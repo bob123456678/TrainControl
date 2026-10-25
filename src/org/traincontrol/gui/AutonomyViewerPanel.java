@@ -74,7 +74,7 @@ public class AutonomyViewerPanel extends JPanel
      *
      * It has to be, because this panel is no longer displayed: its controls moved to the Autonomy
      * menu and the object stayed behind as the place the actions live.  A dialog parented to a
-     * component that is not on screen has nothing to centre on, so every one of them opened in the
+     * component that is not on screen has nothing to center on, so every one of them opened in the
      * middle of the DISPLAY instead of over the window that asked.
      */
     private final TrainControlUI ui;
@@ -94,7 +94,7 @@ public class AutonomyViewerPanel extends JPanel
     private final List<List<org.traincontrol.automationui.TileGraph.TileKey>> findingRelatedRows =
         new java.util.ArrayList<>();
 
-    // What each findings row is, so the renderer can colour it and a click can act on it.  Parallel
+    // What each findings row is, so the renderer can color it and a click can act on it.  Parallel
     // lists rather than a richer element type, so the list still renders as plain strings.
     private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
 
@@ -127,7 +127,7 @@ public class AutonomyViewerPanel extends JPanel
         this.initialSession = session;
         this.ui = ui;
 
-        // White, and no inset border: this panel stands inside a white container, and a default grey
+        // White, and no inset border: this panel stands inside a white container, and a default gray
         // JPanel with padding read as a second surface floating on top of it.
         setOpaque(true);
         setBackground(java.awt.Color.WHITE);
@@ -149,7 +149,7 @@ public class AutonomyViewerPanel extends JPanel
     // Copied from the Autonomy Settings tab rather than invented here, so the two read as one design:
     //   group heading  jLabel51 "Train Behavior"        Segoe UI Semibold 13, navy, above a boxed panel
     //   field label    jLabel46 "Minimum Action Delay"  Segoe UI plain 14, navy
-    //   control        minDelay, atomicRoutes           Segoe UI plain 14, default colour
+    //   control        minDelay, atomicRoutes           Segoe UI plain 14, default color
     //   button         validateButton, editLayoutButton Segoe UI bold 12
     //   box            jPanel3, jPanel4                 white, 1px line border in (204,204,204)
     static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
@@ -1599,7 +1599,7 @@ public class AutonomyViewerPanel extends JPanel
         // dropped: the dialog still reported everything it had matched, because matching is what it
         // counts, and the setup then would not open.
         //
-        // INTO THE CONFIGURATION NAMED AT THE PROMPT (Adam, 2026-09-25, asked whether to honour the name typed or stop
+        // INTO THE CONFIGURATION NAMED AT THE PROMPT (Adam, 2026-09-25, asked whether to honor the name typed or stop
         // asking for one: *"(a)"*).  A layout that already had configurations kept importing into the one in use, so the
         // name the door had just asked for - and warned about replacing - was thrown away, and the old file's placements,
         // homes and facings went into the configuration the operator was running.  Now the one named is created where it
@@ -2235,7 +2235,7 @@ public class AutonomyViewerPanel extends JPanel
      *
      * A finding that says "nothing connects to 1 - Main 8,6" tells the reader where to look and nothing
      * about what they will find when they get there.  Naming the tile - a sensor with an s88 address, a
-     * switch with its address, a piece of plain track - is usually enough to recognise the spot without
+     * switch with its address, a piece of plain track - is usually enough to recognize the spot without
      * going to it, and is what makes a list of eleven skimmable.
      */
     private String describeTile(org.traincontrol.automationui.TileGraph.TileKey tile)

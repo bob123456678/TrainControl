@@ -219,7 +219,7 @@ public final class ConditionOutline
         // and here").  A word sits at the level of what it joins.  One deeper than the condition on either side
         // of it is, to `read`, a group holding a word and no condition - which is nothing - so the word vanished
         // and the level's other word joined everything, with no two words side by side to flag.  Shallower than
-        // both neighbours is fine: that is how two groups are joined.
+        // both neighbors is fine: that is how two groups are joined.
         for (int at = 1; at + 1 < rows.size(); at++)
         {
             Row row = rows.get(at);
@@ -382,7 +382,7 @@ public final class ConditionOutline
      * or C)" with B moved up is "B and (A or C)": the same sentence about different sensors, which
      * is what somebody pressing the arrow beside B means.
      *
-     * A condition whose neighbour at its own level is a whole group moves past the group instead
+     * A condition whose neighbor at its own level is a whole group moves past the group instead
      * (FR-144): "(A or B or C) and D" with D moved up is "D and (A or B or C)", the word staying
      * between them and every line keeping its level.
      *
@@ -479,7 +479,7 @@ public final class ConditionOutline
      * The group a condition would move past: the word beside it is at its own level, and the term past that
      * word is nested deeper.
      *
-     * @return {first, last} of the group's lines, or null where the neighbour is a single condition or nothing
+     * @return {first, last} of the group's lines, or null where the neighbor is a single condition or nothing
      */
     private static int[] groupBeside(List<Row> rows, int line, int by)
     {

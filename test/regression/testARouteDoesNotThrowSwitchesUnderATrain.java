@@ -40,7 +40,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * How long the power is given to come back on after a `go()`.
      *
-     * An acknowledgement rather than a railway event, so it is bounded - `waitForPowerState` says why
+     * An acknowledgment rather than a railway event, so it is bounded - `waitForPowerState` says why
      * at length.  Generous, because what this waits out is a busy machine.
      */
     private static final long POWER_PATIENCE_MS = 15000;
@@ -1451,7 +1451,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         // JVM and `init(simulate)` turns the power on, so no earlier class can be reaching this one.
         //
         // `waitForPowerState` is the railway's own wait for this: it waits on the monitor `setPowerState`
-        // notifies, and it is BOUNDED because an acknowledgement of a command TrainControl itself just sent
+        // notifies, and it is BOUNDED because an acknowledgment of a command TrainControl itself just sent
         // either comes back in milliseconds or is not coming.  `testAConflictSkipsOnlyTheSwitchUnderTheTrain`
         // waits the same way.
         assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
@@ -1475,7 +1475,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             // FIRED AUTOMATICALLY, which is the door this rule is about.
             //
             // The refusal only happens at the unattended door: with `auto` false the whole rule is switched
-            // off and nothing could be discarded, so the safety behaviour asserted here (a route carrying an
+            // off and nothing could be discarded, so the safety behavior asserted here (a route carrying an
             // emergency stop is not thrown away whole) would never be exercised.  This is the door with no
             // human at it: a sensor fires it, and whatever it decides is what the railway does.
             new MarklinRoute(model, "MX emergency", 84903, commands, 0,
@@ -1634,9 +1634,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * Deleting a locomotive says how many routes drive it, before it takes their commands away.
      *
-     * Adam, 2026-09-01, on the behaviour itself: "OK - let\u0027s add a warning about this."
+     * Adam, 2026-09-01, on the behavior itself: "OK - let\u0027s add a warning about this."
      *
-     * The behaviour is deliberate: a command naming a locomotive that is not in the database does nothing
+     * The behavior is deliberate: a command naming a locomotive that is not in the database does nothing
      * when the route fires, and leaving it makes the route look complete while it is not.  An operator who
      * deletes a locomotive and adds it back under the same name (which is how a decoder type gets changed)
      * finds the route's commands gone, so the deletion says how many routes will lose commands.

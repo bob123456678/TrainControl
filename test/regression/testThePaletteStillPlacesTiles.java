@@ -36,7 +36,7 @@ public class testThePaletteStillPlacesTiles
      * A tile from the palette lands on a square that already has track on it.
      *
      * MUTATION: putting back the press handler's unconditional `initCopy(label, null, true)` - the
-     * pick-up-to-drag arm - fails this, which is the shipped behaviour it was written against.
+     * pick-up-to-drag arm - fails this, which is the shipped behavior it was written against.
      */
     @Test
     public void testAPaletteTileLandsOnOccupiedTrack() throws Exception

@@ -174,7 +174,7 @@ public class TailCrossedPrompt
      * @param arrivedFrom the side it came in by, or null
      * @param trainLength its length, or null
      * @param train the train's name, for the question
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param shown what to call a point on screen, or null for its own name
      * @return what the question came to - see `Answer`
      */
@@ -207,9 +207,9 @@ public class TailCrossedPrompt
             ? DiagramPick.of(parent, at, choices, train, shownName(shown, at)) : null;
 
         // IN FRONT OF THE EDITOR WHERE ONE IS SHOWING (MT-575).  A door reached from the autonomy editor hands this the
-        // main window - the Place dialog's parent - and the list hung from it was centred on, and ordered with, the window
+        // main window - the Place dialog's parent - and the list hung from it was centered on, and ordered with, the window
         // the editor covers.  The editor is where the operator is looking, and where the question was asked from.  Not a
-        // minimised one, which hides what it owns: `openLayoutEditorWindow` answers null for it.
+        // minimized one, which hides what it owns: `openLayoutEditorWindow` answers null for it.
         Component over = parent instanceof TrainControlUI && ((TrainControlUI) parent).openLayoutEditorWindow() != null
             ? ((TrainControlUI) parent).openLayoutEditorWindow() : parent;
 
@@ -333,7 +333,7 @@ public class TailCrossedPrompt
      * A closed dialog is no answer and a choice of nothing.  Unlike the side question it does not refuse the
      * placement: the train is already somewhere a side was given for.
      *
-     * @param parent what to centre on
+     * @param parent what to center on
      * @param train the train's name
      * @param station where it stands, as the operator reads it
      * @param choices the sensors
@@ -1185,7 +1185,7 @@ public class TailCrossedPrompt
 
         if (beyond < 0)
         {
-            // SHORT OF THE SENSOR, ON A ROAD THAT IS DIFFERENT TRACK FROM ITS NEIGHBOUR'S (MT-477): offered as the way
+            // SHORT OF THE SENSOR, ON A ROAD THAT IS DIFFERENT TRACK FROM ITS NEIGHBOR'S (MT-477): offered as the way
             // the tail lies, so answering it puts the tail on this rail rather than on whichever the walk meets first.
             // Nothing is walked beyond: the tail ends on this rail.
             if (offerShort && left > 0)

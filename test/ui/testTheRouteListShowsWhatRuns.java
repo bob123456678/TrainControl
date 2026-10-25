@@ -34,7 +34,7 @@ import org.traincontrol.marklin.MarklinRoute;
  * route tile, an s88 trigger, another route - and off when the route really ends.
  *
  * **How it is seen.**  The renderer is asked for a cell, sized and painted to a picture, and the strip left of the play
- * button is searched for the mark's grey; the route is a real one, run by `MarklinRoute.execRoute` with a delay between
+ * button is searched for the mark's gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between
  * its commands so that it runs long enough to look at.
  *
  * MUTATION: take the `routeStarted` notice out of `MarklinRoute.execRoute`, or the paint out of the renderer, and the
@@ -1760,7 +1760,7 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Whether the strip of cell just left of the play button holds the mark's grey - which a short name never reaches.
+     * Whether the strip of cell just left of the play button holds the mark's gray - which a short name never reaches.
      */
     private static boolean markOf(String route)
     {

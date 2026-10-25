@@ -199,7 +199,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * A recorded facing the track does not run is shown by none of the three: the icon lies along the track, the caption
-     * has no east arrow, and the Is Facing menu is greyed.
+     * has no east arrow, and the Is Facing menu is grayed.
      *
      * @throws Exception from the window
      */
@@ -573,7 +573,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
      * Adam, OB-350: *"the track viewer doesn't allow autonomy locomotive placements on stations that have no way in
      * (option greyed out), but the autonomy editor does.  they should be consistent, and allowed."*
      *
-     * MUTATION: grey the diagram's Place where no copy can leave again, and this fails.
+     * MUTATION: gray the diagram's Place where no copy can leave again, and this fails.
      *
      * @throws Exception from the window
      */

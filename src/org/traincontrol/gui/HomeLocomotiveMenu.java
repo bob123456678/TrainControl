@@ -31,7 +31,7 @@ final class HomeLocomotiveMenu
     /**
      * Adds the item that sends every locomotive back where it belongs.
      *
-     * Shown always and greyed when there is nothing to do, so the feature stays discoverable and says
+     * Shown always and grayed when there is nothing to do, so the feature stays discoverable and says
      * why it is unavailable.  Only the cheap half of the question is asked here: whether a plan exists needs
      * a search, which would stall the popup, and the real answer comes when it is clicked.  The setup's
      * question is asked by the caller, once, from what Start's item already knows.
@@ -45,16 +45,16 @@ final class HomeLocomotiveMenu
      *
      * `refreshReturnHomeButton` is the one place that asks now, off the event thread, and this reads
      * the button it maintains, so the two describe the railway one way.  Over a setup with errors they part
-     * on purpose, below: the item is greyed with the setup's sentence and the button stays live and explains
+     * on purpose, below: the item is grayed with the setup's sentence and the button stays live and explains
      * on a click, as Start's item and button do.
      *
      * Autonomy being busy is asked HERE, after the setup.  It costs no monitor - two flags and a
      * ConcurrentHashMap - and it can turn true between the last refresh and this menu opening, so asking it
      * makes the item strictly fresher than the button beside it.
      *
-     * **AND A SETUP THAT CANNOT BE USED GREYS IT, with the setup's own sentence** (Adam, 2026-09-24,
+     * **AND A SETUP THAT CANNOT BE USED GRAYS IT, with the setup's own sentence** (Adam, 2026-09-24,
      * *"Yes, go with your recommendation"*).  Return Home refuses to run over it, and
-     * this item is shown always and greyed where there is nothing it can do - so it says why here,
+     * this item is shown always and grayed where there is nothing it can do - so it says why here,
      * as the right-click Start beside it does.  The buttons stay live and explain on a click, as
      * Start's does.
      *

@@ -15,7 +15,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
  * A station's timetable, and the roads its trains stand on, follow it through a rename, a moved square, a
- * ticked-out page, a cancelled edit and an undo.
+ * ticked-out page, a canceled edit and an undo.
  *
  * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
  * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
@@ -1134,7 +1134,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square deleted in the track editor, and the edit cancelled, keeps its train and its settings: Cancel
+     * A square deleted in the track editor, and the edit canceled, keeps its train and its settings: Cancel
      * puts the setup back as the editor opened it, and the reset's fold after it judged "a square whose tile is gone"
      * against the page the editor had emptied - so it erased what Cancel had just put back.  No fold follows a square
      * removed until the setup is opened again, as none follows a move: opening the editor folded already.

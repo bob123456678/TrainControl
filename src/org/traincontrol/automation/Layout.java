@@ -101,7 +101,7 @@ public class Layout
 
         /**
          * The route to whichever station has gone longest without a train.
-         * On a layout with a favourite loop every other rule can leave the far corner untouched all evening.
+         * On a layout with a favorite loop every other rule can leave the far corner untouched all evening.
          *
          * Ranked by when the destination last had an arrival, so a station never visited wins outright.  Station
          * PRIORITY still applies first.
@@ -189,7 +189,7 @@ public class Layout
         int length = Math.max(1, lengthOf(path));
 
         // What a station is worth, always positive: (priority + 1) million at or above the default 0, so an
-        // unprioritised railway ranks by 1/distance; below zero, 1/(1 - priority) of an ordinary station, since a
+        // unprioritized railway ranks by 1/distance; below zero, 1/(1 - priority) of an ordinary station, since a
         // negative numerator over a longer route would grow.  A million, in long, because the division is integer.
         long worth = end.getPriority() >= 0
             ? (end.getPriority() + 1L) * 1000000L
@@ -2633,7 +2633,7 @@ public class Layout
     {
         boolean result = true;
 
-        // Released before thrown (see releasesBeforeThrows), for every edge: a turnout pair cannot be recognised here.
+        // Released before thrown (see releasesBeforeThrows), for every edge: a turnout pair cannot be recognized here.
         // Both commands of one turnout must sit on one edge, since edges are configured in path order.
         List<String> names = new ArrayList<>(e.getConfigCommands().keySet());
 
@@ -2749,7 +2749,7 @@ public class Layout
         }
 
         // Not while the railway uses the graph, as in renamePoint: this removes a point from under live visited sets.
-        // The menu greys at popup time, not click time; staging counts too, since the planner walks these structures.
+        // The menu grays at popup time, not click time; staging counts too, since the planner walks these structures.
         if (this.isRunning() || this.isStagingInProgress())
         {
             throw new Exception(I18n.f("autolayout.errorCannotEditWhileRunning"));
@@ -3062,7 +3062,7 @@ public class Layout
         }
 
         // Nothing to move it to: right for a real terminus, but on a may-turn square the operator's "keep the
-        // direction" was not honoured (a may-turn dead end has only the turning copy), so it is said.
+        // direction" was not honored (a may-turn dead end has only the turning copy), so it is said.
         if (!mustTurnAt(arrived))
         {
             this.control.logf("autolayout.log.noPlainCopyToStandOn", placeNameOf(arrived));
@@ -4352,7 +4352,7 @@ public class Layout
      *
      * @param pathIsUnmeasured whether nothing on this path is measured (`pathIsUnmeasured`), computed over the whole
      *        path before the run
-     * @param behind how far the head has travelled since the END of the edge in question
+     * @param behind how far the head has traveled since the END of the edge in question
      * @param trainLength the train's length, or null
      * @return whether the tail is provably clear of it
      */
@@ -5131,7 +5131,7 @@ public class Layout
     /**
      * Pauses between polls of a condition the dispatch loop is waiting on.
      *
-     * Honours the operator's action delays, but never spins when both are zero: the sequential branch waits minutes
+     * Honors the operator's action delays, but never spins when both are zero: the sequential branch waits minutes
      * per entry.
      *
      * Any stop cuts it short, or the loop could live on into the next run.
@@ -5784,7 +5784,7 @@ public class Layout
 
     /**
      * Which side of its end point an edge comes in by, the one definition for the arrival that writes it and the tail
-     * walk that reads it.  The build's recorded side, else the compass direction of the neighbouring point (wrong
+     * walk that reads it.  The build's recorded side, else the compass direction of the neighboring point (wrong
      * only on a curve).
      *
      * @param edge the edge
@@ -6032,7 +6032,7 @@ public class Layout
      * horizontal.  Null when either point has no coordinates.
      *
      * @param from the point being stood on
-     * @param to a neighbour
+     * @param to a neighbor
      * @return "N", "S", "E", "W", or null
      */
     public String sideTowards(Point from, Point to)
@@ -7050,7 +7050,7 @@ public class Layout
 
     /**
      * Claims the squares every rail shares from the platform back to where they part, when they do part (MT-477);
-     * true then, and the walk stops there.  Copies of one neighbour are one road, and an unmeasured rail says nothing.
+     * true then, and the walk stops there.  Copies of one neighbor are one road, and an unmeasured rail says nothing.
      */
     private static boolean claimUpToWhereTheRailsPart(List<Edge> rails, Locomotive loc, Map<String, Locomotive> places,
         Set<String> spent, int remaining, Map<String, Integer> reach)
@@ -7404,7 +7404,7 @@ public class Layout
     /**
      * Tells whoever is watching that the last locomotive thread has gone.
      * Nothing reads isRunning() on a timer, and a train idle when Stop is pressed ends no path, so without this the
-     * buttons would stay greyed and the exit capture, gated on isRunning(), would skip silently.
+     * buttons would stay grayed and the exit capture, gated on isRunning(), would skip silently.
      *
      * An empty edge list rather than null, because the registered callback walks it.
      */
@@ -8182,7 +8182,7 @@ public class Layout
         this.timetable.clear();
         this.timetable.addAll(lst);
 
-        // Overlapping execution is the normal behaviour; only a staging plan opts out, and it does so
+        // Overlapping execution is the normal behavior; only a staging plan opts out, and it does so
         // after calling this
         this.timetableSequential = false;
 
@@ -9861,7 +9861,7 @@ public class Layout
         {
             Point landed = layout.getPoint(entry.getKey());
 
-            // Only onto a square whose placement was honoured, or the next train to reserve it inherits the tail.
+            // Only onto a square whose placement was honored, or the next train to reserve it inherits the tail.
             if (landed != null && landed.getCurrentLocomotive() != null)
             {
                 landed.setArrivedFrom(entry.getValue());
@@ -9879,7 +9879,7 @@ public class Layout
             }
         }
 
-        // Only now: until every point exists an honoured assignment cannot be told from one whose locomotive is unread.
+        // Only now: until every point exists an honored assignment cannot be told from one whose locomotive is unread.
         layout.rebuildHomeStations();
 
         return layout;

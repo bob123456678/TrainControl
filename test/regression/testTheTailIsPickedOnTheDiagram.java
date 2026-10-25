@@ -810,7 +810,7 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * The paste door asks for a five-unit train at Tunnel from the north; `meanwhile` runs while the question waits;
      * then TunnelPre is clicked - read again from the diagram, since a rebuild may have drawn it anew - or the small
-     * window is cancelled; and the door returns.
+     * window is canceled; and the door returns.
      *
      * @param train the train pasted
      * @param meanwhile what happens in the wait
@@ -1110,7 +1110,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             String first = dropped.substring(0, Math.min(25, dropped.length()));
 
-            // CANCELLED: nothing to say.
+            // CANCELED: nothing to say.
             pasteAndAnswerLate(train, () ->
             {
                 model.getAutoLayout().moveLocomotive(null, "Tunnel (southbound)", true);

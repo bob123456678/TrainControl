@@ -296,7 +296,7 @@ public class AutonomyChecks
      * **And PER PAGE** (Adam: *"The duplicate caption check should be per page.  It is OK to show on another
      * page what is going on on another."*): a caption beside the station on each of two pages is nothing to report.
      *
-     * An ERROR, as an unlabelled station is: both are a station the diagram cannot be read by.  One finding per station,
+     * An ERROR, as an unlabeled station is: both are a station the diagram cannot be read by.  One finding per station,
      * filed on the first square its name is drawn twice on - so it is counted for that page and a click goes to it - and
      * ABOUT the station (`Finding.getAbout`), with the squares of the pages that draw its name more than once as its
      * related ones and their number as its count (OB-341).
@@ -507,7 +507,7 @@ public class AutonomyChecks
      *
      * An ERROR, because it is not a preference. One sensor on two squares becomes two Points after the
      * reduction, and nothing downstream can say which of them a train is standing on - the railway
-     * cannot be modelled correctly in that state, however carefully everything else is set up.
+     * cannot be modeled correctly in that state, however carefully everything else is set up.
      *
      * `excludeRepeatedSensorPages` shuts a repeating page when a configuration is created, and OB-130
      * settled that a legacy import may do the same. Neither covers a page switched back on by hand
@@ -1587,7 +1587,7 @@ public class AutonomyChecks
      * cannot see - autonomy will announce arrivals at a platform that is nowhere on screen.
      *
      * An error, on the author's instruction: a setup whose stations cannot be found on the diagram is not one
-     * anybody can supervise, even though the trains run perfectly well unlabelled.
+     * anybody can supervise, even though the trains run perfectly well unlabeled.
      *
      * A station still carrying its generated name is skipped, because it already has a warning of its
      * own and naming it is the step that has to come first - two rows about one sensor, one of which
@@ -1606,7 +1606,7 @@ public class AutonomyChecks
             if (point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
 
             // Asked by SQUARE, not by name: matching the caption's text against the Point's name is a
-            // fragile join that would report a well labelled station as unlabelled the moment its name
+            // fragile join that would report a well labeled station as unlabeled the moment its name
             // changed.
             if (!labelled.contains(point.getTile()))
             {

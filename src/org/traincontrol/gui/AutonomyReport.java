@@ -30,7 +30,7 @@ public class AutonomyReport
     /**
      * The sets of missing pages already warned about in this session (MT-380).
      *
-     * Keyed by the sorted page names, so the same refusal is recognised however the report lists them,
+     * Keyed by the sorted page names, so the same refusal is recognized however the report lists them,
      * and a DIFFERENT set - another page gone, or one back - is a new thing to say.
      */
     private static final java.util.Set<String> ALREADY_SAID =

@@ -32,7 +32,7 @@ public class testDiagramResize
     {
         LayoutDiagram diagram = new LayoutDiagram("test", 6, 6, null, null);
 
-        // A recognisable tile, away from every edge so that neither operation touches it
+        // A recognizable tile, away from every edge so that neither operation touches it
         diagram.addComponent(new LayoutDiagramComponent(
             LayoutDiagramComponent.componentType.STRAIGHT, 2, 3, 0, 0, 12, 11,
             Accessory.accessoryDecoderType.MM2), 2, 3);

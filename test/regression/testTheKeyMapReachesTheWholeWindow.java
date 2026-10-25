@@ -176,7 +176,7 @@ public class testTheKeyMapReachesTheWholeWindow
      *
      * The map is attached to the tabbed pane as a listener AND reachable through the post-processor,
      * so a key pressed there passes it twice. It is the same `KeyEvent` object both times, which is
-     * how the second visit is recognised and dropped.
+     * how the second visit is recognized and dropped.
      *
      * **A key that COUNTS, not a letter.** The first version pressed a letter and asserted the button
      * it names is active - and selecting the same locomotive twice lands in the same place, so it

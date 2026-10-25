@@ -171,7 +171,7 @@ public class testAutoLayout
      *
      * The other half of the same gap: `testAutoRoute` asserts that every route outside the list reports
      * itself disabled, which `disable()` makes true by definition. What matters is that the parked
-     * monitor honours it - it tests `enabled` after each feedback wait and returns - and that is what is
+     * monitor honors it - it tests `enabled` after each feedback wait and returns - and that is what is
      * asserted here, with a control first so the test cannot pass because the route was never firing.
      *
      * MUTATION: take the `r.disable()` out of the non-listed branch of `applyAutonomyRouteActivations`
@@ -1322,7 +1322,7 @@ public class testAutoLayout
      * "Least recently visited" sends trains where they have not been.
      *
      * The rule an operator reaches for first, and the one every other rule here cannot express: none
-     * of the others knows or cares where trains have already been, so a layout with a favourite loop
+     * of the others knows or cares where trains have already been, so a layout with a favorite loop
      * can leave its far corner untouched all evening.
      */
     @Test

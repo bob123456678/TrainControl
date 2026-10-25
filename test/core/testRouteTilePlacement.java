@@ -21,7 +21,7 @@ import org.traincontrol.marklin.file.CS2File;
  * Route buttons placed where what they conduct is not what was drawn (OB-160).
  *
  * A route button carries no track of its own.  What it conducts is decided entirely by what is beside
- * it: `transparentRoutes` collects the sides where a neighbour presents a real port OR is itself
+ * it: `transparentRoutes` collects the sides where a neighbor presents a real port OR is itself
  * transparent, then joins N to S and E to W where both face, or the only two faces where there are
  * exactly two.
  *
@@ -348,7 +348,7 @@ public class testRouteTilePlacement
      * What is drawn around a square, so a refusal says what to look at.
      *
      * A coordinate on its own tells the reader which page to open and nothing about why the check
-     * objected - and these two checks are entirely about what the neighbours are.
+     * objected - and these two checks are entirely about what the neighbors are.
      */
     private static String neighbourhood(List<LayoutDiagram> pages, TileGraph.TileKey tile)
     {
@@ -404,7 +404,7 @@ public class testRouteTilePlacement
     }
 
     /**
-     * A straight lying east-west, which presents a real port to its east and west neighbours.
+     * A straight lying east-west, which presents a real port to its east and west neighbors.
      */
     private static void track(LayoutDiagram page, int x, int y) throws Exception
     {

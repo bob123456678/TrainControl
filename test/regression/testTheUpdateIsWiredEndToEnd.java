@@ -177,7 +177,7 @@ public class testTheUpdateIsWiredEndToEnd
 
     /**
      * TrainControl says it started once its window is on screen, or when the user leaves from its own question
-     * (the IP address cancelled, the first sync given up) - and not as main's first act, which a version that then
+     * (the IP address canceled, the first sync given up) - and not as main's first act, which a version that then
      * failed in its own start-up passed.  Pinned by reading.
      *
      * MUTATION: put `SelfUpdate.reportStarted()` back at the top of `TrainControl.main`, or drop any of the three

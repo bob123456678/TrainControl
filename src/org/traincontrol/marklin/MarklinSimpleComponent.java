@@ -89,7 +89,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         
         // A COPY, NOT THE LIVE LIST.  This is built by Backup Data on its own thread while
         // the event thread may be editing that route - `deleteLoc` takes commands out of it through
-        // `Iterator.remove()` - and the serialiser then walks what it was handed.  The route's own walks take
+        // `Iterator.remove()` - and the serializer then walks what it was handed.  The route's own walks take
         // a copy for the same reason.
         this.route = new java.util.ArrayList<>(r.getRoute());
         this.address = r.getId();

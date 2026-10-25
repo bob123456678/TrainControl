@@ -396,7 +396,7 @@ public class GraphLocAssign extends javax.swing.JPanel
      *
      * Adam, 2026-09-07: pasting onto BottomMainPost "asks if the train arrived from the south or from
      * the west, rather than the north or the south."  The geometric answer names where the
-     * neighbouring POINT lies, and a reduced edge may turn corners on the way; the builder splits the
+     * neighboring POINT lies, and a reduced edge may turn corners on the way; the builder splits the
      * square on the side the track actually comes in by, and that is the vocabulary the tail walk
      * compares against (OB-182).
      *

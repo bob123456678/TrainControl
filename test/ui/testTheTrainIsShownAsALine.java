@@ -26,7 +26,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, first half - a train is shown as a line along the track, not as a grey wash over the tile.
+ * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.
  *
  * Adam, 2026-09-08: *"instead of shading the entire tiles, we need to draw a line (let's say in
  * orange) to show that the train is there.  graying makes it look confusing on double curve tiles."*
@@ -43,9 +43,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * uncovered; a line changes the pixels it runs over and no others. So the same tile is painted twice,
  * once with the train and once without, and the two pictures are compared.
  *
- * The orange is recognised by hue rather than by a constant, deliberately: the assertion is "somebody
+ * The orange is recognized by hue rather than by a constant, deliberately: the assertion is "somebody
  * looking at this square sees orange on it", and a test reading production's own constant would pass
- * for any colour that constant was changed to, including grey.
+ * for any color that constant was changed to, including gray.
  *
  * MUTATION: put `ImageUtil.addCoveredOverlay` back and `testTheMarkIsALineAndNotAWash` fails with
  * every pixel of the tile changed. Draw nothing at all and `testACoveredSquareIsMarkedInOrange`
@@ -80,7 +80,7 @@ public class testTheTrainIsShownAsALine
     /** The tile with the train standing there, drawn in the other style a preference may choose: coaches. */
     private static BufferedImage asCoaches;
 
-    /** And in the other colour a preference may choose: the soft orange, solid. */
+    /** And in the other color a preference may choose: the soft orange, solid. */
     private static BufferedImage asSoftOrange;
 
     /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
@@ -239,7 +239,7 @@ public class testTheTrainIsShownAsALine
      * **MEASURED IN ORANGE, and it used to be measured in changed pixels** (2026-09-09).
      *
      * The square this class chooses is a covered one, and a covered square that is an intermediate
-     * tile of a covered edge is also a BLOCKED one - so it now carries the grey wash as well as the
+     * tile of a covered edge is also a BLOCKED one - so it now carries the gray wash as well as the
      * line. The wash was fenced on a running railway and this class runs at idle, so counting every
      * pixel that differs from the bare square used to count the line alone. It counts both now: 900 of
      * 900, and the class reported that the train was being drawn as a wash. It is not; there are two
@@ -307,7 +307,7 @@ public class testTheTrainIsShownAsALine
     // ---------------------------------------------------------------- looking at the picture
 
     /**
-     * Whether this colour is the orange a person would call orange.
+     * Whether this color is the orange a person would call orange.
      *
      * By hue rather than against production's own constant: the claim is about what somebody looking
      * at the diagram sees, and a test reading the constant would agree with any value it was changed
@@ -355,7 +355,7 @@ public class testTheTrainIsShownAsALine
      * Whether the UNMARKED picture has tile art within a couple of pixels of here.
      *
      * The same question testDiagramLooksRight asks of the run line, and for the same reason: the mark
-     * is a stroke centred on the rail, so its edges sit a little either side of the art.
+     * is a stroke centered on the rail, so its edges sit a little either side of the art.
      */
     private static boolean nearArt(BufferedImage bare, int atX, int atY)
     {
@@ -640,7 +640,7 @@ public class testTheTrainIsShownAsALine
     /**
      * A running train's line is the orange of a standing train's (Adam, 2026-10-11: "Can we brighten the color of the
      * orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen
-     * against the dark gray track color with chevrons"): the see-through orange laid over its own dark grey run line came
+     * against the dark gray track color with chevrons"): the see-through orange laid over its own dark gray run line came
      * out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69).
      *
      * The covered square painted standing, and then running with the run's reached line along the road the tail lies on:
@@ -791,7 +791,7 @@ public class testTheTrainIsShownAsALine
     /**
      * The pixels of a train's line laid twice: against the same square painted with its line laid once, pixel by pixel,
      * orange in both and redder by 15 or more - and not paled toward white as a chevron under the line is.  Compared
-     * pixel by pixel because the line laid once is not one colour: a sensor's light contact shows through it lighter.
+     * pixel by pixel because the line laid once is not one color: a sensor's light contact shows through it lighter.
      */
     private static int laidTwice(BufferedImage shot, BufferedImage once)
     {
@@ -852,12 +852,12 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The train's line is see-through: the track it lies on shows through it (Adam, 2026-10-09, from the tail colour
+     * The train's line is see-through: the track it lies on shows through it (Adam, 2026-10-09, from the tail color
      * options: "can we change to the see through tail line").
      *
-     * Read off the picture, as the commonest orange pixel - the line's own colour where it crosses what is under it,
+     * Read off the picture, as the commonest orange pixel - the line's own color where it crosses what is under it,
      * its anti-aliased edges being the minority - rather than off the constant.  A solid line's commonest pixel is the
-     * solid colour, as bright as 245 or 255; a see-through one is darkened by the black and grey track under it.
+     * solid color, as bright as 245 or 255; a see-through one is darkened by the black and gray track under it.
      *
      * MUTATION: draw it solid, or make the soft orange the default, and this fails.
      */
@@ -875,10 +875,10 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The soft orange, rgb(245,140,60), solid, is still the other colour a preference may choose (Adam, 2026-10-09:
+     * The soft orange, rgb(245,140,60), solid, is still the other color a preference may choose (Adam, 2026-10-09:
      * "make it easy to switch to that one too").
      *
-     * MUTATION: let the switch choose nothing, or the soft orange be another colour, and this fails.
+     * MUTATION: let the switch choose nothing, or the soft orange be another color, and this fails.
      */
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheSoftOrangeIsStillAChoice()

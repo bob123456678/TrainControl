@@ -165,7 +165,7 @@ public final class SelfUpdate
          *
          * @param pending the update
          * @param exit the application's exit, which takes the update when nothing refuses it
-         * @return true when the exit came back without taking it: it was cancelled
+         * @return true when the exit came back without taking it: it was canceled
          */
         public boolean exitWith(Pending pending, Runnable exit)
         {
@@ -203,7 +203,7 @@ public final class SelfUpdate
     /**
      * Tells an update that is waiting to hear from this version that it has started (FR-125).
      *
-     * Called once the main window is on screen, and on the two ways the user leaves before then - cancelling the IP
+     * Called once the main window is on screen, and on the two ways the user leaves before then - canceling the IP
      * address, giving up the first sync - because a version that asks a question runs.  Not as `main`'s first act any
      * more (FR-125, 2026-10-13): a version that fails in its own start-up after that had "started" and was kept, while the
      * Readme promised an update that cannot start is undone.
@@ -501,7 +501,7 @@ public final class SelfUpdate
      * JVM has ended; and waits until the updater says it is running.
      *
      * Called from the exit itself, once everything has been saved and nothing can refuse the exit any more - so a
-     * cancelled exit never leaves an updater waiting.  The lock is held from here until the process ends, and the
+     * canceled exit never leaves an updater waiting.  The lock is held from here until the process ends, and the
      * updater waits until it can take it.
      *
      * **The exit goes on only once the updater has said it is running** (`JarUpdater.RUNNING_NAME`, its first act).

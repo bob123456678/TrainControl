@@ -113,11 +113,11 @@ public class ArrivalSidePrompt
      * The combo calls the first and is the answer to the second.  Written as a dispatch rather than
      * duplicated, because a rule with two spellings is this project's most repeated defect.
      *
-     * @param layout the running layout, which knows where the neighbours are
+     * @param layout the running layout, which knows where the neighbors are
      * @param at the point the train is being put down on
      * @param facing which way it points, or null when nobody has said
      * @param mayReverse whether the operator marked this square as one trains may turn at
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param arrivalSides the build's own sides, where the caller has them
      * @return the side, or null when it cannot be worked out and was not answered
      */
@@ -216,7 +216,7 @@ public class ArrivalSidePrompt
      * build's sides.**  §4's rule - *"an ordinary station assumes the opposite of the facing"* - is
      * about where the train is relative to itself, and on a straight the compass says the same thing.
      * On a curve it does not.  A rail that leaves a square northwards and turns east reaches a
-     * neighbour lying east; the build enters that square by N and by E, and a train facing E did not
+     * neighbor lying east; the build enters that square by N and by E, and a train facing E did not
      * come from W, because there is no W.
      *
      * OB-182 moved the offered sides, the written arrival side and the walk's own comparison onto the
@@ -280,7 +280,7 @@ public class ArrivalSidePrompt
      * `forPlacement` returns null in three different situations and only one of them is "the operator
      * said no": the square may have no compass-resolvable sides at all, or the dialog may have been
      * impossible to show. The paste door was reading all three as a dismissal, so a square whose copy
-     * connects only through neighbours the grid cannot place was **silently refused every paste,
+     * connects only through neighbors the grid cannot place was **silently refused every paste,
      * forever**, with no dialog and no log line - the operator could not put a train there and nothing
      * said why.
      *
@@ -316,7 +316,7 @@ public class ArrivalSidePrompt
      * answer that claims least: a tail nobody has placed blocks no track, which is the state the
      * railway was in before the question was asked.
      *
-     * @param parent what to centre on
+     * @param parent what to center on
      * @param at the point
      * @param sides the sides that actually have track
      * @return the chosen side, or null when dismissed
@@ -392,7 +392,7 @@ public class ArrivalSidePrompt
      * really go absent.
      *
      * @param side "N", "S", "E" or "W"
-     * @return the key, or the north one for anything unrecognised
+     * @return the key, or the north one for anything unrecognized
      */
     private static String keyFor(String side)
     {
@@ -412,7 +412,7 @@ public class ArrivalSidePrompt
      * graph runs traffic into this point along it or out.
      *
      * **Through `Layout.entrySideOf`, which is the ONE definition**.  This read
-     * `sideTowards` - where the neighbouring POINT lies - and a Point is the far end of a reduced edge
+     * `sideTowards` - where the neighboring POINT lies - and a Point is the far end of a reduced edge
      * that may run several tiles and turn corners on the way, so on a curve it named a side the metal
      * does not leave by.  `entrySideOf` is the build's own answer where the edge carries one and that
      * same geometry where it does not, so a hand-built `Layout` - which is every layout in the tests
@@ -444,9 +444,9 @@ public class ArrivalSidePrompt
      * Adam, 2026-09-07: pasting onto BottomMainPost "asks if the train arrived from the south or from
      * the west, rather than the north or the south."
      *
-     * The geometric form above answers with the compass direction of the neighbouring POINT, and a
+     * The geometric form above answers with the compass direction of the neighboring POINT, and a
      * Point is the far end of a reduced edge that may run several tiles and turn corners on the way.
-     * A rail leaving north and curving east reaches a neighbour that lies east, so the geometry says
+     * A rail leaving north and curving east reaches a neighbor that lies east, so the geometry says
      * "E" while the metal leaves by "N". On a straight the two agree, which is why this survived
      * everywhere anybody looked.
      *

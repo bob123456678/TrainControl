@@ -111,7 +111,7 @@ public class testMultiUnitMembership
      * that field - so a save that reads the map while a rebuild has emptied it writes a locomotive with
      * NO members into `locdb.data`, and the consist is gone after the next start with the file as the
      * only record.  The rebuild runs off the event thread inside `syncWithCS2`; the save runs on the
-     * window-closing path and on Backup Data's own thread, and nothing serialises them.
+     * window-closing path and on Backup Data's own thread, and nothing serializes them.
      *
      * **A race cannot be asserted, so the property that removes it is.** The defect was `clear()` then
      * `putAll()` on the live map: every reader holds the same instance, so there is a window in which it
@@ -539,7 +539,7 @@ public class testMultiUnitMembership
         }
     }
 
-    // Deleting a member.  These pin behaviour that currently works.
+    // Deleting a member.  These pin behavior that currently works.
 
     /**
      * The core of the delete fix, which had no coverage at all.
@@ -656,7 +656,7 @@ public class testMultiUnitMembership
     }
 
     /**
-     * A structural assertion, not a behavioural one, and the only kind available here.
+     * A structural assertion, not a behavioral one, and the only kind available here.
      *
      * unlinkLocomotive is a one-line map removal and reads as though the keyword on it is pointless.
      * It is not: setSpeed and setDirection iterate that same plain LinkedHashMap under this lock while

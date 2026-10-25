@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
  * one changed: iteration still found it, but contains(), remove() and get() did not.
  *
  * hashCode is now identity-based, which removes the hazard at the root rather than repairing each
- * collection after the fact.  These tests are kept because they assert the *behaviour* - an exclusion
+ * collection after the fact.  These tests are kept because they assert the *behavior* - an exclusion
  * still applies after a rename, a deleted locomotive stops being excluded - which must hold however
  * that is achieved.  They are what would prove the remaining repair calls safe to delete, and
  * testHashNeverMovesWhenAnIdentityFieldChanges guards the root fix itself.

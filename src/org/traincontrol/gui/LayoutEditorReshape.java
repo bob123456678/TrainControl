@@ -84,7 +84,7 @@ final class LayoutEditorReshape
      */
     boolean canShiftDown()
     {
-        // And the ceiling: this grows the page by a row, and Increase Size beside it on the same popup is greyed at the
+        // And the ceiling: this grows the page by a row, and Increase Size beside it on the same popup is grayed at the
         // limit with a tooltip saying why.
         return this.editor.lastHoveredY >= 0 && roomToGrow(1, 0);
     }
@@ -144,7 +144,7 @@ final class LayoutEditorReshape
 
     void shiftLeft()
     {
-        // Refused on the last column - see shiftUp, which has the same normalisation behind it
+        // Refused on the last column - see shiftUp, which has the same normalization behind it
         if (!canShiftLeft()) return;
 
         this.editor.snapshotLayout();

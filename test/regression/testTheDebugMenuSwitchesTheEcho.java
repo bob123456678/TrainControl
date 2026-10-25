@@ -135,7 +135,7 @@ public class testTheDebugMenuSwitchesTheEcho
     }
 
     /**
-     * The power cut at the station shows in the window: Power Off greyed and Power On offered; restored, the other way
+     * The power cut at the station shows in the window: Power Off grayed and Power On offered; restored, the other way
      * round.
      *
      * MUTATION: in `MarklinControlStation.receiveMessage`, take out the STOP branch's

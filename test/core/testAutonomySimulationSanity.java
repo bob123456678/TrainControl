@@ -131,7 +131,7 @@ public class testAutonomySimulationSanity
      * Once the write is absolute the parity has nothing left to protect. The hazard it was for - *"a
      * shuttle that turned at both ends came back facing the way it started and had its facing flipped
      * once"* - cannot arise from an absolute write, which says the same thing however many times it is
-     * applied; and cancelling would now be the defect, because it would leave the graph with nothing
+     * applied; and canceling would now be the defect, because it would leave the graph with nothing
      * to say about a train standing at the far end of the shuttle having turned there.
      *
      * So what this runs is the same shuttle, and what it asserts is that the record follows the train:

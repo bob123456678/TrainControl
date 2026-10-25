@@ -116,9 +116,9 @@ public class RightClickPageMenu extends MouseAdapter
             menuItem = new JMenuItem(
                 I18n.t("page.ui.menuAddPage")
             );
-            // Greyed at the ceiling, with the reason on it - the same shape Delete uses below, and for
+            // Grayed at the ceiling, with the reason on it - the same shape Delete uses below, and for
             // the reason written there: an item that appears and disappears reads as an interface that
-            // cannot make up its mind; one that is greyed with an explanation says what to do.
+            // cannot make up its mind; one that is grayed with an explanation says what to do.
             if (ui.canAddLocMappingPage())
             {
                 menuItem.addActionListener(event -> ui.addLocMappingPage());
@@ -135,7 +135,7 @@ public class RightClickPageMenu extends MouseAdapter
 
             // Offered and refused rather than hidden, with the reason on it.  An item that appears
             // and disappears depending on what is on the page reads as an interface that cannot make
-            // up its mind; one that is greyed with an explanation says what to do about it.
+            // up its mind; one that is grayed with an explanation says what to do about it.
             menuItem = new JMenuItem(
                 I18n.f("page.ui.menuDeletePage", ui.getLocMappingNumber())
             );

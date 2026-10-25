@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  * them; nothing exercised what they DO.
  *
  * THE TWO RULES ARE NOT THE SAME RULE, and a test that assumed they were would have been asserting a
- * behaviour this layout deliberately does not have:
+ * behavior this layout deliberately does not have:
  *
  *   - An excluded **intermediate** point cannot be TRAVERSED. `isPathClear` refuses any path whose
  *     interior includes it.

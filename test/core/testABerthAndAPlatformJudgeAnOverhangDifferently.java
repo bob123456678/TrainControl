@@ -376,7 +376,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
      * is true on the switch alone: the walk claims every place, spends nothing on the unmeasured ones, and
      * refuses the berth to a one-unit train as readily as to a nine-unit one.
      *
-     * Ruled behaviour on both sides and the refusing direction, so this pins it rather than changing it -
+     * Ruled behavior on both sides and the refusing direction, so this pins it rather than changing it -
      * Adam, on the half-measured case: *"we want clear warnings to the user if so, then it's fine."*  What
      * was missing is that the refusal named a road and a train length and never the unmeasured piece, so the
      * operator had nothing pointing at what to measure.

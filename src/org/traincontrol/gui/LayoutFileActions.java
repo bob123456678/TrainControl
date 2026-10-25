@@ -672,7 +672,7 @@ final class LayoutFileActions
         // The ceiling every other growing gesture asks: this goes straight to LayoutDiagram.addRowsAndColumns, which has no ceiling
         // and it can grow a page MOST (combining the three pages that 1 - Main links to comes
         // out 24 x 51 against a ceiling of 60).  Refused BEFORE the page is emptied: `made.clear()` below throws away the page this was
-        // copied from, and a page above the ceiling can never be grown again (Increase Size is greyed on it).
+        // copied from, and a page above the ceiling can never be grown again (Increase Size is grayed on it).
         if (height > LayoutEditor.MAX_SIZE || width > LayoutEditor.MAX_SIZE)
         {
             throw new Exception(I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));

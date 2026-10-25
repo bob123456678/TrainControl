@@ -369,7 +369,7 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * A signal refused as a guard is refused in a popup, not only on the grey line (MT-505).
+     * A signal refused as a guard is refused in a popup, not only on the gray line (MT-505).
      *
      * Adam, 2026-09-29, on MT-505: *"There may have been a gray message, but it wouldn't have been clear since the popup
      * was in the foreground, so any rejection errors should trigger a popup."*  The guard window comes back the moment the
@@ -378,7 +378,7 @@ public class testTheEditorSaysWhatItsToolsDo
      *
      * Both refusals a click can meet: a signal already on the list, and the station's other guard.
      *
-     * MUTATION: say either refusal on the grey line alone, and this fails.
+     * MUTATION: say either refusal on the gray line alone, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -436,7 +436,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * right-click menu again; now the popup says why and the window is back, its list as it was, with Click It on the
      * Diagram to try another square.
      *
-     * MUTATION: say it on the grey line alone, or leave the window closed after it, and this fails.
+     * MUTATION: say it on the gray line alone, or leave the window closed after it, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -495,7 +495,7 @@ public class testTheEditorSaysWhatItsToolsDo
      * Signals refused when given by address are refused in the one popup that reports the addresses (MT-505).
      *
      * By Address already raised a popup for an address that is no number or no signal; a signal it found and could not
-     * pair was said on the grey line alone, behind the guard window.  Now every refusal is in that one popup, however many
+     * pair was said on the gray line alone, behind the guard window.  Now every refusal is in that one popup, however many
      * addresses were typed - a popup per address would be a row of them to dismiss.
      *
      * MUTATION: leave the refusals out of that popup, and this fails.
@@ -612,7 +612,7 @@ public class testTheEditorSaysWhatItsToolsDo
             addressesOf(panel, paired));
     }
 
-    /** The station's menu item labelled so, clicked, and the guard window titled so that it opens. */
+    /** The station's menu item labeled so, clicked, and the guard window titled so that it opens. */
     private static javax.swing.JDialog openTheGuardWindow(final AutonomyEditorPanel panel, final TileKey station,
         final String label, String title) throws Exception
     {

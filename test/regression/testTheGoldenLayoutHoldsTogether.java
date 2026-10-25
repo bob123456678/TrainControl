@@ -479,7 +479,7 @@ public class testTheGoldenLayoutHoldsTogether
      * Every page in the layout index is a page that actually loaded.
      *
      * `CS2File` skips a page whose file will not parse or is not there and carries on, which is the
-     * right behaviour and is why FR-018 exists - but it is also how a page can quietly stop being part
+     * right behavior and is why FR-018 exists - but it is also how a page can quietly stop being part
      * of the railway. On a layout that lives in OneDrive this is a real state, so it is worth saying
      * out loud when it happens rather than only when something else goes wrong because of it.
      */

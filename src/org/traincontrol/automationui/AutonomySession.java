@@ -441,7 +441,7 @@ public class AutonomySession
     /**
      * Moves any length a route tile holds onto the track beside it, keeping the total: a route tile takes no length
      * (OB-273) but the room and tail sums still add it.  Plain track before a switch (whose length is the page's
-     * turnout length), never a sensor (its length is the last place of every approach).  No neighbour: it keeps its
+     * turnout length), never a sensor (its length is the last place of every approach).  No neighbor: it keeps its
      * length.
      * @return route tile to the square that took its length
      */
@@ -640,7 +640,7 @@ public class AutonomySession
 
     /**
      * Whether a square is track that reaches no station, however its switches lie: its directions are not drawn and it
-     * is greyed.  Adam: *"make it so that arrows are hidden from track segments not connected (naively) to any
+     * is grayed.  Adam: *"make it so that arrows are hidden from track segments not connected (naively) to any
      * station."* (OB-353)
      * @param tile a square
      * @return true where no station is on its track; false everywhere while the setup has no station at all
@@ -651,7 +651,7 @@ public class AutonomySession
     }
 
     /**
-     * Squares of each piece of track with no station; none while no square is a station, so a new setup is not grey.
+     * Squares of each piece of track with no station; none while no square is a station, so a new setup is not gray.
      */
     private Set<TileKey> squaresNoStationReaches(TileGraph built)
     {
@@ -5583,7 +5583,7 @@ public class AutonomySession
             stationsWithAHalfMeasuredApproach(),
             // A terminus with two ways in (MT-361)
             terminiWithTwoWaysIn(),
-            // Pages sharing a sensor, which cannot be modelled (OB-150)
+            // Pages sharing a sensor, which cannot be modeled (OB-150)
             repeatedSensorPages(),
             reversalsWithoutLength(),
             // Stations never chosen, so a pocket of only those still leads nowhere
@@ -6820,7 +6820,7 @@ public class AutonomySession
 
 
     /**
-     * The diagram tiles a standing train is lying across, for greying out.
+     * The diagram tiles a standing train is lying across, for graying out.
      *
      * Adam: **"Locked tiles in this way should be greyed out until the train blocking it moves."**
      *
@@ -7045,11 +7045,11 @@ public class AutonomySession
     }
 
     /**
-     * The tiles standing trains have BLOCKED, for greying (OB-280): the places `Layout.placesCoveredByStandingTrains`
+     * The tiles standing trains have BLOCKED, for graying (OB-280): the places `Layout.placesCoveredByStandingTrains`
      * claims, as squares.  Adam: *"'train is here' should also mean 'track is blocked' - that is the whole point.  it's
      * the same as greying out edges, just in a different way."*  Whether autonomy is running is the caller's question.
      * @param running the layout, which is what knows where the trains are
-     * @return the squares to grey, empty when nothing is blocked
+     * @return the squares to gray, empty when nothing is blocked
      */
     public Set<TileKey> tilesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
     {
@@ -8380,8 +8380,8 @@ public class AutonomySession
 
     /**
      * Records one direction along a known path from `first` to `last` without re-deriving: a shortest-path search could
-     * pick the other chain of a passing loop.  The rest are neighbours, for the path's way; an end square takes its way
-     * from its one neighbour (OB-361).
+     * pick the other chain of a passing loop.  The rest are neighbors, for the path's way; an end square takes its way
+     * from its one neighbor (OB-361).
      * @param path the squares in order
      * @return the squares recorded
      */
@@ -8702,7 +8702,7 @@ public class AutonomySession
     {
         if (graph == null || reducer == null) return null;
 
-        // A disabled link is greyed (its art does not show it), before the Point test: a link may lack a sensor.
+        // A disabled link is grayed (its art does not show it), before the Point test: a link may lack a sensor.
         if (isDisabledLink(tile))
         {
             return new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), -1, false, null, true);
@@ -8985,7 +8985,7 @@ public class AutonomySession
 
     /**
      * Writes the setup out without reconciling, for paths saving while the diagram is replaced: the pages may hold
-     * edits the user cancelled, and reconciling would delete what those squares had.
+     * edits the user canceled, and reconciling would delete what those squares had.
      * @throws IOException
      */
     public void saveWithoutReconciling() throws IOException
@@ -9092,7 +9092,7 @@ public class AutonomySession
     }
 
     /**
-     * Stations taking a train of any length (FR-046), gated on the railway modelling any length, not track lengths:
+     * Stations taking a train of any length (FR-046), gated on the railway modeling any length, not track lengths:
      * `maxTrainLength` compares only with the train's own length.
      * @return the squares, empty when the layout models no lengths anywhere
      */

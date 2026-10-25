@@ -48,7 +48,7 @@ public class testAutonomyDiagramTiles
 
         TileGraph graph = graph(page);
 
-        // entering the middle tile from the west, we leave east and land on its neighbour
+        // entering the middle tile from the west, we leave east and land on its neighbor
         List<Exit> exits = graph.exits(key("main", 2, 1), Side.W);
         assertEquals(exits.size(), 1);
         assertEquals(exits.get(0).getSide(), Side.E);
@@ -79,7 +79,7 @@ public class testAutonomyDiagramTiles
 
         TileGraph graph = graph(page);
 
-        // the horizontal tile still wants to leave east, but its neighbour has no west port
+        // the horizontal tile still wants to leave east, but its neighbor has no west port
         assertNull(graph.landing(key("main", 1, 1), Side.E));
     }
 
@@ -449,7 +449,7 @@ public class testAutonomyDiagramTiles
      *
      * It is a control someone put on the diagram, not track: its art touches no border and its
      * orientation is the same in horizontal and vertical runs alike.  So what it conducts cannot come
-     * from the tile - it comes from the neighbours.
+     * from the tile - it comes from the neighbors.
      */
     @Test
     public void testARouteButtonCarriesWhateverLineItSitsOn() throws IOException

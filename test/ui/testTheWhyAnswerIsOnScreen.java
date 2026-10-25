@@ -169,7 +169,7 @@ public class testTheWhyAnswerIsOnScreen
     }
 
     /**
-     * A one-line notice is still centred in the strip, and still readable.
+     * A one-line notice is still centered in the strip, and still readable.
      *
      * THE CONTROL, and it is a control in both directions.  Without it, giving the scroll pane the
      * whole band would pass the two above and bring OB-151 straight back - the short notice resting on
@@ -368,7 +368,7 @@ public class testTheWhyAnswerIsOnScreen
     /**
      * How much ink there is.
      *
-     * The strip is a light grey band and the message is dark blue; anything much darker than the band
+     * The strip is a light gray band and the message is dark blue; anything much darker than the band
      * is a letter.  Counted rather than sampled, because where the text is is exactly what is in doubt.
      *
      * @param image the strip

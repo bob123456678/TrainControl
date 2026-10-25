@@ -255,11 +255,11 @@ public class testTheGraphIsToldWhenARunEnds
      *
      * This is the door OB-189 was reported at, and the one `759aabda` left standing on an argument.
      * That commit deleted the explicit `updateVisiblePoints()` call from both hand-driven doors -
-     * `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - in favour of `announceRunFinished()`
+     * `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - in favor of `announceRunFinished()`
      * plus the window's single refresh callback, on the reasoning that *"a hand dispatch's
      * announceRunFinished() already fires with the thread count at zero and nothing running, so the
      * two pasted copies are deleted rather than joined by a third"*. That sentence was true. Nothing
-     * asserted it: the only behavioural test drove the TIMETABLE door, and the hand-driven door was
+     * asserted it: the only behavioral test drove the TIMETABLE door, and the hand-driven door was
      * covered by a source grep and the paragraph above.
      *
      * It is not a small assumption. `isRunning()` is three things ORed together - `running`, a

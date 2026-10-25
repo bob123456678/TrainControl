@@ -34,7 +34,7 @@ public class testLocDB
      * very test class starts. So an API user asking for the CSV got a bare NullPointerException
      * instead of the nine columns that were never in doubt.
      *
-     * Every neighbouring method in that class already asks whether there is a view. This one did not,
+     * Every neighboring method in that class already asks whether there is a view. This one did not,
      * which is this codebase's recurring shape rather than an isolated slip.
      *
      * **Empty, not refused.** A button mapping is a fact about a window; a session with no window has

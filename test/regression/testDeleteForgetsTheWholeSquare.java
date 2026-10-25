@@ -194,7 +194,7 @@ public class testDeleteForgetsTheWholeSquare
 
         // THE LABEL IS RE-FETCHED HERE, not reused from the block above.  `render()` and every repaint
         // rebuild the grid, so a label held across two EDT blocks is a label the editor no longer
-        // recognises - `getCoordinates` scans for the object and answers -1,-1 - and `delete` then
+        // recognizes - `getCoordinates` scans for the object and answers -1,-1 - and `delete` then
         // looks at the wrong square and quietly does nothing.
         SwingUtilities.invokeAndWait(() ->
         {
@@ -233,7 +233,7 @@ public class testDeleteForgetsTheWholeSquare
      * `builtOver != null && !builtOver.isEmpty()`, which is true before it has looked at anything, and
      * four call sites read it as "something was forgotten, so write the setup to disk" - `delete` says
      * so in as many words, in a comment kept while moving the call onto a method that no longer
-     * honoured it.
+     * honored it.
      *
      * So deleting a piece of plain track that no station, name, length or facing had ever been written
      * about rebuilt the graph over every page and wrote every file of the setup, to a folder under

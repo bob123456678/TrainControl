@@ -63,7 +63,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * A null arrival side narrows the tail walk; a wrong one sends it down track the train is not on.
  * `behaviour.md` §4 states the rule in those terms.
  *
- * Nothing here changed when it landed - these assertions are what correct behaviour looks like, and
+ * Nothing here changed when it landed - these assertions are what correct behavior looks like, and
  * they were written before it did.
  *
  * @author Adam
@@ -176,7 +176,7 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * THE CONTROL, in behaviour rather than in labels: the rail behind a straight platform is blocked.
+     * THE CONTROL, in behavior rather than in labels: the rail behind a straight platform is blocked.
      */
     @Test
     public void testTheTailIsBlockedBehindAStraightPlatform() throws Exception
@@ -246,7 +246,7 @@ public class testACurvedPlatformRecordsASideTheBuildUses
      * Stands a long train on a platform, with the tail recorded exactly as the placement door would
      * record it, and checks the rail it lies across is blocked.
      *
-     * The behavioural half of the same rule.  A label that names a side nothing enters by is a tidy
+     * The behavioral half of the same rule.  A label that names a side nothing enters by is a tidy
      * defect; this is what it COSTS - a protection that reports itself as present and does nothing.
      *
      * @param square the platform
@@ -262,7 +262,7 @@ public class testACurvedPlatformRecordsASideTheBuildUses
 
         assertNotNull(loc, "the test's own locomotive is gone");
 
-        // FOUR, against segments of two: long enough to reach past the neighbouring station, which is
+        // FOUR, against segments of two: long enough to reach past the neighboring station, which is
         // the shape of Adam's own example ("bottommainc should currently be blocked since a train of
         // length 4 is standing at bottommainb").
         loc.setTrainLength(4);

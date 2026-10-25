@@ -637,16 +637,16 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * And an iconified window is un-iconified, without un-maximising a maximised one.
+     * And an iconified window is un-iconified, without un-maximizing a maximized one.
      *
      * A window in the iconified state cannot be activated at all, so the raise would be a no-op on the
-     * one occasion somebody most needs it - the application already running, minimised, and asked for
-     * again.  The maximised bits live in the same field, which is why the ICONIFIED bit is cleared
+     * one occasion somebody most needs it - the application already running, minimized, and asked for
+     * again.  The maximized bits live in the same field, which is why the ICONIFIED bit is cleared
      * rather than the state replaced.
      *
-     * MUTATION this catches: removing the un-iconify entirely.  The maximise half would catch
+     * MUTATION this catches: removing the un-iconify entirely.  The maximize half would catch
      * `setExtendedState(java.awt.Frame.NORMAL)`, and on THIS window it cannot run at all - the frame
-     * is built `setResizable(false)` and refuses the maximised bits - so it is guarded by what the
+     * is built `setResizable(false)` and refuses the maximized bits - so it is guarded by what the
      * fixture actually managed to arrange rather than left to pass on a state nobody set.
      */
     @Test(timeOut = 300000)
@@ -673,7 +673,7 @@ public class testTheWindowTakesTheKeyboard
             // WHAT THE FIXTURE ACTUALLY GOT, before anything is asserted about what changed it.
             //
             // This window is built `setResizable(false)`, and a non-resizable frame refuses the
-            // maximised bits - so the second assertion below is about a state this fixture may not be
+            // maximized bits - so the second assertion below is about a state this fixture may not be
             // able to reach.  Read here rather than assumed, and the assertion is made conditional on
             // it: an assertion whose precondition silently failed is worse than no assertion, because
             // it reads as coverage.
@@ -811,7 +811,7 @@ public class testTheWindowTakesTheKeyboard
     /**
      * `display()` does not take the topmost flag off after showing the window (OB-170, seventh pass).
      *
-     * **The one invariant here that no behavioural test can hold.**  `setViewListener` makes the frame
+     * **The one invariant here that no behavioral test can hold.**  `setViewListener` makes the frame
      * topmost before it is shown, and says why - *"start with true to ensure keyboard events register
      * properly"*.  That is not a preference, it is the mechanism: a topmost window is the one case
      * Windows lets a process raise itself without already owning the foreground.  `display()` used to
@@ -825,7 +825,7 @@ public class testTheWindowTakesTheKeyboard
      *
      * **Measured: putting the restore back passes all five tests in this class.**  Whether Windows
      * grants the foreground is not something this process can read back, so there is nothing for a
-     * behavioural test to assert.  The invariant is pinned where it lives instead - the same device
+     * behavioral test to assert.  The invariant is pinned where it lives instead - the same device
      * `testTheWindowAttachesItsRefreshCallback` uses, and for the same reason.
      *
      * The restore has not gone away: `takeTheKeyboard`'s raise holds the flag for four hundred
@@ -854,7 +854,7 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * The menu bar is greyed out for as long as the connecting notice is up.
+     * The menu bar is grayed out for as long as the connecting notice is up.
      *
      * Adam: **"just gray out the menu bar before it loads, too."**  The notice is drawn on the window
      * itself now rather than in a splash of its own (OB-170), and the menu bar is part of the window
@@ -915,7 +915,7 @@ public class testTheWindowTakesTheKeyboard
 
             assertFalse(wereOn.isEmpty(), "every menu was already off, so greying them proves nothing");
 
-            // GREYED.
+            // GRAYED.
             call(ui, "greyTheMenus");
 
             for (int i = 0; i < bar.getMenuCount(); i++)

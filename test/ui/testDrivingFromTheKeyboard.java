@@ -544,8 +544,8 @@ public class testDrivingFromTheKeyboard
     // Power
 
     /**
-     * Power OFF sends the power-off command; when the railway says the power is off, OFF greys and ON lights.  Power ON
-     * then sends the power-on command, and the railway's answer greys it again.
+     * Power OFF sends the power-off command; when the railway says the power is off, OFF grays and ON lights.  Power ON
+     * then sends the power-on command, and the railway's answer grays it again.
      *
      * MUTATION: `go()` for `stop()` in `PowerOffActionPerformed`, and this fails.
      *

@@ -602,7 +602,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
      *
      * **What that does on the railway.** The stale side is where the PREVIOUS train’s tail lay, so the
      * walk that blocks track behind a standing train follows it for the new one: track behind train B
-     * is greyed and refused on the strength of where train A came in. It is silent - nothing reports a
+     * is grayed and refused on the strength of where train A came in. It is silent - nothing reports a
      * side it did not ask about - and it survives a save.
      *
      * It is also unreachable from the menu, which now offers only the four sides and no way to say "not
@@ -809,7 +809,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.setFacing(departed, choices.get(0));
 
         // A RAILWAY THAT KNOWS NOTHING still lets the setup answer - the half of the old
-        // behaviour that must survive.  A train recorded in the setup and not yet running is the
+        // behavior that must survive.  A train recorded in the setup and not yet running is the
         // ordinary state before anything has moved.
         org.traincontrol.automation.Layout knowsNothing =
             new org.traincontrol.automation.Layout(null);
@@ -1694,7 +1694,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
      * Each was cleared on demotion for a reason that still holds of a plain point: a caption is drawn, and lights a
      * station's name up when a train reverses there; a guard is thrown red over a square nothing is sent to; the old turn
      * flag turns every train round.  They are kept now, at Adam's ruling of 2026-10-10 ("keep them, ignored while not a
-     * station"), so the readers ask whether the square is a station: the caption the diagram draws by, the labelled
+     * station"), so the readers ask whether the square is a station: the caption the diagram draws by, the labeled
      * stations the checks count, the barred sides, the guards and the accessory names the build is given, whether trains
      * turn there - and the built railway itself.  This claim replaces one that said demoting took the caption away.
      *

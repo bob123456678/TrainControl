@@ -189,7 +189,7 @@ public class testACompulsoryTurnIsNotAQuestion
         // AND THE CLAUSE THAT CAUSED IT IS GONE, which is the half this layout cannot show by running.
         //
         // `guard-knows-only-what-it-lists` cuts the other way here and is the reason this is worth
-        // writing: the behavioural assertion above knows only about squares whose copies carry no
+        // writing: the behavioral assertion above knows only about squares whose copies carry no
         // flag, and would report clean about every railway where they do - which is every railway the
         // defect could actually hurt.
         // The one inside forOperator, which is the policy both manual doors hand over. Found by the
@@ -242,13 +242,13 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * The covered track reaches the diagram as squares, so it can be greyed out.
+     * The covered track reaches the diagram as squares, so it can be grayed out.
      *
      * Adam: **"locked tiles in this way should be greyed out until the train blocking it moves."**
      *
      * The rule itself lives in `Layout` and is tested there over random railways; this checks the
      * JOIN - that the runtime edges it returns actually resolve to squares the diagram draws.  A
-     * mapping that silently resolves nothing returns an empty set, which greys nothing, and looks
+     * mapping that silently resolves nothing returns an empty set, which grays nothing, and looks
      * exactly like a railway with no trains protruding.
      *
      * @throws Exception on a failure to build
@@ -592,7 +592,7 @@ public class testACompulsoryTurnIsNotAQuestion
      * The end of a line marked "Trains May Change Direction Here", as the build makes it - one copy, no block - turns a
      * train sent there by hand, and the operator is not asked.  Round 82 left the copy with no block out, as
      * a Point of a hand-written railway, and the build gives a single copy no block: so the operator was asked, "keep"
-     * was honoured, and the train stood facing the end of the line with its next journey routed back.
+     * was honored, and the train stood facing the end of the line with its next journey routed back.
      *
      * MUTATION: leave a copy with no block out of `Layout.noCopyFacesOnFrom` again, and this fails.
      *
@@ -978,7 +978,7 @@ public class testACompulsoryTurnIsNotAQuestion
     /**
      * A turn recorded by hand is not played back where the station no longer lets trains turn (Adam,
      * 2026-10-07: *"The path should organically fail in the direction no longer allowed."*).  The recorded answer is
-     * honoured where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
+     * honored where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
      * keeps its direction, so an entry that needs it the other way fails as any journey would.  Playback turned it
      * where no door could any more.
      *

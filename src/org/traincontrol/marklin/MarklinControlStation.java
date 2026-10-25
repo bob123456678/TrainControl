@@ -100,7 +100,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Which build this is, for a pre-release: when the code being run was built.
      *
      * Taken from the code source this class was loaded from (the jar's timestamp, or the class file's when
-     * running from a build directory in an IDE), so it describes the artefact that is running rather than
+     * running from a build directory in an IDE), so it describes the artifact that is running rather than
      * what a build script recorded about its own inputs.
      *
      * Best-effort, and quiet about failing.  A security manager, an unusual class loader or a URL that
@@ -257,7 +257,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // File parser class
     private CS2File fileParser;
 
-    // Serialises layout refreshes.  Deliberately not the station's own monitor - see refreshLayouts
+    // Serializes layout refreshes.  Deliberately not the station's own monitor - see refreshLayouts
     private final Object layoutRefreshLock = new Object();
     
     // GUI reference
@@ -271,7 +271,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Who is told about every command handed to `exec`, sent or not (MT-359).
      *
-     * What a locomotive ASKS the station to do is the behaviour worth pinning, and in a test nothing is
+     * What a locomotive ASKS the station to do is the behavior worth pinning, and in a test nothing is
      * ever sent: the network is off, so `exec` discards the message and the command is visible nowhere.
      * Null unless a test sets it, and read once per call, so it costs one field read in the program.
      */
@@ -617,7 +617,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (this.fileParser == null) return;
 
-        // Serialisation lives inside syncLayoutsFromConfiguredSource, so that syncWithCS2 - which
+        // Serialization lives inside syncLayoutsFromConfiguredSource, so that syncWithCS2 - which
         // reaches the same clear-and-repopulate - is covered by the same lock.
         try
         {
@@ -694,7 +694,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 else
                 {            
-                    // The station only updates its file on boot, so there is no newer state to synchronise from it.
+                    // The station only updates its file on boot, so there is no newer state to synchronize from it.
                 }  
 
                 c.setAccessory(this.accDB.getById(targetAddress));
@@ -734,7 +734,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         // ONE PARSER FOR THE WHOLE METHOD.
         //
-        // `syncWithCS2` reassigns `fileParser` outside the lock that serialises this method, so every
+        // `syncWithCS2` reassigns `fileParser` outside the lock that serializes this method, so every
         // question below is asked of this one local.  A second read of the field after the parse could
         // return a parser that had parsed nothing (zero pages unreadable, zero named), and the prune would
         // then run on a partial railway.
@@ -766,7 +766,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // ASKED ONCE, HERE, AND CARRIED.
         //
-        // `fileParser` is reassigned by syncWithCS2 outside the lock that serialises this method, so a
+        // `fileParser` is reassigned by syncWithCS2 outside the lock that serializes this method, so a
         // second question further down could be answered by a fresh parser's zero and the pruning would run
         // on a partial read.  A local removes the question rather than answering it.
         final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
@@ -797,7 +797,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // AND THE QUESTION IS ASKED AGAINST WHAT THE INDEX SAID THERE WAS.
         //
         // `couldNotBeRead > 0` means a page threw on the way in.  A page can also simply not arrive: if the
-        // parser does not recognise the index's block name at all (a capitalised `Seite`, say) it returns
+        // parser does not recognize the index's block name at all (a capitalized `Seite`, say) it returns
         // zero pages and zero failures.  The index states what should be there and is read by a method that
         // matches the block name without regard to case, so it can say "two pages" about a file this parser
         // made nothing of.  Carried from the top of this method rather than asked again here.
@@ -860,7 +860,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Delays until the power state matches, or until the Central Station has had long enough to answer.
      *
      * BOUNDED, unlike the waits a locomotive sits in for a sensor: a train reaching a sensor is an event
-     * out on the railway that may legitimately be minutes away, whereas this is an ACKNOWLEDGEMENT of a
+     * out on the railway that may legitimately be minutes away, whereas this is an ACKNOWLEDGMENT of a
      * command TrainControl itself just sent, over a local network, and it either comes back in
      * milliseconds or it is not coming.
      *

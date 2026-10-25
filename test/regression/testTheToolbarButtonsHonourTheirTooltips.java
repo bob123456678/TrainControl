@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
  * `ui.main.tooltip.switchDir` says *"(+Control to force reverse)"*, `incrSpeed` says *"(+Control to
  * fine-tune, +Alt for 2x increment)"*, and all four listeners took the `ActionEvent` and never looked
  * at it: a Control click reversed a locomotive that was already reversed, and an Alt click on Increase
- * Speed moved one step like any other click.  The behaviour existed on `VK_LEFT` and `VK_UP` and
+ * Speed moved one step like any other click.  The behavior existed on `VK_LEFT` and `VK_UP` and
  * nowhere else, so an operator driving with the mouse could not reach it at all.
  *
  * **Driven at the listeners, with events that carry the modifiers.**  That is the seam the fix changes

@@ -164,7 +164,7 @@ public class RouteCommand implements java.io.Serializable
         // wert / 1000 * 100, with a comment promising a range it does not enforce.  All three build the
         // command here.
         //
-        // A NEGATIVE IS NOT CLAMPED TO ZERO.  fromLine normalises any negative to -1 and execRoute reads
+        // A NEGATIVE IS NOT CLAMPED TO ZERO.  fromLine normalizes any negative to -1 and execRoute reads
         // -1 as an instant stop, so clamping to 0 would turn a stop into a speed command.  This is
         // fromLine's rule, moved to where both parsers pass through.
         if (speed < 0) speed = -1;

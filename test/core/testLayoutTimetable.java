@@ -356,7 +356,7 @@ public class testLayoutTimetable
     /**
      * An entry that can never execute ends the run, rather than being retried for ever.
      *
-     * This was a characterisation test pinning the opposite - T3, a known defect - with a note saying
+     * This was a characterization test pinning the opposite - T3, a known defect - with a note saying
      * it must be inverted when the retry loop learned to give up. It has been.
      *
      * The loop is `while (running && !executePath(...))`, and both the attempt cap and the pause that

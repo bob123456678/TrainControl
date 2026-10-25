@@ -312,7 +312,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // Keyboard colors
     // The teal the graph outlines a station with when its home locomotive is standing there, shared so
-    // the locomotive list can say the same thing in the same colour
+    // the locomotive list can say the same thing in the same color
     public static final Color COLOR_AT_HOME = new Color(0, 200, 210);
 
     private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
@@ -2092,7 +2092,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Returns a reference to the image cache.
      *
-     * No longer synchronized: the field is final and initialised with the class, so there is nothing
+     * No longer synchronized: the field is final and initialized with the class, so there is nothing
      * left to guard, and this is called once per tile per repaint.
      * @return
      */
@@ -5583,7 +5583,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // a journey is MEANT to disagree with the graph: it is between two copies.
             if (built.isRunning()) return;
 
-            // What the railway turned round at its destination is written to the graph before the baseline is levelled,
+            // What the railway turned round at its destination is written to the graph before the baseline is leveled,
             // or a manual "no, turn" there is invisible and the next dispatch offers paths for the wrong heading.
             org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
@@ -8181,7 +8181,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Only repaint a button if the locomotive has changed
                 for (JButton b : update)
                 {
-                    // Grey out if the active page corresponds to the active loc
+                    // Gray out if the active page corresponds to the active loc
                     if (b.equals(this.currentButton) 
                             && this.lastLocMappingPainted == this.locMappingNumber)
                     {

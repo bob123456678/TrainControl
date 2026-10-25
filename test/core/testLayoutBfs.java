@@ -174,7 +174,7 @@ public class testLayoutBfs
      * Two routes converge on a shared midpoint M before continuing to T.  Excluding the first route
      * found must yield the other one.  With visited marked on ENQUEUE, M would be claimed by whichever
      * route reached it first and the second would never be queued, so this returns null instead - which
-     * is why that optimisation must not be applied here.
+     * is why that optimization must not be applied here.
      *
      * Repeated deliberately.  getNeighbors shuffles, so a single attempt would catch mark-on-enqueue
      * only about half the time - measured at 247 of 500 runs - because the shuffle sometimes hands the

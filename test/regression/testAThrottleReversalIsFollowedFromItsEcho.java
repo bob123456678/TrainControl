@@ -525,7 +525,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         if (model.getRoute(HOLD) != null) model.deleteRoute(HOLD);
     }
 
-    /** The train, standing at BottomMainA facing east on the running layout, with what the window has seen levelled. */
+    /** The train, standing at BottomMainA facing east on the running layout, with what the window has seen leveled. */
     private static void standEast() throws Exception
     {
         SwingUtilities.invokeAndWait(() ->

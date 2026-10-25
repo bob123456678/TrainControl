@@ -27,7 +27,7 @@ import support.SourceOf;
  * *"reversals during the run should be ignored and not queued.  Only count reversals when nothing is
  * running.  That way, there is no backlog."* - and `bc6120f1` implemented it. So the sentence that
  * used to stand here, that the change was "not deferred until it was safe; it was swallowed", now
- * describes the intended behaviour rather than the defect.
+ * describes the intended behavior rather than the defect.
  *
  * **What is still worth pinning is the ordering, and it is only half the rule.** Recording before the
  * guard writes a direction the window has not acted on, which corrupts the baseline whichever ruling
@@ -39,7 +39,7 @@ import support.SourceOf;
  * **Why this is checked as an ordering rather than run.**  `followDirectionChanges` is an instance
  * method of the main window and reads three things a test cannot cheaply stand up: a built layout, a
  * live autonomy session, and a Central Station feeding locomotive echoes on its own thread.  The
- * behaviour that remains is a race - it needs an echo to arrive during a journey and another after it -
+ * behavior that remains is a race - it needs an echo to arrive during a journey and another after it -
  * and a test that only sometimes reproduces is worse than no test.  `testTheRebuildIsOnePass` split on
  * the same line for the same reason and says so.
  *
@@ -80,7 +80,7 @@ public class testADirectionChangeIsNotSwallowed
     }
 
     /**
-     * The other half of "no backlog": the baseline is levelled when the railway goes idle.
+     * The other half of "no backlog": the baseline is leveled when the railway goes idle.
      *
      * The ordering above stops a mid-run change being recorded as acted-on. On its own that is not the
      * ruling Adam gave - it leaves the pre-run direction in the map, so the first echo after the run
@@ -89,10 +89,10 @@ public class testADirectionChangeIsNotSwallowed
      *
      * **Deleting it would leave both methods above green while restoring the backlog**, which is why
      * this asserts the pair rather than trusting a comment to connect them. Source-level for the same
-     * reason the ordering is: the behaviour is a race between an echo and a repaint.
+     * reason the ordering is: the behavior is a race between an echo and a repaint.
      *
      * The exception is asserted too - a turn the railway made at a destination must be WRITTEN before
-     * the levelling wipes the evidence of it, and "levels everything" would silently undo
+     * the leveling wipes the evidence of it, and "levels everything" would silently undo
      * that.
      *
      * @throws Exception on a failure to read the source

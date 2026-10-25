@@ -59,7 +59,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * The one way in.  The surfaces that offer this menu (a tile, a station caption, the main window's
      * panel and the popup window's panel) all hop to the event thread, build the menu and show it only if it came
      * out non-empty: over plain track with autonomy running and nothing to offer, an empty menu would open a
-     * one-item-high grey box under the pointer, which as LayoutLabel's comment puts it "reads as a fault".  The
+     * one-item-high gray box under the pointer, which as LayoutLabel's comment puts it "reads as a fault".  The
      * constructor is private, so this is the only way the menu can be shown and the check cannot be missing at one
      * call site.
      *
@@ -110,7 +110,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 if (menu.getComponentCount() > 0)
                 {
                     // AFTER the count, and deliberately.  A heading is not an item, and putting one on
-                    // first would turn "nothing to offer here" into a grey box with a station name in it -
+                    // first would turn "nothing to offer here" into a gray box with a station name in it -
                     // which is the fault the check above exists to prevent, arriving by a new road.
                     menu.headline();
 
@@ -252,7 +252,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         // Switched-off squares are not on this menu, only in the autonomy tab.  This menu is the quick way to send a
         // train somewhere ordinary, and a square deliberately taken out of use is not that.  Filtered rather than
-        // greyed: a greyed item still costs a line and still has to be read past.  The autonomy tab lists
+        // grayed: a grayed item still costs a line and still has to be read past.  The autonomy tab lists
         // everything, which is what the ellipsis is for.
         List<List<Edge>> shownPaths = new java.util.ArrayList<>();
 
@@ -294,10 +294,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Puts the clicked square's name at the top, greyed.
+     * Puts the clicked square's name at the top, grayed.
      *
      * OB-112.  With a setup loaded the whole menu is about a square (this train, these paths, that home), and the
-     * menu covers the square while it is open, so the name goes at the top, greyed and bold like the autonomy
+     * menu covers the square while it is open, so the name goes at the top, grayed and bold like the autonomy
      * editor's own menu.
      *
      * The name comes from the session rather than from lines written out again here, so the two menus cannot call
@@ -374,7 +374,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
 
-                // Greyed when it could not start (OB-050).  canStartAutonomy asks whyAutonomyStartIsRefused's own
+                // Grayed when it could not start (OB-050).  canStartAutonomy asks whyAutonomyStartIsRefused's own
                 // number, so the control that OFFERS an action asks the predicate the guard asks.  (The Start button
                 // itself is left enabled and explains at press time, so its enabled state is not that predicate.)
                 // Asked as few times as the answers allow, and this is not tidiness: once where Start
@@ -859,7 +859,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * showing nothing.
      *
      * @param point a Point of the running graph
-     * @return the station name a reader would recognise
+     * @return the station name a reader would recognize
      */
     private String stationName(Point point)
     {
@@ -1088,9 +1088,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // half that survives a restart.  A copy `moveLocomotive` declines is closed at this door: it moves with the form
         // that accepts a copy trains may not arrive at, as the paste does.
         //
-        // The remaining case is the one `behaviour.md` section 6a states as a rule: a menu is greyed when the popup
+        // The remaining case is the one `behaviour.md` section 6a states as a rule: a menu is grayed when the popup
         // OPENS and the action fires when it is clicked, so autonomy started from another window in between leaves a
-        // live item over a running railway.  The refusal is in the method, and this caller honours it.
+        // live item over a running railway.  The refusal is in the method, and this caller honors it.
         //
         // The log line `moveLocomotive` already writes is the user-visible half, so nothing is added here.
         // WHAT THE TRAIN HAD ON THE RAILWAY, before this door moves it.

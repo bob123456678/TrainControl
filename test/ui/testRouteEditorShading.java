@@ -23,11 +23,11 @@ import org.traincontrol.marklin.MarklinRoute;
  *
  * What the reading missed is that a table cell renderer hands back ONE recycled component for every
  * cell in the table. The cell drawn immediately before the + row is the previous row's un-editable
- * column, which paints that shared label grey. The exemption then handed the same label straight back
- * for each cell of the + row, still grey. It was not failing to run - it ran, and returned somebody
+ * column, which paints that shared label gray. The exemption then handed the same label straight back
+ * for each cell of the + row, still gray. It was not failing to run - it ran, and returned somebody
  * else's paint.
  *
- * So the order below is the test. Ask for a greyed cell FIRST and the + row's cells after it, which is
+ * So the order below is the test. Ask for a grayed cell FIRST and the + row's cells after it, which is
  * the order the table paints them in; asking the other way round passes with the defect present.
  *
  * @author Adam
@@ -35,10 +35,10 @@ import org.traincontrol.marklin.MarklinRoute;
 public class testRouteEditorShading
 {
     /**
-     * Every cell of the + row is the table's own colour, even straight after a greyed one.
+     * Every cell of the + row is the table's own color, even straight after a grayed one.
      *
      * MUTATION: either exemption going back to a bare `return out` fails this - and it fails only
-     * because the greyed cell is rendered first, which is the whole point of the ordering.
+     * because the grayed cell is rendered first, which is the whole point of the ordering.
      */
     @Test
     public void testThePlusRowIsNotLeftHoldingTheLastCellsGrey() throws Exception

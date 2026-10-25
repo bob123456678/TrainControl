@@ -386,7 +386,7 @@ public class testPageIdsAreDurable
      * The lists are one map now, so they cannot disagree by count. This is the other half, and it is
      * the half with teeth: the map also encodes each field's SHAPE - whether its values name squares -
      * and a field held with the wrong shape cannot be caught by any amount of name-matching. Only
-     * behaviour catches it.
+     * behavior catches it.
      *
      * The property is the one OB-067 was closed on, stated per field: put something on a page, take
      * that page's file away, load and save, and it is all still in the file.
@@ -427,7 +427,7 @@ public class testPageIdsAreDurable
         // Without this every square in the fixture sat on the absent page, so the key-side check alone
         // decided every entry and the SHAPE half of HELD_FIELDS was never exercised - downgrading all
         // four square-valued fields to PLAIN left this test green, while its own javadoc claimed only
-        // behaviour could catch that. A caption on a loaded page pointing at a station on an absent
+        // behavior could catch that. A caption on a loaded page pointing at a station on an absent
         // one is the ordinary way that happens, and it is the entry a wrong shape lets through.
         TileKey liveCaption = new TileKey("Alpha", 7, 7);
 
@@ -921,7 +921,7 @@ public class testPageIdsAreDurable
      * Adam gets a new page with a new number and a blank setup, and nothing anywhere says why.
      *
      * The second half matters as much: a page NOT named is retired exactly as before, because that is
-     * the behaviour protecting against MT-135, and a fix for one of these that quietly disabled the
+     * the behavior protecting against MT-135, and a fix for one of these that quietly disabled the
      * other would be a worse bug than the one being fixed.
      *
      * MUTATION: dropping the keepAbsent loop from writeLayoutIndex fails the first assertion; making
@@ -1229,7 +1229,7 @@ public class testPageIdsAreDurable
      * page NAMED "5" gone deleted every held entry belonging to the page with ID 5.
      *
      * The names half could never match anything legitimate anyway: `pageIsHere` answers true for any
-     * bare unrecognised name, so a name-keyed entry is never held in the first place. It could only
+     * bare unrecognized name, so a name-keyed entry is never held in the first place. It could only
      * ever produce this false positive.
      *
      * MUTATION: putting the page names back into `parts` fails this test.

@@ -95,7 +95,7 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A greyed diagram tab is not opened by the program either (OB-128).
+     * A grayed diagram tab is not opened by the program either (OB-128).
      *
      * Adam: "go to manage pages -&gt; add blank page.  then just close the popup.  layout tab is opened,
      * with old track diagram still visible in the window."
@@ -138,7 +138,7 @@ public class testSwitchingToACentralStationLayout
                 "there is no other tab to be left on, so the assertions below cannot tell a refusal "
                 + "from a selection");
 
-            // GREYED, as a failed switch to a Central Station layout leaves it.
+            // GRAYED, as a failed switch to a Central Station layout leaves it.
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 tabs.setSelectedIndex(0);
@@ -212,7 +212,7 @@ public class testSwitchingToACentralStationLayout
             "fewer doors go through showLayoutTab than the seven left of the nine that were converted, "
             + "and the autonomy viewer's, so one has found another way to open the tab");
 
-        // And the panel is emptied, not merely greyed.
+        // And the panel is emptied, not merely grayed.
         assertTrue(SourceOf.allCode().contains("clearLayoutPanel();"),
             "nothing empties the track diagram panel when the layout list is emptied, so the tab "
             + "keeps the previous railway mounted and it looks entirely live");
@@ -360,7 +360,7 @@ public class testSwitchingToACentralStationLayout
                     + " Station, and pressing it is refused with 'autonomy needs a layout on this computer' - the"
                     + " menu offering what the handler refuses (REG-C3)");
 
-                // AND THE GREYED ITEM SAYS THE REFUSAL'S OWN REASON.  Its tooltip is this sentence; over
+                // AND THE GRAYED ITEM SAYS THE REFUSAL'S OWN REASON.  Its tooltip is this sentence; over
                 // a Central Station layout it told the operator to wait for trains, which is no reason at all.
                 assertEquals(ui.whyAutonomyWillNotStart(),
                     org.traincontrol.util.I18n.t("autosetup.ui.menuNoSetupPossible"), "the greyed Start explains"
@@ -749,7 +749,7 @@ public class testSwitchingToACentralStationLayout
         // TWENTY-THREE since 2026-09-08, and the one that arrived is
         // `regression.testTheMenusComeBackAtOneMoment`, written for OB-187.  It builds a window
         // because the defect is about the order start-up puts the menu bar together in - the bar is
-        // greyed before the autonomy menu is added to it - and only a real `setViewListener` runs
+        // grayed before the autonomy menu is added to it - and only a real `setViewListener` runs
         // that order.  Its sandbox is opened before the model, as the rule above requires.
         //
         // The number is deliberately a hard count rather than a floor: a class that builds a window
@@ -916,7 +916,7 @@ public class testSwitchingToACentralStationLayout
         // 45 on 2026-09-15: regression.testPathTypeRedrawsTheTestInTheEditor (OB-225), which opens a sandbox first.
         // 46 on 2026-09-16: regression.testAWalkMovesTheFlashOn (OB-231), which opens a sandbox first.
         // 49 on 2026-09-19, three at once, each opening a sandbox first: the toolbar buttons,
-        // the cancelled function copy and the export's grid.
+        // the canceled function copy and the export's grid.
         // 50 on 2026-09-20: the declined setup edit (MT-267, MT-326), which opens a sandbox first too.
         // 51 on 2026-09-23: ui.testTheLengthPromptHasTheKeyboard (MT-474), which opens a sandbox first.
         // 52 the same day: ui.testAStartLoadsOnlyAGraphSomebodyAskedFor, which opens a sandbox first.

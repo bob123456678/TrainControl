@@ -12,7 +12,7 @@ import support.SourceOf;
  * anything carry the setup that was keyed to it?
  *
  * READ FROM THE SOURCE, not by driving the editor. LayoutEditor is a Swing component wired to a live
- * window, and nothing in this suite constructs one - the established shape for its behaviour is the
+ * window, and nothing in this suite constructs one - the established shape for its behavior is the
  * bounded source scan testARunSurvivesADiagramEdit uses, and this follows it. That has a real limit
  * worth stating: these assert that the CALL is in the right place, not that the call does the right
  * thing. What the calls do is covered where it can be exercised - AutonomySession.moveTiles,
@@ -248,7 +248,7 @@ public class testTheEditorTellsAutonomy
      * offered them anyway - so right-clicking the bottom row, the natural gesture for taking an empty
      * row away, chose an item that did nothing and said nothing.
      *
-     * Asserted as the MENU ASKING THE EDITOR'S OWN PREDICATE, not merely as the item being greyed by
+     * Asserted as the MENU ASKING THE EDITOR'S OWN PREDICATE, not merely as the item being grayed by
      * some condition. A menu that restates the rule is a menu that can drift from it, and that drift
      * is this finding: two copies of one question, one of which was never updated.
      */
@@ -262,7 +262,7 @@ public class testTheEditorTellsAutonomy
         // EACH ITEM AGAINST ITS OWN PREDICATE.
         //
         // This asked whether the four strings appeared anywhere in the file, so swapping which
-        // predicate greys which item - Shift Up enabled by canShiftDown - passed, and the menu was
+        // predicate grays which item - Shift Up enabled by canShiftDown - passed, and the menu was
         // back to offering Shift Up on the bottom row where it refuses in silence. That is the old fault
         // restored with the test watching. Bounded to the one addShift call each.
         for (String pair : new String[] {"shiftUp|canShiftUp", "shiftLeft|canShiftLeft",
@@ -304,7 +304,7 @@ public class testTheEditorTellsAutonomy
     }
 
     /**
-     * One declaration's text, braces included, so a scan cannot wander into its neighbours: found wherever the
+     * One declaration's text, braces included, so a scan cannot wander into its neighbors: found wherever the
      * program keeps it, and a miss is a failure that names it.
      */
     private static String bodyOf(String declaration) throws Exception

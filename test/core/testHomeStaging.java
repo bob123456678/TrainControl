@@ -181,7 +181,7 @@ public class testHomeStaging
      * refuses a path across it.  The planner must refuse the same paths, or it produces plans the runtime
      * refuses on their first move.
      *
-     * This is a pairing test and not a journey, because a behavioural one cannot be built from the
+     * This is a pairing test and not a journey, because a behavioral one cannot be built from the
      * hand-made fixtures.  A tail only extends along a LINEAR stretch (`edgesCoveredByStandingTrains`
      * breaks at a FORK, since the graph cannot say which way a tail lies past a junction), and the only
      * train that wants a linear stretch is one heading into the berth at the end of it, which is refused
@@ -1413,7 +1413,7 @@ public class testHomeStaging
 
         // Nothing is asserted about capture here any more.  Loading used to switch it off, and this
         // line pinned that - but it only ever passed because the default is off, so it would have gone
-        // on passing had the behaviour broken.  Capture is now left exactly as the operator set it, and
+        // on passing had the behavior broken.  Capture is now left exactly as the operator set it, and
         // the guarantee that a run does not record itself lives where it is actually enforced:
         // testAStagingRunIsNotCapturedIntoItsOwnTimetable.
     }
@@ -1556,7 +1556,7 @@ public class testHomeStaging
      * Clearing every assignment restores the derived homes exactly, not approximately.
      *
      * This is the promise the feature is built on: a user who tries assignments and changes their mind
-     * gets back the behaviour they had before, with no residue.  Compared as a whole map rather than
+     * gets back the behavior they had before, with no residue.  Compared as a whole map rather than
      * station by station, because a leftover entry is precisely the failure worth catching.
      */
     @Test
@@ -1792,7 +1792,7 @@ public class testHomeStaging
      * So this pins three things, and the third is what "loud" means in a test:
      *
      *  - the configuration loads, rather than the whole railway going out of service;
-     *  - a lock in the same list that DOES resolve is applied - one misspelt entry must not cost its neighbours;
+     *  - a lock in the same list that DOES resolve is applied - one misspelt entry must not cost its neighbors;
      *  - the model's log carries the dedicated warning, naming both the track that owns the lock and the name that
      *    matched nothing.  A drop nobody can see is the silent loss this half was asked about, so the line is heard
      *    rather than assumed, through the model's own `java.util.logging` logger.
@@ -2060,7 +2060,7 @@ public class testHomeStaging
      * assigning homes before configuring the stations is not a mistake.
      *
      * Asked through the planner’s own rule rather than a second copy of it: the answer given when the
-     * assignment is made has to be the answer Return Home gives later, or the warning is theatre.
+     * assignment is made has to be the answer Return Home gives later, or the warning is theater.
      */
     @Test
     public void testAStationKnowsWhichLocomotivesItCouldNeverHold() throws Exception
@@ -2285,7 +2285,7 @@ public class testHomeStaging
      * `deleteEdge` do strictly more damage - they remove the objects those sets and paths hold - and
      * had no such guard.
      *
-     * The menu items are greyed when the popup OPENS, and the action fires when it is CLICKED. Starting
+     * The menu items are grayed when the popup OPENS, and the action fires when it is CLICKED. Starting
      * autonomy from another window in between leaves a live item over a running railway: the same
      * two-moment gap as OB-057 and OB-090.  A guard and the affordance that offers it must ask the same
      * question, and the guard has to be the one that actually holds.
@@ -3093,7 +3093,7 @@ public class testHomeStaging
      * The assignment door has the rule, and a comment once claimed it was "the one door everything comes
      * through".  It is not: `parseAuto` calls `Point.setHomeLoc` directly, so a hand-edited or imported
      * configuration installs a home the menu would refuse, which is the case the model door was added FOR,
-     * since a file cannot be greyed out.  The other door is the POSITIONAL default in `claimHome`, which
+     * since a file cannot be grayed out.  The other door is the POSITIONAL default in `claimHome`, which
      * makes a square the home of whatever is standing on it.
      *
      * Adam, 2026-08-31: "unless there is an explicit home, the home should be where the train started at
@@ -4901,7 +4901,7 @@ public class testHomeStaging
     }
 
     /**
-     * Excluding a locomotive from the station that is its home is recognised before it is applied.
+     * Excluding a locomotive from the station that is its home is recognized before it is applied.
      *
      * The guard on the other door already existed: assigning a home to a station that excludes the
      * locomotive warns.  This state is identical - every future Return Home reports IMPOSSIBLE and
@@ -5074,7 +5074,7 @@ public class testHomeStaging
      * The exclusion therefore lives in pickPath alone - HomeStaging reaches its destinations through
      * canRest and firstClearRoute, neither of which consults the flag.
      *
-     * If the exclusion is ever moved somewhere shared - isPathClear, canRest, bfs - the two behaviours
+     * If the exclusion is ever moved somewhere shared - isPathClear, canRest, bfs - the two behaviors
      * collapse into one and this fails, which is the whole reason it is written down.
      */
     @Test

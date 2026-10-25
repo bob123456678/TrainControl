@@ -47,7 +47,7 @@ public class LayoutPageEdit
      * would collect a stranger's stations, lengths and exclusions with nothing reporting a renumber.
      *
      * The setup is the thing that remembers, so it is the thing that is asked. Zero when there is no
-     * session or no setup, which is exactly the behaviour this had before.
+     * session or no setup, which is exactly the behavior this had before.
      *
      * Takes the session rather than reading a field, which makes it structural: the
      * caller must hand over the session it ALREADY BUILT, and there is no lazy getter in scope here to
@@ -145,11 +145,11 @@ public class LayoutPageEdit
      *
      * An overload rather than a parameter on the one signature, because the answer can only come from
      * a person and every caller that is not the menu item - six tests and counting - has nobody to
-     * ask. They keep the shorter call and get the behaviour they always had: an absent page's id is
+     * ask. They keep the shorter call and get the behavior they always had: an absent page's id is
      * retired, which is right when nothing is absent, and nothing is absent in a fixture.
      *
      * @param keepAbsent names to keep in the index though they are not in the list.  Null for the
-     *        behaviour above
+     *        behavior above
      */
     public static void renameOrDuplicate(List<String> layoutList, LayoutDiagram page,
         String layoutPath, String currentLayout, String newLayoutName, boolean rename,

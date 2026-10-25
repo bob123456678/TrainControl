@@ -125,7 +125,7 @@ public class testConfirmedGoodState
      * And the configuration it builds is byte for byte what was blessed.
      *
      * This is the file autonomy actually runs from, so a change here is a change to the railway's
-     * behaviour whatever the diagram looks like.
+     * behavior whatever the diagram looks like.
      */
     @Test
     public void testTheBuiltConfigurationIsWhatWasBlessed() throws Exception

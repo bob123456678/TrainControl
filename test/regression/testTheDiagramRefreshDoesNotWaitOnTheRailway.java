@@ -349,7 +349,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         // AND THE ANSWER ACTUALLY LANDS.  Without this the test above is satisfied by a
         // `refreshReturnHomeButton` that does nothing at all - "did not block" is true of a method
-        // with an empty body, and the button greying itself correctly is the whole point of it.
+        // with an empty body, and the button graying itself correctly is the whole point of it.
         java.lang.reflect.Method waiting =
             TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
@@ -379,7 +379,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The third door: the diagram's right-click menu asks the same question while it is being built.
      *
-     * `HomeLocomotiveMenu.addReturnHomeItem` greys the "Return Locomotives Home" item and says why,
+     * `HomeLocomotiveMenu.addReturnHomeItem` grays the "Return Locomotives Home" item and says why,
      * reading the button `refreshReturnHomeButton` keeps (OB-192), and handed the setup's sentence by the
      * menu.  A popup menu is built on the event thread by definition, so this is the same wait
      * with a mouse button behind it rather than an arrival.
@@ -1316,7 +1316,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
             finally
             {
-                // Cancelled but never waited for: the point of the timeout is that the event thread may
+                // Canceled but never waited for: the point of the timeout is that the event thread may
                 // still be stuck, and the runnable it is stuck in cannot be interrupted out of a
                 // monitor.  It unwinds by itself when the helper gives the monitor back.
                 refreshed.cancel(true);

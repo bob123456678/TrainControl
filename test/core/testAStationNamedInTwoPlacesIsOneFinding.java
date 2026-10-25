@@ -29,7 +29,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 {
 
     /**
-     * An imported station is labelled on its own square, and so raises no unlabelled-station error.
+     * An imported station is labeled on its own square, and so raises no unlabeled-station error.
      *
      * Every station has to be shown on the diagram - it is an error not to be - so an import that
      * named fifty stations and captioned none would have handed back fifty errors to clear by hand,
@@ -73,9 +73,9 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station nobody has labelled is an error, not a warning.
+     * A station nobody has labeled is an error, not a warning.
      *
-     * The railway runs perfectly well unlabelled, which was the old argument for a warning - true of
+     * The railway runs perfectly well unlabeled, which was the old argument for a warning - true of
      * the trains and beside the point for the person watching them.  A setup whose stations cannot be
      * found on the diagram is not one anybody can supervise.
      */

@@ -498,7 +498,7 @@ public class testMassAssignLengths
     /**
      * The walk's prompt comes back where it was left, and a new round starts it afresh.
      *
-     * Each prompt is a new dialog and `JOptionPane.createDialog` centres every one, so the walk carries the location over
+     * Each prompt is a new dialog and `JOptionPane.createDialog` centers every one, so the walk carries the location over
      * from one prompt to the next.  Adam, MT-454: *"make sure it remembers its location unless I reopen a new mass
      * assignment round from the right click menu."*
      *
@@ -671,7 +671,7 @@ public class testMassAssignLengths
      * The stations Mass Assign Station Max Train Lengths asks about: those on this page with no maximum, row by row.
      *
      * Nothing on this railway is measured and no locomotive has a length, which is where the `NO_MAX_TRAIN_LENGTH`
-     * notice stays quiet - the walk must not, because opening it is saying lengths are being modelled.
+     * notice stays quiet - the walk must not, because opening it is saying lengths are being modeled.
      */
     @Test
     public void testTheMaximumWalkAsksAboutStationsWithNone() throws IOException
@@ -812,7 +812,7 @@ public class testMassAssignLengths
     }
 
     /**
-     * The menu item sits with the other clears, carries the count, greys when there is nothing to clear, and its
+     * The menu item sits with the other clears, carries the count, grays when there is nothing to clear, and its
      * tooltip is the short form of the sentence the confirmation shows (FR-112).
      *
      * @throws Exception from the event thread
@@ -1266,8 +1266,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * On the frozen railway, One-Way Run is greyed on 4 - Combined, which is left out of autonomy - the button, and the
-     * Bulk Tools item with a tooltip saying the page is left out; and armed on 1 - Main, it is put down and greyed when
+     * On the frozen railway, One-Way Run is grayed on 4 - Combined, which is left out of autonomy - the button, and the
+     * Bulk Tools item with a tooltip saying the page is left out; and armed on 1 - Main, it is put down and grayed when
      * Exclude Page is ticked on that page and answered Yes, and the hint stops asking for the first square (MT-568, its
      * steps as amended).
      *
@@ -2473,12 +2473,12 @@ public class testMassAssignLengths
     }
 
     /**
-     * The Bulk Tools item is never greyed, and says in its label how many trains are missing a length (MT-533).
+     * The Bulk Tools item is never grayed, and says in its label how many trains are missing a length (MT-533).
      *
      * Adam: *"This option should never be greyed out completely (show the number of missing trains in parens)."*  MT-533
      * needs the walk to open even when no train is missing a length.
      *
-     * MUTATION: grey it again with none missing, or drop the count from its label, and this fails.
+     * MUTATION: gray it again with none missing, or drop the count from its label, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -2521,7 +2521,7 @@ public class testMassAssignLengths
      * With every train measured, the walk goes through all of them, each with the length it has, and Skip keeps it
      * (MT-533).
      *
-     * What an item that is never greyed does when nothing is missing: the lengths there are, to look at and to change.
+     * What an item that is never grayed does when nothing is missing: the lengths there are, to look at and to change.
      *
      * MUTATION: say every train has a length and walk nothing again, and this fails.
      *
@@ -2727,7 +2727,7 @@ public class testMassAssignLengths
     }
 
     /**
-     * One-way run is greyed on a page left out of autonomy, as Mass Assign Lengths is (MT-528, OB-235).
+     * One-way run is grayed on a page left out of autonomy, as Mass Assign Lengths is (MT-528, OB-235).
      *
      * Nothing on a page autonomy takes no notice of is built, so a run closed one way there closes nothing.
      *
@@ -2757,7 +2757,7 @@ public class testMassAssignLengths
     }
 
     /**
-     * The One-Way Run BUTTON is greyed on a page left out too, and a run armed when the page is left out is put down
+     * The One-Way Run BUTTON is grayed on a page left out too, and a run armed when the page is left out is put down
      * (OB-235) - the parts MT-568 checks that the Bulk Tools claim above does not.
      *
      * The TOOL, not only its button: un-pressing a toggle fires no action, so the button and the tool it arms
@@ -2845,7 +2845,7 @@ public class testMassAssignLengths
      *
      * Read from the source because the window is the half these claims replace with a stand-in.  Two halves, each the
      * reason FR-094 was filed: the refusal on MT-470 named trains and there was nowhere to go - so the walk must ask the
-     * SAME list - and `applyTrainLength` is where the findings and the grey are told, so a walk that set the field
+     * SAME list - and `applyTrainLength` is where the findings and the gray are told, so a walk that set the field
      * itself would leave both describing the length before last.
      *
      * @throws Exception reading the source
@@ -3090,7 +3090,7 @@ public class testMassAssignLengths
      * `promptNumber` is shared with `priority`, where a negative is meaningful, so the refusal is asked per key.  The
      * layer below does not clamp: `Layout.fromJSON` invalidates the WHOLE configuration for a maximum below 0, so a
      * negative one stored takes the railway out of autonomy with only a log line, and Clear All Station Max Train
-     * Lengths must count it or it greys itself on the one setting that needs taking off.
+     * Lengths must count it or it grays itself on the one setting that needs taking off.
      */
     @Test
     public void testANegativeMaximumTrainLengthIsRefused() throws IOException
@@ -4321,7 +4321,7 @@ public class testMassAssignLengths
      *
      * `Layout.fromJSON` refuses a maximum below 0 on any point and invalidates the whole configuration, so a remembered
      * one on a square that is not a station still stops the railway loading - and the bulk clear is the door that takes
-     * one off.  Counting stations only would grey it on the very setting that is stopping the railway.
+     * one off.  Counting stations only would gray it on the very setting that is stopping the railway.
      *
      * MUTATION: count stations only, negatives included, and this fails.
      *

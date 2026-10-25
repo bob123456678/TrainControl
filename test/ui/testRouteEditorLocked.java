@@ -17,12 +17,12 @@ import org.traincontrol.marklin.MarklinRoute;
  *
  * The station owns those.  TrainControl imports them, marks them locked, and shows them with a star
  * in the route list; saving one would be writing over something the station sends again on the next
- * sync.  The old text editor greyed its controls, and the new one has to as well.
+ * sync.  The old text editor grayed its controls, and the new one has to as well.
  *
- * It did not.  Greying the tables looked like enough and was not: the marks in the rows - the plus,
+ * It did not.  Graying the tables looked like enough and was not: the marks in the rows - the plus,
  * the trash, the arrows - are values the table PAINTS rather than buttons in cells, and the click
  * that works them is a click on a cell picked up by a listener belonging to the window.  A disabled
- * table does nothing about that.  So a station's route opened with its name greyed and its Save
+ * table does nothing about that.  So a station's route opened with its name grayed and its Save
  * switched off, and a working plus at the bottom of the command list, which is how Adam found it.
  *
  * The tests below are about the two halves of the rule, because either alone leaves the hole: the
@@ -246,7 +246,7 @@ public class testRouteEditorLocked
      * A locked route draws none of the row marks, and an ordinary one draws them.
      *
      * The marks are values the table PAINTS rather than buttons in cells, which is the whole reason
-     * greying the tables was not enough: the click that works them belongs to the window, not to the
+     * graying the tables was not enough: the click that works them belongs to the window, not to the
      * cell.  `offersToAddCommands` asks about the plus; this asks about the other three, by looking
      * for the mark strings themselves anywhere in the tables.
      *

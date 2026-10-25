@@ -35,7 +35,7 @@ import support.SourceOf;
  * downloaded.  It was a second autonomy system with a file of its own, autonomy.json beside the application, read on
  * every start and written on every exit.  Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*
  *
- * Then, the same day, of that layout's Autonomy menu - greyed whole there since OB-202, which left the download offer
+ * Then, the same day, of that layout's Autonomy menu - grayed whole there since OB-202, which left the download offer
  * (OB-093) and Documentation where nobody could press them: *"Yes, open the autonomy menu with everything but those 2
  * greyed."*
  *
@@ -44,7 +44,7 @@ import support.SourceOf;
  * simulation - with no station to read pages from it makes the demo layout and switches to that - so it is started on
  * a sandbox and put back into that state.
  *
- * MUTATION: put the tab back for a layout with no local copy, or write autonomy.json on exit again, or grey the menu
+ * MUTATION: put the tab back for a layout with no local copy, or write autonomy.json on exit again, or gray the menu
  * there again, or leave it unbuilt for a layout with no session, and the matching claim fails.
  *
  * @author Adam
@@ -272,7 +272,7 @@ public class testTheOldAutonomyTabIsGone
      * Adam, 2026-09-29, on MT-548: *"works, but what is the cs3 has no layout?  give the user the choice to either
      * download or create a new one, which redirects to the corresponding option under layouts."*  The offer was the
      * download alone, and where there was nothing to download the menu said only that autonomy needs a layout.  Both are
-     * offered now, under the Layouts menu's own names, each greyed exactly when its Layouts item would do nothing.
+     * offered now, under the Layouts menu's own names, each grayed exactly when its Layouts item would do nothing.
      *
      * MUTATION: offer the download alone again, or send Create New Layout anywhere but the Layouts menu's own, and this
      * fails.
@@ -328,7 +328,7 @@ public class testTheOldAutonomyTabIsGone
         assertNotNull(download, "the offer has no Download Central Station Layout Files");
         assertNotNull(create, "the offer has no Create New Layout");
 
-        // NOTHING TO DOWNLOAD in a simulation: greyed, saying why
+        // NOTHING TO DOWNLOAD in a simulation: grayed, saying why
         assertFalse(ui.hasPagesToDownload() && ui.isCentralStationConnected(), "precondition: this simulation has a"
             + " Central Station layout to download, so the claim below is about the other case");
 

@@ -201,7 +201,7 @@ public class testParseCS2Routes
      *
      * **The shipped fixture cannot see this.**  ` .S88Flag` has no `=`, so it takes the array-HEADER
      * arm of `parseFileContents`, whose character class was still `[a-z]+` while its sibling nine lines
-     * up had been widened to `[a-z0-9A-Z]+`.  The header was therefore not recognised and `lastKey` was
+     * up had been widened to `[a-z0-9A-Z]+`.  The header was therefore not recognized and `lastKey` was
      * not updated - and in `test/fahrstrassen.cs2` the first route has no conditions and opens with
      * ` .item`, so `lastKey` already held "item" by the time the first condition arrived and everything
      * landed in the right string by luck.  `testConditionsOnTheRealRouteFile` passes either way.

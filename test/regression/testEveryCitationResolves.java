@@ -37,14 +37,14 @@ import org.testng.annotations.Test;
  * A forty-sixth is a comment pointing at nothing, and the point of catching it here is the day it is
  * written rather than six weeks later, when nobody remembers what it meant.
  *
- * **Do not read a high count as licence to delete the documents.** It was 230 an hour before this was
- * written, and every fall since came from teaching the catalogue a spelling the review folder was
+ * **Do not read a high count as license to delete the documents.** It was 230 an hour before this was
+ * written, and every fall since came from teaching the catalog a spelling the review folder was
  * already using - four ways of declaring a prefix, headings with and without separators, refs bolded
  * inside table cells. `V33` and `DOC` were on this list as dead prefixes while their documents sat in
  * `docs/reviews/` with every finding in them. An id that resolves to nothing may mean the finding is
  * gone, or only that this file cannot see it.
  *
- * **It asks the catalogue, not the prose**, which is the whole point. An earlier version searched every
+ * **It asks the catalog, not the prose**, which is the whole point. An earlier version searched every
  * `.md` under `docs/` and passed if anything mentioned the id at all. Three of the ten above
  * are named in a review paragraph that never filed them, so they passed.
  * Under a ruling whose second clause is *"useless prose will go away"*, that check goes vacuous at the
@@ -74,7 +74,7 @@ public class testEveryCitationResolves
         + "|ID|X|Y|Z)-");
 
     /**
-     * The catalogue, as plain text: `ref<TAB>document<TAB>disposition`, `#` for a comment.
+     * The catalog, as plain text: `ref<TAB>document<TAB>disposition`, `#` for a comment.
      *
      * NOT `docs/reviews/findings.md`, which this used to read. Adam is deleting the reviews folder
      * whole, that file included, and a guard anchored to a file scheduled for deletion is a guard that
@@ -144,7 +144,7 @@ public class testEveryCitationResolves
             "only " + cited.size() + " finding ids were found in the code, which is far fewer than this"
             + " codebase carries - the pattern has gone stale and this test is checking almost nothing");
 
-        // WHAT IS ACTUALLY A FINDING: a row in the catalogue, and nothing else. Its first column is
+        // WHAT IS ACTUALLY A FINDING: a row in the catalog, and nothing else. Its first column is
         // the ref, in backticks, and nine of them carry a ` @date` because they mean two things in two
         // documents - a citation of the bare ref resolves through either.
         //
@@ -276,7 +276,7 @@ public class testEveryCitationResolves
     }
 
     /**
-     * How many sub-lettered findings the catalogue held when the last review documents were deleted.
+     * How many sub-lettered findings the catalog held when the last review documents were deleted.
      *
      * One is a severity revision in a document deleted on 2026-09-08, the other a dead
      * citation.  Both name documents that are gone, which is why the floor above could no longer be
@@ -285,20 +285,20 @@ public class testEveryCitationResolves
     private static final int SUBLETTERED = 2;
 
     /**
-     * No catalogued finding carries a sub-letter its document does not write.
+     * No cataloged finding carries a sub-letter its document does not write.
      *
      * **A parser read a mutation table as findings.** `catalog-findings.py` accepted any table row whose
      * first cell looked like `A1a` as a finding of the document's declared prefix, and
      * `X8V-validation.md` opens with a Method table keyed exactly that way - so fifteen findings entered
-     * the catalogue that the document never made, four of them at severity A against an A section that
-     * says "Nothing". The same rows outranked the real status table, so one finding was catalogued as
+     * the catalog that the document never made, four of them at severity A against an A section that
+     * says "Nothing". The same rows outranked the real status table, so one finding was cataloged as
      * "2 of 2 red" where its own table said closed.
      *
-     * **Why the guard is this narrow.** The obvious check - every catalogued ref must appear in its
+     * **Why the guard is this narrow.** The obvious check - every cataloged ref must appear in its
      * document - is red on arrival: sixty documents declare a prefix and then number their headings
      * `### A1`, so the full ref never appears in the text, and that check would fail on 64 legitimate
      * rows before reaching the bad ones. What the fifteen had in common, and what no legitimate row in
-     * the catalogue has, is a SUB-LETTER: `A1a`, `B2b`. Across 2,486 rows only twelve carry one and
+     * the catalog has, is a SUB-LETTER: `A1a`, `B2b`. Across 2,486 rows only twelve carry one and
      * eleven were X8V's. So a sub-lettered ref whose document does not write it out is the signature of
      * this fault and of nothing else.
      *
@@ -334,7 +334,7 @@ public class testEveryCitationResolves
 
         // THE FLOOR, AND WHAT REPLACED IT.
         //
-        // It used to be `resolvable > 0` - at least one catalogued row naming a document still in the
+        // It used to be `resolvable > 0` - at least one cataloged row naming a document still in the
         // tree - because both sub-lettered rows name deleted documents, so every row was skipped and
         // the guard reported success having compared nothing (FV3).
         //
@@ -432,7 +432,7 @@ public class testEveryCitationResolves
             }
 
             // A document that has been deleted cannot be checked, and most of them have been - the
-            // folder was retired on 2026-09-08.  Those rows are the catalogue's whole purpose.
+            // folder was retired on 2026-09-08.  Those rows are the catalog's whole purpose.
             if (document == null) continue;
 
             String body = new String(java.nio.file.Files.readAllBytes(document.toPath()),
@@ -497,14 +497,14 @@ public class testEveryCitationResolves
     }
 
     /**
-     * The catalogue is regenerable and current.
+     * The catalog is regenerable and current.
      *
      * It is rendered from `docs/manual-tests/triage.db` by `triagedb.render_findings`, and a generated
      * file that has drifted from its source is worse than none: it is read as authoritative. This does
      * not re-run the generator - that needs Python - but it does hold the three things that would make
      * it a lie, the third being the database itself, which is now the only copy.
      *
-     * @throws Exception on a failure to read the catalogue
+     * @throws Exception on a failure to read the catalog
      */
     @Test
     public void testTheCatalogueIsThereAndSaysWhereItCameFrom() throws Exception
@@ -559,10 +559,10 @@ public class testEveryCitationResolves
     }
 
     /**
-     * Whether a review document named in the catalogue is still in the tree.
+     * Whether a review document named in the catalog is still in the tree.
      *
-     * Most are not, and deliberately: the folder was retired on 2026-09-08 once the catalogue carried
-     * it, which is the whole reason the catalogue exists. What this answers is whether ANY of them can
+     * Most are not, and deliberately: the folder was retired on 2026-09-08 once the catalog carried
+     * it, which is the whole reason the catalog exists. What this answers is whether ANY of them can
      * still be found, which is what says the name-to-file resolution above is working rather than
      * silently matching nothing.
      *

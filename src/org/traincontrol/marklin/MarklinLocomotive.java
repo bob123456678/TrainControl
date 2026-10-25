@@ -67,7 +67,7 @@ public class MarklinLocomotive extends Locomotive
     // wrote - so a save that sees this map empty writes a locomotive with NO members into locdb.data,
     // and the consist is gone after the next start with the file as the only record.  The rebuild runs
     // off the event thread inside syncWithCS2; the save runs from the window-closing path and from
-    // Backup Data's own thread, and nothing serialises them.
+    // Backup Data's own thread, and nothing serializes them.
     //
     // It was a live LinkedHashMap cleared and refilled in place, so every reader shared one instance and
     // there was a window in which it was empty.  Locking the readers was the other candidate and was
@@ -1092,7 +1092,7 @@ public class MarklinLocomotive extends Locomotive
      * points to.
      *
      * That produced six separate defects across three reviews, each fixed where it happened to surface
-     * - a consist that stopped recognising a member, a station exclusion that silently stopped applying,
+     * - a consist that stopped recognizing a member, a station exclusion that silently stopped applying,
      * a deleted locomotive still being exported.  Eight collections key on this object, and each repair
      * was a call some future author had to know to make.  Identity ends that: the hash is fixed for the
      * object's lifetime, so no mutation can move it.
@@ -1265,7 +1265,7 @@ public class MarklinLocomotive extends Locomotive
      * Stages a list and applies it in one call, so no second thread can be staging at the same time.
      *
      * **`preSetLinkedLocomotives` writes an INSTANCE FIELD and `setLinkedLocomotives` reads it, with
-     * nothing serialising the pair**.  Two threads rebuild consists: `syncWithCS2`, which the
+     * nothing serializing the pair**.  Two threads rebuild consists: `syncWithCS2`, which the
      * window runs off the event thread, and the multi-unit dialog, on the event thread.  One thread's
      * staged list could be overwritten before its own apply read it, and the consist was then rebuilt
      * from the other thread's list - silently, because both calls succeed.
@@ -1303,7 +1303,7 @@ public class MarklinLocomotive extends Locomotive
     {              
         // Staged in a local map and swapped in one step, rather than clearing the live map and
         // refilling it in place.  setSpeed and setDirection iterate linkedLocomotives under this
-        // locomotive's monitor; rebuilding it unsynchronised let a fan-out land mid-rebuild and either
+        // locomotive's monitor; rebuilding it unsynchronized let a fan-out land mid-rebuild and either
         // throw ConcurrentModificationException or command the head alone.  That was tolerable while
         // only the multi-unit dialog rebuilt consists - a deliberate action on a consist the user is
         // editing - but a Central Station sync now rebuilds them too, automatically, and a consist can

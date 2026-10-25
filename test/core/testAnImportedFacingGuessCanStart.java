@@ -35,7 +35,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  *
  * The old format cannot say which way a train points, so the import chooses - and it chose the first copy the build
  * emits, barred or not.  Copies are emitted N, E, S, W, so at BottomMainA, with arrivals from the east barred, that is
- * the westbound copy: no station.  Since the build honours a recorded facing even where only such a copy holds it -
+ * the westbound copy: no station.  Since the build honors a recorded facing even where only such a copy holds it -
  * the copy IS the direction, and a train that really faces that way must stand there - the guess put an imported train
  * where autonomy will not start it, under a log line saying "just run them".  A guess is not a fact, and the one guess
  * autonomy can start is a way trains may arrive.

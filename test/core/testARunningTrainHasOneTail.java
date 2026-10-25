@@ -118,7 +118,7 @@ public class testARunningTrainHasOneTail
         //
         // `moveLocomotive` clears `arrivedFrom` and `arrivedAlong` on a change of occupant, and only a
         // completed run ever writes them - so a hand-placed train's square records no road, a tail
-        // walked from there meets the fork rule at a square with two neighbours and breaks, and the
+        // walked from there meets the fork rule at a square with two neighbors and breaks, and the
         // phantom claim this test exists to refuse could not have been made from it either way.  A
         // train that had DRIVEN in would carry the record, which is the state Adam's railway was in;
         // written here so the negative claims are about the rule rather than about the fixture.  The

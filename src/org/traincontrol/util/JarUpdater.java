@@ -44,7 +44,7 @@ import java.util.List;
  *
  * **"Started" means the new version said so, not that it ran for a while.**  It is given the path of a marker file in
  * the `STARTED_ENVIRONMENT` environment variable, and writes that file once its main window is on screen - or when the
- * user leaves it from a question before then (the IP address cancelled, the first sync given up), which is a version
+ * user leaves it from a question before then (the IP address canceled, the first sync given up), which is a version
  * that runs (`SelfUpdate.reportStarted`).  So a version that fails in its own start-up, before its window, is put
  * back, whatever its exit code; one that is up and then exits stays.  An exit code could not tell those apart:
  * TrainControl ends with 1 on purpose in several places.  An environment variable rather than a -D option, because the
@@ -580,7 +580,7 @@ public final class JarUpdater
      * Waits for a started version to write its marker, or to end without it, or for the cap.
      *
      * The marker is looked for once more after the process has ended: one that wrote it and quit at once (the IP
-     * question cancelled) has started.
+     * question canceled) has started.
      *
      * @param marker the file it is to write
      * @param process the started version

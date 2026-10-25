@@ -532,7 +532,7 @@ public final class CS2File
                 //
                 // LayoutDiagram.readLayoutIndexIds matches the block name without regard to
                 // case, on the measured ground that "an index spelling the block `Seite` gave no page an
-                // id at all".  Its twin here was not swept, and this one is worse: a capitalised block
+                // id at all".  Its twin here was not swept, and this one is worse: a capitalized block
                 // is not a block to this parser, so the file comes back with ZERO pages and ZERO
                 // unreadable pages - and the guard that reverts to the Central Station asks whether
                 // anything failed, not whether anything was expected.  The operator would get an empty
@@ -885,13 +885,13 @@ public final class CS2File
                     //
                     // A route file writes its conditions under ` .S88Flag` and its commands under
                     // ` .item`, and this method used to read `item` alone.  It got the conditions
-                    // anyway, by accident: the array-header regex did not recognise ` .S88Flag`, so
+                    // anyway, by accident: the array-header regex did not recognize ` .S88Flag`, so
                     // `lastKey` was left holding "item" and the condition group was flushed in beside
                     // the commands.  The loop below tells the two apart by asking each piece whether it
                     // carries `kont`, so the result was right.
                     //
                     // That accident is what broke when the regex was corrected, and it is why the two
-                    // halves had to be done together: with the header recognised, the conditions arrive
+                    // halves had to be done together: with the header recognized, the conditions arrive
                     // under their own key, and a route read from `item` alone keeps every command and
                     // silently loses every condition.
                     //
@@ -1989,7 +1989,7 @@ public final class CS2File
         
         for (String layoutName : parseLayoutList())
         {
-            // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
+            // Sanitized, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
 
@@ -2012,7 +2012,7 @@ public final class CS2File
         //
         // Tolerated when absent, unlike the three above. A Central Station with no routes defined is
         // an ordinary thing, and the whole download should not fail because there is nothing to
-        // fetch - which is a different judgement from the accessory file, whose absence would mean
+        // fetch - which is a different judgment from the accessory file, whose absence would mean
         // the station is not answering properly.
         try
         {
@@ -2399,7 +2399,7 @@ public final class CS2File
      * How many pages the index NAMED, whether or not any of them arrived.
      *
      * The caller's "did anything read" guard needs something to ask against.  A page can fail
-     * loudly - it throws, and is counted as unread - or it can simply never be recognised, which is what
+     * loudly - it throws, and is counted as unread - or it can simply never be recognized, which is what
      * an index this parser does not understand produces: zero pages AND zero failures, a layout that
      * read nothing at all and reported no fault.  The index is the statement of what should be there.
      *
@@ -2679,7 +2679,7 @@ public final class CS2File
                                 added.setUnmodelledKeys(m);
 
                                 // And the file's own word for the type, plus its rotation exactly as given.
-                                // Both ARE modelled, and both are lossy: the type mapping is many-to-one, so
+                                // Both ARE modeled, and both are lossy: the type mapping is many-to-one, so
                                 // writing the canonical word back collapses every variant the file
                                 // distinguished, and the rotation of a semaphore signal is corrected on the
                                 // way in by a rule keyed on the word that has just been thrown away.

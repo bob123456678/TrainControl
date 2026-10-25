@@ -13,7 +13,7 @@ import support.SourceOf;
  *
  * **Two of the three told the operator to wait for trains that were not running.**  Autonomy refuses on
  * `hasErrors()`, which covers a graph that will not build at all - and in that state the error COUNT is
- * zero, because nothing turned the problem into a finding.  The greyed Start item's tooltip and the
+ * zero, because nothing turned the problem into a finding.  The grayed Start item's tooltip and the
  * scripting API's exception both chose their wording on that count alone, so they fell through to *"wait
  * for the trains to stop"*: an instruction to wait for something that will never happen.  The guard
  * gained that arm and its two twins did not, and they stood like that for a week.
@@ -77,7 +77,7 @@ public class testTheRefusalToStartSaysWhichThing
     /**
      * All three doors take their words from that one rule.
      *
-     * Read rather than driven: one is a modal dialog, one a greyed tooltip built inside a menu that
+     * Read rather than driven: one is a modal dialog, one a grayed tooltip built inside a menu that
      * needs a loaded setup and a right-click, and the third throws from the scripting API.  What matters
      * is that none of them words the refusal itself any more - so this looks for the ternaries that are
      * gone, not only for the call that replaced them.

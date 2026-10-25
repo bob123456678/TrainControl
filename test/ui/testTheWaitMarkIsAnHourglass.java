@@ -141,7 +141,7 @@ public class testTheWaitMarkIsAnHourglass
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;
 
-                // Grey of any darkness, which is all this draws.  The threshold is well clear of the
+                // Gray of any darkness, which is all this draws.  The threshold is well clear of the
                 // antialiased edge between the sand and the white behind it.
                 if (r < 230 && g < 230 && b < 230) count++;
             }
@@ -151,7 +151,7 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The mark draws something, and it is grey rather than the black the turning arc used.
+     * The mark draws something, and it is gray rather than the black the turning arc used.
      *
      * The weakest assertion here, and it is only worth having because a drawing method that throws or
      * that draws nothing is a real failure mode for a component nobody looks at in a test.
@@ -165,8 +165,8 @@ public class testTheWaitMarkIsAnHourglass
 
         assertTrue(drawn > 500, "the wait mark drew almost nothing: " + drawn + " pixels");
 
-        // Not black.  Adam asked for grey specifically, and the arc this replaced drew in black with
-        // alpha, which composites to grey against white - so a colour check has to look at the
+        // Not black.  Adam asked for gray specifically, and the arc this replaced drew in black with
+        // alpha, which composites to gray against white - so a color check has to look at the
         // DARKEST pixel rather than the average, or the two are indistinguishable.
         int darkest = 255;
 
@@ -185,7 +185,7 @@ public class testTheWaitMarkIsAnHourglass
      * Sand is conserved: what drains out of the top arrives in the bottom.
      *
      * The assertion this class exists for. Every other check here would still pass if the two bulbs
-     * were driven by unrelated formulae - the picture would still be an hourglass, still be grey,
+     * were driven by unrelated formulae - the picture would still be an hourglass, still be gray,
      * still change frame to frame, and the sand would simply appear and vanish as it fell.
      *
      * The band is a twelfth, chosen from measurement rather than taste. Over a real cycle the count
@@ -276,7 +276,7 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * Nothing is drawn outside the component, at any point in the cycle including the turn.
      *
-     * The turn is the frame that can break this: the glass is rotated about the centre, so a shape
+     * The turn is the frame that can break this: the glass is rotated about the center, so a shape
      * sized to fill the space upright sweeps outside it halfway round. Checking a border of pixels
      * says the drawing left itself room to turn in.
      */
@@ -316,7 +316,7 @@ public class testTheWaitMarkIsAnHourglass
      * a WINDOW when the panel is in one; the caller asked `SwingUtilities.getWindowAncestor(owner())`,
      * which walks UP from what it is given, and a top-level frame has no window ancestor. So it got
      * null every time, took its fallback branch - `setLocationRidiculouslyRelativeTo(owner())`, which
-     * centres - and produced the precise behaviour the ticket was raised about, while both tests of
+     * centers - and produced the precise behavior the ticket was raised about, while both tests of
      * the rule stayed green.
      *
      * Driven with real components, because the mistake is only visible in what `getWindowAncestor`
@@ -378,7 +378,7 @@ public class testTheWaitMarkIsAnHourglass
      * offset it." The window's own text tells the reader the signals are outlined on the diagram
      * BEHIND it, so centring hides the thing it is pointing at.
      *
-     * MUTATION: making besideOwner return the centred point - the behaviour this replaced - fails
+     * MUTATION: making besideOwner return the centered point - the behavior this replaced - fails
      * this test.
      */
     @Test
@@ -407,7 +407,7 @@ public class testTheWaitMarkIsAnHourglass
      *
      * The clamp has two ends and only one of them is exercised by the ordinary case. Pushed by the
      * "keep it inside" rule alone, a dialog wider than its parent would be moved to a NEGATIVE offset
-     * from the parent's left edge - which on a maximised window is off the side of the display, where
+     * from the parent's left edge - which on a maximized window is off the side of the display, where
      * the buttons cannot be reached.
      */
     @Test
@@ -544,7 +544,7 @@ public class testTheWaitMarkIsAnHourglass
             "the glass is " + drawn + " pixels tall in a 900px panel - it grows with the space it is "
             + "given, so covering a whole track diagram draws an enormous hourglass");
 
-        // And it is still centred in that space, which is the other half of OB-129.
+        // And it is still centered in that space, which is the other half of OB-129.
         int middle = (top + bottom) / 2;
 
         assertTrue(Math.abs(middle - big / 2) <= 4,
@@ -554,7 +554,7 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * The spinner covers the area the diagram will take, which is what puts it in the middle.
      *
-     * It is centred inside its own component already; what was wrong is how much of the page that
+     * It is centered inside its own component already; what was wrong is how much of the page that
      * component covered. Capped at 400 and dropped into a FlowLayout parent, it sat at the top.
      */
     @Test

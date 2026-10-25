@@ -79,7 +79,7 @@ final class EditorTileMenus
             return only;
         }
 
-        // Right-clicking anywhere in a run opens the run's own menu: the greyed tiles hand the question to the tile that
+        // Right-clicking anywhere in a run opens the run's own menu: the grayed tiles hand the question to the tile that
         // answers it.  A new local rather than the parameter, which the lambdas below capture and so must stay
         // effectively final.
         final TileKey target = editor.leaderOf(tile);
@@ -209,7 +209,7 @@ final class EditorTileMenus
             menu.addSeparator();
 
             // What trains may do at this square, as one three-way choice: stop, pass through, or neither.  Mutually
-            // exclusive by construction, so there is no combination to get wrong and nothing to grey out.
+            // exclusive by construction, so there is no combination to get wrong and nothing to gray out.
             final boolean isOpen = !Boolean.FALSE.equals(editor.session.getPointProperty(target, "active"));
 
             javax.swing.JMenu stationMenu = new javax.swing.JMenu(
@@ -243,10 +243,10 @@ final class EditorTileMenus
                 "autosetup.ui.hintAutoDestination", editor.session.isAutoDestination(target),
                 on -> editor.session.setAutoDestination(target, on));
 
-            // Greyed rather than hidden, so the shape of the choice stays visible.  NOT greyed for an out-of-service square
+            // Grayed rather than hidden, so the shape of the choice stays visible.  NOT grayed for an out-of-service square
             // (Adam: *"Can Be Chosen in Full Autonomy - does not apply to returning home, of course.  these should be
             // allowed."*): `active` is whether the railway may use the square, this is whether autonomy chooses it as a
-            // destination, and homing never consults it, which is what makes a parking berth work.  Still greyed on a square
+            // destination, and homing never consults it, which is what makes a parking berth work.  Still grayed on a square
             // that is not a station: autonomy cannot choose somewhere trains do not stop.
             auto.setEnabled(isStation);
 
@@ -310,8 +310,8 @@ final class EditorTileMenus
             final java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
                 editor.session.arrivalSides(target);
 
-            // Shown GREYED where there is only one way in, rather than left out (MT-079): an absent menu and a menu with
-            // nothing to offer look identical from the outside, and a greyed one with a tooltip answers without being
+            // Shown GRAYED where there is only one way in, rather than left out (MT-079): an absent menu and a menu with
+            // nothing to offer look identical from the outside, and a grayed one with a tooltip answers without being
             // asked.
             if (isStation && ways.size() == 1)
             {
@@ -359,7 +359,7 @@ final class EditorTileMenus
 
             // The signal thrown to red while this platform is claimed, paired by hand rather than inferred: the nearest signal
             // on the approach is not always the one that protects a platform, and a wrong guess throws a real signal.  Last
-            // of the station settings, under the arrivals; labelled with the signal's ADDRESS and outlined on the diagram
+            // of the station settings, under the arrivals; labeled with the signal's ADDRESS and outlined on the diagram
             // while the item is acted on; left out of the deep menu, where pairing means clicking a diagram it is drawn over.
             if (isStation && !editor.menuOnly)
             {
@@ -378,7 +378,7 @@ final class EditorTileMenus
                 // WHAT THE GUARD DOES (OB-293), said as the runtime does it, `Layout.refreshProtectingSignal`.
                 signalItem.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipExitGuard")));
 
-                // THE ENTRY GUARD, the same dialog on the other list (FR-096), and labelled the same way.
+                // THE ENTRY GUARD, the same dialog on the other list (FR-096), and labeled the same way.
                 java.util.List<TileKey> guarding = editor.session.getEntrySignals(target);
 
                 entryItem = editor.item(
@@ -527,7 +527,7 @@ final class EditorTileMenus
         if (arrivals != null) menu.add(arrivals);
 
         // Only when there is something under the heading.  Everything that fills this submenu sits inside
-        // canCarryDirection(target), false for any portal, so right-clicking a link or a tunnel would open a greyed
+        // canCarryDirection(target), false for any portal, so right-clicking a link or a tunnel would open a grayed
         // heading and a separator (the state hasItemsBesidesTitle detects, OB-032).
         if (editor.hasItemsBesidesTitle(connections)) menu.add(connections);
 
@@ -593,7 +593,7 @@ final class EditorTileMenus
         }
 
         // Naming a link, on the menu itself rather than inside Connections: a link is FOUND by its name (an unnamed one shows in
-        // the pairing list as a coordinate pair nobody recognises), so it is the first thing done to a new link; what it is
+        // the pairing list as a coordinate pair nobody recognizes), so it is the first thing done to a new link; what it is
         // CALLED is not a connection.
         if (component != null && (component.isLink()
             || component.getType() == LayoutDiagramComponent.componentType.TUNNEL))
@@ -714,10 +714,10 @@ final class EditorTileMenus
         // ("a Station Name" when the square shows none, "a Different Station" when it already shows one).
         // A station square has three states, and `promptStationLabel` captions it with itself whatever it is showing, so
         // none is ever offered a choice; what differs is whether choosing it would CHANGE anything:
-        //   already showing itself    nothing to do.  Greyed, and the label says why.
+        //   already showing itself    nothing to do.  Grayed, and the label says why.
         //   showing another station   resets it to its own.  Live - a drag can produce this.
-        //   showing nothing           captions it with itself.  Live: greying it would make Stop Showing one-way.
-        // Neither live case reads "a DIFFERENT station", because a station square cannot show one.  The greyed item is
+        //   showing nothing           captions it with itself.  Live: graying it would make Stop Showing one-way.
+        // Neither live case reads "a DIFFERENT station", because a station square cannot show one.  The grayed item is
         // disabled rather than removed, and its tooltip carries the reason.
         boolean showsItself = editor.session.getStore().isStation(tile) && tile.equals(captioned);
 
@@ -732,7 +732,7 @@ final class EditorTileMenus
                     : I18n.t("autosetup.ui.menuShowStationHereNamed"),
                 () -> editor.promptStationLabel(tile, component));
 
-            // Greyed, with the reason, on a square the running diagram does not draw
+            // Grayed, with the reason, on a square the running diagram does not draw
             boolean inTheDrawnArea = editor.session.isInTheDrawnArea(tile);
 
             name.setEnabled(!showsItself && inTheDrawnArea);
@@ -809,7 +809,7 @@ final class EditorTileMenus
         // A train has to be standing there on the RUNNING railway: the offer above asks the SETUP, and `pointOnTheLayout`
         // falls back to any copy, so a square the setup assigns a train while the running layout has not placed one would
         // write a side onto an unoccupied Point, which `Point.toJSON` declines to save.  While the running layout is held
-        // (during a run, before the first rebuild after a configuration is loaded) the item is absent rather than greyed;
+        // (during a run, before the first rebuild after a configuration is loaded) the item is absent rather than grayed;
         // otherwise `setupChanged`'s rebuild catches the placement up within the gesture.
         if (point.getCurrentLocomotive() == null) return null;
 
@@ -901,7 +901,7 @@ final class EditorTileMenus
      * not offer it.
      *
      * Null unless a locomotive is standing there.  Where the square has no facing to choose - no track leads out of
-     * it - the submenu is there and greyed, with the reason in its tooltip (OB-347).
+     * it - the submenu is there and grayed, with the reason in its tooltip (OB-347).
      *
      * @param target the square
      * @return the submenu, or null
@@ -939,7 +939,7 @@ final class EditorTileMenus
         // `facing == recorded`, so a recorded facing not among the offered ones would tick NOTHING, reading as "no facing" for a
         // train that has one (`facingsThatCannotBeHeld` reports it).  It gets an entry rather than being silently corrected,
         // because which is wrong, the record or the track under it, is not this menu's to decide.  NOT WHERE NO TRACK LEADS OUT
-        // (OB-348): there the menu is greyed (OB-347) whatever is recorded.
+        // (OB-348): there the menu is grayed (OB-347) whatever is recorded.
         if (recorded != null && !facings.isEmpty() && !facings.contains(recorded)) facings.add(recorded);
 
         // Shown even with one answer, so the menu explains itself instead of vanishing ("no menu" reads as a fault).  A
@@ -948,7 +948,7 @@ final class EditorTileMenus
         // offered where the railway holds one; the one facing is shown, ticked, with a line saying why there is nothing
         // to choose.
         //
-        // Greyed, not hidden, where no track leads out (OB-347; Adam: *"rather than hiding it, grey it out."*).  ONE
+        // Grayed, not hidden, where no track leads out (OB-347; Adam: *"rather than hiding it, grey it out."*).  ONE
         // SUBMENU (OB-348): built once, here, so the track diagram and the editor cannot offer two that drift apart.
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));

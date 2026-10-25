@@ -53,7 +53,7 @@ public class LocButtonTransferHandler extends TransferHandler
      * Makes the given letter button both a drag source and a drop target
      * @param ui
      * @param button
-     * @param tabs - the page tabs, used to return to the source page if the drag is cancelled
+     * @param tabs - the page tabs, used to return to the source page if the drag is canceled
      */
     public static void enable(TrainControlUI ui, JButton button, JTabbedPane tabs)
     {
@@ -187,7 +187,7 @@ public class LocButtonTransferHandler extends TransferHandler
 
         if (origin == null) return;
 
-        // The drag was cancelled, so undo the cut - possibly on a page we have since navigated away from
+        // The drag was canceled, so undo the cut - possibly on a page we have since navigated away from
         tabs.setSelectedIndex(origin.page - 1);
         ui.doPaste(origin.button, false, false);
     }

@@ -364,7 +364,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      *
      * **A BAND, BECAUSE THE EXACT COUNT IS NOT REPRODUCIBLE.**  Six runs on Adam's live railway gave
      * 2116, 2146, 1648, 1617, 1625 and 1645 - the first two asking one route per pair, the rest asking
-     * every route the search will yield - and the snapshot answers in the same neighbourhood, 1640 to
+     * every route the search will yield - and the snapshot answers in the same neighborhood, 1640 to
      * 1660.  `bfs(from, to, exclude)` returns SOME route avoiding the ones already found rather
      * than the next in a defined order, and which one depends on an adjacency keyed by objects whose
      * hash is their identity.  So the count moves by about two per cent between JVMs, and a pin to one

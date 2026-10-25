@@ -76,7 +76,7 @@ final class TrainFit
         Set<String> claimed = new LinkedHashSet<>();
 
         // HOW MUCH OF WHAT IS CLAIMED WAS NEVER MEASURED: an unmeasured place costs the walk nothing and is
-        // claimed anyway (the refusing side of the rounding, ruled behaviour), so the refusal also says so, pointing the
+        // claimed anyway (the refusing side of the rounding, ruled behavior), so the refusal also says so, pointing the
         // operator at the piece Mass Assign Lengths left at zero.  Counted over the places the walk actually claims.
         int unmeasured = 0;
 

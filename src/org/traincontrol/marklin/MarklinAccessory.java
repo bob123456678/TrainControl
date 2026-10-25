@@ -177,7 +177,7 @@ public class MarklinAccessory extends Accessory
                     this.numActuations += 1;
                 }
 
-                // Any echo is an acknowledgement from the Central Station, whether or not it moved the
+                // Any echo is an acknowledgment from the Central Station, whether or not it moved the
                 // accessory - so it confirms the position, and it has to wake the waiter either way.
                 // Both of these used to happen only when the state changed, which left an accessory
                 // commanded to the position it was already in confirmed by nothing at all, and left

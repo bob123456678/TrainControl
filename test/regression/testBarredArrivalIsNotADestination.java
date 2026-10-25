@@ -326,7 +326,7 @@ public class testBarredArrivalIsNotADestination
      * exists because clearing sixty-two homes by right-click is too many gestures; doing it cost
      * sixty-two rebuilds instead.
      *
-     * **What this pins is the behaviour, not the count**, because the rebuild is not observable from
+     * **What this pins is the behavior, not the count**, because the rebuild is not observable from
      * outside: every home goes, the count comes back, and the index is still right afterwards - which
      * is the thing a bulk path is most likely to get wrong by skipping the re-derive altogether.
      *
@@ -385,7 +385,7 @@ public class testBarredArrivalIsNotADestination
      * there - so the editor's loop cost two full builder constructions per square, for the gesture that
      * exists precisely because doing it one at a time is too many.
      *
-     * What is pinned is the behaviour, because the rebuild is not observable from outside: every
+     * What is pinned is the behavior, because the rebuild is not observable from outside: every
      * placement goes, the count comes back, the FACING goes with it, and the session still works
      * afterwards - which is what a bulk path that skipped the re-derive would get wrong.
      *

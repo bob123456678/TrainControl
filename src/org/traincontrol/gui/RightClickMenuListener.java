@@ -216,7 +216,7 @@ public class RightClickMenuListener extends MouseAdapter
                 submenu.add(menuItem);
 
                 // How long this train is, when there is autonomy to care (FR-047).  Null when there
-                // is not, so the item simply is not there rather than being greyed.
+                // is not, so the item simply is not there rather than being grayed.
                 JMenuItem howLong = LocomotiveMenuItems.trainLength(ui, subject, null);
 
                 if (howLong != null) submenu.add(howLong);

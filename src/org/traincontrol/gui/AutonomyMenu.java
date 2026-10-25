@@ -79,7 +79,7 @@ public class AutonomyMenu extends JMenu
     {
         // THE QUESTION LIVES ON THE WINDOW NOW (OB-202), because this menu is no longer the only
         // thing that asks it: `autonomyTopMenu` holds this slot until start-up builds this menu, and it
-        // has to be greyed for the same reasons and say the same sentence.  Two copies of one condition
+        // has to be grayed for the same reasons and say the same sentence.  Two copies of one condition
         // is two answers waiting to disagree.
         //
         // What the parts are, and why each is there, is at `TrainControlUI.autonomyMenuIsUsable` - a
@@ -144,7 +144,7 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Greys every item while an editor has the diagram, and offers the way back to it.
+     * Grays every item while an editor has the diagram, and offers the way back to it.
      *
      * The same shape as TrainControlUI.guardLayoutMenu, deliberately: the two menus are guarded for the
      * same reason and should not look like two different rules.
@@ -176,7 +176,7 @@ public class AutonomyMenu extends JMenu
         insert(busy, 0);
 
         // Under the item it belongs to.  addSeparator APPENDS, so the rule meant to divide this one
-        // entry from the greyed rest was drawn after the LAST item instead - a line across the bottom
+        // entry from the grayed rest was drawn after the LAST item instead - a line across the bottom
         // of the popup with nothing below it.
         insertSeparator(1);
     }
@@ -186,7 +186,7 @@ public class AutonomyMenu extends JMenu
      *
      * *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*  The link
      * was on the old Load Autonomy Configuration tab, which went (OB-254); the guide it opened is about the autonomy
-     * this menu drives.  Left enabled while an editor greys the rest: reading the guide changes nothing.
+     * this menu drives.  Left enabled while an editor grays the rest: reading the guide changes nothing.
      */
     private void rebuild()
     {
@@ -211,12 +211,12 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Greys what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
+     * Grays what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
      * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
      * editor's item has since OB-045.  Autonomy Settings and Documentation stay live: the guide changes nothing, and the
-     * settings are shown greyed while autonomy is busy, each saying why (Adam, 2026-10-02), their own handlers refusing a
+     * settings are shown grayed while autonomy is busy, each saying why (Adam, 2026-10-02), their own handlers refusing a
      * change besides.  The debug export is
-     * greyed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running") - greyed only: it
+     * grayed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running") - grayed only: it
      * writes nothing of the setup, and has no refusal of its own.
      *
      * @param documentation the guide's item
@@ -264,14 +264,14 @@ public class AutonomyMenu extends JMenu
             // Adam: "the 'autonomy needs a layout stored on this computer' notice should be clickable
             // and allow the user to download one."
             //
-            // It is a true statement and it was a greyed one, which leaves the reader knowing what is
+            // It is a true statement and it was a grayed one, which leaves the reader knowing what is
             // wrong and not what to do - and the thing to do lives in a different menu, under a name
             // that says nothing about autonomy. Where somebody reads the sentence is where the offer
             // belongs.
             //
             // ONLY when a download is actually the answer. This branch is also taken for reasons a
             // download would not touch - no viewer panel yet, a session that failed to open - and an
-            // offer that cannot help is worse than the greyed line it replaced, because pressing it
+            // offer that cannot help is worse than the grayed line it replaced, because pressing it
             // teaches the reader that the notice lies.
             // The handler's OWN question, both halves of it.
             //
@@ -288,8 +288,8 @@ public class AutonomyMenu extends JMenu
             // A CHOICE NOW, download or create (Adam, 2026-09-29, on MT-548: *"what is the cs3 has no layout?  give the
             // user the choice to either download or create a new one, which redirects to the corresponding option under
             // layouts."*).  On the Central Station's layout, both of the Layouts menu's own ways to a layout on this
-            // computer, under their own names and doing what they do there - the download greyed, saying why, where it
-            // would do nothing; Create New Layout greyed exactly when its Layouts item is.
+            // computer, under their own names and doing what they do there - the download grayed, saying why, where it
+            // would do nothing; Create New Layout grayed exactly when its Layouts item is.
             if (ui.isRemoteLayout())
             {
                 javax.swing.JMenu offer = new javax.swing.JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
@@ -321,7 +321,7 @@ public class AutonomyMenu extends JMenu
                 return;
             }
 
-            // A SETUP THAT IS THERE AND WOULD NOT READ SAYS SO, with the reason on the greyed line.
+            // A SETUP THAT IS THERE AND WOULD NOT READ SAYS SO, with the reason on the grayed line.
             //
             // This line said that autonomy needs a layout stored on this computer whatever had left the session null - and
             // on a layout stored on this computer, whose setup.json had a typing slip in it or came from a newer
@@ -412,7 +412,7 @@ public class AutonomyMenu extends JMenu
             // is the same kind of thought as choosing between them.
             choose.addSeparator();
 
-            // Import is greyed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses then
+            // Import is grayed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses then
             // too, saying so; into the configuration that is running it refuses a file that would replace it,
             // and takes an old file's gaps without its trains; otherwise it brings one in -
             // and the moment it is most needed is when the current setup will not load, which is repaired by importing
@@ -428,7 +428,7 @@ public class AutonomyMenu extends JMenu
                 }
             }));
 
-            // Export keeps the greying it had: it writes out the configuration that is RUNNING, so
+            // Export keeps the graying it had: it writes out the configuration that is RUNNING, so
             // with none running there is nothing for it to write.
             JMenuItem exportItem = item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
             {
@@ -506,10 +506,10 @@ public class AutonomyMenu extends JMenu
             // And not while trains are running (OB-045).
             //
             // Opening it was already refused on the click, which states the problem after the user has
-            // committed to it. A greyed item says the same thing before, and says it where the eye
+            // committed to it. A grayed item says the same thing before, and says it where the eye
             // already is - which is the difference between a rule and an obstacle.
             //
-            // While autonomy runs `guardWhileRunning` greys the rest of the menu with it, bar Autonomy Settings and
+            // While autonomy runs `guardWhileRunning` grays the rest of the menu with it, bar Autonomy Settings and
             // Documentation (Adam, MT-613 and MT-626; the debug export too, MT-633); this item asks the editor's own
             // refusals as well, at rest.
             //
@@ -568,7 +568,7 @@ public class AutonomyMenu extends JMenu
             }));
         }
     
-        // Everything greyed while an editor has the diagram, rather than nothing shown at all.
+        // Everything grayed while an editor has the diagram, rather than nothing shown at all.
         //
         // Every item here saves the setup or rebuilds the main window, and an open editor makes both
         // unsafe: saving commits edits that editor has not saved - so its Cancel then has nothing to
@@ -578,7 +578,7 @@ public class AutonomyMenu extends JMenu
         //
         // MT-111, Adam: "Layout greys out all options while Autonomy hides them. Grey them out in
         // Autonomy instead." He is right, and the Layout menu was already the better of the two: a
-        // greyed item says "this exists and not now", and an empty menu says "this feature is gone" -
+        // grayed item says "this exists and not now", and an empty menu says "this feature is gone" -
         // which is a worse thing to be told by the surface you have just opened to use it.
     }
 
@@ -612,7 +612,7 @@ public class AutonomyMenu extends JMenu
      * which is what a submenu already is, and it answers in one click instead of three.
      *
      * Pages autonomy has been told to ignore are left out.  There is nothing on one to configure -
-     * every square is greyed and refuses - so offering it would open an editor that can do nothing.
+     * every square is grayed and refuses - so offering it would open an editor that can do nothing.
      */
     private JMenu editMenu(final AutonomySession session)
     {
@@ -696,7 +696,7 @@ public class AutonomyMenu extends JMenu
         // the Configuration submenu now, under a divider, beside the list of configurations they are
         // about.
 
-        // Everything above acts on the configuration that is RUNNING, so it means nothing until one is.  Greyed one at
+        // Everything above acts on the configuration that is RUNNING, so it means nothing until one is.  Grayed one at
         // a time rather than the whole submenu, so that deleting the lot, below, stays reachable when nothing is
         // loaded, which is exactly when somebody wants it.
         for (int i = 0; i < manage.getItemCount(); i++)
@@ -709,7 +709,7 @@ public class AutonomyMenu extends JMenu
         }
 
         // BUT DELETE ASKS WHICH (OB-319), so it needs only that there is one to delete: a configuration whose setup cannot
-        // be used is never loaded, and greying Delete until one was left it out of reach.
+        // be used is never loaded, and graying Delete until one was left it out of reach.
         boolean anyToDelete = !session.getStore().getConfigurationNames().isEmpty();
 
         deleteOne.setEnabled(anyToDelete);

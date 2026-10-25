@@ -90,7 +90,7 @@ public class FacingPrompt
      * @param canHold the headings this square can hold, from `AutonomySession.facingsFor`
      * @param suggested the walk's own answer, offered as the default, or null
      * @param station what to call the square in the question
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @return the chosen heading, or null when there was nothing to ask or the question was dismissed
      */
     public static Side forPlacement(Collection<Side> canHold, Side suggested, String station,
@@ -117,7 +117,7 @@ public class FacingPrompt
      * @param canHold the headings a train may be homed in there - copies trains may arrive at
      * @param locomotive the locomotive being homed
      * @param station what to call the square in the question
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @return the chosen heading, or null when there was nothing to ask or the question was dismissed
      */
     public static Side forHome(Collection<Side> canHold, String locomotive, String station, Component parent)
@@ -207,7 +207,7 @@ public class FacingPrompt
      * The walk's own answer is the default button where the square can hold it, so the operator who
      * presses return gets what the paste would have done without asking.
      *
-     * @param parent what to centre on
+     * @param parent what to center on
      * @param question the question, already worded
      * @param sides the headings to offer
      * @param suggested the default, or null

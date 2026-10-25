@@ -364,7 +364,7 @@ public class testAPastedTrainKeepsItsDirection
                         + (built.isAutoDestination() ? "may" : "may not") + " choose it");
                 }
 
-                // AND THE EDITOR, which colours the leg magenta and writes the Auto tier notice from its own set.
+                // AND THE EDITOR, which colors the leg magenta and writes the Auto tier notice from its own set.
                 if (built.isActive() && editorSays.contains(square) == built.isAutoDestination())
                 {
                     wrong.add(name + ": the editor's manual-only set " + (editorSays.contains(square) ? "holds" : "leaves"
@@ -1030,7 +1030,7 @@ public class testAPastedTrainKeepsItsDirection
      * then wiped, on every build and every reload.
      *
      * **The tail blocking was therefore off after every restart**, for exactly the squares the arrival
-     * -side question exists for: the operator answers it, watches the track grey, restarts, and the
+     * -side question exists for: the operator answers it, watches the track gray, restarts, and the
      * protection is gone with nothing to say so.
      *
      * Two rules that were each correct collided, and the existing survival test could not see it
@@ -1047,7 +1047,7 @@ public class testAPastedTrainKeepsItsDirection
         // The first station the real layout offers, rather than a named one: this class runs against
         // Adam’s own railway and a hard-coded name would be a guess.
         // SEARCHED, not the first one.  This class runs against Adam’s own railway, and not every
-        // station has a compass-resolvable neighbour - `sideTowards` answers null for a point without
+        // station has a compass-resolvable neighbor - `sideTowards` answers null for a point without
         // coordinates and for a zero delta - so the first station may offer no side at all, and a test
         // that recorded nothing would pass whatever the build did.
         String pointName = null;

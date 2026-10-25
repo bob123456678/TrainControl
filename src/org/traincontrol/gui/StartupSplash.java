@@ -45,7 +45,7 @@ public final class StartupSplash
     /**
      * The notice - a spinner and a line of words - for the window that is going to wear it.
      *
-     * Centred in whatever it is given, because it is given a whole window now rather than a small box
+     * Centered in whatever it is given, because it is given a whole window now rather than a small box
      * packed around it.
      *
      * @param message what is happening, in words - a spinner alone says only "wait"

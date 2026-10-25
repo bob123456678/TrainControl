@@ -35,7 +35,7 @@ public class testCentralStationDetection
     /**
      * One slow answer no longer loses the station.
      *
-     * MUTATION: setting WEB_RETRY to 1 - which is the behaviour before this fix - fails the first
+     * MUTATION: setting WEB_RETRY to 1 - which is the behavior before this fix - fails the first
      * assertion, and it fails it the same one-in-ten way Adam saw, except deterministically.
      */
     @Test

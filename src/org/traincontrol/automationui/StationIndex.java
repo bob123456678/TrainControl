@@ -479,7 +479,7 @@ public final class StationIndex
     /**
      * Drops the paths that do not actually take a train anywhere.
      *
-     * Two ways that happens, and both are artefacts of one square being several Points.  A path that
+     * Two ways that happens, and both are artifacts of one square being several Points.  A path that
      * ends on a copy of the square it started from is a train being offered a journey to where it is
      * already standing.  And a station reachable facing either way is offered once per copy, which
      * since the copies stopped being named apart on screen reads as the same destination listed twice.

@@ -847,7 +847,7 @@ public class testTheWashIsNoLongerThanTheTrain
     /**
      * Whether this tile is drawing the mark that says a train is lying across it.
      *
-     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a greyed copy of it -
+     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a grayed copy of it -
      * so this could be an identity comparison against `lastIcon`.  It is a line drawn over the icon
      * now, which is nowhere in the object, and the only honest question left is what the square looks
      * like.  `support.Rendered.showsTheTrainMark` paints it and looks for the orange.

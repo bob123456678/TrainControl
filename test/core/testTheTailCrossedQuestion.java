@@ -400,7 +400,7 @@ public class testTheTailCrossedQuestion
     /**
      * A train with no road still follows the only road back past a square it reaches by two names.
      *
-     * The fork rule counted the junction's neighbours by name, so a lane copy and a turning copy of one square read as
+     * The fork rule counted the junction's neighbors by name, so a lane copy and a turning copy of one square read as
      * two roads and the tail stopped at J - and with the question rightly not put there, nothing could ever
      * extend it.  Adam's rule is to stop where the track SPLITS, and two copies of one square are not a split.
      */

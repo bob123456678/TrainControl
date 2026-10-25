@@ -38,7 +38,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **Why the fence was wrong.**  A train in this model always comes to rest with its head at the
  * destination sensor, so its tail extends back over the run in whatever kind of station that is.
- * `edgesCoveredByStandingTrains` has always modelled it that way and is not fenced on terminus -
+ * `edgesCoveredByStandingTrains` has always modeled it that way and is not fenced on terminus -
  * Adam's own example for it is a THROUGH platform: *"bottommainc should currently be blocked since a
  * train of length 4 is standing at bottommainb, which has a length of 1 leading up to its switch."*
  * So the railway already knew such a train lies across the switch behind it; nothing stopped one
@@ -118,7 +118,7 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * And a terminus still refuses, which is the behaviour that already existed.
+     * And a terminus still refuses, which is the behavior that already existed.
      *
      * The widening must not be a REPLACEMENT for the reversal rule: a fix that moved the refusal from
      * one kind of berth to the other would leave this file green and the railway no better off.

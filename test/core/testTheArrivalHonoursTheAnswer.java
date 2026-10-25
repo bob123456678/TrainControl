@@ -35,7 +35,7 @@ import org.traincontrol.marklin.MarklinFeedback;
  * asserts the statement verbatim - `||` and all. A guard that requires an expression cannot fail on what
  * that expression does, and this one pinned the bug in place: correcting the line broke the test, so the
  * guard argued for the defect. The comment beside the code said as much, asking that the line not be
- * changed in shape because the guard would not recognise it. Code and guard were each citing the other,
+ * changed in shape because the guard would not recognize it. Code and guard were each citing the other,
  * and neither was reading the railway.
  *
  * So the decision has a name now - `Layout.turnsOnArrival` - and this class asks it what it DOES.
@@ -245,7 +245,7 @@ public class testTheArrivalHonoursTheAnswer
      * the graph is, and the next dispatch reads that Point's outgoing edges, which are the edges for a
      * train pointing the other way. It drives off its own route.
      *
-     * **This became reachable when the answer started being honoured.**  Before MT-368 the arrival
+     * **This became reachable when the answer started being honored.**  Before MT-368 the arrival
      * turned every train at a may-turn square whatever the operator said, and a turned train agrees
      * with the turning copy - so the copy was right for the wrong reason. Repairing the decision is
      * what exposed this, which is `a-fix-can-be-worse-than-the-defect` arriving as a second half
@@ -1185,7 +1185,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * The operator is not asked about a destination where no copy faces on from the train's approach, since the answer
-     * could not be honoured there - and still is where one does.
+     * could not be honored there - and still is where one does.
      *
      * Asked of `ManualReversalPrompt.destinationAskedAbout`, the part of the question that decides whether to ask, because
      * asking puts a modal dialog up.

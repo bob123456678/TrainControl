@@ -247,7 +247,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * A train standing on a square no track leads out of gets the Facing menu greyed, with the reason in its tooltip,
+     * A train standing on a square no track leads out of gets the Facing menu grayed, with the reason in its tooltip,
      * rather than no menu (OB-347, Adam 2026-10-13: *"the locomotive is facing menu gets hidden when there is no way
      * out.  rather than hiding it, grey it out."*).
      *

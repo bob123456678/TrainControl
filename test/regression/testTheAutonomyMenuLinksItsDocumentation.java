@@ -26,7 +26,7 @@ import support.SourceOf;
  * on the Load Autonomy Configuration tab, which goes (OB-254); the guide it opened, `TrainControlUI.README_URL`, is
  * about the autonomy the menu drives.
  *
- * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard grey it with
+ * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard gray it with
  * the rest, and the second does.
  *
  * @author Adam
@@ -106,9 +106,9 @@ public class testTheAutonomyMenuLinksItsDocumentation
     }
 
     /**
-     * With an editor open, everything else on the menu is greyed and Documentation is not.
+     * With an editor open, everything else on the menu is grayed and Documentation is not.
      *
-     * The rest is greyed because each of those items saves the setup or rebuilds the window under an editor that has
+     * The rest is grayed because each of those items saves the setup or rebuilds the window under an editor that has
      * not saved (MT-111).  Reading the guide does neither.
      *
      * @throws Exception from the event thread or reflection

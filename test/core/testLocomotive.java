@@ -953,7 +953,7 @@ public class testLocomotive
      * An address with exactly one locomotive on it is not in the duplicate list - the fact the
      * "check for duplicates" dialog's bug (and its fix) both turn on.
      *
-     * This used to close with `assertTrue(all.containsKey(single), ...)`, labelled as the
+     * This used to close with `assertTrue(all.containsKey(single), ...)`, labeled as the
      * substantive check - but `single` was obtained by iterating `all.entrySet()` in the first place,
      * so that assertion could never fail; it is true by construction, not by anything about the
      * database.  Removed rather than kept as padding.

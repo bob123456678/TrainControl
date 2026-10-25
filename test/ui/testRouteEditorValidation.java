@@ -42,7 +42,7 @@ public class testRouteEditorValidation
      * check without the save would have turned a refusal into an exception. One reader now.
      *
      * **What is NOT asserted, and why.** The field is digits-only, so letters cannot be typed into it
-     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defence rather than
+     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defense rather than
      * removed - the field could gain another door - but a test for it would be a check that cannot
      * fail, so this says so instead of pretending.
      *
@@ -177,15 +177,15 @@ public class testRouteEditorValidation
      * `grep -rn "isValidLogicalAddress" test/` found nothing, and putting the defect back verbatim left
      * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green.
      *
-     * **Why this is a shape check and not a behavioural one, which is worth knowing about this whole
+     * **Why this is a shape check and not a behavioral one, which is worth knowing about this whole
      * class.** Its editors are built as `new RouteEditorFrame(null, null)` - no parent window, so no
      * model - and `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before
      * it reaches any per-row rule. So NO row-level complaint is reachable from this fixture: not the
-     * address, not "no such locomotive", not "no such route". The behavioural version of this test was
+     * address, not "no such locomotive", not "no such route". The behavioral version of this test was
      * written first and passed on an editor that never looked at the address at all; a control that
      * asked whether address 99999 is complained about is what caught it. Measured, 2026-09-11.
      *
-     * The rule itself is asserted behaviourally, at both ends of both protocols, by
+     * The rule itself is asserted behaviorally, at both ends of both protocols, by
      * `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`. What is left for here is that
      * this door asks that rule rather than the raw one - which is the half that was wrong, and the
      * half a shape check can see.
@@ -843,10 +843,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * "Reads as" says the joining words in bold and the settings in the colour of what they do (2026-09-14).
+     * "Reads as" says the joining words in bold and the settings in the color of what they do (2026-09-14).
      *
      * Adam: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red
-     * red?"*  Coloured by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
+     * red?"*  Colored by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
      */
     @Test
     public void testReadsAsBoldsTheWordsAndColoursTheSettings() throws Exception

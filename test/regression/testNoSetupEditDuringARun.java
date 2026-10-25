@@ -1847,7 +1847,7 @@ public class testNoSetupEditDuringARun
             final TileKey square = session.getStationIndex().squareOf(at.getName());
             final String standing = at.getCurrentLocomotive().getName();
 
-            // AT REST BEFORE THE MENU IS BUILT: it greys what it offers by the window's state as it is built,
+            // AT REST BEFORE THE MENU IS BUILT: it grays what it offers by the window's state as it is built,
             // and a red with nothing asked said only that the click met no dialog
             java.lang.reflect.Method busy = TrainControlUI.class.getDeclaredMethod("isAutonomyBusy");
 
@@ -3451,7 +3451,7 @@ public class testNoSetupEditDuringARun
 
     /**
      * Closes every question and every file chooser until `going` is lowered: a question's words into `asked`, a
-     * chooser cancelled and its title into `choosers`.
+     * chooser canceled and its title into `choosers`.
      */
     static void closingEveryQuestion(final List<String> asked, final List<String> choosers,
         final java.util.concurrent.atomic.AtomicBoolean going)
@@ -3606,9 +3606,9 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Autonomy menu greys what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
+     * The Autonomy menu grays what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
      * (Adam, MT-613 and MT-626: "why not grey out the whole menu while running?"): each door refused on its own, after
-     * the click.  Autonomy Settings and Documentation stay live - they change nothing; Export Raw Graph as JSON is greyed
+     * the click.  Autonomy Settings and Documentation stay live - they change nothing; Export Raw Graph as JSON is grayed
      * with the rest (Adam, MT-633).
      *
      * MUTATION: leave the menu live while autonomy runs, or the debug export, and this fails.
@@ -3703,11 +3703,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Layout menu greys what changes the diagram or the folder while autonomy runs, saying why, and gives each back as
+     * The Layout menu grays what changes the diagram or the folder while autonomy runs, saying why, and gives each back as
      * it was at rest (Adam, 2026-10-01: "Grey layout: grey the relevant options, but we need to keep open CS3 web app
      * available").  Opening the folder, the pop-outs, the picture and the CS3 web app are left as they were.
      *
-     * MUTATION: leave the menu live while autonomy runs, and this fails; so does a greyed item left grey at rest.
+     * MUTATION: leave the menu live while autonomy runs, and this fails; so does a grayed item left gray at rest.
      *
      * @throws Exception from the window
      */
@@ -3977,7 +3977,7 @@ public class testNoSetupEditDuringARun
     /**
      * Start Timetable pressed while autonomy's trains are still finishing after a Graceful Stop is refused, and the stop
      * being carried out is not forgotten: the press lowered the flag before its busy refusal, so the strip's
-     * greyed Graceful Stop went for the rest of the coast-down.  It is lowered once that refusal has passed, as Return
+     * grayed Graceful Stop went for the rest of the coast-down.  It is lowered once that refusal has passed, as Return
      * Home lowers its own.
      *
      * MUTATION: lower it at the press, and this fails.
@@ -5244,18 +5244,18 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab's settings, Execute Timetable and the capture toggle are greyed while autonomy is busy, each saying why,
+     * The Auto tab's settings, Execute Timetable and the capture toggle are grayed while autonomy is busy, each saying why,
      * and given back with their own tooltips once it is not (Adam, 2026-10-02: "Implement the two grey usability fixes").
      * Each handler refused while busy - a slider moved and a dialog snapped it back - but offered first.  A click on a
-     * greyed setting says nothing: its handler listens for the mouse, which a greyed control still hears.  Graceful Stop
-     * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press greyed
+     * grayed setting says nothing: its handler listens for the mouse, which a grayed control still hears.  Graceful Stop
+     * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press grayed
      * is not given back by the refresh.
      *
-     * Activate Routes is greyed the same way, and a control its owner greyed while busy says why too.
+     * Activate Routes is grayed the same way, and a control its owner grayed while busy says why too.
      *
-     * MUTATION: grey nothing, leave the tooltips, put the refusal up on a greyed click or leave a slider where it was let
-     * go, ask the railway alone, give back what another owner greyed, grey Activate Routes with no reason, or leave an
-     * owner's grey saying nothing, and this fails.
+     * MUTATION: gray nothing, leave the tooltips, put the refusal up on a grayed click or leave a slider where it was let
+     * go, ask the railway alone, give back what another owner grayed, gray Activate Routes with no reason, or leave an
+     * owner's gray saying nothing, and this fails.
      *
      * @throws Exception from the window
      */
@@ -5321,7 +5321,7 @@ public class testNoSetupEditDuringARun
             assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that something runs while autonomy is busy"
                 + " (OB-309)");
 
-            // THE ROUTING RULE'S TOOLTIP, set again while greyed, as a load sets it: still says why
+            // THE ROUTING RULE'S TOOLTIP, set again while grayed, as a load sets it: still says why
             final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod("refreshRoutingLogicTooltip");
 
             rule.setAccessible(true);
@@ -5341,7 +5341,7 @@ public class testNoSetupEditDuringARun
             assertEquals(control(ui[0], "algorithmType").getToolTipText(), edits, "the routing rule's tooltip, set again"
                 + " while it is greyed, stopped saying why");
 
-            // A CLICK ON A GREYED SETTING, through its own listeners: nothing said, nothing written
+            // A CLICK ON A GRAYED SETTING, through its own listeners: nothing said, nothing written
             final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
 
             closingEveryQuestion(asked, new ArrayList<String>(), going);
@@ -5352,7 +5352,7 @@ public class testNoSetupEditDuringARun
 
             assertEquals(trains.getValue(), was, "precondition: the slider does not show the railway's setting");
 
-            // MOVED AS THE GREY CAME DOWN, as a drag under way leaves it, and let go
+            // MOVED AS THE GRAY CAME DOWN, as a drag under way leaves it, and let go
             SwingUtilities.invokeAndWait(() ->
             {
                 trains.setValue(was == trains.getMaximum() ? was - 1 : was + 1);
@@ -5410,7 +5410,7 @@ public class testNoSetupEditDuringARun
             assertTrue(control(ui[0], "minDelay").isEnabled(), "precondition: the settings are not given back once Graceful"
                 + " Stop is not offered");
 
-            // WHAT EXECUTE TIMETABLE'S OWN PRESS GREYED, before its run is counted: not given back
+            // WHAT EXECUTE TIMETABLE'S OWN PRESS GRAYED, before its run is counted: not given back
             final javax.swing.JComponent timetable = control(ui[0], "executeTimetable");
 
             SwingUtilities.invokeAndWait(() -> timetable.setEnabled(false));
@@ -5420,7 +5420,7 @@ public class testNoSetupEditDuringARun
             assertFalse(timetable.isEnabled(), "the refresh offered Execute Timetable again between its press and its run"
                 + " being counted");
 
-            // AND GREYED BY ITS OWNER WHILE AUTONOMY IS BUSY - its own run, Return Home's press: it says why, and
+            // AND GRAYED BY ITS OWNER WHILE AUTONOMY IS BUSY - its own run, Return Home's press: it says why, and
             // at rest gets its own tooltip back and stays its owner's to give back
             staging.set(ui[0], true);
 
@@ -5460,11 +5460,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * A run started with Start Autonomy greys what waits for the trains, and its Graceful Stop gives it back once the
+     * A run started with Start Autonomy grays what waits for the trains, and its Graceful Stop gives it back once the
      * trains have stopped (Adam, 2026-10-02: "Implement the two grey usability fixes") - the refreshes at each end of a
      * real run, not only the rule.
      *
-     * MUTATION: grey nothing, and this fails.
+     * MUTATION: gray nothing, and this fails.
      *
      * @throws Exception from the window
      */

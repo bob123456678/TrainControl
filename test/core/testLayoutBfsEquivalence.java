@@ -37,7 +37,7 @@ import org.testng.annotations.Test;
  *
  * What IS deterministic, and so what gets compared:
  *
- *   - whether a route exists at all: reachability does not depend on the order neighbours are tried
+ *   - whether a route exists at all: reachability does not depend on the order neighbors are tried
  *   - the LENGTH of the route returned: breadth first exhausts every allowed route of length n before
  *     trying any of length n+1, whatever order it tries them in
  *   - the SET of routes each implementation can produce, sampled over many runs - see
@@ -297,7 +297,7 @@ public class testLayoutBfsEquivalence
     // The differential deliberately does NOT compare repeated exclusion over random graphs.  Measured
     // first: comparing the current implementation against ITSELF that way produces just as many
     // disagreements (62 in a 120-graph run) as comparing it against the previous one (57).  With
-    // mark-on-dequeue, which points get enqueued at each depth depends on the order neighbours are
+    // mark-on-dequeue, which points get enqueued at each depth depends on the order neighbors are
     // tried, so the set of routes the search can enumerate varies per call - and once some are
     // excluded, whether an allowed one remains findable varies too.  A test built on that compares
     // luck, not implementations.  What it would have measured is covered instead by the fixed

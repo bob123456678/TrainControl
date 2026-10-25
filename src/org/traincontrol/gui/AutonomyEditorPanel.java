@@ -104,7 +104,7 @@ public class AutonomyEditorPanel extends JPanel
     /** For each row of the findings list, the squares it is about beyond its own - a guard notice's signal (MT-505). */
     private final List<List<TileKey>> findingRelated = new java.util.ArrayList<>();
 
-    // Each row's severity, coloured as the Auto tab colours its own list
+    // Each row's severity, colored as the Auto tab colors its own list
     private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
 
     private Tool tool = Tool.NONE;
@@ -428,7 +428,7 @@ public class AutonomyEditorPanel extends JPanel
     private Map<TileKey, org.traincontrol.automationui.TileAnnotation.Mark> flowMarks =
         new java.util.LinkedHashMap<>();
 
-    // Which tile speaks for each run; the rest follow and are drawn greyed
+    // Which tile speaks for each run; the rest follow and are drawn grayed
     private Map<TileKey, TileKey> runLeaders = new java.util.LinkedHashMap<>();
 
     /**
@@ -557,7 +557,7 @@ public class AutonomyEditorPanel extends JPanel
         button(nameAll);
 
 
-        // Leaving the page out, from the page itself; ticked, it greys at once and waits for Save.
+        // Leaving the page out, from the page itself; ticked, it grays at once and waits for Save.
         excludePage = new javax.swing.JCheckBox(I18n.t("autosetup.ui.btnExcludeThisPage"));
         excludePage.setToolTipText(wrapped(I18n.t("autosetup.ui.hintExcludeThisPage")));
         excludePage.setFocusable(false);
@@ -1043,7 +1043,7 @@ public class AutonomyEditorPanel extends JPanel
     // Square numbers follow the grid (OB-179, `LayoutGrid.coordinatesVisible`); Control+K toggles both.
 
     /**
-     * The setup-wide actions (MT-257), for the tile menu and an ignored square's one-item menu.  Each greys on its own
+     * The setup-wide actions (MT-257), for the tile menu and an ignored square's one-item menu.  Each grays on its own
      * count, the guard's own question.
      * @return the submenu, always present, its items enabled or not
      */
@@ -1066,7 +1066,7 @@ public class AutonomyEditorPanel extends JPanel
 
                 oneWay.setToolTipText(oneWayButton.getToolTipText());
 
-                // Greyed on a page left out (OB-235, MT-528).
+                // Grayed on a page left out (OB-235, MT-528).
                 if (session != null && session.getStore().getExcludedPages().contains(page))
                 {
                     oneWay.setEnabled(false);
@@ -1087,7 +1087,7 @@ public class AutonomyEditorPanel extends JPanel
                 bulk.add(nameEverythingItem);
             }
 
-            // Mass Assign Lengths, greyed on the walk's own count
+            // Mass Assign Lengths, grayed on the walk's own count
             int piecesToMeasure = session == null ? 0 : session.stretchesNeedingALengthOn(page).size();
             int switchesToMeasure = session == null ? 0 : session.switchesNeedingALengthOn(page).size();
 
@@ -1111,7 +1111,7 @@ public class AutonomyEditorPanel extends JPanel
 
             bulk.add(massAssign);
 
-            // Mass Assign Station Max Train Lengths, greyed on the walk's own count
+            // Mass Assign Station Max Train Lengths, grayed on the walk's own count
             int stationsToLimit = session == null ? 0 : session.stationsWithoutAMaximumOn(page).size();
 
             javax.swing.JMenuItem massAssignMaximum =
@@ -1130,7 +1130,7 @@ public class AutonomyEditorPanel extends JPanel
             // Mass Assign Train Lengths (FR-094), not a page's question
             int trainsToMeasure = trainLengthDoor().trainsWithoutALength().size();
 
-            // Never greyed, the count in its label (MT-533: *"This option should never be greyed out completely (show
+            // Never grayed, the count in its label (MT-533: *"This option should never be greyed out completely (show
             // the number of missing trains in parens)"*).
             javax.swing.JMenuItem massAssignTrains = item(
                 I18n.f("autosetup.ui.menuMassAssignTrainLengthsCounted", trainsToMeasure), () -> massAssignTrainLengths());
@@ -1354,7 +1354,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Activates every paused train, or pauses every going one standing, and says how many changed (FR-126): through the
      * window's door per train where it can, else the setup alone; then the railway is told.  The emptiness check is the
-     * guard behind the greying.
+     * guard behind the graying.
      * @param active true to activate every paused train, false to deactivate every train standing that is going
      */
     private void setEveryTrainActive(boolean active)
@@ -1407,7 +1407,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Makes every placed train's square its home, after confirming (FR-075).  The emptiness check is the guard behind
-     * the greying; the confirmation names what will be overwritten (`AutonomySession.setHome` holds the rule).
+     * the graying; the confirmation names what will be overwritten (`AutonomySession.setHome` holds the rule).
      */
     private void homeEveryPlacedTrain()
     {
@@ -2076,7 +2076,7 @@ public class AutonomyEditorPanel extends JPanel
             if (answer != 0) return;
         }
 
-        // A station labelling itself has nothing to ask.
+        // A station labeling itself has nothing to ask.
         if (session.getStore().isStation(tile))
         {
             if (!mayTakeAnotherStationsOnlyName(tile)) return;
@@ -2255,7 +2255,7 @@ public class AutonomyEditorPanel extends JPanel
         return javax.swing.SwingUtilities.getWindowAncestor(anchor);
     }
 
-    /** The window this panel lives in, for parenting dialogs: JOptionPane centres over its component, a side strip. */
+    /** The window this panel lives in, for parenting dialogs: JOptionPane centers over its component, a side strip. */
     java.awt.Component owner()
     {
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
@@ -2319,7 +2319,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The "{loc} Is Facing..." submenu, or null unless a locomotive stands there, for the track diagram's menu; greyed
+     * The "{loc} Is Facing..." submenu, or null unless a locomotive stands there, for the track diagram's menu; grayed
      * with the reason where no facing can be chosen (OB-347).
      * @param target the square
      * @return the submenu, or null
@@ -2773,7 +2773,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Asks for one locomotive from a filterable list (FR-010, FR-011), as a combo box is useless for sixty.  One
      * component for homes and for adding to autonomy, which differ in which shortcut buttons make sense.
-     * @param owner what to centre the dialog on
+     * @param owner what to center the dialog on
      * @param title the dialog's title
      * @param prompt the question
      * @param names what may be chosen, in the order they should appear
@@ -2781,7 +2781,7 @@ public class AutonomyEditorPanel extends JPanel
      * @param useActive the locomotive being driven, behind a "use active" button, or null for none
      * @param useParked the locomotive standing at this station, behind a "use current" button, or
      *        null when nothing is parked there
-     * @return the chosen name, or null if the dialog was cancelled
+     * @return the chosen name, or null if the dialog was canceled
      */
     static String pickLocomotive(java.awt.Component owner, String title, String prompt,
         List<String> names, String current, final String useActive, final String useParked)
@@ -2913,7 +2913,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The Pick on the Diagram button as the "nothing to list" message shows it, greyed (MT-376), for a test.
+     * The Pick on the Diagram button as the "nothing to list" message shows it, grayed (MT-376), for a test.
      * @return a disabled button carrying the option's own words
      */
     public static javax.swing.JButton nothingToPickButton()
@@ -3751,7 +3751,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Where a dialog goes so it does not cover the middle of its window: up and left of centre.  Public and static on
+     * Where a dialog goes so it does not cover the middle of its window: up and left of center.  Public and static on
      * rectangles, to be tested without a dialog.
      * @param parent the bounds of the window the dialog belongs to, in screen coordinates
      * @param dialog the size the dialog packed to
@@ -3772,7 +3772,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * A guard signal refused, said in a popup too (MT-505; Adam: *"any rejection errors should trigger a popup."*): the
-     * guard window covers the grey line.
+     * guard window covers the gray line.
      * @param why the sentence
      */
     private void refuseGuard(String why)
@@ -3948,7 +3948,7 @@ public class AutonomyEditorPanel extends JPanel
         if (where instanceof LayoutEditor) ((LayoutEditor) where).showTextLabels();
     }
 
-    /** The grey of a square autonomy never chooses in the blocker list (FR-074): a shade of text, not disabled grey. */
+    /** The gray of a square autonomy never chooses in the blocker list (FR-074): a shade of text, not disabled gray. */
     static final java.awt.Color NOT_CHOSEN_BY_AUTONOMY = new java.awt.Color(120, 120, 120);
 
     /** 0 to 999 (OB-048) */
@@ -4245,7 +4245,7 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // A signal pick waits for this click, answered before the ignored check, which greys signals.
+        // A signal pick waits for this click, answered before the ignored check, which grays signals.
         if (signalFor != null)
         {
             if (heldByARun()) return;
@@ -5020,7 +5020,7 @@ public class AutonomyEditorPanel extends JPanel
 
         traces.clear();
 
-        // Each direction its own line, coloured by where it ends.
+        // Each direction its own line, colored by where it ends.
         trace(traces, there, testFrom, true, tile);
         trace(traces, back, tile, false, testFrom);
 
@@ -5112,7 +5112,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (run == null) return;
 
-        // Asked once for the whole leg, as a colour on its last square alone could be off the page.
+        // Asked once for the whole leg, as a color on its last square alone could be off the page.
         // `manualOnlyStations`, not `stationsAutonomyWillNotChoose`: a shut square is no manual-only point.
         final boolean manualOnly = to != null && session != null
             && session.manualOnlyStations().contains(to);
@@ -5155,7 +5155,7 @@ public class AutonomyEditorPanel extends JPanel
         }
     }
 
-    /** Which side of one square faces another, or null when not neighbours (a jump through a link). */
+    /** Which side of one square faces another, or null when not neighbors (a jump through a link). */
     private org.traincontrol.automationui.TilePorts.Side towards(TileKey from, TileKey to)
     {
         return org.traincontrol.automationui.TileGraph.gridSideTowards(from, to);
@@ -5289,13 +5289,13 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
-        // Stationless track is greyed and arrowless (OB-353), but still editable.
+        // Stationless track is grayed and arrowless (OB-353), but still editable.
         boolean stationless = !ignored && session.reachesNoStation(tile);
 
         // Everything not a signal gets out of the way (OB-040), asked once for its three uses.
         final boolean focused = isFocusedOnSignals();
 
-        // While picking a signal, everything else is greyed, and nothing for its track (OB-353).
+        // While picking a signal, everything else is grayed, and nothing for its track (OB-353).
         if (focused) { ignored = !isPairableSignal(componentAt(tile)); stationless = false; }
 
         // An ignored link carries no trains, so no arrows.
@@ -5351,7 +5351,7 @@ public class AutonomyEditorPanel extends JPanel
         // None where a crossing's squares meet (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
 
-        // Greyed where no station is on its track (OB-353)
+        // Grayed where no station is on its track (OB-353)
         if (stationless && !ignored && componentAt(tile) != null) annotation.withNoStation();
 
         if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();
@@ -5593,11 +5593,11 @@ public class AutonomyEditorPanel extends JPanel
 
         if (component == null) return true;
 
-        // A lamp is decoration, greyed.
+        // A lamp is decoration, grayed.
         if (component.getType() == LayoutDiagramComponent.componentType.LAMP) return true;
 
         // A route button on a running line is track (OB-332; Adam: *"We need the direction arrows to be editable and
-        // clickable."*): only one with no track through it is greyed.
+        // clickable."*): only one with no track through it is grayed.
         if (org.traincontrol.automationui.TilePorts.isTransparent(component.getType()))
         {
             return session.getRoutes(tile).isEmpty();
@@ -5712,7 +5712,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (excludePage != null) excludePage.setSelected(ignored);
 
-        // Nothing else here works on an ignored page: greyed, not hidden, so the column keeps its shape.
+        // Nothing else here works on an ignored page: grayed, not hidden, so the column keeps its shape.
         if (testButton != null) testButton.setEnabled(!ignored);
         if (whyButton != null) whyButton.setEnabled(!ignored);
 
@@ -5783,7 +5783,7 @@ public class AutonomyEditorPanel extends JPanel
         // Unnamed points are already errors in the list.
         int unnamed = unnamedPoints().size();
 
-        // Greyed, never hidden, as Test a path.
+        // Grayed, never hidden, as Test a path.
         if (nameAll != null)
         {
             nameAll.setEnabled(unnamed > 0 && !ignored);
@@ -6237,7 +6237,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Forgets every length on every page, after asking (FR-069); the dialog says whether Cancel brings them back, which
      * it does in the editor (OB-223) and not on the track diagram's menu.  The empty-case guard stands behind the
-     * greying (OB-057).
+     * graying (OB-057).
      */
     private void clearAllTileLengths()
     {
@@ -6308,7 +6308,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         java.util.List<TileKey> homed = session.tilesWithAHome();
 
-        // Nothing to do, in the hint line; the guard behind the greying (OB-057).
+        // Nothing to do, in the hint line; the guard behind the graying (OB-057).
         if (homed.isEmpty())
         {
             say(hint, I18n.t("autosetup.ui.infoNoHomesToClear"));

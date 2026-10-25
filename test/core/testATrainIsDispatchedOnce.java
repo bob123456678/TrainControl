@@ -558,7 +558,7 @@ public class testATrainIsDispatchedOnce
      * by a fold - though another train's path now runs through it.
      *
      * A second train locking a path through that point is recorded on it, but a train only passing through stands
-     * elsewhere: the carry must not skip the first train wherever the point has any occupant (it would be modelled back
+     * elsewhere: the carry must not skip the first train wherever the point has any occupant (it would be modeled back
      * where it set off), and the fold must not write the second train there as if it stood.
      *
      * Built by hand, as a run would leave it: the maps a dispatch writes, set directly.

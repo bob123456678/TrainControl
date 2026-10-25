@@ -833,7 +833,7 @@ public final class HomeStaging
         }
 
         // NOT ONLY FROM WHERE THE GREEDY PASS LEFT THINGS (OB-228).  That pass makes every move it can, in the order it
-        // meets the trains, and with the tails of moved trains modelled a move it makes can block the rest: it parks a
+        // meets the trains, and with the tails of moved trains modeled a move it makes can block the rest: it parks a
         // train on a platform with no way out and leaves the tail across the run another train needs, and no search
         // from there can take it back.  So when nothing is found from the greedy arrangement, search again from the
         // railway as it stands.
@@ -1239,7 +1239,7 @@ public final class HomeStaging
                     // `at.validateTrainLength(loc)`, so a home the operator has limited below the train's length is
                     // refused before any route to it is searched.  A second spelling of a rule is this project's most
                     // repeated defect, and one that agrees today is the kind that stops agreeing later.
-                    // `core.testHomeStaging.testThePlannerRefusesAHomeTheOperatorSaidIsTooShort` pins the behaviour
+                    // `core.testHomeStaging.testThePlannerRefusesAHomeTheOperatorSaidIsTooShort` pins the behavior
                     // wherever it is enforced from.
 
                     if (Layout.whyABerthCannotHoldIt(route, loc) != null) continue;
@@ -1738,7 +1738,7 @@ public final class HomeStaging
     /**
      * Why this square cannot be a home, or null when it can.
      *
-     * Split out of {@link #canBeHome} so the refusal can say which of the two reasons it is: a greyed item with no
+     * Split out of {@link #canBeHome} so the refusal can say which of the two reasons it is: a grayed item with no
      * explanation is the thing OB-050 was about.  Both doors (the right-click menu and the assignment) ask this, and
      * each acts on the answer it is about.
      *
@@ -2269,14 +2269,14 @@ public final class HomeStaging
 
                 seen.add(next.getUniqueId());
 
-                // A TERMINUS IS TRAVELLED THROUGH HERE, BY STOPPING AT IT.  `firstClearRoute` will not expand a
+                // A TERMINUS IS TRAVELED THROUGH HERE, BY STOPPING AT IT.  `firstClearRoute` will not expand a
                 // terminus, rightly: it builds ONE path, and a train arrives at a terminus without driving on past it.
                 // This search answers a different question: `plan()` consults it to declare a locomotive UNREACHABLE,
                 // and `plan()` ends a move at any station and starts the next from there, so stopping at a terminus and
                 // setting off again is an ordinary two-move plan, not an impossibility.
                 //
                 // Only a terminus a move could actually END at, which is a destination that is in service.  One that is
-                // neither is not a stop, and travelling through it would invent a move the planner cannot make, the
+                // neither is not a stop, and traveling through it would invent a move the planner cannot make, the
                 // costlier error: a proof may be looser than the search it guards, never tighter.
 
                 // WHERE THIS IS STILL TIGHTER THAN THE SEARCH, for whoever widens it next.  An out-of-service

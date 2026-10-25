@@ -36,7 +36,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
      * @param lc the square being edited
      * @param tcui the window
      * @param onPage the name of the page this square is on, so a link is not offered it.  Null to offer
-     *        every page, which is the old behaviour and is what a caller that does not know gets
+     *        every page, which is the old behavior and is what a caller that does not know gets
      */
     public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui, String onPage)
     {
@@ -222,7 +222,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 //
                 // BY REFERENCE, which is what the constant's own comment always claimed.
                 // `NO_PAGE.equals(chosen.toString())` is value equality, so a page named exactly the
-                // localised label read as "(none)" and had its arrow set to -1. The entry the combo
+                // localized label read as "(none)" and had its arrow set to -1. The entry the combo
                 // holds IS the constant - `pagesThatCanBeLinkedTo` puts that very object in - so this
                 // is the comparison the comment describes, and it makes the collision impossible
                 // rather than documented.

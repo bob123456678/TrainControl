@@ -124,7 +124,7 @@ public interface View
      * chained routes - waits for the answer.  The javadoc used to say the answer was about "the rest
      * of its accessories", which understated it by the width of a route.
      *
-     * That IS the right behaviour, and it is worth saying why rather than leaving it to be read as an
+     * That IS the right behavior, and it is worth saying why rather than leaving it to be read as an
      * oversight: the answer decides whether this route's ironwork gets set, and running its speeds
      * while its turnouts are not set is worse than making the operator answer first.
      *

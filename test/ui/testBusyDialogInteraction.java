@@ -184,7 +184,7 @@ public class testBusyDialogInteraction
                     // to see and captured null - and the assertion below then reported "no dialog was
                     // showing" about a dialog that was a millisecond away from showing.
                     //
-                    // Bounded, because a dialog appearing is an acknowledgement rather than a railway
+                    // Bounded, because a dialog appearing is an acknowledgment rather than a railway
                     // event, and this file waits on acknowledgements with a deadline. If it never
                     // appears the wait ends and the assertion says exactly that.
                     org.traincontrol.gui.BusyDialog seen = null;

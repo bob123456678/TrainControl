@@ -162,7 +162,7 @@ public class testRouteReachesTheRails
     }
 
     /**
-     * A per-command delay is honoured rather than dropped.
+     * A per-command delay is honored rather than dropped.
      *
      * Timed rather than inspected, because "the field survived" is what the round-trip tests already
      * cover.  What a user cares about is that the route takes longer to run - which is the whole point

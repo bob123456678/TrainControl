@@ -124,7 +124,7 @@ public class testNonReversibleTrains
      * Adam, 2026-09-13, asked whether autonomy should route such a train to a turning copy at all:
      * **"Never, unless it's part of a 'return home' backing in manoeuvre."**
      *
-     * **That is the behaviour, and it is spread across two methods.**  A TERMINUS copy is refused by
+     * **That is the behavior, and it is spread across two methods.**  A TERMINUS copy is refused by
      * `pickPath`'s own filter (`!end.isTerminus() || loc.isReversible()`); a REVERSING copy is refused
      * for everybody inside `isSendableDestination`.  Nothing asked the DOOR whether the pair of them
      * add up to his sentence, and the two are edited by different rounds for different reasons - MT-367
@@ -281,7 +281,7 @@ public class testNonReversibleTrains
      * trains at every plain copy they passed - the "may" promoted to "must" that `AutonomyBuilder`
      * refuses to emit. It counts as nobody now.
      *
-     * The behaviour is asserted here and the WIRING by the census below, because a rule that behaves
+     * The behavior is asserted here and the WIRING by the census below, because a rule that behaves
      * correctly and a door that hands it the wrong policy are two different defects.
      */
     @Test
@@ -576,7 +576,7 @@ public class testNonReversibleTrains
      * nothing had ever run.
      *
      * **This is the gap that let one defect survive a fix, a review and a confirming pass.**  Every
-     * behavioural case in this class hands `shouldReverseAt` a `(train, where) -> ...` lambda, and a
+     * behavioral case in this class hands `shouldReverseAt` a `(train, where) -> ...` lambda, and a
      * lambda takes the interface DEFAULT `asksAbout`, which answers `at.isReversing()`.  The doors do
      * not: `ManualReversalPrompt` overrides it, and that override is the input `shouldReverseAt` uses
      * to tell a compulsory turn from a may-reverse one.  So the branch the railway runs had no test at
@@ -756,7 +756,7 @@ public class testNonReversibleTrains
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
         // THE CONTROL: the plain copy carries no flag, which is the whole reason the old rule missed
-        // it.  If this ever becomes true the fixture has stopped modelling a split.
+        // it.  If this ever becomes true the fixture has stopped modeling a split.
         assertFalse(plain.isReversing(),
             "control: the plain copy of a split must NOT be marked reversing, or this test is about "
             + "a must-reverse square and says nothing about may-reverse");

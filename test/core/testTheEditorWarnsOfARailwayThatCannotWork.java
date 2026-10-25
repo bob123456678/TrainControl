@@ -844,7 +844,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // `subjectsOf` asks `check()` about the CURRENT state, and the assertions above leave whatever
         // the last `setDirection` set.  So this used to pass on the accident that the trapping
         // direction happened to be the one applied second: swapping the two calls above, or writing
-        // `route(Side.W, Side.E)` in `TilePorts` - a rename with no behavioural meaning - made it fail
+        // `route(Side.W, Side.E)` in `TilePorts` - a rename with no behavioral meaning - made it fail
         // while accusing the editor of not reporting something that does not exist in that state.
         //
         // Which of the two traps the arrival is the tile's business, which is this test's whole

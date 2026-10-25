@@ -10,14 +10,14 @@ import javax.swing.JLabel;
  * A station caption, drawn as a rounded pill instead of a rectangle of text (FR-028): a blue background, white
  * text and a fully rounded border, the same badge as on the auto loc panels in the autonomy tab.
  *
- * **A JLabel subclass rather than a new kind of component**, because the caption is registered, coloured, re-texted
+ * **A JLabel subclass rather than a new kind of component**, because the caption is registered, colored, re-texted
  * and clicked from a dozen places that all know it as a JLabel (the window's caption registry, `updateStationLabels`,
  * the click and hover listeners, the grid's own styling).
  *
- * What changes is the painting.  The fill comes from `getBackground()`, so every colour the running diagram already
- * uses to say something (yellow for the destination, grey for a station that is shut, the resting blue) still says
- * it, and still says it through the tile art underneath because those colours carry their own alpha.  What changes is
- * the SHAPE, and that the text is legible on top of whatever the colour turned out to be.
+ * What changes is the painting.  The fill comes from `getBackground()`, so every color the running diagram already
+ * uses to say something (yellow for the destination, gray for a station that is shut, the resting blue) still says
+ * it, and still says it through the tile art underneath because those colors carry their own alpha.  What changes is
+ * the SHAPE, and that the text is legible on top of whatever the color turned out to be.
  *
  * @author Adam
  */
@@ -39,7 +39,7 @@ public class StationCaption extends JLabel
         new Color(PILL.getRed(), PILL.getGreen(), PILL.getBlue(), LayoutGrid.LAYOUT_STATION_OPACITY);
 
     /**
-     * The other resting colour: light grey, for a diagram somebody wants quieter (FR-031).  It is the default; blue is
+     * The other resting color: light gray, for a diagram somebody wants quieter (FR-031).  It is the default; blue is
      * the optional setting (`TrainControlUI.stationLabelsAreGrey`).
      *
      * A page with thirty stations is thirty blue ovals, so the alternative is a caption that stops competing with the
@@ -51,7 +51,7 @@ public class StationCaption extends JLabel
 
     /**
      * A running train's destination: `DiagramColours.DESTINATION`, solid, not with the diagram's translucency the other
-     * pills have.  A pill with this fill draws a ring in a dark orange: the fill says "destination", as every colour
+     * pills have.  A pill with this fill draws a ring in a dark orange: the fill says "destination", as every color
      * this caption carries says something, and the ring follows it.
      */
     public static final Color DESTINATION_FILL = new Color(org.traincontrol.automationui.DiagramColours.DESTINATION.getRed(),
@@ -59,7 +59,7 @@ public class StationCaption extends JLabel
         org.traincontrol.automationui.DiagramColours.DESTINATION.getBlue());
 
     /**
-     * Whether this fill is the destination's, by colour and not by alpha.
+     * Whether this fill is the destination's, by color and not by alpha.
      *
      * @param fill the pill's fill
      * @return whether a ring belongs round it
@@ -79,12 +79,12 @@ public class StationCaption extends JLabel
     /**
      * An outline round a pill, inside it by half its own width on EVERY side.
      *
-     * Not `drawRoundRect(x, y, w - 1, h - 1)`: with anti-aliasing, and Java's stroke normalising nudging it half a
+     * Not `drawRoundRect(x, y, w - 1, h - 1)`: with anti-aliasing, and Java's stroke normalizing nudging it half a
      * pixel, that puts the outline's left and top half outside the fill and its right and bottom wholly inside it, with
      * a sliver of fill showing past them, so the pill looks heavier and tighter at the lower right.  Drawn as the exact
      * shape, with the stroke left pure, the four sides are the same.
      *
-     * @param g the graphics, its colour set
+     * @param g the graphics, its color set
      * @param x the pill's left
      * @param y its top
      * @param w its length
@@ -104,7 +104,7 @@ public class StationCaption extends JLabel
     /**
      * A pill's fill, as the exact shape - see `outline`.
      *
-     * @param g the graphics, its colour set
+     * @param g the graphics, its color set
      * @param x the pill's left
      * @param y its top
      * @param w its length
@@ -117,9 +117,9 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * Whichever resting colour the operator has chosen (FR-031).
+     * Whichever resting color the operator has chosen (FR-031).
      *
-     * Asked at the moment a caption is coloured rather than stored: a preference read once into a constant needs the
+     * Asked at the moment a caption is colored rather than stored: a preference read once into a constant needs the
      * application restarted, which is not what "persist as with other settings" means for a switch in a menu.
      *
      * @return the fill for a caption with nothing else to say
@@ -188,7 +188,7 @@ public class StationCaption extends JLabel
      *
      * On north-south track the caption lands just to the right of the tile, similar to how horizontal labels land
      * between tracks, rather than lying across the rail: laid across it, a caption covered the track it named, and on a
-     * busy column its neighbours too.
+     * busy column its neighbors too.
      */
     private boolean rotated = false;
 
@@ -207,7 +207,7 @@ public class StationCaption extends JLabel
      *
      * Opacity is taken OVER: a JLabel fills its own rectangle when opaque, which is exactly the shape
      * being replaced, so the fill is painted here and the label itself is left transparent. Callers go
-     * on setting a background colour and it goes on meaning the same thing.
+     * on setting a background color and it goes on meaning the same thing.
      *
      * @param on whether to draw as a pill
      */
@@ -494,25 +494,25 @@ public class StationCaption extends JLabel
 
         int wide = width();
 
-        // CENTRED ON THE SQUARE, whichever way the difference goes (OB-118).  An empty station shows a dash, narrower than
-        // a tile, and a locomotive name is wider; one expression covers both, because both ask where this square's centre
+        // CENTERED ON THE SQUARE, whichever way the difference goes (OB-118).  An empty station shows a dash, narrower than
+        // a tile, and a locomotive name is wider; one expression covers both, because both ask where this square's center
         // line falls:
         //
         //     left = backShift + (tile - wide) / 2
         //
-        // Wider than the tile, `(tile - wide) / 2` is minus half the overflow; narrower, it is the padding that centres
+        // Wider than the tile, `(tile - wide) / 2` is minus half the overflow; narrower, it is the padding that centers
         // it.  The clamp stays because a caption cannot start before its own cell.
         if (rotated)
         {
-            // Stood on end: centred ALONG the rail, which now runs up the square, and set off to the
+            // Stood on end: centered ALONG the rail, which now runs up the square, and set off to the
             // side of it by the same distance a flat caption is set below it.
             //
             // The two clamps are the two shifts, and each says a caption cannot start before its own
             // cell. Insets cannot be negative, so a name longer than the room bought above the square
-            // is centred as far as that room goes and then simply starts at the top of it.
+            // is centered as far as that room goes and then simply starts at the top of it.
             int top = Math.max(0, upShift + (tile - wide) / 2);
 
-            // ACROSS: CENTRED ON THE LINE BETWEEN ITS SQUARE AND THE NEXT (OB-327), which is the middle of the gap
+            // ACROSS: CENTERED ON THE LINE BETWEEN ITS SQUARE AND THE NEXT (OB-327), which is the middle of the gap
             // between this station's badge and the badge of a station one square over.
             setBorder(javax.swing.BorderFactory.createEmptyBorder(top, Math.max(0, backShift + tile - thickness() / 2),
                 0, 0));
@@ -602,12 +602,12 @@ public class StationCaption extends JLabel
     /**
      * Black or white, whichever can be read on this fill.
      *
-     * White on the blue pill is the look, and white on a light fill is unreadable, so the colour of the text follows the
-     * colour underneath it rather than being fixed.  The weights are the usual perceived-brightness ones: the eye takes
+     * White on the blue pill is the look, and white on a light fill is unreadable, so the color of the text follows the
+     * color underneath it rather than being fixed.  The weights are the usual perceived-brightness ones: the eye takes
      * far more of its brightness from green than from blue.
      *
-     * @param fill the pill colour
-     * @return the colour to write on it
+     * @param fill the pill color
+     * @return the color to write on it
      */
     public static Color readableOn(Color fill)
     {
@@ -739,23 +739,23 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * The text colour to use on a pill, keeping what the caller meant by the one it asked for.
+     * The text color to use on a pill, keeping what the caller meant by the one it asked for.
      *
-     * The running diagram says two things with the text colour: red for a station the train has not reached yet, and
+     * The running diagram says two things with the text color: red for a station the train has not reached yet, and
      * plain for one it has.  On a blue pill plain black is invisible and red is nearly so, and simply forcing white
      * would throw away the distinction rather than redraw it, so red stays red and is lightened or darkened until it can
      * be read.
      *
-     * GREY is the third thing: the editors grey a square that is a PLACEHOLDER rather than an answer (an unnamed
-     * station's em-dash, a yard name that is not what this editor is for).  Grey is not red, so it would otherwise fall
+     * GRAY is the third thing: the editors gray a square that is a PLACEHOLDER rather than an answer (an unnamed
+     * station's em-dash, a yard name that is not what this editor is for).  Gray is not red, so it would otherwise fall
      * through to `readableOn` and come back as the same white or black a NAME does.
      *
-     * Redrawn rather than forced: a neutral grey comes back as the readable colour carried part of the way back towards
+     * Redrawn rather than forced: a neutral gray comes back as the readable color carried part of the way back towards
      * the pill, which is dimmer than a name on any fill and still legible on both, the same move the red branch makes.
      *
-     * @param fill the pill colour
-     * @param wanted the colour the caller asked for
-     * @return a colour that says the same thing and can be read
+     * @param fill the pill color
+     * @param wanted the color the caller asked for
+     * @return a color that says the same thing and can be read
      */
     public static Color onPill(Color fill, Color wanted)
     {
@@ -770,7 +770,7 @@ public class StationCaption extends JLabel
             return dark ? new Color(255, 150, 150) : new Color(150, 0, 0);
         }
 
-        // THE ROUTE'S BLUE: a station a running train has not reached yet, said in the colour the route ahead is drawn
+        // THE ROUTE'S BLUE: a station a running train has not reached yet, said in the color the route ahead is drawn
         // in - itself on a light pill, lifted to a light blue on the blue one, where the route's own blue would disappear.
         if (wanted != null && wanted.getBlue() > 150 && wanted.getRed() < 80 && wanted.getGreen() < 80)
         {
@@ -781,7 +781,7 @@ public class StationCaption extends JLabel
         {
             // Still dimmer than a name, on whichever ground.  Not so far towards the pill that it
             // stops being readable: a bit under halfway keeps a usable separation on both the navy and
-            // the pale grey resting fills, which are the only two this is ever asked about.
+            // the pale gray resting fills, which are the only two this is ever asked about.
             return blend(readable, fill, 0.45);
         }
 
@@ -789,15 +789,15 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * Whether a colour is one of the greys the editors use to mean "this is a placeholder".
+     * Whether a color is one of the grays the editors use to mean "this is a placeholder".
      *
-     * By the shape of the colour rather than by an equality test against the one constant, because
+     * By the shape of the color rather than by an equality test against the one constant, because
      * that constant is written out longhand at four places in LayoutGrid and a fifth would not be
-     * surprising. Black and white are excluded: they are the ANSWER colours, and a rule that dimmed
+     * surprising. Black and white are excluded: they are the ANSWER colors, and a rule that dimmed
      * them would dim every ordinary caption on the diagram.
      *
-     * @param wanted the colour the caller asked for
-     * @return whether it is a neutral grey
+     * @param wanted the color the caller asked for
+     * @return whether it is a neutral gray
      */
     private static boolean isNeutralGrey(Color wanted)
     {
@@ -809,12 +809,12 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * A colour moved part of the way towards another.
+     * A color moved part of the way towards another.
      *
-     * @param from the colour to start at
-     * @param towards the colour to move towards
+     * @param from the color to start at
+     * @param towards the color to move towards
      * @param howFar 0 for `from` unchanged, 1 for `towards`
-     * @return the blended colour
+     * @return the blended color
      */
     private static Color blend(Color from, Color towards, double howFar)
     {
@@ -983,7 +983,7 @@ public class StationCaption extends JLabel
      *
      * Painted here rather than by JLabel, because JLabel lays text out along its own width and there
      * is no way to tell it the text now runs the other way. Everything a caption needs is already
-     * worked out in this class - the pill, its padding, the colour that can be read on it - so what is
+     * worked out in this class - the pill, its padding, the color that can be read on it - so what is
      * left is a transform and one drawString.
      *
      * The transform is a quarter turn ANTICLOCKWISE, which on a screen whose y grows downwards is
@@ -1078,7 +1078,7 @@ public class StationCaption extends JLabel
 
         // THE PILL'S TEXT IS DRAWN HERE, IN THE MIDDLE OF IT: the label's own painter places it by the width the text
         // measured for layout, and painted at a larger scale (a display at 125 or 150 per cent) the glyphs come out wider
-        // than that, all of the difference landing at the right end.  Centred by the width it is drawn at, the two ends
+        // than that, all of the difference landing at the right end.  Centered by the width it is drawn at, the two ends
         // get the same room whatever the scale.
         if (pill)
         {
@@ -1123,7 +1123,7 @@ public class StationCaption extends JLabel
             //
             // ACROSS BY THE INK, not the advance: the advance carries the first letter's and the last one's side room,
             // which is not the same at the two ends.  UP AND DOWN BY THE CAPITALS: the font's ascent includes room above
-            // the capitals that no letter fills, so text centred by ascent and descent sat low (at 15 points and twice the
+            // the capitals that no letter fills, so text centered by ascent and descent sat low (at 15 points and twice the
             // size, 13 pixels of pill above "Carlton" and 8 below).  A letter that hangs below the line still does, from
             // the same line as every other caption's.
             java.awt.font.FontRenderContext frc = g2.getFontRenderContext();

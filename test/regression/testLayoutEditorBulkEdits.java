@@ -538,12 +538,12 @@ public class testLayoutEditorBulkEdits
      * Found while writing the test above, which failed against this rather than against the flag it
      * was aimed at - the two are one gesture apart and need separate fixes.
      *
-     * **One assertion, not two.** This carried a second - that the station had not travelled to
+     * **One assertion, not two.** This carried a second - that the station had not traveled to
      * `9,3` - and no implementation can make it false: with the fix nothing moves at all,
      * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
      * A check that both branches satisfy is not a check.
      *
-     * **One assertion, not two.** This carried a second - that the station had not travelled to
+     * **One assertion, not two.** This carried a second - that the station had not traveled to
      * `9,3` - and no implementation can make it false: with the fix nothing moves at all,
      * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
      * A check that both branches satisfy is not a check.

@@ -24,11 +24,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A running route's captions speak the route's colours, its destination is a warm yellow, and the Auto tab's station
+ * A running route's captions speak the route's colors, its destination is a warm yellow, and the Auto tab's station
  * badge is the captions' blue (Adam, 2026-10-09: "Build 2,3,5,6" - the diagram look proposals' second, third and
  * sixth), asked of the real window on his frozen railway with a run staged part way along its route.
  *
- * The colours themselves are claimed beside the pill (`ui.testDiagramLooksRight`); this asks the place that chooses
+ * The colors themselves are claimed beside the pill (`ui.testDiagramLooksRight`); this asks the place that chooses
  * them for a running train - `TrainControlUI.updateStationLabels` - because a rule tested apart from its caller says
  * nothing about whether the caller asks it.
  */
@@ -46,7 +46,7 @@ public class testARunsCaptionsSpeakInItsColours
         return c != null && c.getRed() == r && c.getGreen() == g && c.getBlue() == b;
     }
 
-    /** Whether a colour is this one, whatever its transparency. */
+    /** Whether a color is this one, whatever its transparency. */
     private static boolean sameInk(Color c, Color wanted)
     {
         return rgb(c, wanted.getRed(), wanted.getGreen(), wanted.getBlue());
@@ -99,7 +99,7 @@ public class testARunsCaptionsSpeakInItsColours
             model.setNetworkCommState(false);
 
             // ITS TRAINS' LENGTHS, CLEARED: a length is the database's working state, and his 3505 SP of four units
-            // cannot stop at TopMainR1 (room for three).  A claim about colours keeps the length rule out.
+            // cannot stop at TopMainR1 (room for three).  A claim about colors keeps the length rule out.
             for (String name : new String[] {MOVER, "75 407 DB"})
             {
                 Locomotive borrowed = model.getLocByName(name);
@@ -248,7 +248,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             // THE AUTO TAB'S BADGE AND TEXT, the window's label blue (Adam, 2026-10-09: "On the Autonomy Locomotive
             // Commands tab, match the color of the text and pills to the darker blue used on text labels"): every card
-            // whose badge is neither idle grey nor the home teal, and every destination not written in red
+            // whose badge is neither idle gray nor the home teal, and every destination not written in red
             List<AutoLocomotiveStatus> cards = new ArrayList<>();
 
             collect(ui.getContentPane(), cards);
@@ -316,10 +316,10 @@ public class testARunsCaptionsSpeakInItsColours
     /**
      * An empty station's dash is drawn dimmer than a name on the running diagram, as the diagram's own rule for a
      * placeholder says (D1 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").  `StationCaption.onPill` dims a
-     * placeholder, and the editors ask it with the placeholder grey; the running diagram asked it with black, so the dash
+     * placeholder, and the editors ask it with the placeholder gray; the running diagram asked it with black, so the dash
      * was as loud as a train's name.
      *
-     * MUTATION: colour the dash black again and this fails.
+     * MUTATION: color the dash black again and this fails.
      *
      * @throws Exception from the window or the railway
      */

@@ -127,7 +127,7 @@ final class LocIconActions
 
     /**
      * The wrench itself, drawn rather than loaded, as the crop mark is and for its reasons: a handle corner to corner with an open jaw at
-     * each end - dark over a white underlay, so it reads on a photograph of any colour.  A JAW AT EACH END (MT-591; Adam: "make the
+     * each end - dark over a white underlay, so it reads on a photograph of any color.  A JAW AT EACH END (MT-591; Adam: "make the
      * wrench icon look like a wrench on both sides. it looks more like a wine glass right now"): each jaw opens away from the handle, and
      * the drawing is the same turned half round, about the middle of the square, which is why it is laid out in half-pixel coordinates.
      */
@@ -189,7 +189,7 @@ final class LocIconActions
     /**
      * The crop mark itself, drawn rather than loaded: two overlapping right angles, which is what every photo tool uses for this, in
      * eleven pixels of two lines (a PNG would want a size, a folder, a name, and a test that it is still there).  A white line is laid
-     * under the dark one so it reads on a photograph of any colour, as the running-train marker on the diagram does.
+     * under the dark one so it reads on a photograph of any color, as the running-train marker on the diagram does.
      */
     static final class CropMark implements javax.swing.Icon
     {
@@ -328,7 +328,7 @@ final class LocIconActions
 
                 // The file the user picked, unless cropping produced a file of our own.  Assigned
                 // before the crop is attempted so that every way the crop can fail - unreadable
-                // picture, cancelled dialog, unwritable folder - lands on exactly the behaviour this
+                // picture, canceled dialog, unwritable folder - lands on exactly the behavior this
                 // method had before FR-022 rather than on no icon at all.
                 String chosenURL = Paths.get(f.getAbsolutePath()).toUri().toString();
 
@@ -343,13 +343,13 @@ final class LocIconActions
                     // Cancel is not a failure, and treating it as one was destructive: cropLocIcon returned null for both "the user pressed Cancel"
                     // and "the picture could not be read", and the fallback to the UNCROPPED file set the full photograph as the icon and deleted the
                     // crop that was there.  The dialog's own javadoc says null means "leave everything exactly as it was, not a failure".  Two answers,
-                    // not one: was it cancelled, and was the picture unreadable.
+                    // not one: was it canceled, and was the picture unreadable.
                     boolean[] cancelled = {false, false};
 
                     String cropped = cropLocIcon(source, l, f, cancelled, null);
 
                     // Nothing is assigned and nothing is deleted: the locomotive keeps the icon it
-                    // had, which is what cancelling a dialog means.
+                    // had, which is what canceling a dialog means.
                     if (cancelled[0]) return;
 
                     // Nor when the picture could not be read at all: the fallback below (use the file the user picked, uncropped) is right when the
@@ -436,12 +436,12 @@ final class LocIconActions
      * own folder, as PNG regardless of the source, since JPEG would flatten the transparency of a crop of a Central Station picture to
      * black.
      *
-     * @param parent the component the dialog should centre on
-     * @param l the locomotive the icon is for; its name is used to make the file recognisable
+     * @param parent the component the dialog should center on
+     * @param l the locomotive the icon is for; its name is used to make the file recognizable
      * @param chosen the picture the user picked, never written to
      * @param cancelled set to true when the user dismissed the crop dialog, which is NOT a failure: the caller must then change nothing at
      *                  all (collapsing the two set the uncropped photograph as the icon, deleted the crop it replaced)
-     * @return the URL of the cropped icon, or null if there is nothing to use - the user cancelled, the picture could not be read, or the
+     * @return the URL of the cropped icon, or null if there is nothing to use - the user canceled, the picture could not be read, or the
      *         folder could not be written - in which case the caller must fall back to the uncropped original
      */
     private String cropLocIcon(Component parent, Locomotive l, File chosen, boolean[] cancelled,
@@ -776,7 +776,7 @@ final class LocIconActions
      * picture.
      *
      * @param l the locomotive
-     * @param parent where the crop window centres
+     * @param parent where the crop window centers
      */
     private void cropTheCentralStationPicture(Locomotive l, java.awt.Component parent)
     {

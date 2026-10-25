@@ -262,7 +262,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
     /**
      * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it was
-     * (Adam, 2026-09-25, choosing between honouring the name and not asking for one: *"(a)"*).
+     * (Adam, 2026-09-25, choosing between honoring the name and not asking for one: *"(a)"*).
      *
      * The Import asks for a configuration name, and warns when it would replace one - and on a layout that already had
      * configurations the old file's placements, homes and facings were then written into the one in use, the name thrown

@@ -65,7 +65,7 @@ public class testEveryWindowWearsTheApplicationsLook
     /**
      * A window built cold - as a test builds it - wears the application's look.
      *
-     * **This can only be asked once per JVM**, which is why it is the only behavioural claim here and
+     * **This can only be asked once per JVM**, which is why it is the only behavioral claim here and
      * why it asserts its own precondition: once anything has installed the look and feel, every later
      * window gets it for free and the question stops meaning anything. The battery runs one JVM per
      * class, so "cold" is real here as long as nothing in this class calls `init` first - and nothing
@@ -369,12 +369,12 @@ public class testEveryWindowWearsTheApplicationsLook
     /**
      * Whether this source installs the look and feel at CLASS LOAD rather than in a constructor.
      *
-     * The distinction is the whole of the 2026-09-11 fix: class initialisation finishes before the first
+     * The distinction is the whole of the 2026-09-11 fix: class initialization finishes before the first
      * instance exists, so a static block is in front of `JFrame`'s own constructor and a constructor body
      * is behind it - and the root pane is created there.
      *
      * @param source the class's text
-     * @return true when a static initialiser asks for it
+     * @return true when a static initializer asks for it
      */
     private static boolean asksAtClassLoad(String source)
     {

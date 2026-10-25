@@ -28,7 +28,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, third ruling - **the drawing says "track is blocked" again, and it says it in grey**.
+ * MT-309, third ruling - **the drawing says "track is blocked" again, and it says it in gray**.
  *
  * Adam, 2026-09-09: *"'train is here' should also mean 'track is blocked' - that is the whole point.
  * it's the same as greying out edges, just in a different way."*  And, choosing between widening the
@@ -37,7 +37,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * refreshed carefully, should do the trick."*
  *
  * **What went wrong, and why a test could not see it.**  The wash used to wash the whole EDGE - one
- * hop between two sensors, which can be a dozen squares - so a train of length one greyed seventeen.
+ * hop between two sensors, which can be a dozen squares - so a train of length one grayed seventeen.
  * On 2026-09-08 the wash was replaced by an orange line as long as the train, which answered that
  * report and Adam's separate complaint about double curves.  It also made the picture a strict SUBSET
  * of what routing refuses, and behaviour.md 5c was changed to say so in bold.  That is the half being
@@ -47,14 +47,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **Three kinds of square, and each has to look different:**
  *
  * - orange on it - a train is lying there;
- * - grey and no orange - track a train's presence has made unusable;
+ * - gray and no orange - track a train's presence has made unusable;
  * - neither - free.
  *
- * **And the grey is NOT bounded to while autonomy is running, which it once was.**  The
+ * **And the gray is NOT bounded to while autonomy is running, which it once was.**  The
  * bound was Adam's own - *"while autonomy is running"* - and the refusal it draws never had one, so a
  * stopped railway refused manual sends over track this drew as free.  Adam, 2026-09-09: *"yes, this
  * greyout should appear at idle and be regenerated if a placement or train/track length is changed."*
- * This class keeps its name and its subject - while autonomy runs, blocked track is grey - and
+ * This class keeps its name and its subject - while autonomy runs, blocked track is gray - and
  * `ui.testTheGreyAppearsAtIdleToo` carries the idle half.
  *
  * **The blocked extent is worked out here from the railway rather than asked of the window**, which
@@ -64,12 +64,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * the points are technically unoccupied"* - and the same exclusion `AutonomySession.pathBetween`
  * makes.
  *
- * **Asserted in pixels**, because none of it can be read off the model.  Whether a square is greyed
+ * **Asserted in pixels**, because none of it can be read off the model.  Whether a square is grayed
  * is decided when the tile is PAINTED; every model-level assertion available answers identically with
- * the grey present and absent, which is the lesson OB-180 and `support.Rendered` were written for.
+ * the gray present and absent, which is the lesson OB-180 and `support.Rendered` were written for.
  *
  * MUTATION: fence the wash on `isAutonomyBusy()` again and `testAStoppedRailwayShowsTheSameGrey`
- * fails.  Draw it only where the line is drawn - the state before the grey came back - and
+ * fails.  Draw it only where the line is drawn - the state before the gray came back - and
  * `testBlockedTrackIsGreyedWhileAutonomyRuns` fails.  Draw the wash OVER the line and
  * `testASquareWithATrainOnItIsStillOrange` fails.  Wash the whole page and
  * `testFreeTrackIsNotTouched` fails.
@@ -273,7 +273,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     // ---------------------------------------------------------------- the four claims
 
     /**
-     * A square nothing is drawn on, but which the railway refuses, is greyed while autonomy runs.
+     * A square nothing is drawn on, but which the railway refuses, is grayed while autonomy runs.
      */
     @Test
     public void testBlockedTrackIsGreyedWhileAutonomyRuns()
@@ -283,7 +283,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         // THE ORANGE IS EXPECTED HERE NOW, and this used to assert its absence (MT-373).
         //
         // The square is the one the train is standing on, because since the wash was narrowed that is
-        // also the only kind of square a standing train greys.  The claim below is unchanged and is
+        // also the only kind of square a standing train grays.  The claim below is unchanged and is
         // the one that matters: the tile is drawn FAINTER when the railway refuses it.
         assertTrue(orangePixels(runningBlocked) > 0,
             "the orange line is not drawn on " + blockedSquare + ", so the train is not shown where"
@@ -297,7 +297,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * And it is grey rather than another line: the whole square is faded, not a stroke drawn across it.
+     * And it is gray rather than another line: the whole square is faded, not a stroke drawn across it.
      */
     @Test(dependsOnMethods = "testBlockedTrackIsGreyedWhileAutonomyRuns")
     public void testTheBlockedMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
@@ -323,7 +323,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     }
 
     /**
-     * And a stopped railway shows exactly the same grey - the mark is NOT bounded to a run.
+     * And a stopped railway shows exactly the same gray - the mark is NOT bounded to a run.
      *
      * **This test asserted the opposite until 2026-09-09, and the reversal is the point of it.**  The
      * bound was Adam's own sentence - *"can we just grey out the tiles just like blocked edges while
@@ -334,12 +334,12 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
      * was never fenced.  `Layout.isPathClear` sweeps the covered edges in every tier at every time,
      * correctly, because a tail lying across the rail is physical.  So at idle a right-click manual
      * send across a parked train's tail was refused over track this drew as free - which is the same
-     * complaint that brought the grey back for the running case, arriving through the other door.
+     * complaint that brought the gray back for the running case, arriving through the other door.
      *
      * Adam, asked about the idle case directly, 2026-09-09: *"yes, this greyout should appear at idle
      * and be regenerated if a placement or train/track length is changed."*
      *
-     * **What this class still claims** is its own name: while autonomy runs, blocked track is grey.
+     * **What this class still claims** is its own name: while autonomy runs, blocked track is gray.
      * That was true before and is true now.  What has gone is the word ONLY.
      * `ui.testTheGreyAppearsAtIdleToo` carries the idle half, including the regeneration Adam asked
      * for in the same sentence.
@@ -398,7 +398,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         // AGAINST THE BARE PICTURE, and it used to be against the STOPPED one.
         //
-        // While the grey was fenced on a running railway, "stopped" was the same square with no wash
+        // While the gray was fenced on a running railway, "stopped" was the same square with no wash
         // on it and that comparison said what this claim means.  The fence is gone: the two pictures
         // are now identical by design, and the difference this looked for could only ever be zero.
         // The square with nothing standing anywhere is the picture that has no wash on it now.
@@ -415,7 +415,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     /**
      * CONTROL - track no train blocks is left alone, running or not.
      *
-     * Without this every assertion above is satisfied by greying the whole page while autonomy runs.
+     * Without this every assertion above is satisfied by graying the whole page while autonomy runs.
      */
     @Test
     public void testFreeTrackIsNotTouched()
@@ -513,22 +513,22 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
                 }
             }
 
-            // A SQUARE THAT IS GREY AND NOT ORANGE NO LONGER EXISTS FOR A STANDING TRAIN, and that is
+            // A SQUARE THAT IS GRAY AND NOT ORANGE NO LONGER EXISTS FOR A STANDING TRAIN, and that is
             // Adam's ruling rather than a regression (MT-373, 2026-09-12).
             //
-            // This class used to hunt for one: the grey came from the whole covered EDGE and the
-            // orange from the train's own extent, so a long run behind a short train was grey with no
+            // This class used to hunt for one: the gray came from the whole covered EDGE and the
+            // orange from the train's own extent, so a long run behind a short train was gray with no
             // line on it.  He asked for the wash to be narrowed to the train - *"the visuals look
             // perfect now"* - and the two marks then covered the same squares.
             //
             // *"grey out the blocked path only if on a double curve.  otherwise, greyed out means
-            // either edge locked or path blocked."*  So the grey still has a meaning of its own, and
+            // either edge locked or path blocked."*  So the gray still has a meaning of its own, and
             // it is EDGE LOCKED - a square an active route is holding, which carries no train.  That
             // is `TileOverlay`'s wash and `ui.testTheWashDoesNotStack` is where it is tested; it needs
             // a running route, which this class does not have.
             //
             // What this class still claims is its own name: while autonomy runs, blocked track is
-            // grey.  The square it claims it of is the one the train is on.
+            // gray.  The square it claims it of is the one the train is on.
             TileKey blockedOnly = onTheTrain;
 
             if (onTheTrain == null) continue;
@@ -574,7 +574,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     // ---------------------------------------------------------------- looking at the picture
 
     /**
-     * Whether this colour is the orange a person would call orange.
+     * Whether this color is the orange a person would call orange.
      *
      * The same test `support.Rendered` and `testTheTrainIsShownAsALine` use, by hue rather than
      * against production's own constant: the claim is about what somebody looking at the diagram
@@ -610,7 +610,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
      *
      * The difference between the brightest and the darkest pixel on the tile.  A tile drawn at reduced
      * alpha blends toward whatever is behind it, so this falls; whether the MEAN rises or falls depends
-     * on the panel's colour, which is exactly the thing a claim about the mark should not depend on.
+     * on the panel's color, which is exactly the thing a claim about the mark should not depend on.
      * These claims said "darker" until MT-278 item 1 replaced the wash with a fade, and on a light
      * panel a fade is brighter.
      *
@@ -620,7 +620,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     /**
      * How many pixels of this tile carry anything but its own background.
      *
-     * The background is the commonest colour on the square, which on a tile is the panel showing
+     * The background is the commonest color on the square, which on a tile is the panel showing
      * through around the track.  What is left is the drawing.
      *
      * Used to say what "the whole tile is marked" means for a FADE: a wash paints every pixel, and a
@@ -629,7 +629,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
      * the same claim about a fade.
      *
      * @param image the painted tile
-     * @return how many pixels are not the background colour
+     * @return how many pixels are not the background color
      */
     private static int drawnPixels(java.awt.image.BufferedImage image)
     {

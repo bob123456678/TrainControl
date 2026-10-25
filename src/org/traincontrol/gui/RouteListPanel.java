@@ -34,11 +34,11 @@ final class RouteListPanel
     {
         // The same answer at all three doors.  Not protection against two threads throwing one route's
         // accessories at once: `Route.setExecuting()` is a synchronized re-entrancy guard on the model's own funnel, so a second attempt has
-        // always returned immediately.  What it IS: the play button greys itself while `routesExecuting` holds the name, and the other two
+        // always returned immediately.  What it IS: the play button grays itself while `routesExecuting` holds the name, and the other two
         // doors (the row click with its confirmation, and the right-click menu) did not ask, so the same gesture was refused at one door and
         // accepted at two (the OB-057/OB-090 shape).  The window is short: `execRoute` returns as soon as it has spawned the route thread,
         // so the name is cleared 600 ms later whatever the route is still doing - a debounce, not a lock.  Logged rather than silent,
-        // because unlike the greyed button these two doors say nothing on their own, and the operator confirmed a dialog and is owed a reason.
+        // because unlike the grayed button these two doors say nothing on their own, and the operator confirmed a dialog and is owed a reason.
         if (route != null && this.ui.routesExecuting.contains(route))
         {
             this.ui.getModel().log(I18n.f("route.ui.infoAlreadyRunning", route));
@@ -112,7 +112,7 @@ final class RouteListPanel
      * The three ways out of executeRoute's thread, wrapped so all of them are timed.  Left as a wrapper rather than a try/finally
      * around the body because the body returns early twice (an overridden conflict and a refused one), and a measurement that misses
      * those two measures the happy path only.  It puts the button back on the last line of the finally, through
-     * `releaseTheRoutePlayButton`, which holds the grey for a minimum time first.
+     * `releaseTheRoutePlayButton`, which holds the gray for a minimum time first.
      *
      * @param route the route's name
      * @param work what to run
@@ -156,7 +156,7 @@ final class RouteListPanel
                 {
                     Route currentRoute = asked;
                     
-                    // Realised on the EDT.  Everything above - the model lookups, toCSV - belongs
+                    // Realized on the EDT.  Everything above - the model lookups, toCSV - belongs
                     // off it and stays off it, but constructing, packing and showing a JFrame is not
                     // thread safe, and the command-capture path then writes this window's document
                     // from the EDT while it is still being built on another thread.
@@ -187,12 +187,12 @@ final class RouteListPanel
                         }
 
                         // The route itself, rather than its name to look up again: this window is
-                        // handed what it is to show, which is what makes its read-only behaviour
+                        // handed what it is to show, which is what makes its read-only behavior
                         // testable without a control station on the network.
                         this.ui.routeEditor = new RouteEditorFrame(this.ui, routeName, currentRoute);
 
                         // Not over a locked route's own title.  A route from the Central Station
-                        // opens with every control greyed and its title is the only thing that says
+                        // opens with every control grayed and its title is the only thing that says
                         // why; overwriting it with the ordinary edit-route title left a window full
                         // of dead controls and no explanation.
                         if (!this.ui.routeEditor.isLocked()) this.ui.routeEditor.setTitle(title);
@@ -302,7 +302,7 @@ final class RouteListPanel
 
         if (isOverTheRoutePlayButton(evt))
         {
-            // Disabled means disabled (MT-217): the button greys while its route runs, and a greyed button that still fires is a lie, and would
+            // Disabled means disabled (MT-217): the button grays while its route runs, and a grayed button that still fires is a lie, and would
             // start the same route twice.  Asked in executeRoute now, not here: this was the only door that asked, and the two that do
             // not (the row click with its confirmation, and the right-click menu) reach the same method; one guard on the funnel is the
             // OB-057/OB-090 shape, where two copies, one per door, is how the other two came to be missing.
@@ -416,7 +416,7 @@ final class RouteListPanel
                 I18n.t("route.ui.promptWhichRoute"), I18n.t("route.ui.menuFindRoute"),
                 JOptionPane.PLAIN_MESSAGE, null, matches.toArray(), matches.get(0));
 
-            // Cancelled, which is not the same as choosing the first one.
+            // Canceled, which is not the same as choosing the first one.
             if (found == null) return;
         }
 

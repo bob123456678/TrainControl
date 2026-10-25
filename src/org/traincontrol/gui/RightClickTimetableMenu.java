@@ -65,7 +65,7 @@ public class RightClickTimetableMenu extends MouseAdapter
             // All four handlers below open with the identical
             // `if (ui.isAutonomyBusy()) { showMessageDialog(...); return; }` guard, so right-clicking
             // the timetable during a run - exactly when an operator is likely to be looking at it -
-            // offered four items and refused all four with the same dialog. Greyed here on the same
+            // offered four items and refused all four with the same dialog. Grayed here on the same
             // question the handler asks, with the same sentence as the tooltip, rather than found out
             // by pressing.
             boolean busy = ui.aRunHoldsTheSetup();

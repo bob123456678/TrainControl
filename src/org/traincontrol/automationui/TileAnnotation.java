@@ -29,7 +29,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 public class TileAnnotation
 {
     /**
-     * One route of a tile, and which way it may be travelled.
+     * One route of a tile, and which way it may be traveled.
      */
     public static class Mark
     {
@@ -104,7 +104,7 @@ public class TileAnnotation
     private static final Color CLOSED = new Color(200, 0, 0);
 
     /**
-     * The same red the diagram writes accessory addresses in, so the reader learns one colour for numbers
+     * The same red the diagram writes accessory addresses in, so the reader learns one color for numbers
      * drawn small over track art.
      */
     private static final Color LENGTH = Color.RED;
@@ -128,8 +128,8 @@ public class TileAnnotation
     private static final Color DIM_COLOUR = Color.WHITE;
 
     /**
-     * The colour of a square autonomy uses (the graph window's own blue, rgb(0,0,200)) and of one it leaves
-     * alone: a medium dark grey, just darker than the grey station labels (FR-103, MT-492).
+     * The color of a square autonomy uses (the graph window's own blue, rgb(0,0,200)) and of one it leaves
+     * alone: a medium dark gray, just darker than the gray station labels (FR-103, MT-492).
      */
     private static final Color POINT_ACTIVE = DiagramColours.STATION;
     private static final Color POINT_INACTIVE = new Color(128, 130, 134);
@@ -144,7 +144,7 @@ public class TileAnnotation
      * What a sensor has been designated as, drawn as a badge on its tile.
      *
      * The SHAPE says what turning means here; the SIZE says whether it is a station.  Blue means
-     * autonomy uses it, grey means it does not (FR-103), and orange that nothing can pass (the X).
+     * autonomy uses it, gray means it does not (FR-103), and orange that nothing can pass (the X).
      *
      *                       trains do not turn    trains MAY turn    trains ALWAYS turn
      *     a station              big circle          big diamond         big square
@@ -174,7 +174,7 @@ public class TileAnnotation
         private final boolean shut;
 
         // Which route the badge sits on, so it can be drawn where the rails are rather than in the
-        // middle of the square.  Null for a tile whose route is unknown, which falls back to centre.
+        // middle of the square.  Null for a tile whose route is unknown, which falls back to center.
         private final Side a;
         private final Side b;
 
@@ -339,9 +339,9 @@ public class TileAnnotation
     }
 
     /**
-     * Autonomy takes no notice of this square.  Washed out rather than greyed over, so that a tile
+     * Autonomy takes no notice of this square.  Washed out rather than grayed over, so that a tile
      * nobody can configure recedes without becoming a dark block that draws the eye more than the
-     * track does - which is what a heavier grey did on a page with forty route buttons on it.
+     * track does - which is what a heavier gray did on a page with forty route buttons on it.
      */
     private static final Color IGNORED = Color.WHITE;
 
@@ -613,10 +613,10 @@ public class TileAnnotation
     /**
      * Whether this is being drawn in the autonomy EDITOR rather than on a diagram.
      *
-     * One thing turns on it, with FR-118's icons only (`StationIcons.SHAPES`): what colour a badge is.
-     * In the editor every point's icon is white with its colour round it, named or not, because the
+     * One thing turns on it, with FR-118's icons only (`StationIcons.SHAPES`): what color a badge is.
+     * In the editor every point's icon is white with its color round it, named or not, because the
      * direction arrows are drawn over the icon there and are what the editor is read for.  Everywhere else
-     * - the main window, a popup, an exported image - a named point's icon is filled with its colour.
+     * - the main window, a popup, an exported image - a named point's icon is filled with its color.
      *
      * Set rather than passed: the constructor already takes ten arguments and this is a property of
      * the SURFACE doing the drawing rather than of the square being drawn.
@@ -648,7 +648,7 @@ public class TileAnnotation
     private boolean allowedToo = false;
 
     /**
-     * Greys the square as one autonomy takes no notice of is greyed, and goes on to draw the rest - its length, its
+     * Grays the square as one autonomy takes no notice of is grayed, and goes on to draw the rest - its length, its
      * outline - since every edit still works there: it is track no station is on (OB-353).  It carries no arrows.
      *
      * @return this
@@ -662,7 +662,7 @@ public class TileAnnotation
     private boolean stationless = false;
 
     /**
-     * Whether this square is greyed for having no station on its track (OB-353).
+     * Whether this square is grayed for having no station on its track (OB-353).
      *
      * @return true where `withNoStation` was asked
      */
@@ -744,7 +744,7 @@ public class TileAnnotation
     }
 
     /**
-     * Amber, and a wash rather than a border: the outline already means "selected", grey already means "autonomy
+     * Amber, and a wash rather than a border: the outline already means "selected", gray already means "autonomy
      * cannot use this", and red is a finding.  Amber is none of those, and a wash over a whole run of squares reads as
      * a run.
      */
@@ -824,7 +824,7 @@ public class TileAnnotation
     public boolean isBlank()
     {
         // `editing` is deliberately NOT here, unlike in equals and hashCode: on its own it paints nothing (it only
-        // says what colour a badge is), so an annotation carrying it and nothing else is still blank.
+        // says what color a badge is), so an annotation carrying it and nothing else is still blank.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !stationless
             && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured;
     }
@@ -899,15 +899,15 @@ public class TileAnnotation
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // A square autonomy takes no notice of is greyed out and nothing else is drawn on it.
+            // A square autonomy takes no notice of is grayed out and nothing else is drawn on it.
             // Nothing here is the user's to decide, so anything drawn would invite a click.
-            // Grey means one thing on this diagram: autonomy cannot use this square.  Track that follows its
+            // Gray means one thing on this diagram: autonomy cannot use this square.  Track that follows its
             // run is drawn plainly and carries no arrows of its own.
             if (ignored)
             {
                 paintGreyedOut(g, width, height);
 
-                // Except the route being tested, which is drawn on top of the greying.
+                // Except the route being tested, which is drawn on top of the graying.
                 //
                 // "Ignored" means there is nothing here for the user to SET, not that no route runs over this
                 // square; a route button threaded through a running line is exactly a square a route runs over.
@@ -924,7 +924,7 @@ public class TileAnnotation
                 return;
             }
 
-            // TRACK NO STATION IS ON, greyed the same way (OB-353) - and the rest drawn over it, as it can still be edited
+            // TRACK NO STATION IS ON, grayed the same way (OB-353) - and the rest drawn over it, as it can still be edited
             if (stationless)
             {
                 paintGreyedOut(g, width, height);
@@ -957,7 +957,7 @@ public class TileAnnotation
 
             paintArrivals(g, width, height);
 
-            // And the train mark over the badge (MT-099).  On a station both are centred on the tile and the badge
+            // And the train mark over the badge (MT-099).  On a station both are centered on the tile and the badge
             // is half the tile across while the star's arms are a sixth, so the star must go on top to be seen.
             // The badge says what the square IS; the star says a train is standing on it now, and the changing
             // fact belongs on top of the fixed one.
@@ -1104,7 +1104,7 @@ public class TileAnnotation
      * and a reader has to be able to tell which they are looking at without being told.
      *
      * Small, and at the very edge, so a station with all its sides marked still shows its badge, its
-     * name and whatever is standing on it.  A barred side is the same chevron left open, in grey (OB-326):
+     * name and whatever is standing on it.  A barred side is the same chevron left open, in gray (OB-326):
      * the shape says "arrival", the state says whether it is allowed, so there is one thing to learn rather
      * than two.
      */
@@ -1174,7 +1174,7 @@ public class TileAnnotation
                 py = -py;
             }
 
-            // Pulled off the edge itself, which is shared with the neighbouring square, and along
+            // Pulled off the edge itself, which is shared with the neighboring square, and along
             // it, clear of the direction arrow in the middle
             double baseX = at[0] + dx * 1.5 + px * along;
             double baseY = at[1] + dy * 1.5 + py * along;
@@ -1200,7 +1200,7 @@ public class TileAnnotation
             }
             else
             {
-                // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GREY (OB-326).  One chevron whose arms are
+                // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GRAY (OB-326).  One chevron whose arms are
                 // a fourteenth of the square is the same shape at 30 pixels and at 60, where a hollow chevron with
                 // separate strokes through it would read as a hollow triangle.
                 java.awt.Stroke was = g.getStroke();
@@ -1306,7 +1306,7 @@ public class TileAnnotation
      * The setup can put a train on a platform; the caption beside it is on a different square, sometimes on none,
      * and the first thing to go when the labels are turned off, so the star shows where the trains are.
      *
-     * White with a dark edge, because the tile art underneath is not one colour: white alone vanishes on
+     * White with a dark edge, because the tile art underneath is not one color: white alone vanishes on
      * a pale platform and a dark mark vanishes on the black of the rails.  Drawn last of the marks and
      * before the badge, so it sits over the arrows rather than under them.
      */
@@ -1320,9 +1320,9 @@ public class TileAnnotation
         // are three numbers that have to agree.
         double arm = Math.max(2.5, span / 7.0);
 
-        // On the BADGE, wherever the badge went (MT-124), and on the TRACK, not on the tile: the badge is centred
-        // on trackCentre, which is the tile centre for a straight and lands on the rails on a bend, and the editor
-        // moves a curved station's badge to the corner.  Falls back to the track centre when no badge was drawn, as
+        // On the BADGE, wherever the badge went (MT-124), and on the TRACK, not on the tile: the badge is centered
+        // on trackCentre, which is the tile center for a straight and lands on the rails on a bend, and the editor
+        // moves a curved station's badge to the corner.  Falls back to the track center when no badge was drawn, as
         // a train standing on a plain square still gets its mark.
         int[] on = badgeDrawnAt != null ? badgeDrawnAt : trackCentre(width, height);
 
@@ -1373,7 +1373,7 @@ public class TileAnnotation
 
         // Where a traced line stops when it has no side to leave by - the first and last square of a
         // run, which AutonomyEditorPanel builds with a null end deliberately.  The track midpoint, as OB-026 gives
-        // the RUN line and the badge, since on a bend the tile centre is nowhere near the rails.
+        // the RUN line and the badge, since on a bend the tile center is nowhere near the rails.
         int[] centre = trackCentre(width, height);
 
         // The route ONCE, however many directions it carries: a line per direction would draw two on the same
@@ -1418,7 +1418,7 @@ public class TileAnnotation
             if (!drawn.add(at)) continue;
 
             // WHERE THE LINE GOES BEATS WHICH WAY IT IS RUNNING.  A leg ending somewhere autonomy
-            // will never choose is drawn in its own colour whichever direction it is - the reader is
+            // will never choose is drawn in its own color whichever direction it is - the reader is
             // being told about the destination, and the chevrons already say the direction.
             g.setColor(trace.manualOnly ? TRACE_MANUAL
                 : Boolean.TRUE.equals(shared.get(at)) ? TRACE
@@ -1445,14 +1445,14 @@ public class TileAnnotation
 
             // Edge to edge in one stroke, along the rail rather than around it: a straight chord between the
             // midpoints of two edges, which is also where heading() takes its arrow directions from.  A line
-            // bent through the tile centre would lie at forty-five degrees to the track beneath it.
+            // bent through the tile center would lie at forty-five degrees to the track beneath it.
             g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
                 (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
         }
 
         // Which way, as chevrons on the line.  Two of them, pointing opposite ways, is a route that
         // works both ways; one is a route that works one way; and the direction is read off the shape
-        // rather than off a colour nobody can be expected to have learnt.
+        // rather than off a color nobody can be expected to have learnt.
         g.setStroke(new BasicStroke(Math.max(2f, span / 14f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -1490,7 +1490,7 @@ public class TileAnnotation
         dx /= length;
         dy /= length;
 
-        // Two thirds of the way along, which keeps it clear of both the tile edge and the centre
+        // Two thirds of the way along, which keeps it clear of both the tile edge and the center
         double atX = from[0] + dx * length * 0.66;
         double atY = from[1] + dy * length * 0.66;
 
@@ -1546,7 +1546,7 @@ public class TileAnnotation
             }
         }
 
-        // The fallback is trackCentre rather than the geometric centre.  It changes nothing on a
+        // The fallback is trackCentre rather than the geometric center.  It changes nothing on a
         // straight, or where the branch above applies; it corrects a bend whose side carries no route or more
         // than one.
         int[] from = curved && through == 1 && other != null && other != side
@@ -1618,7 +1618,7 @@ public class TileAnnotation
 
         // The OPEN direction is the filled one, and the two are the same size: most squares are open, so otherwise
         // most arrows would be the faint ones and the diagram would read as track something had gone wrong with.
-        // Filled against hollow still carries the difference without colour, so it survives printing, a poor screen,
+        // Filled against hollow still carries the difference without color, so it survives printing, a poor screen,
         // and a reader who cannot tell red from green.
         // A pixel smaller where the direction is SHUT, and a pixel further back: an outline carries a line's worth of
         // ink beyond the shape a filled one stops at, so nominally equal arrows would still read the red one heavier.
@@ -1634,7 +1634,7 @@ public class TileAnnotation
         double tipY = target[1] - dy * gap;
 
         // A blocked direction is the SAME arrow in red, not a cross.  A cross says "something is wrong
-        // here" and leaves the reader to work out which way; an arrow says which way, and the colour
+        // here" and leaves the reader to work out which way; an arrow says which way, and the color
         // says it is shut - so the allowed and the blocked directions are read the same way round.
         double angle = Math.atan2(dy, dx);
 
@@ -1691,12 +1691,12 @@ public class TileAnnotation
 
     /**
      * How far short of the tile edge an arrowhead stops.  One pixel, so that the arrows on two
-     * neighbouring tiles are visibly separate marks rather than one continuous shape.
+     * neighboring tiles are visibly separate marks rather than one continuous shape.
      */
     private static final int EDGE_GAP = 1;
 
     /**
-     * The tested route: a broad yellow line, the colour this application already uses to say "look
+     * The tested route: a broad yellow line, the color this application already uses to say "look
      * here" on the running diagram, and one nothing else in this editor uses.
      */
     private static final Color TRACE = new Color(255, 214, 0);
@@ -1715,9 +1715,9 @@ public class TileAnnotation
     /**
      * The way back, where it does not share track with the way out.
      *
-     * Both legs in one colour is right while they run over the same rails - two lines down one piece
+     * Both legs in one color is right while they run over the same rails - two lines down one piece
      * of track say nothing twice - and wrong the moment they go different ways round, where the single
-     * colour turns an out-and-back into what looks like one circuit.
+     * color turns an out-and-back into what looks like one circuit.
      */
     private static final Color TRACE_RETURN = new Color(255, 150, 40);
 
@@ -1729,7 +1729,7 @@ public class TileAnnotation
      * answered by two lines.
      *
      * MAGENTA, the only strong hue this diagram has left.  The vocabulary already spoken here is warm for paths and
-     * trains (yellow out, orange back, orange for the train mark), a medium grey for the badge on a square autonomy
+     * trains (yellow out, orange back, orange for the train mark), a medium gray for the badge on a square autonomy
      * leaves alone (FR-103), green and red for the one-way arrows and blue for a point autonomy uses.  Magenta is none
      * of those, is far enough from the red arrowhead and the blue badge to be told apart at tile size, and is dark
      * enough that the chevrons drawn on top of it still show.  Not orange, which is this painter's RETURN leg.
@@ -1741,20 +1741,20 @@ public class TileAnnotation
 
     /**
      * The arrival marks: indigo, which is on this diagram neither a direction (red and green), nor a
-     * tested path (yellow), nor track autonomy ignores (grey).  A colour of its own for a question of
+     * tested path (yellow), nor track autonomy ignores (gray).  A color of its own for a question of
      * its own.
      */
     private static final Color ARRIVAL = new Color(255, 205, 0);
 
     /**
-     * Outlined in near-black rather than in a darker yellow.  Yellow on the pale grey of an unlit tile
-     * is the one colour on this diagram that disappears, and the outline is what stops it - it also
+     * Outlined in near-black rather than in a darker yellow.  Yellow on the pale gray of an unlit tile
+     * is the one color on this diagram that disappears, and the outline is what stops it - it also
      * tells the filled mark from the hollow one at a glance, which is the whole distinction.
      */
     private static final Color ARRIVAL_EDGE = new Color(60, 45, 0);
 
     /**
-     * And a barred one, which is the same mark drawn as an absence: an open chevron, in grey, so a shut side recedes
+     * And a barred one, which is the same mark drawn as an absence: an open chevron, in gray, so a shut side recedes
      * and the open ones read as the answer (OB-326).
      */
     private static final Color ARRIVAL_BARRED = new Color(140, 140, 140);
@@ -1874,16 +1874,16 @@ public class TileAnnotation
 
     private void paintBadge(Graphics2D g, int width, int height)
     {
-        // ONE COLOUR WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE: `POINT_INACTIVE`, a medium grey just darker than
-        // the labels (FR-103, MT-492).  A square nothing can pass is `POINT_IMPASSABLE` orange, a parking berth grey,
+        // ONE COLOR WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE: `POINT_INACTIVE`, a medium gray just darker than
+        // the labels (FR-103, MT-492).  A square nothing can pass is `POINT_IMPASSABLE` orange, a parking berth gray,
         // and impassable is asked FIRST because every square switched off is parking as well.
         //
         // `shut` implies `parking` at both places in src/ that build a Badge, so no editor configuration lets the
-        // impassable clause alone decide the colour.  It stays because the two flags are independent in
-        // the type: a Badge built any other way, by a test or a later site, must still take the X's colour when
+        // impassable clause alone decide the color.  It stays because the two flags are independent in
+        // the type: a Badge built any other way, by a test or a later site, must still take the X's color when
         // nothing can pass, and the test pins that.
         //
-        // Colour and shape stay separate questions: the colour says whether autonomy uses the square, the mark says
+        // Color and shape stay separate questions: the color says whether autonomy uses the square, the mark says
         // what the square does; only a parking berth is a place a train can stand, and the cross says this is not.
         Color colour = badge.isImpassable() ? POINT_IMPASSABLE : badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
 
@@ -1937,8 +1937,8 @@ public class TileAnnotation
         // than a station's.
         if (!classic && turns) size = Math.round(Math.min(width, height) * (mayTurn ? 0.53f : 0.4f));
 
-        // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
-        // which is the tile centre for a straight and lands on the rails for anything else.
+        // Centered on the TRACK for anything straight - the midpoint of the route's own two sides,
+        // which is the tile center for a straight and lands on the rails for anything else.
         int[] on = trackCentre(width, height);
 
         int x = on[0] - size / 2;
@@ -1950,7 +1950,7 @@ public class TileAnnotation
         // A CLASSIC STATION'S DIAMOND ON A BEND, ON ITS RAILS: a pixel in from the middle of the curve's chord toward
         // the middle of the square, as the circle and the square beside it are, and 15 pixels at 30 and 29 at 60, where
         // it is 17 and 36 on straight track - a curve leaves no more room on its rails.  Still bigger than a sensor's,
-        // 13 and 26.  Its points' mitres reach under half a pixel past the square, and `paintBadge` cuts them off there.
+        // 13 and 26.  Its points' miters reach under half a pixel past the square, and `paintBadge` cuts them off there.
         boolean onTheBend = classic && badge.isStation() && mayTurn && trackBends();
 
         if (onTheBend)
@@ -1986,7 +1986,7 @@ public class TileAnnotation
         g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
 
         // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.  With FR-118's icons,
-        // white with its colour round it in the editor, as a station's icon there; with the classic ones the same in the
+        // white with its color round it in the editor, as a station's icon there; with the classic ones the same in the
         // editor as on the diagram.
         boolean white = editing && !classic;
 
@@ -2102,8 +2102,8 @@ public class TileAnnotation
      *     out of service                 a white circle, an orange ring and an orange X in it, whatever the point is
      *                                    otherwise - `paintOutOfService`, drawn by `paintBadge` before it gets here
      *
-     * Blue where autonomy uses it, grey a berth it does not choose - a colour, not a shape - filled when named and white
-     * ringed in the colour when not, and in the autonomy editor white ringed in the colour named or not.
+     * Blue where autonomy uses it, gray a berth it does not choose - a color, not a shape - filled when named and white
+     * ringed in the color when not, and in the autonomy editor white ringed in the color named or not.
      *
      * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
      * the sensor's contact is covered first (`cover`).  On a bend the icon lies along the chord between the road's two
@@ -2114,7 +2114,7 @@ public class TileAnnotation
      * @param g the tile's graphics
      * @param width the tile's width
      * @param height the tile's height
-     * @param colour the colour the square's state gives it
+     * @param colour the color the square's state gives it
      */
     private void paintStation(Graphics2D g, int width, int height, Color colour)
     {
@@ -2141,7 +2141,7 @@ public class TileAnnotation
 
         if (deadEnd != null && deadEnd == badge.getB()) angle += Math.PI;
 
-        // WHITE WITH ITS COLOUR ROUND IT IN THE EDITOR: the arrows are drawn over the icon, and the editor is where they
+        // WHITE WITH ITS COLOR ROUND IT IN THE EDITOR: the arrows are drawn over the icon, and the editor is where they
         // are read
         Color fill = badge.isNamed() && !editing ? colour : Color.WHITE;
         Color line = badge.isNamed() && !editing ? Color.WHITE : colour;
@@ -2173,7 +2173,7 @@ public class TileAnnotation
         // cut off at its edges.  The square draws what falls inside it, cut off cleanly at its edges, and `paintSpill`,
         // asked by the diagram once every square is drawn, draws the rest over the squares beside it.
         //
-        // IN THE EDITOR TOO, white with its colour round it so the arrows at the sides read over it.
+        // IN THE EDITOR TOO, white with its color round it so the arrows at the sides read over it.
         boolean spills = known && bends;
 
         // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved in towards the middle of the square as far as it
@@ -2352,7 +2352,7 @@ public class TileAnnotation
     }
 
     /**
-     * This square's arrows and barred-arrival marks again, over a neighbour's station that spilled onto it: they sit at
+     * This square's arrows and barred-arrival marks again, over a neighbor's station that spilled onto it: they sit at
      * the middle of the square's edges, which is where a curve's station reaches it.  As `paint` draws them; nothing on a
      * square autonomy takes no notice of, where `paint` draws none.
      *
@@ -2394,7 +2394,7 @@ public class TileAnnotation
      * at 30 and 26 at 60: white a pixel wider all round, and the track's black band, `tile` * 8 / 30 across, drawn back
      * over it.  The icons are no taller than the contact, so they alone would leave its edges showing.
      *
-     * @param g graphics at the icon's centre, turned along the track
+     * @param g graphics at the icon's center, turned along the track
      * @param tile the tile's edge
      */
     private static void cover(Graphics2D g, int tile)
@@ -2439,13 +2439,13 @@ public class TileAnnotation
      * the first place that fits on the way from there to the middle of the square, or - fitting nowhere - the middle,
      * made smaller until it does.  A pixel's half to spare at each edge, so no edge pixel is touched.
      *
-     * @param needs what the icon covers at scale 1, about its centre, turned as it is drawn
+     * @param needs what the icon covers at scale 1, about its center, turned as it is drawn
      * @param scale the scale it is drawn at
-     * @param x where its centre was asked to go
-     * @param y where its centre was asked to go
+     * @param x where its center was asked to go
+     * @param y where its center was asked to go
      * @param width the square's width
      * @param height the square's height
-     * @return the centre's x and y, and the scale
+     * @return the center's x and y, and the scale
      */
     private static double[] fitInside(java.awt.geom.Rectangle2D needs, double scale, double x, double y, int width,
         int height)
@@ -2496,7 +2496,7 @@ public class TileAnnotation
      * longer than the may-turn hexagon (MT-710) - each half 10 pixels at 30, 21 at 60.
      *
      * The bar at 30 is a pixel wide and set on whole pixels: drawn in its half's own frame, which can sit on a half
-     * pixel, it would spread over two columns and show grey.
+     * pixel, it would spread over two columns and show gray.
      */
     private static void mustTurn(Graphics2D g, int tile, int h, int total, Color fill, Color line)
     {
@@ -2693,7 +2693,7 @@ public class TileAnnotation
     private int[] badgeDrawnAt;
 
     /**
-     * The midpoint of this tile's own two track sides - the tile centre for a straight, and on the
+     * The midpoint of this tile's own two track sides - the tile center for a straight, and on the
      * rails for anything else.
      *
      * Public because the running overlay needs it too: the end of a run has one side and a null, and without this it
@@ -2706,7 +2706,7 @@ public class TileAnnotation
      */
     public int[] trackCentre(int width, int height)
     {
-        // the badge's own route where it has one, otherwise the first route drawn, otherwise centre
+        // the badge's own route where it has one, otherwise the first route drawn, otherwise center
         Side sideA = badge != null && badge.getA() != null ? badge.getA()
             : marks.isEmpty() ? null : marks.get(0).getA();
 
@@ -2780,7 +2780,7 @@ public class TileAnnotation
 
     /**
      * The middle of the one road among these that ends at every one of the sides, where every road is a curve - two
-     * neighbouring sides - or null.
+     * neighboring sides - or null.
      */
     private static int[] centreOf(java.util.Set<java.util.Set<Side>> roads, List<Side> sides, int width, int height)
     {
@@ -2788,7 +2788,7 @@ public class TileAnnotation
 
         for (java.util.Set<Side> road : roads)
         {
-            // CURVES ONLY: two neighbouring sides, on every road of the tile
+            // CURVES ONLY: two neighboring sides, on every road of the tile
             if (road.size() != 2) return null;
 
             java.util.Iterator<Side> ends = road.iterator();
@@ -2839,7 +2839,7 @@ public class TileAnnotation
         String text = String.valueOf(length);
 
         // A third of the tile, which is what LayoutGrid gives an address label (OB-019): the two numbers sit in opposite
-        // corners of the same square in the same colour, so the smaller one would read as a footnote to the larger.
+        // corners of the same square in the same color, so the smaller one would read as a footnote to the larger.
         int size = Math.max(8, Math.min(width, height) / 3);
 
         g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, (float) size));
@@ -2849,7 +2849,7 @@ public class TileAnnotation
         int textWidth = metrics.stringWidth(text);
 
         // Top right, which is the corner away from the address the diagram writes at the leading edge.
-        // The two are the same colour on purpose, so they must not be able to sit on top of one another
+        // The two are the same color on purpose, so they must not be able to sit on top of one another
         // and read as one number.
         int x = width - textWidth - 2;
         int y = metrics.getAscent() + 1;
@@ -2903,7 +2903,7 @@ public class TileAnnotation
 
         TileAnnotation other = (TileAnnotation) o;
 
-        // `editing` is in here because it changes the PICTURE (whether a named point's icon is filled with its colour or
+        // `editing` is in here because it changes the PICTURE (whether a named point's icon is filled with its color or
         // white) and equals is what LayoutLabel asks to decide whether a redraw is needed.  The two populations
         // of labels happen to be segregated today, so no live path reaches it; leaving it out would be a trap.
         return length == other.length && selected == other.selected

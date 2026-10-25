@@ -109,7 +109,7 @@ public class testLayoutTiles
     }
 
     /**
-     * Behavioural half: run the real production shapes against each other - repeated updateTiles()
+     * Behavioral half: run the real production shapes against each other - repeated updateTiles()
      * calls, as the CS feedback path does, while tiles are added, as the EDT does when a track diagram
      * window opens or a page is switched.  Neither may fail.
      *
@@ -685,10 +685,10 @@ public class testLayoutTiles
     }
 
     /**
-     * The exit brings a minimised route editor back before it asks about its unsaved typing (the popups sweep, on Adam's
-     * MT-703 note): the question is owned by the route editor, and a minimised window hides what it owns - so closing
+     * The exit brings a minimized route editor back before it asks about its unsaved typing (the popups sweep, on Adam's
+     * MT-703 note): the question is owned by the route editor, and a minimized window hides what it owns - so closing
      * TrainControl with the route editor in the taskbar asked where nobody could see it, and the exit waited on it.
-     * `toFront`, which it did call, does not restore a minimised window.
+     * `toFront`, which it did call, does not restore a minimized window.
      *
      * MUTATION: ask without bringing the route editor back, and this fails.
      *
@@ -1010,7 +1010,7 @@ public class testLayoutTiles
             try
             {
                 // Long enough that a second action would have to overlap this one if nothing were
-                // serialising them - a thread per click would fail here
+                // serializing them - a thread per click would fail here
                 Thread.sleep(120);
             }
             catch (InterruptedException ex)

@@ -37,7 +37,7 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
  * No setup edit is made while a route runs with autonomy idle, at any door that refuses one while autonomy is busy (Adam,
  * 2026-09-28: *"There should be no setup edit possible during a run"*; asked whether those doors should also refuse while
  * a route runs: *"yes, refuse"*).  One question, `TrainControlUI.somethingIsRunning` as Return Home's place-at-home item
- * asks it (FR-129), and each door keeps its own way of refusing - greyed, hidden, or said at the click.
+ * asks it (FR-129), and each door keeps its own way of refusing - grayed, hidden, or said at the click.
  *
  * On the live snapshot's window, with a route of one accessory command marked running as `MarklinRoute.execRoute` marks
  * it, so nothing is sent; and each door asked again at rest, where it does not refuse.
@@ -359,7 +359,7 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * Neither editor opens while a route runs - the Edit door says why, and Open Full Editor is greyed with it - and the
+     * Neither editor opens while a route runs - the Edit door says why, and Open Full Editor is grayed with it - and the
      * track editor's Autonomy tab and its Save refuse; at rest the autonomy editor may open and the tab is live.
      *
      * MUTATION: let `whyAutonomyEditorCannotOpen`, `openLayoutEditor`, the editor's mode tab or its Save ask autonomy
@@ -479,7 +479,7 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * The Autonomy and Layout menus grey what changes the setup or the diagram while a route runs, saying a route is one
+     * The Autonomy and Layout menus gray what changes the setup or the diagram while a route runs, saying a route is one
      * reason, and give it back at rest.
      *
      * MUTATION: let either menu's guard ask autonomy alone again, and this fails.
@@ -576,7 +576,7 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * A control greyed because a run holds the setup says, as its tooltip, the sentence its own door gives when driven
+     * A control grayed because a run holds the setup says, as its tooltip, the sentence its own door gives when driven
      * (Adam: "make tooltips match"): the track editor's Autonomy tab, the timetable's right-click menu, the Layout and
      * Autonomy menus, and, with autonomy busy, the Auto tab's settings - autonomy busy and a route running alike.
      *
@@ -745,7 +745,7 @@ public class testNoSetupEditWhileARouteRuns
                             item.getToolTipText(), door.getValue());
                     }
 
-                    // THE AUTO TAB'S SETTINGS, greyed only while autonomy is busy: each setting refuses as an edit, and
+                    // THE AUTO TAB'S SETTINGS, grayed only while autonomy is busy: each setting refuses as an edit, and
                     // Execute Timetable, which sends trains, says to wait
                     if (autonomy)
                     {
@@ -825,7 +825,7 @@ public class testNoSetupEditWhileARouteRuns
         SwingUtilities.invokeAndWait(() -> callUi(ui, "refreshWhatWaitsForTheTrains", new Class<?>[0]));
     }
 
-    /** Drives a greyed control's door and asserts its tooltip holds the one sentence the door said. */
+    /** Drives a grayed control's door and asserts its tooltip holds the one sentence the door said. */
     private static void saysWhatItsDoorSays(Answering answering, String control, Object tooltip, Runnable door)
         throws Exception
     {
@@ -1467,7 +1467,7 @@ public class testNoSetupEditWhileARouteRuns
     /**
      * The Auto tab's settings, the route activations, the timetable's doors and a train's direction change leave the
      * setup alone while a route runs with autonomy idle, and say why with the edit sentence (Adam: *"There should be no
-     * setup edit possible during a run"*; of a route: *"yes, refuse"*).  The timetable's right-click menu greys its items
+     * setup edit possible during a run"*; of a route: *"yes, refuse"*).  The timetable's right-click menu grays its items
      * with the sentence that names a route.
      *
      * MUTATION: ask `isAutonomyBusy` alone again in any of them, and this fails naming it.
@@ -1581,7 +1581,7 @@ public class testNoSetupEditWhileARouteRuns
 
                 assertEquals(railway.isTimetableCapture(), captureWas, "the capture box wrote the setup while a route runs");
 
-                // THE TIMETABLE'S RIGHT-CLICK MENU: every item greyed, with that sentence
+                // THE TIMETABLE'S RIGHT-CLICK MENU: every item grayed, with that sentence
                 for (javax.swing.JMenuItem item : timetableMenuItems(window))
                 {
                     assertFalse(item.isEnabled(), item.getText() + " is live in the timetable's menu while a route runs");
@@ -1951,7 +1951,7 @@ public class testNoSetupEditWhileARouteRuns
 
     /**
      * No run starts while a route runs: Start, Execute Timetable, Return Home's run and a train sent by hand each refuse
-     * through the one gate (`whyNoTrainMayBeSent`), saying a route is running, before anything is greyed or sent - so a turn
+     * through the one gate (`whyNoTrainMayBeSent`), saying a route is running, before anything is grayed or sent - so a turn
      * held for the route (`turnsHeldByARoute`) never meets a run that began under it (Adam, on a turn lost to a run that
      * started before its route ended: *"prevent starting autonomy etc if a route is still running"*).  At rest the gate
      * does not say it.

@@ -52,7 +52,7 @@ public class testASetupMovesToAOnePageLayout
      * export gives ONE warning, naming the four pages this layout does not have.  MT-514: after it, opening the autonomy
      * editor, closing it and opening it again says nothing about the setup being left alone.
      *
-     * MUTATION: grey Import on a layout with nothing set up, warn once per page, or let the save after the import be
+     * MUTATION: gray Import on a layout with nothing set up, warn once per page, or let the save after the import be
      * declined, and this fails.
      *
      * @throws Exception from the windows or the files

@@ -39,8 +39,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 {
 
     /**
-     * A page left out greys the path type with the tools that test by it (Adam, FR-105: "when a page is excluded in the
-     * autonomy editor, also disable/grey out the auto/manual radio buttons"): Test a Path and Why not Moving? were greyed,
+     * A page left out grays the path type with the tools that test by it (Adam, FR-105: "when a page is excluded in the
+     * autonomy editor, also disable/grey out the auto/manual radio buttons"): Test a Path and Why not Moving? were grayed,
      * and the pair choosing which paths they test stayed live, choosing nothing.
      *
      * MUTATION: leave the path type live on a page left out, and this fails.
@@ -580,7 +580,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         return new int[] {first, last};
     }
 
-    /** How many pixels of exactly this colour an annotation paints on black. */
+    /** How many pixels of exactly this color an annotation paints on black. */
     private static int pixelsOf(TileAnnotation annotation, Color colour)
     {
         int size = 48;
@@ -849,7 +849,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         return (double[]) heading.invoke(annotation, side, 48, 48);
     }
 
-    /** An annotation painted on black: how many of its pixels are green, and the colour of its corner. */
+    /** An annotation painted on black: how many of its pixels are green, and the color of its corner. */
     private static int[] greenAndCorner(TileAnnotation annotation)
     {
         int size = 48;
@@ -1408,7 +1408,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
      *
      * The track diagram's annotation of a sensor square said it was not curved, so an arrow was aimed from the middle of
      * the badge's road - right on a curve, which has one road, and some thirty degrees off on a double curve's other one.
-     * Both roads one-way here, so each has a red arrow at its shut end; each arrow's ink is centred on its own curve's
+     * Both roads one-way here, so each has a red arrow at its shut end; each arrow's ink is centered on its own curve's
      * chord.
      *
      * MUTATION: annotate a sensor square as not curved again, and this fails.
@@ -2080,11 +2080,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /**
      * A route button on a running line takes direction clicks like the track it sits on (OB-332; Adam, 2026-10-11:
      * *"sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable."*).  The graph runs the line through the button, so a direction is stored on it and its arrow
-     * drawn there, and the editor greyed every button and refused its click - six such arrows on his Oles kreds sandbox,
-     * route 41 among them.  Not greyed, a click changes its direction; a button beside the line, with no track through
-     * it, is still greyed and takes no click.
+     * drawn there, and the editor grayed every button and refused its click - six such arrows on his Oles kreds sandbox,
+     * route 41 among them.  Not grayed, a click changes its direction; a button beside the line, with no track through
+     * it, is still grayed and takes no click.
      *
-     * MUTATION: grey every route button again, and this fails.
+     * MUTATION: gray every route button again, and this fails.
      *
      * @throws Exception from the panel
      */

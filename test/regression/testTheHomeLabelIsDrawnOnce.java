@@ -82,22 +82,22 @@ public class testTheHomeLabelIsDrawnOnce
      */
     private static final TileKey OB193 = new TileKey(PAGE, 6, 4);
 
-    /** Captioned on its own square AND on a neighbour - the defect */
+    /** Captioned on its own square AND on a neighbor - the defect */
     private static TileKey doubled;
 
-    /** The neighbour that names `doubled` */
+    /** The neighbor that names `doubled` */
     private static TileKey doubledOffset;
 
     /** Captioned on its own square only - the control against suppressing every self-caption */
     private static TileKey selfOnly;
 
-    /** Captioned on a neighbour only - the control against suppressing the offset one */
+    /** Captioned on a neighbor only - the control against suppressing the offset one */
     private static TileKey offsetOnly;
 
     private static TileKey offsetOnlyCaption;
 
     /**
-     * Captioned on two neighbours and not on its own square - drawn TWICE, which is the one shape here the setup check
+     * Captioned on two neighbors and not on its own square - drawn TWICE, which is the one shape here the setup check
      * calls an error (OB-341).  Null where the railway has no fourth station with two free squares beside it.
      */
     private static TileKey twoBeside;
@@ -228,7 +228,7 @@ public class testTheHomeLabelIsDrawnOnce
         session.setHome(selfOnly, selfHome);
         session.setHome(offsetOnly, offsetHome);
 
-        // A FOURTH, if the railway has one, captioned on two neighbours: moved off its own square (which sweeps), and a
+        // A FOURTH, if the railway has one, captioned on two neighbors: moved off its own square (which sweeps), and a
         // second put beside it through the raw store door.  Everything above is arranged first, so the squares it takes
         // are free ones.
         for (int at = 3; at < selfCaptioned.size() && twoBeside == null && locomotives.size() > 3; at++)

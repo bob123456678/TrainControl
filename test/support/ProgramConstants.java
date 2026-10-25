@@ -5,7 +5,7 @@ import java.awt.Color;
 /**
  * The static constants of the program, asked for by name, whatever their visibility.
  *
- * A test that restates a number or a colour of the program holds its own copy of a rule: change the
+ * A test that restates a number or a color of the program holds its own copy of a rule: change the
  * program and the test goes red looking like a regression, or stays green for the wrong reason.  This reads
  * the program's own constant instead.  A constant that has been renamed or moved fails here, loudly and
  * naming the class and the field, rather than being swallowed.
@@ -63,7 +63,7 @@ public final class ProgramConstants
     /**
      * @param owner the class that declares the static field
      * @param name the field's name
-     * @return its value as a colour
+     * @return its value as a color
      */
     public static Color colour(Class<?> owner, String name)
     {

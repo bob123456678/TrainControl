@@ -52,7 +52,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * | | |
  * |---|---|
  * | BARE | nothing standing anywhere |
- * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309; it was "is darker than it was" while the mark was a grey wash) |
+ * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309; it was "is darker than it was" while the mark was a gray wash) |
  * | AFTER | the train moved away, and that square is EXACTLY the bare image again |
  *
  * MUTATION: removing the `repaintTheWashWhereItChanged` call from
@@ -229,7 +229,7 @@ public class testTheShadingIsRedrawnWhenATrainMoves
             // ORANGE, NOT DARKER (MT-309).
             //
             // This asked whether the square had got darker, which was the right question while the
-            // mark was a grey wash over the whole tile.  Adam has replaced that with a line along the
+            // mark was a gray wash over the whole tile.  Adam has replaced that with a line along the
             // road the train is on - "instead of shading the entire tiles, we need to draw a line
             // (let's say in orange)" - and a line over a few pixels of a mostly white square does not
             // move its mean brightness by a whole point.  What it does is put orange on it.

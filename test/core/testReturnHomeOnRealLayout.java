@@ -366,7 +366,7 @@ public class testReturnHomeOnRealLayout
             + " back to " + home.getName() + " before anything is blocked");
 
         // Hold the home station's own sensor occupied.  Nothing the planner can move accounts for it, so
-        // it stays blocked for the whole plan - the way an unmodelled obstruction on the track behaves.
+        // it stays blocked for the whole plan - the way an unmodeled obstruction on the track behaves.
         model.setFeedbackState(home.getS88(), true);
 
         try
@@ -404,7 +404,7 @@ public class testReturnHomeOnRealLayout
      * `core.testHomeStaging.testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome` and
      * `testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt`, both seen red before the fix.  What
      * they cannot do is what he was trying to do by hand: meet the arrangement on HIS railway, where the
-     * turning squares are real berths with real approaches and real neighbours.
+     * turning squares are real berths with real approaches and real neighbors.
      *
      * **THE PLACEMENTS ARE STAGED, NOT WAITED FOR.**  The first version of this ran autonomy, stopped it
      * and took whatever had come to rest on a turning square away from home - and on his layout, over

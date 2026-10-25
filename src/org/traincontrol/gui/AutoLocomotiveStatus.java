@@ -270,7 +270,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // compiling and always answered false.
             final boolean atAssignedHome = at != null && locomotive.equals(at.getHomeLoc());
 
-            // Grey out locomotives on inactive points / not on the graph
+            // Gray out locomotives on inactive points / not on the graph
             if ((layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
                     layout.getLocomotiveLocation(locomotive) == null
             )
@@ -278,7 +278,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locName.setForeground(Color.LIGHT_GRAY);
                 this.pauseButton.setVisible(false);
                 
-                // Grey out label
+                // Gray out label
                 locStation.setBackground(Color.LIGHT_GRAY);
                 locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
@@ -691,7 +691,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         area.setEditable(false);
         area.setMargin(new java.awt.Insets(6, 6, 6, 6));
 
-        // FlatLaf derives a non-editable JTextPane's background from the panel behind it - a grey,
+        // FlatLaf derives a non-editable JTextPane's background from the panel behind it - a gray,
         // not the white every other text area in the app uses (OB-096, Adam: "make the text area of
         // 'no available paths window' with the text be white"). White is set explicitly here, the same
         // way the rest of the app does it (e.g. AutonomyViewerPanel's `findings` list and RouteEditorFrame's
@@ -703,7 +703,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         // Asking the L&F for "Label.font" and using it whole was the previous attempt at "the standard
         // size of all other windows", and it is why Adam asked for the same thing twice: FlatLaf's
         // label font is smaller than the size this application sets on its own components, so taking it
-        // whole made this window smaller than its neighbours rather than the same.
+        // whole made this window smaller than its neighbors rather than the same.
         //
         // The number is not invented. Ninety-eight components in the gui package are built with a
         // Segoe UI font at size 14, against a single one at 12, so 14 IS the standard in this
@@ -757,7 +757,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * which matters here more than it looks, because the whole point of the grouping is that the first
      * list is worth waiting for and the second is not.
      *
-     * A heading is recognised by position rather than by matching its text: the report writes each one
+     * A heading is recognized by position rather than by matching its text: the report writes each one
      * on its own line immediately before an indented block, and the lines that are not indented and
      * not blank are exactly the headings and the opening sentence. Matching the translated text would
      * mean this working in English and quietly doing nothing in the other seven bundles.
@@ -805,7 +805,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * would then be a second answer to "can autonomy pick this station" - drifting from the one the
      * search itself uses is exactly how the reason and the grouping would come to disagree.
      *
-     * Arrival-side copies are collapsed to the station a person would recognise, the same way the
+     * Arrival-side copies are collapsed to the station a person would recognize, the same way the
      * tooltip does it.  A station counts as choosable if ANY of its copies is: one reachable from one
      * side and barred from the other is a station autonomy can choose.
      *
@@ -1058,7 +1058,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * being shown the internals invites them to wonder which is the real one.
      *
      * @param point a Point of the running graph
-     * @return the station name a reader would recognise
+     * @return the station name a reader would recognize
      */
     private String stationName(org.traincontrol.automation.Point point)
     {
@@ -1209,7 +1209,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
         locomotive.setAutonomyPaused(pauseButton.isSelected());
 
-        // AND ITS ICON ON THE DIAGRAM (FR-117), grey while paused.  The train alone: this button is pressed while trains
+        // AND ITS ICON ON THE DIAGRAM (FR-117), gray while paused.  The train alone: this button is pressed while trains
         // run, when the setup is not edited (Adam, 2026-09-28), and the fold takes it into the setup with the rest of this
         // tab's settings.
         parent.trainsPausedChanged();

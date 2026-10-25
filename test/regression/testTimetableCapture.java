@@ -25,7 +25,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Layout starts with capture off. So every rebuild - applying a diagram edit, placing a locomotive,
  * loading a configuration - quietly turned capture off underneath a toggle button that stayed lit.
  *
- * That is why the tests below are in two halves. The first two are the behaviour anybody would have
+ * That is why the tests below are in two halves. The first two are the behavior anybody would have
  * written; the third is the one that would have caught this, and it is about a piece of state
  * surviving something that looks unrelated to it.
  *

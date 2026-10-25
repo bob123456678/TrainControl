@@ -13,9 +13,9 @@ import org.traincontrol.util.I18n;
  *
  * Eight items were written out twice, once in {@link RightClickMenuListener} for a key-mapping button
  * and once in {@link RightClickSelectorMenu} for a tile in the locomotive database: set and clear the
- * local icon, customise function icons, edit the name and address, edit the notes, find similar
+ * local icon, customize function icons, edit the name and address, edit the notes, find similar
  * locomotives, and delete from the database. Two copies of a menu item is two places to fix a label
- * and one place to forget - the customise-icons item already differed between them, and nothing said
+ * and one place to forget - the customize-icons item already differed between them, and nothing said
  * which was intended.
  *
  * **Why this is provably safe rather than merely tidy.** The two copies called the same methods with
@@ -62,7 +62,7 @@ final class LocomotiveMenuItems
     }
 
     /**
-     * @param source the button the icons are being customised from, or null when there is none
+     * @param source the button the icons are being customized from, or null when there is none
      */
     static JMenuItem customiseFunctionIcons(TrainControlUI ui, Locomotive loc, JButton source,
         MouseEvent evt)
@@ -141,7 +141,7 @@ final class LocomotiveMenuItems
      * to fill in for no reason, and on one WITH a setup it is the other half of the warning FR-046
      * raises about a train that has no length.
      *
-     * Null rather than a disabled item, because a greyed entry invites the question "why not", and the
+     * Null rather than a disabled item, because a grayed entry invites the question "why not", and the
      * answer - there is no autonomy here - is not something this menu can say in the space it has.
      *
      * @return the item, or null when autonomy is not loaded

@@ -189,7 +189,7 @@ final class EditorMassAssign
     /**
      * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
      * Train Lengths, FR-094, named so on MT-567) - and where none is missing one, through every train with the length it
-     * has, which Skip keeps (MT-533: the item is never greyed).
+     * has, which Skip keeps (MT-533: the item is never grayed).
      *
      * **Mass Assign Station Max Train Lengths' walk, for trains**: the same prompt, and the list asked again before each
      * train rather than trusted from the start.
@@ -202,7 +202,7 @@ final class EditorMassAssign
      * why.  Skip leaves the train as it was.
      *
      * **Written through `applyTrainLength`**, the one door every other train-length gesture uses, so the findings and the
-     * grey follow the number as they do from the locomotive menu.  A train length belongs to the locomotive, not to this
+     * gray follow the number as they do from the locomotive menu.  A train length belongs to the locomotive, not to this
      * setup, so the editor's Cancel does not take it back, and each prompt says so before the answer is given.
      *
      * A train standing on this page is outlined and scrolled to while it is asked about; one elsewhere, or standing
@@ -217,7 +217,7 @@ final class EditorMassAssign
 
         java.util.List<String> trains = door.trainsWithoutALength();
 
-        // EVERY TRAIN WHEN NONE IS MISSING A LENGTH (MT-533): the item is never greyed, and this is what it offers then -
+        // EVERY TRAIN WHEN NONE IS MISSING A LENGTH (MT-533): the item is never grayed, and this is what it offers then -
         // each train with the length it has, which Skip keeps.
         java.util.Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
 

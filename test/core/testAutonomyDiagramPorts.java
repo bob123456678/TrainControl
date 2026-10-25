@@ -458,7 +458,7 @@ public class testAutonomyDiagramPorts
 
         // it claims no sides here, because which sides it conducts is not a property of the tile: the
         // same button appears in horizontal and vertical runs at the same orientation, and beside the
-        // rails carrying nothing at all.  TileGraph settles it from the neighbours.
+        // rails carrying nothing at all.  TileGraph settles it from the neighbors.
         assertTrue(TilePorts.ports(componentType.ROUTE, 0, 0).isEmpty(),
             "a transparent tile must not claim sides the art does not have");
 
@@ -558,7 +558,7 @@ public class testAutonomyDiagramPorts
      * the only complete statement of the port map anywhere - all twenty-eight tile types, their routes
      * and their branches - and drew a picture of it for a person to check against the artwork. The
      * trouble was how it stayed true: `TilePorts`'s javadoc instructed the reader to keep the Python
-     * copy in step BY HAND. A verification that has to be hand-synchronised with the thing it verifies
+     * copy in step BY HAND. A verification that has to be hand-synchronized with the thing it verifies
      * is not a verification, it is a second opinion with the same author - and that copy had already
      * gone stale, still marking the LINK side "UNCONFIRMED" long after `d4d5b7ba` confirmed it.
      *
@@ -567,7 +567,7 @@ public class testAutonomyDiagramPorts
      * **The union across every state, not state 0.** A three-way has two addresses and therefore more
      * states than a simple switch, and numbering them is `TilePorts`'s business; what a reader wants
      * to know is which pieces of track this tile joins in any position at all. The per-state and
-     * per-orientation behaviour is pinned by the tests above, which is the right division: those say
+     * per-orientation behavior is pinned by the tests above, which is the right division: those say
      * how the tile TURNS, this says what it IS.
      *
      * A stub - a tile with one open side, like an end, a tunnel mouth or a link - is a route whose two
@@ -608,7 +608,7 @@ public class testAutonomyDiagramPorts
         table.put(componentType.CUSTOM_PERM_Y,         new String[] {"SW", "ES"});
         table.put(componentType.CUSTOM_PERM_THREEWAY,  new String[] {"NS", "SW", "ES"});
 
-        // Carries no trains: decorative, disqualified, or transparent to its neighbours
+        // Carries no trains: decorative, disqualified, or transparent to its neighbors
         table.put(componentType.CUSTOM_SCISSORS,       new String[] {});
         table.put(componentType.CUSTOM_PERM_SCISSORS,  new String[] {});
         table.put(componentType.TURNTABLE,             new String[] {});
@@ -654,7 +654,7 @@ public class testAutonomyDiagramPorts
      * direction ANDs with the tile's own restriction, so on a permanent turnout - every route directed
      * at the toe - "toward the fork" and "both ways" restrict nothing at all: no train could take that
      * road either way.  The editor drew a green arrow for it, which is a control offering what the
-     * guard will not honour (OB-057, OB-090).
+     * guard will not honor (OB-057, OB-090).
      *
      * `TileGraph.directionIsPossible` is the question the MENU asks.  `directionAllows` is not the
      * other half of it, though an earlier draft said so: they disagree about `NONE`, which is always

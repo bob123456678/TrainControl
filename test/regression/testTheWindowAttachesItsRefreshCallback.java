@@ -19,7 +19,7 @@ import support.SourceOf;
  * and two panels simply stopped being true - the timetable, which Adam reported as capture not working
  * at all, and the locomotive status panel, which he reported separately three days later as OB-097.
  *
- * A behavioural test cannot see that: it can always attach the callback itself, and then it is testing
+ * A behavioral test cannot see that: it can always attach the callback itself, and then it is testing
  * its own wiring. So this reads the source instead and insists the window does it. Crude, and the same
  * device `testStoreCollectionsAreHandledEverywhere` and `testEditorSurfaceRules` use, for the same
  * reason - some invariants are about what the code SAYS, and a deleted call site is one of them.

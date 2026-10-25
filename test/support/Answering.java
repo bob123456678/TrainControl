@@ -155,7 +155,7 @@ public final class Answering implements AutoCloseable
     }
 
     /**
-     * Picks this file in every file chooser from now on, and approves it.  Without it, a chooser is cancelled.
+     * Picks this file in every file chooser from now on, and approves it.  Without it, a chooser is canceled.
      *
      * @param file the file or folder to pick; null to cancel again
      * @return this answerer

@@ -333,7 +333,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
      * does not exist is exactly the shape of "the write cannot be made", and nothing about it is
      * special-cased.
      *
-     * MUTATION, run: removing the pending entry unconditionally - the shipped behaviour - fails this.
+     * MUTATION, run: removing the pending entry unconditionally - the shipped behavior - fails this.
      *
      * @throws Exception on a reflection failure
      */
@@ -427,7 +427,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             if (plain.isReversing() || plain.isTerminus()) { count(why, "is a turning copy"); continue; }
 
             // THE PLAIN COPY OF A SQUARE TRAINS MAY TURN AT.  `mayReverseAt` asks about the PLACE
-            // rather than the copy, which is the only way to recognise one from the runtime.
+            // rather than the copy, which is the only way to recognize one from the runtime.
             if (!layout.mayReverseAt(plain)) { count(why, "no turning sibling"); continue; }
 
             TileKey square = session.getStationIndex().squareOf(plain.getName());

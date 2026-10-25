@@ -709,7 +709,7 @@ final class SessionImport
 
             metHere.add(tile);
 
-            // Labelled on the station square itself, where the station has no caption on its page already (OB-341): every
+            // Labeled on the station square itself, where the station has no caption on its page already (OB-341): every
             // station has to be shown on the diagram, and its own square is the one place that always exists, is on the
             // page the reader is looking at, and cannot land on somebody else's track.
             if (point.optBoolean("station", false) && !owner.isCaptionedOnPage(tile, tile.getPage()))
@@ -825,7 +825,7 @@ final class SessionImport
         // are the only thing left to say so.
         if (file.optJSONObject("globals") != null) return ImportFormat.CONFIGURATION;
 
-        // Deliberately NOT recognised: a configuration created and never used, which carries nothing
+        // Deliberately NOT recognized: a configuration created and never used, which carries nothing
         // but its own name.  A name is not evidence - half the JSON in the world has one - and there
         // would be nothing in such a file to import anyway.
 

@@ -58,7 +58,7 @@ public final class CommandRow
         FUNCTIONS_OFF,
 
         // The rest of what a route can do.  These were all readable and none of them buildable: a
-        // route that used one could be opened, and the row was kept greyed and untouched, but there
+        // route that used one could be opened, and the row was kept grayed and untouched, but there
         // was no way to add one.  AUTO_LOCOMOTIVE - a train at a sensor - is the condition the route editor's
         // documentation used as its example, so until then the editor could not build the row it illustrated.
         LIGHTS_ON,
@@ -318,7 +318,7 @@ public final class CommandRow
     }
 
     /**
-     * Whether this kind can carry a decoder type, so the editor can grey the cell for the rest.
+     * Whether this kind can carry a decoder type, so the editor can gray the cell for the rest.
      */
     public static boolean hasProtocol(Kind kind)
     {
@@ -348,7 +348,7 @@ public final class CommandRow
     }
 
     /**
-     * Whether this kind takes a target at all, so the editor can grey the cell rather than offer a box
+     * Whether this kind takes a target at all, so the editor can gray the cell rather than offer a box
      * that does nothing.
      */
     public static boolean hasTarget(Kind kind)

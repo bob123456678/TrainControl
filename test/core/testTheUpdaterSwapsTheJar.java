@@ -180,7 +180,7 @@ public class testTheUpdaterSwapsTheJar
 
     /**
      * The new version has started when it says so - by writing the marker it is told of outside its command line -
-     * and that holds when it then ends at once, as it does when its IP question is cancelled: an exit code of 1 is
+     * and that holds when it then ends at once, as it does when its IP question is canceled: an exit code of 1 is
      * not a failed start.
      *
      * @throws Exception from the files
@@ -687,7 +687,7 @@ public class testTheUpdaterSwapsTheJar
 
     /**
      * One update at a time, and an exit that does not happen leaves none armed: a second Download & Update is refused
-     * while one is under way; an exit that throws or is cancelled disarms the update; and a second `startUpdater`
+     * while one is under way; an exit that throws or is canceled disarms the update; and a second `startUpdater`
      * while the lock is held is refused rather than letting go of the first one's lock.
      *
      * @throws Exception from the files

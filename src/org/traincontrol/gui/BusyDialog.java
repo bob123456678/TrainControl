@@ -39,9 +39,9 @@ public final class BusyDialog extends JDialog
     // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
     // 166x77 against 166x49 for the identical window, measured 2026-09-11.
     //
-    // Class initialisation always finishes before the first instance is created, so this is early enough.
+    // Class initialization always finishes before the first instance is created, so this is early enough.
     //
-    // Headless-guarded because a static initialiser that throws leaves the class unusable for the rest of
+    // Headless-guarded because a static initializer that throws leaves the class unusable for the rest of
     // the process, which is a worse failure than a window in the wrong font.
     static
     {
@@ -95,7 +95,7 @@ public final class BusyDialog extends JDialog
      * halves land on the event thread in the order they were posted, and the flag covers the case
      * where the work finishes so fast that the close is queued behind a show that has not run yet.
      *
-     * @param parent the window to centre on
+     * @param parent the window to center on
      * @param message what is happening, in words
      * @return the handle that dismisses it
      */
@@ -170,7 +170,7 @@ public final class BusyDialog extends JDialog
     /**
      * Runs slow work behind a spinner, then hands back to the event thread.
      *
-     * @param parent the window to centre on
+     * @param parent the window to center on
      * @param message what is happening, in words - a spinner alone says only "wait"
      * @param work the slow part.  Runs off the event thread, so it must not touch Swing
      * @param whenDone what to do with the result, on the event thread.  May be null

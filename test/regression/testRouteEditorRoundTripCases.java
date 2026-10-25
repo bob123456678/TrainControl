@@ -15,7 +15,7 @@ import org.traincontrol.base.ThreeWaySwitch;
  * parsed back on the way out - and both name a specific shape that got lost on that trip before.
  *
  * `testRouteRoundTrip` already covers the trip in general, including three-ways as a pair and the
- * feedback command that used to swallow its neighbour. What it does not cover is the two shapes below,
+ * feedback command that used to swallow its neighbor. What it does not cover is the two shapes below,
  * which is why these are here rather than added to it.
  *
  * @author Adam
@@ -39,7 +39,7 @@ public class testRouteEditorRoundTripCases
     public void testAConditionStartingWithABracketSurvives() throws Exception
     {
         // Built from objects and rendered, rather than hand-written: the text form is the editor's
-        // business, and inventing it in a test would pin my spelling rather than its behaviour.
+        // business, and inventing it in a test would pin my spelling rather than its behavior.
         NodeExpression bracketed = new org.traincontrol.base.NodeGroup(java.util.Collections.<NodeExpression>singletonList(
             new org.traincontrol.base.NodeOr(feedback(1, true), feedback(2, true))));
 

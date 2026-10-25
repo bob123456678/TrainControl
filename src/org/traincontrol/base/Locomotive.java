@@ -1663,7 +1663,7 @@ public abstract class Locomotive
      *
      * COPIES, not the live arrays and map.  `setLocalFunctionImageURLs` stores the map it is given by
      * reference, so a snapshot holding the live one would follow every later edit - and a Cancel would
-     * then restore the state it was cancelling.
+     * then restore the state it was canceling.
      *
      * @return the snapshot
      */

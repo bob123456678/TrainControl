@@ -44,7 +44,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * train has arrived and its path has been released.
  *
  * This tests the BUILD, which is where the whole feature lives. The refusal itself is the existing lock
- * behaviour, covered by the path tests that have always covered it.
+ * behavior, covered by the path tests that have always covered it.
  *
  * @author Adam
  */
@@ -515,7 +515,7 @@ public class testStationBlockedByAnotherPoint
      * holds the points themselves now, so a name that resolves to nothing never becomes a restriction
      * at all - it is reported once, where the file is read, and then does not exist.
      *
-     * The behaviour a user sees is the same, and that is deliberate: refusing the path, or the
+     * The behavior a user sees is the same, and that is deliberate: refusing the path, or the
      * configuration, would take a station out of service because the point it was paired with was
      * renamed. What changed is that the restriction is no longer carried around in a state where it
      * cannot mean anything.
@@ -656,7 +656,7 @@ public class testStationBlockedByAnotherPoint
     /**
      * The exemption asks the BLOCK, not the square.
      *
-     * The yard is reachable from two sides, modelled as two Points sharing one s88 - and a train
+     * The yard is reachable from two sides, modeled as two Points sharing one s88 - and a train
      * standing on the twin is standing on the same piece of track. getBlockLocomotive is what makes
      * that true, and it is the subtle half of the rule: testACopyOfTheWatchedSquareCountsAsOccupied
      * pins it for the train being held back, and this pins it for the train being let out.
@@ -776,7 +776,7 @@ public class testStationBlockedByAnotherPoint
      * A run from A to B, with a yard that B is held back by.
      *
      * The yard is two Points sharing a block, which is how a square reachable from two sides is
-     * modelled - so the block half of the rule has something to be asked about.
+     * modeled - so the block half of the rule has something to be asked about.
      *
      * runLocomotives sets the auto-running flag and starts nothing here: it iterates the run list, and
      * this layout has none.

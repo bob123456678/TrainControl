@@ -20,7 +20,7 @@ import support.SourceOf;
  * Two halves, and the second is the one worth having. A guard that only the interface consults is a
  * guard the next caller does not have, and a guard nothing consults is a rule with a passing test and
  * no effect - which is the fault that has cost this project four defects, three of them last week. So
- * the predicate is tested, AND the menu that offers the action is asked whether it actually greys.
+ * the predicate is tested, AND the menu that offers the action is asked whether it actually grays.
  *
  * The refusal inside `addLocMappingPage` cannot be driven here: it is a modal dialog, and a modal
  * dialog in a test is a hang rather than a failure. That one is read rather than run.
@@ -75,7 +75,7 @@ public class testLocMappingPages
      * both exactly that, and a third turned up in this morning's review. The button that offers an
      * action asks that action's own question.
      *
-     * Greyed rather than removed, which is the shape Delete settled on for the reason written beside
+     * Grayed rather than removed, which is the shape Delete settled on for the reason written beside
      * it: an item that appears and disappears reads as an interface that cannot make up its mind.
      *
      * MUTATION: dropping the `canAddLocMappingPage` test from the menu leaves the item enabled and
@@ -106,7 +106,7 @@ public class testLocMappingPages
             "Add Page is still offered at the ceiling, so a person is invited to do something that "
             + "will be refused with a dialog when they try it");
 
-        // And the greying SAYS SO. A dead item with no explanation is the state the delete side was
+        // And the graying SAYS SO. A dead item with no explanation is the state the delete side was
         // in when Adam found it, and it reads as a bug rather than a rule.
         assertNotNull(at.getToolTipText(),
             "Add Page greys itself at the ceiling and gives no reason, which looks like a fault");
@@ -119,7 +119,7 @@ public class testLocMappingPages
     /**
      * Adding refuses on its own, without the menu's help.
      *
-     * `addLocMappingPage` is public, and the greying above is one caller's manners rather than the
+     * `addLocMappingPage` is public, and the graying above is one caller's manners rather than the
      * rule. Read rather than run because the refusal is a modal dialog.
      *
      * Comments are stripped first. The guard in that method has a comment above it that names
@@ -149,7 +149,7 @@ public class testLocMappingPages
      * Loading a state that already has too many pages does NOT throw the extra ones away.
      *
      * The dangerous half of this cap. `setViewListener` grows the page count to fit whatever the saved
-     * state holds, past the ceiling and without asking, and it has to: the only way to honour a limit
+     * state holds, past the ceiling and without asking, and it has to: the only way to honor a limit
      * while loading is to drop the mappings above it. Every installation configured before 2026-08-27
      * could be over the line, and the pages above it are somebody's railway.
      *
@@ -237,7 +237,7 @@ public class testLocMappingPages
     }
 
     /**
-     * The autonomy menu greys itself, and says which of the two reasons it is.
+     * The autonomy menu grays itself, and says which of the two reasons it is.
      *
      * `AutonomyMenu.refreshEnabled()` decides two things a person meets: whether the menu can be
      * opened at all, and what the tooltip tells them instead.  Both were tested nowhere - and this is
@@ -246,7 +246,7 @@ public class testLocMappingPages
      * this one still did.
      *
      * Two reasons, and they are not interchangeable: no layout at all, and a layout that came straight
-     * from the Central Station, which has nowhere to keep a setup.  A menu that greyed for the second
+     * from the Central Station, which has nowhere to keep a setup.  A menu that grayed for the second
      * and blamed the first would send somebody looking for a layout they already have.
      *
      * Driven through the menu rather than read from the source, so what is asserted is what the
@@ -813,7 +813,7 @@ public class testLocMappingPages
             + pub(geometry, "decoderType") + "|" + pub(geometry, "decoderAddress");
     }
 
-    /** The colour of a pixel, without its alpha. */
+    /** The color of a pixel, without its alpha. */
     private static int rgb(java.awt.image.BufferedImage image, int x, int y)
     {
         return image.getRGB(x, y) & 0xFFFFFF;
@@ -850,8 +850,8 @@ public class testLocMappingPages
     }
 
     /**
-     * Whether every pixel in this box is the page's words' colour on the background or a blend of the two - which, over a
-     * magenta background and navy words, is every pixel whose green is nothing.  A grey, a white or a neutral edge has
+     * Whether every pixel in this box is the page's words' color on the background or a blend of the two - which, over a
+     * magenta background and navy words, is every pixel whose green is nothing.  A gray, a white or a neutral edge has
      * some green, so a shape round the words, or a fill behind them, is a pixel that fails this.
      */
     private static boolean onlyWordsOnTheBackground(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
@@ -889,7 +889,7 @@ public class testLocMappingPages
     }
 
     /**
-     * That nothing but the page's words is painted where the page is: no pill, fill or line of any colour round or
+     * That nothing but the page's words is painted where the page is: no pill, fill or line of any color round or
      * between the number and the name.  Asked of the painted row, because the layout names no such shape to look for.
      * The words themselves are looked for first, so a row that paints nothing cannot pass for one that paints no line.
      */
@@ -935,7 +935,7 @@ public class testLocMappingPages
         return false;
     }
 
-    /** Whether every pixel along this row, in these columns, is the one colour - nothing is drawn into it. */
+    /** Whether every pixel along this row, in these columns, is the one color - nothing is drawn into it. */
     private static boolean rowIsOneColour(java.awt.image.BufferedImage image, int x0, int x1, int y)
     {
         int ref = rgb(image, x0, y);
@@ -948,7 +948,7 @@ public class testLocMappingPages
         return true;
     }
 
-    /** Whether any pixel in these columns and rows is white or all but - the colour of the words and the line. */
+    /** Whether any pixel in these columns and rows is white or all but - the color of the words and the line. */
     private static boolean whiteIn(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
     {
         for (int x = x0; x <= x1; x++)
@@ -975,7 +975,7 @@ public class testLocMappingPages
      * pill floats to the right: *"Can we also float the address to the right?"*  Round 3: *"move the page number to after
      * the page name and separate it with a line"*.  Round 4: *"Change the page title to just the name with page number in
      * parens after, no pill around that, in the standard blue label font"*.  Round 5: *"Change (5) to 5 as a prefix.
-     * Example: 5. MMMMMM"* - so the page is plain words, "5. Example", in `CurrentKeyLabel`'s own font and colour, and
+     * Example: 5. MMMMMM"* - so the page is plain words, "5. Example", in `CurrentKeyLabel`'s own font and color, and
      * only the keycap and the decoder pill are shapes.
      *
      * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
@@ -989,7 +989,7 @@ public class testLocMappingPages
      * MUTATION: put the word Page back in the page's words (draw `getTooltip`'s page words there), put the number after
      * the name or back in parentheses, leave the full stop off, put a line between them, put the decoder pill back beside
      * the page's words, join the type and the address into one text, draw the divider outside its pill, or set the
-     * page's words in any font or colour but the label's, and this fails.
+     * page's words in any font or color but the label's, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1007,7 +1007,7 @@ public class testLocMappingPages
             assertEquals(slot.getText(), "", "CurrentKeyLabel still carries the old text as well as the row, so the line"
                 + " would be said twice");
 
-            // THE PAGE'S WORDS ARE SET IN THE LABEL'S OWN FONT AND COLOUR, read from it: the "standard blue label font"
+            // THE PAGE'S WORDS ARE SET IN THE LABEL'S OWN FONT AND COLOR, read from it: the "standard blue label font"
             java.lang.reflect.Method pageFont = null, pageColour = null;
 
             try
@@ -1345,7 +1345,7 @@ public class testLocMappingPages
      * *"Change the page title to just the name with page number in parens after, no pill around that, in the standard
      * blue label font ... Keep both the key and address pills as is"*, and round 5, *"Change (5) to 5 as a prefix"*.  So,
      * between the keycap and the decoder pill, every
-     * pixel is the background or the label's navy words and a blend of the two - no outline, no fill, no line, no grey -
+     * pixel is the background or the label's navy words and a blend of the two - no outline, no fill, no line, no gray -
      * and the words are navy; the decoder's divider is white with navy above and below it - the rim, unbroken - and the
      * pill's last painted column is the slot's last.
      *
@@ -1430,14 +1430,14 @@ public class testLocMappingPages
                 "no white address text right of the divider");
 
             // THE PAGE'S WORDS HAVE NO SHAPE: in all the room between the keycap and the decoder pill, every pixel is the
-            // background, the label's navy, or a blend of the two - so no outline, fill, line or grey of any kind
+            // background, the label's navy, or a blend of the two - so no outline, fill, line or gray of any kind
             int from = keycap.x + keycap.width, to = decoder.x - 1;
 
             assertTrue(onlyWordsOnTheBackground(image, from, to, 0, box.height - 1), "something other than the page's words is"
                 + " drawn between the keycap and the decoder pill: a pill, a fill or a line.  Adam, round 4: \"no pill around"
                 + " that\"");
 
-            // ... and the words ARE THE LABEL'S NAVY, not black or a grey
+            // ... and the words ARE THE LABEL'S NAVY, not black or a gray
             assertTrue(navyIn(image, page.x, page.x + page.width, page.y, page.y + page.height - 1), "the page's words are not"
                 + " drawn in the label's navy rgb(0,0,115)");
 
@@ -1485,7 +1485,7 @@ public class testLocMappingPages
      * that go above the line and below it - "Egypt jgy Alt" - a key with a tail ("Q") and a decoder in both its parts are
      * painted, and each piece's text is looked for in the rows it may use: below the top rim and above the bottom one,
      * with the descenders really there (a clipped descender is a text whose last row is the rim's) and the rim rows
-     * themselves untouched, one colour along the whole run of the text.
+     * themselves untouched, one color along the whole run of the text.
      *
      * Round 4 put the page back to plain words in the label's 13 point Semibold, which fitted this slot before there
      * were any pills; "12. Egypt jgy Alt" has its digits, capitals and descenders and must show all of them within the 18
@@ -1603,7 +1603,7 @@ public class testLocMappingPages
                 assertTrue(ink[0] >= 2 && ink[1] <= bottomRim - 2, "the decoder's text is too tall for the pill: rows "
                     + ink[0] + " to " + ink[1]);
 
-                // the straight part of the rim: past the rounded ends, which are not one colour along their length
+                // the straight part of the rim: past the rounded ends, which are not one color along their length
                 int from = Math.max(span[0], decoder.x + 10), to = Math.min(span[1], decoder.x + decoder.width - 11);
 
                 assertTrue(rowIsOneColour(image, from, to, decoder.y), "the decoder's text touches the pill's top rim");

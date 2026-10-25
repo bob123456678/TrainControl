@@ -734,7 +734,7 @@ public class AutonomyBuilder
     private int homeCopy(List<Node> nodes, JSONObject extras)
     {
         // THE COPY FACING THE WAY THE HOME WAS SET, where the setup says which (OB-282) - and only one trains may
-        // arrive at, so a facing no train can stand in is never honoured.  The plain copy before its turning twin.
+        // arrive at, so a facing no train can stand in is never honored.  The plain copy before its turning twin.
         TilePorts.Side wanted = homeFacingOf(extras);
 
         if (wanted != null)
@@ -943,7 +943,7 @@ public class AutonomyBuilder
         String name = base + " (" + heading(node.arrival) + (node.reverse ? ", reverse)" : ")");
 
         // And made unique against everything else, which uniqueNames cannot do on its own: it settles the BASE names, and
-        // these suffixes are added afterwards.  Name one point "Main (eastbound)" by hand and let a neighbouring "Main"
+        // these suffixes are added afterwards.  Name one point "Main (eastbound)" by hand and let a neighboring "Main"
         // split, and two Points would come out with the same name, which Layout.createPoint refuses, invalidating the
         // whole configuration rather than the one square, and reporting it in terms of a Point name nothing on the
         // diagram carries.
@@ -1172,7 +1172,7 @@ public class AutonomyBuilder
                 // They used to be written only when a page list was supplied, which is the "read this
                 // against the diagram" export.  The running layout got none - and `arrivedFrom` is
                 // recorded as a compass side, which cannot be resolved to a piece of track without
-                // knowing where the neighbours lie.  Every side came back null and the tail covered
+                // knowing where the neighbors lie.  Every side came back null and the tail covered
                 // nothing.
                 //
                 // Roughly one tile per 60 units, which is the spacing the hand-written files use,
@@ -1181,8 +1181,8 @@ public class AutonomyBuilder
                 //
                 // Without a page list the stacking is dropped rather than the coordinates: two pages
                 // then overlap, which matters only for a comparison between points on DIFFERENT pages
-                // - and the only reader is `sideTowards`, which asks about immediate neighbours.  A
-                // portal neighbour is the exception and is the reason this is written down.
+                // - and the only reader is `sideTowards`, which asks about immediate neighbors.  A
+                // portal neighbor is the exception and is the reason this is written down.
                 int page = coordinatePages == null ? 0
                     : Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
 
@@ -1208,7 +1208,7 @@ public class AutonomyBuilder
 
                         // On a split tile, turning round is what the COPY means, so the authored flag
                         // is not carried onto either of them: it would make the plain copy reverse too,
-                        // which is the behaviour the split exists to separate.  CAN_REVERSE never goes
+                        // which is the behavior the split exists to separate.  CAN_REVERSE never goes
                         // out at all - it is the instruction to split, not something parseAuto knows.
                         if (CAN_REVERSE.equals(key) || PARKING.equals(key)
                                 || FACING.equals(key) || AUTO_DESTINATION.equals(key) || HOME_FACING.equals(key)) continue;
@@ -1252,7 +1252,7 @@ public class AutonomyBuilder
                 }
 
                 // A berth is an ordinary station that autonomy is told not to choose.  It is not emitted as a reversing
-                // station, which would drag along two unrelated behaviours: the train reversing on arrival whether or not
+                // station, which would drag along two unrelated behaviors: the train reversing on arrival whether or not
                 // anybody asked, and no path routed through.  A terminus and a shut arm say those now, each on its own,
                 // so this says only the thing it means.
                 if (manualOnly.contains(point.getTile()))
@@ -1341,8 +1341,8 @@ public class AutonomyBuilder
 
             // AND THE SIDE IT COMES IN BY, which only this end of the program knows (OB-182).
             //
-            // The model can work out where a neighbouring POINT lies and calls that the arrival side.  That is a different
-            // question: a reduced run crosses tiles and turns corners, so the neighbour can lie east of a rail that leaves
+            // The model can work out where a neighboring POINT lies and calls that the arrival side.  That is a different
+            // question: a reduced run crosses tiles and turns corners, so the neighbor can lie east of a rail that leaves
             // by the north.  The side written on arrival, the walk that blocks the track behind a standing train, and the
             // question the operator is asked when placing one by hand all need this one, not that.
             //
@@ -1560,7 +1560,7 @@ public class AutonomyBuilder
      * The ways a locomotive may be homed facing on a square: the facings of the copies trains may arrive at (OB-282).
      *
      * *"we shouldn't allow an impossible facing to be saved"* - a copy trains may not arrive at is not one a train can
-     * be brought home to, so its facing is not offered and `homeCopy` would not honour it.
+     * be brought home to, so its facing is not offered and `homeCopy` would not honor it.
      *
      * @param tile the square
      * @return the facings, empty on a square that is not split

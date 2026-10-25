@@ -667,7 +667,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     /**
      * The form's train-length list, found by what it offers.
      *
-     * Its field is generated and private, so it is recognised by its entries: the one list in the form that runs from
+     * Its field is generated and private, so it is recognized by its entries: the one list in the form that runs from
      * 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.  The locomotive list holds names, and the two function lists start
      * with their "none" entry.
      *

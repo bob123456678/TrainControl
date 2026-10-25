@@ -90,7 +90,7 @@ public final class DiagramExport
      *
      * @param layout the page to draw
      * @param tileSize how many pixels each square should be
-     * @param ui the application, which the grid needs for icons and colours
+     * @param ui the application, which the grid needs for icons and colors
      * @return the picture
      */
     public static BufferedImage render(final LayoutDiagram layout, int tileSize,

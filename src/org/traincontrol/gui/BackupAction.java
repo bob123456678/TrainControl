@@ -126,7 +126,7 @@ final class BackupAction
             // TrainControl's OWN routes, exported as JSON (FR-021; Adam: "OB 90 should run an export of our route db."): the `fahrstrassen.cs2`
             // in the config folder is the CENTRAL STATION's copy, and routes are edited in this application, whose route database is what runs.
             // Written through the door the Export Routes menu item uses, so Import Routes will read it back.  A failure here is named and the
-            // rest of the archive still written: losing the whole backup because one part could not be serialised is the wrong trade.
+            // rest of the archive still written: losing the whole backup because one part could not be serialized is the wrong trade.
             try
             {
                 routesExport = java.io.File.createTempFile("tc-routes", ".json");

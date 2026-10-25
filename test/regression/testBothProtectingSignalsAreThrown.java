@@ -29,7 +29,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **Why this test is at the layout rather than in the editor.** Reading the chain settled where it is
  * NOT: the store keeps a list, `protectingSignalNames` maps every one of them, the builder writes one
  * as a bare string and several as an array, `fromJSON` reads both shapes back (testAutoLayout covers
- * that), and the aspect is memoised per ACCESSORY rather than per Point - with a comment recording that
+ * that), and the aspect is memoized per ACCESSORY rather than per Point - with a comment recording that
  * keying it per Point was itself a bug, because one copy of a square wrote a memo while standing empty
  * and the signal stayed green with a train at the platform.
  *
@@ -622,7 +622,7 @@ public class testBothProtectingSignalsAreThrown
             "precondition - somebody must be standing at the protected platform");
 
         // Placed by hand while idle, so the signal has NOT been commanded - that silence is the
-        // behaviour the sweep exists to compensate for, and asserting it here is what stops this test
+        // behavior the sweep exists to compensate for, and asserting it here is what stops this test
         // passing for the wrong reason.
         far.setState(Accessory.accessorySetting.GREEN);
 

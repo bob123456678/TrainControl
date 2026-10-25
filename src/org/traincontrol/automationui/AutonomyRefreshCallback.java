@@ -28,7 +28,7 @@ import org.traincontrol.base.Locomotive;
  * Here, it is a thing with a name that can be tested. `testTimetableCapturesThroughARealRun` attaches
  * exactly this and runs real autonomy over it, and `testTheWindowAttachesItsRefreshCallback` fails the
  * build if TrainControlUI stops calling it - which is the only kind of test that would have caught the
- * deletion, because deleting a caller breaks nothing that any behavioural test can see.
+ * deletion, because deleting a caller breaks nothing that any behavioral test can see.
  */
 public final class AutonomyRefreshCallback
 {

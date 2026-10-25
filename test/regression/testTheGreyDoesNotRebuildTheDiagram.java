@@ -30,7 +30,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-334's shape, asked of the grey wash that came back on 2026-09-09.
+ * MT-334's shape, asked of the gray wash that came back on 2026-09-09.
  *
  * Adam asked for the wash back beside the line and said how: *"That plus the line, **drawn and
  * refreshed carefully**, should do the trick."*  This codebase has already paid for the other kind of
@@ -55,7 +55,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does and for the same reason: asking the window under
  * test what the right answer is agrees with it whatever it says.
  *
- * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY**.  The grey was
+ * **THE GESTURE IS A TRAIN LENGTH NOW, AND IT USED TO BE STARTING AUTONOMY**.  The gray was
  * fenced on a running railway, so starting and stopping a run was what put the wash on and took it
  * off.  Adam, 2026-09-09: *"yes, this greyout should appear at idle and be regenerated if a placement
  * or train/track length is changed."*  With the fence gone, starting a run changes not one square -
@@ -228,7 +228,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
             // THE TRAIN IS UNMEASURED TO BEGIN WITH, so the gesture below is what puts the wash on.
             //
-            // This used to start and stop AUTONOMY, because the grey was fenced on a running railway.
+            // This used to start and stop AUTONOMY, because the gray was fenced on a running railway.
             // That fence is gone (Adam 2026-09-09: *"yes, this greyout should appear at idle
             // and be regenerated if a placement or train/track length is changed"*), so starting a run
             // no longer changes a single square and the measurement would have been of nothing at all.
@@ -379,7 +379,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * the two differ, and every component here is offscreen.
      */
     /**
-     * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighbourhood, not the whole
+     * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighborhood, not the whole
      * window it sits in (speed, 2026-10-04).
      *
      * `LayoutLabel.setImageOnEDT` repainted the tile and then its `parent` - the panel the diagram sits in, which on the
@@ -557,7 +557,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * skips an unchanged mark never saw one, and every marked square was redrawn twice.  It sets each mark, and clears only
      * the squares that dropped out.
      *
-     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the grey count every square redrawn
+     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the gray count every square redrawn
      * - with the layer showing, the main window's own squares are among them.
      *
      * MUTATION: clear every mark first again, and this fails.

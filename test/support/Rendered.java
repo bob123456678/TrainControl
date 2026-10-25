@@ -214,7 +214,7 @@ public final class Rendered
     /**
      * How dark a tile is, averaged over its pixels.
      *
-     * The covered wash is a translucent grey laid over the tile art, so a covered square is uniformly
+     * The covered wash is a translucent gray laid over the tile art, so a covered square is uniformly
      * DARKER than the same square uncovered. Mean brightness says that in one number, and it does not
      * depend on which pixels the track happens to occupy - which a fixed sample point would.
      *
@@ -291,13 +291,13 @@ public final class Rendered
     /**
      * Whether this tile is drawing the mark that says a train is lying across it (MT-309).
      *
-     * The mark used to be the tile's ICON - a greyed copy - so "is it marked" could be asked of the
+     * The mark used to be the tile's ICON - a grayed copy - so "is it marked" could be asked of the
      * object with an identity comparison.  It is a line PAINTED over the icon now, which is not in
      * the object at all, so the only honest way to ask is to paint the tile and look.
      *
      * By hue rather than against `LayoutLabel.TRAIN_MARK`: the claim is that somebody looking at the
      * square sees orange on it, and a check reading production's own constant would agree with any
-     * value that constant was changed to, grey included.
+     * value that constant was changed to, gray included.
      *
      * `paint` and not `printAll`: both of the others begin with an isShowing() check and do nothing
      * for a component that is not on screen, which is every component a test builds.
@@ -350,7 +350,7 @@ public final class Rendered
      * By hue because the line is see-through since 2026-10-09 (Adam: "can we change to the see through tail line"): over
      * black track it is a dark orange, rgb(140,56,0), and over white a pale one, rgb(255,171,115), and the thresholds
      * this replaced (red above 190, blue below 90) counted neither.  Red (0 degrees) and the destination's yellow (47)
-     * fall outside it; so do the greys.  One rule for every test that asks, so they cannot come to disagree about what
+     * fall outside it; so do the grays.  One rule for every test that asks, so they cannot come to disagree about what
      * orange is.
      *
      * @param rgb the pixel

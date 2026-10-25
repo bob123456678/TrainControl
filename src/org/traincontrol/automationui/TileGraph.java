@@ -165,7 +165,7 @@ public class TileGraph
     }
 
     /**
-     * Which side of one square faces another, or null when they are not neighbours.
+     * Which side of one square faces another, or null when they are not neighbors.
      *
      * Null is a real answer and not a failure: a path can step from one page to another through a link,
      * and that jump has no side on the grid to draw it as.  A line through the square simply stops in
@@ -204,7 +204,7 @@ public class TileGraph
      * Which way a train may move through one route of one tile.
      *
      * A and B are the route's two sides as TilePorts reports them.  Stored per tile rather than per
-     * connection between tiles, so two neighbours can never disagree about the link they share.
+     * connection between tiles, so two neighbors can never disagree about the link they share.
      */
     public static enum Direction
     {
@@ -658,7 +658,7 @@ public class TileGraph
             }
         }
 
-        // AFTER every page is in, because these questions are about neighbours (OB-160).
+        // AFTER every page is in, because these questions are about neighbors (OB-160).
         checkTransparentTiles();
 
         // And so is this one (OB-320)
@@ -1186,7 +1186,7 @@ public class TileGraph
 
         Side entrySide = exitSide.opposite();
 
-        // the neighbour must actually have track on the facing side
+        // the neighbor must actually have track on the facing side
         if (!hasPortOn(neighbourComponent, entrySide)) return null;
 
         return new Landing(neighbourKey, entrySide);
@@ -1209,7 +1209,7 @@ public class TileGraph
             if (!tiles.containsKey(from)) continue;
 
             // A link the user has switched off is not autonomy's business, and every problem this loop
-            // raises is BLOCKING (see disabledPortals).  exits() and the never-paired loop below honour
+            // raises is BLOCKING (see disabledPortals).  exits() and the never-paired loop below honor
             // the switch-off too: a link switched off must neither carry trains nor fail the build.
             if (portalClosed(from)) continue;
 
@@ -1451,7 +1451,7 @@ public class TileGraph
     }
 
     /**
-     * What a transparent tile conducts, read off its neighbours.
+     * What a transparent tile conducts, read off its neighbors.
      *
      * A route button is a control someone put on the diagram; it says nothing about track.  So the track
      * beneath it is whatever the tiles around it imply:
@@ -1460,7 +1460,7 @@ public class TileGraph
      *     run carries that run, which is how layouts actually use them;
      *   - failing that, exactly two adjacent sides facing track become a corner, so a button on a curve
      *     works rather than silently breaking the curve;
-     *   - anything else - nothing beside it, one neighbour only, or an ambiguous three-way - carries
+     *   - anything else - nothing beside it, one neighbor only, or an ambiguous three-way - carries
      *     nothing, which is the honest answer for a button placed beside the rails.
      *
      * The user can still author a connection the inference declines to make; this only decides the seed.
@@ -1532,7 +1532,7 @@ public class TileGraph
 
             if (neighbourComponent == null) continue;
 
-            // a transparent neighbour presents a face on every side, which stops two adjacent buttons
+            // a transparent neighbor presents a face on every side, which stops two adjacent buttons
             // from each waiting on the other to decide
             if (TilePorts.isTransparent(neighbourComponent.getType())
                 || hasPortOn(neighbourComponent, side.opposite()))
@@ -1566,7 +1566,7 @@ public class TileGraph
      * there is something to conduct at each end.  One end is a siding stub or a panel beside the
      * track; two is a splice.
      *
-     * The whole run is walked rather than this tile's neighbours, so that three buttons in a row with
+     * The whole run is walked rather than this tile's neighbors, so that three buttons in a row with
      * track at each end is caught as readily as two.
      *
      * @param from any button in the run
@@ -1614,8 +1614,8 @@ public class TileGraph
      * Route buttons placed where what they conduct is not what was drawn (OB-160).
      *
      * A SECOND PASS, after every page is in `tiles`.  The per-tile scan that raises the other problems
-     * runs while the map is still being filled, so a tile there cannot see its neighbours - and every
-     * question here is about neighbours.
+     * runs while the map is still being filled, so a tile there cannot see its neighbors - and every
+     * question here is about neighbors.
      */
     private void checkTransparentTiles()
     {
@@ -1660,13 +1660,13 @@ public class TileGraph
             //
             // An empty result is not a dropped arm - it is a button that conducts nothing, which is
             // what a button beside the rails or at the end of a line IS.  A single arm with no face
-            // opposite it (the neighbour there is rotated so it presents none) makes no pair, so nothing
+            // opposite it (the neighbor there is rotated so it presents none) makes no pair, so nothing
             // is carried and nothing is dropped.
             if (carried.isEmpty()) continue;
 
             for (Side side : facing)
             {
-                // Only a REAL arm is worth reporting.  Dropping a face that a neighbouring button
+                // Only a REAL arm is worth reporting.  Dropping a face that a neighboring button
                 // contributed loses no track, and the adjacency error above has already spoken.
                 if (!carried.contains(side) && realTrackOn(tile, side))
                 {
@@ -1748,12 +1748,12 @@ public class TileGraph
      * The walk's half of this question is `directionAllows` below: an authored direction ANDs with the
      * hardware's own restriction, so a direction the hardware refuses restricts nothing - choosing it
      * changes no train's road.  Offering it anyway is a control that offers an action the guard will
-     * not honour, which is the shape OB-057 and OB-090 are about.
+     * not honor, which is the shape OB-057 and OB-090 are about.
      *
      * A permanent turnout is the case that matters: its routes are all directed at the toe, so "toward
      * the fork" and "both ways" are not answers, and the menu should not draw a green arrow for a road
      * no train can take.  `NONE` is always a real answer - shutting a route is
-     * meaningful whichever way it could be travelled.
+     * meaningful whichever way it could be traveled.
      *
      * @param direction the answer being considered
      * @param route the route it would be set on
@@ -2153,8 +2153,8 @@ public class TileGraph
      *
      * Computed from the DIAGRAM ALONE - tile types and which sides face which - and never from the
      * reduction.  That is the whole point: edges come and go as directions are set, so a run derived
-     * from them would regroup itself every time somebody closed a route, and the greying would move
-     * around under the user.  What is grey is a property of the track, not of the settings on it.
+     * from them would regroup itself every time somebody closed a route, and the graying would move
+     * around under the user.  What is gray is a property of the track, not of the settings on it.
      *
      * A run tile is a piece of plain track: exactly one route through it, not a sensor, and not
      * something autonomy ignores.  Anything else - a switch, a crossing, a sensor - ends the run,
@@ -2514,7 +2514,7 @@ public class TileGraph
         if (TilePorts.isDisqualified(type) || TilePorts.isTerminator(type)) return false;
 
         // A transparent tile presents a face everywhere; what it actually conducts is settled when it is
-        // walked, not when a neighbour asks whether it is there
+        // walked, not when a neighbor asks whether it is there
         if (TilePorts.isTransparent(type)) return true;
 
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
@@ -2542,7 +2542,7 @@ public class TileGraph
     }
 
     /**
-     * Which side of a tile faces one of its neighbours.
+     * Which side of a tile faces one of its neighbors.
      *
      * Geometric, not routing: it answers "which way is that square from this one".
      *
@@ -2551,7 +2551,7 @@ public class TileGraph
      * page.  They are named apart to end the collision between `sideTowards` and `sideToward`, one
      * letter apart.
      *
-     * A portal's partner is not reachable here: the two squares are neighbours in the graph without
+     * A portal's partner is not reachable here: the two squares are neighbors in the graph without
      * touching, so there is no side to name, and callers that care use landing() instead.
      *
      * @param tile
@@ -2567,7 +2567,7 @@ public class TileGraph
             if (other.equals(tile.beside(side))) return side;
         }
 
-        // A portal's partner is a neighbour reached through no side at all, so there is no side to
+        // A portal's partner is a neighbor reached through no side at all, so there is no side to
         // name for it; callers that care about portals use landing() instead.
         return null;
     }
@@ -2919,7 +2919,7 @@ public class TileGraph
             }
         }
 
-        // A portal's partner is a neighbour reached through no side at all, so the loop above cannot
+        // A portal's partner is a neighbor reached through no side at all, so the loop above cannot
         // find it; the reducer walks straight through one and derives edges over it, and so must this.
         // It is entered by no side either, so every route on the far square is open, exactly as at the
         // square the walk started from.

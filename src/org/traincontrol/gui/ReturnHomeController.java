@@ -79,12 +79,12 @@ final class ReturnHomeController extends SettledQuestion
 
         // A TURNING MARK ON THE BUTTON WHILE THE PLAN IS WORKED OUT (Adam, FR-077: "there needs to be a
         // spinner on the return home button while it is calculating").  The search can take seconds on
-        // a full railway, and a greyed button with nothing moving reads as a click that did nothing.
+        // a full railway, and a grayed button with nothing moving reads as a click that did nothing.
         this.ui.showReturnHomeWorking(true);
         this.ui.executeTimetableButton().setEnabled(false);
 
         // And the capture toggle (OB-101; Adam: "capture locomotive commands button can still be toggled while trains are returning home."):
-        // its handler did refuse (isAutonomyBusy covers this flow), but refusing is not the same as not offering; a greyed button says the
+        // its handler did refuse (isAutonomyBusy covers this flow), but refusing is not the same as not offering; a grayed button says the
         // railway is busy, which is true (the same distinction as OB-094 and OB-100: make the affordance agree with the guard).
         this.ui.timetableCapture().setEnabled(false);
 
@@ -300,7 +300,7 @@ final class ReturnHomeController extends SettledQuestion
         if (this.ui.isAutonomyBusy())
         {
             // Said out loud rather than left to the previous reason.  Disabling without touching the
-            // tooltip meant a button greyed because trains are moving went on claiming they were all
+            // tooltip meant a button grayed because trains are moving went on claiming they were all
             // at home - the explanation from before the run started.
             this.ui.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
@@ -418,9 +418,9 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * Return Home's right-click menu, freshly built: Run Trains to Their Homes (the button itself, greyed with the
+     * Return Home's right-click menu, freshly built: Run Trains to Their Homes (the button itself, grayed with the
      * button's own reason), then Place All Trains at Their Homes, which puts each homed train on its home in the setup
-     * and takes the others off the layout without sending anything to the railway (FR-129), greyed with its reason
+     * and takes the others off the layout without sending anything to the railway (FR-129), grayed with its reason
      * while `whyTheTrainsCannotBePlacedAtTheirHomes` says no.
      */
     javax.swing.JPopupMenu buildReturnHomeMenu()

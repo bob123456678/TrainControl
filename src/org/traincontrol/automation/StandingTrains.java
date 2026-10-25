@@ -358,7 +358,7 @@ final class StandingTrains
         while (remaining > 0)
         {
             // EVERY WAY IN, in both directions, because a tail is not directional.  The graph encodes facing as one-way edges, so
-            // "incoming" means "a train travelling this way could arrive by it", and a train that has been TURNED lies across
+            // "incoming" means "a train traveling this way could arrive by it", and a train that has been TURNED lies across
             // track no incoming edge names (Adam's 2-8-4, turned to face east having arrived from the west, has its tail on the
             // westbound rail, an outgoing edge of the copy it stands on).  So the candidates are every edge that touches this
             // point, and `arrivedFrom` picks between them; a train lying across a rail fouls it whichever way traffic runs.
@@ -388,7 +388,7 @@ final class StandingTrains
                     if (other == null) continue;
 
                     // THE BUILD'S SIDE where there is one - see `entrySideOf`: the written value and this comparison have to come
-                    // from the same place (this asked where the neighbour LIES and the doors offered the side the track comes in
+                    // from the same place (this asked where the neighbor LIES and the doors offered the side the track comes in
                     // by, which differ on a curve).
                     if (roadBack != null && !other.isSamePlaceAs(roadBack)) continue;
 
@@ -409,8 +409,8 @@ final class StandingTrains
                     // copy is still taken when there is no arriving one, as at a square a train has been turned on: it lies across
                     // that rail whichever way traffic runs, and half an answer beats none.
                     //
-                    // AND FROM THE NEIGHBOUR'S PLAIN COPY, where its turning twin also arrives by this side.  At a
-                    // neighbour trains may turn at, its plain copy and its turning copy both have a rail in here, and
+                    // AND FROM THE NEIGHBOR'S PLAIN COPY, where its turning twin also arrives by this side.  At a
+                    // neighbor trains may turn at, its plain copy and its turning copy both have a rail in here, and
                     // `getNeighborsAndIncoming` sorts them by name (a turning copy is named by the opposite heading plus ", reverse",
                     // so it came first whenever the plain heading was southbound or westbound).  Every rail from a turning copy leads
                     // back here, so the walk would stop at it.  The plain copy first, the rule `copyFacing` and `placementCopy` use.
@@ -465,7 +465,7 @@ final class StandingTrains
             {
                 // THE FORK RULE, for every hop after the first and for a train nobody has told us about.  One way means the tail
                 // certainly lies there; several means the graph cannot say which, and blocking either would stop a train that
-                // could have run.  Counted over DISTINCT neighbours rather than edges: a square joined to one other by a pair of
+                // could have run.  Counted over DISTINCT neighbors rather than edges: a square joined to one other by a pair of
                 // one-way rails is still one way back.
                 Set<String> neighbours = new LinkedHashSet<>();
 
@@ -476,7 +476,7 @@ final class StandingTrains
 
                     if (other == null) continue;
 
-                    // NOT THE WAY WE CAME: every point on a straight run has two neighbours, and counting the one just walked would
+                    // NOT THE WAY WE CAME: every point on a straight run has two neighbors, and counting the one just walked would
                     // make every ordinary tile look like a fork.  BY PLACE: a split square's copies are one square,
                     // and the walk has been on it if it has been on any of them.
                     if (walkedAPlaceLike(other, walked)) continue;

@@ -217,7 +217,7 @@ public class testConditionOutline
     }
 
     /**
-     * The control: a word SHALLOWER than both its neighbours is how two groups are joined, and is not flagged.
+     * The control: a word SHALLOWER than both its neighbors is how two groups are joined, and is not flagged.
      */
     @Test
     public void testAWordJoiningTwoGroupsIsNotFlagged()
@@ -435,7 +435,7 @@ public class testConditionOutline
     }
 
     /**
-     * Moving a condition past its neighbour leaves the joining word where it was.
+     * Moving a condition past its neighbor leaves the joining word where it was.
      *
      * Adam's: three lines reading "A and B", with B moved up, came back as "A B" - the AND gone and
      * the route now firing on a condition nobody changed.  Moving the LINE put B beside the word
@@ -486,7 +486,7 @@ public class testConditionOutline
     }
 
     /**
-     * FR-144: a condition whose neighbour at its own level is a group moves past the whole group.  "(1 or 2 or 3)
+     * FR-144: a condition whose neighbor at its own level is a group moves past the whole group.  "(1 or 2 or 3)
      * and 4" with 4 moved up is "4 and (1 or 2 or 3)", every line at its level, and moving it down undoes that.
      *
      * MUTATION: drop the group branch of `moved`, and 4 trades places with 3 inside the group.
@@ -905,7 +905,7 @@ public class testConditionOutline
             + "which is exactly how `read` consumes them, and the editor refused to save an outline "
             + "it reads perfectly (IPR-B3)");
 
-        // AND THE RULE IT STILL ENFORCES, which is what stops this being a licence to disagree.
+        // AND THE RULE IT STILL ENFORCES, which is what stops this being a license to disagree.
         java.util.List<ConditionOutline.Row> mixed = new java.util.ArrayList<>();
 
         mixed.add(condition(0, 1));

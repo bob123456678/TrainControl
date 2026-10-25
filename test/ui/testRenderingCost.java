@@ -25,7 +25,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * was deleted with the review folder; the thresholds below are what is left of it, which is the half
  * that can fail.
  *
- * Thresholds are roughly ten times the measured cost. A tenfold regression is not a micro-optimisation
+ * Thresholds are roughly ten times the measured cost. A tenfold regression is not a micro-optimization
  * anybody argues about - it is a loop that should not be there - and setting them near the real figure
  * would make this fail on a busy machine and teach everyone to ignore it.
  *

@@ -287,7 +287,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
      *
      * Read out of the source, and the reason is the same one `testTheWindowAttachesItsRefreshCallback`
      * gives for its own reading: the value is right and the CALLER asked the wrong question, which is
-     * a thing a behavioural test cannot see when it can only reach the caller through a modal dialog.
+     * a thing a behavioral test cannot see when it can only reach the caller through a modal dialog.
      * `promptName` opens one, so driving Control+S here would hang the battery rather than test it.
      *
      * MUTATION this catches: put `getLastHoveredLabel()` back in the Control+S branch. The test above
@@ -325,7 +325,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
         // Control+E - three readers of a field nothing ever cleared, so a page change left all three
         // naming a square on the page before.  There is one question now, and it forgets a label that
         // is not on the grid it is asked about.  `regression.testTheHoveredSquareIsForgotten` is what
-        // asserts the behaviour; this stays a source check because what it is about is which door the
+        // asserts the behavior; this stays a source check because what it is about is which door the
         // KEY goes through.
         assertTrue(branch.contains("hoveredSquare()"),
             "the Control+S branch does not ask the square autonomy mode tracks.  What it does ask:\n"

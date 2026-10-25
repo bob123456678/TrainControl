@@ -351,7 +351,7 @@ public class testNonAtomicRoutesNeedTheirLengths
      * THE FILE DOOR LOGS THE HALF IT FOUND, and each half has its own sentence.
      *
      * Swapping `autolayout.warnAtomicRoutesKeptOn` and `autolayout.warnAtomicRoutesKeptOnTrains` in
-     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` leaves every behavioural claim in this
+     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` leaves every behavioral claim in this
      * class green - the setting comes back on either way - and the operator is told to measure track
      * when what is wrong is a train's length, which is a remedy for a fault he does not have.
      *
@@ -450,7 +450,7 @@ public class testNonAtomicRoutesNeedTheirLengths
      * and a length cleared a minute later puts `behind >= trainLength` back to `0 >= 0`.
      *
      * **A TEXT CLAIM, because pressing Start on this fixture would dispatch Adam's trains.**  What it
-     * pins is that the handler asks before it hands anything to `runLocomotives` - the behaviour the
+     * pins is that the handler asks before it hands anything to `runLocomotives` - the behavior the
      * call produces is the file door's, and the claims above are what hold that.
      *
      * MUTATION: delete the call from `startAutonomyActionPerformed` and this goes red; move it below
@@ -630,7 +630,7 @@ public class testNonAtomicRoutesNeedTheirLengths
      * The gate is what keeps a run atomic over unmeasured track, and a door that carried on past a failure of it would run
      * non-atomic over it.  One door at a time, each named when it fails: Start's claim sat after Return Home's ordering
      * in one method and was never seen failing on its own, and Return Home's had none.  Execute Timetable's gate had no
-     * catch at all, so a failure left its button greyed for the session.
+     * catch at all, so a failure left its button grayed for the session.
      *
      * MUTATION: take the `return` out of any door's catch, or Execute Timetable's `setEnabled(true)`, and this fails
      * naming the door.

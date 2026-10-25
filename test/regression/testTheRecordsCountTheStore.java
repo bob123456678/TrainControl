@@ -20,7 +20,7 @@ import org.testng.annotations.Test;
  * and the third one found the pattern rather than another instance: *"every one of these numbers is
  * counted by hand from a file the same commit is still editing.  Until one of them is COMPUTED, a
  * fourth round will find a fourth stale count."*  Two were wrong inside the very sentence written to
- * apologise for the previous wrong one - the Inbox count three times, the finding count twice - and one
+ * apologize for the previous wrong one - the Inbox count three times, the finding count twice - and one
  * "correction" reversed a pair of numbers that had been right.
  *
  * So the numbers are no longer trusted to a reader's care.  Each one below is read out of the document
@@ -36,7 +36,7 @@ import org.testng.annotations.Test;
  * but its own arithmetic.  What the README now states is four countable things - files deleted per
  * round, reviews per round, the two for-Adam notes that are the difference, and the spelled-out total -
  * and this asks whether they agree with each other.  Which of those files counted as a review is a
- * judgement no test can make; how the stated numbers relate is arithmetic, and that is where it went
+ * judgment no test can make; how the stated numbers relate is arithmetic, and that is where it went
  * wrong, twice.
  *
  * MUTATION: change by one any number a claim below reads, and the matching claim names it.
@@ -48,7 +48,7 @@ import org.testng.annotations.Test;
  *
  * **THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136).**  With the review documents deleted the folder cannot say which
  * round is next, so `catalog-findings.py --next PREFIX` reads it from the store, `--check-unused REF` refuses one
- * already there, and no mode of the tool can rebuild the catalogue from the documents that remain.  The claims that
+ * already there, and no mode of the tool can rebuild the catalog from the documents that remain.  The claims that
  * run it need `python` on the path, as the tool does.
  *
  * @author Adam
@@ -106,7 +106,7 @@ public class testTheRecordsCountTheStore
     /**
      * The review-document arithmetic in `docs/reviews/README.md` agrees with itself.
      *
-     * Which files counted as reviews is a judgement no test can make; how the four numbers the README
+     * Which files counted as reviews is a judgment no test can make; how the four numbers the README
      * states relate to each other is arithmetic, and that is where it went wrong - "143 on 2026-09-08
      * and 63 more on 2026-09-21" stood beside "two hundred and eight" for a day, and a validation round
      * later re-derived the total from `git` alone and got 207, because the two for-Adam notes the
@@ -938,7 +938,7 @@ public class testTheRecordsCountTheStore
      * A file, whole.
      *
      * @param path where
-     * @return its text, with the line endings normalised so a regex need not care
+     * @return its text, with the line endings normalized so a regex need not care
      * @throws Exception on a failure to read
      */
     private static String read(String path) throws Exception

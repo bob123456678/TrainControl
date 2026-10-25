@@ -33,7 +33,7 @@ import org.traincontrol.util.I18n;
  *      blue label font"* (round 4), and then *"Change (5) to 5 as a prefix.  Example: 5. MMMMMM"* (round 5).  No word
  *      "Page" in a page that has a name (*"I wouldn't like to see the word 'page' in it"*); the page with no name is the
  *      one place the word is back.  The standard blue label font is the one the
- *      line was set in before this feature, the font and the colour of the generated `CurrentKeyLabel` the row sits in -
+ *      line was set in before this feature, the font and the color of the generated `CurrentKeyLabel` the row sits in -
  *      Segoe UI Semibold 13, rgb(0,0,115);
  *   3. **a decoder pill** - a solid navy capsule with white text, in two parts the way the data is: the decoder TYPE and
  *      the ADDRESS, with a white vertical line between them ("MFX | 12"): *"add a vertical line from top to bottom
@@ -60,7 +60,7 @@ import org.traincontrol.util.I18n;
  * the blue mfx+address pill slightly"*, after 3.0.1).  At 12 point Segoe UI's capitals are about 8.4 pixels tall
  * and its letters hang about 2.8 below the baseline, and the baseline is set so the capitals sit in the middle of the
  * pill, so nothing is clipped and nothing touches the rim.  The page's words are 13 point Semibold with no shape round
- * them, in the same 18 pixels: its capitals are about 9.1 tall and its letters hang about 3.1 below the baseline, centred
+ * them, in the same 18 pixels: its capitals are about 9.1 tall and its letters hang about 3.1 below the baseline, centered
  * the same way, and that is the size the line was set in in the slot before there were any pills.
  *
  * **The divider stays inside the border.**  The decoder pill's white line runs from one pixel below the pill's top edge
@@ -87,16 +87,16 @@ import org.traincontrol.util.I18n;
  * asked for "Page 5" so that the line, the tabs and the label say the same.)  The tooltip always has the whole line, the
  * number included.
  *
- * **Why not `StationCaption`.**  The diagram's captions are labels whose fill is a state colour, drawn at a size taken
+ * **Why not `StationCaption`.**  The diagram's captions are labels whose fill is a state color, drawn at a size taken
  * from the tile; this is a few fixed shapes and a line of words in a fixed box.  What is borrowed is its house style for
- * painting a pill: the exact shape rather than `drawRoundRect(w - 1, h - 1)`, and text centred on the capitals rather
+ * painting a pill: the exact shape rather than `drawRoundRect(w - 1, h - 1)`, and text centered on the capitals rather
  * than on the ascent.  Its `LABEL_FONT` is not used because that name is "Segoe UI Symbol" on machines that have it,
  * chosen for the diagram's arrows; it has no bold, and none of this row's words are arrows.
  *
- * **Colours come from the look and feel where Adam did not choose one**: the keycap's edge is the component border
- * colour and its letter the label foreground, so a theme that turns them light turns them.  He chose the navy and the
- * white of the decoder pill (the navy is the exact colour of the line's text before FR-128) and, by asking for the
- * standard blue label font, the colour of the page's words.  This program ships only the light theme.
+ * **Colors come from the look and feel where Adam did not choose one**: the keycap's edge is the component border
+ * color and its letter the label foreground, so a theme that turns them light turns them.  He chose the navy and the
+ * white of the decoder pill (the navy is the exact color of the line's text before FR-128) and, by asking for the
+ * standard blue label font, the color of the page's words.  This program ships only the light theme.
  *
  * @author Adam
  */
@@ -504,10 +504,10 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * The colour the page's words are drawn in: the label's foreground, inherited as the font is (rgb(0,0,115) in the
+     * The color the page's words are drawn in: the label's foreground, inherited as the font is (rgb(0,0,115) in the
      * form).
      *
-     * @return the colour
+     * @return the color
      */
     public Color pageColour()
     {
@@ -594,7 +594,7 @@ public class CurrentKeyRow extends JComponent
 
             decoder = new Rectangle(Math.max(0, width - w), top, w, h);
 
-            // centred in the pill, which is the whole of PAD at each end when the pill is as wide as its words
+            // centered in the pill, which is the whole of PAD at each end when the pill is as wide as its words
             int start = decoder.x + (w - inside) / 2;
 
             typeX = start;
@@ -669,7 +669,7 @@ public class CurrentKeyRow extends JComponent
         return font.getStringBounds(text, FRC).getWidth();
     }
 
-    /** How tall the capitals are: the height a pill's words are centred on, rather than the line they sit in. */
+    /** How tall the capitals are: the height a pill's words are centered on, rather than the line they sit in. */
     private static double capHeight(Font font)
     {
         return font.createGlyphVector(FRC, "H").getVisualBounds().getHeight();
@@ -738,8 +738,8 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * THE PAGE'S WORDS, as `pageWords` words them, in the label's font and colour, with nothing round them - no outline,
-     * no fill, no line - centred on their capitals in the slot's height.
+     * THE PAGE'S WORDS, as `pageWords` words them, in the label's font and color, with nothing round them - no outline,
+     * no fill, no line - centered on their capitals in the slot's height.
      */
     private void paintPage(Graphics2D g2, Geometry at)
     {
@@ -806,7 +806,7 @@ public class CurrentKeyRow extends JComponent
         return top + height / 2.0 + capHeight(font) / 2.0;
     }
 
-    /** The words' colour: the look and feel's own for a label. */
+    /** The words' color: the look and feel's own for a label. */
     private static Color foreground()
     {
         Color c = UIManager.getColor("Label.foreground");
@@ -814,7 +814,7 @@ public class CurrentKeyRow extends JComponent
         return c == null ? Color.BLACK : c;
     }
 
-    /** The outline's colour: the look and feel's own for the edge of a component. */
+    /** The outline's color: the look and feel's own for the edge of a component. */
     private static Color outline()
     {
         Color c = UIManager.getColor("Component.borderColor");

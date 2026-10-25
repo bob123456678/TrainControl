@@ -143,7 +143,7 @@ public class testErrorsStopTheSetupRunning
      *
      * "it runs on warnings." Worth its own test because the cheap way to fix OB-090 - have the strip
      * ask whether the checks found ANYTHING - passes every assertion in the two tests above and
-     * quietly makes a railway with one unlabelled siding unstartable. The sample layout carries far
+     * quietly makes a railway with one unlabeled siding unstartable. The sample layout carries far
      * more soft findings than errors, so an errorCount() that had swallowed them would be obvious
      * here.
      */
@@ -440,7 +440,7 @@ public class testErrorsStopTheSetupRunning
         return session;
     }
     /**
-     * The strip greys the stop it has already carried out, rather than removing it (OB-143).
+     * The strip grays the stop it has already carried out, rather than removing it (OB-143).
      *
      * Adam: "the button disappears rather than being greyed out prior to replacement by the start
      * button. make it get greyed out and then replaced."
@@ -457,7 +457,7 @@ public class testErrorsStopTheSetupRunning
      *
      * The case that must NOT change is the last one. "Neither button is enabled" has causes that have
      * nothing to do with stopping - most of them before anything has been started at all - and a
-     * greyed Graceful Stop shown to somebody who has never run anything would be worse than the gap.
+     * grayed Graceful Stop shown to somebody who has never run anything would be worse than the gap.
      *
      * MUTATION: return HIDDEN for the pending case and the third assertion fails; return STOP_PENDING
      * whenever neither is enabled and the last one fails.
@@ -504,7 +504,7 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The strip actually asks that question, and greys the button when the answer says to.
+     * The strip actually asks that question, and grays the button when the answer says to.
      *
      * The rule above is only in force if `syncRun` calls it and acts on the answer. Extracting a rule
      * and testing the rule leaves the call site as the only uncovered part, which is how two defects
@@ -578,7 +578,7 @@ public class testErrorsStopTheSetupRunning
      * the operator to wait for trains that are not running and never will be.
      *
      * The guard itself got the third arm in the commit that widened it.  Its twins - the API's
-     * exception and the greyed right-click item's tooltip - did not, and stood like that for a week.
+     * exception and the grayed right-click item's tooltip - did not, and stood like that for a week.
      * That is the sweep-the-siblings miss this project makes more often than any other, so it is pinned
      * rather than fixed and forgotten.
      *

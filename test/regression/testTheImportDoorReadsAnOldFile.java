@@ -4003,7 +4003,7 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The Import... item of the Configuration menu, opened at rest and clicked once autonomy runs, refuses and says what
-     * to do instead: nothing is asked, nothing is imported, and the menu opened again greys the submenu that
+     * to do instead: nothing is asked, nothing is imported, and the menu opened again grays the submenu that
      * holds it.
      *
      * MUTATION: drop the refusal from Import, or leave the Configuration submenu live while autonomy runs, and this
@@ -4087,7 +4087,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "a refused import changed " + inUse);
 
-            // AND THE MENU, opened again, greys the submenu Import... is in
+            // AND THE MENU, opened again, grays the submenu Import... is in
             SwingUtilities.invokeAndWait(() ->
             {
                 for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);

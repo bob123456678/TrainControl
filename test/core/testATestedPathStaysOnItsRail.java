@@ -29,7 +29,7 @@ import support.ProgramConstants;
  *
  * **Read off the painted pixels.**  Only the eastern quarter of the square is examined, which the
  * diverging leg - drawn from the west edge to the south edge - never reaches, so everything there in a
- * line colour belongs to the straight rail and must lie on it.
+ * line color belongs to the straight rail and must lie on it.
  *
  * @author Adam
  */
@@ -37,7 +37,7 @@ public class testATestedPathStaysOnItsRail
 {
     private static final int SIZE = 60;
 
-    /** The line colours: out, back.  Chevrons are drawn in a third, and are not the line. */
+    /** The line colors: out, back.  Chevrons are drawn in a third, and are not the line. */
     private static final int[] LINE =
     {
         ProgramConstants.colour(TileAnnotation.class, "TRACE").getRGB() & 0xFFFFFF,
@@ -99,10 +99,10 @@ public class testATestedPathStaysOnItsRail
     }
 
     /**
-     * Paints one square and measures how far from the rail's centre line any line-coloured pixel in its
+     * Paints one square and measures how far from the rail's center line any line-colored pixel in its
      * eastern quarter lies.
      *
-     * @return the largest distance in pixels, or -1 when nothing line-coloured was painted there
+     * @return the largest distance in pixels, or -1 when nothing line-colored was painted there
      */
     private static int furthestFromTheRail(List<TileAnnotation.Trace> traces)
     {

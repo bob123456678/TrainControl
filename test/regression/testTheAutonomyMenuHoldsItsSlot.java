@@ -75,7 +75,7 @@ public class testTheAutonomyMenuHoldsItsSlot
     }
 
     /**
-     * Before anything mounts a real menu, the bar already carries the heading - greyed.
+     * Before anything mounts a real menu, the bar already carries the heading - grayed.
      *
      * MUTATION: taking the `setText` out of the constructor leaves the form's hard-coded "Autonomy",
      * which passes an English run and fails every other language - so this compares against the bundle

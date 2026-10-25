@@ -29,7 +29,7 @@ public class testTheRoutePlayButton
     /**
      * The button sits inside its cell, against the right edge, and is about the height of the text.
      *
-     * The numbers are not asserted exactly - "about the same height as the text" is a judgement, and a
+     * The numbers are not asserted exactly - "about the same height as the text" is a judgment, and a
      * test that pins 13 pixels would fail the next time somebody nudges it for good reason. What is
      * asserted is what would make it unusable: falling outside the cell, drifting away from the right
      * edge, or growing to fill the row.
@@ -209,15 +209,15 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * A running route's button is greyed, refuses the click, and shows no hand (MT-217).
+     * A running route's button is grayed, refuses the click, and shows no hand (MT-217).
      *
      * Adam: "there is no animation / change in state while it is running.  It should gray out and then
      * become reenabled once the route finishes."
      *
      * Three surfaces have to agree about one fact, and they are the three that made OB-057 and OB-090:
-     * what the button LOOKS like, what the click DOES, and what the cursor PROMISES. A greyed button
+     * what the button LOOKS like, what the click DOES, and what the cursor PROMISES. A grayed button
      * that still fires is a lie; a hand over it is the same lie in a different form; and either would
-     * also let the same route be started twice, which is the thing the greying exists to say cannot
+     * also let the same route be started twice, which is the thing the graying exists to say cannot
      * happen.
      *
      * MUTATION: delete any one of the three `routesExecuting.contains(...)` guards and this fails.

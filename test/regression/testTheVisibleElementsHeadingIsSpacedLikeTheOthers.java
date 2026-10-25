@@ -1049,7 +1049,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * How far below a heading the nearest control in its column begins - a box, a list, a button, or a labelled
+     * How far below a heading the nearest control in its column begins - a box, a list, a button, or a labeled
      * panel's first child - or -1 when there is none.
      */
     private static int gapUnder(Container pane, JLabel heading)

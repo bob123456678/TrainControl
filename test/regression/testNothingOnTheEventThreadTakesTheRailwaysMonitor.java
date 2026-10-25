@@ -220,10 +220,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " describeStagingOutcome passes LOCOMOTIVES_RUNNING with a null list and never reaches"
             + " this (OB-206)");
 
-        // THE GREY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
+        // THE GRAY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
         // marks were made one, and a permission left behind for a member that had stopped calling would have
         // been one for whatever was written into it next.  Adam's ruling of 2026-09-23 - *"orange shows where
-        // the train is, gray shows what's blocked"* - gave the grey its own answer again, so the railway is
+        // the train is, gray shows what's blocked"* - gave the gray its own answer again, so the railway is
         // asked once more, by `routesBlockedByStandingTrains`, on the same worker: the places it claims
         // (OB-280), where OB-208 asked for the covered edges.
         ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
@@ -446,7 +446,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * The narrow tripwire this generalises is gone.
+     * The narrow tripwire this generalizes is gone.
      *
      * Two guards for one rule is how the two come to disagree - the narrow one pinned
      * `triageReturnToHome` while its own failure message stated the rule generally, and it reported
@@ -543,7 +543,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
      * a lambda inside a member is stepped over rather than named, which is what the allowlist wants: a
      * listener built in a constructor belongs to that constructor.
      *
-     * A field initialiser is not a member declaration for this purpose - it has an `=` before its
+     * A field initializer is not a member declaration for this purpose - it has an `=` before its
      * parenthesis - so a call inside one is attributed to the member above it.  That is wrong, and it
      * is harmless: the failure message quotes the file and the line, so the reader finds it anyway.
      *

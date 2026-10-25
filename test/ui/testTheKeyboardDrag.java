@@ -23,8 +23,8 @@ import org.testng.annotations.Test;
  *
  * There were none. `setCopyTarget`, `doPaste`, `getSwapTarget` and `clearCopyTarget` between them carry
  * copy, cut, move and swap across fifty pages, and not one line of it was covered - which is how a
- * reviewer came to read a deliberate feature as a defect in the first place. A behaviour nothing
- * asserts is a behaviour the next reader has to guess at.
+ * reviewer came to read a deliberate feature as a defect in the first place. A behavior nothing
+ * asserts is a behavior the next reader has to guess at.
  *
  * The four gestures are asserted through the public surface, on a real window. What they do to the
  * MAPPING is the thing that matters: the paint follows it, and a wrong mapping is a locomotive that

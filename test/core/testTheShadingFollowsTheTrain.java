@@ -37,7 +37,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train runs to the next station and back, and the diagram's grey wash follows it (OB-180).
+ * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).
  *
  * Adam: **"when a train is manually moved to a new station in the track diagram viewer using control+X
  * and V, its former shaded icons are not reset."**
@@ -55,7 +55,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `CoveredTrackView` (reached through `TrainControlUI.refreshCoveredTrack`), and asked afterwards which image they are actually showing.
  *
  * **How far that is, exactly.**  Every tile is PAINTED and looked at: since MT-309 the mark is an
- * orange line drawn along the road the train is on rather than a greyed copy of the icon, so "is this
+ * orange line drawn along the road the train is on rather than a grayed copy of the icon, so "is this
  * tile marked" has no answer in the object and the only honest way to ask is to paint the square.
  * `support.Rendered.showsTheTrainMark` does it, and everything between the train moving and the
  * picture changing - the recompute, the difference, the registry lookup, the event-thread hop, the
@@ -73,7 +73,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **The fixture is Adam's own railway, in a sandbox copy (OB-111), and never the folder itself.**  A
  * hand-built `Layout` would have been easier to make deterministic, and it was rejected: the squares
- * that grey are a product of the diagram - `AutonomySession` needs a reducer and a station index to
+ * that gray are a product of the diagram - `AutonomySession` needs a reducer and a station index to
  * turn a runtime `Edge` into the tiles lying along it - and the registry keys labels by page and
  * square.  A synthetic graph has no diagram behind it, so the half of the mechanism this defect lives
  * in would not exist.
@@ -645,7 +645,7 @@ public class testTheShadingFollowsTheTrain
     /**
      * Whether this tile is drawing the mark that says a train is lying across it.
      *
-     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a greyed copy of it -
+     * PAINTED AND LOOKED AT since MT-309.  The mark used to be the tile's ICON - a grayed copy of it -
      * so this could be an identity comparison against `lastIcon`.  It is a line drawn over the icon
      * now, which is nowhere in the object, and the only honest question left is what the square looks
      * like.  `support.Rendered.showsTheTrainMark` paints it and looks for the orange.

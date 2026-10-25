@@ -342,7 +342,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
-        // A station hard against the top-left of the drawn area, with its only neighbour to the east a curve (FR-136).
+        // A station hard against the top-left of the drawn area, with its only neighbor to the east a curve (FR-136).
         // Beside a straight the name went on that straight and the search for blank space was never reached, which is
         // where the square outside the drawn area was found; with no plain track to put it on, the blank squares are
         // looked at, and the ones outside have to be refused.
@@ -400,7 +400,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * A page whose labels all name stations this setup never heard of is not written at all.
      *
-     * The migration leaves an unrecognised "Point:" label exactly where it is - deleting it would
+     * The migration leaves an unrecognized "Point:" label exactly where it is - deleting it would
      * destroy the only record that it existed.  But it saved every page it had LOOKED at, including
      * those, and because the labels stay they are found again on the next open.  So a user who has
      * never used autonomy, and whose diagram carries labels from the hand-written configuration this
@@ -448,7 +448,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
-        // A station hard against the top-left corner, its only neighbour a curve (so no plain track to put the name on) and
+        // A station hard against the top-left corner, its only neighbor a curve (so no plain track to put the name on) and
         // nothing below or beside it that carries a component
         page.addComponent(componentType.FEEDBACK, 0, 0, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);

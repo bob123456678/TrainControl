@@ -29,7 +29,7 @@ public class testRouteCapture
 {
     // High addresses, the convention testAccessory follows.
     //
-    // This claimed 71, 72 and 73 against a control station initialised from the operator's REAL
+    // This claimed 71, 72 and 73 against a control station initialized from the operator's REAL
     // accessory database - three addresses a layout is quite likely to be using.  Creating an
     // accessory at an address that already has one is not a test failure, it is a test quietly
     // altering somebody's railway.

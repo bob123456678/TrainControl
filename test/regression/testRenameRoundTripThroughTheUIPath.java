@@ -512,7 +512,7 @@ public class testRenameRoundTripThroughTheUIPath
      * renamed page - a protecting signal, a blocker, the far end of a portal, a caption, and the
      * configuration JSON, which every page's map carries - and after a successful rename those
      * pointers say the new name. That is the rename WORKING. Blanking only each page's own name made
-     * every one of those read as a change, and the test called correct behaviour a bug.
+     * every one of those read as a change, and the test called correct behavior a bug.
      *
      * The subject goes first because the new name contains the old one - "1 - Main Renamed" contains
      * "1 - Main" - so replacing the shorter first would leave "&lt;page&gt; Renamed" behind and the two

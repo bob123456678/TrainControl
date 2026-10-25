@@ -219,7 +219,7 @@ public class CSDetect
     /**
      * The same, with the number of attempts named - the way in for a test (MT-060).
      *
-     * A fake server that times out once and then answers is the whole behaviour under test, and it
+     * A fake server that times out once and then answers is the whole behavior under test, and it
      * cannot be built against a real Central Station. `host` may therefore carry a port, which costs
      * nothing: the scan passes a bare address and the URL reads the same either way.
      *

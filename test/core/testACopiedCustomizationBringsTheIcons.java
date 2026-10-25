@@ -188,7 +188,7 @@ public class testACopiedCustomizationBringsTheIcons
      * flag, not the answer its icons give (OB-245; Adam, 2026-10-06: "Fix OB-245").
      *
      * `isCustomFunctions` is derived - any custom icon makes it true.  The Cancel's snapshot recorded that derived answer,
-     * so a locomotive customized by an icon alone came back from a cancelled copy with its flag set by the copy, and the
+     * so a locomotive customized by an icon alone came back from a canceled copy with its flag set by the copy, and the
      * save wrote the derived answer as the flag.  Delete the icon afterwards and it read as customized for ever - and
      * the Central Station sync never gives a customized locomotive its function types again.
      *

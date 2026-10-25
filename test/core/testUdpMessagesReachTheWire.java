@@ -60,7 +60,7 @@ public class testUdpMessagesReachTheWire
     /**
      * The bytes that arrive are the bytes the message is made of.
      *
-     * Compared against the message's OWN serialisation rather than against a hand-written array. A
+     * Compared against the message's OWN serialization rather than against a hand-written array. A
      * literal here would be a second statement of the CAN frame format, and the two would drift - the
      * DR family of findings is entirely about that. What is being tested is the transmission path, not
      * the encoding, and this asserts exactly that: whatever `getRawMessage` says, that is what left.

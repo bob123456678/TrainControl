@@ -17,12 +17,12 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A tail across a double curve greys the road it lies on, not the whole square (OB-280, MT-475 step 4).
+ * A tail across a double curve grays the road it lies on, not the whole square (OB-280, MT-475 step 4).
  *
- * A double curve carries two separate tracks, and routing refuses only the one a standing train covers - so the grey,
+ * A double curve carries two separate tracks, and routing refuses only the one a standing train covers - so the gray,
  * which is what routing refuses, has to name that road.  Nothing claimed it: `ui.testTheGreyAppearsAtIdleToo` compares
  * squares only, and its fixture never chooses a double curve, so emptying the road set left every claim green and the
- * diagram then greyed the whole square - both tracks - for a tail on one (the round-4 mutation run, G1).  Adam, 2026-09-24:
+ * diagram then grayed the whole square - both tracks - for a tail on one (the round-4 mutation run, G1).  Adam, 2026-09-24:
  * *"Add the double curve coverage test."*
  *
  * On his frozen railway: ParkingTrack7, `2 - Bottom:16,5`, is reached from the west only (its east end is a buffer),
@@ -99,7 +99,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
     }
 
     /**
-     * Two units in ParkingTrack7 grey the double curve's E-S road and leave its N-W road alone.
+     * Two units in ParkingTrack7 gray the double curve's E-S road and leave its N-W road alone.
      *
      * @throws Exception from the fixture
      */

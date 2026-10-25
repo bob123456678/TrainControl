@@ -135,7 +135,7 @@ public class DiagramMonitor
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains,
         java.util.Set<TileKey> paused)
     {
-        // THE GREY BEFORE THE TRAINS IT IS DRAWN ON, and never an empty set between (OB-343).  A frame on the
+        // THE GRAY BEFORE THE TRAINS IT IS DRAWN ON, and never an empty set between (OB-343).  A frame on the
         // monitor's thread reads the trains and then asks of each whether it is paused, so the frame that reads the new trains
         // finds the new set already there.  This used to write the trains through the one-argument form, which emptied the set
         // first, and a frame between the two writes drew a paused train as one that runs.
@@ -155,7 +155,7 @@ public class DiagramMonitor
         setTrainsOnNoPoint(trains, null);
     }
 
-    /** The squares among the trains on no Point whose train is paused, drawn grey. */
+    /** The squares among the trains on no Point whose train is paused, drawn gray. */
     private volatile java.util.Set<TileKey> pausedOnNoPoint = Collections.emptySet();
 
     /**
@@ -330,12 +330,12 @@ public class DiagramMonitor
                 if (reduced == null) continue;
 
                 // An edge counts as reached once the train has passed the point it ends at.  That is the
-                // same rule the graph window colours by, so the two views cannot disagree.
+                // same rule the graph window colors by, so the two views cannot disagree.
                 boolean reached = edge.getEnd() != null && reachedPoints.contains(edge.getEnd().getName());
 
                 State state = reached ? State.REACHED : State.ACTIVE;
 
-                // The Points at the ends are coloured by whether the train has passed THEM, not by the
+                // The Points at the ends are colored by whether the train has passed THEM, not by the
                 // edge they belong to: the square a train is standing on has been reached even though
                 // the track ahead of it has not.
                 append(run, states, reduced.getStart(),
@@ -523,7 +523,7 @@ public class DiagramMonitor
 
             if (tile == null) continue;
 
-            // GREY WHERE IT IS PAUSED (FR-117)
+            // GRAY WHERE IT IS PAUSED (FR-117)
             TileOverlay mark = TileOverlay.parked(facings.get(point.getName())).withPaused(standing.isAutonomyPaused());
 
             TileOverlay existing = into.get(tile);
@@ -550,7 +550,7 @@ public class DiagramMonitor
         // AND THOSE ON NO POINT, where the setup says they stand
         for (Map.Entry<TileKey, org.traincontrol.automationui.TilePorts.Side> train : onNoPoint.entrySet())
         {
-            // GREY WHERE IT IS PAUSED, as every other train is
+            // GRAY WHERE IT IS PAUSED, as every other train is
             TileOverlay mark = TileOverlay.parked(train.getValue()).withPaused(pausedOnNoPoint.contains(train.getKey()));
 
             TileOverlay existing = into.get(train.getKey());
@@ -589,7 +589,7 @@ public class DiagramMonitor
      * @param at the Point the train is on
      * @param moving whether it is running
      * @param will the copy it will be stood on when its run is done, or null
-     * @param train the train, whose icon is grey while it is paused (FR-117), or null where it is not known
+     * @param train the train, whose icon is gray while it is paused (FR-117), or null where it is not known
      */
     private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving, Point will,
         org.traincontrol.base.Locomotive train)

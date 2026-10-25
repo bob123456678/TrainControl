@@ -34,7 +34,7 @@ import support.SourceOf;
 public class testCancelUndoesACustomizationCopy
 {
     /**
-     * A copy pressed and then cancelled leaves the locomotive exactly as it was.
+     * A copy pressed and then canceled leaves the locomotive exactly as it was.
      *
      * @throws Exception from the event thread
      */

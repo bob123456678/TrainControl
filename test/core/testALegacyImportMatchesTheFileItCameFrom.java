@@ -292,7 +292,7 @@ public class testALegacyImportMatchesTheFileItCameFrom
      * And the square's own track length is untouched, which is the other half of the same confusion.
      *
      * Lengths are what the shortest-track and longest-track routing rules are computed from, so a
-     * capacity written into one is not a harmless mislabelling.
+     * capacity written into one is not a harmless mislabeling.
      *
      * @throws Exception from the store
      */

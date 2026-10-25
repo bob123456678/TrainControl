@@ -26,7 +26,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **Why this is a different kind of test from the ones beside it.**  Every other length test picks the
  * cases I thought of, and the whole history of this feature is cases nobody thought of: a train
- * exactly filling its berth, a fork behind a tail, an unmeasured segment cancelling a refusal that had
+ * exactly filling its berth, a fork behind a tail, an unmeasured segment canceling a refusal that had
  * already been earned.  These generate the railway instead, and check a property that must hold on
  * every one of them - so they cover the shapes I would not have chosen, including the ones I would
  * have got wrong.

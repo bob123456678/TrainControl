@@ -141,7 +141,7 @@ public class testUiStateIsNotLostWhenUnreadable
             Files.write(onDisk.toPath(), original);
         }
 
-        // A file that exists and cannot possibly be read as a serialised state
+        // A file that exists and cannot possibly be read as a serialized state
         weWroteIt = true;
 
         Files.write(live.toPath(), "this is not a serialised anything".getBytes(StandardCharsets.UTF_8));

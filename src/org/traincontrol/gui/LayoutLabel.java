@@ -64,8 +64,8 @@ public final class LayoutLabel extends JLabel
     /**
      * Diagram switching runs here rather than on the event thread.
      *
-     * One thread, not a pool, and not a thread per click: the actions must stay serialised, as the event queue
-     * serialised them for free, and a three-way's two sends must not interleave with another tile's.  Daemon so
+     * One thread, not a pool, and not a thread per click: the actions must stay serialized, as the event queue
+     * serialized them for free, and a three-way's two sends must not interleave with another tile's.  Daemon so
      * that it never holds the JVM open by itself.
      */
     private static final ExecutorService SWITCHING = Executors.newFixedThreadPool(1, runnable ->
@@ -100,7 +100,7 @@ public final class LayoutLabel extends JLabel
      * What autonomy says is happening on this square, or null for nothing.
      *
      * Painted over the icon rather than baked into it, for three reasons that are all about the existing
-     * rendering.  The icon cache is shared by every tile of a type, so recolouring one would recolour
+     * rendering.  The icon cache is shared by every tile of a type, so recoloring one would recolor
      * them all or need a cache entry per state.  updateImage only refreshes when the icon NAME changes,
      * which autonomy state never does - hence the repaint below, which cannot ride that path.  And the
      * transient yellow highlight already works by swapping the icon out and back from lastIcon, so a
@@ -135,7 +135,7 @@ public final class LayoutLabel extends JLabel
      *
      * LayoutGrid puts an empty label along its last row and column - "a dummy column at the end with
      * nothing in it to ensure long labels don't misalign things".  They are not track and they are not
-     * places a tile can be drawn, so they must not wear the grey grid.
+     * places a tile can be drawn, so they must not wear the gray grid.
      *
      * A flag rather than "has no component": the blank squares in the MIDDLE of a layout also have no
      * component, and in the editor those are exactly the squares a user is about to draw on - they need
@@ -257,7 +257,7 @@ public final class LayoutLabel extends JLabel
                 }
             });
 
-            // The grey grid, which is where it actually comes from: the editor's restingBorder puts it BACK after a
+            // The gray grid, which is where it actually comes from: the editor's restingBorder puts it BACK after a
             // hover, and this is what puts it there to begin with.  Asked of the same rule, so the toggle reaches
             // both (FR-006).  Off, it is NOTHING: tiles sit flush, as they do in the viewer, and the hover outline
             // reserves nothing either, so the pointer does not push the diagram along in front of it.
@@ -725,7 +725,7 @@ public final class LayoutLabel extends JLabel
      * them out while they are merely put away.
      *
      * NOT DISPLAYABLE, rather than not visible: a label whose grid has been replaced has been removed from a
-     * realised window and has no peer, which is what "nobody can see this" actually means.  The arriving label is
+     * realized window and has no peer, which is what "nobody can see this" actually means.  The arriving label is
      * never judged; it may legitimately not be attached yet.
      *
      * Where the square cannot be established the label is KEPT.  A missed prune is a slow leak; a wrong prune is a
@@ -964,9 +964,9 @@ public final class LayoutLabel extends JLabel
                         this.setIcon(lastIcon);
 
                         // NEITHER MARK IS AN ICON (MT-309).  There are two marks, the orange line where a train IS
-                        // and the grey wash over the track its presence has BLOCKED, and both are painted in
+                        // and the gray wash over the track its presence has BLOCKED, and both are painted in
                         // `paintCoveredMark` over whatever the icon happens to be.  So nothing swaps the icon for a
-                        // greyed copy: not here, not at the restore at the end of the transient highlight, not in
+                        // grayed copy: not here, not at the restore at the end of the transient highlight, not in
                         // `refreshCoveredMark`.  A tile flashing yellow for an accessory change still shows both
                         // marks.
                         
@@ -1046,7 +1046,7 @@ public final class LayoutLabel extends JLabel
                     // ITS OWN SQUARE AND THE SQUARES AROUND IT, not the whole window: `parent` is the panel the
                     // diagram sits in, and repainting it would redraw everything on every switch, signal and sensor
                     // event of a run.  The diagram's panel draws overlapping children together (OB-172), and the
-                    // neighbourhood is redrawn as a train's icon is (MT-642).
+                    // neighborhood is redrawn as a train's icon is (MT-642).
                     java.awt.Container around = getParent();
 
                     if (around != null)
@@ -1098,13 +1098,13 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The same flash, in a colour and for a length the caller chooses.
+     * The same flash, in a color and for a length the caller chooses.
      *
      * Both are the caller's because both mean something: the route editor lights what a route COMMANDS
      * in the ordinary yellow and what it merely CHECKS in orange, and holds them long enough to look
      * from the window to the diagram and back.
      *
-     * @param wash the colour to lay over the tile
+     * @param wash the color to lay over the tile
      * @param holdMs how long to hold it
      */
     public void flashHighlight(java.awt.Color wash, int holdMs)
@@ -1302,7 +1302,7 @@ public final class LayoutLabel extends JLabel
         autonomyAnnotation = effective;
 
         // AND THE TILES AROUND IT WHERE A TRAIN STANDS: the annotation can say where the icon goes, and the
-        // icon reaches past this tile - repainting it alone left the old icon's reach on the neighbours
+        // icon reaches past this tile - repainting it alone left the old icon's reach on the neighbors
         java.awt.Container around = getParent();
 
         TileOverlay train = autonomyOverlay;
@@ -1333,7 +1333,7 @@ public final class LayoutLabel extends JLabel
     {
         // THE SQUARE ITSELF, FAINTLY, WHERE THE RAILWAY REFUSES IT (Adam, MT-278 item 1: "I want the shading to
         // instead be the same tile with more transparency exactly like what happens when edges are locked in
-        // autonomy mode.").  A grey rectangle over the tile said the same thing by hiding the track; this fades the
+        // autonomy mode.").  A gray rectangle over the tile said the same thing by hiding the track; this fades the
         // track, so a blocked curve is still legibly a curve.
         //
         // On the icon rather than beside it: `super.paintComponent` is what draws the tile, so the composite has to
@@ -1451,8 +1451,8 @@ public final class LayoutLabel extends JLabel
             {
                 // TOLD WHETHER THE TILE IS ALREADY FAINT (MT-375).  `refused` is what drew the art at
                 // `BLOCKED_ALPHA` above.  The overlay pales out track a route is holding, and on a square that is
-                // both blocked and held the two would compound into a tone difference between neighbouring
-                // squares.  Adam ruled (MT-373) that one grey covers both reasons.
+                // both blocked and held the two would compound into a tone difference between neighboring
+                // squares.  Adam ruled (MT-373) that one gray covers both reasons.
                 overlay.paint(g2, getWidth(), getHeight(),
                     annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()),
                     faded);
@@ -1525,13 +1525,13 @@ public final class LayoutLabel extends JLabel
      * The orange a train is drawn in (MT-309).
      *
      * Adam: *"we need to draw a line (let's say in orange) to show that the train is there."*  Opaque, and the one
-     * strongly coloured line on an ordinary diagram: the greens and reds already mean "trains may run this way" and
+     * strongly colored line on an ordinary diagram: the greens and reds already mean "trains may run this way" and
      * "they may not", and yellow is the transient flash for something that has just been switched.  Orange is not
      * spoken for.
      *
      * It is also the orange the diagram uses for a square autonomy does not choose (Adam: *"make the orange of the
-     * lines match the orange of inactive stations"*), which is the graph window's own inactive colour, so a diagram
-     * carrying both reads them as one colour.  A parking berth is grey (FR-103); a square nothing can pass, the X,
+     * lines match the orange of inactive stations"*), which is the graph window's own inactive color, so a diagram
+     * carrying both reads them as one color.  A parking berth is gray (FR-103); a square nothing can pass, the X,
      * is this orange.
      *
      * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
@@ -1564,7 +1564,7 @@ public final class LayoutLabel extends JLabel
      * gaps fall exactly at the joins between squares, on a curve as on a straight, and no coach is ever cut short.  On
      * a curve the coach is shorter, as its chord is.
      *
-     * @param g the graphics, its colour and stroke set by the caller
+     * @param g the graphics, its color and stroke set by the caller
      * @param a one end of the road, a side's midpoint
      * @param b the other end
      * @param span the square's size
@@ -1582,7 +1582,7 @@ public final class LayoutLabel extends JLabel
      * @param a one end of the road, a side's midpoint
      * @param b the other end
      * @param span the square's size
-     * @return the coach's centre line
+     * @return the coach's center line
      */
     private static java.awt.geom.Line2D coach(int[] a, int[] b, int span)
     {
@@ -1624,7 +1624,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * The style trains are drawn in, asked in ONE place so a preference can choose it later: read the preference
-     * here, as `TrainControlUI.stationLabelsAreGrey` reads the caption colour, and every square follows on its next
+     * here, as `TrainControlUI.stationLabelsAreGrey` reads the caption color, and every square follows on its next
      * paint.
      *
      * @return how a train's body is drawn
@@ -1686,13 +1686,13 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The colour a train's body is drawn in.
+     * The color a train's body is drawn in.
      */
     public enum TailColour
     {
         /**
          * The old orange at 55%, the track showing through (`DiagramColours.TRAIN_SEE_THROUGH`); over a running train's
-         * own dark grey line, the orange that comes out the same (`DiagramColours.TRAIN_OVER_RUN`).
+         * own dark gray line, the orange that comes out the same (`DiagramColours.TRAIN_OVER_RUN`).
          */
         SEE_THROUGH(org.traincontrol.automationui.DiagramColours.TRAIN_SEE_THROUGH,
             org.traincontrol.automationui.DiagramColours.TRAIN_OVER_RUN),
@@ -1711,7 +1711,7 @@ public final class LayoutLabel extends JLabel
         }
 
         /**
-         * @return the colour itself
+         * @return the color itself
          */
         public Color colour()
         {
@@ -1719,7 +1719,7 @@ public final class LayoutLabel extends JLabel
         }
 
         /**
-         * @return the colour over a running train's own run line, which it comes out as `colour` does over track
+         * @return the color over a running train's own run line, which it comes out as `colour` does over track
          */
         public Color overTheRun()
         {
@@ -1728,15 +1728,15 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The colour trains are drawn in: see-through by default, and easy to switch (Adam: "can we change to the see
+     * The color trains are drawn in: see-through by default, and easy to switch (Adam: "can we change to the see
      * through tail line, and make it easy to switch to that one too?").
      */
     private static volatile TailColour tailColour = TailColour.SEE_THROUGH;
 
     /**
-     * The colour trains are drawn in, asked in ONE place so a preference can choose it later, as `tailStyle` is.
+     * The color trains are drawn in, asked in ONE place so a preference can choose it later, as `tailStyle` is.
      *
-     * @return the colour a train's body is drawn in
+     * @return the color a train's body is drawn in
      */
     public static TailColour tailColour()
     {
@@ -1744,9 +1744,9 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Chooses the colour trains are drawn in from now on - for that preference, and for a test.
+     * Chooses the color trains are drawn in from now on - for that preference, and for a test.
      *
-     * @param colour the colour, null for the default
+     * @param colour the color, null for the default
      */
     public static void setTailColour(TailColour colour)
     {
@@ -1754,11 +1754,11 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Draws what a standing train has done to this square: the grey it has blocked, the orange it is lying on.
+     * Draws what a standing train has done to this square: the gray it has blocked, the orange it is lying on.
      *
      * **BOTH MARKS, AND THEY SAY DIFFERENT THINGS** (Adam: *"'train is here' should also mean 'track is blocked' -
      * that is the whole point.  it's the same as greying out edges, just in a different way"*).  A square with
-     * orange on it is where a train IS; a square that is merely grey is track that train's presence has made
+     * orange on it is where a train IS; a square that is merely gray is track that train's presence has made
      * unusable; a square with neither is free.  The wash is under the line, so a square that is both still reads as
      * both: the other order would bury the train under the consequence of the train.
      *
@@ -1782,7 +1782,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Draws the train's line, as `paintCoveredMark(g)` does, or over a run line: in the colour that comes out there
+     * Draws the train's line, as `paintCoveredMark(g)` does, or over a run line: in the color that comes out there
      * as the line does over plain track (Adam: "brighten the color of the orange train tail while running so that
      * it more closely matches the normal stopped color").
      *
@@ -1810,10 +1810,10 @@ public final class LayoutLabel extends JLabel
 
         g.setStroke(new java.awt.BasicStroke(width, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
-        // WHICHEVER COLOUR THE DIAGRAM IS SET TO DRAW - see `tailColour`
+        // WHICHEVER COLOR THE DIAGRAM IS SET TO DRAW - see `tailColour`
         g.setColor(overTheRun ? tailColour().overTheRun() : tailColour().colour());
 
-        // ONE SHAPE FOR ALL OF THE SQUARE'S ROADS, drawn once.  A see-through colour drawn road by road lays itself twice
+        // ONE SHAPE FOR ALL OF THE SQUARE'S ROADS, drawn once.  A see-through color drawn road by road lays itself twice
         // where two roads meet - the middle of a crossing, the throat of a switch - and comes out darker there; the
         // outline of one shape is filled once.
         java.awt.geom.Path2D.Double body = new java.awt.geom.Path2D.Double();
@@ -1878,7 +1878,7 @@ public final class LayoutLabel extends JLabel
 
         if (length <= 0) return new double[] {end[0], end[1]};
 
-        // How squarely the road meets the side: the cap's centre has to be a radius in from the side, measured across it
+        // How squarely the road meets the side: the cap's center has to be a radius in from the side, measured across it
         double square = side == org.traincontrol.automationui.TilePorts.Side.N
             || side == org.traincontrol.automationui.TilePorts.Side.S ? Math.abs(dy) / length : Math.abs(dx) / length;
 
@@ -1956,7 +1956,7 @@ public final class LayoutLabel extends JLabel
 
         if (getWidth() <= 0 || getHeight() <= 0) return null;
 
-        // THE BLOCKED ROADS, NOT THE TRAIN'S (OB-208).  The fade is the grey, and the grey is its own answer (Adam's
+        // THE BLOCKED ROADS, NOT THE TRAIN'S (OB-208).  The fade is the gray, and the gray is its own answer (Adam's
         // ruling): the places the tails claim, per road (OB-280), rather than the orange's squares.  Asking the
         // orange here would fade the whole of a double curve the train is not on, over which a covered edge runs on
         // one arc: the confusion MT-309 was about.
@@ -2018,7 +2018,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * Roads of this square, named by the reduction, as the sides they join - one translation for both marks,
-     * so the orange line and the grey band cannot come to describe a road differently.
+     * so the orange line and the gray band cannot come to describe a road differently.
      *
      * @param roads the reduction's names for them
      * @return the roads, possibly none
@@ -2049,7 +2049,7 @@ public final class LayoutLabel extends JLabel
         {
             // A ROUTE TILE'S ROADS ARE NOT IN THE PORT MAP (OB-279).  It carries whatever the track beside it carries, and
             // its roads are named by the sides they join - so indexing the port map found nothing, and the orange line
-            // and the grey band broke at every route tile a train lay across.
+            // and the gray band broke at every route tile a train lay across.
             if (org.traincontrol.automationui.TilePorts.isTransparent(component.getType()))
             {
                 org.traincontrol.automationui.TilePorts.Route through =
@@ -2093,7 +2093,7 @@ public final class LayoutLabel extends JLabel
      * TRANSLATED to this tile, because the Graphics belongs to the container and the overlay draws in tile
      * coordinates, and NOT CLIPPED to it (Adam, MT-642: "there should be no clip").  On a curve the icon runs along
      * the rail at its full size and reaches onto the next tiles.  `setAutonomyOverlay` repaints the tiles around
-     * this one when a train comes or goes, so nothing is left behind there.  The centre is the train's own road
+     * this one when a train comes or goes, so nothing is left behind there.  The center is the train's own road
      * (`trackCentreOf`): a double curve has two.
      *
      * @param g the container's graphics
@@ -2175,7 +2175,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * This square's arrows back over a neighbour's station that spilled onto it (Adam: *"make sure that the optional
+     * This square's arrows back over a neighbor's station that spilled onto it (Adam: *"make sure that the optional
      * ingress/egress arrows remain visible, especially on curves"*) - `TileAnnotation.paintArrowsAgain`, asked by
      * the diagram once the spills are drawn.  Only where another square's spill reaches this one.
      *
@@ -2217,8 +2217,8 @@ public final class LayoutLabel extends JLabel
 
     /**
      * And the squares around it, where this square's station spills onto them (Adam: *"make the stations spill over
-     * onto adjacent tiles"*): the diagram paints a square's neighbours only where it is asked to, so repainting this
-     * square alone would leave the old spill on them, a station turned grey and still blue past its edges.
+     * onto adjacent tiles"*): the diagram paints a square's neighbors only where it is asked to, so repainting this
+     * square alone would leave the old spill on them, a station turned gray and still blue past its edges.
      */
     @Override
     public void repaint(long tm, int x, int y, int width, int height)
@@ -2374,7 +2374,7 @@ public final class LayoutLabel extends JLabel
         if (running == null) return false;
 
         // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask.  The dialog that can
-        // authorise the click asks `hasAutoLayout() && isAutonomyRunning()`, so this must too.  With a configuration
+        // authorize the click asks `hasAutoLayout() && isAutonomyRunning()`, so this must too.  With a configuration
         // loaded and autonomy idle (the ordinary state, since the active diagram loads at start-up and places
         // locomotives onto Points) no dialog could be shown, `warnedAboutProtection` would always be false, and the
         // worker below would refuse EVERY click that would set a protecting signal green over a square the model

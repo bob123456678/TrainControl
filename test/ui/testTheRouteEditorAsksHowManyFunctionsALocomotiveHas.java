@@ -227,7 +227,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
                 // NOTHING SELECTED.  A selected row is painted in the look-and-feel's selection ink
                 // and the renderer leaves the foreground alone there, so a test that rendered the
-                // selected row would read the same colour whatever the rule said.
+                // selected row would read the same color whatever the rule said.
                 frame[0].clearCommandSelectionForTest();
             });
 

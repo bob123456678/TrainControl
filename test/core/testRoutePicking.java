@@ -24,7 +24,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * "take the direct one" and nothing anywhere complains.
  *
  * The fixture is one junction with two ways across it, arranged so that every rule has a different
- * favourite:
+ * favorite:
  *
  * <pre>
  *   the short way:  Start -> ViaStation -> End      2 sensors, 1 station passed, 100 long
@@ -722,7 +722,7 @@ public class testRoutePicking
      *
      * THE POINT OF THE RULE IS THE BAND IT CROSSES. Every other preference ranks candidates within one
      * priority band, because pickPath settles the highest band before looking at the next - which is
-     * why "the highest priority available station" needed no rule of its own, it is the behaviour. So
+     * why "the highest priority available station" needed no rule of its own, it is the behavior. So
      * the fixture here is built to make the two answers differ: a high-priority station a long way
      * off, and an ordinary one close by.
      *
@@ -781,15 +781,15 @@ public class testRoutePicking
     }
 
     /**
-     * A de-prioritised station is not reached by the longest route available.
+     * A de-prioritized station is not reached by the longest route available.
      *
      * ratioOf was ((priority + 1) * 1000) / length, reasoned about only from a default of zero.  Point.
      * setPriority takes negatives and the editor calls them perfectly valid, so at -1 the numerator was
      * 0 - every route to that station scored the same and distance stopped mattering - and at -2 and
      * below the numerator was negative, where dividing by a LARGER length gives a LARGER value.  Among
-     * de-prioritised stations the rule therefore chose the most distant one it could find.
+     * de-prioritized stations the rule therefore chose the most distant one it could find.
      *
-     * Two assertions, because the two halves fail apart: the de-prioritised station must lose to an
+     * Two assertions, because the two halves fail apart: the de-prioritized station must lose to an
      * ordinary one at all, and - the inversion itself - it must not beat it BY BEING FURTHER.
      */
     @Test
@@ -810,7 +810,7 @@ public class testRoutePicking
             + "it was eighteen units away rather than two - a negative numerator makes a longer route "
             + "score higher, so \"go here less\" was read as \"go here the long way round\" (RC-B2)");
 
-        // And the same station, de-prioritised the same amount, must not become MORE attractive as the
+        // And the same station, de-prioritized the same amount, must not become MORE attractive as the
         // route to it grows.  This is the inversion stated on its own, without a rival station.
         int near = ratioFor(layout, 2, -2);
         int away = ratioFor(layout, 18, -2);
@@ -842,7 +842,7 @@ public class testRoutePicking
     }
 
     /**
-     * What the ratio makes of a de-prioritised destination at a given distance.
+     * What the ratio makes of a de-prioritized destination at a given distance.
      *
      * Asked of the real method rather than recomputed here, which is the point: a copy of the
      * arithmetic in the test would agree with whatever the arithmetic says, including a sign error.
@@ -876,8 +876,8 @@ public class testRoutePicking
      * A long way to an important station, and a short way to an ordinary one.
      *
      * Priorities: the far station is 5, the near one the default of 0. The near one therefore scores
-     * (0+1)*1000/2 = 500 and the far one (5+1)*1000/18 = 333, so priority-per-unit favours the near
-     * station while raw priority favours the far one - which is the disagreement the test needs.
+     * (0+1)*1000/2 = 500 and the far one (5+1)*1000/18 = 333, so priority-per-unit favors the near
+     * station while raw priority favors the far one - which is the disagreement the test needs.
      *
      * The baseline in that arithmetic is not decoration: without it the near station scores 0/2 = 0
      * and could never win, whatever the distance.

@@ -84,7 +84,7 @@ final class EditorPrompts
      * A checklist of the other stations, rather than a picker of one: a station may be held back by more than one place.
      *
      * Only NAMED points are offered: the restriction is written into the built configuration as lock edges pointing at
-     * the watched square, and a square with no name is one the operator cannot recognise in a list.
+     * the watched square, and a square with no name is one the operator cannot recognize in a list.
      */
     void promptBlockingPoints(TileKey station)
     {
@@ -96,7 +96,7 @@ final class EditorPrompts
         for (TileKey tile : editor.session.getStore().getNamedTiles())
         {
             // STATIONS ONLY (MT-376: *"works, but exclude non-station points from the list entirely."*): a name is not a station (a
-            // caption square, an approach guard or a labelled piece of track all carry one), and this setting watches whether a place
+            // caption square, an approach guard or a labeled piece of track all carry one), and this setting watches whether a place
             // trains stop is OCCUPIED.  ...unless it is ALREADY STORED: this dialog is the only way to edit `blockedPoints`,
             // and `chosen` is built from what the list offers, so hiding a stored entry would delete it when somebody pressed OK.
             if (!editor.session.getStore().isStation(tile) && !already.contains(tile)) continue;
@@ -139,9 +139,9 @@ final class EditorPrompts
         // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
         {
-            // GREYED, because there is nothing a click could find (MT-376: *"if there are no stations on the diagram yet, the 'choose
+            // GRAYED, because there is nothing a click could find (MT-376: *"if there are no stations on the diagram yet, the 'choose
             // on diagram' button should be greyed out to match the message"*): `whyNotABlocker` refuses a square that is not a
-            // station.  Shown greyed rather than left out, so the operator learns the way in exists.
+            // station.  Shown grayed rather than left out, so the operator learns the way in exists.
             javax.swing.JButton pickNow = AutonomyEditorPanel.nothingToPickButton();
 
             final javax.swing.JButton close = new javax.swing.JButton(
@@ -191,7 +191,7 @@ final class EditorPrompts
 
             box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
-            // LIGHTLY (FR-074), so a foreground colour rather than a disabled box: these squares are valid to block with (a
+            // LIGHTLY (FR-074), so a foreground color rather than a disabled box: these squares are valid to block with (a
             // parking berth holding a platform back is the case FR-001 exists for), so the mark says what KIND of square it
             // is, not that it cannot be picked.
             if (notChosen.contains(tile))
@@ -205,7 +205,7 @@ final class EditorPrompts
             panel.add(box);
         }
 
-        // White behind the list rather than the panel's default grey: this reads as a list of things
+        // White behind the list rather than the panel's default gray: this reads as a list of things
         // to pick from, and every other list in the application is white (OB-083).
         panel.setBackground(java.awt.Color.WHITE);
         panel.setOpaque(true);

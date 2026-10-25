@@ -806,7 +806,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * a legacy graph is not - it will overrule them - and Adam has ruled that it may: "yes, it may
      * override." A page repeating another page’s sensors is not a preference but a diagram the
      * reduction cannot read, and a setting made before the rule existed is not a decision the rule
-     * has to honour.
+     * has to honor.
      *
      * This comment used to end "if a second call site ever appears, this is the test whose comment
      * explains why it must not". It appeared, it was argued over, and it stays.
@@ -843,7 +843,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      *
      * TWO CALL SITES, BOTH SANCTIONED (OB-130, settled 2026-08-29). Configuration creation (:885) and
      * legacy import into an existing setup (:1137). So this is no longer a count held while an argument
-     * runs - it is the number of places the behaviour is wanted, and a third would still be one nobody
+     * runs - it is the number of places the behavior is wanted, and a third would still be one nobody
      * has argued for.
      *
      * The second was raised on the reading that it silently re-excludes a page the user had
@@ -884,7 +884,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         //
         // Adam, 2026-08-29: "yes, it may override." A page that repeats another page\u2019s sensors is
         // not a preference - it is a diagram the reduction cannot make sense of - and a setting made
-        // before the rule existed is not a decision the rule has to honour.
+        // before the rule existed is not a decision the rule has to honor.
         //
         // So the ratchet stands for a different reason than it did: not "nobody has settled this" but
         // "these two are wanted and a third has never been argued for".
@@ -1051,7 +1051,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * what it can find.
      *
      * That does mean an import onto a genuinely different layout is quiet about the half that did not
-     * apply.  Asserted here so the behaviour is at least written down, and so that anyone adding a
+     * apply.  Asserted here so the behavior is at least written down, and so that anyone adding a
      * report of it later has to come through this test.
      */
     @Test
@@ -1173,7 +1173,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         // Given the globals every real configuration carries.  A configuration created and never
         // touched holds nothing but its own name, and a file that says only "name" is not something
-        // this should claim to recognise - see the note on detectImportFormat.
+        // this should claim to recognize - see the note on detectImportFormat.
         session.getStore().getConfiguration("Adam 1").put("globals", new org.json.JSONObject());
 
         org.json.JSONObject bundle = session.getStore().exportBundle("Adam 1");
@@ -1693,7 +1693,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
      * A modern export coming back through the legacy door is spotted by each of its three keys.
      *
      * `detectImportFormat` calls any file whose `points` is an ARRAY a legacy graph, and a
-     * configuration serialised by `Layout.toJSON` is one of those - so a modern setup exported and
+     * configuration serialized by `Layout.toJSON` is one of those - so a modern setup exported and
      * re-imported comes through a door that carries none of the fields the modern format added.
      *
      * **The first version of this check asked for `blocks` and the key is `block`**, singular, as

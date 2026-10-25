@@ -41,8 +41,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *   there belongs to), then a train standing nowhere - by name with capitals ignored, and that coming back to the Auto tab
  *   counts as opening it;
  * - that a card's pause button, and the refresh a run fires, move no card;
- * - that the two tools reach every train they should, are counted and greyed on the train's own flag, save with the
- *   configuration, are refused while autonomy runs, and tell the diagram's grey for a paused train on no Point.
+ * - that the two tools reach every train they should, are counted and grayed on the train's own flag, save with the
+ *   configuration, are refused while autonomy runs, and tell the diagram's gray for a paused train on no Point.
  *
  * @author Adam
  */
@@ -155,7 +155,7 @@ public class testTheActiveTickPausesATrain
 
     // ----------------------------------------------------------- the trains these claims use (C1)
 
-    /** The train the paused-grey claim stands on a square its facing cannot be held on. */
+    /** The train the paused-gray claim stands on a square its facing cannot be held on. */
     private static final String STRAY = "BR 10 001";
 
     /** The first address of the trains made for the class, one each: nobody's but this class's. */
@@ -2227,7 +2227,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * The three the claims pause, as the card's own button pauses them (the train alone).  The last is on a station put out of
-     * use as well, and sorts with the stations out of use: the station is the stronger fact, and the card is greyed for it.
+     * use as well, and sorts with the stations out of use: the station is the stronger fact, and the card is grayed for it.
      */
     private static final String[] PAUSED = {"BDymf 457 DB", "ALCO UP", "118 028-0 DB"};
 
@@ -2667,9 +2667,9 @@ public class testTheActiveTickPausesATrain
     /**
      * Bulk Tools has Deactivate All Trains and Activate All Trains, on the track diagram's right-click menu as in the editor:
      * each sets every train it covers, in the railway and in the setup, saves it with the configuration so a reload has it,
-     * says how many it changed, and greys when there is nothing for it to change (FR-126; Adam: "a bulk tool to mass activate
+     * says how many it changed, and grays when there is nothing for it to change (FR-126; Adam: "a bulk tool to mass activate
      * and mass deactivate all trains").  Deactivate covers the trains standing on the layout - the ones on a station put out
-     * of use too, which are on it though their cards are grey.
+     * of use too, which are on it though their cards are gray.
      *
      * MUTATION: leave a train out of either tool, set the train and not the setup, or save nothing, and this fails.
      *
@@ -2735,7 +2735,7 @@ public class testTheActiveTickPausesATrain
             assertTrue(reloaded.getPausedLocomotives().containsAll(standing), "the pauses were not saved with the"
                 + " configuration: a reload lists " + reloaded.getPausedLocomotives());
 
-            // AND NOTHING LEFT FOR IT: greyed
+            // AND NOTHING LEFT FOR IT: grayed
             javax.swing.JMenuItem spent = diagramMenuItem(mainB, I18n.f("autosetup.ui.menuDeactivateAllTrains", 0));
 
             assertTrue(spent != null && !spent.isEnabled(), "with every train paused, Deactivate All Trains is not greyed: "
@@ -2981,7 +2981,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A paused train on no Point is drawn grey on the diagram, and the tools tell the diagram (FR-126): its grey is read from
+     * A paused train on no Point is drawn gray on the diagram, and the tools tell the diagram (FR-126): its gray is read from
      * the configuration's list, which Deactivate All Trains and Activate All Trains change, and the diagram was told only of
      * a train placed or put back.
      *
@@ -3087,7 +3087,7 @@ public class testTheActiveTickPausesATrain
         }
     }
 
-    /** The squares the diagram draws a paused train grey on, among the trains the railway stands on no Point. */
+    /** The squares the diagram draws a paused train gray on, among the trains the railway stands on no Point. */
     @SuppressWarnings("unchecked")
     private static java.util.Set<TileKey> pausedOnNoPointOnTheDiagram() throws Exception
     {

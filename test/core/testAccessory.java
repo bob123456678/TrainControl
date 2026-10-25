@@ -259,7 +259,7 @@ public class testAccessory
 
     /**
      * And at a genuinely unused address the accessory is created, as the requested type, with no
-     * spurious extra accessory left behind at a neighbouring address.
+     * spurious extra accessory left behind at a neighboring address.
      */
     @Test
     public void testSignalIsCreatedAtAnUnusedAddress() throws Exception
@@ -445,7 +445,7 @@ public class testAccessory
      *
      * **What this test can and cannot show.** The executor captures that exception in its `Future`,
      * which nobody reads, so the failure is invisible from outside and the pre-fix code would NOT have
-     * failed the middle assertion here. What it does pin is the surrounding behaviour: the echo reaches
+     * failed the middle assertion here. What it does pin is the surrounding behavior: the echo reaches
      * a live accessory, an echo for a deleted one does not throw *synchronously* on the caller's thread,
      * and the pipeline keeps working afterwards. The synchronous part matters - if this handling is ever
      * made synchronous, that exception lands on the CAN reader thread, which is exactly how A8 killed

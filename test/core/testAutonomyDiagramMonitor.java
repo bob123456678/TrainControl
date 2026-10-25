@@ -26,7 +26,7 @@ import support.ProgramConstants;
 /**
  * Turning what the railway is doing into what each tile shows.
  *
- * The interesting behaviour is not the colours, it is the bookkeeping: a tile lit after its train has
+ * The interesting behavior is not the colors, it is the bookkeeping: a tile lit after its train has
  * gone reads as a train that is still there, and a monitor that computes on the firing thread holds up
  * the trains rather than the drawing.  So these tests are about staleness and about who does the work.
  *
@@ -140,7 +140,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The colour changes where the train is, not where the edge is.
+     * The color changes where the train is, not where the edge is.
      *
      * Green behind, red ahead: the whole point of drawing the path rather than outlining it is that the
      * two halves are told apart at a glance.
@@ -164,7 +164,7 @@ public class testAutonomyDiagramMonitor
     /**
      * The line follows the track round a corner.
      *
-     * Read off the neighbours rather than from the tile art, so a curve is entered by one side and left
+     * Read off the neighbors rather than from the tile art, so a curve is entered by one side and left
      * by the next one round without this having to know what a curve looks like.
      */
     @Test
@@ -238,7 +238,7 @@ public class testAutonomyDiagramMonitor
     /**
      * A jump between pages has no side to be drawn as, and says so.
      *
-     * A link is a hole in one page that comes out on another, so the two squares are not neighbours on
+     * A link is a hole in one page that comes out on another, so the two squares are not neighbors on
      * any grid.  The honest answer is a line that stops, which is what the train visibly does.
      */
     @Test
@@ -258,7 +258,7 @@ public class testAutonomyDiagramMonitor
     /**
      * A square carrying a line is not blank, however it was reached.
      *
-     * isBlank is what stops the common case costing anything, and a claim it does not recognise is a
+     * isBlank is what stops the common case costing anything, and a claim it does not recognize is a
      * square that quietly refuses to paint.
      */
     @Test
@@ -758,7 +758,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A run is drawn in the diagram's palette (FR-106: the stations' blue for the path ahead, dark grey
+     * A run is drawn in the diagram's palette (FR-106: the stations' blue for the path ahead, dark gray
      * for what the train has driven, the tail in orange), from the one place it is kept: `DiagramColours`.  The arrowheads
      * are white, to read on both.
      *
@@ -1133,12 +1133,12 @@ public class testAutonomyDiagramMonitor
      *
      * A segment is drawn from the midpoint of the side it came in by to the midpoint of the side it
      * leaves by. At the end of a run there is no side it leaves by, so the line stops on the rail, not at the
-     * tile's geometric centre - which is ON the rail for a straight and nowhere near it for a curve, where the
+     * tile's geometric center - which is ON the rail for a straight and nowhere near it for a curve, where the
      * track cuts the corner and never passes through the middle.
      *
      * The tile here is the shape that broke: track entering at the TOP and leaving at the EAST, which is
      * the curve at `1 - Main:0,11` the picture was taken of. Its rail runs from (30,0) to (60,30), so
-     * the point half way along it is (45,15). The tile centre, (30,30), is well clear of the rail - far
+     * the point half way along it is (45,15). The tile center, (30,30), is well clear of the rail - far
      * enough that a line reaching it cannot be mistaken for one that stopped on the track.
      *
      * Painted rather than computed, because "where does the line stop" is a question about the picture.
@@ -1166,7 +1166,7 @@ public class testAutonomyDiagramMonitor
         assertTrue(painted(image, 45, 15), "nothing was drawn where the rail actually runs");
 
         // The stroke is a seventh of the tile with a round cap, so it reaches a few pixels past where
-        // the line ends.  Anything as far down as the tile centre is the old straight-down stub.
+        // the line ends.  Anything as far down as the tile center is the old straight-down stub.
         int lowest = -1;
 
         for (int y = 0; y < size; y++)
@@ -1183,7 +1183,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The locomotive icon on every orientation of a curve and a double curve runs along the train's own road, centred on
+     * The locomotive icon on every orientation of a curve and a double curve runs along the train's own road, centered on
      * it, with its front towards the side the train is heading for and its roof never pointing down - and at the size a
      * straight gives it, not cut off at its tile (MT-642).  A straight, both ways and both orientations, is drawn as
      * before.
@@ -1192,11 +1192,11 @@ public class testAutonomyDiagramMonitor
      * onto a canvas three tiles wide with the tile in the middle, so what reaches past the tile is seen.  Compared with
      * the icon drawn from first principles rather than by the product's arithmetic: its front along the vector from the
      * middle of the train's road to the heading side's midpoint, its roof the perpendicular that points up the screen,
-     * centred on that middle.  Each case is every movement a train makes over a square - parked facing the heading side,
+     * centered on that middle.  Each case is every movement a train makes over a square - parked facing the heading side,
      * running through, arriving (a run that ends here, with only the side it came in by) and departing (a run that starts
      * here, with only the side it leaves by) - on the two tile sizes the diagram draws, 30 and 60 pixels.
      *
-     * MUTATION: draw the icon square to the tile on a curve, clip it to its tile, centre it on the station's road of a
+     * MUTATION: draw the icon square to the tile on a curve, clip it to its tile, center it on the station's road of a
      * double curve, mirror it the wrong way, or point an arriving train at the side opposite its entry, and this fails.
      */
     @Test
@@ -1274,7 +1274,7 @@ public class testAutonomyDiagramMonitor
             }
         }
 
-        // AND A STRAIGHT, as before: centred on the tile, square to it
+        // AND A STRAIGHT, as before: centered on the tile, square to it
         for (Side[] road : new Side[][] {{Side.W, Side.E}, {Side.N, Side.S}})
         {
             for (int way = 0; way < 2; way++)
@@ -1525,7 +1525,7 @@ public class testAutonomyDiagramMonitor
     /**
      * A train coming to or leaving a curve repaints the tiles around it, not only its own (MT-642): its icon is not
      * clipped to its tile and reaches onto the next ones along the rail, so a repaint of the tile alone left the front
-     * of the old icon behind on its neighbours.
+     * of the old icon behind on its neighbors.
      *
      * MUTATION: repaint only the tile itself, and this fails.
      */
@@ -1569,7 +1569,7 @@ public class testAutonomyDiagramMonitor
 
                 tile.setAutonomyOverlay(comesOrGoes);
 
-                // the tile and the half of each neighbour an icon on a curve can reach
+                // the tile and the half of each neighbor an icon on a curve can reach
                 java.awt.Rectangle reach = new java.awt.Rectangle(size / 2, size / 2, 2 * size, 2 * size);
 
                 boolean covered = false;
@@ -1618,8 +1618,8 @@ public class testAutonomyDiagramMonitor
     /**
      * The dot marking where the train is sits on the rail too.
      *
-     * The star is centred on `trackCentre` (MT-057), and the RUNNING overlay draws its own mark, the dot that says
-     * which square of a claimed path actually holds the train.  That dot is centred on `trackCentre` too (MT-117):
+     * The star is centered on `trackCentre` (MT-057), and the RUNNING overlay draws its own mark, the dot that says
+     * which square of a claimed path actually holds the train.  That dot is centered on `trackCentre` too (MT-117):
      * on a straight the two agree, but on a curve the badge and star sit on the corner the rail cuts, so a dot in
      * the middle of the square would be a mark beside its own station.
      *
@@ -1664,7 +1664,7 @@ public class testAutonomyDiagramMonitor
      * about.
      *
      * A 60-pixel tile whose track joins N to E: the two side midpoints are (30,0) and (60,30), so the
-     * rail's midpoint is (45,15). The tile centre, (30,30), is well clear of it.
+     * rail's midpoint is (45,15). The tile center, (30,30), is well clear of it.
      */
     @Test
     public void testTheAnnotationPutsTheTrackCentreOnTheRailOfACurve()
@@ -1695,7 +1695,7 @@ public class testAutonomyDiagramMonitor
      *
      * Switching a reversing point off changes its badge, and switching a station off does too (the editor's "out of
      * service" leaves the station flag set, so a rule that skipped stations would miss almost every square the mode is
-     * used on).  Both draw the same cross, neither draws a grey block, and parking alone does not draw it.
+     * used on).  Both draw the same cross, neither draws a gray block, and parking alone does not draw it.
      *
      * MUTATION: make `Badge.isImpassable` answer false, or answer `parking`, and the first assertion fails.
      */
@@ -1726,14 +1726,14 @@ public class testAutonomyDiagramMonitor
             size / 5.0, "a switched-off station and a switched-off passing point draw different crosses, though "
             + "nothing can use either - the mark is about the square being out of use");
 
-        // ONE MARK FOR BOTH, AND NO GREY BLOCK, whatever type of station or point the square otherwise is
-        // (`testASquareOutOfServiceIsAnOrangeRingedCircle`); grey is counted, not ink, which the white over a
+        // ONE MARK FOR BOTH, AND NO GRAY BLOCK, whatever type of station or point the square otherwise is
+        // (`testASquareOutOfServiceIsAnOrangeRingedCircle`); gray is counted, not ink, which the white over a
         // sensor's contact adds to a station's as well
         assertEquals(greyOf(badgeAt(true, true, true, size)) + greyOf(badgeAt(false, true, true, size)), 0,
             "a square out of service still draws a grey block");
 
         // AND PARKING IS NOT SHUT.  The two flags have to be told apart, or `isImpassable()` returning
-        // `parking` would pass every assertion above.  They share a colour and mean opposite things - a parking berth
+        // `parking` would pass every assertion above.  They share a color and mean opposite things - a parking berth
         // is somewhere autonomy leaves alone and the operator uses freely; a shut square is one nothing may enter at
         // all.
         assertNotEquals(inkOf(badgeAt(false, true, true, false, size)),
@@ -1743,14 +1743,14 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square nothing can pass - drawn with an X - is orange, and a parking berth grey.
+     * A square nothing can pass - drawn with an X - is orange, and a parking berth gray.
      *
      * Both answer "autonomy will not send a train here" (FR-103), but the X is orange, so a square shut to every
      * train reads apart from a berth autonomy merely does not choose.
      * Asked as the editor and the diagram build a switched-off square - parking AND shut, since a square nothing can
      * pass is also one autonomy does not choose - and with shut alone.
      *
-     * MUTATION: let parking decide the colour first, or draw the X grey, and this fails.
+     * MUTATION: let parking decide the color first, or draw the X gray, and this fails.
      *
      * @throws Exception from painting
      */
@@ -1759,7 +1759,7 @@ public class testAutonomyDiagramMonitor
     {
         final int size = 40;
 
-        // THE CROSS'S OWN COLOUR (FR-118): a station's cross is drawn over a grey block now, which outweighs it
+        // THE CROSS'S OWN COLOR (FR-118): a station's cross is drawn over a gray block now, which outweighs it
         java.awt.Color shut = crossColour(plainBadge(true, true), size);
         java.awt.Color shutAlone = crossColour(plainBadge(false, true), size);
         java.awt.Color parking = markColour(plainBadge(true, false), size);
@@ -1777,10 +1777,10 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square autonomy will not choose - a parking berth - is drawn in a medium dark grey, not orange (FR-103).  One
+     * A square autonomy will not choose - a parking berth - is drawn in a medium dark gray, not orange (FR-103).  One
      * switched off is orange again, the X - `testASquareNothingCanPassIsOrange`.
      *
-     * Grey as the grey station labels are, and slightly darker than they are (MT-492).
+     * Gray as the gray station labels are, and slightly darker than they are (MT-492).
      *
      * MUTATION: put the orange back, and this fails.
      *
@@ -1820,7 +1820,7 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testTheCrossKeepsItsWeightAsTheTileGrows() throws Exception
     {
-        // A PASSING POINT'S, the cross alone: a station's sits on a grey block (FR-118), whose ink grows with the
+        // A PASSING POINT'S, the cross alone: a station's sits on a gray block (FR-118), whose ink grows with the
         // square of the tile whatever the cross does
         int small = inkOf(badgeAt(false, true, true, 40));
         int large = inkOf(badgeAt(false, true, true, 80));
@@ -1932,7 +1932,7 @@ public class testAutonomyDiagramMonitor
     /**
      * Where trains must turn, two terminus shapes back to back, pointing away from each other, with
      * the track's black line showing in the gap between them, and each with a WHITE bar (FR-118).  A one-pixel bar
-     * set on a half pixel spreads over two columns and shows grey.
+     * set on a half pixel spreads over two columns and shows gray.
      *
      * MUTATION: narrow the gap so the outlines meet, or draw the 30-pixel bar inside its half's own frame, and this
      * fails.
@@ -2027,8 +2027,8 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A parking berth is grey in whatever shape it has: the block on through track, the terminus at a dead end
-     * (FR-118).  Parking is a colour, not a shape.
+     * A parking berth is gray in whatever shape it has: the block on through track, the terminus at a dead end
+     * (FR-118).  Parking is a color, not a shape.
      *
      * MUTATION: give parking a shape of its own, or draw it blue, and this fails.
      *
@@ -2059,7 +2059,7 @@ public class testAutonomyDiagramMonitor
     /**
      * Every square out of service is one mark - a white circle, an orange ring, an orange X in it - whatever it otherwise
      * is, a station of any kind or a plain sensor, on the track diagram and in the editor.  It is small enough that the
-     * sensor activation arrows still show, and big enough to be prominent.  It replaces the orange X over a grey block
+     * sensor activation arrows still show, and big enough to be prominent.  It replaces the orange X over a gray block
      * (FR-118) and the bare X on a plain sensor.
      *
      * Painted on white, on straight track and a curve, at both sizes: every kind draws the same picture; the mark is round,
@@ -2250,7 +2250,7 @@ public class testAutonomyDiagramMonitor
      * Every station icon covers the sensor's own contact - the circle of the s88 tile, 14 pixels at 30 and 26 at 60 -
      * with white, the track's black band drawn back across it (FR-118).  The icons are no taller than the contact, so
      * they alone would leave its edges showing.
-     * Painted over the real tile art; above and below the band, nothing of the contact's grey ring may remain.
+     * Painted over the real tile art; above and below the band, nothing of the contact's gray ring may remain.
      *
      * MUTATION: drop the cover, and this fails.
      *
@@ -2320,7 +2320,7 @@ public class testAutonomyDiagramMonitor
             double terminus = lengthAlong(station(Side.W, Side.E, false, false, false, false, Side.W), size);
 
             // the outline's own length past each end: half the stroke at a flat end, more at a point, where the stroke's
-            // mitre runs on - a point of length p on a shape h tall is an angle whose half has tan (h / 2) / p
+            // miter runs on - a point of length p on a shape h tall is an angle whose half has tan (h / 2) / p
             double pointed = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (h / 2.0)));
             double terminusPoint = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (large ? h / 2.0 : h * smallPoint)));
 
@@ -2434,9 +2434,9 @@ public class testAutonomyDiagramMonitor
      * beside it, rather than made smaller until it fits or moved in off its rails.
      *
      * Painted as the diagram paints it: the square's own paint cut off at its edges, over the curved sensor's art, then
-     * the spill over the squares around it.  The middle of the icon's colour lies on the chord, within a pixel at 30 and
+     * the spill over the squares around it.  The middle of the icon's color lies on the chord, within a pixel at 30 and
      * a pixel and a half at 60 - along the chord a terminus's weight may lean to its flat end; across it nothing may - and
-     * there is as much of that colour as the same kind shows on straight track, give or take what drawing it on the
+     * there is as much of that color as the same kind shows on straight track, give or take what drawing it on the
      * slant softens: at least 85%.
      *
      * MUTATION: make a curve's icon smaller to fit again, or move it in off its rails, and this fails.
@@ -2737,12 +2737,12 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * In the autonomy editor every icon is white with its colour round it - blue, grey for a berth autonomy does not
+     * In the autonomy editor every icon is white with its color round it - blue, gray for a berth autonomy does not
      * choose - so the arrows over it can be seen clearly.  Every named kind, on
-     * straight track and a curve, at both sizes: in the editor the icon's colour is its outline, a small part of what the
+     * straight track and a curve, at both sizes: in the editor the icon's color is its outline, a small part of what the
      * track diagram fills with it; on the diagram it is filled as before.
      *
-     * MUTATION: fill the editor's icons in their colour again, and this fails.
+     * MUTATION: fill the editor's icons in their color again, and this fails.
      */
     @Test
     @support.DrawsFR118Icons
@@ -2773,7 +2773,7 @@ public class testAutonomyDiagramMonitor
                     String what = badge + " on " + road[0] + "-" + road[1] + " at " + size + " pixels";
 
                     // not the must-turn pair, whose middle is the gap between its halves and each half barred in its
-                    // colour: its fill is the same `fill` as every other kind's
+                    // color: its fill is the same `fill` as every other kind's
                     if (badge.isTerminus() && !badge.isOptional()) continue;
 
                     assertTrue(colour.test(diagram.getRGB(cx, cy)), "precondition: " + what + " on the track diagram is"
@@ -2790,7 +2790,7 @@ public class testAutonomyDiagramMonitor
     /**
      * And on a curve the editor's icon is where the track diagram's is - on the rails, its full size, spilling onto the
      * squares beside it - not in the square's corner: white, the arrows read over it, which is what the corner was for.
-     * Every kind on every curve at both sizes: the middle of the icon's colour, square and spill together, is the middle of
+     * Every kind on every curve at both sizes: the middle of the icon's color, square and spill together, is the middle of
      * the curve's chord.
      *
      * MUTATION: put the editor's icon on a bend back in the corner, and this fails.
@@ -2828,7 +2828,7 @@ public class testAutonomyDiagramMonitor
      * The classic icons are the grid: a circle where trains do not turn, a
      * diamond where they may, a square where they must - and where a station's track runs out, whatever its turning
      * setting - on a station and on a sensor that is no station alike.  Drawn at 150 pixels a square, so the shape is read
-     * off the picture without a pixel's doubt: inside its colour's own extent a square is filled to its corners, a circle
+     * off the picture without a pixel's doubt: inside its color's own extent a square is filled to its corners, a circle
      * short of them but past a diamond's sides.
      *
      * MUTATION: draw a classic station where trains may turn as a square, and this fails.
@@ -2896,7 +2896,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A classic station's diamond on a curve sits on its rails, a little smaller there: the middle of its colour
+     * A classic station's diamond on a curve sits on its rails, a little smaller there: the middle of its color
      * within a pixel and a half of the middle of the curve's chord, every way a curve turns, at both sizes - clamped to
      * keep it inside its square it would sit 3 pixels in at 30 and 5 at 60, toward the inside of the curve.  And it is
      * still bigger than a sensor's diamond on the same curve.
@@ -3277,7 +3277,7 @@ public class testAutonomyDiagramMonitor
         return canvas;
     }
 
-    /** How many pixels of a colour an image has. */
+    /** How many pixels of a color an image has. */
     private static int inkOf(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
     {
         int n = 0;
@@ -3464,7 +3464,7 @@ public class testAutonomyDiagramMonitor
         return Math.abs((point[0] - a[0]) * dy - (point[1] - a[1]) * dx) / length;
     }
 
-    /** The middle of the pixels of a colour, and how many there are. */
+    /** The middle of the pixels of a color, and how many there are. */
     private static double[] middleOf(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
     {
         double x = 0, y = 0, n = 0;
@@ -3611,7 +3611,7 @@ public class testAutonomyDiagramMonitor
             {
                 int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
 
-                // the arrows' own red and green, solid: an antialiased edge takes the colour of what it is drawn over
+                // the arrows' own red and green, solid: an antialiased edge takes the color of what it is drawn over
                 if (isArrowInk(r, gr, b)) n++;
             }
         }
@@ -3703,7 +3703,7 @@ public class testAutonomyDiagramMonitor
         assertTrue(bar, which + " has no white bar at its flat end (FR-118)");
     }
 
-    /** How many pixels of a colour lie on one line across the track: a column (`along`), or a row. */
+    /** How many pixels of a color lie on one line across the track: a column (`along`), or a row. */
     private static int count(java.awt.image.BufferedImage image, int line, boolean along, java.util.function.IntPredicate colour)
     {
         int n = 0;
@@ -3722,7 +3722,7 @@ public class testAutonomyDiagramMonitor
         return count(image, line, column, BLUE);
     }
 
-    /** What the pixels of a colour cover, or null for none. */
+    /** What the pixels of a color cover, or null for none. */
     private static java.awt.Rectangle extent(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
     {
         java.awt.Rectangle out = null;
@@ -3757,8 +3757,8 @@ public class testAutonomyDiagramMonitor
         rgb -> channel(rgb, 0) > 150 && channel(rgb, 16) < 90 && channel(rgb, 8) < 90;
 
     /**
-     * The grey of a berth autonomy does not choose, the program's own `POINT_INACTIVE` - bluer than it is red, which the
-     * tile art's greys, all of them neutral, are not.  Asked rather than restated: a matcher for a colour the program no
+     * The gray of a berth autonomy does not choose, the program's own `POINT_INACTIVE` - bluer than it is red, which the
+     * tile art's grays, all of them neutral, are not.  Asked rather than restated: a matcher for a color the program no
      * longer paints finds nothing, and every "no grey" claim below passes on nothing.
      */
     private static final java.awt.Color INACTIVE = ProgramConstants.colour(TileAnnotation.class, "POINT_INACTIVE");
@@ -3778,7 +3778,7 @@ public class testAutonomyDiagramMonitor
     /**
      * Whether a pixel is one of the arrows' own red or green, solid.
      *
-     * The colours are the program's.  A matcher cut for a colour the program has stopped painting counts nothing, and the
+     * The colors are the program's.  A matcher cut for a color the program has stopped painting counts nothing, and the
      * claims that assert there is NONE of it on a square then pass on nothing.
      */
     private static boolean isArrowInk(int r, int gr, int b)
@@ -3890,8 +3890,8 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The colour a cross is drawn in, read off the cross alone: the commonest solid colour where the badge differs from
-     * a grey station's block, which is what a station's cross is drawn over (FR-118).
+     * The color a cross is drawn in, read off the cross alone: the commonest solid color where the badge differs from
+     * a gray station's block, which is what a station's cross is drawn over (FR-118).
      */
     private static java.awt.Color crossColour(TileAnnotation.Badge b, int size) throws Exception
     {
@@ -3907,7 +3907,7 @@ public class testAutonomyDiagramMonitor
 
                 if (argb == without.getRGB(x, y) || (argb >>> 24) < 200) continue;
 
-                // not the white inside the circle, which says nothing about the colour chosen
+                // not the white inside the circle, which says nothing about the color chosen
                 if (PURE_WHITE.test(argb)) continue;
 
                 counts.merge(argb & 0xFFFFFF, 1, Integer::sum);
@@ -3930,7 +3930,7 @@ public class testAutonomyDiagramMonitor
         return new java.awt.Color(best);
     }
 
-    /** How many of a painted badge's pixels are solid in the grey of a berth autonomy does not choose. */
+    /** How many of a painted badge's pixels are solid in the gray of a berth autonomy does not choose. */
     private static int greyOf(java.awt.image.BufferedImage image)
     {
         int n = 0;
@@ -3984,7 +3984,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * An ordinary station badge, where the only things that vary are the two that decide its colour.
+     * An ordinary station badge, where the only things that vary are the two that decide its color.
      */
     private static TileAnnotation.Badge plainBadge(boolean parking, boolean shut)
     {
@@ -3992,8 +3992,8 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The colour the mark is actually drawn in - the commonest solid pixel that is not the white a
-     * badge is lined and hollowed with, which says nothing about which colour was chosen.
+     * The color the mark is actually drawn in - the commonest solid pixel that is not the white a
+     * badge is lined and hollowed with, which says nothing about which color was chosen.
      */
     private static java.awt.Color markColour(TileAnnotation.Badge b, int size) throws Exception
     {
@@ -4025,7 +4025,7 @@ public class testAutonomyDiagramMonitor
                 int argb = image.getRGB(x, y);
 
                 // Solid pixels only: the antialiased fringe of a stroke is every shade between the
-                // colour and nothing, and counting it would make the answer depend on the shape.
+                // color and nothing, and counting it would make the answer depend on the shape.
                 if ((argb >>> 24) < 200) continue;
 
                 int rgb = argb & 0xFFFFFF;
@@ -4074,7 +4074,7 @@ public class testAutonomyDiagramMonitor
      * They are separate arguments because the two tests that vary only `shut` would otherwise pass just as well
      * against `isImpassable() { return parking; }`: a fixture with the two equal cannot tell them apart.
      *
-     * They share a colour, which is why separating them changes no ink here: parking was true only where shut
+     * They share a color, which is why separating them changes no ink here: parking was true only where shut
      * already was.
      *
      * @param station whether the square is a station
@@ -4178,8 +4178,8 @@ public class testAutonomyDiagramMonitor
      * Subtracting a rendering without the trace from one with it leaves only the pixels the trace added, which is the
      * only thing this test is about.
      *
-     * On a 60-pixel N-E bend the rail's midpoint is (45,15). The tile centre, (30,30), is 21 pixels
-     * away - so a line that stops at the centre cannot be mistaken for one that reached the rail.
+     * On a 60-pixel N-E bend the rail's midpoint is (45,15). The tile center, (30,30), is 21 pixels
+     * away - so a line that stops at the center cannot be mistaken for one that reached the rail.
      */
     @Test
     public void testTheEditorsTracedPathStopsOnTheRailOfABend()
@@ -4214,7 +4214,7 @@ public class testAutonomyDiagramMonitor
      * and which are waiting at a platform.
      *
      * **What is asserted is ink in a ring the dot cannot reach.** Not "the two pictures differ", which
-     * a one-pixel change would satisfy, and not the colour of a particular pixel, which is a bet on the
+     * a one-pixel change would satisfy, and not the color of a particular pixel, which is a bet on the
      * artwork - the icon is a FILE and is meant to be replaced. Whatever somebody draws, it is scaled
      * to ICON_SCALE of the tile and the dot is a third of it, so ink between those two radii is the
      * icon and nothing else.
@@ -4258,7 +4258,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * How many pixels carry ink between two radii of the tile's centre.
+     * How many pixels carry ink between two radii of the tile's center.
      *
      * A ring rather than a point, so this asks "is anything drawn out here" rather than betting on
      * where a particular piece of an icon lands - the icon is meant to be replaceable.
@@ -4530,10 +4530,10 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A paused train is drawn grey, where one that may run is black (FR-117).
+     * A paused train is drawn gray, where one that may run is black (FR-117).
      *
      * The icon's black body is counted on a train that runs; on a paused one none of it is left black, and as much again
-     * is a mid grey.
+     * is a mid gray.
      *
      * MUTATION: draw a paused train's icon as any other's, and this fails.
      */
@@ -4921,7 +4921,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A paused train the railway stands on no Point is drawn grey there, as every other paused train is.
+     * A paused train the railway stands on no Point is drawn gray there, as every other paused train is.
      *
      * MUTATION: draw the trains on no Point without asking whether they are paused, and this fails.
      */
@@ -4955,10 +4955,10 @@ public class testAutonomyDiagramMonitor
     /**
      * No frame draws a paused train on no Point as one that runs while the monitor is told which trains are paused (OB-343;
      * FR-126): the trains and the set of the paused must be written together, or a frame on the monitor's thread
-     * between the two writes would publish the picture with no grey.
+     * between the two writes would publish the picture with no gray.
      *
      * The monitor is told the same picture over and over while frames are taken on another thread, and not one of them may
-     * show the train without its grey.  A race, so a failure is a matter of chance - the more it is told, the surer - and a
+     * show the train without its gray.  A race, so a failure is a matter of chance - the more it is told, the surer - and a
      * pass proves nothing by itself; the mutation below fails it every time it is run.
      *
      * MUTATION: write the trains of the two-argument form and then empty the paused set before filling it, and this fails.

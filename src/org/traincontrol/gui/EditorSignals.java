@@ -80,7 +80,7 @@ final class EditorSignals
         {
             // Cleared HERE, in the finally, and not in the button handlers: the window has four ways out (Done, Escape,
             // the close box, and "click it on the diagram"), and a flag that quietens the whole diagram strands the editor
-            // grey and arrowless if any one of them forgets.  This is the only place all four pass through.
+            // gray and arrowless if any one of them forgets.  This is the only place all four pass through.
             editor.signalWindowOpen = false;
 
             editor.highlightedSignals.clear();
@@ -253,7 +253,7 @@ final class EditorSignals
         dialog.setMinimumSize(dialog.getSize());
 
         // Beside the diagram rather than on top of it (OB-107): this window's own text says the signals "are outlined on the
-        // diagram behind this window", so centring would cover them.  Offset from centre, not pinned to a corner, and clamped to
+        // diagram behind this window", so centring would cover them.  Offset from center, not pinned to a corner, and clamped to
         // the owner so it cannot land off-screen.
         placeBesideOwner(dialog);
 
@@ -264,9 +264,9 @@ final class EditorSignals
      * Puts a dialog beside the diagram rather than over the middle of it.
      *
      * For the windows that describe something drawn on the diagram behind them (the paired signals are outlined while
-     * this is open), where a window centred on them hides what it is describing (OB-107).
+     * this is open), where a window centered on them hides what it is describing (OB-107).
      *
-     * Offset from the owner's centre rather than pinned to a corner: a dialog in the corner of the screen reads as
+     * Offset from the owner's center rather than pinned to a corner: a dialog in the corner of the screen reads as
      * belonging to nothing.  Clamped so it stays within the owner, which keeps it on the same monitor.
      *
      * @param dialog a packed dialog, ready to show
@@ -332,7 +332,7 @@ final class EditorSignals
             else if (!found.contains(at)) found.add(at);
         }
 
-        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505): on the grey line alone
+        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505): on the gray line alone
         // it was behind this window.
         java.util.List<String> refused = new java.util.ArrayList<>();
 

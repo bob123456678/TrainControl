@@ -197,12 +197,12 @@ public class testDiagramLooksRight
      * regenerated picture.  **The route line is drawn ALONG the railway, so its ink is on the rails.**
      *
      * Render the page with nothing published, render it again with a real run laid on it, and look only
-     * at the pixels that CHANGED to a run colour.  Each must be within a few pixels of dark ink in the
+     * at the pixels that CHANGED to a run color.  Each must be within a few pixels of dark ink in the
      * FIRST image, that is on or beside a rail already drawn there.  The difference cancels the tile art,
      * badges, captions and signal lamps (a red lamp is not mistaken for route ink), and the chevrons and
      * the train dot are black and white, so no list of tile shapes is needed.
      *
-     * The tolerance covers the stroke, which is a seventh of a tile and centred on the rail, and its
+     * The tolerance covers the stroke, which is a seventh of a tile and centered on the rail, and its
      * anti-aliasing.  It is nowhere near wide enough to reach the middle of a curve from the rail that
      * cuts its corner, which is the distance OB-026 was wrong by.
      */
@@ -337,7 +337,7 @@ public class testDiagramLooksRight
 
                 // A REAL segment's worth, not a few pixels.
                 //
-                // "Has some ink" is satisfiable by the NEIGHBOURS: a segment ends at the midpoint of the
+                // "Has some ink" is satisfiable by the NEIGHBORS: a segment ends at the midpoint of the
                 // shared edge, so a handful of its pixels land on the far side of the boundary.  A segment
                 // across a 60px tile is several hundred pixels; the bleed is single figures.
                 if (here == null || here < MINIMUM_INK_PER_SQUARE) blank.add(square + "=" + here);
@@ -355,7 +355,7 @@ public class testDiagramLooksRight
             //
             // "Every pixel of the line lies on track art" is not true as stated.  The line is drawn as a
             // straight chord between edge midpoints, deliberately: "a curve on this diagram is not an arc and
-            // a switch's diverging leg is not a right angle", and bending it through the tile centre put it at
+            // a switch's diverging leg is not a right angle", and bending it through the tile center put it at
             // forty-five degrees to the track.  So on switches, crossings and scissors it legitimately cuts
             // across the art.  The rails are drawn as an OUTLINE with a pale interior, so ink in the middle of
             // a rail is not on dark art either.
@@ -380,7 +380,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Whether this pixel is a colour the run is drawn in - the path ahead or the track driven, from `DiagramColours`
+     * Whether this pixel is a color the run is drawn in - the path ahead or the track driven, from `DiagramColours`
      * (FR-106), so a change of palette there is followed here.
      *
      * Loose on purpose - the edges of a stroke are blended with whatever is under them - but tight enough to exclude the
@@ -393,7 +393,7 @@ public class testDiagramLooksRight
             || near(rgb, org.traincontrol.automationui.DiagramColours.PATH_DRIVEN);
     }
 
-    /** Whether a pixel is within a blend's reach of a colour. */
+    /** Whether a pixel is within a blend's reach of a color. */
     private static boolean near(int rgb, java.awt.Color colour)
     {
         return Math.abs(((rgb >> 16) & 0xFF) - colour.getRed()) < 60
@@ -416,8 +416,8 @@ public class testDiagramLooksRight
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;
 
-                // Any art at all, not just the black rails: a switch draws its other road in pale grey,
-                // and grey is still track. The background is what the line must not be drawn on.
+                // Any art at all, not just the black rails: a switch draws its other road in pale gray,
+                // and gray is still track. The background is what the line must not be drawn on.
                 if (r < 236 || g < 236 || b < 236) return true;
             }
         }
@@ -428,7 +428,7 @@ public class testDiagramLooksRight
     /**
      * How far route ink may sit from the rail it belongs to, in pixels of a 60px tile.
      *
-     * The stroke is a seventh of a tile and centred on the rail, so its edges sit a few pixels either
+     * The stroke is a seventh of a tile and centered on the rail, so its edges sit a few pixels either
      * side of the art - and the art is anti-aliased. Nowhere near wide enough to reach the middle of a
      * curve from the rail that cuts its corner, which is the distance OB-026 was wrong by.
      */
@@ -437,7 +437,7 @@ public class testDiagramLooksRight
     /**
      * The least route ink a square the run crosses may carry.
      *
-     * A full segment is several hundred pixels at this tile size; what a neighbouring segment spills
+     * A full segment is several hundred pixels at this tile size; what a neighboring segment spills
      * over the shared edge is single figures. Anywhere in between rules out the bleed and still catches
      * a square the line skipped.
      */
@@ -617,7 +617,7 @@ public class testDiagramLooksRight
             new java.util.ArrayList<>();
 
         // The first half reached, the rest still claimed - which is what a train part way along looks
-        // like, and puts a colour change where the eye can see both.
+        // like, and puts a color change where the eye can see both.
         for (int i = 0; i < run.size(); i++)
         {
             states.add(i < run.size() / 2
@@ -630,7 +630,7 @@ public class testDiagramLooksRight
 
         org.traincontrol.automationui.DiagramMonitor.lay(overlays, run, states);
 
-        // Neighbours, or the line has nothing to be drawn along.
+        // Neighbors, or the line has nothing to be drawn along.
         //
         // A run built by mapping Points to squares gives unconnected marks scattered over the page, while
         // everything else about it (squares, overlays, none of them blank) looks healthy; only the picture
@@ -708,7 +708,7 @@ public class testDiagramLooksRight
      * Mapping each Edge's two POINTS to their squares would give scattered, unconnected stubs, because a
      * Point is a station and the track between two stations is everything the edge steps over on the way.
      * A line has to know what is on either side of a square to be drawn through it, so the squares of a
-     * run must be neighbours.
+     * run must be neighbors.
      *
      * `DiagramMonitor.append` is public and does the joining, and the reduced edges carry the steps, so
      * this walks them exactly as the monitor does: start Point, every step, end Point.
@@ -719,7 +719,7 @@ public class testDiagramLooksRight
     {
         java.util.List<org.traincontrol.automationui.TileGraph.TileKey> out = new java.util.ArrayList<>();
 
-        // append() colours as it goes; the states this test wants are decided later, by position
+        // append() colors as it goes; the states this test wants are decided later, by position
         java.util.List<org.traincontrol.automationui.TileOverlay.State> ignored =
             new java.util.ArrayList<>();
 
@@ -770,18 +770,18 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Station captions are blue or light grey, whichever the operator asked for, and readable either
+     * Station captions are blue or light gray, whichever the operator asked for, and readable either
      * way.
      *
-     * FR-031: a preference in the menu chooses blue or light grey station labels, persisted as with the
+     * FR-031: a preference in the menu chooses blue or light gray station labels, persisted as with the
      * other settings.
      *
-     * The colour is ASKED FOR at the moment a caption is coloured rather than read once into a
+     * The color is ASKED FOR at the moment a caption is colored rather than read once into a
      * constant, so the menu switch takes effect without restarting the application.
      *
-     * The readability half is not decoration. The text colour is derived from the fill by perceived
-     * brightness, so a grey a few shades lighter takes the captions from white text to black, which is
-     * correct, while a grey a few shades DARKER would leave black text on a dark ground and nobody would
+     * The readability half is not decoration. The text color is derived from the fill by perceived
+     * brightness, so a gray a few shades lighter takes the captions from white text to black, which is
+     * correct, while a gray a few shades DARKER would leave black text on a dark ground and nobody would
      * notice until they looked at a diagram.
      *
      * The operator's own setting is put back at the end whatever happens. It is a real preference in a
@@ -796,14 +796,14 @@ public class testDiagramLooksRight
         // WHETHER IT WAS STORED, not what the accessor answers.
         //
         // Capturing the accessor captures its DEFAULT when nothing is stored, and writing that back
-        // materialises the preference on a machine that never set it.
+        // materializes the preference on a machine that never set it.
         boolean had = TrainControlUI.getPrefs().get(TrainControlUI.STATION_LABELS_GREY, null) != null;
 
         boolean was = TrainControlUI.stationLabelsAreGrey();
 
         try
         {
-            // GREY WHEN NOTHING HAS BEEN CHOSEN, blue being the optional setting via the existing preference
+            // GRAY WHEN NOTHING HAS BEEN CHOSEN, blue being the optional setting via the existing preference
             TrainControlUI.getPrefs().remove(TrainControlUI.STATION_LABELS_GREY);
 
             assertEquals(org.traincontrol.gui.StationCaption.restingFill(),
@@ -848,27 +848,27 @@ public class testDiagramLooksRight
     /**
      * A placeholder is drawn dimmer than a name, on either pill.
      *
-     * The editors say "this square is a PLACEHOLDER, not an answer" with grey: an unnamed station's
+     * The editors say "this square is a PLACEHOLDER, not an answer" with gray: an unnamed station's
      * em-dash, a yard name that is not what the autonomy editor is for. On a white label that reads
-     * exactly as intended. On a pill, grey is not red, so `onPill` must not let it fall through to
+     * exactly as intended. On a pill, gray is not red, so `onPill` must not let it fall through to
      * `readableOn`, which answers by the FILL and would give a placeholder and a name the same white on
-     * navy and the same black on grey.
+     * navy and the same black on gray.
      *
      * Both fills, because they are the two the operator can actually choose and the answer has to hold
-     * on each: on navy the readable colour is white and dimming moves it DOWN towards the fill, on pale
-     * grey it is black and dimming moves it UP. A rule that only dimmed one way would look right to
+     * on each: on navy the readable color is white and dimming moves it DOWN towards the fill, on pale
+     * gray it is black and dimming moves it UP. A rule that only dimmed one way would look right to
      * whoever wrote it and wrong to whoever had the other preference set.
      *
      * The separation is asserted as a distance and not as a constant. What matters is that the two are
      * far enough apart to see and that the placeholder is still legible; the exact blend is a taste
      * question and pinning it here would make every future adjustment a test edit.
      *
-     * MUTATION: returning `readableOn(fill)` for grey fails the first assertion on both fills.
+     * MUTATION: returning `readableOn(fill)` for gray fails the first assertion on both fills.
      */
     @Test
     public void testAPlaceholderStaysDimmerThanAName()
     {
-        // The grey LayoutGrid writes out longhand wherever it means "placeholder".
+        // The gray LayoutGrid writes out longhand wherever it means "placeholder".
         java.awt.Color placeholder = new java.awt.Color(150, 150, 150);
 
         for (java.awt.Color fill : new java.awt.Color[] {
@@ -885,7 +885,7 @@ public class testDiagramLooksRight
                 + "states the editor draws are one state on the screen");
 
             // Dimmer means NEARER THE PILL, which is a different sentence on each fill: darker on the
-            // navy, lighter on the pale grey.  Distance to the fill is the one way to say it that is
+            // navy, lighter on the pale gray.  Distance to the fill is the one way to say it that is
             // true of both.
             assertTrue(distance(dim, fill) < distance(name, fill),
                 "the placeholder is further from the pill than the name is on " + fill + ", which is "
@@ -898,7 +898,7 @@ public class testDiagramLooksRight
                 + "disappeared into it");
         }
 
-        // The ANSWER colours are not dimmed.  Black and white are what an ordinary caption asks for,
+        // The ANSWER colors are not dimmed.  Black and white are what an ordinary caption asks for,
         // and a rule keyed on "all three channels equal" catches both unless it says otherwise.
         assertEquals(
             org.traincontrol.gui.StationCaption.onPill(
@@ -966,9 +966,9 @@ public class testDiagramLooksRight
     }
 
     /**
-     * How far apart two colours are, plainly.
+     * How far apart two colors are, plainly.
      *
-     * @param one a colour
+     * @param one a color
      * @param other another
      * @return the straight-line distance between them in RGB
      */
@@ -1144,10 +1144,10 @@ public class testDiagramLooksRight
     /**
      * An empty caption sits over the middle of its square, not at the left of it.
      *
-     * OB-118: a position that is empty is centred over the track. The placement shifts left by half of the
+     * OB-118: a position that is empty is centered over the track. The placement shifts left by half of the
      * caption's overflow past one tile, and that difference is NEGATIVE for a caption narrower than its square,
      * so it must not be clamped to zero. An empty station shows a dash and is narrow; the locomotive name that
-     * replaces it a moment later is wide. The same caption must be centred either way.
+     * replaces it a moment later is wide. The same caption must be centered either way.
      *
      * MUTATION: restoring `Math.max(0, (wide - tile) / 2)` and subtracting it fails the dash case
      * while leaving the long-name case passing.
@@ -1174,7 +1174,7 @@ public class testDiagramLooksRight
             "an empty caption starts at " + dash + " with its square beginning at " + backShift
             + ", so it is hard against the left edge of the square rather than over the middle of it");
 
-        // And a LONG name still behaves as it did - centred by pulling left, clamped at the cell.
+        // And a LONG name still behaves as it did - centered by pulling left, clamped at the cell.
         caption.setText("Hauptbahnhof Nord 12");
 
         int name = caption.getBorder().getBorderInsets(caption).left;
@@ -2158,7 +2158,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption stood on end, coloured so its text can be told from its pill.
+     * A caption stood on end, colored so its text can be told from its pill.
      */
     private org.traincontrol.gui.StationCaption onEnd(String text)
     {
@@ -2178,11 +2178,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption is an oval, not a rectangle of colour.
+     * A caption is an oval, not a rectangle of color.
      *
      * FR-028: a caption is a blue oval with white text. The pill is painted by the label itself, which
      * means the label has to stay TRANSPARENT: a JLabel that is opaque fills its own rectangle first,
-     * and the rounded shape would be drawn inside a square of the same colour, which is not an oval
+     * and the rounded shape would be drawn inside a square of the same color, which is not an oval
      * at all.
      *
      * So the corner is the assertion. Nothing painted there is the whole difference between the two.
@@ -2521,7 +2521,7 @@ public class testDiagramLooksRight
      * and MT-194 does.
      *
      * Both assertions read `isVisible` inside the same event-thread block that built the grid, which is
-     * what makes them deterministic: the reveal can only arrive on a later pass, so the old behaviour
+     * what makes them deterministic: the reveal can only arrive on a later pass, so the old behavior
      * cannot sneak past by being quick.
      *
      * MUTATION: removing the `tilesAreSettled` early return fails the first; removing the `replacing`
@@ -2623,7 +2623,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * How many distinct colours, up to the point where the answer stops mattering.
+     * How many distinct colors, up to the point where the answer stops mattering.
      */
     private int colours(BufferedImage image)
     {
@@ -2656,7 +2656,7 @@ public class testDiagramLooksRight
      * always did - tiles, then captions - and then walks them once more asking each for its train, so
      * the locomotive lands above both and the name survives everywhere the locomotive is not.
      *
-     * Asserted as a DIFFERENCE rather than against a colour: the same arrangement is rendered with a
+     * Asserted as a DIFFERENCE rather than against a color: the same arrangement is rendered with a
      * train published and without one, and the middle of the square has to change. That is true of
      * every correct drawing and says nothing about which shade of what the locomotive is.
      *
@@ -2674,7 +2674,7 @@ public class testDiagramLooksRight
         }
 
         // A big tile, so there is room to sample the caption somewhere the locomotive does not reach.
-        // The icon is drawn centred at 76% of the square, and the run outline is a line on the very
+        // The icon is drawn centered at 76% of the square, and the run outline is a line on the very
         // edge, so a point near the left edge and low down is inside the caption and outside both.
         final int size = 120;
 
@@ -2727,7 +2727,7 @@ public class testDiagramLooksRight
         // sits at (0, 80, 120, 30): the pixel would be identical whether the train was drawn over the
         // captions or back inside its tile.
         //
-        // The overlap of the pill and the icon, which spans 76% of the square about its centre, is the
+        // The overlap of the pill and the icon, which spans 76% of the square about its center, is the
         // only place the question can be asked.
         //
         // THE CONTROL FIRST, because it is what tells the two failures apart.
@@ -2753,7 +2753,7 @@ public class testDiagramLooksRight
 
         // AND THE CAPTION IS STILL THERE, which is the half OB-117 is about.
         //
-        // Sampled inside the pill and outside both the icon - which spans 76% of the square, centred -
+        // Sampled inside the pill and outside both the icon - which spans 76% of the square, centered -
         // and the run outline, which is a line on the very edge.  If the train were painting the
         // whole square this pixel would have changed with it.
         int atX = size / 12;
@@ -2784,7 +2784,7 @@ public class testDiagramLooksRight
     /**
      * The locomotive on a square is drawn ten per cent clear, so a caption under it still shows faintly (FR-130).
      *
-     * The black of the engine, over a white ground, comes out a dark grey a tenth of the way to white - never pure black.
+     * The black of the engine, over a white ground, comes out a dark gray a tenth of the way to white - never pure black.
      * Nothing here adds a glow: every label that can lie under the engine already has a light surround (a pill's fill, or
      * the white halo of `setHalo` and an address), which is what shows through.
      *
@@ -2870,10 +2870,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A caption on a running route is in the route's colours: the blue of the path ahead until the train gets there,
-     * as the route itself has been drawn since FR-106 (blue ahead, grey behind).
+     * A caption on a running route is in the route's colors: the blue of the path ahead until the train gets there,
+     * as the route itself has been drawn since FR-106 (blue ahead, gray behind).
      *
-     * On both pills the operator can choose, because the blue has to read on each: the path's own blue on the pale grey,
+     * On both pills the operator can choose, because the blue has to read on each: the path's own blue on the pale gray,
      * lifted to a light blue on the blue pill, where the path's own blue would disappear.
      *
      * MUTATION: let `onPill` answer the route's blue with plain black or white, and this fails.
@@ -2982,7 +2982,7 @@ public class testDiagramLooksRight
      *
      * The pill is sized from the text's width as measured for layout.  Painted at a larger scale (a display scaled
      * to 125 or 150 per cent, or the 2x the guide's pictures are made at) the glyphs come out wider than measured,
-     * and the text must still sit centred, not leave all of the difference at the right end.  Painted here at 2x,
+     * and the text must still sit centered, not leave all of the difference at the right end.  Painted here at 2x,
      * the room either side of the ink is measured: with the arrow on the left, on the right, and none.
      *
      * MUTATION: draw the text where the label's layout put it again, and this fails.
@@ -3419,10 +3419,10 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A side trains may not arrive by is marked with the same grey chevron at the large size as at the small one
+     * A side trains may not arrive by is marked with the same gray chevron at the large size as at the small one
      * (OB-326).
      *
-     * The mark is painted on a 30-pixel square and on a 60-pixel one.  Every pixel it inks is grey - as much red as green
+     * The mark is painted on a 30-pixel square and on a 60-pixel one.  Every pixel it inks is gray - as much red as green
      * as blue - and the large one, shrunk to half, carries the ink the small one does: a chevron whose arms scale with
      * the square, not a hollow shape whose strokes come apart at the larger size.
      *
@@ -3759,9 +3759,9 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The mark beside "No available paths" on the Auto tab is the dark grey of the window's side tabs' icons, not blue.
+     * The mark beside "No available paths" on the Auto tab is the dark gray of the window's side tabs' icons, not blue.
      *
-     * The card's own icon, read off the class that draws it, against the commonest colour of the side tabs' pictures.
+     * The card's own icon, read off the class that draws it, against the commonest color of the side tabs' pictures.
      *
      * @throws Exception from reading the icons
      */
@@ -3795,7 +3795,7 @@ public class testDiagramLooksRight
             + " icons are rgb(" + ((tabs >> 16) & 0xFF) + "," + ((tabs >> 8) & 0xFF) + "," + (tabs & 0xFF) + ")");
     }
 
-    /** The commonest opaque colour in a picture that is not white. */
+    /** The commonest opaque color in a picture that is not white. */
     private static int commonestInk(BufferedImage image)
     {
         java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
@@ -3820,8 +3820,8 @@ public class testDiagramLooksRight
     /**
      * A running train's destination is drawn in the orange the train's line shows on white, solid.
      *
-     * The colour against the train's see-through line laid on white - worked out here from the line's own colour and
-     * see-through - and the pill painted on white: its commonest colour, the fill between the ring and the letters, is
+     * The color against the train's see-through line laid on white - worked out here from the line's own color and
+     * see-through - and the pill painted on white: its commonest color, the fill between the ring and the letters, is
      * that orange exactly, with nothing more of the white through it.
      *
      * MUTATION: put the bright orange or the warm yellow back, or draw the destination see-through, and this fails.
@@ -4027,7 +4027,7 @@ public class testDiagramLooksRight
 
     /**
      * And a station that spills repaints what it spills onto: when its square is repainted, or its icon is taken away, the
-     * diagram is asked to repaint the squares around it too - the diagram paints a square's neighbours only where it is
+     * diagram is asked to repaint the squares around it too - the diagram paints a square's neighbors only where it is
      * asked to, and the old spill would stay there.  Asked of Swing's repaint queue.
      *
      * MUTATION: repaint only the square itself again, and this fails.
@@ -4161,8 +4161,8 @@ public class testDiagramLooksRight
         assertEquals(arrows, 0, "the arrows drawn again over the spill were drawn over the caption on their square - "
             + arrows + " pixels of red and green in front of it (RSA61-C2)");
 
-        // THE CONTROL: the same square with the caption taken off shows both, so the zeros above counted colours the
-        // square is painted in and not colours nothing is painted in
+        // THE CONTROL: the same square with the caption taken off shows both, so the zeros above counted colors the
+        // square is painted in and not colors nothing is painted in
         grid.remove(caption);
 
         int[] open = blueAndArrowsBeside(grid, size);
@@ -4198,7 +4198,7 @@ public class testDiagramLooksRight
             g.dispose();
         }
 
-        // THE ARROWS' COLOURS ARE THE PROGRAM'S OWN, so a colour changed there is followed and not left uncounted
+        // THE ARROWS' COLORS ARE THE PROGRAM'S OWN, so a color changed there is followed and not left uncounted
         java.awt.Color oneWay = (java.awt.Color) support.ProgramConstants.get(
             org.traincontrol.automationui.TileAnnotation.class, "ONE_WAY");
         java.awt.Color closedWay = (java.awt.Color) support.ProgramConstants.get(
@@ -4221,7 +4221,7 @@ public class testDiagramLooksRight
         return new int[] {blue, arrows};
     }
 
-    /** Whether a pixel is within these margins of a colour, channel by channel. */
+    /** Whether a pixel is within these margins of a color, channel by channel. */
     private static boolean near(int r, int g, int b, java.awt.Color colour, int marginR, int marginG, int marginB)
     {
         return Math.abs(r - colour.getRed()) < marginR && Math.abs(g - colour.getGreen()) < marginG
@@ -5696,7 +5696,7 @@ public class testDiagramLooksRight
      * The link and the two signal tiles meet the straight beside them with no seam: the band's rows where the track
      * comes in are the straight's own, at both sizes (FR-135).
      *
-     * The track's band has a one-pixel edge in a dark grey (#333 at 30, #666 at 60, not one drawing scaled), so an edge
+     * The track's band has a one-pixel edge in a dark gray (#333 at 30, #666 at 60, not one drawing scaled), so an edge
      * row of another shade on a signal would be a lighter stripe between two straights; the link's shaft is the
      * straight's band, edges and all.
      *
@@ -5749,7 +5749,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The link's arrow is the same drawing above and below the track, and a signal's bar is centred with both its ends
+     * The link's arrow is the same drawing above and below the track, and a signal's bar is centered with both its ends
      * alike: the drawn art is symmetric (FR-135).
      *
      * MUTATION: put the old Small link or signal art back, and this fails.

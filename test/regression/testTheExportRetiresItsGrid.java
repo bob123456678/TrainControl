@@ -97,7 +97,7 @@ public class testTheExportRetiresItsGrid
      * And the export that works still hands them back, which is the other case.
      *
      * Here because the fix moves the discard into a `finally`: a mistake there would take the working
-     * path with it, and this is the half of the behaviour that was never in doubt.
+     * path with it, and this is the half of the behavior that was never in doubt.
      *
      * @throws Exception from start-up
      */

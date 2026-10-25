@@ -298,7 +298,7 @@ public class testATrainCoversTheTrackBehindIt
      * The first version put the standing train beyond a junction and expected its tail to reach the
      * approach.  It does not, and should not: walked backwards the junction has two ways on, the graph
      * cannot say which the tail lies along, and Adam's ruling is to stop there.  So the fixture was
-     * asking for behaviour the spec forbids.
+     * asking for behavior the spec forbids.
      *
      * A -> B -> C -> D, train standing at D reaching back over C -> D and B -> C.  The second train
      * runs A -> B -> C, crossing B -> C, and C is free.
@@ -372,7 +372,7 @@ public class testATrainCoversTheTrackBehindIt
 
         // AND IT IS THE SAME RULE THE WALK READS BACK (OB-182).
         //
-        // This used to pin `sideTowards` here, which names where the neighbouring POINT lies. A
+        // This used to pin `sideTowards` here, which names where the neighboring POINT lies. A
         // reduced run turns corners, so on a curve that is not the side the track comes in by - and
         // the operator doors were offering the other answer. Correcting the doors alone made the walk
         // match nothing and block no track at all, so the two now share `entrySideOf`.
@@ -397,7 +397,7 @@ public class testATrainCoversTheTrackBehindIt
     /**
      * And the value itself, on a run the test drives by hand.
      *
-     * The ordering above is source; this is the behaviour.  A train moved from A to B has come in from
+     * The ordering above is source; this is the behavior.  A train moved from A to B has come in from
      * A, and `sideTowards` names that side from the coordinates - so B records the side A lies on.
      *
      * @throws Exception on a failure to build
@@ -626,7 +626,7 @@ public class testATrainCoversTheTrackBehindIt
      * On a square a train may turn round at, the build emits the rail into it twice: once into the plain copy and once
      * into the turning copy, over exactly the same places.  The tail walk covers the one it walks, and `isPathClear`
      * refused only that Edge and its lock partners - so a train could be sent onto the turning copy of a square another
-     * train's tail lies across, while the diagram showed that square grey, which is what routing refuses (OB-280).
+     * train's tail lies across, while the diagram showed that square gray, which is what routing refuses (OB-280).
      *
      * MUTATION: take the by-place test out of `isPathClear` and this fails.
      *
@@ -783,7 +783,7 @@ public class testATrainCoversTheTrackBehindIt
 
             claimed = layout.placesCoveredByStandingTrains();
 
-            // AND IT CLAIMS THE SQUARE ITSELF, as the control does: a square left out of the claim is left out of the grey
+            // AND IT CLAIMS THE SQUARE ITSELF, as the control does: a square left out of the claim is left out of the gray
             // overlay, and a route onto the other copy of it is not refused by place.
             assertEquals(claimed.get(square), standing, "a train turned on its square does not claim the square it stands"
                 + " on: the walk took the rail running away from its copy and never put the square into the places (AUT-C3)."
@@ -802,9 +802,9 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * The tail's first step takes the rail from the neighbour's plain copy, not from its turning twin.
+     * The tail's first step takes the rail from the neighbor's plain copy, not from its turning twin.
      *
-     * Rails arriving at a standing copy from a neighbour N come from the copies of N that face it: N's plain copy, and -
+     * Rails arriving at a standing copy from a neighbor N come from the copies of N that face it: N's plain copy, and -
      * where trains may turn at N - its turning copy, which arrived from this side.  Both come in by the same side, and the
      * walk took whichever `getNeighborsAndIncoming` listed first, which sorts by name: a turning copy is named by the
      * opposite heading plus ", reverse", so it came first whenever the plain heading was southbound or westbound.  From a
@@ -902,7 +902,7 @@ public class testATrainCoversTheTrackBehindIt
      * (OB-278).
      *
      * With nothing saying which side it came in by, the walk takes the fork rule, which kept the first rail it met to
-     * each neighbour - and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
+     * each neighbor - and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
      * rail's places begin after the square the train stands on, so the square was neither claimed nor spent and the tail
      * reached one square further back than the train lies.  The read that spends the square off an arriving rail
      * needs the square's block, which the build writes only where a square is split into several Points - so a square
@@ -1027,7 +1027,7 @@ public class testATrainCoversTheTrackBehindIt
      * mark put on, and one that has stopped being covered needs it taken off.
      *
      * **And BOTH MARKS go through this one comparison** (Adam, 2026-09-09: *"That plus the line, drawn
-     * and refreshed carefully, should do the trick."*).  Since the grey wash came back beside the
+     * and refreshed carefully, should do the trick."*).  Since the gray wash came back beside the
      * orange line, a square changes what it draws when its road changes AND when it starts or stops
      * being blocked - and the two do not move together: starting autonomy changes every blocked square
      * and no covered one.  A second refresh path for the second mark would be a second thing to forget
@@ -1067,11 +1067,11 @@ public class testATrainCoversTheTrackBehindIt
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
-        // AND THE GREY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
+        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
         //
         // It was a plain symmetric difference while the wash was over the whole square.  Since OB-208 the
-        // grey is per road, like the line - a double curve on a covered edge fades only the arc the edge
-        // runs over - so a square can stay grey while what it fades changes, and the grey is compared the
+        // gray is per road, like the line - a double curve on a covered edge fades only the arc the edge
+        // runs over - so a square can stay gray while what it fades changes, and the gray is compared the
         // way the line is: the union of both sets, and a square added wherever its roads differ.  Both
         // directions fall out of that one comparison - a square that has stopped being blocked has roads
         // before and none after, one just blocked the other way round - and each is asked for below.

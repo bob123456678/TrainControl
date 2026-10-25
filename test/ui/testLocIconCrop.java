@@ -581,7 +581,7 @@ public class testLocIconCrop
         // A blank source lets every assertion below pass against a bound that puts the photograph in
         // the wrong place - swapping the scale and the offset, which is the one mistake the code’s
         // own comment names, produces an image of identical dimensions.  Two blocks of different
-        // colours make "where did it land" answerable.
+        // colors make "where did it land" answerable.
         java.awt.Graphics2D paint = source.createGraphics();
 
         try
@@ -631,7 +631,7 @@ public class testLocIconCrop
             + "inside the OK listener on the EDT - and what the user sees is OK doing nothing "
             + "(IPR-B4)");
 
-        // AND THE SHAPE IS KEPT, because the caller fits the cut into the icon and centres it: a
+        // AND THE SHAPE IS KEPT, because the caller fits the cut into the icon and centers it: a
         // bound that squashed the rectangle would put the photograph in the frame stretched.
         double wanted = (double) region.width / region.height;
         double got = (double) cut.getWidth() / cut.getHeight();
@@ -651,7 +651,7 @@ public class testLocIconCrop
 
         // AND THE PICTURE LANDED WHERE IT SHOULD, which is the assertion that can actually fail.
         //
-        // The frame is centred on the source, so the middle of the cut is the middle of the
+        // The frame is centered on the source, so the middle of the cut is the middle of the
         // photograph - red above, blue below.  A bound that scaled without moving the offset with it,
         // or that translated before it scaled, puts the join somewhere else entirely while leaving
         // every size assertion above green.

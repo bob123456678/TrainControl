@@ -376,7 +376,7 @@ public class testMessageBundles
      * condition it cannot edit, and printing "%s" where the condition should be.
      *
      * Nothing in TrainControl calls String.format on a bundle value, so a percent-s in one is always
-     * a mistake, which makes this a rule rather than a judgement.
+     * a mistake, which makes this a rule rather than a judgment.
      */
     @Test
     public void testNoMessageUsesAPrintfPlaceholder() throws Exception
@@ -466,11 +466,11 @@ public class testMessageBundles
      * "Locomotive speed", "Three-way Switch" beside "Stop everything" - and the two sit next to each
      * other in one dropdown, which is where inconsistency is most visible.
      *
-     * **English only, deliberately.** This is a rule about English capitalisation and applying it to
+     * **English only, deliberately.** This is a rule about English capitalization and applying it to
      * the other seven would be wrong rather than merely unnecessary: French, Spanish, Italian, Dutch,
-     * Danish and Polish all use sentence case for interface labels, and German capitalises nouns for
+     * Danish and Polish all use sentence case for interface labels, and German capitalizes nouns for
      * reasons of its own that a rule about every word would trample. The bundles are checked for
-     * matching key sets, ASCII and placeholders elsewhere in this class; how a language capitalises
+     * matching key sets, ASCII and placeholders elsewhere in this class; how a language capitalizes
      * is that language's business.
      *
      * A word here is a run between spaces, and a hyphenated pair counts as two - "Three-Way", not
@@ -1121,7 +1121,7 @@ public class testMessageBundles
     }
 
     /**
-     * The popup for a failed first sync names its two buttons as they are labelled, in every language (OB-338).
+     * The popup for a failed first sync names its two buttons as they are labeled, in every language (OB-338).
      *
      * Its text says "choose Resync ... or Exit", and a translator who renders the sentence's word and the button's
      * differently leaves a reader looking for a button that is not there.  The Exit button is the File menu's item.

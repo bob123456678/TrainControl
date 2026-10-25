@@ -169,7 +169,7 @@ public class testTriggerWaitsSayNothing
     /**
      * And the advisory door has exactly one caller.
      *
-     * The behaviour above can only be kept by keeping the split, and the split is easy to undo by
+     * The behavior above can only be kept by keeping the split, and the split is easy to undo by
      * accident: the natural way to "improve" a wait is to add the advisory to the shared one, which is
      * the door every route monitor on the layout comes in by. Only the dispatch loop - which knows a
      * train was actually sent somewhere - may say anything.

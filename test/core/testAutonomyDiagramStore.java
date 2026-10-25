@@ -367,7 +367,7 @@ public class testAutonomyDiagramStore
      * so the emptying must include the station signals: an entry the file says nothing about is never
      * overwritten.  A pairing made and then thrown away must not survive the discard, or the next save
      * writes it to disk and a real signal is thrown to red on real hardware for a pairing the user had
-     * cancelled.
+     * canceled.
      *
      * The file has to hold NO signal for that station, which is what makes this different from an
      * edit that changes one: a changed entry was overwritten by the read and looked fine.
@@ -429,7 +429,7 @@ public class testAutonomyDiagramStore
     /**
      * Two names that would be written to one file are refused.
      *
-     * A configuration's file is named after it, and the sanitising is many to one (every character a
+     * A configuration's file is named after it, and the sanitizing is many to one (every character a
      * filename may not hold becomes an underscore), so two differently-named configurations would share
      * one file: saving would write both to it, and the next load, which rebuilds the list from the
      * folder, would lose one of them.
@@ -1146,7 +1146,7 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A file from a newer TrainControl is refused rather than read partially.  Reading what it recognises
+     * A file from a newer TrainControl is refused rather than read partially.  Reading what it recognizes
      * and dropping the rest would lose the user's work on the next save.
      */
     @Test
@@ -1294,7 +1294,7 @@ public class testAutonomyDiagramStore
      * A caption made after a LOAD survives the next save.
      *
      * The round trip that matters, and the one the save-then-load test above cannot reach: a store that
-     * has read a file keeps every field it does not recognise, and writes them back last so an older
+     * has read a file keeps every field it does not recognize, and writes them back last so an older
      * TrainControl cannot delete a newer one\u2019s work.  Leave "captions" off the list of fields this
      * version knows about and that mechanism eats it - the stale copy read at load is written over the
      * caption made since.  Every real session is load, edit, save; only a brand new setup is not.
@@ -2077,7 +2077,7 @@ public class testAutonomyDiagramStore
      * `forgetSquares` covers a signal square that is BUILT OVER, so what is left is the plain deletion.
      * `signalsThatAreGone()` reports it, but nothing would drop it, and if any accessory-bearing tile is
      * later drawn at those coordinates, `protectingSignalNames()` resolves it and autonomy starts
-     * throwing an accessory nobody paired. That is the same defect the neighbouring drop exists for,
+     * throwing an accessory nobody paired. That is the same defect the neighboring drop exists for,
      * "INHERITED by the next link drawn on that square", applied to the one collection that commands
      * real hardware.
      *
@@ -2244,7 +2244,7 @@ public class testAutonomyDiagramStore
     /**
      * A locomotive renamed while an editor is open is repaired in the snapshot Cancel would put back.
      *
-     * The diagram editor holds the whole setup as it was when it opened, so that cancelling undoes
+     * The diagram editor holds the whole setup as it was when it opened, so that canceling undoes
      * every edit made in that window. A rename made meanwhile repairs the live store - and left the
      * snapshot naming the old locomotive, so pressing Cancel wrote it back.
      *

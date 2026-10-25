@@ -28,7 +28,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.ProgramConstants;
 
 /**
- * A simulated path to a station autonomy will never choose is drawn in a colour of its own.
+ * A simulated path to a station autonomy will never choose is drawn in a color of its own.
  *
  * Adam asked for this twice. First: *"We should draw arrows to manual-only destinations in a
  * different color, like orange."*  Then, narrowing it on 2026-09-09: *"I was likely talking about the
@@ -38,17 +38,17 @@ import support.ProgramConstants;
  * So this is about the editor's path tracing and nothing else - not the station arrival chevrons, and
  * not the one-way restriction arrows. The two legs of a tested route are drawn yellow out and orange
  * back; a leg whose DESTINATION is a parking berth, or a square that turns every train it takes, is
- * drawn in a third colour, because "the track is passable" and "autonomy will ever use it" are
+ * drawn in a third color, because "the track is passable" and "autonomy will ever use it" are
  * different answers and the picture was giving only the first.
  *
- * **Read off the painted pixels, not off the source.** The whole feature is a colour reaching the
- * screen, and the annotation is where the three colours are decided - so a test that inspected the
+ * **Read off the painted pixels, not off the source.** The whole feature is a color reaching the
+ * screen, and the annotation is where the three colors are decided - so a test that inspected the
  * flag would pass with all three drawn identically. `paint` is called for real and the line's own
- * colour is read back out of the image.
+ * color is read back out of the image.
  *
  * The exact shades are asserted for the two that already existed, so that redefining one of them into
  * the new one cannot pass here; the new one is asserted only to differ from both, from the chevron
- * that sits on top of it, and from grey - which is what "a colour of its own" means and all Adam
+ * that sits on top of it, and from gray - which is what "a colour of its own" means and all Adam
  * asked for.
  *
  * @author Adam
@@ -134,9 +134,9 @@ public class testManualOnlyPathsAreADifferentColour
     // What is painted
 
     /**
-     * The three cases, painted, with the line's own colour read back off the image.
+     * The three cases, painted, with the line's own color read back off the image.
      *
-     * One test rather than three, because the assertion is about the three colours being DIFFERENT and
+     * One test rather than three, because the assertion is about the three colors being DIFFERENT and
      * a test that could only see one of them at a time could not make it.
      */
     @Test
@@ -182,7 +182,7 @@ public class testManualOnlyPathsAreADifferentColour
             + "notice of this track' - a different statement, made about the squares rather than "
             + "about the destination.  Got: " + manual);
 
-        // And the return leg to a manual-only destination is the same third colour, not a fourth one:
+        // And the return leg to a manual-only destination is the same third color, not a fourth one:
         // what is being said is about where the line GOES, and it says it whichever way round the run
         // is being drawn.
         assertEquals(lineColour(true, false), manual,
@@ -195,7 +195,7 @@ public class testManualOnlyPathsAreADifferentColour
      *
      * Every square of a traced route carries the flag, so a mistake that set it everywhere would
      * repaint the whole editor and still pass the test above - the assertions there are all about the
-     * manual-only case being different, and a world where everything is that colour satisfies none of
+     * manual-only case being different, and a world where everything is that color satisfies none of
      * them except by accident.
      */
     @Test
@@ -266,16 +266,16 @@ public class testManualOnlyPathsAreADifferentColour
     // Fixtures
 
     /**
-     * Paints one square with a single traced segment through it and returns the line's colour.
+     * Paints one square with a single traced segment through it and returns the line's color.
      *
-     * The commonest colour in the image is the line: the stroke is a seventh of the tile wide and runs
+     * The commonest color in the image is the line: the stroke is a seventh of the tile wide and runs
      * edge to edge, while the only other thing painted is the arrowhead on it. Partly transparent
-     * pixels - the antialiased rim - are skipped, so what comes back is a colour that was actually
+     * pixels - the antialiased rim - are skipped, so what comes back is a color that was actually
      * asked for rather than a blend of two that were.
      *
      * @param manualOnly whether the leg ends somewhere autonomy will never choose
      * @param forward whether it is the outbound leg
-     * @return the colour the line was drawn in
+     * @return the color the line was drawn in
      */
     private static Color lineColour(boolean manualOnly, boolean forward)
     {
@@ -333,7 +333,7 @@ public class testManualOnlyPathsAreADifferentColour
     }
 
     /**
-     * Whether a colour says anything at all, or is a grey.
+     * Whether a color says anything at all, or is a gray.
      */
     private static boolean saturated(Color c)
     {

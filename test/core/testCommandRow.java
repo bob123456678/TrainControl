@@ -343,7 +343,7 @@ public class testCommandRow
     }
 
     /**
-     * The kinds with nothing to point at say so, so the editor can grey those cells.
+     * The kinds with nothing to point at say so, so the editor can gray those cells.
      */
     @Test
     public void testTheKindsWithNoTargetSaySo()

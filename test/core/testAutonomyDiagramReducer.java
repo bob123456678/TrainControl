@@ -989,7 +989,7 @@ public class testAutonomyDiagramReducer
      *
      * *"show that the overpass routes don't touch ... and double check our layout model accurately reflects this."*
      * The locks are held above.  A STANDING train is held by places instead: its tail claims the place ids of the track
-     * it lies on (OB-207), and every door that asks whether track is free - the path check, the grey, the orange - reads
+     * it lies on (OB-207), and every door that asks whether track is free - the path check, the gray, the orange - reads
      * those.  So a train whose tail lies over one level of an overpass must claim nothing the other level runs over,
      * while a crossing is one piece of metal that both roads run over.
      *
@@ -1211,7 +1211,7 @@ public class testAutonomyDiagramReducer
 
         // The fixture has to have built the thing this test is about before any of it means anything.
         //
-        // "Whatever the geometry turns out to be" is what this used to say, and it was a licence for the
+        // "Whatever the geometry turns out to be" is what this used to say, and it was a license for the
         // geometry to turn out to be nothing at all: two curves were rotated off the track they were
         // meant to join, the passing loop joined up nowhere, no edges were emitted, and the loop below
         // ran zero times.  The test passed for years without once exercising the parallel-route rule it

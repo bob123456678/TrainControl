@@ -501,7 +501,7 @@ public class testAdvancedRoutes
      * A route speed command naming the head reaches the members too.
      *
      * The multiplier is 1.0 here, so the member should match the head exactly.  Speed is the fan-out
-     * that silently desynchronised above a threshold, so it is worth an explicit check
+     * that silently desynchronized above a threshold, so it is worth an explicit check
      * that a route - not just a throttle - drives the whole consist.
      */
     @Test

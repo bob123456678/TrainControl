@@ -134,7 +134,7 @@ public class testTwoRoutesShareOneSwitch
     /**
      * And the lock does something: claiming one arm makes the other read as occupied.
      *
-     * The lock LIST is a statement of intent; this is the behaviour it exists for, which is what
+     * The lock LIST is a statement of intent; this is the behavior it exists for, which is what
      * `isPathClear` asks before letting a train onto a switch somebody else's route is standing on.
      * `review-by-running-not-reading`: a fixture that can only be read proves nothing about the machine.
      */

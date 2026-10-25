@@ -28,8 +28,8 @@ import support.SourceOf;
  * events - and Swing lays out and paints between events. The route list, the locomotive list and the
  * menus coming back were three visible steps because they were asked for three separate times.
  *
- * These are checked differently on purpose. `singlePass` has a behaviour that can be run, so it is
- * run. The `LayoutGrid` ordering has no observable behaviour short of catching a paint mid-rebuild -
+ * These are checked differently on purpose. `singlePass` has a behavior that can be run, so it is
+ * run. The `LayoutGrid` ordering has no observable behavior short of catching a paint mid-rebuild -
  * which is a race, and a test that only sometimes reproduces is worse than no test - so it is checked
  * as the ordering it is.
  *

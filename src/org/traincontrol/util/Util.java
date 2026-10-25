@@ -212,7 +212,7 @@ public class Util
             return new File(dir, fileName).getPath();
         }
 
-        // Folder unavailable - fall back to the current directory (the original behaviour)
+        // Folder unavailable - fall back to the current directory (the original behavior)
         return fileName;
     }
 
@@ -256,11 +256,11 @@ public class Util
      *
      * Unlike getBackupPath there is no fall back to the current directory.  A backup that lands
      * beside the file it protects is still a backup; an icon written into the working directory
-     * would sit among the application's own data files under a name nobody would recognise as ours,
+     * would sit among the application's own data files under a name nobody would recognize as ours,
      * and it would never be cleaned up.  Null instead, so the caller can leave the locomotive
      * pointing at the uncropped original - which is exactly what it did before this existed.
      *
-     * @param fileName the intended file name, already sanitised
+     * @param fileName the intended file name, already sanitized
      * @return the file to write to, or null if the folder could not be created
      */
     public static File getLocIconFile(String fileName)
@@ -695,7 +695,7 @@ public class Util
         // target somebody holds open - left the staging file behind, which is how a probe
         // found a `LocDB.data.part` sitting next to a corrupt `LocDB.data`.
         //
-        // Deleted rather than kept as a recovery artefact.  It holds the GOOD data, which is an
+        // Deleted rather than kept as a recovery artifact.  It holds the GOOD data, which is an
         // argument for keeping it - but a file nothing reads, nothing mentions, and nothing cleans
         // up is litter whatever it contains, and the caller is told the save failed.
         try

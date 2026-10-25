@@ -17,7 +17,7 @@ import support.SourceOf;
  *
  * - **OB-039** - the facing menu existed twice, so a redraw added to one copy left the other reporting
  *   the bug.
- * - **OB-040** - the de-clutter while a signal is being picked has to reach the greying, the arrows and
+ * - **OB-040** - the de-clutter while a signal is being picked has to reach the graying, the arrows and
  *   the lengths, and has to be turned off again down every one of the window's four exits.
  * - **OB-028** - what a tile's border looks like at rest differs between the palette, the layout editor
  *   and autonomy mode, which is three answers to one question.
@@ -74,7 +74,7 @@ public class testEditorSurfaceRules
             "the facing menu still vanishes when a square holds one facing, so the operator is given "
             + "no answer at all rather than the answer that there is nothing to choose");
 
-        // GREYED, NOT HIDDEN, where there is no facing (OB-347).  Adam's rule: "rather than hiding it, grey it out."
+        // GRAYED, NOT HIDDEN, where there is no facing (OB-347).  Adam's rule: "rather than hiding it, grey it out."
         assertFalse(code.contains("if (facings.isEmpty()) return null;"),
             "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
 
@@ -331,8 +331,8 @@ public class testEditorSurfaceRules
      * The signal-focus flag is cleared where every exit passes.
      *
      * OB-040 quietens the whole diagram while the protecting-signals window is up - no arrows, no
-     * lengths, everything that is not a signal greyed. That is a good state to be in for a few seconds
-     * and a terrible one to be stuck in: an editor that stays grey and arrowless looks broken, and
+     * lengths, everything that is not a signal grayed. That is a good state to be in for a few seconds
+     * and a terrible one to be stuck in: an editor that stays gray and arrowless looks broken, and
      * nothing on screen would say why.
      *
      * The window has four ways out - Done, Escape, the close box, and "click it on the diagram" - so
@@ -385,7 +385,7 @@ public class testEditorSurfaceRules
     /**
      * And every part of the de-clutter is asked the same question.
      *
-     * Greying, arrows and lengths are three separate decisions in `annotationFor`. A de-clutter that is
+     * Graying, arrows and lengths are three separate decisions in `annotationFor`. A de-clutter that is
      * on for one of them and off for the others reads as a diagram that is half-dressed rather than
      * focused - and three numbers that have to agree is exactly the shape that produced OB-037.
      */
@@ -402,7 +402,7 @@ public class testEditorSurfaceRules
             if (line.contains("focused") && !line.contains("isFocusedOnSignals()")) uses++;
         }
 
-        // Three: the greying, the arrows, the lengths.  The declaration is excluded above, so this
+        // Three: the graying, the arrows, the lengths.  The declaration is excluded above, so this
         // counts the places that USE the answer rather than the place that works it out.
         assertEquals(uses, 3,
             "the signal focus is used at " + uses + " places in annotationFor, not the three it "
@@ -427,11 +427,11 @@ public class testEditorSurfaceRules
      * The autonomy editor shows the railway, not a grid over it.
      *
      * OB-028. The rule is small enough to state as a function and is tested as one: the palette keeps
-     * its visible border in both modes, the layout editor keeps its grey grid, and autonomy mode gets
+     * its visible border in both modes, the layout editor keeps its gray grid, and autonomy mode gets
      * no border at all.
      *
      * **No border, not an invisible one.** An empty border of the same thickness would keep the insets, but an
-     * inset with nothing drawn in it shows the panel behind, so a grey grid becomes a white one.  The insets
+     * inset with nothing drawn in it shows the panel behind, so a gray grid becomes a white one.  The insets
      * are not needed anyway: `receiveMoveEvent` returns immediately in autonomy mode, so nothing swaps this
      * border for another.
      */
@@ -481,8 +481,8 @@ public class testEditorSurfaceRules
      * A grid knows whether IT is in an editor, not whether an editor is open somewhere.
      *
      * `layout.getEdit()` is the flag the two editors share for their mutual exclusion, so while either is open
-     * it is true for every grid on screen, the viewer included: the viewer would draw the editor's grey grid,
-     * grey its captions, drop its hand cursors and tooltips, and attach mouse listeners that cast their parent
+     * it is true for every grid on screen, the viewer included: the viewer would draw the editor's gray grid,
+     * gray its captions, drop its hand cursors and tooltips, and attach mouse listeners that cast their parent
      * to `LayoutEditor`, which the viewer is not.  A grid asks `inEditor`, the conjunction with its own host;
      * this requires the bare question to be gone.
      */
@@ -516,10 +516,10 @@ public class testEditorSurfaceRules
      * MT-116.  `AutonomySession.placeCaption` MOVES a station's caption when it already has one rather than
      * refusing, which is right when somebody has asked for the name to be shown on a particular square and
      * wrong as a side effect of a rename: the rename says nothing about where the label should go, and the
-     * search would pick whichever neighbouring square is free this time round.
+     * search would pick whichever neighboring square is free this time round.
      *
      * Nothing needs re-placing for the text to change - a caption points at the station's SQUARE and
-     * looks the name up - so the rename path must ask whether the station is labelled already before
+     * looks the name up - so the rename path must ask whether the station is labeled already before
      * placing anything.
      */
     @Test
@@ -703,7 +703,7 @@ public class testEditorSurfaceRules
      * not start a second run of a route that is already running (two threads throwing the same accessories,
      * each unlocking what the other had locked).
      *
-     * The button greys while its route runs and that is the AFFORDANCE; the check inside executeRoute
+     * The button grays while its route runs and that is the AFFORDANCE; the check inside executeRoute
      * is the GUARD, and OB-057 and OB-090 are both this shape - the two must ask one question.  Which
      * is also why the play-button branch must NOT ask it again: a second copy per door is exactly how
      * the other two came to be missing.
@@ -866,7 +866,7 @@ public class testEditorSurfaceRules
      * persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths
      * when it is off."
      *
-     * The second half is the one with teeth: a border occupies space, so a square with a coloured outline
+     * The second half is the one with teeth: a border occupies space, so a square with a colored outline
      * on it grows by a pixel in each direction and pushes every square after it along.  With the grid off a
      * square rests in NO border, so its hover outline has to reserve nothing either; with the grid on, both
      * editors reserve the same room (OB-091).  Asked of the insets rather than of the picture, because
@@ -924,8 +924,8 @@ public class testEditorSurfaceRules
 
         overlay.setAccessible(true);
 
-        // THE COLOUR A HOVERED SQUARE REALLY WEARS, asked of the editor rather than chosen here: handing the outline
-        // a colour of this test's own and reading the same colour back proves only that the outline paints what it
+        // THE COLOR A HOVERED SQUARE REALLY WEARS, asked of the editor rather than chosen here: handing the outline
+        // a color of this test's own and reading the same color back proves only that the outline paints what it
         // is given.
         java.lang.reflect.Field hoveredColour =
             LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_HOVERED_COLOR");
@@ -941,7 +941,7 @@ public class testEditorSurfaceRules
 
         java.awt.Color wornAtRest = (java.awt.Color) restingColour.get(null);
 
-        // SEEN: opaque, and not the colour of the grid line a square rests in with the grid on
+        // SEEN: opaque, and not the color of the grid line a square rests in with the grid on
         assertEquals(wornWhenHovered.getAlpha(), 255,
             "the colour a hovered square wears is not opaque, so hovering one with the grid off shows nothing at all");
 
@@ -1007,7 +1007,7 @@ public class testEditorSurfaceRules
         {
             String line = lines[at];
 
-            // The FIELD's own initialiser is not a reset - there is nothing to hand back yet
+            // The FIELD's own initializer is not a reset - there is nothing to hand back yet
             if (!line.contains("layoutCache = new HashMap")) continue;
             if (line.contains("public HashMap")) continue;
 
@@ -1115,12 +1115,12 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The shortcut to the full editor is greyed by the editor's own reasons for refusing.
+     * The shortcut to the full editor is grayed by the editor's own reasons for refusing.
      *
      * FR-026: "to the 'autonomy setup' right click menu on the track viewer, add a shortcut to open
      * the full editor.  deactivate when inappropriate."
      *
-     * "Inappropriate" is not a new judgement - `openLayoutEditor` already refuses four different ways,
+     * "Inappropriate" is not a new judgment - `openLayoutEditor` already refuses four different ways,
      * each with its own dialog. Writing those four conditions out again on the menu item is this
      * application's most repeated defect, and this file exists because of it: a rule written in two
      * places drifts, and the drift shows up as an item that is dead when it should work, or live and
@@ -1162,7 +1162,7 @@ public class testEditorSurfaceRules
         if (opener.contains("refuseWhileARunHoldsTheSetup(")) refusals.add("RunGates.NO_EDITS_WHILE_RUNNING");
 
         // THREE LITERALS AND ONE INDIRECTION (OB-126).  The fourth refusal goes through
-        // `reasonLayoutIsNotEditable()`, because the Edit button has three causes of greyness and a literal named
+        // `reasonLayoutIsNotEditable()`, because the Edit button has three causes of grayness and a literal named
         // the first one whatever was true.  The count is kept as a shape check, at the shape it now is: it exists
         // to notice a refusal being added or removed without this test being looked at.
         assertTrue(refusals.size() >= 3,
@@ -1329,9 +1329,9 @@ public class testEditorSurfaceRules
      * that blocks the track behind a standing train. They have to agree about what "N" means, and two
      * answers were available:
      *
-     * - **the geometry** - `Layout.sideTowards`, the compass direction of the neighbouring POINT. A
+     * - **the geometry** - `Layout.sideTowards`, the compass direction of the neighboring POINT. A
      *   Point is the far end of a reduced run that can cross several tiles and turn corners, so a rail
-     *   leaving north and curving east reaches a neighbour lying east and this answers "E".
+     *   leaving north and curving east reaches a neighbor lying east and this answers "E".
      * - **the build** - the reduced edge’s entry side, the side the metal actually comes in by, which
      *   is what the builder splits the square on.
      *
@@ -2005,7 +2005,7 @@ public class testEditorSurfaceRules
      * emptied the source key and **before** the paste could put the locomotive down: a moment of bad
      * luck would delete a mapping.
      *
-     * The behaviour of the gesture itself is in that class. This asserts only the two things that are
+     * The behavior of the gesture itself is in that class. This asserts only the two things that are
      * textual: that the write is still there, and that it still cannot take the drag down with it.
      *
      * MUTATION: removing the try fails the second assertion; removing the write fails the first.
@@ -2039,9 +2039,9 @@ public class testEditorSurfaceRules
     /**
      * The Sync menu comes back even when the sync does not (C23).
      *
-     * doSync greys Sync and the functions menu, hands off to a worker thread, and re-enables them when
+     * doSync grays Sync and the functions menu, hands off to a worker thread, and re-enables them when
      * the worker finishes. There is no finally: a RuntimeException out of syncWithCS2 kills the worker,
-     * and **both menus stay greyed for the rest of the session** with nothing on screen saying why. The
+     * and **both menus stay grayed for the rest of the session** with nothing on screen saying why. The
      * only route back is to restart the application.
      *
      * Source-level because the fault is the absence of a catch around a call that only throws when the
@@ -2069,7 +2069,7 @@ public class testEditorSurfaceRules
 
         // WHAT THE CATCH DOES, not that a catch exists.  "There is a catch between the call
         // and the re-enable" is satisfied by `catch (RuntimeException e) { log(e); return; }`, which
-        // is C23 fully restored - menus greyed for the session - with this test green.  The failure
+        // is C23 fully restored - menus grayed for the session - with this test green.  The failure
         // code is the observable thing: it is what carries the operator to the log.
         assertTrue(sync.substring(call, back).contains("syncResult = -1"),
             "nothing between the sync and the re-enable turns a failure into the code this method"
@@ -2201,8 +2201,8 @@ public class testEditorSurfaceRules
      * both are on screen. So the rule sits on the session and this asserts that neither menu has its own.
      *
      * The heading is also checked to go on AFTER the emptiness test. A heading is not an item, and a
-     * menu with nothing to offer must stay unshown rather than become a grey box with a station name
-     * in it - the exact fault showFor was centralised to prevent.
+     * menu with nothing to offer must stay unshown rather than become a gray box with a station name
+     * in it - the exact fault showFor was centralized to prevent.
      *
      * MUTATION: inlining describeTile\u2019s body back into AutonomyEditorPanel fails the delegation
      * check; moving menu.headline() above the getComponentCount test fails the ordering one.
@@ -2390,7 +2390,7 @@ public class testEditorSurfaceRules
      * Builds a menu of the given shape, tidies it, and reads the shape back.
      *
      * `I` an item, `-` a divider, `H` a heading - a disabled item, which is what title() leaves
-     * behind and what tidy recognises one by.
+     * behind and what tidy recognizes one by.
      */
     private String shapeAfterTidy(String shape)
     {
@@ -2441,7 +2441,7 @@ public class testEditorSurfaceRules
      *
      * **This reads the source, and that is a weaker thing than running it.** `settleUnsavedWork` puts a
      * modal dialog on the screen and there is no seam to answer it from here; nothing in the suite
-     * builds a LayoutEditor. The behaviour is MT-201, by hand. What this catches is a reader deciding
+     * builds a LayoutEditor. The behavior is MT-201, by hand. What this catches is a reader deciding
      * the method looks over-complicated and giving it back its one line.
      *
      * MUTATION: taking the `settledByDiscarding` test out of `completeExitDiscard`, or calling it from
@@ -2585,7 +2585,7 @@ public class testEditorSurfaceRules
             + "without it one press would do both");
 
         // ONE DEFINITION OF ARMED, asked by both the methods that let go.  Written out twice they come
-        // apart at the next tool, and a gesture missing from one list survives being cancelled.
+        // apart at the next tool, and a gesture missing from one list survives being canceled.
         assertTrue(codeOf("    void cancelPendingGesture()").contains(
             "anythingIsArmed()"),
             "cancelPendingGesture has its own copy of what 'armed' means again");
@@ -2647,12 +2647,12 @@ public class testEditorSurfaceRules
 
         // BOTH shifts are paid back before the constraints are used again.
         //
-        // A caption borrows room to centre itself - a column to the left when flat, a row above when
+        // A caption borrows room to center itself - a column to the left when flat, a row above when
         // stood on end - by moving gbc, and gbc is then REUSED by the address label for the same
-        // square. Leaving the shift in draws that label a whole tile away, over its neighbour's.  The
+        // square. Leaving the shift in draws that label a whole tile away, over its neighbor's.  The
         // bounds harness could not see it: it builds its grids with addresses switched off.
         //
-        // Read rather than run, and that is a real limitation: the behavioural version needs a square
+        // Read rather than run, and that is a real limitation: the behavioral version needs a square
         // that carries BOTH an autonomy caption and an address label, which means standing up an
         // autonomy graph. What this catches is the payback being dropped.
         //
@@ -2683,7 +2683,7 @@ public class testEditorSurfaceRules
             "captionOffset is no longer given the caption's line height, so where a caption sits stops "
             + "depending on how tall its text actually is");
 
-        // onPill and not readableOn, at BOTH places that colour a caption: asserting only that onPill appears
+        // onPill and not readableOn, at BOTH places that color a caption: asserting only that onPill appears
         // somewhere would let one of the two call sites go back to readableOn.
         int asks = 0;
 
@@ -3074,9 +3074,9 @@ public class testEditorSurfaceRules
     /**
      * "Is an editor open" is asked of the EDITOR, not of the button that opens one.
      *
-     * `!editLayoutButton.isEnabled()` is a true answer only while the button being grey has exactly one
+     * `!editLayoutButton.isEnabled()` is a true answer only while the button being gray has exactly one
      * cause.  OB-126 gave it a second - there is no local layout to edit - so a caller reading it as "an
-     * editor is open" would grey every item in the Layout and Autonomy menus on a Central Station layout,
+     * editor is open" would gray every item in the Layout and Autonomy menus on a Central Station layout,
      * including the ones that switch back.  Nothing else tests the predicate, which is how a proxy for a
      * fact gets a second job and nobody notices.
      *
@@ -3198,7 +3198,7 @@ public class testEditorSurfaceRules
      * it draws.
      *
      * This dialog is the only way to edit blockedPoints, and its offer-and-carry logic is where the
-     * last three defects in this family were.  Store level `setBlockingPoints` behaviour is tested by four
+     * last three defects in this family were.  Store level `setBlockingPoints` behavior is tested by four
      * classes; the filters a revert removed took their test with them, and the rules
      * that SURVIVED the revert are pinned here.
      *
@@ -3244,7 +3244,7 @@ public class testEditorSurfaceRules
         // offer.  Read after, it can only be used to tick boxes that are already on the list.
         //
         // The left term is proved present first: indexOf returns -1 for an absent needle, and
-        // -1 is less than every real index, so a rename or reparameterisation of getBlockingPoints(station)
+        // -1 is less than every real index, so a rename or reparameterization of getBlockingPoints(station)
         // would otherwise make the ordering assertion below pass vacuously instead of failing.
         assertTrue(body.contains("getBlockingPoints(station)"),
             "getBlockingPoints(station) is no longer called here - it may have been renamed or "
@@ -3379,10 +3379,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The grey Edit Layout button explains WHICH of its reasons applies (OB-126).
+     * The gray Edit Layout button explains WHICH of its reasons applies (OB-126).
      *
-     * The button is grey for three reasons - no layout loaded, a Central Station layout, an editor already
-     * open - and both doors that ask whether it is grey must name the one that applies, not tell somebody
+     * The button is gray for three reasons - no layout loaded, a Central Station layout, an editor already
+     * open - and both doors that ask whether it is gray must name the one that applies, not tell somebody
      * with no editor and no layout to "close the editor you already have open".  That is the fault OB-126
      * itself was: a predicate that gained a second meaning and kept its first answer.  This checks the
      * pairing rather than the sentence, because the sentence is only ever wrong when the pairing is.
@@ -3750,7 +3750,7 @@ public class testEditorSurfaceRules
      * thing that makes an edit outlive the process, and `rebuildRunningLayoutFromSetup` is the only
      * thing that tells the running `Layout` about it. Every affordance that asks a question about
      * homes, priorities, lengths or usage reads the running layout - which is why a home set from the
-     * diagram left "Return Locomotives Home" greyed: `triageReturnToHome` asked a layout nobody had
+     * diagram left "Return Locomotives Home" grayed: `triageReturnToHome` asked a layout nobody had
      * told.
      *
      * Asked of the source rather than by driving the panel: these methods are private, they open modal
@@ -3869,7 +3869,7 @@ public class testEditorSurfaceRules
      * A lambda that writes the setup is not announced by another lambda's `setupChanged()`.
      *
      * `buildTileMenu` is one method that builds a whole menu, and several of its items call `setupChanged()`,
-     * so a scan of the enclosing METHOD passes every item on its neighbours' announcement, including one whose
+     * so a scan of the enclosing METHOD passes every item on its neighbors' announcement, including one whose
      * own lambda wrote the setup and said nothing.  A lambda runs when its item is clicked, not when the menu
      * is built.
      *
@@ -3944,7 +3944,7 @@ public class testEditorSurfaceRules
      *
      * **Asked of the write's own lambda, not of the method it is in.**  A lambda runs when its item is
      * clicked, not when the menu is built, so it is the lambda that has to announce; a menu-building method
-     * with several announcing items must not cover a silent neighbour.
+     * with several announcing items must not cover a silent neighbor.
      *
      * So the scope of a write is the innermost lambda that runs it - a block lambda's braces, or an expression
      * lambda's expression - and its method only where no lambda does.  An `if` or a `try` is not a scope: their braces
@@ -4460,7 +4460,7 @@ public class testEditorSurfaceRules
      * Adam: *"yes, this greyout should appear at idle and be regenerated if a placement or
      * train/track length is changed."*
      *
-     * **Why this is a source-level check and the behaviour is tested elsewhere.**  Two of the three
+     * **Why this is a source-level check and the behavior is tested elsewhere.**  Two of the three
      * gestures are pinned by driving them: `ui.testTheGreyAppearsAtIdleToo` presses the diagram's own
      * Delete key for a placement and rebuilds the setup for a tile length, and both claims fail if the
      * mark does not follow.  The third cannot be driven - `promptTrainLength` opens a modal, and a
@@ -4468,11 +4468,11 @@ public class testEditorSurfaceRules
      * `applyTrainLength`, which that class DOES drive.
      *
      * **And extracting a rule moves the bug to the call.**  A door that stops calling
-     * `applyTrainLength` and sets the length itself passes every behavioural test there is, because
+     * `applyTrainLength` and sets the length itself passes every behavioral test there is, because
      * the extracted method still works.  This is the part that only the source can say.
      *
      * The fence is checked here too, in the one place that decided it, because a fence is a line that
-     * can come back in a merge and every claim about the idle grey is silently about the running case
+     * can come back in a merge and every claim about the idle gray is silently about the running case
      * once it does.
      *
      * @throws Exception if the source cannot be read
@@ -4498,7 +4498,7 @@ public class testEditorSurfaceRules
             + " this returns, with no rebuild to tell the drawing.  Adam: \"be regenerated if a"
             + " placement or train/track length is changed\"");
 
-        // AND THE DIALOG STILL GOES THROUGH IT, which is the half the behavioural test cannot see.
+        // AND THE DIALOG STILL GOES THROUGH IT, which is the half the behavioral test cannot see.
         String prompt = codeOf("public void promptTrainLength(Locomotive l, MouseEvent evt)");
 
         assertTrue(prompt.contains("applyTrainLength("),

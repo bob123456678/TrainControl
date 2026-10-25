@@ -89,7 +89,7 @@ public final class SourceOf
     /**
      * The whole text of the one file that declares this signature, for a claim that compares places in the file
      * holding it (the order of two calls, say).  A claim about one declaration asks {@link #declaration} instead,
-     * which does not care where its neighbours went.
+     * which does not care where its neighbors went.
      *
      * @param signature enough of a declaration to name it once
      * @return the file's text

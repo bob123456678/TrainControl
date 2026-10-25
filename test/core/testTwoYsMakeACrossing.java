@@ -200,7 +200,7 @@ public class testTwoYsMakeACrossing
     /**
      * Ys side by side, back to back, or toe to toe with an addressed Y switch, are no crossing.
      *
-     * MUTATION: pair any two Ys that are neighbours, or a permanent Y with a switch, and this fails.
+     * MUTATION: pair any two Ys that are neighbors, or a permanent Y with a switch, and this fails.
      *
      * @throws Exception from the session
      */

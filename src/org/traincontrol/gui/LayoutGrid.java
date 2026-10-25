@@ -52,7 +52,7 @@ public class LayoutGrid
      * The pill under a home locomotive that is not standing at its home (MT-261 ruling 2).
      *
      * Adam: "labels show the home locomotive in white to indicate it's not there."  The name turns white by the
-     * colour BEHIND it (`StationCaption.onPill` picks a foreground that reads on whatever fill it is handed), so
+     * color BEHIND it (`StationCaption.onPill` picks a foreground that reads on whatever fill it is handed), so
      * this is a dark fill rather than a white foreground.  Translucent like its sibling, so the tile art shows
      * through.
      */
@@ -766,7 +766,7 @@ public class LayoutGrid
 
                 // AND THE ARROWS OF THE SQUARES A SPILL REACHED, BACK OVER IT (Adam: "make sure that the optional
                 // ingress/egress arrows remain visible, especially on curves").  A square's arrows sit at the middle
-                // of its edges, exactly where a curve's station reaches its neighbours.
+                // of its edges, exactly where a curve's station reaches its neighbors.
                 if (!spilt.isEmpty())
                 {
                     // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again: everywhere else
@@ -919,7 +919,7 @@ public class LayoutGrid
     {
         // Is THIS grid inside an editor, not "is an editor open somewhere".  layout.getEdit() alone is the second
         // question: it is the flag the two editors share for their mutual exclusion, so while either was open every
-        // grid on screen would answer yes, the viewer included, and would draw the editor's grey grid, grey its
+        // grid on screen would answer yes, the viewer included, and would draw the editor's gray grid, gray its
         // captions, drop its hand cursors and tooltips, and attach mouse listeners that cast their parent to
         // LayoutEditor, which the viewer is not.
         final boolean inEditor = layout.getEdit() && master instanceof LayoutEditor;
@@ -1044,7 +1044,7 @@ public class LayoutGrid
         if (master instanceof LayoutEditor && coordinatesVisible())
         {
             // MEASURED, NOT MULTIPLIED.  Positions worked out as `column * size` are right only while every cell is
-            // exactly a tile wide, and with the grey grid on each square wears a line border that reserves room, so
+            // exactly a tile wide, and with the gray grid on each square wears a line border that reserves room, so
             // the real pitch is a pixel or two more.  The error is cumulative: the first few numbers sit over their
             // squares and the twentieth is a whole square out (Adam: "the axis numbers drift and are out of
             // alignment").  These two lambdas are asked at PAINT time, when the layout has run and a square's
@@ -1106,7 +1106,7 @@ public class LayoutGrid
 
         // THE SPACER IS PAID FOR, and `width`/`height` already include it.  The ruler numbers every real square;
         // what has no number is the dummy column and row GridBagLayout is given so that an overflowing text label
-        // cannot widen its neighbours, and those are not squares.  Sizing the container without them is wrong; see
+        // cannot widen its neighbors, and those are not squares.  Sizing the container without them is wrong; see
         // `LayoutLabel.markSpacer`.
         int fullWidth = width * size + gutter.left + gutter.right;
         int fullHeight = height * size + gutter.top + gutter.bottom;
@@ -1133,7 +1133,7 @@ public class LayoutGrid
                 {
                     grid[x][y] = new LayoutLabel(null, master, size, ui, false);
 
-                    // Not a square, so not part of the grey grid (OB-055).  These hold nothing, so GridBagLayout
+                    // Not a square, so not part of the gray grid (OB-055).  These hold nothing, so GridBagLayout
                     // gives them whatever is left rather than a square's worth, and the border would make them
                     // visible: an extra row at the bottom and an extra half column on the right.
                     grid[x][y].markSpacer();
@@ -1363,7 +1363,7 @@ public class LayoutGrid
                                 // AWAY IS THE DARK ONE, which is how the name comes out white.
                                 //
                                 // `StationCaption.onPill` picks a foreground that reads on whatever fill it is
-                                // given, so the colour is chosen by naming the FILL rather than by hard-coding a
+                                // given, so the color is chosen by naming the FILL rather than by hard-coding a
                                 // white that would vanish on the resting pill.  Home and standing here gets the
                                 // ordinary resting fill and its ordinary near-black text.
                                 String standing = ui.autonomyLocomotiveAt(captioned);
@@ -1393,7 +1393,7 @@ public class LayoutGrid
                             }
                             else if (naming)
                             {
-                                // The station's own name, which is what this window is for.  Greyed like the
+                                // The station's own name, which is what this window is for.  Grayed like the
                                 // placeholder: it is a label on the diagram rather than something set here.
                                 text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
 
@@ -1454,7 +1454,7 @@ public class LayoutGrid
                             // Adam: "stop stripping that prefix.").
                             text.setText(own);
 
-                            // Writing of their own, greyed while autonomy is being edited: it is still
+                            // Writing of their own, grayed while autonomy is being edited: it is still
                             // worth seeing - it says what part of the railway this is - and it is not
                             // what the editor is for.
                             if (autonomyEditor) labelColour = new Color(150, 150, 150);
@@ -1476,9 +1476,9 @@ public class LayoutGrid
                     {
                         text.setPill(true);
                         text.setBackground(StationCaption.restingFill());
-                        // onPill and not readableOn: the branches above choose a grey for a placeholder and a black
+                        // onPill and not readableOn: the branches above choose a gray for a placeholder and a black
                         // for a name, deliberately, and readableOn would throw both away because its condition is a
-                        // superset of all of them.  onPill dims a neutral grey towards the pill, so a placeholder
+                        // superset of all of them.  onPill dims a neutral gray towards the pill, so a placeholder
                         // stays dimmer than a name (`testAPlaceholderStaysDimmerThanAName`).
                         text.setForeground(
                             StationCaption.onPill(StationCaption.restingFill(), labelColour));
@@ -1537,10 +1537,10 @@ public class LayoutGrid
                         //
                         // NORTHWEST because a caption has no business voting on the row's baseline.
                         // BASELINE_LEADING lines up every component anchored that way, so a caption whose height
-                        // changed would move the row's baseline and take its neighbours with it (OB-115).
+                        // changed would move the row's baseline and take its neighbors with it (OB-115).
                         //
                         // ROTATED for track that runs up the square, which also decides which way the caption is
-                        // centred and which way it is offset, so the orientation is asked once, here, and the
+                        // centered and which way it is offset, so the orientation is asked once, here, and the
                         // caption is told.
                         boolean onEnd = runsNorthSouth(c);
 
@@ -1548,7 +1548,7 @@ public class LayoutGrid
 
                         int offset = StationCaption.captionOffset(size, text.lineHeight());
 
-                        // A column of room to the left, so the caption can be CENTRED on its square
+                        // A column of room to the left, so the caption can be CENTERED on its square
                         // rather than starting at it. Centring means beginning left of the square, and
                         // no border can say that - insets cannot be negative - so the cell is moved
                         // back a column and the label pays the difference back as a left inset.
@@ -1558,7 +1558,7 @@ public class LayoutGrid
                         int backShift = onEnd || x == 0 ? 0 : size;
 
                         // And a row of room ABOVE for a rotated one, which is the same trick turned a
-                        // quarter: it is centred along a rail that runs up the square, so centring
+                        // quarter: it is centered along a rail that runs up the square, so centring
                         // means starting above that square, and insets cannot say that either.
                         //
                         // Only one of the two is ever bought. A flat caption needs no vertical room
@@ -1641,7 +1641,7 @@ public class LayoutGrid
                     // And back to this square's own column.  Centring a caption moves gbc.gridx a column LEFT so the
                     // pill can start before its square, and gbc is then reused by the address label below, which
                     // pays nothing back: on every captioned, clickable square the sensor's number would be drawn a
-                    // whole tile away from the sensor, over its neighbour's.  gridy is paid back for the same reason
+                    // whole tile away from the sensor, over its neighbor's.  gridy is paid back for the same reason
                     // (the rotation moves it up): a shift taken out for the caption must not be left in the
                     // constraints for whoever comes next.
                     gbc.gridx = x;
@@ -1864,7 +1864,7 @@ public class LayoutGrid
         // Sized to the space the diagram will take, so nothing jumps when the two are swapped, and so the glass
         // lands in the MIDDLE of it (OB-129).  The parent is laid out with FlowLayout, which aligns to the top, so a
         // smaller capped box over a larger diagram would sit at the top of the page rather than over the middle of
-        // it.  The glass is centred within this component already; its drawn size does not follow the component (see
+        // it.  The glass is centered within this component already; its drawn size does not follow the component (see
         // MAX_GLASS_H).
         spinner.setPreferredSize(new Dimension(maxWidth, maxHeight));
 

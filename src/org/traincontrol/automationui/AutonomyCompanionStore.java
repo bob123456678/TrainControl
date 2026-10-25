@@ -53,7 +53,7 @@ public class AutonomyCompanionStore
     /**
      * The highest schema this class can read.  A file claiming a higher version was written by a newer
      * TrainControl and is refused rather than read partially - silently dropping fields it does not
-     * recognise would lose the user's work on the next save.
+     * recognize would lose the user's work on the next save.
      *
      * 2 is "a station may carry several protecting signals", where stationSignals holds an array rather than a
      * square.  Version 1 would throw on an array after load() has already emptied the store, so a file it cannot
@@ -71,7 +71,7 @@ public class AutonomyCompanionStore
     /**
      * A configuration name refused because it would be saved in another configuration's file.
      *
-     * A configuration's file is named after it, and the sanitising is many to one, so "Night: Yard" and "Night_ Yard" are
+     * A configuration's file is named after it, and the sanitizing is many to one, so "Night: Yard" and "Night_ Yard" are
      * two names for one file.  Its message is a key, as every refusal of this store's is; the configuration it collides
      * with travels beside it, because the sentence names both and a key cannot carry a name.
      */
@@ -702,7 +702,7 @@ public class AutonomyCompanionStore
         if (goneByName == null || goneByName.isEmpty()) return 0;
 
         // The IDS the file recorded these pages under, and only those.  Not the names too: a name-keyed entry is never
-        // held (`pageIsHere` answers true for any bare unrecognised name), and a page may legally be called "5" (OB-092
+        // held (`pageIsHere` answers true for any bare unrecognized name), and a page may legally be called "5" (OB-092
         // is that page), so declaring the page NAMED "5" gone would delete every held entry belonging to the page with
         // ID 5 - the id-as-name pun the hold exists to prevent.  `untranslatePages` states the discriminator: the
         // file's own pages record.
@@ -1003,7 +1003,7 @@ public class AutonomyCompanionStore
      * Every square that has been given a name, in the order they were named.
      *
      * For pickers that offer POINTS to choose between: a square with no name is one the operator cannot
-     * recognise in a list, so it is not a choice that can be made sensibly.
+     * recognize in a list, so it is not a choice that can be made sensibly.
      *
      * @return the named squares
      */
@@ -1564,9 +1564,9 @@ public class AutonomyCompanionStore
         // made while an edit note is open on a locked folder), and silently, as rememberBeforeEdit swallows the
         // IOException.
         //
-        // SERIALISED BEFORE THE STREAM IS OPENED: `new FileOutputStream` truncates at open, and `toString(2)`
+        // SERIALIZED BEFORE THE STREAM IS OPENED: `new FileOutputStream` truncates at open, and `toString(2)`
         // throws JSONException (a RuntimeException), so building the text inside the try would leave a ZERO-BYTE note on
-        // a serialisation failure.  The note is the operator's pre-edit snapshot, so destroying it destroys the revert.
+        // a serialization failure.  The note is the operator's pre-edit snapshot, so destroying it destroys the revert.
         byte[] bytes;
 
         try
@@ -1602,7 +1602,7 @@ public class AutonomyCompanionStore
      * The same repair, over a setup somebody else is holding.
      *
      * The diagram editor takes a snapshot of the whole setup when it opens and puts it back on Cancel.  A rename made
-     * while the window is open repairs the LIVE store, so the snapshot must be repaired too, or cancelling would write
+     * while the window is open repairs the LIVE store, so the snapshot must be repaired too, or canceling would write
      * back a configuration naming a locomotive that is not in the database, which parseAuto refuses by invalidating the
      * whole layout.
      *
@@ -2366,7 +2366,7 @@ public class AutonomyCompanionStore
      * Everything this store holds, as JSON, for a caller that may have to put it back.
      *
      * The diagram editor writes the setup to disk as it goes, so its Cancel needs something to undo those writes with:
-     * the DIAGRAM is re-read from disk and the setup is not, so cancelling would otherwise leave a station recorded on a
+     * the DIAGRAM is re-read from disk and the setup is not, so canceling would otherwise leave a station recorded on a
      * square the track had been moved away from.
      *
      * Deep copies on the way out, so that the snapshot cannot be changed underneath its holder by the editing that
@@ -2548,7 +2548,7 @@ public class AutonomyCompanionStore
      * silently overwrite whatever happened to share the exporter's name.
      *
      * **AND IT ASKS WHAT THE OTHER THREE DOORS ASK.**  A configuration is stored as
-     * `configuration-<sanitised name>.json` and sanitising is many-to-one, so `Night: Yard` and `Night_ Yard` are two
+     * `configuration-<sanitised name>.json` and sanitizing is many-to-one, so `Night: Yard` and `Night_ Yard` are two
      * names for one file.  `createConfiguration` and `renameConfiguration` both refuse that pair
      * (`testTwoNamesCannotShareOneFile` pins both), and so must this door: otherwise the next `load()`, which rebuilds
      * the list by scanning the folder, would come back with only one of them and say nothing.
@@ -2628,7 +2628,7 @@ public class AutonomyCompanionStore
         {
             try
             {
-                // The move only when there is somewhere to move TO.  Two names can resolve to one file (sanitising is many
+                // The move only when there is somewhere to move TO.  Two names can resolve to one file (sanitizing is many
                 // to one, and File.equals is case-insensitive on Windows, so "Morning" to "morning" has nothing to move),
                 // but the REWRITE still has to happen, because load() takes a configuration's name from inside its file.
                 if (!old.equals(now))
@@ -4337,7 +4337,7 @@ public class AutonomyCompanionStore
             }
         }
 
-        // From the whole object, not the filtered copy: an unmodelled field is written back verbatim
+        // From the whole object, not the filtered copy: an unmodeled field is written back verbatim
         // and the filter has no business editing it.
         for (String key : wholeRoot.keySet())
         {
@@ -4883,7 +4883,7 @@ public class AutonomyCompanionStore
     {
         // One list, walked by clear and clearShared alike: load() empties the store and then reads the file over it, and
         // readShared only PUTS what the file holds, so a collection missing from a hand-kept list would let a pairing made
-        // since the last save survive a discard and be written to disk (a cancelled signal was once thrown on real hardware).
+        // since the last save survive a discard and be written to disk (a canceled signal was once thrown on real hardware).
         for (Kept k : kept()) k.clear();
 
         unknownSharedFields.clear();
@@ -5083,7 +5083,7 @@ public class AutonomyCompanionStore
     /**
      * Whether another configuration would be written to the same file as this name.
      *
-     * The name is free text and the filename is sanitised, and sanitising is many to one - every character a filename may
+     * The name is free text and the filename is sanitized, and sanitizing is many to one - every character a filename may
      * not hold becomes an underscore.  So "Night: Yard" and "Night_ Yard" are two different configurations by name and one
      * file on disk: saving would write both to it, the second over the first, and the next load, which rebuilds the list by
      * scanning the folder, would find one of them gone.
@@ -5422,7 +5422,7 @@ public class AutonomyCompanionStore
             // But ONLY when the file itself recorded that id (OB-092).  `translatePages` falls back to writing a bare page
             // NAME when it cannot find an id, and a name that looks like a number would be read straight back as somebody
             // else's id.  The file's own `pages` record is the discriminator: an id this file wrote is in it, and a name is
-            // not.  Defence rather than the fix, which is that renamePage keeps the numbering current: the fallback still
+            // not.  Defense rather than the fix, which is that renamePage keeps the numbering current: the fallback still
             // exists for a page genuinely not in the index, and one silent transplant of a page's whole setup was enough.
             out.add(pageNamesWhenWritten.containsKey(stored) ? pageOf(stored) : stored);
         }

@@ -440,7 +440,7 @@ public class testDownloadAndUpdateFromAJar
      * a dialog the user had open - is refused with "An update is already under way."  Only one download was made and
      * no updater started; the first then stops at its exit for the run started meanwhile, as above.
      *
-     * While the first downloads and backs up the menu item is greyed, so the user cannot ask twice then; the exit's wait
+     * While the first downloads and backs up the menu item is grayed, so the user cannot ask twice then; the exit's wait
      * for an open dialog is when the item is back and the update still under way.
      *
      * @throws Exception from the window

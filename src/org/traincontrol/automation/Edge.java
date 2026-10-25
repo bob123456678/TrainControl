@@ -327,8 +327,8 @@ public class Edge
      *
      * **Two vocabularies used to describe one thing, and only one of them blocked track.** A Point is
      * the far end of a reduced run that may cross several tiles and turn corners, so the compass
-     * direction of the NEIGHBOURING POINT - which is what `Layout.sideTowards` answers - is not the
-     * side the metal actually leaves by. A rail leaving north and curving east reaches a neighbour
+     * direction of the NEIGHBORING POINT - which is what `Layout.sideTowards` answers - is not the
+     * side the metal actually leaves by. A rail leaving north and curving east reaches a neighbor
      * lying east: the geometry says "E" and the track says "N". On a straight they agree, which is why
      * it survived everywhere anybody looked.
      *
@@ -345,7 +345,7 @@ public class Edge
      * have to agree.
      *
      * Null for a configuration written before this existed, and for one built by hand in a test. Every
-     * reader falls back to the geometry when it is null, which is exactly the old behaviour - so an
+     * reader falls back to the geometry when it is null, which is exactly the old behavior - so an
      * old file keeps working and is wrong in the way it has always been wrong, rather than newly
      * blocking nothing.
      */
@@ -612,7 +612,7 @@ public class Edge
      * take one throat at the same time; it is not a claim on the point beyond it, and a train standing
      * at that point is not using the throat.
      *
-     * That is not a judgement call, it is how the graph is built.  Reduction cuts an edge at every
+     * That is not a judgment call, it is how the graph is built.  Reduction cuts an edge at every
      * sensor, so a Point's tile is an ENDPOINT of the edges that meet there and an intermediate step of
      * none of them - on the author's layout, 54 sensor tiles and 259 intermediate tiles with not one
      * tile in both.  A train stands on a sensor.  The track a lock edge protects is the rest of the

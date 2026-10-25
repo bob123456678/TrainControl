@@ -596,7 +596,7 @@ public class testWhereHisTrainsMayBeSent
      * The 0 is given as the steps give it: the squares of that stretch selected with Shift-click in the autonomy editor on
      * 1 - Main, then Segment Length... on one of them, 0 and OK; the running railway is then rebuilt, as closing the editor
      * saving the change rebuilds it.  The train is sent with the right-click's "-> Tunnel" and driven in simulation.  The
-     * grey behind a standing train is the track the railway holds for it, read here from the railway.
+     * gray behind a standing train is the track the railway holds for it, read here from the railway.
      *
      * MUTATION: stop the measured way in at the stretch answered 0, and this fails.
      *
@@ -730,7 +730,7 @@ public class testWhereHisTrainsMayBeSent
             assertNotNull(arrived, "75 407 DB, sent to Tunnel, did not arrive (MT-586): it stands at "
                 + railway().getLocomotiveLocation(his));
 
-            // AND THE GREY BEHIND IT: the track held for it reaches back past TunnelPre and BottomSecondary onto the track
+            // AND THE GRAY BEHIND IT: the track held for it reaches back past TunnelPre and BottomSecondary onto the track
             // towards RampDown.
             Map<String, Locomotive> held = railway().placesCoveredByStandingTrains();
 

@@ -703,9 +703,9 @@ public class testRoutes
     }
 
     /**
-     * A delay the railway will not honour is not a delay the editor shows.
+     * A delay the railway will not honor is not a delay the editor shows.
      *
-     * **The number in the cell and the number on the railway disagreed silently.** `execRoute` honours a
+     * **The number in the cell and the number on the railway disagreed silently.** `execRoute` honors a
      * command's own delay only when it is the larger of it and `DEFAULT_SLEEP_MS`, and the editor
      * accepted any non-negative integer, stored it, wrote it to the file, read it back and redisplayed
      * it. Somebody lowering a pause from 300 to 100 to speed a route up saw the number change and the
@@ -927,7 +927,7 @@ public class testRoutes
      * `wert / 1000 * 100` with a comment promising the range it did not enforce. Clamping in the FACTORY
      * covers all three, which is why the fix is here rather than in `fromJSON`.
      *
-     * **A negative is load-bearing and is not clamped to zero.** `fromLine` normalises any negative to
+     * **A negative is load-bearing and is not clamped to zero.** `fromLine` normalizes any negative to
      * `-1` and `execRoute` reads `-1` as an instant stop, so the clamp has to be that rule and not
      * `clamp(0, 100)`.
      *
@@ -1624,7 +1624,7 @@ public class testRoutes
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
             "an absent triggerType must mean clear-then-occupied, not the opposite edge");
 
-        // An explicit value is still honoured
+        // An explicit value is still honored
         json.put("triggerType", MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR.toString());
 
         assertEquals(MarklinRoute.fromJSON(json, model).getTriggerType(),
@@ -2071,7 +2071,7 @@ public class testRoutes
         // A TO B, asked about Q and B while on the way to P
         runAndAsk(rail, x, new String[] {"O250 A", "O250 P", "O250 Q", "O250 B"}, new int[] {a, p, q, b});
 
-        // AND B TO A, asked about P and A, so a hash order that favours one end is caught at the other
+        // AND B TO A, asked about P and A, so a hash order that favors one end is caught at the other
         runAndAsk(rail, x, new String[] {"O250 B", "O250 Q", "O250 P", "O250 A"}, new int[] {b, q, p, a});
     }
 

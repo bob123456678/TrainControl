@@ -31,7 +31,7 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
  * *"There seems to be a bug with autonomy config management. If there is a setup cant be used, it cant be selected from
  * the list of configs, which prevents subsequent deletion."*).
  *
- * Delete acted on the configuration in use and was greyed until one was loaded; a configuration whose setup cannot be
+ * Delete acted on the configuration in use and was grayed until one was loaded; a configuration whose setup cannot be
  * used is refused at its load, so it never became the one in use and could not be deleted.  Here nothing is loaded - as
  * after that refusal - and the configuration deleted is not the one the store names as active.
  *
@@ -48,7 +48,7 @@ public class testDeleteAsksWhichConfiguration
      * With nothing loaded, Delete is offered; it asks which configuration, offering every one; and it deletes the one
      * chosen and no other (OB-319).
      *
-     * MUTATION: grey Delete while nothing is loaded, or delete the configuration in use without asking, and this fails.
+     * MUTATION: gray Delete while nothing is loaded, or delete the configuration in use without asking, and this fails.
      *
      * @throws Exception from the window
      */

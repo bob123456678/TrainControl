@@ -762,9 +762,9 @@ public class GraphReducer
     /**
      * Whether anything at all adjoins this tile.
      *
-     * Physical connection, not traversability: a sensor whose neighbours are all one-way away from it is
+     * Physical connection, not traversability: a sensor whose neighbors are all one-way away from it is
      * still part of the layout and should be a Point, whereas a sensor drawn on its own in a blank area
-     * is not.  landing() already refuses a neighbour with no facing port, so this is exactly "is there
+     * is not.  landing() already refuses a neighbor with no facing port, so this is exactly "is there
      * track on the other side".
      */
 
@@ -1224,7 +1224,7 @@ public class GraphReducer
      * The exceptions are the three tile types whose roads never meet - an overpass, where the two tracks are at
      * different heights, and the two kinds of double curve, whose curves sit in opposite corners.
      * Crossing one by different routes is not a conflict, though crossing it by the same one still is.  Getting that
-     * backwards is costly either way - treating it as a conflict needlessly serialises two independent routes, while
+     * backwards is costly either way - treating it as a conflict needlessly serializes two independent routes, while
      * treating a same-route share as safe would allow a real collision.
      */
     private void deriveLocks()

@@ -27,7 +27,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * to match the message."*
  *
  * **The two are one rule at two doors.**  The list became stations only; the click on the diagram went on
- * accepting any square autonomy routes over.  A greyed button beside "nothing to choose" is only true if
+ * accepting any square autonomy routes over.  A grayed button beside "nothing to choose" is only true if
  * the click it stands for would find nothing either - so the click now refuses what the list leaves out,
  * with the list's own exception for an entry already stored.
  *
@@ -157,7 +157,7 @@ public class testOnlyAStationHoldsAnotherBack
     }
 
     /**
-     * With nothing to list, the Pick on the Diagram button is shown greyed.
+     * With nothing to list, the Pick on the Diagram button is shown grayed.
      */
     @Test
     public void testThePickButtonIsGreyedWhenThereIsNothingToPick()

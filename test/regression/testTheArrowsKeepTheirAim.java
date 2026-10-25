@@ -35,7 +35,7 @@ public class testTheArrowsKeepTheirAim
     /**
      * Adding a page whose name sorts into the MIDDLE leaves every arrow on the same page.
      *
-     * The name is the one Combine Linked Pages offers by default - `"<page> and neighbours"` - which
+     * The name is the one Combine Linked Pages offers by default - `"<page> and neighbors"` - which
      * sorts immediately after the page it was made from rather than last. That is what makes the
      * caller's appended list differ from the sorted one.
      *

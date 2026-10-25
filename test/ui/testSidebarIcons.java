@@ -9,24 +9,24 @@ import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
 /**
- * The sidebar icons are one flat colour, and that colour is the theme's.
+ * The sidebar icons are one flat color, and that color is the theme's.
  *
  * FR-029. Adam: "the sidebar icons (locomotive, track, autonomy, signal, route, stats, log), while
  * nice, date the application.  use modernized, simple icons with a plain blue color matching the
  * flatlaf theme."
  *
  * Then, having looked at them (2026-08-26): "Try using dark gray like 333 for the icons, rather than
- * the blue." So the colour asserted here is #333333, and the flat-colour rule is what it always was -
- * what changed is which single colour, not that there is one.
+ * the blue." So the color asserted here is #333333, and the flat-color rule is what it always was -
+ * what changed is which single color, not that there is one.
  *
  * Safe on this application because there is exactly one look and feel: `FlatLightLaf.setup()`, with no
- * dark variant offered anywhere. Dark grey on a dark tab strip would be close to invisible, and if a
+ * dark variant offered anywhere. Dark gray on a dark tab strip would be close to invisible, and if a
  * dark theme is ever added this is one of the things that has to be revisited.
  *
  * **These are assets, not code, which is exactly why they are worth a test.** Nothing compiles them,
  * nothing refers to them by anything but a string, and a file that goes missing or comes back as a
  * photograph fails silently at the top left of the window. The three things asserted here are the
- * three ways that goes wrong: the file is not there, it is not one colour, or it is not the colour the
+ * three ways that goes wrong: the file is not there, it is not one color, or it is not the color the
  * rest of the window is painted in.
  *
  * The size they are drawn at is deliberately NOT asserted. `getTabIcon` scales whatever it finds to 30
@@ -46,7 +46,7 @@ public class testSidebarIcons
     };
 
     /**
-     * The one colour every icon is drawn in.
+     * The one color every icon is drawn in.
      *
      * Written down twice on purpose - once in `docs/tools/tab-icons.py`, which drew the files, and once here
      * - because the two are not connected by anything the compiler can see. If they ever disagree,
@@ -55,11 +55,11 @@ public class testSidebarIcons
     private static final int ICON_INK = 0x333333;
 
     /**
-     * Each icon is a single colour on transparency.
+     * Each icon is a single color on transparency.
      *
      * A flat mark reads at 30 pixels; a picture does not, which was the whole of the complaint. Partial
      * alpha is allowed and expected - the edges are antialiased - but every pixel with any opacity at
-     * all has to be the same colour underneath.
+     * all has to be the same color underneath.
      *
      * The generator draws at four times the output size and reduces with LANCZOS, so there are a great
      * many more partial-alpha pixels than there used to be. That is the point: PIL does not antialias
@@ -90,7 +90,7 @@ public class testSidebarIcons
 
                     int alpha = (pixel >>> 24) & 0xFF;
 
-                    // Nearly transparent is the antialiased edge, where the colour is unreliable and
+                    // Nearly transparent is the antialiased edge, where the color is unreliable and
                     // nobody can see it anyway.
                     if (alpha < 128) continue;
 
@@ -198,7 +198,7 @@ public class testSidebarIcons
     /**
      * And they still say something at the size they are actually drawn.
      *
-     * An icon that is legible at 512 pixels and a grey smudge at 30 is the commonest way this kind of
+     * An icon that is legible at 512 pixels and a gray smudge at 30 is the commonest way this kind of
      * change goes wrong, and it is invisible to anybody looking at the source files. So the scaling
      * the application does is done here too, and what is asserted is that a useful part of the mark
      * survives it: enough ink to be a shape, and not so much that it is a filled square.

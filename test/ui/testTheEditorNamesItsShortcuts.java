@@ -2756,7 +2756,7 @@ public class testTheEditorNamesItsShortcuts
         SwingUtilities.invokeAndWait(() -> first.dispose());
 
         // THE MAIN WINDOW AS AFTER EVERY EDITOR HAS CLOSED: other claims of this class build editors of their own and put
-        // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is grey answers with a
+        // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is gray answers with a
         // dialog that waits on the screen
         SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
 
@@ -3110,7 +3110,7 @@ public class testTheEditorNamesItsShortcuts
      */
     private static LayoutEditor openedBy(Runnable opening, LayoutEditor not) throws Exception
     {
-        // NOT WITH EDIT GREY: the main window answers that with a dialog that waits on the screen
+        // NOT WITH EDIT GRAY: the main window answers that with a dialog that waits on the screen
         java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
 
         button.setAccessible(true);
@@ -3273,7 +3273,7 @@ public class testTheEditorNamesItsShortcuts
      * An undo's redraw keeps the selection's grip and the pointer's blue outline.
      *
      * The redraw a Control+Z asks for ended with a pass that took every outline down and put back only the picked squares'
-     * yellow: the grip that moves the group and the square under the pointer went grey until the pointer next moved,
+     * yellow: the grip that moves the group and the square under the pointer went gray until the pointer next moved,
      * though both still acted - after five rounds (52 to 56) of making exactly these outlines right through every gesture,
      * and Control+Z is pressed with the mouse still.
      *
@@ -3812,13 +3812,13 @@ public class testTheEditorNamesItsShortcuts
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
     }
 
-    /** The colour the track editor draws one of its borders in, asked of the editor's own constant. */
+    /** The color the track editor draws one of its borders in, asked of the editor's own constant. */
     private static java.awt.Color editorColour(String constant)
     {
         return support.ProgramConstants.colour(LayoutEditor.class, constant);
     }
 
-    /** How the editor's record of a square's border begins when the border is a highlight of this colour. */
+    /** How the editor's record of a square's border begins when the border is a highlight of this color. */
     private static String highlightKey(int rgb)
     {
         return support.ProgramConstants.get(LayoutEditor.class, "HIGHLIGHT_KEY_PREFIX") + Integer.toString(rgb) + ":";
@@ -3981,8 +3981,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The exit brings a minimised track editor back before it asks about its unsaved work (the popups sweep, on Adam's
-     * MT-703 note): the question is owned by the editor, and a minimised window hides what it owns - so closing
+     * The exit brings a minimized track editor back before it asks about its unsaved work (the popups sweep, on Adam's
+     * MT-703 note): the question is owned by the editor, and a minimized window hides what it owns - so closing
      * TrainControl with the editor in the taskbar asked Save, Discard or Cancel where nobody could see it, and the exit
      * waited on it.  The editor has a turned square unsaved, so the exit does ask, and the editor is read while the
      * question shows (an editor with nothing unsaved asked nothing, and the claim saw only that the exit

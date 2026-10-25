@@ -147,8 +147,8 @@ public class testDiagramDrawingSettings
     /**
      * The three drawing settings are one group, under autonomy, with a divider above.
      *
-     * Adam asked for the grouping, and it is checkable: Grey Station Labels used to be added to the
-     * LAYOUT menu, which is where the diagram itself is configured. The colour of a station caption is
+     * Adam asked for the grouping, and it is checkable: Gray Station Labels used to be added to the
+     * LAYOUT menu, which is where the diagram itself is configured. The color of a station caption is
      * not a fact about the diagram - it is a fact about what autonomy draws on one.
      *
      * MUTATION: adding any of the three to layoutMenuItem again, or dropping the separator, fails this.

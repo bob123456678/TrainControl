@@ -36,7 +36,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * for a configuration RELOAD between the turn and the write - that swaps this object entirely and the
  * pending records go with it.  That one needs the record to outlive the layout."*
  *
- * **THE REBUILD IS RUN, NOT MODELLED.**  Its siblings assert about `putTheTrainsBack` over a
+ * **THE REBUILD IS RUN, NOT MODELED.**  Its siblings assert about `putTheTrainsBack` over a
  * hand-built `Layout`, and one of them reproduces the rebuild by calling `parseAuto` directly.  Both
  * are right about the rule and neither can see this defect, because the defect is that the CALL SITE
  * does not carry something - `extracted-rule-moves-the-bug-to-the-call`.  So this opens a real window
@@ -863,7 +863,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A build keeps both of its captions of a station captioned on two squares - a long platform labelled at both ends -
+     * A build keeps both of its captions of a station captioned on two squares - a long platform labeled at both ends -
      * and a later build's caption still takes an earlier build's place.  The station map keeps captions by
      * station, and registering one let go of every other of the same window not on screen, its own build's included: the
      * first of the two was never written, and its page was never served from the page cache again.
@@ -1096,7 +1096,7 @@ public class testAPendingTurnSurvivesTheRebuild
      * saved that over the operator's - on every caption gesture in the autonomy editor on that page.  A caption-only redraw
      * leaves the window's size and place alone and saves nothing; an explicit page change still sizes the window as it did.
      *
-     * Modelled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
+     * Modeled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
      * caption of its page taken off as the editor takes it off, and the window told.  Remember Window Location is switched
      * on, put back after, and the bounds kept for this window are read from the preferences.
      *

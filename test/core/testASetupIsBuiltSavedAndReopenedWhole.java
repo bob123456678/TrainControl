@@ -395,7 +395,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * Initialising twice makes a second configuration rather than quietly doing nothing.
+     * Initializing twice makes a second configuration rather than quietly doing nothing.
      *
      * It used to create one only when the store was empty, which was right while it was the "set
      * autonomy up for the first time" button and wrong the moment the menu offered "add a

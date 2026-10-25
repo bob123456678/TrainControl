@@ -20,7 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Adam, on MT-335, 2026-09-15: *"The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbound) to
  * TopMainR0Park - the path stayed blocked."*  His log: the plan parked 75 407 DB at BottomMainA first, then routed
  * EN57-203 over BottomMainAPre -> RampDown, and the runtime refused it - *"75 407 DB is standing across BottomMainAPre ->
- * RampDown"*.  The planner modelled only the tails of trains that had not moved yet; a train it has moved has a known
+ * RampDown"*.  The planner modeled only the tails of trains that had not moved yet; a train it has moved has a known
  * road, the route the plan gave it, and its tail lies back along that route.
  *
  * **The shape, on sensors of its own.**  Both trains' routes home share T -> P.  Train A comes from Y and parks at A,
@@ -303,7 +303,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
      * The railway forces the order.  A starts on B's home, so A must move first; A's home is beyond the shared metal,
      * and parking it there three units long leaves its tail over `RS_T -> RS_HA`; B's only road home runs over
      * `RS_P -> RS_Y`, the other edge on that metal.  So B can only go home over A's tail, and the plan for both is
-     * possible exactly when the shared metal is not modelled.
+     * possible exactly when the shared metal is not modeled.
      *
      * MUTATION, both run: dropping the lock-edge loop from `passesTheTailsOfTrainsItHasMoved` fails the first
      * arrangement.  Dropping the `tailLiesOn` continue instead fails all four claims in this class, the control

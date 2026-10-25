@@ -35,7 +35,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * same sentence the confirmation shows, from the same builder, which is the arrangement OB-194 put
  * there precisely so the two cannot drift. If the tooltip says it, the dialog says it.
  *
- * **And the guard is asserted as well as the greying.** The item disables itself when nothing is
+ * **And the guard is asserted as well as the graying.** The item disables itself when nothing is
  * measured, and `clearAllTileLengths` refuses again when it is pressed - `guard-and-affordance-same-
  * question`, and what OB-057 and OB-090 were both instances of. Only the first is reachable from here;
  * the second is asserted through the session door it calls.
@@ -168,7 +168,7 @@ public class testClearAllTrackLengths
     }
 
     /**
-     * With nothing measured, the item is greyed and says why.
+     * With nothing measured, the item is grayed and says why.
      *
      * @throws Exception from the event thread
      */

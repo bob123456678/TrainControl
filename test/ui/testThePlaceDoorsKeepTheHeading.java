@@ -504,16 +504,16 @@ public class testThePlaceDoorsKeepTheHeading
     }
 
     /**
-     * With the autonomy editor open but minimised, the tail question's list belongs to the main window - where it can be
-     * seen - and not to the minimised editor.
+     * With the autonomy editor open but minimized, the tail question's list belongs to the main window - where it can be
+     * seen - and not to the minimized editor.
      *
-     * MT-575 hung the list from the editor whenever one was open, and a minimised editor is still open: on Windows a
-     * window owned by a minimised frame is hidden, so the question was a modal nobody could see, holding the application
+     * MT-575 hung the list from the editor whenever one was open, and a minimized editor is still open: on Windows a
+     * window owned by a minimized frame is hidden, so the question was a modal nobody could see, holding the application
      * until the editor was restored.  Asked here for his 75 407 DB, 5 long, on Tunnel from the north, as the main
      * window's own doors ask it.
      *
      * NO DOOR REACHES THIS TODAY: every main-window door that asks the question refuses while an editor is
-     * open, a minimised one included, and the editor's own door cannot be used while it is minimised.  So this pins the
+     * open, a minimized one included, and the editor's own door cannot be used while it is minimized.  So this pins the
      * owner rule itself, asked as a door would ask it, against the day a door does reach it.
      *
      * MUTATION: hang the list from any editor that is open, and this fails.
@@ -547,7 +547,7 @@ public class testThePlaceDoorsKeepTheHeading
             assertNull(ui.whyLayoutCannotBeEdited(), "precondition: the layout cannot be edited: "
                 + ui.whyLayoutCannotBeEdited());
 
-            // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimised.
+            // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimized.
             SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
@@ -602,7 +602,7 @@ public class testThePlaceDoorsKeepTheHeading
             {
                 Thread.sleep(50);
 
-                // SHOWING OR NOT: a list hung from the minimised editor is hidden with it.
+                // SHOWING OR NOT: a list hung from the minimized editor is hidden with it.
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
                     if (window instanceof javax.swing.JDialog && window.isVisible() && I18n.t("autolayout.ui.askArrivalSideTitle")

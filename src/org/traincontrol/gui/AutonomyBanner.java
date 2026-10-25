@@ -47,7 +47,7 @@ public class AutonomyBanner extends JPanel
     private static final int MS_PER_CHARACTER = 90;
 
     /**
-     * A light grey, and no line around it: grey is quiet and needs no edge to be a distinct area, where a white strip
+     * A light gray, and no line around it: gray is quiet and needs no edge to be a distinct area, where a white strip
      * with a border reads as one more panel rather than as a strip saying something.
      */
     private static final Color PANEL_BACKGROUND = new Color(242, 242, 242);
@@ -125,7 +125,7 @@ public class AutonomyBanner extends JPanel
     {
         setLayout(new BorderLayout());
 
-        // Padding, and nothing else: the colour that carries meaning is on the text.
+        // Padding, and nothing else: the color that carries meaning is on the text.
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         setBackground(INFO_BACKGROUND);
@@ -146,7 +146,7 @@ public class AutonomyBanner extends JPanel
         scroller.setOpaque(false);
         scroller.getViewport().setOpaque(false);
 
-        // The scrollbar is painted in the banner's own colour, so it is invisible while the message fits and a
+        // The scrollbar is painted in the banner's own color, so it is invisible while the message fits and a
         // look-and-feel track down the edge does not read as a rendering fault; hold() makes it opaque whenever there
         // is more to read than fits, so a long answer never stops in the middle with nothing saying there is more.
         scroller.getVerticalScrollBar().setOpaque(false);
@@ -162,7 +162,7 @@ public class AutonomyBanner extends JPanel
 
         scroller.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Centred in the band and never laid out taller than it (OB-151, OB-191); CentredButNeverTaller says why no
+        // Centered in the band and never laid out taller than it (OB-151, OB-191); CentredButNeverTaller says why no
         // GridBagConstraints can say both.
         javax.swing.JPanel centred = new javax.swing.JPanel(new CentredButNeverTaller());
 
@@ -463,7 +463,7 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * The button this banner offers, for whoever mounts it to size it like its neighbours.
+     * The button this banner offers, for whoever mounts it to size it like its neighbors.
      * @return
      */
     public javax.swing.JButton getActionButton()
@@ -537,7 +537,7 @@ public class AutonomyBanner extends JPanel
 
         java.awt.Color ink = warning ? WARNING_TEXT : INFO_TEXT;
 
-        // The font and the colour go into the DOCUMENT: an editor pane showing HTML takes neither
+        // The font and the color go into the DOCUMENT: an editor pane showing HTML takes neither
         // from setFont nor from setForeground, so a message set the ordinary way came out in the
         // default serif face in black.
         message.setText("<html><body style=\"font-family:'" + MESSAGE_FONT.getFamily()
@@ -639,9 +639,9 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Centres one child in its container, and never lays it out taller than the container is.
+     * Centers one child in its container, and never lays it out taller than the container is.
      *
-     * - **Centred** (OB-151).  A message shorter than the band gets the leftover space split equally above and below
+     * - **Centered** (OB-151).  A message shorter than the band gets the leftover space split equally above and below
      *   it, where the band is taller than the message: at its one-line floor, or beside the offer button.
      *
      * - **Never taller than the band** (OB-191).  A message LONGER than the band is given exactly the

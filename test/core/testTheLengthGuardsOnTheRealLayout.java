@@ -759,7 +759,7 @@ public class testTheLengthGuardsOnTheRealLayout
      *
      * Adam: **"if we made both lengths 4, would it then be accepted?  That should be the minimum
      * acceptable length."** The guard agrees in code - `loc.getTrainLength() > room` refuses, so four
-     * into four is admitted - and this is the behavioural half of it.
+     * into four is admitted - and this is the behavioral half of it.
      *
      * **Three things this test has now stopped naming**, each of which went stale in turn:
      *

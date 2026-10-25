@@ -47,7 +47,7 @@ import support.Components;
  *
  * MUTATIONS, each seen red: the download written somewhere other than the target the notice names (the download
  * claim); the error notice dropped from the download's catch (the failure claim); Cancel taken as Download (the
- * cancel claim and the MT-774 claim); the download's `finally` leaving the item greyed (the MT-774 claim, and every
+ * cancel claim and the MT-774 claim); the download's `finally` leaving the item grayed (the MT-774 claim, and every
  * claim after it, which starts from an enabled item).
  */
 public class testDownloadUpdateFetchesTheNewVersion

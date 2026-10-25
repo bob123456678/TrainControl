@@ -631,7 +631,7 @@ public class testTrainsComeHomeToTheirPlatforms
      *
      * A square trains can enter from two directions is emitted as one Point per arrival side, and the
      * builder puts the direction in the name - "BottomMainC (westbound)". Where a square has only one
-     * copy the direction is not modelled and the name is bare.
+     * copy the direction is not modeled and the name is bare.
      */
     private static Point pointFor(String station, String facing)
     {

@@ -66,7 +66,7 @@ public class Point
      * what makes a parking berth a berth rather than a closed siding.
      *
      * It also replaces the way that used to be said.  A "reversing station" was the only way to keep
-     * autonomy from choosing a station, and it dragged two unrelated behaviours along with it - the
+     * autonomy from choosing a station, and it dragged two unrelated behaviors along with it - the
      * train reversed on arrival, and no path could be routed through.  Those are now what a terminus
      * and a shut arm say, each on its own.
      */
@@ -117,7 +117,7 @@ public class Point
      * object, so every reference to it is already right, and a locomotive that is not in the database
      * cannot be pointed at.  What is left is the two rules that are really about the railway - one
      * locomotive has one station, and a station whose locomotive has been deleted has none - and both
-     * of those are now identity checks beside their neighbours rather than string comparisons.
+     * of those are now identity checks beside their neighbors rather than string comparisons.
      *
      * The FILE still holds a name, because a file has to; that boundary is in Layout.parseAuto and
      * Point.toJSON, and it is now the only place a home is a string.
@@ -1059,7 +1059,7 @@ public class Point
      * The layout this Point belongs to, or null when it was built and never added.
      *
      * Package-private like the setter below it, and for the same reason: this is for rules inside the
-     * automation model that have to ask about a Point's neighbours - which copies of a square there
+     * automation model that have to ask about a Point's neighbors - which copies of a square there
      * are, in particular - and not part of what the rest of the application sees.
      */
     Layout getLayout()

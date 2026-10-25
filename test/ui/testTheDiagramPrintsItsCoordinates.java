@@ -85,7 +85,7 @@ public class testTheDiagramPrintsItsCoordinates
     /**
      * A square too small for its number prints nothing rather than something misleading.
      *
-     * A number wider than the square it belongs to overhangs its neighbour, and a number pointing at
+     * A number wider than the square it belongs to overhangs its neighbor, and a number pointing at
      * the wrong square is worse than a gap - this is a feature for finding a square by its coordinate.
      */
     @Test
@@ -93,9 +93,9 @@ public class testTheDiagramPrintsItsCoordinates
     {
         // THE READER FIRST.
         //
-        // `digitsIn` recognises numbers by re-rendering each candidate with a font it chooses itself
+        // `digitsIn` recognizes numbers by re-rendering each candidate with a font it chooses itself
         // and sliding the stamp over the painted ink.  If that font ever stops matching the one the
-        // ruler draws with, it recognises NOTHING - and an assertion that nothing was drawn is then
+        // ruler draws with, it recognizes NOTHING - and an assertion that nothing was drawn is then
         // satisfied by a reader that cannot read.  A sibling two methods up would fail loudly, which
         // is a rescue rather than a guard.
         String big = paint(AxisRuler.uniform(30, 100, 100, 6, 6));
@@ -119,7 +119,7 @@ public class testTheDiagramPrintsItsCoordinates
      * rest aren't.  That's why it looks off by one."*
      *
      * **The first version worked the positions out as `column * size`**, and that is right only while
-     * every cell is exactly one tile wide.  With the grey grid switched on each square wears a line
+     * every cell is exactly one tile wide.  With the gray grid switched on each square wears a line
      * border that reserves room, so the real pitch is a pixel or two more - and the error is
      * cumulative.  The first few numbers land over their squares; the twentieth is a whole square out.
      *
@@ -326,7 +326,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         container.setLayout(null);
 
-        // WHITE, so that "ink" means a number rather than the panel's own grey.  The first version of
+        // WHITE, so that "ink" means a number rather than the panel's own gray.  The first version of
         // this test left the default background and counted 3024 non-white pixels in an 18x168 strip -
         // which is every pixel of it, and told me nothing about the numbers at all.
         container.setOpaque(true);

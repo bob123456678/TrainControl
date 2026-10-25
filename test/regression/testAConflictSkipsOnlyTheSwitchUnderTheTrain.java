@@ -62,7 +62,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
     /**
      * How long the power is given to come back on after a `go()`.
      *
-     * An acknowledgement rather than a railway event, so it is bounded - `waitForPowerState` says why
+     * An acknowledgment rather than a railway event, so it is bounded - `waitForPowerState` says why
      * at length.  Generous, because what this waits out is a busy machine.
      */
     private static final long POWER_PATIENCE_MS = 15000;
@@ -257,7 +257,7 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
         // and `init(simulate)` turns the power on, so no earlier class can be reaching this one.
         //
         // `waitForPowerState` is the railway's own wait for precisely this: it waits on the monitor
-        // `setPowerState` notifies, inside it, and it is BOUNDED because an acknowledgement of a
+        // `setPowerState` notifies, inside it, and it is BOUNDED because an acknowledgment of a
         // command TrainControl itself just sent either comes back in milliseconds or is not coming.
         assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
             "precondition: the power has to be ON, or the route's stop has nothing to turn off");

@@ -43,7 +43,7 @@ public final class ManualReversalPrompt
      * departure itself, that way there is no dispatch prior to user input."**
      *
      * **The question was right and its moment was wrong.**  Asked from inside the run, the train has
-     * already been dispatched, already reserved its path and already travelled - and the run had to
+     * already been dispatched, already reserved its path and already traveled - and the run had to
      * stop it mid-journey so the dialog was not answered by somebody watching a moving train.  Asked
      * before departure there is nothing to stop: the train is standing where the operator left it, and
      * the answer is carried into the run.
@@ -56,7 +56,7 @@ public final class ManualReversalPrompt
      * Nothing is asked when the path reaches no such square, so an ordinary send is unchanged.
      *
      * @param session the setup, which knows what the operator marked
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param path the journey about to be run
      * @param loc the train
      * @param railway the railway the path was offered on, or null
@@ -221,7 +221,7 @@ public final class ManualReversalPrompt
         // may-turn square, which is the one square this door exists to ask about.
         if (arrival == null || !asking.asksAbout(arrival)) return null;
 
-        // NOT WHERE THE ANSWER COULD NOT BE HONOURED: no copy of the square faces on from the way the train
+        // NOT WHERE THE ANSWER COULD NOT BE HONORED: no copy of the square faces on from the way the train
         // comes, so the arrival turns it whatever is said - `Layout.turnsOnArrival`, the same question
         if (railway != null && railway.noCopyFacesOnFrom(arrival, path.get(path.size() - 1).getStart())) return null;
 
@@ -261,7 +261,7 @@ public final class ManualReversalPrompt
      * Twice, because the first two fixes both looked for a flag in the running layout.
      *
      * @param session the setup, which knows what the operator marked
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @return the policy
      */
     public static org.traincontrol.automation.Layout.ReversalPolicy forOperator(
@@ -367,7 +367,7 @@ public final class ManualReversalPrompt
      * leaves the train pointing the way it already points, which is the answer that changes nothing on
      * the railway. Turning a train because a dialog failed is the worse of the two mistakes.
      *
-     * @param parent what to centre the dialog on
+     * @param parent what to center the dialog on
      * @param train the locomotive
      * @param where the point it has reached
      * @return whether the operator asked for it to be turned

@@ -373,8 +373,8 @@ public class testControlNAsksTheMenusQuestion
      *
      * The autonomy editor shows the whole page, padding included; the running diagram draws only the part its components
      * cover, and a caption is not a component.  Show a Station Name Here on a blank square outside that part, Control+N
-     * over it, and a drop of a label on it stored a caption nothing would ever show - and the station counted as labelled.
-     * The menu item is present but greyed, with the reason on its tooltip, as it is on a station's own square; the key
+     * over it, and a drop of a label on it stored a caption nothing would ever show - and the station counted as labeled.
+     * The menu item is present but grayed, with the reason on its tooltip, as it is on a station's own square; the key
      * agrees; a dragged label is refused; and a blank square inside the area is still offered.
      *
      * MUTATION: leave the area test out of `offersAStationName`, the menu item or `refuseCaptionDrop`, and this fails.
@@ -414,7 +414,7 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(panel.canDropCaption(new TileKey("main", 5, 2), inside, null), "precondition: a label cannot be dropped"
                 + " on a blank square inside the area");
 
-            // OUTSIDE IT: present, greyed, and the reason on the tooltip
+            // OUTSIDE IT: present, grayed, and the reason on the tooltip
             javax.swing.JMenuItem shown = itemNamed(panel.buildTileMenu(outside, null), name);
 
             assertNotNull(shown, "the item is gone from the menu of a square outside the area, rather than greyed");

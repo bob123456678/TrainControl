@@ -33,7 +33,7 @@ public class testThePlaceholderLocomotive
 
         // BELOW the body, not through it.
         //
-        // The wheels occupy the bottom fifth and the body is drawn down to their centre line, so a row
+        // The wheels occupy the bottom fifth and the body is drawn down to their center line, so a row
         // through the middle of a wheel also crosses the body and reads as one continuous mark. Three
         // quarters of the way down the wheels is clear of it and still well inside them.
         int wheel = Math.max(3, Math.round(picture.getHeight() / 5f));
@@ -104,7 +104,7 @@ public class testThePlaceholderLocomotive
 
         assertTrue(bodyTop > 0, "the body has no top edge, so nothing here is measurable");
 
-        // The body runs from there to the wheel centres, which is where it is drawn to.
+        // The body runs from there to the wheel centers, which is where it is drawn to.
         int bodyBottom = height - wheel / 2;
 
         int body = bodyBottom - bodyTop;
@@ -214,7 +214,7 @@ public class testThePlaceholderLocomotive
     }
 
     /**
-     * It is light grey, which is the one thing about it Adam specified twice.
+     * It is light gray, which is the one thing about it Adam specified twice.
      */
     @Test
     public void testItIsLightGrey()
@@ -229,11 +229,11 @@ public class testThePlaceholderLocomotive
             {
                 int argb = picture.getRGB(x, y);
 
-                // Solid enough to be judging the colour of.
+                // Solid enough to be judging the color of.
                 //
                 // It went down to 120 for the few hours the placeholder was translucent, and back up
-                // with it: the floor has to follow the colour, or the assertions below run on
-                // antialiased edge pixels whose grey is a blend with the background rather than the
+                // with it: the floor has to follow the color, or the assertions below run on
+                // antialiased edge pixels whose gray is a blend with the background rather than the
                 // paint.
                 if ((argb >>> 24) < 200) continue;
 

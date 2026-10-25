@@ -89,7 +89,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
         );
                 
-        // THE TRIGGER-TYPE COMBO IS LOCALISED BEFORE ANYTHING IS SELECTED IN IT.
+        // THE TRIGGER-TYPE COMBO IS LOCALIZED BEFORE ANYTHING IS SELECTED IN IT.
         //
         // These four lines stood at the END of the constructor, after `fNoItemStateChanged` and
         // `setSelectedIndex` had already chosen the current function's trigger type.
@@ -103,7 +103,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         //
         // It did not reach the operator, because a deferred `fNoItemStateChanged(null)` queued in the
         // constructor re-derived the type afterwards - a corrupted state with an accidental repair
-        // standing over it. Moving the localisation above the selection removes the corruption instead
+        // standing over it. Moving the localization above the selection removes the corruption instead
         // of relying on the repair.
         javax.swing.DefaultComboBoxModel<String> defaultModel =
             (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
@@ -216,7 +216,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
                 new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
             );
             
-            // Highlight the right one and grey out if needed
+            // Highlight the right one and gray out if needed
             fIconlabel.setText(fIconlabel.getText().replace(" " + I18n.t("loc.ui.loadingMessage"), ""));
             fNoItemStateChanged(null);
             displayCustomizationButtons();
@@ -609,7 +609,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }
 
     /**
-     * Greys Apply while there is nothing to apply (FR-098).  External applies - `doApply`, the standalone window's OK -
+     * Grays Apply while there is nothing to apply (FR-098).  External applies - `doApply`, the standalone window's OK -
      * are not affected: they call the handler, not the button.
      */
     private void refreshApply()

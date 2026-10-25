@@ -152,7 +152,7 @@ public class DiagramMonitorDriver
 
         recordedFacingsChanged();
 
-        // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the grey
+        // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the gray
         // away: a tool that paused a train on no Point told the monitor, and the rebuild its change asks for then undid it.
         monitor.setTrainsOnNoPoint(session.trainsOnNoPoint(), session.pausedTrainsOnNoPoint());
 

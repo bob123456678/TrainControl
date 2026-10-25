@@ -20,7 +20,7 @@ import support.SourceOf;
  * diagram's right-click destinations and the Auto tab's list of paths - and at the two run doors that dispatch without
  * Start, Execute Timetable and Return Home.
  *
- * **Asked of the words, then of the doors**, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioural
+ * **Asked of the words, then of the doors**, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioral
  * claim would have to raise the modal dialog each door shows, which is how a runner was stranded on 2026-09-09.
  *
  * MUTATION: take the refusal out of either door, or ask it after the reversal question, and the second claim fails
@@ -105,7 +105,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     }
 
     /**
-     * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they grey
+     * The two run doors that move trains without Start - Execute Timetable and Return Home - ask it too, before they gray
      * anything or dispatch.
      *
      * The rule's own reason is not about the hand: a timetable run and a Return Home run drive over the railway the same
@@ -178,8 +178,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             // there, and a change made from this thread raced it.
             final String[] outcome = new String[9];
 
-            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN: otherwise the item is greyed for that, and the
-            // greyed state below says nothing about the setup.
+            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN: otherwise the item is grayed for that, and the
+            // grayed state below says nothing about the setup.
             java.lang.reflect.Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
             triage.setAccessible(true);
@@ -227,12 +227,12 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                     outcome[1] = String.valueOf(ui[0].autonomyHasErrors());
                     outcome[2] = String.valueOf(ui[0].whyAHandSendIsRefused());
 
-                    // AND THE RIGHT-CLICK RETURN HOME ITEM: greyed, with the setup's sentence.
+                    // AND THE RIGHT-CLICK RETURN HOME ITEM: grayed, with the setup's sentence.
                     try
                     {
                         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-                        // Handed the sentence, as the menu hands it where Start is greyed.
+                        // Handed the sentence, as the menu hands it where Start is grayed.
                         Method add = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu").getDeclaredMethod(
                             "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
@@ -282,7 +282,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             assertEquals(outcome[3], "null", "with the setup mended, a hand send is still refused");
 
-            // Adam, 2026-09-24: "Yes, go with your recommendation" - the item greyed with the setup's sentence,
+            // Adam, 2026-09-24: "Yes, go with your recommendation" - the item grayed with the setup's sentence,
             // the buttons live and explaining, as Start's is.
             assertEquals(outcome[6], "true", "precondition: Return Home is not offered on the frozen railway before anything"
                 + " is broken, so its item is greyed for that and nothing below is about the setup (ADU-C6)");
@@ -429,7 +429,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * The right-click menu asks the setup once where Start is offered: the Return Home item is handed the hand doors'
-     * sentence, worked out only where Start is greyed.
+     * sentence, worked out only where Start is grayed.
      *
      * `AutonomySession.check()` is not cached, and a popup menu is built on the event thread; the walks a
      * right-click costs are down to one each, and the item asked the whole check twice more on every right-click.
@@ -578,7 +578,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
             // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (and MT-573's comment of 2026-09-24): a train is away
-            // from its home, so a greyed item or a refused press below is about the setup.
+            // from its home, so a grayed item or a refused press below is about the setup.
             Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
             triage.setAccessible(true);

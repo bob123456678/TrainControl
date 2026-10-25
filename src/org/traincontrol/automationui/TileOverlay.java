@@ -7,14 +7,14 @@ import java.awt.RenderingHints;
 /**
  * What a tile is doing, and how that is painted over it.
  *
- * Drawn as a wash rather than by recolouring the tile art, for three reasons that are all about the
+ * Drawn as a wash rather than by recoloring the tile art, for three reasons that are all about the
  * existing rendering rather than about taste: the icon cache is shared by every tile of a type, so
- * recolouring one would recolour all of them or need a cache entry per state; the icon is only
+ * recoloring one would recolor all of them or need a cache entry per state; the icon is only
  * refreshed when its NAME changes, which autonomy state does not do; and the transient yellow highlight
  * already works by swapping the icon out and back, so a second effect doing the same would fight it for
  * the one slot it restores from.
  *
- * Colours are `DiagramColours`', the one place the diagram's autonomy colours are kept (FR-106).
+ * Colors are `DiagramColours`', the one place the diagram's autonomy colors are kept (FR-106).
  *
  * @author Adam
  */
@@ -143,9 +143,9 @@ public class TileOverlay
      * nothing: a held square looked like an ordinary one, and the whole point of showing it is that a
      * reader can see which track is spoken for.
      *
-     * Lightened rather than coloured in.  It is not somewhere a train is going - it is somewhere
+     * Lightened rather than colored in.  It is not somewhere a train is going - it is somewhere
      * nobody else may go - so it should recede from the running path rather than compete with it, and
-     * paling the tile says "held" without adding another colour to a diagram that already has four.
+     * paling the tile says "held" without adding another color to a diagram that already has four.
      */
     private static final Color LOCKED_WASH = DiagramColours.PATH_HELD_WASH;
 
@@ -162,8 +162,8 @@ public class TileOverlay
      * the tile, so the size it is drawn at does not matter, only its shape and its transparency.
      *
      * The one shipped is a side-view locomotive in near-black with a white halo, because it has to read
-     * on whatever is underneath it: plain track, the blue of a claimed path, the dark grey of a driven one,
-     * the light grey of a locked one. An icon with no halo disappears into the dark colours.
+     * on whatever is underneath it: plain track, the blue of a claimed path, the dark gray of a driven one,
+     * the light gray of a locked one. An icon with no halo disappears into the dark colors.
      *
      * If the file is missing or unreadable the dot is drawn instead, which is what was here before this
      * existed - a diagram that stops saying where the trains are would be a worse fault than a plain
@@ -227,7 +227,7 @@ public class TileOverlay
     private final org.traincontrol.automationui.TilePorts.Side facing;
     private final java.util.List<Segment> segments;
 
-    /** Whether the train here is paused, which draws its icon grey (FR-117). */
+    /** Whether the train here is paused, which draws its icon gray (FR-117). */
     private final boolean paused;
 
     /**
@@ -358,7 +358,7 @@ public class TileOverlay
     }
 
     /**
-     * @return whether the train here is paused, which draws its icon grey (FR-117)
+     * @return whether the train here is paused, which draws its icon gray (FR-117)
      */
     public boolean isPaused()
     {
@@ -419,7 +419,7 @@ public class TileOverlay
     /**
      * Turns the graphics so that an icon drawn facing east ends up facing the way the train is going.
      *
-     * Called with the origin already at the middle of the icon, so a rotation is about its own centre.
+     * Called with the origin already at the middle of the icon, so a rotation is about its own center.
      *
      * @param g the tile's graphics, translated to where the icon goes
      */
@@ -448,7 +448,7 @@ public class TileOverlay
      * Which way the rail runs under the train on a curve - from the middle of the train's road to the midpoint of the side
      * it is heading for (MT-642) - or null on a straight, a switch or a crossing, where the icon stays square to the tile.
      *
-     * A curve on this diagram is the straight line between the midpoints of two neighbouring sides, so its middle is a
+     * A curve on this diagram is the straight line between the midpoints of two neighboring sides, so its middle is a
      * quarter of the tile in from each, and the line from there to the heading side's midpoint is the rail.  Anything
      * else answers null: a heading along a straight leaves one of the two at zero, and a heading out of a curve by a side
      * it does not have lands anywhere but a quarter across and a quarter down.
@@ -675,11 +675,11 @@ public class TileOverlay
     /** A paused train's icon, worked out once from the train's (FR-117). */
     private static java.awt.image.BufferedImage pausedIcon;
 
-    /** The grey a paused train's black is drawn in - the grey of the empty dash and the barred chevron's family. */
+    /** The gray a paused train's black is drawn in - the gray of the empty dash and the barred chevron's family. */
     private static final int PAUSED_GREY = 150;
 
     /**
-     * The train's icon with its black taken to a mid grey and its white left white (FR-117), so its windows and wheels
+     * The train's icon with its black taken to a mid gray and its white left white (FR-117), so its windows and wheels
      * still read: each pixel's brightness laid between `PAUSED_GREY` and white, its alpha kept - so the halo, which is
      * the icon's silhouette, is the same.
      *
@@ -774,11 +774,11 @@ public class TileOverlay
      * last square the run does not reach - and came out a second, lighter orange.
      *
      * The whole square for a segment from side to side; for one that ends in the square, the half of it toward the side
-     * it leaves by, cut at the track's centre.  A held line is no run line: nothing of a train is drawn over one.
+     * it leaves by, cut at the track's center.  A held line is no run line: nothing of a train is drawn over one.
      *
      * @param width the square's width
      * @param height the square's height
-     * @param trackCentre where the track's centre is, or null for the square's
+     * @param trackCentre where the track's center is, or null for the square's
      * @return the area, or null where there is no run line
      */
     public java.awt.Shape runArea(int width, int height, int[] trackCentre)
@@ -849,7 +849,7 @@ public class TileOverlay
      * two of them, which is the tone difference he can see between 13,11 and 13,12.
      *
      * **His ruling settles which gives way** (MT-373): *"greyed out means either edge locked or path
-     * blocked."*  One grey, for either reason - so the second wash is not drawn, rather than the two
+     * blocked."*  One gray, for either reason - so the second wash is not drawn, rather than the two
      * being blended into some third tone.
      *
      * @param g where to draw
@@ -912,7 +912,7 @@ public class TileOverlay
                 g.setColor(outline);
 
                 // Thinner for locked track, and drawn INSIDE the tile either way: a line on the very
-                // edge is shared with the neighbouring square, so two tiles in different states would
+                // edge is shared with the neighboring square, so two tiles in different states would
                 // argue over the same pixels and whichever painted last would win.
                 float weight = locked ? 1.6f : 2.6f;
 
@@ -985,13 +985,13 @@ public class TileOverlay
             // the dot any more.
             java.awt.image.BufferedImage picture = drawsTheIcon() ? trainIcon() : null;
 
-            // GREY FOR A PAUSED TRAIN (FR-117; Adam, 2026-10-09: "Inactive locomotive icons go from black to gray")
+            // GRAY FOR A PAUSED TRAIN (FR-117; Adam, 2026-10-09: "Inactive locomotive icons go from black to gray")
             if (picture != null && paused) picture = pausedIconOf(picture);
 
             if (picture != null)
             {
                 // The composite is reset because the outline above leaves a partial alpha on the Graphics, and an icon
-                // drawn through that is a grey smudge; the icon's own alpha is set below, once it is one picture.
+                // drawn through that is a gray smudge; the icon's own alpha is set below, once it is one picture.
                 g.setComposite(java.awt.AlphaComposite.SrcOver);
 
                 int side = iconSide(width, height);
@@ -1000,7 +1000,7 @@ public class TileOverlay
 
                 // ON A CURVE, ALONG THE RAIL AT FULL SIZE (MT-642, Adam: "the front of the locomotive is cut off on curved
                 // tiles.  Rotate the icon to match the angle of the tile so it fits"; then, of the choices drawn for him,
-                // "C: full size", and "there should be no clip").  The rail there is the line between two neighbouring
+                // "C: full size", and "there should be no clip").  The rail there is the line between two neighboring
                 // sides' midpoints, so the icon is turned along it and reaches past the tile onto the track beyond.
                 int[] along = alongTheCurve(trackCentre, width, height);
 
@@ -1058,7 +1058,7 @@ public class TileOverlay
             else
             {
                 // An outline says which track is claimed; it cannot say which part of it holds the
-                // train.  The dot is the diagram's equivalent of the graph labelling its node.
+                // train.  The dot is the diagram's equivalent of the graph labeling its node.
                 int diameter = dotDiameter(width, height);
 
                 g.setComposite(java.awt.AlphaComposite.getInstance(
@@ -1088,7 +1088,7 @@ public class TileOverlay
     /**
      * How wide the locomotive icon is drawn on a tile of this size.
      *
-     * Never smaller than the dot it replaces: at the smallest tile size a shape scaled by a fraction becomes a few grey
+     * Never smaller than the dot it replaces: at the smallest tile size a shape scaled by a fraction becomes a few gray
      * pixels, which is less legible than the dot and would make this a regression for anybody running a compact diagram.
      */
     private static int iconSide(int width, int height)
@@ -1126,7 +1126,7 @@ public class TileOverlay
     /**
      * Where the middle of this tile IS, for anything that has to sit on the track.
      *
-     * The geometric centre is on the rail for a straight and nowhere near it for a curve, where the
+     * The geometric center is on the rail for a straight and nowhere near it for a curve, where the
      * track cuts the corner.  Two things here need the answer - the end of a run (OB-026) and the dot
      * marking which square holds the train ("stars work, but are offcenter on curve stations") - and
      * they were wrong in the same way for the same reason, so they ask the same question now.
@@ -1173,7 +1173,7 @@ public class TileOverlay
      *
      * A border said WHERE a path went and nothing about which way it ran, or which part of it the train
      * had already covered - and on a square two paths crossed, one border had to speak for both.  A
-     * line laid along the track answers all three: the stations' blue ahead of the train, dark grey behind
+     * line laid along the track answers all three: the stations' blue ahead of the train, dark gray behind
      * it, and a white arrowhead pointing the way it is going (FR-106; `DiagramColours`).
      *
      * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
@@ -1185,15 +1185,15 @@ public class TileOverlay
         int span = Math.min(width, height);
         // Where a line stops when it has no side to leave by - the END of a run.
         //
-        // OB-026: this was always the tile's geometric centre, which is on the rail for a straight and
+        // OB-026: this was always the tile's geometric center, which is on the rail for a straight and
         // nowhere near it for a curve, where the track cuts the corner and never passes through the
         // middle.  So a train arriving at a curved station drew a stub across the tile instead of along
         // it, while a curve the run passed THROUGH looked right - because that case has two sides and
         // never comes here at all.
         //
-        // The caller supplies the midpoint of this tile's own two track sides, which is the tile centre
+        // The caller supplies the midpoint of this tile's own two track sides, which is the tile center
         // for a straight and lands on the rails for anything else.  That keeps the through-case exactly
-        // as it was, which matters: bending the line through the centre was tried once before and put
+        // as it was, which matters: bending the line through the center was tried once before and put
         // it at forty-five degrees to the track underneath.
         int[] centre = middle(trackCentre, width, height);
 
@@ -1215,8 +1215,8 @@ public class TileOverlay
         }
 
         // Track merely held clear is dropped where a path is actually running over the same square.
-        // Same rule the merged state follows, and without it the grey line and the coloured one are
-        // drawn down the same rails, where the grey reads as a second route going nowhere.
+        // Same rule the merged state follows, and without it the gray line and the colored one are
+        // drawn down the same rails, where the gray reads as a second route going nowhere.
         boolean running = false;
 
         for (Segment segment : segments)
@@ -1255,15 +1255,15 @@ public class TileOverlay
             // A curve on this diagram is not an arc and a switch's diverging leg is not a right angle:
             // both are drawn as a straight chord from the midpoint of one edge to the midpoint of the
             // next, which is what TileAnnotation.heading has always taken its arrow directions from.
-            // Bending the run line through the tile centre instead put it at forty-five degrees to the
+            // Bending the run line through the tile center instead put it at forty-five degrees to the
             // track under it - two strokes cutting across the corner the rail cuts through - so on
             // every turn of a route the highlight and the railway disagreed about where the train was
-            // going.  Straight through is unchanged by this: the chord and the centre lie on one line.
+            // going.  Straight through is unchanged by this: the chord and the center lie on one line.
             g.drawLine(a[0], a[1], b[0], b[1]);
         }
 
         // Which way, in white with a dark edge (FR-106), on the half the train is heading INTO - clear of the
-        // centre, where two arrowheads on a square crossed twice would sit on top of each other.
+        // center, where two arrowheads on a square crossed twice would sit on top of each other.
         //
         // Only where there is a direction to state.  Locked track is not somewhere a train is going,
         // it is track nobody else may use, and an arrow on it would claim a journey that is not
@@ -1276,7 +1276,7 @@ public class TileOverlay
 
         for (Segment segment : segments)
         {
-            // AND A SEGMENT WITH NO COLOUR, which the line pass twenty lines above also skips.
+            // AND A SEGMENT WITH NO COLOR, which the line pass twenty lines above also skips.
             // `colourOf` answers null for IDLE, so without this an idle segment drew a
             // black arrowhead floating over track with no line under it. Nothing emits that pair
             // today - the only IDLE overlay built anywhere passes null segments - so this is a trap

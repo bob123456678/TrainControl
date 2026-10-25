@@ -25,7 +25,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * MM2 head with an MFX member drives f6 through the member, and `core.testMultiUnitMembership
  * .testAConsistCanDriveEveryFunctionItsMembersHave` covers it.  The window went on lighting buttons from
  * `getNumF()`, the HEAD's own count, so that function worked from a keyboard shortcut, a route or
- * autonomy and was greyed on screen - and the F20-F31 tab was removed outright.  The guard and the
+ * autonomy and was grayed on screen - and the F20-F31 tab was removed outright.  The guard and the
  * affordance asking different questions is `OB-057`/`OB-090` arriving in a third place.
  *
  * **Driven through `repaintLoc`**, which is what the window calls when the active locomotive changes,
@@ -429,7 +429,7 @@ public class testTheFunctionButtonsFollowTheConsist
         // `repaintLoc` returns without doing anything while an earlier render is still running, and the
         // render itself goes to a worker and back through `invokeLater`.  So a `show` straight after
         // another `show` - which is what `testTheWidenedButtonsCarryNoText` does after the all-MM2 claim
-        // - could have its repaint dropped, and the buttons read were the previous consist's: f6 greyed
+        // - could have its repaint dropped, and the buttons read were the previous consist's: f6 grayed
         // for a consist that can drive it.  One pump of the event thread was never a wait for either.
         waitForTheRender();
 
@@ -468,7 +468,7 @@ public class testTheFunctionButtonsFollowTheConsist
             Thread.sleep(20);
         }
 
-        // SAID HERE, not as a greyed f6 three lines later that would blame the rule for a stuck render.
+        // SAID HERE, not as a grayed f6 three lines later that would blame the rule for a stuck render.
         throw new AssertionError("the window's render did not finish within ten seconds, so the buttons"
             + " below would be read from whatever it last drew");
     }

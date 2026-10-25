@@ -604,7 +604,7 @@ public class testLocomotiveIdentityPropagates
     /**
      * Which of the layout's locomotive collections still mention this one, by reflection.
      *
-     * The behavioural half of the guard above: that one asks whether the sweep NAMES every holder, and
+     * The behavioral half of the guard above: that one asks whether the sweep NAMES every holder, and
      * this asks whether anything is actually left in one afterwards.
      */
     private List<String> collectionsHolding(Layout layout, Locomotive loc) throws Exception
@@ -730,7 +730,7 @@ public class testLocomotiveIdentityPropagates
      * not the captions. So deleting a locomotive standing at a station left the caption naming a
      * locomotive the database no longer has, until something unrelated repainted it.
      *
-     * **A source rule rather than a behavioural one, for the same reason the rename rule above is
+     * **A source rule rather than a behavioral one, for the same reason the rename rule above is
      * one**: the caption is drawn by a window, and what can be asserted without one is that the door
      * calls the method that draws it. That is exactly what went wrong - `MT-149`'s fix went to the
      * guard inside `repaintTimetable` and never to the doors that have to call it - so the door

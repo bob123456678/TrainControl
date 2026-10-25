@@ -130,8 +130,8 @@ public class testWhatCountsAsAParkingSquare
      * And the eight with track running past them answer no.
      *
      * This is the half that can be got wrong quietly: counting a square's COPIES rather than the
-     * places they lead to makes a split berth look like a junction, and counting neighbours without
-     * collapsing the copies of one neighbour makes every square look like one.
+     * places they lead to makes a split berth look like a junction, and counting neighbors without
+     * collapsing the copies of one neighbor makes every square look like one.
      */
     @Test
     public void testSomewhereWithAnotherWayOutIsNot()

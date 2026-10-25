@@ -34,7 +34,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * It used to say "that script holds the same data; if this table changes, change it there too" - a
  * Python copy of the whole port map, kept in step by hand.  It went stale, as a copy kept in step by
  * hand does: it still marked the LINK side UNCONFIRMED long after d4d5b7ba confirmed it, and a
- * verification that has to be hand-synchronised with the thing it verifies is a second opinion with the
+ * verification that has to be hand-synchronized with the thing it verifies is a second opinion with the
  * same author.  The script is retired; its table lives in
  * testAutonomyDiagramPorts.testTheWholePortTableIsWhatTheMapSaysItIs, where it is executed rather than
  * remembered, and where adding a tile type without stating its ports fails the build.
@@ -116,7 +116,7 @@ public class TilePorts
         }
 
         /**
-         * The only side this route may be travelled toward, or null when it is traversable both ways.
+         * The only side this route may be traveled toward, or null when it is traversable both ways.
          * @return
          */
         public Side getDirectedToward()
@@ -342,7 +342,7 @@ public class TilePorts
         // connect can be read from the icon - and its orientation says nothing either, the same drehung
         // appearing in horizontal and vertical runs alike.  What it conducts therefore depends on what is
         // next to it, which is not something this class can see: TilePorts is a pure function of type and
-        // orientation.  TileGraph resolves it from the neighbours.
+        // orientation.  TileGraph resolves it from the neighbors.
         //
         // This matters because layouts thread them through running lines - the sample layout has 43 - so
         // treating them as decoration severs those lines, while treating them as a fixed crossing invents
@@ -603,7 +603,7 @@ public class TilePorts
     }
 
     /**
-     * A route that may only be travelled toward the given side.
+     * A route that may only be traveled toward the given side.
      */
     private static Route into(Side toward, Side from)
     {

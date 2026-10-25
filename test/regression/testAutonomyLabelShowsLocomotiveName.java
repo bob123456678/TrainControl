@@ -19,7 +19,7 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  *
  * Reported 2026-08-22 with a screenshot: instead of "EN57-203" sitting in the caption in the track
  * diagram's own style, the autonomy editor drew {"name":"EN57-203"} in a box wide enough to cover
- * three neighbouring tiles.
+ * three neighboring tiles.
  *
  * A placement is stored as an OBJECT - {"name": ..., "speed": ..., "arrivalFunc": ...} - because
  * parseAuto resets whatever a placement omits, so the extra settings have to travel with it. The

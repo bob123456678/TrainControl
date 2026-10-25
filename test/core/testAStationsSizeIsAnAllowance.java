@@ -62,7 +62,7 @@ public class testAStationsSizeIsAnAllowance
      *
      * The park above does not: the run into it ends at BottomMainA, where three roads meet, and the fork rule stops the
      * tail there however long the train is.  TopMainR1's approach runs back through TopMainR1Pre to exactly one
-     * neighbour.  He has measured the three squares behind it at 1 each and left the station and TopMainR1Pre at
+     * neighbor.  He has measured the three squares behind it at 1 each and left the station and TopMainR1Pre at
      * nothing, so those two are measured here.
      */
     private static final TileKey TWO_HOPS = new TileKey("1 - Main", 5, 4);

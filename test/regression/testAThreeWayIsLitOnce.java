@@ -39,7 +39,7 @@ public class testAThreeWayIsLitOnce
     private static final String ROUTE = "OB-286 route";
 
     /**
-     * The three-way ends the highlight in the commanded colour.
+     * The three-way ends the highlight in the commanded color.
      *
      * @throws Exception from the event thread
      */

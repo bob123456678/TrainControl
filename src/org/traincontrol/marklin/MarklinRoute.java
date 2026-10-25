@@ -54,7 +54,7 @@ public class MarklinRoute extends Route
     // states - and command capture records what the diagram sent, carrying no delay of its own.
     // Without it a pair fires DEFAULT_SLEEP_MS apart, inside the margin the diagram path was tuned to.
     //
-    // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honours a command's own delay
+    // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honors a command's own delay
     // only when it is the larger of the two.  It does, with room to spare - but lowering
     // THREEWAY_DELAY_MS far enough would make this silently inert rather than merely shorter.
     public static final int THREEWAY_ROUTE_DELAY_MS =
@@ -959,7 +959,7 @@ public class MarklinRoute extends Route
                                     }
                                     else if (response == ConflictResponse.CANCEL_ROUTE)
                                     {
-                                        // CANCELLED WHOLE.  The log line first, so the record of why
+                                        // CANCELED WHOLE.  The log line first, so the record of why
                                         // exists before the route stops being anything.
                                         this.network.logf(now[1], this.getName(), now[0]);
 

@@ -26,7 +26,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
  * reported to him as one autonomy WILL choose, in the panel he opens to find out why a train is not
  * moving.
  *
- * **Three readers had it**: the Path Type note on the Auto setting, the magenta leg colour, and
+ * **Three readers had it**: the Path Type note on the Auto setting, the magenta leg color, and
  * `AutonomyChecks.checkReversingGoesSomewhere` - a reversing point whose only reachable stations are
  * all switched off counted as leading somewhere.
  *

@@ -314,9 +314,9 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Cancelling the text question changes nothing, and leaves nothing to undo.
+     * Canceling the text question changes nothing, and leaves nothing to undo.
      *
-     * MUTATION: take the undo snapshot whatever the answer, and a cancelled question leaves an undo step behind.
+     * MUTATION: take the undo snapshot whatever the answer, and a canceled question leaves an undo step behind.
      */
     @Test
     public void testControlTCancelledChangesNothing() throws Exception
@@ -416,7 +416,7 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Cancelling the address popup changes nothing and leaves nothing to undo.
+     * Canceling the address popup changes nothing and leaves nothing to undo.
      *
      * MUTATION: treat every answer but the close box as OK (`result != CLOSED_OPTION`), and Cancel leaves an undo step.
      */

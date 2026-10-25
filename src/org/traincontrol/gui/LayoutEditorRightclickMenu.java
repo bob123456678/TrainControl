@@ -473,7 +473,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         });
 
         // This matched shrinkEdges()'s own check already, but was left with no tooltip at
-        // all, so when it greys out it gives no reason - against the pattern used everywhere else in
+        // all, so when it grays out it gives no reason - against the pattern used everywhere else in
         // this menu (see Delete Page's tooltip split for the same idea).  Reuse the exact sentence
         // shrinkEdges() itself shows when refused.
         boolean canShrink = edit.getMarklinLayout().edgesAreEmpty();
@@ -490,7 +490,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         addShift(diagramSubmenu, "layout.ui.shiftRight", "layout.ui.tooltip.shiftDiagramRight",
             () -> edit.shiftRight(), edit.canShiftRight());
 
-        // Greyed where they would refuse, with the reason - the same treatment Shrink gets above, and
+        // Grayed where they would refuse, with the reason - the same treatment Shrink gets above, and
         // asking the editor's own predicate rather than restating it here.
         addShift(diagramSubmenu, "layout.ui.shiftUp", "layout.ui.tooltip.shiftDiagramUp",
             () -> edit.shiftUp(), edit.canShiftUp());

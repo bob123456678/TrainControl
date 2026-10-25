@@ -36,8 +36,8 @@ public class testLayoutFolderRobustness
      * A page named with a slash in it comes back after a save.
      *
      * "Up/Down" is an ordinary name for a page on a two-level railway and an impossible one for a file.
-     * The reader finds a page by taking the name out of the index and sanitising it, so a writer that
-     * does not sanitise produces a file the reader will never look for - and resolveSibling reads the
+     * The reader finds a page by taking the name out of the index and sanitizing it, so a writer that
+     * does not sanitize produces a file the reader will never look for - and resolveSibling reads the
      * slash as a directory, so the page went into a folder of its own and vanished from the layout.
      */
     @Test

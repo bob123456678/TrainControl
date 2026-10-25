@@ -207,7 +207,7 @@ public class testDiagramExport
     }
 
     /**
-     * How many distinct colours the picture holds, up to the point where the answer stops mattering.
+     * How many distinct colors the picture holds, up to the point where the answer stops mattering.
      */
     private static int colourCount(BufferedImage image)
     {
@@ -394,7 +394,7 @@ public class testDiagramExport
 
         // WHETHER IT WAS STORED, not what the accessor answers.
         //
-        // Writing the accessor's default back materialises a preference on a machine that never set
+        // Writing the accessor's default back materializes a preference on a machine that never set
         // one, so the operator ends up with a setting he did not choose and a later change of default
         // cannot reach him.  The rule is stated at `testDiagramLooksRight`, in the sweep that produced
         // it - this was one of the three sites that sweep missed.

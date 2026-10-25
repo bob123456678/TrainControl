@@ -33,8 +33,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * A train with no road into its platform - placed by hand, answered Not known, or re-stood after a restart or an edit,
  * none of which keeps the road it drove - has its tail decided by the side it came in by.  Where more than one rail
  * comes in by that side and they part behind the platform, the walk claims the squares they share, up to the switch,
- * and stops (MT-477).  It claims them as PLACES, which is what the grey is drawn from, and covers no EDGE - and the
- * orange line was drawn only from covered edges.  So the grey was right and the train itself was drawn nowhere.
+ * and stops (MT-477).  It claims them as PLACES, which is what the gray is drawn from, and covers no EDGE - and the
+ * orange line was drawn only from covered edges.  So the gray was right and the train itself was drawn nowhere.
  *
  * At BottomMainA on the frozen `live-snapshot`, where rails from the west part behind the platform, with this class's
  * own four-unit train (75 407 DB's length) standing there, having come in from the west.

@@ -20,10 +20,10 @@ import org.traincontrol.marklin.MarklinControlStation;
  * should not be asked to do, and it is the kind a test does not mind.
  *
  * **Both halves, because the point of FR-033 was that there are two.**  `canAddLocMappingPage` is what
- * the menu greys itself on; `addLocMappingPage` refuses again on its own account, and its javadoc says
+ * the menu grays itself on; `addLocMappingPage` refuses again on its own account, and its javadoc says
  * why - *"this method is public and the greying is one caller's manners, not the rule.  A guard that
  * lives only in the interface is a guard the next caller does not have."*  That is
- * `guard-and-affordance-same-question`, and a test that checked only the greying would pass with the
+ * `guard-and-affordance-same-question`, and a test that checked only the graying would pass with the
  * method's own refusal deleted.
  *
  * **What is deliberately NOT asserted: that loading cannot exceed fifty.**  `setViewListener` grows the
@@ -166,7 +166,7 @@ public class testFiftyLocomotiveMappingPages
         assertEquals(pages(), ceiling,
             "the page count could not be set to the ceiling, so nothing below is being asked at it");
 
-        // THE AFFORDANCE: what the menu greys itself on.
+        // THE AFFORDANCE: what the menu grays itself on.
         assertFalse(ui.canAddLocMappingPage(),
             "at " + ceiling + " pages the window still says another may be added, so the menu item"
             + " that asks this stays live at the ceiling (FR-033)");

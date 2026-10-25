@@ -298,7 +298,7 @@ public class testImportRename
      * ACROSS addresses through the names: sources are unique and Central Station names are unique, so
      * the list is a permutation - and a permutation can contain a cycle.
      *
-     * Swapping two names is what a user does after noticing a mislabelling, and it produces
+     * Swapping two names is what a user does after noticing a mislabeling, and it produces
      * [{A to B}, {B to A}].  Both entries are individually correct.  Applied in order against a
      * database each entry mutates, the first deletes the locomotive the second was about to rename,
      * and the second then renames the survivor back to the name it started with: one locomotive

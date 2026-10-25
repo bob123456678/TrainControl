@@ -337,7 +337,7 @@ public class testControlStationFaults
     /**
      * And an ordinary timetable is not turned into a sequential one by the same round trip.
      *
-     * Overlapping execution is the normal behaviour and much the faster one; a flag that defaulted
+     * Overlapping execution is the normal behavior and much the faster one; a flag that defaulted
      * the wrong way would make every layout's timetable crawl for no visible reason.
      */
     @Test

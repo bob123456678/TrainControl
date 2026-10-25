@@ -371,7 +371,7 @@ public class LayoutDiagram
         }
 
         // The elements this build could make nothing of, put back exactly as they were read.  Saving regenerates the
-        // whole page from this model, and an element whose type TrainControl does not recognise never entered it.  Saving
+        // whole page from this model, and an element whose type TrainControl does not recognize never entered it.  Saving
         // happens on the user's behalf without a save button (naming one station writes its page out, and renaming a
         // point writes out every page carrying that caption), so losing scenery, or a component a later Central Station
         // firmware added, because this program had not heard of it is not a trade anybody agreed to.
@@ -541,7 +541,7 @@ public class LayoutDiagram
         //
         // `getLayoutList()` sorts by name, and that sorted list is what an arrow's number means.  The list handed in is
         // not it: a rename removes the old name and puts the new one back IN THE OLD SLOT, deliberately; an add, a
-        // duplicate and a combine APPEND, and the default name Combine offers ("<page> and neighbours") sorts
+        // duplicate and a combine APPEND, and the default name Combine offers ("<page> and neighbors") sorts
         // immediately after the page it was made from rather than last.  Only a delete leaves it sorted.
         //
         // `before` comes from the PAGES this session is holding rather than from the index file, which also settles the
@@ -730,7 +730,7 @@ public class LayoutDiagram
             String data = exportToCS2TextFormat();
 
             // Determine the file path.
-            // Sanitised, because the reader locates a page by the name in the index and applies it (see
+            // Sanitized, because the reader locates a page by the name in the index and applies it (see
             // sanitizeFilename), so a write that does not produces a file the reader will never look for.  A name holding
             // a slash would be read by resolveSibling as a directory, and "Up/Down" written into a folder of its own.
             String renaming = filename == null ? null
@@ -1122,7 +1122,7 @@ public class LayoutDiagram
      * An id that does not read as `CS2File` reads one is left alone: there is no square to move it from.
      *
      * @param columns true for a shift along x (right, left), false for one along y (down, up)
-     * @param start the first column or row the shift moved, after the shift's own normalising
+     * @param start the first column or row the shift moved, after the shift's own normalizing
      * @param inserted true for a shift that inserts (right, down), false for one that removes (left, up)
      */
     private void shiftUnmodelledElements(boolean columns, int start, boolean inserted)
@@ -1202,7 +1202,7 @@ public class LayoutDiagram
      * stored key.  Where they disagree, the setup is keyed by ids the index does not believe.
      *
      * A CORRUPT `.id=` line falls back to the position: an unparseable id is not an absent one, the file is damaged
-     * rather than terse, and a position is at least a number that distinguishes the page from its neighbours.  Zero would
+     * rather than terse, and a position is at least a number that distinguishes the page from its neighbors.  Zero would
      * give every damaged page the same id.
      *
      * @param idText what the `.id=` line said, or null when the page had none
@@ -1262,7 +1262,7 @@ public class LayoutDiagram
                 if (trimmed.length() > 0 && !trimmed.startsWith(".") && !trimmed.startsWith("["))
                 {
                     // WITHOUT REGARD TO CASE, as the other two readers of this file do: `readLayoutIndexExtras`
-                    // matches its modelled names case-insensitively (because the genuine export spells its version
+                    // matches its modeled names case-insensitively (because the genuine export spells its version
                     // block `Version`), and so does `readLayoutIndexPageExtras`.  This is the reader whose answer everything
                     // else is keyed BY: an index spelling the block `Seite` would give no page an id at all, and a write
                     // would reissue 1..n across the whole layout.
@@ -1305,7 +1305,7 @@ public class LayoutDiagram
     /**
      * The keys inside a page's own `seite` block that TrainControl does not model.
      *
-     * `readLayoutIndexExtras` below keeps whole blocks the program has no name for, and declares `seite` modelled.  That
+     * `readLayoutIndexExtras` below keeps whole blocks the program has no name for, and declares `seite` modeled.  That
      * is true of the two keys the writer emits, `.id` and `.name`, and not of the block: a Central Station writes the
      * page's scroll position into it as `.xoffset` and `.yoffset`, and a later firmware may write anything else there, so
      * what sat inside each page must be kept too.
@@ -1397,14 +1397,14 @@ public class LayoutDiagram
     }
 
     /**
-     * Files one page's unmodelled keys under its name.
+     * Files one page's unmodeled keys under its name.
      *
      * A page with no name is not filed.  Every `seite` a station writes carries one, and a block
      * without one cannot be matched to a page on the way back out - which is the whole basis of the key.
      *
      * @param out what has been filed so far
      * @param name the page's name, or null when there is no page open
-     * @param extras its unmodelled lines, or null
+     * @param extras its unmodeled lines, or null
      */
     private static void attribute(Map<String, List<String>> out, String name, List<String> extras)
     {
@@ -1423,7 +1423,7 @@ public class LayoutDiagram
      * which page you were last looking at) would otherwise be deleted by the first page add, rename, delete or duplicate.
      *
      * **What is NOT kept here, and where it is kept instead.**  `[gleisbild]`, `version`, `groesse` and `seite` are the
-     * modelled parts: the writer emits them itself, from what the layout actually is now, and keeping a stale copy of any
+     * modeled parts: the writer emits them itself, from what the layout actually is now, and keeping a stale copy of any
      * of them would be worse than regenerating it.  Everything else is passed through untouched.  For `seite` the writer
      * regenerates only the BLOCK and its two keys, `.id` and `.name`; the other keys on a real export, such as the
      * page's scroll position, are read by `readLayoutIndexPageExtras` above and written back with the page they belong to.
@@ -1432,7 +1432,7 @@ public class LayoutDiagram
      * returns nothing rather than adding a second way to fail a save over a block nobody has ever needed.
      *
      * @param path the layout folder
-     * @return the unmodelled blocks, each as its lines in file order, outermost first
+     * @return the unmodeled blocks, each as its lines in file order, outermost first
      */
     public static List<List<String>> readLayoutIndexExtras(String path)
     {
@@ -1481,7 +1481,7 @@ public class LayoutDiagram
                     continue;
                 }
 
-                // A key, kept with the block it belongs to and dropped when that block is modelled.
+                // A key, kept with the block it belongs to and dropped when that block is modeled.
                 if (current != null) current.add(" " + trimmed);
             }
         }
@@ -1554,7 +1554,7 @@ public class LayoutDiagram
      * @param path the layout folder
      * @param layoutList the pages, in the order they are to appear
      * @param renamedFromTo old name -> new name, so a renamed page keeps its id.  Null when nothing was
-     *        renamed - a page nobody recognises is then given a fresh id, which is right for a new
+     *        renamed - a page nobody recognizes is then given a fresh id, which is right for a new
      *        page, a duplicate and a combined page.
      * @throws IOException
      */
@@ -1652,7 +1652,7 @@ public class LayoutDiagram
 
         // A RENAME IS THE ONE CASE where the writer holds a name the index has never seen, and it is
         // handed the map that says so - the same indirection the id lookup above uses, for the same
-        // reason.  Without it a rename would drop the page's unmodelled lines.
+        // reason.  Without it a rename would drop the page's unmodeled lines.
         if (extras == null && renamedFromTo != null)
         {
             for (Map.Entry<String, String> renamed : renamedFromTo.entrySet())
@@ -1676,11 +1676,11 @@ public class LayoutDiagram
      * client has open).  They are written back out with the id they already have, so when the file returns it is the SAME
      * page and its settings are still attached to it.
      *
-     * Anything absent and NOT named here is retired, which is the behaviour every caller gets by passing null.  That
+     * Anything absent and NOT named here is retired, which is the behavior every caller gets by passing null.  That
      * default matters: this must stay callable from the startup path and from tests without anybody being asked anything.
      *
      * @param keepAbsent names to keep in the index though they are not in the list.  Null or empty
-     *        for the old behaviour
+     *        for the old behavior
      */
     public static void writeLayoutIndex(String path, List<String> layoutList,
         Map<String, String> renamedFromTo, int floor,
@@ -1715,7 +1715,7 @@ public class LayoutDiagram
         // which is right for the parts this program models and wrong for the parts it does not: a genuine CS2 export opens
         // with `zuletztBenutzt` (the page you were last looking at), which would be deleted by the first rename.  This is
         // the page exporter's rule ("what TrainControl does not understand it is not entitled to throw away") one level
-        // up, where the index lives.  AFTER the modelled header and BEFORE the pages, which is where the sample file has it.
+        // up, where the index lives.  AFTER the modeled header and BEFORE the pages, which is where the sample file has it.
         for (List<String> block : readLayoutIndexExtras(path))
         {
             for (String line : block)

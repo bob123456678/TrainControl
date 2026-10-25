@@ -18,9 +18,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * One ceiling, asked by everything that grows the page, about the right dimension.
  *
  * **Three copies became one, and the one was wrong in a new way.** The limit on a page's size lived in
- * `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that greys
+ * `growEdges`, again in `addRowsAndColumns`, and a third time in the right-click menu that grays
  * Increase Size - while Shift Down and Shift Right, two items away on the same submenu, grow the page by
- * a row or a column and asked nothing. At the ceiling the menu greyed one item with a tooltip explaining
+ * a row or a column and asked nothing. At the ceiling the menu grayed one item with a tooltip explaining
  * why and offered another that did the same thing and worked.
  *
  * The predicate that replaced them took both dimensions and was written as one conjunction, so
@@ -29,7 +29,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * element coordinate with nothing clamping it, and three fixture pages in this repository parse at
  * 17 x 129.
  *
- * **Nothing pinned any of it**, which is why this class exists: a ceiling change altered behaviour and
+ * **Nothing pinned any of it**, which is why this class exists: a ceiling change altered behavior and
  * `grep -rn "roomToGrow" test/` found nothing. It is a pure function of two ints and the page's size,
  * which is about the cheapest thing in this window to pin.
  *
@@ -151,7 +151,7 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * And the shift gestures ask it, which is what makes the predicate more than a greying rule.
+     * And the shift gestures ask it, which is what makes the predicate more than a graying rule.
      *
      * `shiftDown` and `shiftRight` each open with `if (!canShift...()) return;`, so the answer decides
      * the gesture and not only whether the menu item is enabled.

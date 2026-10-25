@@ -27,7 +27,7 @@ import support.SourceOf;
  * back on - silently, and only on the renamed page."
  *
  * The same shape produced at least four more, all documented in the source: `clear()` missing
- * `stationSignals` while `clearShared()` had it, which threw a cancelled signal on real hardware;
+ * `stationSignals` while `clearShared()` had it, which threw a canceled signal on real hardware;
  * `captions` missing from `KNOWN_SHARED`, which reverted every caption edit on the next save;
  * directions left behind by every move; captions rekeyed on one side only.
  *
@@ -39,7 +39,7 @@ import support.SourceOf;
  *
  * So what is left to check is different, and smaller:
  *
- *   - Nothing the store holds is unclassified. Unchanged, and still the first line of defence: a
+ *   - Nothing the store holds is unclassified. Unchanged, and still the first line of defense: a
  *     collection nobody classified is how the eleventh one took five commits to finish adding.
  *   - Every kept collection is IN the registry. This is the new single point of failure and it is the
  *     only one that a compiler cannot check - a `Kept` subclass that forgets a method will not build,
@@ -326,7 +326,7 @@ public class testStoreCollectionsAreHandledEverywhere
     }
 
     /**
-     * The text of one method, or of one constant's initialiser, by brace matching.
+     * The text of one method, or of one constant's initializer, by brace matching.
      *
      * Crude and adequate: this asks whether a name is mentioned, not what is done with it. Something
      * that reads the file cannot tell a real handling from a mention in a comment - which is a
@@ -415,7 +415,7 @@ public class testStoreCollectionsAreHandledEverywhere
 
         if (longest != null) return longest;
 
-        // Not a method - a constant, whose "body" is its initialiser up to the semicolon
+        // Not a method - a constant, whose "body" is its initializer up to the semicolon
         java.util.regex.Matcher constant = java.util.regex.Pattern.compile(
             "^[ \t]*(?:private|public|protected)[^\n]*\\b" + name + "\\s*=",
             java.util.regex.Pattern.MULTILINE).matcher(source);

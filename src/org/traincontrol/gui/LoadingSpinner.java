@@ -114,7 +114,7 @@ public class LoadingSpinner extends JPanel
         setOpaque(false);
 
         // Matches the diagram's own background so the swap to the finished grid is not also a flash of
-        // a different colour
+        // a different color
         setBackground(Color.WHITE);
 
         timer = new Timer(FRAME_MS, e ->
@@ -171,7 +171,7 @@ public class LoadingSpinner extends JPanel
      * the grid asks for the space the diagram is about to take so that nothing jumps when the two are
      * swapped, the busy dialog asks for something small enough to sit above a line of text, and the
      * splash asks for its own fixed size. None of them got what they asked for, and the grid's comment
-     * described a behaviour that could not happen.
+     * described a behavior that could not happen.
      */
     @Override
     public Dimension getPreferredSize()
@@ -222,9 +222,9 @@ public class LoadingSpinner extends JPanel
                 halfTurns += (at - DRAIN_FRAMES + 1) / (double) TURN_FRAMES;
             }
 
-            // Centred on the VISIBLE part of this component, not the whole of it. This
+            // Centered on the VISIBLE part of this component, not the whole of it. This
             // component is sized to the whole diagram page (LayoutGrid.showWhenTilesAreReady), which
-            // on a page bigger than the LayoutArea viewport put the glass's true centre off whatever
+            // on a page bigger than the LayoutArea viewport put the glass's true center off whatever
             // screenful the operator happens to be scrolled to - the "blank page" symptom OB-129 was
             // filed for, arrived at by a different route. getVisibleRect() is the standard way to ask
             // a component what part of itself is actually on screen inside a JScrollPane; it degrades
@@ -254,13 +254,13 @@ public class LoadingSpinner extends JPanel
     }
 
     /**
-     * Draws the glass and its sand, centred on the origin of the transform it is given.
+     * Draws the glass and its sand, centered on the origin of the transform it is given.
      *
      * Kept apart from the frame arithmetic above so the shape can be reasoned about on its own:
      * everything here is a function of the three numbers passed in, with no reference to what frame it
      * is or which way up the glass has been turned.
      *
-     * @param g2 a graphics already translated to the centre and rotated to the current turn
+     * @param g2 a graphics already translated to the center and rotated to the current turn
      * @param glassW the width across the plates
      * @param glassH the height from plate to plate
      * @param drained how much of the sand has run through, 0 for none and 1 for all of it

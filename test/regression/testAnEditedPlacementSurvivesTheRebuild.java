@@ -844,7 +844,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.trainsOnNoPoint().get(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train"
                 + " on no Point is not listed, facing west, for the diagram to draw on Beta: " + session.trainsOnNoPoint());
 
-            // AND GREY WHERE THE CONFIGURATION PAUSES IT - asked of the setup's list, since the railway does
+            // AND GRAY WHERE THE CONFIGURATION PAUSES IT - asked of the setup's list, since the railway does
             // not have the train
             assertFalse(session.pausedTrainsOnNoPoint().contains(beta), "control: the train on no Point is listed as"
                 + " paused before anybody paused it");
@@ -987,7 +987,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A move cancelled puts the railway's squares back with the setup's: a move moves the squares the railway's
+     * A move canceled puts the railway's squares back with the setup's: a move moves the squares the railway's
      * Points say they are copies of, and a Cancel that put back the setup alone left the carry reading every train's
      * square as the move had made it, against the pages as they were - each train on the station that had its square.
      *

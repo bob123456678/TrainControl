@@ -337,7 +337,7 @@ public class testADiagramClickAsksFirst
      * Setting it red over the same train asks nothing: red is what protection itself commands.
      *
      * MUTATION: drop the aspect from the question (ask as if every click set it green), and setting it red asks and is
-     * cancelled.
+     * canceled.
      */
     @Test
     public void testSettingTheProtectingSignalRedAsksNothing() throws Exception

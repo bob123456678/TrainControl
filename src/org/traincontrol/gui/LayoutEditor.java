@@ -92,18 +92,18 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_HOVERED_COLOR = Color.BLUE;
     private static final Color COMPONENT_BORDER_DEFAULT_COLOR = Color.LIGHT_GRAY;
 
-    /** A highlight's record in `borderState` starts with this, then colour, width and whether it reserves room. */
+    /** A highlight's record in `borderState` starts with this, then color, width and whether it reserves room. */
     private static final String HIGHLIGHT_KEY_PREFIX = "hl:";
 
     /**
-     * The colour a picked square is outlined in.
+     * The color a picked square is outlined in.
      *
      * Red, the strongest line on the diagram, as a selection says what the next key press acts on.
      */
     private static final Color COMPONENT_BORDER_SELECTED_COLOR = new Color(210, 0, 0);
 
     /**
-     * Where a dragged group would land: blue, a different colour from the selection, as twenty tiles cannot follow the
+     * Where a dragged group would land: blue, a different color from the selection, as twenty tiles cannot follow the
      * cursor as one does.
      */
     private static final Color COMPONENT_BORDER_LANDING_COLOR = new Color(0, 90, 220);
@@ -491,13 +491,13 @@ public class LayoutEditor extends PositionAwareJFrame
         // The designer's panel, kept before the sidebar wraps it: three places swap controls in its GroupLayout.
         this.formPane = getContentPane();
 
-        // Centred, with gaps this class sizes the panel by (OB-172), so the left edge can be scrolled to.
+        // Centered, with gaps this class sizes the panel by (OB-172), so the left edge can be scrolled to.
         this.ExtLayoutPanel.setLayout(new FlowLayout(FlowLayout.CENTER, DIAGRAM_GAP, DIAGRAM_GAP));
         this.parent = ui;
         this.size = size;
         this.layout = l;
 
-        // A failed build disposes its frame, or an invisible editor would grey Edit for the session.
+        // A failed build disposes its frame, or an invisible editor would gray Edit for the session.
         try
         {
             // The setup as it stands, before anything here touches it: gestures write it as they go, so Cancel needs
@@ -2508,7 +2508,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * What a square's border looks like when nothing is hovering it.
      * @param palette a tile in the toolbox rather than on the diagram, which keeps its thicker line
      * @param autonomy the autonomy editor, which draws its grid ON the squares rather than around them
-     * @param grid whether the grey grid is being drawn
+     * @param grid whether the gray grid is being drawn
      * @return the border, or null when the grid is off: an empty border's room shows the panel through (MT-127)
      */
     public static Border restingBorder(boolean palette, boolean autonomy, boolean grid)
@@ -2531,7 +2531,7 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * A line drawn ON a component, reserving no space, so the hover outline on a borderless square moves nothing
      * (FR-006); a border may paint outside what it reserves.
-     * @param color the outline colour
+     * @param color the outline color
      * @param width how thick to draw it
      * @return a border that paints a line and reports no insets
      */
@@ -2624,7 +2624,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private java.awt.Component gapUnderTextLabels;
 
     /**
-     * Whether the editor draws its grey grid, on by default and remembered (FR-006); static, as the label asking has no
+     * Whether the editor draws its gray grid, on by default and remembered (FR-006); static, as the label asking has no
      * editor.
      * @return true when the grid should be drawn
      */
@@ -3703,7 +3703,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 answers[0]
             );
 
-            // Cancelled or closed: the sidebar goes back to what is on screen.
+            // Canceled or closed: the sidebar goes back to what is on screen.
             if (answer != 0 && answer != 1)
             {
                 syncSidebar();

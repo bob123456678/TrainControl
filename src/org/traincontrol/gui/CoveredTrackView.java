@@ -92,7 +92,7 @@ final class CoveredTrackView extends SettledQuestion
             {
                 found = ask.setup.routesCoveredByStandingTrains(ask.railway);
 
-                // The grey is not bounded to a running railway, and this is the one place that decides it (Adam: "yes, this greyout
+                // The gray is not bounded to a running railway, and this is the one place that decides it (Adam: "yes, this greyout
                 // should appear at idle and be regenerated if a placement or train/track length is changed."): `Layout.isPathClear` sweeps the
                 // covered edges in every tier at every time, because a tail lying across the rail is a physical fact, so at idle a manual send
                 // across a parked train's tail was refused over track this drew as free.  The guard and the affordance ask one question
@@ -113,9 +113,9 @@ final class CoveredTrackView extends SettledQuestion
         this.ui.blockedTrack = greyed;
 
         // And the tiles that changed are redrawn (OB-180): the wash is decided when a tile is DRAWN, and a tile is only drawn when its
-        // own accessory, feedback or route changes, so moving a train left the old squares grey (Adam: "when a train is manually moved to
+        // own accessory, feedback or route changes, so moving a train left the old squares gray (Adam: "when a train is manually moved to
         // a new station in the track diagram viewer using control+X and V, its former shaded icons are not reset.").  Reached on every
-        // path out of the computation above, including the failed one, since ungreying is where the old tiles most need repainting.
+        // path out of the computation above, including the failed one, since ungraying is where the old tiles most need repainting.
         // Only what CHANGED, because the refresh runs whenever anything about a train changes.
         this.ui.repaintTheWashWhereItChanged(was, this.ui.coveredTrack, wasBlocked, this.ui.blockedTrack);
     }

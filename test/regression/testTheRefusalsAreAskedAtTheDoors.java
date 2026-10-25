@@ -31,10 +31,10 @@ import support.SourceOf;
  * collecting of the longhand checks into two methods was meant to make hard.
  *
  * It does NOT pin the two guards' own bodies, which are a dialog over a predicate:
- * `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviourally by
+ * `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by
  * `core.testHomeStaging` (both halves, including staging) and `regression.testARouteDoesNotThrowSwitchesUnderATrain`;
  * `refuseWhileEditorOpen` is `isLayoutEditorOpen()`, which `testEditorSurfaceRules:3246` pins by shape.
- * A behavioural test of the refusals themselves would have to raise the modal dialog each one shows,
+ * A behavioral test of the refusals themselves would have to raise the modal dialog each one shows,
  * and a modal dialog inside a battery is how `testTheCeilingIsAskedAboutTheAmount` stranded a runner
  * for ten minutes on 2026-09-09. Said here rather than implied, so nobody reads this class as more
  * than it is.
@@ -49,11 +49,11 @@ public class testTheRefusalsAreAskedAtTheDoors
     /**
      * A page name cannot take another page's file.
      *
-     * A page lives in its sanitised name plus `.cs2`, so a name differing from another's only in case - which Windows does
+     * A page lives in its sanitized name plus `.cs2`, so a name differing from another's only in case - which Windows does
      * not tell apart - or only in a character a file name cannot hold is that page's file, and writing it replaced the
      * other page.  Asked of `LayoutPageEdit.pageUsingTheFileOf`, the one question every page door asks.
      *
-     * MUTATION: compare the names in their case again, or unsanitised, and this fails.
+     * MUTATION: compare the names in their case again, or unsanitized, and this fails.
      */
     @Test
     public void testAPageNameCannotTakeAnotherPagesFile()
@@ -283,7 +283,7 @@ public class testTheRefusalsAreAskedAtTheDoors
      * for as long as somebody takes - long enough for an s88 trigger to start a route that drives the locomotive.  The
      * Central Station's name proposal and the multi-unit dialog already ask again after theirs; renaming or
      * re-addressing, and deleting, asked only first and then wrote.  Read from the source, as this class reads its other
-     * doors: a behavioural test would have to hold a modal dialog open while a route starts.
+     * doors: a behavioral test would have to hold a modal dialog open while a route starts.
      *
      * MUTATION: take the second `refuseWhileARouteDrivesIt` out of either door, and this fails naming it.
      *
@@ -369,7 +369,7 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         // COUNTED INSIDE THE DECLARED DOORS, not from the list's own arithmetic.
         //
-        // The first version added up the list instead, and two errors then cancelled: a door was
+        // The first version added up the list instead, and two errors then canceled: a door was
         // declared that never asked at all - `putThePendingTurnsBack`, where the name appears in a
         // COMMENT explaining why another door's guard makes something safe - while
         // `refreshAutonomyPrompt` asked twice and was counted once. The totals matched and the check

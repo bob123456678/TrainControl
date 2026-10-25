@@ -356,7 +356,7 @@ public class testTheCheckerAgreesWithTheBuild
      * {@link #testEveryFacingTheBuildEmitsIsOneTheEditorOffers} when the arrival-sides consolidation
      * was checked, and into the production check afterwards - and a validation pass then found that
      * deleting it from the production check left every class green, because nothing anywhere
-     * referenced FACING_IMPOSSIBLE. A behaviour change with no guard is one that can be undone by
+     * referenced FACING_IMPOSSIBLE. A behavior change with no guard is one that can be undone by
      * accident.
      *
      * It lives here rather than beside the session's other tests because their fixture is a synthetic
@@ -583,7 +583,7 @@ public class testTheCheckerAgreesWithTheBuild
      * That cannot presently happen, and this test is where that is written down: an edge ends at a
      * Point, a Point is a feedback tile (`GraphReducer.buildPoints` reads `getFeedbackTiles`), and a
      * null entry side comes only from `TileGraph.landing` returning a portal's partner - which is a
-     * TUNNEL or a LINK and so never a feedback tile.  The consolidation is therefore behaviour-
+     * TUNNEL or a LINK and so never a feedback tile.  The consolidation is therefore behavior-
      * preserving, and stays so only while this holds.
      *
      * Mutation this must fail: in `StationIndex.arrivalSidesAt`, answer with the first side only -
