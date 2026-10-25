@@ -115,8 +115,7 @@ public class testAPasteDoesNotTurnTheTrainRound
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";

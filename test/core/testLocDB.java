@@ -282,8 +282,7 @@ public class testLocDB
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testLocDB.model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false)); 
+        testLocDB.model = support.TestStation.simulated(); 
     }
 
     @AfterClass(alwaysRun = true)

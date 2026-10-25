@@ -39,8 +39,7 @@ public class testMaxActiveTrains
     {
         // DEBUG ON, as every class that drives a journey in simulation has it: setSimulate refuses otherwise
         // (testAHandSendDuringARunIsNotRefusedByTheCap sends a train by hand)
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         for (int sensor = 190; sensor <= 193; sensor++)
         {

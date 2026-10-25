@@ -45,14 +45,13 @@ public class testAutonomyPathValidation
     {
         // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
         // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
-        // this, showUI = true below opens and can write to Adam's own railway (OB-111), and can also
+        // this, the window below opens and can write to Adam's own railway (OB-111), and can also
         // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
         // the whole battery.
         sandbox = support.LayoutSandbox.open();
 
-        // showUI = true so the failure popup renders and the operator can see the error.
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        // A window, so the failure popup renders and the operator can see the error.
+        model = support.TestStation.simulatedWithWindowInDebug();
 
         // Not connected => exec() takes the simulated-echo branch; debug is on so that branch is active.
         model.setNetworkCommState(false);

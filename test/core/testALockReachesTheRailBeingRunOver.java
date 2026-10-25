@@ -87,8 +87,7 @@ public class testALockReachesTheRailBeingRunOver
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         AutonomySession session = new AutonomySession(sandbox.getFolder());
 

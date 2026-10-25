@@ -126,8 +126,7 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
         // stopped, which is what a pin needs.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         String path = "file:///"
             + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";

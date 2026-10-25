@@ -62,8 +62,7 @@ public class testStagingSkipsALegWithNoSpeed
         sandbox = support.LayoutSandbox.open();
 
         // Debug mode last, because simulation requires it
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(LOC_STUCK, STUCK_ADDRESS);

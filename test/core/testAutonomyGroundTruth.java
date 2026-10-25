@@ -61,8 +61,7 @@ public class testAutonomyGroundTruth
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         // Resolved as a classpath resource, not a CWD-relative File.  test/autonomy.json used to be

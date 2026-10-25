@@ -83,8 +83,7 @@ public class testAutonomySimulationSanity
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         // Not connected: the layout may enter simulate mode, and exec() takes the simulated-echo branch so
         // accessory actuations are confirmed (which is what advances getNumActuations()).

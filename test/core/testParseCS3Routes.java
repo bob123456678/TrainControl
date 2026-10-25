@@ -37,8 +37,7 @@ public class testParseCS3Routes
     public testParseCS3Routes() throws Exception
     {
         parser = new CS2File(null, null);
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false)); 
+        model = support.TestStation.simulated(); 
                 
         // We assume the TrainControl routes are correct.  Also possible to read a CS2 file to compare
         // routesCS2 = parser.parseRoutes(parseFile(fetchURL(cs2_routes)));

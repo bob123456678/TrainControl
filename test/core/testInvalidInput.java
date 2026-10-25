@@ -84,8 +84,7 @@ public class testInvalidInput
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
         model.stop();
 
         model.newMM2Locomotive(LOC_PLACED, LOC_PLACED_ADDRESS);

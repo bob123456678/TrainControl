@@ -56,8 +56,7 @@ public class testATailFollowsTheRouteItCameIn
         // open Adam's real railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         loc = model.getLocByName(model.getLocList().get(0));
 

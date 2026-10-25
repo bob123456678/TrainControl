@@ -58,8 +58,7 @@ public class testACopiedCustomizationBringsTheIcons
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         source = model.newMM2Locomotive("MT466 source", 71);
         target = model.newMM2Locomotive("MT466 target", 72);

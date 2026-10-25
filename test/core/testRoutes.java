@@ -1690,8 +1690,7 @@ public class testRoutes
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testRoutes.model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        testRoutes.model = support.TestStation.simulated();
     }
 
     @AfterClass(alwaysRun = true)

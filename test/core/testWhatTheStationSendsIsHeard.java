@@ -20,7 +20,6 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.udp.CS2Message;
-import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Packets;
 import support.RouteMonitor;
@@ -60,7 +59,7 @@ public class testWhatTheStationSendsIsHeard
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(() -> init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         model.setSentMessageObserver(SENT::add);
     }

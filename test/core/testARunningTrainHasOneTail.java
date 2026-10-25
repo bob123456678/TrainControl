@@ -69,8 +69,7 @@ public class testARunningTrainHasOneTail
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         loc = model.getLocByName(model.getLocList().get(0));
 

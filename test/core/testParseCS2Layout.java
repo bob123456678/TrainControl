@@ -43,8 +43,7 @@ public class testParseCS2Layout
             
     public testParseCS2Layout() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false)); 
+        model = support.TestStation.simulated(); 
 
         parser = new CS2File(cs2_layout, model);
                  

@@ -56,8 +56,7 @@ public class testRouteTilePlacement
         // own railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
     }
 
     @AfterClass(alwaysRun = true)

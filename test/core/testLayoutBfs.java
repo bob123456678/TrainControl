@@ -60,8 +60,7 @@ public class testLayoutBfs
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
         model.stop();
 
         MarklinFeedback feedback = model.newFeedback(47000, null);

@@ -113,8 +113,7 @@ public class testTimetableOnDerivedGraph
     public static void setUpClass() throws Exception
     {
         // Debug mode last, because simulation requires it
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
     }
 

@@ -53,8 +53,7 @@ public class testRouteReachesTheRails
         // OFF - the loopback lives in the branch exec() takes when it cannot transmit.
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         model.setNetworkCommState(false);
     }

@@ -63,8 +63,7 @@ public class testATrainDoesNotRunIntoItsOwnTail
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         // This class's own train, as the frozen railway's README asks - not one of his borrowed.
         train = model.newMM2Locomotive(OUR_TRAIN, 2294);

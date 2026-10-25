@@ -61,8 +61,7 @@ public class testPlaceAllAtTheirHomes
         {
             sandbox = support.LayoutSandbox.open(frozen);
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, true));
+            model = support.TestStation.simulatedInDebug();
             model.stop();
 
             model.newMM2Locomotive(HOMED, 2401);
@@ -192,8 +191,7 @@ public class testPlaceAllAtTheirHomes
         {
             sandbox = support.LayoutSandbox.open(frozen);
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, true));
+            model = support.TestStation.simulatedInDebug();
             model.stop();
 
             model.newMM2Locomotive(TWICE, 2404);

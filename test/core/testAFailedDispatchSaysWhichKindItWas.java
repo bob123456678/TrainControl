@@ -64,8 +64,7 @@ public class testAFailedDispatchSaysWhichKindItWas
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         // THE LOG, READ AT ITS OWN LOGGER.  `MarklinControlStation.log(String)` ends in
         // `log.info(message)`, and attaching a handler there needs nothing added to the program for

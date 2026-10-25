@@ -91,8 +91,7 @@ public class testAPastedTrainKeepsItsDirection
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         // THE MODEL'S OWN PAGES, not a second parse of the same files.
         //

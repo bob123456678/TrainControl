@@ -519,8 +519,7 @@ public class testAutoLayout
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testAutoLayout.model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true)); 
+        testAutoLayout.model = support.TestStation.simulatedInDebug(); 
         model.stop();
         
         String s = readTheSample();

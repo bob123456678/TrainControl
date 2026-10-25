@@ -72,8 +72,7 @@ public class testTrainTailClearsEdges
         // had it in that order on 2026-08-28 and had been opening his layout on every battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
     }
 

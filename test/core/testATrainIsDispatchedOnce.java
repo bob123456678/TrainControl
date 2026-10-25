@@ -75,8 +75,7 @@ public class testATrainIsDispatchedOnce
         // regression.testSwitchingToACentralStationLayout.
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         for (int sensor = 194; sensor <= 198; sensor++)
         {

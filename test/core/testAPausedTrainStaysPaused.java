@@ -86,8 +86,7 @@ public class testAPausedTrainStaysPaused
         // HIS FROZEN RAILWAY, for the setup's claim; the ring's claims load their own configuration over it
         sandbox = support.LayoutSandbox.open(frozen);
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(ALPHA, 2404);

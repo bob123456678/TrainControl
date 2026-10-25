@@ -87,8 +87,7 @@ public class testMassAssignLengths
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                support.TestStationAddress.withNoStation(
-                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+                support.TestStation.simulated();
 
             try
             {
@@ -1462,8 +1461,7 @@ public class testMassAssignLengths
     private org.traincontrol.marklin.MarklinControlStation openHisRailway(support.LayoutSandbox sandbox) throws Exception
     {
         org.traincontrol.marklin.MarklinControlStation model =
-            support.TestStationAddress.withNoStation(
-                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+            support.TestStation.simulated();
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -2245,8 +2243,7 @@ public class testMassAssignLengths
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("unfolded-route-tiles"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                support.TestStationAddress.withNoStation(
-                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+                support.TestStation.simulated();
 
             AutonomySession his = new AutonomySession(sandbox.getFolder());
 
@@ -3518,8 +3515,7 @@ public class testMassAssignLengths
             sandbox = support.LayoutSandbox.open();
 
             org.traincontrol.marklin.MarklinControlStation model =
-                support.TestStationAddress.withNoStation(
-                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+                support.TestStation.simulated();
 
             try
             {

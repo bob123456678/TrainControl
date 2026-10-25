@@ -88,8 +88,7 @@ public class testATailPastASwitchIsAskedAbout
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         List<LayoutDiagram> pages = new ArrayList<>();

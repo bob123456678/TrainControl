@@ -70,8 +70,7 @@ public class testAnImportDoesNotSwitchYourRoutesOff
         org.json.JSONObject legacy = new org.json.JSONObject(new String(
             java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        model = support.TestStation.simulated();
 
         // A ROUTE OF OUR OWN, enabled and watching a sensor.  The fixture's own routes are asserted
         // over too, but a class whose subject exists only if somebody else's file happens to contain

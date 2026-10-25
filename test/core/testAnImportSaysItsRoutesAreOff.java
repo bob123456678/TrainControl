@@ -58,8 +58,7 @@ public class testAnImportSaysItsRoutesAreOff
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
 
         tap = new Handler()
         {

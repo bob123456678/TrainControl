@@ -64,8 +64,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         {
             sandbox = support.LayoutSandbox.open(unpackTheSample());
 
-            model = support.TestStationAddress.withNoStation(
-                () -> MarklinControlStation.init(null, true, false, false, false));
+            model = support.TestStation.simulated();
 
             session = new AutonomySession(sandbox.getFolder());
 

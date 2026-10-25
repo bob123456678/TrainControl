@@ -538,8 +538,7 @@ public class testAccessory
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testAccessory.model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, false));
+        testAccessory.model = support.TestStation.simulated();
         model.stop();
     }
 

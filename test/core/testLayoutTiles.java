@@ -41,7 +41,7 @@ import support.SourceOf;
  *   - LayoutLabel's temporary change-highlight applied its icon from a raw thread, mutating a Swing
  *     component off the EDT - the one place in that class which did not marshal its work
  *
- * Requires a display (showUI = true), like testAutonomyPathValidation.
+ * Requires a display (the station's window), like testAutonomyPathValidation.
  */
 public class testLayoutTiles
 {
@@ -66,13 +66,12 @@ public class testLayoutTiles
     {
         // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
         // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
-        // this, showUI = true below opens and can write to Adam's own railway (OB-111), and can also
+        // this, the window below opens and can write to Adam's own railway (OB-111), and can also
         // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
         // the whole battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, true, false, true));
+        model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();

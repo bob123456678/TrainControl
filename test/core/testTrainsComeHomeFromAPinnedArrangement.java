@@ -74,8 +74,7 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
         sandbox = support.LayoutSandbox.open(frozen);
 
-        model = support.TestStationAddress.withNoStation(
-            () -> MarklinControlStation.init(null, true, false, false, true));
+        model = support.TestStation.simulatedInDebug();
         model.stop();
 
         List<LayoutDiagram> pages = new ArrayList<>();
