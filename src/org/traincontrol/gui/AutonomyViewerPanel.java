@@ -478,7 +478,7 @@ public class AutonomyViewerPanel extends JPanel
         JPanel panel = box();
         panel.setLayout(new BorderLayout(0, 6));
 
-        findings.setCellRenderer(new FindingRenderer());
+        findings.setCellRenderer(new FindingRenderer(findingSeverity, findingRows, FONT, FONT_BOLD));
         findings.setBackground(java.awt.Color.WHITE);
         findings.setFont(FONT_LIST);
 
@@ -550,11 +550,29 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * Colours a row by what it is: a section heading, something that must be fixed, or something worth
-     * checking.  Colour rather than a prefix, because the list is scanned rather than read.
+     * Colors a row by what it is: a section heading, something that must be fixed, or something worth
+     * checking.  Color rather than a prefix, because the list is scanned rather than read.  The editor's list too.
      */
-    private class FindingRenderer extends javax.swing.DefaultListCellRenderer
+    static final class FindingRenderer extends javax.swing.DefaultListCellRenderer
     {
+        private final List<AutonomyChecks.Severity> severities;
+        private final List<?> tiles;
+        private final java.awt.Font font;
+        private final java.awt.Font headingFont;
+
+        /**
+         * @param severities each row's severity, null on a heading
+         * @param tiles each row's square, null on a heading and on a row about no square
+         */
+        FindingRenderer(List<AutonomyChecks.Severity> severities, List<?> tiles, java.awt.Font font,
+            java.awt.Font headingFont)
+        {
+            this.severities = severities;
+            this.tiles = tiles;
+            this.font = font;
+            this.headingFont = headingFont;
+        }
+
         @Override
         public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
             int index, boolean isSelected, boolean cellHasFocus)
@@ -562,12 +580,12 @@ public class AutonomyViewerPanel extends JPanel
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
             AutonomyChecks.Severity severity =
-                index < findingSeverity.size() ? findingSeverity.get(index) : null;
+                index < severities.size() ? severities.get(index) : null;
 
-            boolean heading = index < findingRows.size()
-                && findingRows.get(index) == null && severity == null;
+            boolean heading = index < tiles.size()
+                && tiles.get(index) == null && severity == null;
 
-            setFont(heading ? FONT_BOLD : FONT);
+            setFont(heading ? headingFont : font);
 
             if (!isSelected)
             {

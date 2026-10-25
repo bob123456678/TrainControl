@@ -868,36 +868,9 @@ public class AutonomyEditorPanel extends JPanel
 
         findings.setFont(FONT_CONTROL);
 
-        // The Auto tab's colours: red must be fixed, amber worth checking, grey headings.
-        findings.setCellRenderer(new javax.swing.DefaultListCellRenderer()
-        {
-            @Override
-            public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
-                int index, boolean isSelected, boolean cellHasFocus)
-            {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-                AutonomyChecks.Severity severity =
-                    index < findingSeverity.size() ? findingSeverity.get(index) : null;
-
-                boolean heading = index < findingTiles.size()
-                    && findingTiles.get(index) == null && severity == null;
-
-                setFont(heading ? AutonomyViewerPanel.FONT_GROUP : FONT_CONTROL);
-
-                if (!isSelected)
-                {
-                    setForeground(heading ? AutonomyViewerPanel.HEADING_COLOUR
-                        : severity == AutonomyChecks.Severity.ERROR
-                            ? AutonomyViewerPanel.ERROR_COLOUR
-                        : severity == AutonomyChecks.Severity.WARNING
-                            ? AutonomyViewerPanel.WARNING_COLOUR
-                        : java.awt.Color.DARK_GRAY);
-                }
-
-                return this;
-            }
-        });
+        // The Auto tab's colors: red must be fixed, amber worth checking, gray headings.
+        findings.setCellRenderer(new AutonomyViewerPanel.FindingRenderer(findingSeverity, findingTiles, FONT_CONTROL,
+            AutonomyViewerPanel.FONT_GROUP));
 
         // Clicking a finding goes to its tile.
         findings.addListSelectionListener(e ->
