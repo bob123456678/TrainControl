@@ -143,7 +143,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Delete Entry, answered Yes, takes that entry out of the timetable and off the tab, and leaves the other.
      *
-     * MUTATION: in `TimetableTab.deleteTimetableEntry`, take out `layout.removeTimetableEntry(row, (TimetablePath) shown);`.
+     * MUTATION: in `TimetableTab.deleteTimetableEntry`, take out `layout.removeTimetableEntry(...)`.
      */
     @Test
     public void testDeleteEntryAnsweredYesRemovesThatEntry() throws Exception
@@ -303,7 +303,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Execute Timetable with no entries says there are none, and the button can be pressed again.
      *
-     * MUTATION: in `TrainControlUI.executeTimetableActionPerformed`, take out the `this.executeTimetable.setEnabled(true);`
+     * MUTATION: in `executeTimetableActionPerformed`, take out the `this.executeTimetable.setEnabled(true);`
      * after the no-entries message.
      */
     @Test

@@ -331,7 +331,7 @@ public class testTheHomeLabelIsDrawnOnce
     }
 
     /**
-     * OB-193 (MT-293): TopMainR2, which really is captioned twice on this railway, draws ONE label.  The other claims arrange
+     * OB-193 (MT-293): TopMainR2, captioned twice on this railway, draws ONE label.  The other claims arrange
      * their own state; this one pins the FIXTURE as well as the rule, which is safe because `live-snapshot` is frozen.
      * If it fails, either the fix at `TrainControlUI.autonomyCaptionAt` was lost or the snapshot was re-taken from a
      * railway whose labels moved; the precondition tells the two apart.

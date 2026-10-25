@@ -532,9 +532,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-068 (MT-320): a nested group that is NOT the first term can be built by indenting.  Seven lines are typed flat, as the
-     * plus does, then indented into `3 or (4 and (1 or 2))`: the group goes on the right because a line may be at most
-     * one level deeper than the line above it (`ConditionTable.indent`).
+     * FR-068 (MT-320): a nested group that is NOT the first term can be built by indenting.  Seven lines are typed flat,
+     * as the plus does, then indented into `3 or (4 and (1 or 2))`: the group goes on the right because a line may be at
+     * most one level deeper than the line above it (`ConditionTable.indent`).
      *
      * MUTATION: dropping `ConditionTable.indent`'s one-level rule does not fail this (it only ever
      * admits more); forcing every indent to be refused does, at the first assertion.
