@@ -895,7 +895,7 @@ text:
 
 [issue OB-372]
 ordinal: 42
-inbox: yes
+inbox: no
 kind: bug
 title: Flipping a train's facing during a turning journey may read the facing of the wrong copy of its square
 filed: 2026-10-24
@@ -910,4 +910,23 @@ text:
 | **Filed:** 2026-10-24 19:17
 |
 | Found by the 3.0.3 duplication scan (cluster 50).  'Which copy of a square holds the train' is written three times in AutonomySession (about lines 1702, 7681, 7745).  facingOnTheRailway applies running.copyItWillStandOn(...) (OB-314); facingOfTrainOnTheRailway, which flipFacing uses, returns facingsAt(tile).get(name) without it.  So a flip while a train is on a journey that turns it may start from the copy it stood on, not the one it will stand on.  To do: show whether a flip during a turning journey goes wrong (a test through the flip, red first); if it does, both readers ask one method; if it does not, the copies still become one and this is closed as not a bug.
+|
+
+[issue OB-373]
+ordinal: 43
+inbox: yes
+kind: bug
+title: A train placed by right-click Place where no copy gives a facing may not be saved
+filed: 2026-10-24
+filed_at: 2026-10-24 20:14
+raised_from: 3.0.3 duplication work
+build: -
+text:
+| ### OB-373 - 2026-10-24 - A train placed by right-click Place where no copy gives a facing may not be saved
+|
+| **Kind:** bug  
+| **Raised from:** 3.0.3 duplication work  
+| **Filed:** 2026-10-24 20:14
+|
+| Found while merging the placement doors into one helper (3.0.3 duplication work, cluster 96).  LayoutRightclickAutonomyMenu.placeFacing writes the placement into the setup (session.placeLocomotive, setFacing) and then saves only under 'if (facing != null && session != null && setupStands)'.  Where no copy of the station can give a facing (OB-350's case: a station no train can leave), the placement is saved only if the tail question was put, which saves before asking.  Otherwise it stays in memory, and the locomotive dialog's own comment names the symptom of a missing save: the placement is gone at the next configuration load.  The paste and the locomotive dialog save in that case.  Also: when this door's save fails, the error is logged only in debug mode and only its message; the other two doors always log it.  To do: show it with a test (place there by right-click, reload the configuration, the train is gone), then save whenever the placement was written, and log a failed save as the other doors do.
 |

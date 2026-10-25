@@ -4018,3 +4018,11 @@ kind: bug
 what: Name Everything asks in the Mass Assign walks' prompt (EditorMassAssign.askInWalkPrompt): the question wraps, and the field has the keyboard when the prompt opens and after a refusal, per MT-474 (`60d68612`).
 state: -
 became: MT-815
+
+[receipt OB-372]
+seq: 502
+filed: 2026-10-24
+kind: bug
+what: One method answers which copy of a square holds the train and its facing, with OB-314's adjustment (copyHoldingATrain, facingOfTheTrainOn), used by trainOnTheRailway, facingOnTheRailway and flipFacing (`8d2bb7f8`). The flip read the plain copy's facing during a turning journey (testAFlipOnItsWayTurnsTheWayItWillStand red, then green), but no user can reach it today: flipFacing's only caller, followTheTurn, declines while a run holds the setup. A latent defect, fixed and pinned; no MT.
+state: fixed validated
+became: -

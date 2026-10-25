@@ -32185,3 +32185,117 @@ body:
 tail:
 | ---
 |
+
+[test MT-816]
+ordinal: 815
+anchor: mt-816
+date: 2026-10-24
+title: Placing a train three ways keeps its facing, tail and save (3.0.3 duplication work)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-816"></a>
+| ### MT-816 - 2026-10-24 - Placing a train three ways keeps its facing, tail and save (3.0.3 duplication work)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout with autonomy loaded and nothing running, on a page with a free station where trains may turn.
+| 2. Place a train there from the track diagram: right-click the station and choose `Place <locomotive>`.  If you are asked which side its tail is on, answer.
+| 3. Place a second train at another free station by copying it (Control+C on its square) and pasting it there (Control+V), answering the tail question if asked.
+| 4. Place a third train with `Place Locomotive...` in the autonomy editor's right-click menu, choosing its facing in the dialog, and press OK.
+| 5. Close and reopen the layout, and look at all three trains.
+|
+| **Expected**
+|
+| - Steps 2 to 4: each train stands where it was put, its label shows the facing it was given, and the tail question appears exactly where it did in 3.0.2.
+| - Step 5: all three trains are still where they were put, facing the same way.
+|
+| *What this is:* the 3.0.3 duplication work.  The three placement doors now share one helper for the tail question and the save before it; nothing visible should change.
+|
+tail:
+| ---
+|
+
+[test MT-817]
+ordinal: 816
+anchor: mt-817
+date: 2026-10-24
+title: Track editor shifts carry the setup; route and locomotive exports (3.0.3 duplication work)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-817"></a>
+| ### MT-817 - 2026-10-24 - Track editor shifts carry the setup; route and locomotive exports (3.0.3 duplication work)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout, open the track editor on a page with autonomy stations on it, and note where one station is.
+| 2. Right-click a row or column and use `Shift Right`, then `Shift Down`.
+| 3. Open the autonomy editor on that page and check the station and its settings (its name, its train, its arrows).
+| 4. Back in the track editor, undo both shifts, and check again.
+| 5. Close the track editor without saving.
+| 6. On the Routes tab, use `Export` to export the routes; then on the locomotive side, use `Export to CSV`.
+|
+| **Expected**
+|
+| - Steps 2 and 3: the track moves, and the station's settings move with its square.
+| - Step 4: everything is back where it was.
+| - Step 6: each export shows its panel as before; the routes' text is also on the clipboard (paste it into a text editor to check).
+|
+| *What this is:* the 3.0.3 duplication work.  The four shifts and the two exports each now run through one method; nothing visible should change.
+|
+tail:
+| ---
+|
+
+[test MT-818]
+ordinal: 817
+anchor: mt-818
+date: 2026-10-24
+title: Switch arms and one-way runs in the autonomy editor (3.0.3 duplication work)
+disposition: needs test
+from: FR-136
+written: 2026-10-24
+reopened: no
+body:
+| <a id="mt-818"></a>
+| ### MT-818 - 2026-10-24 - Switch arms and one-way runs in the autonomy editor (3.0.3 duplication work)
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-24
+|
+| **Steps**
+|
+| 1. Before you start, File > Backup TrainControl Data.  Open your railway's layout, then Autonomy > Edit Autonomy on Page.
+| 2. Left-click a switch square several times and watch its arrows cycle; hover over it and read the tooltip.
+| 3. Right-click the switch and look at its arm check boxes.
+| 4. Make a run of plain track one way, then look at its arrows.
+| 5. Close the editor with `Cancel` and answer Yes to "Are you sure you want to close the editor without saving changes?"
+|
+| **Expected**
+|
+| - Steps 2 and 3: the arrows cycle through the same arms in the same order as in 3.0.2, and the tooltip and check boxes name the same arms.
+| - Step 4: the run's arrows all point the chosen way.
+| - Step 5: nothing is kept.
+|
+| *What this is:* the 3.0.3 duplication work.  The editor's switch arms now come from the built railway's own method, and a run's direction is recorded by one method; nothing visible should change.
+|
+tail:
+| ---
+|
