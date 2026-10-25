@@ -28,12 +28,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     String customIconPath;
     
     /**
-     * What Copy Customizations overwrote, or null if it was never pressed (MT-466).
-     *
-     * One value rather than the three fields this was: the types, the triggers and the custom flag
-     * were remembered and put back one by one, and the custom ICONS - the other half of what the
-     * button copies - were in neither list.  `Locomotive.Customizations` is now the single statement
-     * of what a customization is, so the copy and this undo cannot disagree again.
+     * What Copy Customizations overwrote, or null if it was never pressed (MT-466).  One value:
+     * `Locomotive.Customizations` is the single statement of what a customization is (types, triggers, custom flag and
+     * icons), so the copy and this undo cannot disagree.
      */
     private Locomotive.Customizations beforeACopy;
 
@@ -91,22 +88,10 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
         );
                 
-        // THE TRIGGER-TYPE COMBO IS LOCALIZED BEFORE ANYTHING IS SELECTED IN IT.
-        //
-        // These four lines stood at the END of the constructor, after `fNoItemStateChanged` and
-        // `setSelectedIndex` had already chosen the current function's trigger type.
-        // `DefaultComboBoxModel.removeElementAt` MOVES the selection when the element it removes is the
-        // selected one - and for a momentary function the third statement removes exactly that. The
-        // selection fell to 0, and `applyButton` reads the index and writes `FUNCTION_TOGGLE`: every
-        // momentary function became a toggle on Apply.
-        //
-        // Measured on the model alone, walking all four starting selections: start=1 (Momentary) ended
-        // at index 0 (Umschalten). Toggle survived by luck, being moved away and back.
-        //
-        // It did not reach the operator, because a deferred `fNoItemStateChanged(null)` queued in the
-        // constructor re-derived the type afterwards - a corrupted state with an accidental repair
-        // standing over it. Moving the localization above the selection removes the corruption instead
-        // of relying on the repair.
+        // THE TRIGGER-TYPE COMBO IS LOCALIZED BEFORE ANYTHING IS SELECTED IN IT: `DefaultComboBoxModel.removeElementAt`
+        // MOVES the selection when it removes the selected element, which for a momentary function it does, and
+        // `applyButton` would then write `FUNCTION_TOGGLE`.  Localizing first removes that corruption instead of
+        // relying on the deferred `fNoItemStateChanged(null)` to repair it.
         javax.swing.DefaultComboBoxModel<String> defaultModel =
             (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
 
@@ -168,9 +153,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         // Show custom icon and controls
         displayCustomizationButtons();
 
-        // APPLY ONLY WHILE THERE IS SOMETHING TO APPLY (FR-098; Adam, on MT-466: *"just make sure apply is greyed out
-        // if there is nothing to apply"*).  Asked whenever the icon or the trigger on show changes, and whenever
-        // another function is shown.
+        // APPLY ONLY WHILE THERE IS SOMETHING TO APPLY (FR-098): asked whenever the icon or the trigger on show
+        // changes, and whenever another function is shown.
         this.fIcon.addItemListener(event -> refreshApply());
         this.functionTriggerType.addItemListener(event -> refreshApply());
 
@@ -256,16 +240,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }
     
     /**
-     * Remembers what a Copy Customizations press is about to overwrite, the first time it is pressed.
-     *
-     * **This door does not wait for OK, and the dialog's Cancel branch says everything does**.
-     * The copy writes the other locomotive's function types, triggers and custom flag straight onto
-     * this one so the panel can show them at once, which is the same reason the two autonomy slots
-     * write straight through - and those are restored on Cancel.  These were not, so Cancel kept the
-     * copied functions and the comment beside it in `RightClickFunctionMenu` said nothing had changed.
-     *
-     * Only the FIRST press is remembered: two copies in a row still have to undo to what was there
-     * before either of them.
+     * Remembers what a Copy Customizations press is about to overwrite, the first time it is pressed: this door does
+     * not wait for OK (the copy writes straight onto this locomotive so the panel can show it), so Cancel has to
+     * restore it.  Only the FIRST press is remembered, so two copies in a row undo to what was there before either.
      */
     private void rememberBeforeACopy()
     {
@@ -275,10 +252,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }
 
     /**
-     * Puts back what Copy Customizations overwrote, and does nothing if it was never pressed.
-     *
-     * Restored rather than deferred, which is the shape the slots beside it already use: the preview
-     * stays honest while the dialog is open, and Cancel still means cancel.
+     * Puts back what Copy Customizations overwrote (restored rather than deferred, like the slots beside it); nothing
+     * if it was never pressed.
      */
     public void undoCopiedCustomizations()
     {
@@ -496,12 +471,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
 
-        // ON THE EVENT THREAD, and the thread now holds the only slow thing here.
-        //
-        // The thread existed to hold a modal confirm - everything the answer led to was already being
-        // marshalled straight back with invokeLater, which is the tell: the background thread was
-        // doing no background work at all. What IS slow is syncWithCS2, which talks to the station,
-        // so that is what runs off the event thread now.
+        // ON THE EVENT THREAD; what IS slow is syncWithCS2, which talks to the station, so only that runs off it.
         this.resetButton.setEnabled(false);
 
         int dialogResult = JOptionPane.showOptionDialog(
@@ -534,14 +504,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }//GEN-LAST:event_resetButtonActionPerformed
 
     /**
-     * Told when the function this panel is editing changes (FR-045).
-     *
-     * The panel is a form, so anything added to it has to go through the designer - which is why the
-     * autonomy slot ticks live on the DIALOG around it instead. They still have to follow the fNo
-     * dropdown, because switching function inside the panel changes what a tick would be about, and a
-     * tick about a function nobody is looking at is worse than no tick.
-     *
-     * A hook rather than a public getter the dialog polls: there is no moment the dialog could poll at.
+     * Told when the function this panel is editing changes (FR-045).  The autonomy slot ticks live on the DIALOG around
+     * the form and must follow the fNo dropdown, as a tick about a function nobody is looking at is worse than none.  A
+     * hook rather than a getter the dialog polls: there is no moment it could poll at.
      */
     private java.util.function.IntConsumer onFunctionChanged;
 
@@ -626,23 +591,15 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
     private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
 
-        // NO THREAD AT ALL.
-        //
-        // A modal JFileChooser opened on a raw thread, and so did every setEnabled, the icon preview
-        // and the repaint that followed it. Nothing in this handler is slow: it reads a preference,
-        // opens a chooser, and shows the chosen image. The thread bought nothing and cost correctness.
+        // NO THREAD AT ALL: nothing in this handler is slow (it reads a preference, opens a chooser and shows the
+        // image).
         String currentPath = null;
 
         if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
         {
-            // Through a URI, because that is what the value IS (validation pass).
-            //
-            // `getLocalFunctionImageURL` returns what `.toUri().toString()` produced twenty lines
-            // below, so `new File(String)` on it makes a path with the scheme still on the front,
-            // which never exists.  currentPath was therefore always null and the chooser never
-            // opened where the current icon lives - a silent no-op since the day it was written.
-            // The identical mistake was fixed in TrainControlUI's locomotive-icon chooser; this is
-            // its twin, one class over.
+            // Through a URI, because that is what the value IS: `getLocalFunctionImageURL` returns
+            // `.toUri().toString()`, so `new File(String)` on it makes a path with the scheme still on, which never
+            // exists (as in TrainControlUI's locomotive-icon chooser).
             File currentIcon = TrainControlUI.fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
 
             if (currentIcon != null && currentIcon.exists())
@@ -702,9 +659,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             // included since MT-466.
             rememberBeforeACopy();
 
-            // THE ICONS AS WELL AS THE TYPES (MT-466).  This wrote the types and set the flag, so a
-            // source locomotive whose F0 carried a custom icon copied everything about F0 except the
-            // icon - while the type change altered every other button's picture.
+            // THE ICONS AS WELL AS THE TYPES (MT-466).
             this.loc.copyCustomizationsFrom(copyFrom);
 
             // Kept though `copyCustomizationsFrom` copies the source's flag: a source that is not
