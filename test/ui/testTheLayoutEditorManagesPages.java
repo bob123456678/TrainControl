@@ -115,8 +115,6 @@ public class testTheLayoutEditorManagesPages
      * Add Blank Page, answered with a name, writes an empty page of that name, and the same window shows it.
      *
      * MUTATION: the add arrives on the page it left (`from.arriveOn(null)` in LayoutFileActions), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAddBlankPageShowsTheNewPageInTheSameWindow() throws Exception
@@ -155,8 +153,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the rename arrives on the page it left (`from.arriveOn(null)` in LayoutFileActions), which has gone,
      * and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testRenameShowsTheRenamedPageInTheSameWindow() throws Exception
@@ -202,8 +198,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the delete arrives on the deleted page (`from.arriveOn(going)`), which closes the window, and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDeleteShowsAnotherPageInTheSameWindow() throws Exception
@@ -245,8 +239,6 @@ public class testTheLayoutEditorManagesPages
      * editor still.
      *
      * MUTATION: the arrival always in the track editor (`arriveAt(to, false)` in `arriveOn`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testRenameInTheSetupEditorStaysInTheSetupEditor() throws Exception
@@ -284,8 +276,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor's item settles unsaved work before the handler runs (`settleUnsavedWork()` in
      * `pageMenuItem`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDeleteAnsweredNoLeavesTheWindowAsItWas() throws Exception
@@ -323,8 +313,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor that asked refused as an open editor (`from == null &&` dropped in LayoutFileActions), and
      * this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARenameToATakenNameIsRefusedAndLeavesTheWindowAsItWas() throws Exception
@@ -363,8 +351,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor's item settles unsaved work before the handler asks for the name (`settleUnsavedWork()` in
      * `pageMenuItem`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testACancelAtTheNameLeavesTheSameWindowOnTheSamePage() throws Exception
@@ -402,8 +388,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor's own run refusal dropped (`pageMenuItem`), so Add and Rename ask for a name first, and
      * this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheItemsRefuseWhileARouteRunsInOneDialog() throws Exception
@@ -463,8 +447,6 @@ public class testTheLayoutEditorManagesPages
      *
      * MUTATION: the editor does not select its page in the main window before the action (`pageMenuItem`), and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheItemsActOnTheEditedPageWhenTheMainWindowShowsAnother() throws Exception
@@ -526,8 +508,6 @@ public class testTheLayoutEditorManagesPages
      * turn into the page that the rename then moves, so the renamed page's file has it.
      *
      * MUTATION: Save's answer not written (`saveBeforeLeaving` returns true without saving), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testSaveThenRenameKeepsTheEditUnderTheNewName() throws Exception
@@ -572,8 +552,6 @@ public class testTheLayoutEditorManagesPages
      * question (answered Cancel, which leaves the window as it was).
      *
      * MUTATION: the name asked over the main window (`promptUserForLayout(this, ...)`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testEveryQuestionHangsOffTheEditor() throws Exception
