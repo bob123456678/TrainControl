@@ -27,7 +27,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 143;
+    private static final int GROUPS_ALLOWED = 142;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -53,7 +53,6 @@ public class testNoNewCopies
         "AutonomyCompanionStore:3 (136)",
         "AutonomyCompanionStore:3 (86)",
         "AutonomyCompanionStore:5 (185)",
-        "AutonomyEditorPanel:1,AutonomyViewerPanel:1 (72)",
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
         "AutonomyEditorPanel:3 (108)",

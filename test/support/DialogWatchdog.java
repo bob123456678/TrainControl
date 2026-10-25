@@ -34,7 +34,12 @@ public class DialogWatchdog implements ISuiteListener, IInvokedMethodListener
     private static Thread watcher;
 
     @Override
-    public synchronized void onStart(ISuite suite)
+    public void onStart(ISuite suite)
+    {
+    }
+
+    /** Started at the first test method, not the suite, so the first look at the windows comes after the test's own. */
+    private static synchronized void startWatching()
     {
         if (watcher != null) return;
 
@@ -94,6 +99,8 @@ public class DialogWatchdog implements ISuiteListener, IInvokedMethodListener
     public void beforeInvocation(IInvokedMethod method, ITestResult result)
     {
         lastProgress = System.currentTimeMillis();
+
+        if (method.isTestMethod()) startWatching();
     }
 
     @Override
