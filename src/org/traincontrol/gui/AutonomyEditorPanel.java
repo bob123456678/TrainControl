@@ -2596,18 +2596,29 @@ public class AutonomyEditorPanel extends JPanel
 
             if (name.isEmpty()) return null;
 
-            String refused = AutonomySession.whyNotAPointName(name);
-
-            if (refused == null && session.isPointNameTaken(name, tile))
-            {
-                refused = I18n.f("autosetup.ui.errorPointNameTaken", name);
-            }
+            String refused = whyNotNamed(tile, name);
 
             if (refused == null) return name;
 
             message = refused + "  " + prompt;
             typed = name;
         }
+    }
+
+    /**
+     * Why a typed name may not go on this square, as unusable or as another square's (FR-120), or null; the prompts
+     * that ask again on a refusal ask this.
+     */
+    private String whyNotNamed(TileKey tile, String name)
+    {
+        String refused = AutonomySession.whyNotAPointName(name);
+
+        if (refused == null && session.isPointNameTaken(name, tile))
+        {
+            refused = I18n.f("autosetup.ui.errorPointNameTaken", name.trim());
+        }
+
+        return refused;
     }
 
     private void setStation(TileKey tile, boolean on)
@@ -5964,16 +5975,16 @@ public class AutonomyEditorPanel extends JPanel
 
             if (onReveal != null) onReveal.accept(tile);
 
-            String name = askForName(I18n.f("autosetup.ui.promptNameEverything", i + 1,
-                unnamed.size()));
+            String question = I18n.f("autosetup.ui.promptNameEverything", i + 1, unnamed.size());
+            String name = askForName(question);
+            String refused;
 
-            // Asked again until the session takes the name.
-            while (name != null && !name.trim().isEmpty()
-                && AutonomySession.whyNotAPointName(name) != null)
+            // Asked again on a refusal; a name given earlier in this walk is already stored, so it counts as taken.
+            while (name != null && !name.trim().isEmpty() && (refused = whyNotNamed(tile, name)) != null)
             {
-                JOptionPane.showMessageDialog(owner(), wrapped(AutonomySession.whyNotAPointName(name)));
+                JOptionPane.showMessageDialog(owner(), wrapped(refused));
 
-                name = askForName(I18n.f("autosetup.ui.promptNameEverything", i + 1, unnamed.size()));
+                name = askForName(question);
             }
 
             // Cancel stops the walk; Skip skips.
