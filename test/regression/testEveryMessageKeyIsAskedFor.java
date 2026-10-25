@@ -105,7 +105,10 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.leftBehindOne",
         "autosetup.ui.leftBehindFew",
 
-        // The import's guessed facings, <key> + I18n.countForm the same way
+        // LocomotiveActions.deleteLoc's question and the import's guessed facings, <key> + I18n.countForm the same way;
+        // the bulk clears' counted forms are under the confirmClearAll and confirmAllowEveryPath builders above
+        "ui.confirmDeleteFromDatabaseWithRoutesOne",
+        "ui.confirmDeleteFromDatabaseWithRoutesFew",
         "autosetup.ui.facingsGuessedOne",
         "autosetup.ui.facingsGuessedFew",
 

@@ -605,7 +605,7 @@ final class LocomotiveActions
         }
 
         String question = drivenBy > 0
-            ? I18n.f("ui.confirmDeleteFromDatabaseWithRoutes", value, drivenBy)
+            ? I18n.f("ui.confirmDeleteFromDatabaseWithRoutes" + I18n.countForm(drivenBy), value, drivenBy)
             : I18n.f("ui.confirmDeleteFromDatabase", value);
 
         if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(

@@ -6291,7 +6291,7 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         if (JOptionPane.showOptionDialog(owner(),
-            bulkClearWarning("autolayout.ui.confirmAllowEveryPath", shut),
+            bulkClearQuestion("autolayout.ui.confirmAllowEveryPath", shut),
             I18n.f("autolayout.ui.menuAllowEveryPath", shut),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -6327,7 +6327,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // What Cancel does depends on the surface, as `clearLocomotivesWarning` chooses.
         if (JOptionPane.showOptionDialog(owner(),
-            bulkClearWarning("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
+            bulkClearQuestion("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
             I18n.f("autolayout.ui.menuClearAllTrackLengths", measured.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -6359,7 +6359,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // The track-length clear's two sentences.
         if (JOptionPane.showOptionDialog(owner(),
-            bulkClearWarning("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
+            bulkClearQuestion("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
             I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -6419,7 +6419,18 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String bulkClearWarning(String key, int count)
     {
-        return I18n.f(page == null ? key + "AtOnce" : key, count);
+        return I18n.f(onThisSurface(key), count);
+    }
+
+    /** The bulk clear's question, in the form its count takes: "1 square", not "1 squares". */
+    private String bulkClearQuestion(String key, int count)
+    {
+        return I18n.f(onThisSurface(key) + I18n.countForm(count), count);
+    }
+
+    private String onThisSurface(String key)
+    {
+        return page == null ? key + "AtOnce" : key;
     }
 
     /**
