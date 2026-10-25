@@ -17,31 +17,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Capture, tested the way the operator meets it: a real configuration, real autonomy, real trains.
  *
- * Adam, 2026-08-24: "Make sure you validate via REALISTIC tests for the timetable issue that still
- * persists." He had already reported it twice - "capture locomotive commands is capturing neither
- * manual locomotive commands nor full autonomy commands into the timetable", and then "still an issue
- * after testing - nothing gets captured" - against a build whose `testTimetableCapture` was green.
+ * Adam: "Make sure you validate via REALISTIC tests for the timetable issue that still persists."  The earlier
+ * `testTimetableCapture` built its own two-point Layout, set the flag on it, handed `executePath` a path it had
+ * assembled, and could only see the model.  The capture worked throughout; what had stopped was the REDRAW, because
+ * the registration that repainted the timetable was deleted with the GraphStream window.
  *
- * It was green because of what it did. It built its own two-point Layout with `Layout.fromJSON`, set
- * the flag on that object, handed `executePath` a path it had assembled itself, and asked whether an
- * entry appeared. Every one of those is a step the application does differently, and the one that
- * mattered is that a test can only see the model. The capture was working the whole time. What had
- * stopped was the REDRAW: the timetable is a description of path starts and ends, it repaints when the
- * layout says one has happened, and the registration that said so was deleted with the GraphStream
- * window in `d8db4879`. Entries were landing in a table nobody was told to redraw.
- *
- * So this test does the whole thing:
+ * So this does the whole thing:
  *
  * - a real configuration, through `model.parseAuto`, which is what loading one does
  * - capture switched on where the window switches it, on `model.getAutoLayout()`
  * - `AutonomyRefreshCallback.attach`, which is the same call the window makes
  * - `runLocomotives()`, so autonomy picks its own paths rather than being handed one
  *
- * and then asks the two questions that were separately false: did anything get captured, and was
- * anybody told.
- *
- * The old test is kept. It is a good unit test of the capture flag and it is faster than this; what it
- * cannot do is stand in for this one.
+ * and then asks the two questions that were separately false: did anything get captured, and was anybody told.  The
+ * old test is kept as a faster unit test of the flag.
  */
 public class testTimetableCaptureThroughARealRun
 {
@@ -61,21 +50,10 @@ public class testTimetableCaptureThroughARealRun
     /**
      * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).
      *
-     * Far above what a dispatch takes - it is a path search and a speed command - and deliberately not
-     * derived from RUN_MS, which is how long a run is watched for rather than how long it takes to
-     * start. The two were the same number, and the day a battery ran while the application was open
-     * the wait ran out before the railway had moved.
-     *
-     * RAISED AGAIN on 2026-08-30, to 480 seconds, after it ran out twice in two consecutive batteries
-     * on a machine that was also being used - and passed on its own both times, immediately, in the
-     * quiet between them. A test that only fails when the machine is busy reads as a regression every
-     * time it does, which costs an investigation to arrive back at "the machine was busy".
-     *
-     * A higher ceiling is close to free: the wait ends the moment a locomotive moves, so the extra
-     * time is only ever spent on a run that is failing anyway. What it cannot do is tell a slow
-     * machine from a railway that will never move, and no wall-clock number can - that would want
-     * waiting on autonomy's own progress rather than on the clock, which is a bigger change than this
-     * flake justifies today.
+     * Far above what a dispatch takes, and deliberately not derived from RUN_MS, which is how long a run is watched
+     * for.  Raised to 480 seconds after it ran out twice in consecutive batteries on a busy machine and passed alone.
+     * The wait ends the moment a locomotive moves, so a higher ceiling is only ever spent on a run that is failing
+     * anyway; no wall-clock number can tell a slow machine from a railway that will never move.
      */
     private static final long STARTUP_CEILING_MS = 480000;
 
@@ -112,21 +90,16 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * With capture on, a real autonomy run fills the timetable AND says so.
-     *
-     * Two assertions because two different things were broken and only one of them was ever visible.
-     * The capture half has worked throughout; asserting it here is what makes the redraw half
-     * meaningful, because "the table is empty" has two possible causes and this tells them apart.
+     * With capture on, a real autonomy run fills the timetable AND says so.  Two assertions because two things were
+     * broken and only one was visible: the capture half works, which tells "the table is empty" apart from no redraw.
      */
     @Test
     public void testARealRunCapturesAndAnnouncesIt() throws Exception
     {
         Layout layout = loadedConfiguration();
 
-        // Set rather than assumed, in BOTH directions, because parseAuto preserves the flag across a
-        // rebuild - so whichever of these two tests TestNG happens to run first decides what the other
-        // one starts with, and within-class order is arbitrary reflection order.  A test that comes
-        // and goes between runs of unchanged code is worse than no test.
+        // Set in BOTH directions: parseAuto preserves the flag across a rebuild, so whichever test TestNG runs first
+        // decides what the other starts with.
         layout.setTimetableCapture(false);
 
         assertFalse(layout.isTimetableCapture(), "capture did not switch off");
@@ -179,21 +152,16 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * And with capture off, a run of the same length captures nothing.
-     *
-     * The mutation check for the test above. Without it, a capture that ignored the flag entirely -
-     * or a test fixture that somehow arrived with entries already in it - would pass.
+     * With capture off, a run of the same length captures nothing: the mutation check for the test above, which a
+     * capture ignoring the flag, or a fixture arriving with entries, would pass.
      */
     @Test
     public void testARealRunCapturesNothingWithCaptureOff() throws Exception
     {
         Layout layout = loadedConfiguration();
 
-        // Set explicitly rather than assumed off.  parseAuto PRESERVES the flag across a rebuild -
-        // deliberately, because the operator toggling it and then doing something ordinary that
-        // rebuilds the layout must not silently switch it back off - so after the test above this
-        // fixture arrives with capture ON.  A test that assumed the default here would fail for a
-        // reason that is correct behavior, and the obvious repair is to weaken it.
+        // Set explicitly: parseAuto PRESERVES the flag across a rebuild (an ordinary rebuild must not switch it off),
+        // so after the test above this fixture arrives with capture ON.
         layout.setTimetableCapture(false);
 
         assertFalse(layout.isTimetableCapture(), "capture did not switch off");
@@ -201,19 +169,9 @@ public class testTimetableCaptureThroughARealRun
         model.go();
         layout.runLocomotives();
 
-        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114).
-        //
-        // This polled for half the run length and then asserted that something had moved. On a loaded
-        // machine - a full battery, the application open, several JVMs at once - autonomy does not
-        // always dispatch anything in that window, and the test failed on its own precondition: "no
-        // locomotive moved, so nothing was declined and nothing is proved". That is an honest failure
-        // of a test that could not reach its subject, but it fails a whole battery to say so, and it
-        // made the same suite say different things depending on what else the machine was doing.
-        //
-        // So the wait ends when the railway does something rather than when the clock does, with a
-        // ceiling far above what a dispatch takes even on a busy machine. Nothing is skipped: a
-        // minute of nothing moving is a real fault worth failing for, and a skip that fires routinely
-        // is a test nobody notices has stopped running.
+        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114): on a loaded machine autonomy does not
+        // always dispatch within a fixed window.  The ceiling is far above a dispatch; nothing is skipped, since a
+        // minute of nothing moving is a real fault and a skip that fires routinely goes unnoticed.
         boolean moved = false;
 
         long deadline = System.currentTimeMillis() + STARTUP_CEILING_MS;
@@ -227,33 +185,16 @@ public class testTimetableCaptureThroughARealRun
         // And then let it actually run for a while, which is the part capture would have recorded.
         if (moved) Thread.sleep(RUN_MS / 2);
 
-        // ASKED BEFORE THE STOP, and that is the whole of what makes it an answer.
-        //
-        // `stopLocomotives` sets `running` false, `isAutoRunning()` IS that field, and
-        // `whyNothingMoved` reports it - so taken afterwards the line read "Auto running: false"
-        // whatever had happened, which cannot tell "autonomy never started" from "we have just
-        // stopped it".  Several of `explainCannotStart`'s rules are fenced on the same flag and were
-        // answering about the stopped railway too.  Three failures inside a battery were diagnosed
-        // with that, which is to say they were not.
-        //
-        // Only on the failing path, so the passing one still costs nothing.
+        // ASKED BEFORE THE STOP: `isAutoRunning()` is the field `stopLocomotives` clears, so read afterwards it says
+        // "Auto running: false" whatever happened, and several of `explainCannotStart`'s rules are fenced on it too.
+        // Only on the failing path.
         String why = moved ? "" : whyNothingMoved(layout, "with autonomy still running");
 
         layout.stopLocomotives();
 
-        // AND AGAIN WITH IT STOPPED, because the running answer is a SUBSTITUTION (MT-374).
-        //
-        // `explainDestinations` replaces the real reason with "Blocked by a train or a route in
-        // progress" whenever `isAutoRunning()`, and says why in its own comment: the reason it would
-        // otherwise quote comes from a static that every running locomotive's thread writes, so a
-        // message read while trains move can belong to a different train's candidate route.  The
-        // DECISION is sound and only the wording is untrustworthy - which is right for an operator
-        // and useless for a diagnosis.  The battery of 2026-09-13 failed here with all three
-        // destinations "blocked" on a railway holding ONE train, and named nothing to look at.
-        //
-        // So both are printed.  The comment above still stands - several of `explainCannotStart`'s
-        // rules are fenced on `isAutoRunning` and answer about the stopped railway once it stops - and
-        // that is why this is a SECOND reading rather than a replacement for the first.
+        // AND AGAIN WITH IT STOPPED, because the running answer is a SUBSTITUTION (MT-374): `explainDestinations`
+        // replaces the real reason with "Blocked by a train or a route in progress" whenever `isAutoRunning()`, since
+        // the reason it would quote comes from a static every running thread writes.  Both readings are printed.
         if (!moved) why = why + whyNothingMoved(layout, "after being stopped, so the real refusal is"
             + " no longer substituted - but the rules fenced on isAutoRunning now answer about a"
             + " stopped railway");
@@ -269,20 +210,12 @@ public class testTimetableCaptureThroughARealRun
     /**
      * What the railway says about each train that did not start.
      *
-     * This test has failed three times inside a full battery and never once on its own, always on the
-     * same precondition, and every time the message said only that nothing moved - which is a fact
-     * about the test rather than about the railway, and left nothing to work from but guesses.
-     *
-     * `explainCannotStart` is the answer the application itself gives an operator who presses Start
-     * and sees nothing happen. Asking it here costs nothing on the passing path, because it is only
-     * reached when the assertion is already lost.
-     *
-     * Deliberately not asserted ON. What a train says about itself is a diagnosis, not a
-     * specification, and a test that pinned those strings would fail whenever the wording improved.
+     * `explainCannotStart` is the answer the application gives an operator who presses Start and sees nothing happen;
+     * it is only reached when the assertion is already lost.  Deliberately not asserted ON: a diagnosis, not a
+     * specification.
      *
      * @param layout the railway that would not move
-     * @param when which reading this is - running or stopped - because the two do not agree and a
-     *        reader has to know which one they are looking at (MT-374)
+     * @param when which reading this is, running or stopped, because the two do not agree (MT-374)
      * @return the reasons, ready to append to a failure
      */
     private String whyNothingMoved(Layout layout, String when)
@@ -299,11 +232,8 @@ public class testTimetableCaptureThroughARealRun
                 why.append("\n    ").append(loc.getName()).append(": ")
                     .append(reason == null ? "free to be given a route" : reason);
 
-                // AND WHERE IT COULD ACTUALLY GO, which is the question the line above does not ask.
-                //
-                // `explainCannotStart` asks four things about the TRAIN - paused, on the graph, on a
-                // destination, active - so a railway where every train is blocked by the others reads
-                // as every train being free. Two batteries were diagnosed with that and were not.
+                // AND WHERE IT COULD ACTUALLY GO: `explainCannotStart` asks four things about the TRAIN, so a railway
+                // where every train is blocked by the others reads as every train being free.
                 if (reason == null)
                 {
                     java.util.Map<String, String> destinations = layout.explainDestinations(loc);
@@ -324,17 +254,9 @@ public class testTimetableCaptureThroughARealRun
 
             why.append("\n  Auto running: ").append(layout.isAutoRunning());
 
-            // AND WHETHER THIS IS THE LAYOUT THAT WOULD DISPATCH (MT-374).
-            //
-            // `loadedConfiguration` says why this can be false: "Layout's version counter is static
-            // and every construction retires the earlier instances - a retired Layout refuses to
-            // dispatch, SILENTLY".  A test watching a retired instance sees a railway that is running,
-            // has trains, has open destinations, and never moves - which is exactly the failure this
-            // method is called for, and nothing printed above can tell it from a busy machine.
-            //
-            // Measured with a probe on 2026-09-12: on this fixture, stopped, all destinations are
-            // open and a dispatch happens within three seconds.  So "nothing moved in 480 seconds" is
-            // not the railway refusing; the question is which object was asked.
+            // AND WHETHER THIS IS THE LAYOUT THAT WOULD DISPATCH (MT-374): a retired Layout refuses to dispatch
+            // SILENTLY (`loadedConfiguration`), and a test watching one sees a running railway with open destinations
+            // that never moves, which nothing printed above can tell from a busy machine.
             why.append("\n  This layout is the one the model holds: ")
                 .append(model != null && model.getAutoLayout() == layout);
 
@@ -353,31 +275,17 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * A fresh configuration in the model, as loading one does.
-     *
-     * Reloaded per test rather than shared. Layout's version counter is static and every construction
-     * retires the earlier instances - a retired Layout refuses to dispatch, silently - so a test that
-     * ran second against a shared fixture would see no trains move and blame the feature.
-     */
-    /**
-     * How long to wait for the railway to go quiet before replacing it (OB-199).
-     *
-     * Generous, because it is only ever waited out when something is wrong: a graceful stop on this
-     * fixture takes a second or two, and the ceiling is here so a hung run says so rather than hanging.
+     * How long to wait for the railway to go quiet before replacing it (OB-199); only waited out when something is
+     * wrong, so a hung run says so rather than hanging.
      */
     private static final long QUIET_MS = 60_000;
 
     /**
      * Waits for the layout in force to stop driving trains, before a new one replaces it (OB-199).
      *
-     * `stopLocomotives` stops trains **gracefully** - at their next station - so it returns long before
-     * the railway is quiet.  The locomotives belong to the MODEL and are shared, so a second
-     * configuration parsed on top of a still-running one is asking a fleet somebody else is driving:
-     * nothing it wants can be dispatched, `getActiveLocomotives()` on the new layout stays empty, and
-     * the test that waits for a train to move waits until its ceiling.
-     *
-     * This class has failed four times inside a full battery and never once on its own, which is the
-     * shape a loaded machine leaving the first run unfinished would produce.
+     * `stopLocomotives` stops trains gracefully, at their next station, so it returns long before the railway is quiet.
+     * The locomotives belong to the MODEL, so a second configuration parsed over a still-running one asks a fleet
+     * somebody else is driving: nothing can be dispatched and the test waits until its ceiling.
      *
      * @throws Exception if interrupted
      */
@@ -431,27 +339,12 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * Puts every sensor back to clear, which is the other half of starting from a known railway.
+     * Puts every sensor back to clear, the other half of starting from a known railway (MT-374).
      *
-     * **This is what made the class fail four batteries** (MT-374).  `emptyTheRailway` puts the trains
-     * back and nothing put the SENSORS back, so a feedback left occupied by the run in the test before
-     * this one stayed occupied - and a destination whose approach expects it clear is then shut for
-     * ever.  Measured on 2026-09-13, once the diagnostic could say so:
-     *
-     *     Station 2 = Expects feedback 5 to be clear
-     *     Station 3 = Expects feedback 5 to be clear
-     *     StationArrival = Expects feedback 5 to be clear
-     *
-     * One train on an empty railway, every destination shut, and 480 seconds of waiting to say so.
-     *
-     * **And it is load-dependent for a reason rather than by luck**, which is what the entry could not
-     * work out: whether the first run leaves a sensor set depends on where its trains had got to when
-     * it was stopped, and that depends on how fast the machine was going.  On a quiet machine the run
-     * finishes its legs and the sensors end clear; on a busy one it is cut off mid-leg.
-     *
-     * Every sensor the RAILWAY knows about, rather than every sensor in the model: this fixture shares
-     * a locomotive database with the rest of the suite, and clearing sensors that belong to somebody
-     * else's fixture would be the same fault pointing the other way.
+     * `emptyTheRailway` puts the trains back but nothing put the SENSORS back, so a feedback left occupied by the
+     * previous run stayed occupied and a destination whose approach expects it clear was shut for ever ("Station 2 =
+     * Expects feedback 5 to be clear").  It is load-dependent because a busy machine cuts the first run off mid-leg.
+     * Only sensors the RAILWAY knows about, since clearing others would be the same fault the other way.
      *
      * @param layout the freshly parsed railway
      */
@@ -468,29 +361,14 @@ public class testTimetableCaptureThroughARealRun
     /**
      * Takes every train off, so this test starts from a railway nobody else has arranged.
      *
-     * Adam, 2026-09-11: *"let's get it to start with an empty layout onto which you place locomotives,
-     * with other locomotives removed."*
+     * Adam: "let's get it to start with an empty layout onto which you place locomotives, with other locomotives
+     * removed."  `autonomy_sanity.json` places three trains on a railway with four destinations and one single-track
+     * corridor, so it ran at capacity minus one with one train able to move at a time: fine for autonomy's
+     * contention handling, the arrangement least likely to produce a moving train on a loaded machine.  That made this
+     * class fail batteries with "no locomotive moved in 480 seconds", and `explainCannotStart` could not say why.
      *
-     * **What the fixture was.** `autonomy_sanity.json` places three trains, at Station 1, 2 and 3. The
-     * railway has four destinations - those three and StationArrival - and every journey runs the same
-     * single-track corridor:
-     *
-     * `Station 1/2/3 -> Departure -> Main Track -> StationArrival -> Station 1/2/3`
-     *
-     * So it ran permanently at capacity minus one: exactly one free platform, one shared corridor, and
-     * therefore one train able to move at a time and only into the slot the last one left. That is a
-     * fine thing to test autonomy's contention handling with, and a bad thing to rest a test about
-     * CAPTURE on - the run this class needs is one where a train moves, and three trains sharing one
-     * corridor is the arrangement least likely to produce that on a loaded machine.
-     *
-     * It is what made this class fail two batteries with *"no locomotive moved in 480 seconds"* while
-     * passing on its own, and the diagnostic could not tell: `explainCannotStart` asks four questions
-     * about a train - paused, on the graph, on a destination, active - and none of them is "is there
-     * anywhere it can go right now", so three trains blocking each other read as three trains "free to
-     * be given a route".
-     *
-     * Through `moveLocomotive(null, ..., true)`, which is the door the diagram's Cut uses, rather than
-     * by reaching into the Points - so what this arranges is a state the application can also be in.
+     * Through `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses, so the state is one the application
+     * can also be in.
      *
      * @param layout the freshly parsed railway
      */
@@ -511,13 +389,8 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * And puts back exactly the train this test drives.
-     *
-     * **One, deliberately.** What this class asserts is that a real run fills the timetable and says
-     * so; a second train adds nothing to that and halves the free platforms on a railway whose corridor
-     * is single-track. The realism that matters here is the one the class javadoc names - a real
-     * configuration, real autonomy picking its own paths, a real train moving - and none of it is about
-     * how many trains there are.
+     * And puts back exactly the train this test drives.  One, deliberately: a second adds nothing to what is asserted
+     * and halves the free platforms on a single-track corridor.
      *
      * @param layout the emptied railway
      */
