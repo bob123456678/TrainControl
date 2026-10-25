@@ -32805,3 +32805,43 @@ body:
 tail:
 | ---
 |
+
+[test MT-832]
+ordinal: 831
+anchor: mt-832
+date: 2026-10-25
+title: Shorter messages and tooltips, and long lists in popups scroll
+disposition: needs test
+from: hands-on testing
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-832"></a>
+| ### MT-832 - 2026-10-25 - Shorter messages and tooltips, and long lists in popups scroll
+|
+| **Disposition:** needs test
+| **From:** hands-on testing
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. `Routes` > `Export`.  In the saved file, set `"auto": true` on more than 10 routes that have a sensor, then `Routes` > `Import` that file.
+| 2. Answer No.  Then `Autonomy` > `Import...` an older `autonomy.json` (for example `test/autonomy_formats/autonomy-2.7.4c.json`) under a new name.
+| 3. Point at the toolbar's Show Page Numbers item, then in Preferences at the Atomic Routes box.
+| 4. With autonomy running trains, close TrainControl, and answer No.
+| 5. Look through a few popups and tooltips you use often, in English and in one other language.
+|
+| **Expected**
+|
+| - Step 1: the question is one sentence with the number of routes ("Automatic firing was on for N of the routes in this file..."), and the route names are in a scrolling Details box underneath.  The popup fits on the screen.
+| - Step 2: the report gives its counts on top, and what it could not do is in a scrolling Details box.  The popup stays narrow.
+| - Step 3: each tooltip is one short line.
+| - Step 4: the warning is two short sentences, and nothing closes after No.
+| - Step 5: messages say what happened and what to do, without repeating themselves, and none is cut off.
+|
+| *What this is:* Adam: "shorten error messages and tooltips across the app to be more concise?  I've seen some massive popups in tests".  About 100 messages and tooltips were rewritten to the approved caps in all eight languages, long lists moved into scrolling Details boxes, and a test now holds messages to their caps.
+|
+tail:
+| ---
+|
