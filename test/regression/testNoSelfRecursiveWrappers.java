@@ -134,6 +134,8 @@ public class testNoSelfRecursiveWrappers
         { "RunGates", "src/org/traincontrol/gui/RunGates.java", "RunGates", WINDOW, "TrainControlUI", "ui." },
         { "returnHomeController", "src/org/traincontrol/gui/ReturnHomeController.java", "ReturnHomeController", WINDOW,
             "TrainControlUI", "ui." },
+        { "runningLayoutSync", "src/org/traincontrol/gui/RunningLayoutSync.java", "RunningLayoutSync", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**

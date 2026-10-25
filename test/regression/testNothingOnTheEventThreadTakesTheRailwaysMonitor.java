@@ -270,19 +270,19 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         ALLOWED.put("TrainControlUI.java#locomotiveGestureOnDiagram",
             "ON THE EVENT THREAD (D3-C4): a paste or a clear on the diagram, one gesture at a time");
 
-        ALLOWED.put("TrainControlUI.java#putTheTrainsBack",
+        ALLOWED.put("RunningLayoutSync.java#putTheTrainsBack",
             "ON THE EVENT THREAD: a setup rebuild puts every placement back into the layout it has just"
             + " built, and that layout is not the one anything else holds yet");
 
-        ALLOWED.put("TrainControlUI.java#noteTheRailwaysSettingsAsBuilt",
+        ALLOWED.put("RunningLayoutSync.java#noteTheRailwaysSettingsAsBuilt",
             "ON THE EVENT THREAD: reading the railway just built, at the end of its load, before anything runs on it"
             + " (RSA20-B1)");
 
-        ALLOWED.put("TrainControlUI.java#rebuildRunningLayoutFromSetup",
+        ALLOWED.put("RunningLayoutSync.java#rebuildRunningLayoutFromSetup",
             "ON THE EVENT THREAD: reading the railway's settings at rest, before the rebuild a setup gesture asked for -"
             + " refused while autonomy is busy, as the rebuild is (RSA20-B1)");
 
-        ALLOWED.put("TrainControlUI.java#recordTheTrainsNotPutBack",
+        ALLOWED.put("RunningLayoutSync.java#recordTheTrainsNotPutBack",
             "ON THE EVENT THREAD: the put-back's own step (RSA17-A1), over the layout the rebuild has just built and"
             + " nothing else holds yet, as putTheTrainsBack");
 
@@ -292,7 +292,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         ALLOWED.put("TrainControlUI.java#saveState",
             "ON THE EVENT THREAD: writing the session out, at shutdown and on an explicit save");
 
-        ALLOWED.put("TrainControlUI.java#captureRunningLayout",
+        ALLOWED.put("RunningLayoutSync.java#captureRunningLayout",
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
     }
 

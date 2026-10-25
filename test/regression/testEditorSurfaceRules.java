@@ -276,6 +276,9 @@ public class testEditorSurfaceRules
                 // place, record the facing) is written once, with it.  It redraws through its
                 // callers, both of which repaint immediately after calling it.
                 "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
+                // RunningLayoutSync records the facing of a train the rebuild could not put back
+                // (`recordTheTrainsNotPutBack`), and the put-back tells the diagram after.
+                "RunningLayoutSync.java",
                 // SessionImport is the legacy import's facings (FR-136), written behind
                 // AutonomyViewerPanel.importLegacyGraph, which reloads the railway after.
                 "SessionImport.java",
@@ -569,8 +572,10 @@ public class testEditorSurfaceRules
     @Test
     public void testTheRunningLayoutIsRebuiltFromOnePlace() throws Exception
     {
-        // Over the whole program's code (FR-136), so a copy in another file is counted too
-        int found = SourceOf.occurrences("load(activeDiagramConfiguration, false, false)");
+        // Over the whole program's code (FR-136), so a copy in another file is counted too: as the window spells it,
+        // and as RunningLayoutSync, which holds the rebuild, does
+        int found = SourceOf.occurrences("load(activeDiagramConfiguration, false, false)")
+            + SourceOf.occurrences("load(this.ui.getActiveDiagramConfiguration(), false, false)");
 
         assertEquals(found, 1,
             "the rebuild-from-setup load appears " + found + " times. It was extracted into "
@@ -1564,7 +1569,7 @@ public class testEditorSurfaceRules
     @Test
     public void testARebuildLeavesTheTrainsWhereTheyAre() throws Exception
     {
-        String rebuild = codeOf("public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,");
+        String rebuild = codeOf("    void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,");
 
         int read = rebuild.indexOf("whereTheTrainsAre()");
         int loaded = rebuild.indexOf("getAutonomyViewerPanel().load(");

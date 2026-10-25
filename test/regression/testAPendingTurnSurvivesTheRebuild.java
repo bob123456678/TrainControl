@@ -48,7 +48,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * rebuild really happened; without it this class would go green the day the guard changed.
  *
  * MUTATION: take the `takeThePendingTurns()` / `putThePendingTurnsBack(...)` pair out of
- * `TrainControlUI.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
+ * `RunningLayoutSync.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
  *
  * @author Adam
  */
