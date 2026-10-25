@@ -284,7 +284,7 @@ public class testACompulsoryTurnIsNotAQuestion
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squares =
             session.tilesCoveredByStandingTrains(built);
 
-        // MEASURED: on the snapshot three edges are covered by the standing trains (2026-10-19, FR-136 1b, H0004), so the join
+        // MEASURED: on the snapshot three edges are covered by the standing trains (FR-136 1b, H0004), so the join
         // below runs for real.  The empty branch stays for a layout with no recorded lengths, where nothing can be covered.
         if (edges.isEmpty())
         {
@@ -590,9 +590,8 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * The end of a line marked "Trains May Change Direction Here", as the build makes it - one copy, no block - turns a
-     * train sent there by hand, and the operator is not asked.  Round 82 left the copy with no block out, as
-     * a Point of a hand-written railway, and the build gives a single copy no block: so the operator was asked, "keep"
-     * was honored, and the train stood facing the end of the line with its next journey routed back.
+     * train sent there by hand, and the operator is not asked; otherwise a "keep" answer would leave the train facing
+     * the end of the line with its next journey routed back.
      *
      * MUTATION: leave a copy with no block out of `Layout.noCopyFacesOnFrom` again, and this fails.
      *
@@ -642,7 +641,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A timetable entry recorded with "keep" plays back turned where the railway turns every train: the end of
-     * a line marked "may" - recorded before round 83 - or a station marked "must" after the recording.  The compulsory
+     * a line marked "may" or a station marked "must" after the recording.  The compulsory
      * turn is asked before the recorded answer.
      *
      * MUTATION: answer the recorded "keep" before the compulsory turn, and this fails.
@@ -906,11 +905,10 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A train a plan turns - autonomy, Return Home, staging, a timetable recorded from autonomy - stays on the turning
-     * copy it arrived on, where the plan's next leg starts.  Round 83 stood every turned train at once on the
-     * copy the window's idle drain would choose, a plain copy of the other approach where there is one; Return Home's
-     * planner models the train on the move's end and plans its next move from there, so that move was refused
-     * at its start check three times and the run stopped half-staged.  The re-stand at the arrival is for the turns an
-     * operator answered, whose next journey nobody has planned.
+     * copy it arrived on, where the plan's next leg starts: Return Home's planner models the train on the move's end
+     * and plans its next move from there, and standing it on the copy the window's idle drain would choose would refuse
+     * that move at its start check.  The re-stand at the arrival is for the turns an operator answered, whose next
+     * journey nobody has planned.
      *
      * MUTATION: in `AutonomySession`'s re-stand onto the copy a train faces, take out the return
      * (`if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;`) and this
@@ -976,8 +974,8 @@ public class testACompulsoryTurnIsNotAQuestion
     }
 
     /**
-     * A turn recorded by hand is not played back where the station no longer lets trains turn (Adam,
-     * 2026-10-07: *"The path should organically fail in the direction no longer allowed."*).  The recorded answer is
+     * A turn recorded by hand is not played back where the station no longer lets trains turn (Adam:
+     * *"The path should organically fail in the direction no longer allowed."*).  The recorded answer is
      * honored where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
      * keeps its direction, so an entry that needs it the other way fails as any journey would.  Playback turned it
      * where no door could any more.
@@ -1328,9 +1326,9 @@ public class testACompulsoryTurnIsNotAQuestion
      * A timetable entry recorded from a may-turn station's turning copy leaves a train that came in from the other side
      * where it stands, with its tail where it lies.  The plain copy it stands on faces the turning copy's way,
      * so the entry counts it as at its start - but a turning copy has rails on one side only, the side it is
-     * arrived at from, and round 86 stood the train on it with its own tail side: the railway then claimed none of the
-     * track the train lay over, and a second train was routed onto it, while the entry waited for its way and after the
-     * run gave up.  The entry runs from the copy the train stands on now.
+     * arrived at from, so standing the train on it with its own tail side leaves the railway claiming none of the
+     * track the train lay over, a second train is routed onto it, and the entry waits for its way until the run gives
+     * up.  The entry runs from the copy the train stands on now.
      *
      * MUTATION: stand the train on the entry's start copy again, and this fails.
      *
