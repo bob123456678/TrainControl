@@ -54,11 +54,11 @@ public class testDiagramExport
             throw new SkipException("drawing tiles needs a display");
         }
 
-        // BEFORE THE MODEL, not just before the window (OB-111, corrected 2026-08-28).
+        // BEFORE THE MODEL, not just before the window (OB-111).
         //
         // MarklinControlStation.init reads the layout preference too - it is what loads the pages -
         // so opening the sandbox after it left the model on the operator's real railway while the
-        // window looked at the copy. The comment that used to stand here named only the window.
+        // window looked at the copy.
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulatedInDebug();
@@ -352,7 +352,7 @@ public class testDiagramExport
      * for the reason `TrainControlUI` gives beside the other retired keys - and a stored `false` there
      * is exactly what would come back to haunt somebody who had once turned the numbers off.
      *
-     * So the test writes it, and writes the value that used to hide the numbers.  That is the half of
+     * So the test writes it, and writes the value that hid the numbers.  That is the half of
      * this fix that a test of the grid alone would be silent about.
      */
     private static final String RETIRED_COORDINATES_PREF = "ShowCoordinates";
