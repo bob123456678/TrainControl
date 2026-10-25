@@ -27,6 +27,8 @@
 
 set -u
 
+. "$(dirname "$0")/wait-for-slot.sh"
+
 S="${TC_SCRATCH:-}"
 
 if [ -z "$S" ] || [ ! -f "$S/cp.txt" ]

@@ -32,9 +32,56 @@ Not:
     // OB-271 (2026-09-14): Adam reported that a train standing across the switch was sent the other way.  Round 112
     // found the guard only checked one road; RSA61-B2 widened it.  Before that the code used to ...
 
+## How to build here
+
+Drawn from what went wrong here, and from a study of 80 builders' transcripts (2026-10-24).
+
+**Design**
+- **One rule, one place.**  Before writing a check, find the method that already answers it (grep the message key or
+  the rule's name) and call it.  A rule spelled twice is this project's most repeated defect; a guard and the control
+  it grays out ask the same method.
+- **Fix the rule, then its siblings.**  When you change a rule, grep its other callers and copies, and change or test
+  them in the same commit.
+- **Refuse little.**  A warning or an error the user can act on beats refusing the edit.  Every guard needs a way
+  past, and every error names its remedy.
+- **Do what was asked.**  No widening, renaming or tidying beyond the brief.  A rule's second copy, code from before
+  v2.7.0, and public methods on the API classes go only on Adam's word: report them instead.
+- **Decide from the store the event writes** (the setup, or the running layout).  A new field needs its place in the
+  copy constructor, the snapshot and undo.
+- **US English** everywhere: gray, canceled, behavior, color, -ize.
+
+**Tests**
+- Red before green: show each new claim failing without the change.  A claim that never failed proves nothing.
+- Test what the user does and what comes of it, through the real door, not the record the code just wrote.
+- One `MUTATION:` note per claim.  Run mutations only when the brief asks or the claim is new.
+- A test that copies Adam's settings sets what it needs; it never toggles them.
+- Read the "Total tests run" line: a class that skipped everything is not green, and a failed compile leaves old
+  reports behind.
+- Known red: `core.testMockCentralStation` (4 failures, the baseline).  A record class red over a tracker count is the
+  orchestrator's: report it, don't chase it.
+
+**Working efficiently**
+- Run tests as ONE background command and wait for its notification.  The runners wait for a free test slot
+  themselves (`docs/tools/wait-for-slot.sh`): never write a retry loop, never `sleep`, never poll the output file, and
+  don't read the runners' source.
+- Run only the classes your change can affect, plus the bookkeeping classes it touches: a new test class,
+  `testEveryTestIsInTheBattery` (and `testSwitchingToACentralStationLayout` if it builds a window); a bundle,
+  `testMessageBundles` and `testEveryMessageKeyIsAskedFor`; comments or javadoc, `testCommentsStayLean` and
+  `testJavadocsAreAttached`; a `synchronized` member, `testNothingOnTheEventThreadTakesTheRailwaysMonitor`.  The full
+  battery is the orchestrator's.
+- Grep first, then read the range you need (about 120 lines); never read a giant file whole.  Pipe long output
+  through `head`.
+- Edit with the Edit tool.  Where a script is needed, write it with the Write tool (heredocs eat backslashes); never
+  `sed -i` a Java file.  Git normalizes line endings on commit (`core.autocrlf`) and Edit keeps them: don't check them
+  by hand.
+- A worktree you were given is clean and on the right commit: start work, don't re-check it.
+- Answer your own questions from the repository first: this file, the brief, `docs/refactor-3.0.3.md`,
+  `docs/reference/behaviour.md`, `triagedb.py show <id>`.  Ask only for a decision that is Adam's.
+- Report what changed, the evidence (red, green, the Total lines), and what is left.  No screenshots unless asked.
+
 ## Working here
 
-- Java files are CRLF; keep them CRLF.  Message bundles (`src/org/traincontrol/resources/messages*.properties`, eight
+- Java files check out CRLF.  Message bundles (`src/org/traincontrol/resources/messages*.properties`, eight
   languages) are ASCII only: every other character as `\uXXXX`.
 - New UI is hand-written Swing.  Never edit the NetBeans `//GEN-BEGIN`..`//GEN-END` regions or the variables block.
 - Never touch `LocDB.data`, `UIState.data`, Adam's preferences, or anything under `cs2_sample_layout/` (his live
@@ -42,8 +89,9 @@ Not:
 - Stage files by name (never `git add -A`); never `git stash` (the stash is shared by every worktree).  Work on `dev`
   or a branch of it; moving or pushing `master` is a release and needs Adam.
 - Tests: red before green.  Run classes with `TC_SCRATCH=<scratch dir> bash docs/tools/one.sh pkg.ClassA pkg.ClassB`
-  (`label:pkg.Class.m1,pkg.Class.m2` for single methods).  "nothing was run" means the machine is busy: retry later.
-  A whole run is `TC_LANES=auto TC_SCRATCH=<dir> bash docs/tools/battery.sh`.
+  (`label:pkg.Class.m1,pkg.Class.m2` for single methods); several classes at once in lanes with
+  `TC_LANES=auto TC_CLASSES=<file of class names> TC_SCRATCH=<dir> bash docs/tools/battery.sh`, the whole suite
+  without `TC_CLASSES`.  Both wait for a free slot (`TC_WAIT=0` refuses at once instead).
 - A new test class goes into `build.xml`; read `test/README.md` for the census and "Used by" bookkeeping.
 - The tracker (MT-###, OB-###, FR-###, findings) is `docs/manual-tests/triage.db`, read and written only through
   `py -3 docs/manual-tests/triagedb.py`.  Manual-test entries are append-only.
