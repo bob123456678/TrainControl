@@ -106,8 +106,6 @@ public class testFiftyLocomotiveMappingPages
      *
      * MUTATION: delete the `canAddLocMappingPage()` guard from `addLocMappingPage` and the second
      * claim fails while the first still passes, which is the whole reason both are here.
-     *
-     * @throws Exception from the window
      */
     @Test(timeOut = 120000)
     public void testTheFiftiethPageIsTheLast() throws Exception
