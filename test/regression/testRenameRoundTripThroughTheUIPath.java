@@ -22,28 +22,18 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A whole setup, renamed and renamed back through the same call the menu makes.
+ * A whole setup, renamed and renamed back through the same call the menu makes. Adam: *"Do you have tests that try to
+ * load an entire config, and then trigger a rename via the same function that the UI calls, and then rename it back and
+ * test along the way?  This is the only way to catch bugs across these complex types of features."*
  *
- * Adam, 2026-08-24: "Do you have tests that try to load an entire config, and then trigger a rename via
- * the same function that the UI calls, and then rename it back and test along the way?  This is the only
- * way to catch bugs across these complex types of features."
+ * A test that supplies its own order of steps (calling `AutonomyCompanionStore.renamePage` and
+ * `LayoutDiagram.writeLayoutIndex` itself) agrees with itself whatever the application does, while every rename defect
+ * (MT-135, OB-049, OB-092) lived in the ORDER of the steps or in a step nobody called. So this calls
+ * `LayoutPageEdit.renameOrDuplicate`, what the menu item calls. NOT covered are the four refusals above that call (open
+ * editor, running trains, remote layout, name taken), which stay in the window because they raise dialogs.
  *
- * We did not, and he is right that it is the only way. The existing rename tests call
- * `AutonomyCompanionStore.renamePage` and `LayoutDiagram.writeLayoutIndex` themselves, one layer below
- * the sequence, in an order the test author chose. That reads as coverage and is not: a test that
- * supplies its own order agrees with itself no matter what the application does. Every rename defect
- * this project has had - MT-135, OB-049, OB-092 - lived in the ORDER of those steps or in a step nobody
- * called, and none of them could have been caught that way.
- *
- * So this calls `LayoutPageEdit.renameOrDuplicate`, which is what the menu item now calls, with the
- * arguments the menu item passes. What is NOT covered is the four refusals above that call - open
- * editor, running trains, remote layout, name taken - which stay in the window because they raise
- * dialogs. Those are decisions about whether to ask; everything about what then happens is here.
- *
- * The shape is the one Adam asked for on 2026-08-23: a mutation, a check, a save, a load, and
- * verification that the mutation is still there while the rest stayed the same. The round TRIP is the
- * addition, and it earns its place - MT-135 was reported as "renaming the page back did not restore the
- * stations", so the way back is where the loss became visible.
+ * The shape is a mutation, a check, a save, a load, and verification that the mutation is still there while the rest
+ * stayed the same; the round TRIP is the addition, since MT-135 became visible only on the way back.
  */
 public class testRenameRoundTripThroughTheUIPath
 {
@@ -56,12 +46,9 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * Everything the setup holds for a page survives a rename and the rename back.
-     *
-     * Deliberately not a spot check. The failures this covers did not damage one collection - they
-     * pruned the whole page, because the settings looked like squares that had been deleted. So every
-     * collection is loaded before, compared after the rename, and compared again after the way back,
-     * and the comparison is of the WHOLE map rather than of a key somebody remembered to look at.
+     * Everything the setup holds for a page survives a rename and the rename back. Deliberately not a spot check: the
+     * failures this covers pruned the whole page, because the settings looked like squares that had been deleted, so
+     * every collection is loaded before and compared whole after the rename and after the way back.
      */
     @Test
     public void testAPageSurvivesBeingRenamedAndRenamedBack() throws Exception
@@ -75,19 +62,12 @@ public class testRenameRoundTripThroughTheUIPath
 
         String page = aPageWithSettings(session, pages);
 
-        // WHAT THE SETUP HOLDS FOR THAT PAGE, before anything happens to it.
+        // What the setup holds for that page, before anything happens to it.
         Map<String, String> before = settingsOn(session, page, pages, page);
 
-        // The SQUARE settings, not the whole map.
-        //
-        // This asked `before.isEmpty()`, which can never be true: `settingsOn` ends with an
-        // unconditional `#excluded` entry plus one `#config/<name>` per configuration, and has a
-        // single return. So the guard against "this page has nothing on it, and a rename that lost
-        // everything would pass" could only fire on a layout with no pages at all.
-        //
-        // The same file diagnoses this exactly, forty lines from here, and fixed the assertion it was
-        // written for without carrying it back to this one: "the map it returns is never empty ...
-        // which is the more dangerous kind of wrong".
+        // The SQUARE settings, not the whole map: `settingsOn` always ends with an `#excluded` entry and one
+        // `#config/<name>` per configuration, so `before.isEmpty()` can never be true and the guard against "this page
+        // has nothing on it" could only fire on a layout with no pages at all.
         assertFalse(squareSettings(before).isEmpty(),
             "the page chosen has no SQUARE settings on it, so a rename that lost them all would "
             + "pass. Only the per-square entries count - the exclusion flag and the per-configuration "
@@ -101,14 +81,14 @@ public class testRenameRoundTripThroughTheUIPath
         Map<String, Map<String, String>> othersBefore =
             settingsOnEveryOtherPage(session, page, pages);
 
-        // THE MUTATION, through the same call the menu makes.
+        // The mutation, through the same call the menu makes.
         String renamed = page + " Renamed";
 
         LayoutPageEdit.renameOrDuplicate(namesOf(pages), diagram(pages, page),
             folder.getAbsolutePath(), page, renamed, true, false, false, session, model);
 
-        // THE LOAD. A fresh session over the folder as it now stands on disk, exactly as restarting
-        // the application would give.
+        // The load: a fresh session over the folder as it now stands on disk, exactly as restarting the application
+        // would give.
         AutonomySession after = reopened(folder);
 
         assertEquals(settingsOn(after, renamed, pagesIn(folder), renamed), before,
@@ -152,11 +132,9 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * A rename carries the page's own file with it, and leaves no second copy behind.
-     *
-     * Separate from the settings, because they fail independently: the setup can be carried perfectly
-     * across a rename that left two page files on disk, and the next parse would then show the user
-     * both.
+     * A rename carries the page's own file with it, and leaves no second copy behind. Separate from the settings
+     * because they fail independently: the setup can be carried across a rename that left two page files on disk, and
+     * the next parse would show the user both.
      */
     @Test
     public void testTheRenameLeavesOnePageFileNotTwo() throws Exception
@@ -191,31 +169,18 @@ public class testRenameRoundTripThroughTheUIPath
     // what the setup holds
 
     /**
-     * The whole gesture, including what the window does AFTER the rename.
+     * The whole gesture, including what the window does AFTER the rename (MT-171, MT-135: *"renaming a page MOVES
+     * locomotives to other stations, not just deleted them."*). The test above passed while his railway was being
+     * wrecked, for two reasons.
      *
-     * Adam, MT-171: "renaming a page MOVES locomotives to other stations, not just deleted them.  make
-     * a COMPREHENSIVE AND REALISTIC test case to reproduce these bugs, then fix them." And MT-135, with
-     * the errors it produced on his railway: "TopMainR2Inter holds a locomotive that is also recorded
-     * as standing somewhere else."
+     * It stopped at the rename: `layoutEditingComplete` re-reads the diagrams and then `resetAutonomySession` captures
+     * the running Layout's state back into the configuration, and that capture is the step that does the damage. It
+     * compared stored settings and never ran the CHECKS: the damage is every placement existing twice, the second copy
+     * keyed to the page's old name, which "more data" does not fail in an equality, while the OPERATOR sees the check
+     * refusing to build the setup.
      *
-     * The test above this one renames a page and reads the setup back, and it passes, and it passed
-     * while his railway was being wrecked. Two things were missing from it, and each on its own is
-     * enough to miss this.
-     *
-     * **It stopped at the rename.** The window does not. `layoutEditingComplete` re-reads the diagrams
-     * and then `resetAutonomySession` captures the running Layout's state back into the configuration
-     * before letting the session go. That capture is the step that does the damage, and no test had
-     * ever run it.
-     *
-     * **It compared stored settings, and never ran the CHECKS.** The damage does not look like a
-     * setting going missing. Every placement is still there - there are simply twice as many of them,
-     * the second copy keyed to the page's old name. Comparing what the store holds sees more data, not
-     * less, and "more" does not fail an equality unless you happen to look at the right key. What the
-     * OPERATOR sees is the check refusing to build the setup.
-     *
-     * So this asserts on the checks, which is the thing he actually meets, and it drives the sequence
-     * the window drives. It reproduces on the sample layout exactly as reported: four locomotives, each
-     * in two places, on the same squares as his - 6,4 and 14,3 and 13,11.
+     * So this asserts on the checks and drives the sequence the window drives. It reproduces on the sample layout as
+     * reported: four locomotives, each in two places.
      */
     @Test
     public void testARenameDoesNotLeaveLocomotivesInTwoPlaces() throws Exception
@@ -250,9 +215,8 @@ public class testRenameRoundTripThroughTheUIPath
         LayoutPageEdit.renameOrDuplicate(namesOf(pages), diagram(pages, page),
             folder.getAbsolutePath(), page, renamed, true, false, false, session, model);
 
-        // AND WHAT THE WINDOW DOES NEXT, on the same session: resetAutonomySession captures the
-        // running layout's state before letting the session go.  This is the step that was never
-        // tested and the step that did the damage.
+        // And what the window does next, on the same session: resetAutonomySession captures the running layout's state
+        // before letting the session go. This is the step that did the damage.
         session.captureFromLayout(model.getAutoLayout().toJSON(), active);
         session.saveWithoutReconciling();
 
@@ -277,9 +241,7 @@ public class testRenameRoundTripThroughTheUIPath
             + "will no longer run");
     }
 
-    /**
-     * tile -> locomotive, out of the active configuration, which is where placements live.
-     */
+    /** tile -> locomotive, out of the active configuration, which is where placements live. */
     private static Map<String, String> placements(AutonomySession session)
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -313,11 +275,8 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * Any locomotive standing on more than one square, named with its squares, or "" if none is.
-     *
-     * Returned as text rather than as a boolean so that a failure says WHICH train is in two places -
-     * which is the first thing anybody reading the failure will want and the first thing the operator
-     * is told by the check this mirrors.
+     * Any locomotive standing on more than one square, named with its squares, or "" if none is: text, so a failure
+     * says WHICH train is in two places.
      */
     private static String duplicatesIn(Map<String, String> placed)
     {
@@ -356,22 +315,13 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * Everything the setup records about one page, flattened so that two of them can be compared whole.
+     * Everything the setup records about one page, flattened so that two of them can be compared whole: a hand-written
+     * comparison covers the collections its author thought of, and the store has eleven. The squares come from the
+     * PAGE, not the store, so a setting that moved to the wrong square shows as a difference at both ends, with no new
+     * production API.
      *
-     * Flattened rather than compared collection by collection on purpose. A comparison written by hand
-     * covers the collections its author thought of, and the store has eleven - the same counting
-     * problem, and the one that let the eleventh collection be forgotten in four
-     * separate places.
-     *
-     * The squares come from the PAGE rather than from the store, which is what makes this whole rather
-     * than a spot check: every square the page has is asked about, so a setting that moved to the wrong
-     * square shows up as a difference at both ends. It also needs no new production API, which a test
-     * should not be inventing.
-     *
-     * The configuration JSON is folded in as text with the page name blanked, because that is where the
-     * per-configuration settings live - terminus, reversing, home, placed locomotives - and they are
-     * keyed by strings that contain the page name. Blanking it is what makes "the same setup under a
-     * different name" comparable at all.
+     * The configuration JSON is folded in as text with the page name blanked, because the per-configuration settings
+     * (terminus, reversing, home, placed locomotives) are keyed by strings containing the page name.
      */
     private static Map<String, String> settingsOn(AutonomySession session, String page,
         List<LayoutDiagram> pages, String subject)
@@ -434,12 +384,8 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * Only the per-square entries, dropping the whole-page ones.
-     *
-     * settingsOn always reports #excluded and a line per configuration, so the map it returns is never
-     * empty and "has this page been emptied" cannot be asked of it directly. That is not a flaw in
-     * settingsOn - those entries are part of what a page holds - but it did make the first version of
-     * the assertion below unfalsifiable, which is the more dangerous kind of wrong.
+     * Only the per-square entries, dropping the whole-page ones: `settingsOn` always reports #excluded and a line per
+     * configuration, so its map is never empty and "has this page been emptied" cannot be asked of it directly.
      */
     private static Map<String, String> squareSettings(Map<String, String> all)
     {
@@ -459,13 +405,9 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * JSON as text with its object keys in a fixed order.
-     *
-     * org.json.JSONObject is a HashMap, so toString() emits its keys in whatever order the hash gave
-     * them - and that order is not stable across two objects holding identical data. Comparing the
-     * strings therefore failed on the first run of this test with two configurations that were the
-     * same in every entry. A comparison that reports a difference where there is none is worse than no
-     * comparison: it gets muted, and then it is not checking anything.
+     * JSON as text with its object keys in a fixed order: org.json.JSONObject is a HashMap whose key order is not
+     * stable across two objects holding identical data, and a comparison that reports a difference where there is none
+     * gets muted.
      */
     private static String canonical(Object value)
     {
@@ -506,17 +448,11 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * A value as text, with both the page it belongs to and the page being renamed blanked.
-     *
-     * Blanking the SUBJECT everywhere is the part the first version missed. Other pages point at the
-     * renamed page - a protecting signal, a blocker, the far end of a portal, a caption, and the
-     * configuration JSON, which every page's map carries - and after a successful rename those
-     * pointers say the new name. That is the rename WORKING. Blanking only each page's own name made
-     * every one of those read as a change, and the test called correct behavior a bug.
-     *
-     * The subject goes first because the new name contains the old one - "1 - Main Renamed" contains
-     * "1 - Main" - so replacing the shorter first would leave "&lt;page&gt; Renamed" behind and the two
-     * sides would still differ, for a new reason that is even harder to see.
+     * A value as text, with both the page it belongs to and the page being renamed blanked. Blanking the SUBJECT
+     * everywhere matters: other pages point at the renamed page (a protecting signal, a blocker, a portal's far end, a
+     * caption, the configuration JSON), and after a successful rename those pointers say the new name, which is the
+     * rename WORKING. The subject goes first because the new name contains the old one ("1 - Main Renamed" contains "1
+     * - Main").
      */
     private static String named(Object value, String page, String subject)
     {
@@ -535,8 +471,7 @@ public class testRenameRoundTripThroughTheUIPath
 
         String text = String.valueOf(value);
 
-        // Absent and "nothing set" are the same thing to the user, and must not read as a change: a
-        // store returning "" where it returned null has lost nothing.
+        // Absent and "nothing set" are the same thing to the user and must not read as a change.
         if (text.trim().isEmpty() || "false".equals(text) || "0".equals(text) || "[]".equals(text))
         {
             return;
@@ -545,9 +480,7 @@ public class testRenameRoundTripThroughTheUIPath
         out.put(at + "/" + what, text);
     }
 
-    /**
-     * The page the setup records most about, so that losing it would show.
-     */
+    /** The page the setup records most about, so that losing it would show. */
     private static String aPageWithSettings(AutonomySession session, List<LayoutDiagram> pages)
     {
         String best = null;
@@ -555,10 +488,8 @@ public class testRenameRoundTripThroughTheUIPath
 
         for (LayoutDiagram diagram : pages)
         {
-            // Counted by SQUARE settings, for the same reason the caller's guard is: every page
-            // reports at least the exclusion flag and one entry per configuration, so counting the
-            // whole map picks whichever page has the most CONFIGURATIONS rather than the most
-            // settings - and on a setup with one configuration, whichever comes first.
+            // Counted by SQUARE settings: every page reports at least the exclusion flag and one entry per
+            // configuration, so counting the whole map picks the page with the most CONFIGURATIONS.
             int size = squareSettings(
                 settingsOn(session, diagram.getName(), pages, diagram.getName())).size();
 
@@ -578,10 +509,8 @@ public class testRenameRoundTripThroughTheUIPath
     // the index
 
     /**
-     * The id the layout index currently gives a page, or 0.
-     *
-     * Read from the FILE rather than from the session, because the id surviving in memory is not the
-     * property under test - what matters is what a restart would see.
+     * The id the layout index currently gives a page, or 0, read from the FILE because what a restart would see is the
+     * property under test.
      */
     private static int idOf(File folder, String page) throws Exception
     {
@@ -590,9 +519,7 @@ public class testRenameRoundTripThroughTheUIPath
         return id == null ? 0 : id;
     }
 
-    /**
-     * The page names in the order the index has them, which is what the operation mutates.
-     */
+    /** The page names in the order the index has them, which is what the operation mutates. */
     private static List<String> namesOf(List<LayoutDiagram> pages)
     {
         List<String> names = new ArrayList<>();
@@ -635,9 +562,7 @@ public class testRenameRoundTripThroughTheUIPath
         return session;
     }
 
-    /**
-     * A whole copy of the sample layout - diagram files, index and setup - because these tests write.
-     */
+    /** A whole copy of the sample layout (diagram files, index and setup), because these tests write. */
     private static File aWorkingCopy() throws Exception
     {
         File from = new File(System.getProperty("user.dir"), "test/test_layout");
