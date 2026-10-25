@@ -14,42 +14,23 @@ import org.testng.annotations.Test;
 import org.traincontrol.util.Util;
 
 /**
- * A backup archive keeps each folder under the name it came from.
+ * A backup archive keeps each folder under the name it came from (MT-159; Adam: "we are missing the folder name of the
+ * active layout (i.e., zip file contains 'config' instead of 'cs2_sample_layout')").
  *
- * Adam, MT-159: "we are missing the folder name of the active layout (i.e., zip file contains 'config'
- * instead of 'cs2_sample_layout')."
- *
- * (His words name `cs2_sample_layout`, which was the fixture at the time and is now his own live
- * railway - the two were the same folder until they were separated. The test below builds its own
- * throwaway layout folder and does not read either.)
- *
- * The interesting part of this one is that the fix was already in the build he tested - it landed at
- * 10:21 and he ran a build compiled from a 14:12 commit - and he reported the symptom anyway. So
- * either the fix does not work or he was looking at an archive made before it. Nothing in the report
- * distinguishes those, and guessing between them is how a working fix gets "fixed" again into
- * something worse.
- *
- * This settles the half that can be settled without him: whether a key with a folder in it actually
- * produces a nested archive. `Util.zipInto` takes a map of entry name to file and the backup passes
- * `<layout folder name>/config`, so if that key were flattened - or the recursion into subfolders
- * dropped the prefix - the archive would contain a bare `config` no matter what the caller asked for,
- * and that is exactly what he described.
- *
- * The other half - which archive he opened - is his to answer, and the entry says so.
+ * The fix was already in the build he tested, so either it does not work or he opened an archive made before it.  This
+ * settles the half that can be settled without him: whether a key with a folder in it produces a nested archive.
+ * `Util.zipInto` takes a map of entry name to file and the backup passes `<layout folder name>/config`, so a flattened
+ * key, or a recursion that dropped the prefix, would give a bare `config` whatever the caller asked for.  The test
+ * builds its own throwaway layout folder.  The other half, which archive he opened, is his to answer.
  */
 public class testBackupArchiveNamesTheLayout
 {
     /**
-     * Show Files, after a backup, opens the backup folder itself (OB-311).
-     *
-     * Adam, 2026-10-03: *"show files after backup opened by documents folder, not the tc_backup folder."*  On Windows it
-     * asked Explorer to select the archive (`explorer /select,`), and an Explorer that cannot take the path it is given -
-     * spaces, a folder it will not resolve - opens its default place instead, Documents, with nothing said.  The folder is
-     * opened as a folder now, which cannot land anywhere else.
+     * Show Files, after a backup, opens the backup folder itself (OB-311).  On Windows it asked Explorer to select the
+     * archive (`explorer /select,`), and an Explorer that cannot take the path (spaces, a folder it will not resolve)
+     * opens its default place instead, Documents, with nothing said.  The folder is opened as a folder now.
      *
      * MUTATION: ask Explorer to select the file again, and this fails on Windows.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testShowFilesOpensTheBackupFolder() throws Exception
@@ -80,9 +61,7 @@ public class testBackupArchiveNamesTheLayout
         }
     }
 
-    /**
-     * A folder handed over under a prefixed name arrives under that prefix, all the way down.
-     */
+    /** A folder handed over under a prefixed name arrives under that prefix, all the way down. */
     @Test
     public void testAPrefixedFolderKeepsItsPrefixThroughoutTheArchive() throws Exception
     {
