@@ -2,7 +2,7 @@
 
 Adam's, set 2026-08-19.
 
-| What | Font | Colour |
+| What | Font | Color |
 | --- | --- | --- |
 | Section headings | Segoe UI Semibold 13 | `0,0,155` |
 | Important text and labels | Segoe UI Semibold 13 | black |

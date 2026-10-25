@@ -50,7 +50,7 @@ public class testTheArrowsKeepTheirAim
         // The caller APPENDS, which is what LayoutPageEdit and combineLinkedPages both do.
         List<String> now = new ArrayList<>(was);
 
-        now.add("1 - Main and neighbours");
+        now.add("1 - Main and neighbors");
 
         Aimed aimed = repoint(was, now, null, 2);
 
@@ -309,7 +309,7 @@ public class testTheArrowsKeepTheirAim
 
             String from = "1 - Main";
 
-            String made = "rename".equals(gesture) ? "9 - Main" : "1 - Main and neighbours";
+            String made = "rename".equals(gesture) ? "9 - Main" : "1 - Main and neighbors";
 
             String subject = from;
 
