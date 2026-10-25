@@ -61,8 +61,8 @@ import org.traincontrol.marklin.file.CS2File;
  * **What this still guards, after the tier split (2026-09-07).** The trapped-arrival clause no
  * longer has two authors: `AutonomySession.check` reads the built graph rather than walking the
  * reduction, so that half is now true by construction and this asserts it only against the oracle's
- * own filters. The reachability and facing clauses still compare two derivations and are where the
- * value is.
+ * own filters. The reachability clauses compare the checker's reach, read off the build's JSON
+ * (`BuiltReach`), with a walk of the Layout parseAuto made of it, over this fixture and every scenario.
  *
  * **It earned its keep on the change meant to retire it.** The first version of the build-derived
  * derivation dropped the "never split, so no arrival to trap" filter and reported three squares on the
@@ -84,15 +84,6 @@ public class testTheCheckerAgreesWithTheBuild
     private static Layout built;
     private static StationIndex index;
     private static List<AutonomyChecks.Finding> findings;
-
-    /**
-     * The one square where the checker and the build genuinely disagree, and the reason is not the consolidation's.
-     *
-     * See testTheStationsThatReachNothingAreTheOnesTheBuildCannotRouteOutOf, which is where the
-     * divergence is written out.  Named by its printed key rather than rebuilt as a TileKey so that a
-     * layout change reads as "the exemption is stale" instead of as a missing square.
-     */
-    private static final String UNCONSTRAINED_START = "1 - Main:12,11";
 
     /**
      * Reads the sample diagram, opens the setup that ships with it, and builds the railway it names.
@@ -234,10 +225,9 @@ public class testTheCheckerAgreesWithTheBuild
     /**
      * A station the checker says nothing can reach is one no other station's copies reach.
      *
-     * The reachability the checker uses is `GraphReducer.reachableTiles`, which walks the reduction
-     * carrying the side each square was arrived by.  The oracle here is a plain breadth-first walk over
-     * the BUILT edges from every copy of the starting square - no arrival sides, no turn sets, nothing
-     * but the edges the builder wrote - which is the graph a dispatched train is actually routed over.
+     * The oracle is a breadth-first walk over the parsed Layout's edges (`walk`) - no arrival sides, no
+     * turn sets, nothing but the edges the builder wrote - which is the graph a dispatched train is
+     * actually routed over.
      *
      * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the reverse direction so a
      * station is reported when something CAN reach it - `if (reachable)` in place of `if (!reachable)`.
@@ -301,21 +291,9 @@ public class testTheCheckerAgreesWithTheBuild
      * The stranded and the reaches-nothing findings are one verdict said two ways - a terminus that
      * cannot be left is named separately because a train sent there is stuck - so both are read here.
      *
-     * ONE SQUARE IS EXEMPT, and the exemption is the finding this test was written to surface.
-     * `GraphReducer.reachableTiles` starts its walk with no arrival side - deliberately, and its
-     * javadoc says why: "the train is already standing there, and the question is whether the TRACK
-     * allows the journey onward.  Same as findPath's start state."  But a train standing at a square
-     * is standing on one of its COPIES, and every copy carries the side it arrived by.  Where a square
-     * has a single copy, the unconstrained start lets the walk leave by a side that copy cannot leave
-     * by, and the checker then believes in a journey no train can make.
-     *
-     * `1 - Main:12,11` (BottomSecondary) is that square here.  Its one copy arrives by the east side,
-     * so it cannot depart east; the built graph takes it west to a trapped copy of TunnelPre and no
-     * further, and it therefore reaches no station at all.  The checker leaves eastward and finds
-     * nineteen more squares, so it says nothing.  Not fixed here: constraining the start would put
-     * `reachableTiles` at odds with `findPath`, which starts the same way and which
-     * `testReachableTilesDoesNotCrossADoubleCurve` pins to it.  Reported instead, and the exemption is
-     * asserted to be still needed so that fixing it fails this test rather than outliving it.
+     * `1 - Main:12,11` (BottomSecondary) is one: its one copy arrives by the east side, so it cannot
+     * depart east, and west leads to a trapped copy of TunnelPre.  The checker once started its walk
+     * facing every way and missed it.
      *
      * Mutation this must fail: in `AutonomyChecks.checkStations`, invert the forward direction so a
      * station is reported when it CAN reach another - `if (reachesAStation)` in place of
@@ -340,18 +318,9 @@ public class testTheCheckerAgreesWithTheBuild
             if (!reaches) stranded.add(station);
         }
 
-        TileKey exempt = null;
-
-        for (TileKey station : stranded)
-        {
-            if (UNCONSTRAINED_START.equals(station.toString())) exempt = station;
-        }
-
-        assertNotNull(exempt, "the built graph can now route out of " + UNCONSTRAINED_START
-            + ", so the unconstrained-start divergence this test exempts has either been fixed or the "
-            + "layout has changed.  Delete the exemption rather than moving it");
-
-        stranded.remove(exempt);
+        assertTrue(String.valueOf(stranded).contains("1 - Main:12,11"),
+            "precondition: BottomSecondary, whose one copy cannot leave eastward, is no longer stranded on the built"
+                + " graph, so this fixture has changed: " + stranded);
 
         // A closed station is said to be closed, and nothing else (FR-101) - see the claim above.
         stranded.removeAll(closedAmong(reach.keySet()));
@@ -719,7 +688,7 @@ public class testTheCheckerAgreesWithTheBuild
 
         for (ReducedPoint point : session.getReducer().getPoints().values())
         {
-            if (point.isStation()) out.put(point.getTile(), walk(point.getTile()));
+            if (point.isStation()) out.put(point.getTile(), walk(built, index(), point.getTile()));
         }
 
         assertTrue(out.size() > 10, "only " + out.size() + " stations, so reachability proves little");
@@ -728,22 +697,33 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * A breadth-first walk of the built graph from every copy of one square.
+     * The squares a train sent to one square can be sent on to, walked over the built Layout.
      *
-     * Deliberately ignorant of everything the checker knows.  It does not ask whether a Point is a
-     * destination, which side a train arrived by, or whether trains may turn round: the builder has
-     * already written all of that into which edges exist, and re-reading it here would make this the
-     * checker's own answer wearing a different hat.
+     * From the copies a train is sent to there (its destinations), or every copy where it has none; to a destination
+     * copy of another square; never onto a Point switched off (*"inactive really means nothing can pass"*), the start
+     * excepted.  It does not ask which side a train arrived by or whether trains may turn round: the builder has
+     * already written that into which Points and edges exist.
      *
+     * @param layout the parsed railway
+     * @param index the square-to-Point translation
      * @param from the square to start from
-     * @return every square reached, including the starting one
+     * @return every other square reached at a destination
      */
-    private static Set<TileKey> walk(TileKey from)
+    static Set<TileKey> walk(Layout layout, StationIndex index, TileKey from)
     {
+        List<Point> starts = new ArrayList<>();
+
+        for (Point point : index.pointsAt(layout, from))
+        {
+            if (point.isDestination()) starts.add(point);
+        }
+
+        if (starts.isEmpty()) starts = index.pointsAt(layout, from);
+
         Set<String> seen = new LinkedHashSet<>();
         Deque<Point> queue = new ArrayDeque<>();
 
-        for (Point point : index().pointsAt(built, from))
+        for (Point point : starts)
         {
             if (seen.add(point.getName())) queue.add(point);
         }
@@ -752,30 +732,135 @@ public class testTheCheckerAgreesWithTheBuild
 
         while (!queue.isEmpty())
         {
-            Point point = queue.remove();
-
-            TileKey square = index().squareOf(point.getName());
-
-            if (square != null) squares.add(square);
-
-            for (Edge edge : built.getNeighbors(point))
+            for (Edge edge : layout.getNeighbors(queue.remove()))
             {
-                // AND THE CLOSURES, so both sides answer one question (Adam, 2026-09-06).
-                //
-                // This walk is pure topology and the checker's no longer is: *"inactive really means
-                // nothing can pass"*, so `reachableTiles` refuses a closed square and `isPathClear`
-                // refuses it as a destination at every door.  Left as raw neighbours, this helper
-                // became the third walk of the same railway with its own rules - which is the exact
-                // shape the test it serves exists to catch.
-                TileKey beyond = index().squareOf(edge.getEnd().getName());
+                Point end = edge.getEnd();
 
-                if (beyond != null && session.shutTiles().contains(beyond)) continue;
+                if (!end.isActive() || !seen.add(end.getName())) continue;
 
-                if (seen.add(edge.getEnd().getName())) queue.add(edge.getEnd());
+                TileKey square = index.squareOf(end.getName());
+
+                if (end.isDestination() && square != null && !square.equals(from)) squares.add(square);
+
+                queue.add(end);
             }
         }
 
         return squares;
+    }
+
+    /**
+     * On every scenario and the live snapshot, the stations the checker says reach nothing, and those it says nothing
+     * reaches, are the ones the built Layout says so of.
+     *
+     * The live snapshot is Adam's railway, and there the two answers differed before the checker read the build:
+     * `1 - Main:2,5` and `1 - Main:2,7` are reached only by TopMainR1Inter's copy that trains may not stop at, so no
+     * train autonomy starts can be sent there, and the editor said nothing.
+     *
+     * MUTATION: let `BuiltReach.bySquare` start from every copy of a station, or let `BuiltReach` pass a Point switched
+     * off, and this fails.
+     *
+     * @throws Exception from a scenario
+     */
+    @Test
+    public void testEveryScenarioIsReachedAsItsBuiltRailwayIs() throws Exception
+    {
+        List<String> compared = new ArrayList<>();
+
+        for (String name : support.Scenario.names())
+        {
+            support.Scenario scenario = null;
+
+            try
+            {
+                scenario = support.Scenario.open(name);
+
+                AutonomySession opened = scenario.getSession();
+
+                if (opened.getReducer() == null) continue;
+
+                // Every station starts a walk, a closed one too, as a train standing there is driven off by hand; only
+                // those in service are judged, a closed one being said to be closed instead (FR-101).
+                Set<TileKey> stations = new TreeSet<>(BY_KEY);
+
+                for (ReducedPoint point : opened.getReducer().getPoints().values())
+                {
+                    if (point.isStation()) stations.add(point.getTile());
+                }
+
+                if (stations.size() < 2) continue;
+
+                Layout railway = scenario.build();
+                StationIndex names = opened.getStationIndex();
+
+                Map<TileKey, Set<TileKey>> reach = new LinkedHashMap<>();
+
+                for (TileKey station : stations) reach.put(station, walk(railway, names, station));
+
+                Set<TileKey> leaveNothing = new TreeSet<>(BY_KEY);
+                Set<TileKey> reachedByNothing = new TreeSet<>(BY_KEY);
+
+                for (TileKey station : stations)
+                {
+                    if (opened.shutTiles().contains(station)) continue;
+
+                    boolean leaves = false;
+                    boolean reached = false;
+
+                    for (TileKey other : stations)
+                    {
+                        if (other.equals(station)) continue;
+
+                        leaves |= reach.get(station).contains(other);
+                        reached |= reach.get(other).contains(station);
+                    }
+
+                    if (!leaves) leaveNothing.add(station);
+                    if (!reached) reachedByNothing.add(station);
+                }
+
+                Set<TileKey> saidToLeaveNothing = new TreeSet<>(BY_KEY);
+                Set<TileKey> saidReachedByNothing = new TreeSet<>(BY_KEY);
+
+                for (AutonomyChecks.Finding finding : opened.check())
+                {
+                    String key = finding.getMessageKey();
+
+                    if (AutonomyChecks.STATION_REACHES_NOTHING.equals(key) || AutonomyChecks.TERMINUS_STRANDED.equals(key))
+                    {
+                        saidToLeaveNothing.add(finding.getTile());
+                    }
+
+                    if (AutonomyChecks.STATION_UNREACHABLE.equals(key)) saidReachedByNothing.add(finding.getTile());
+
+                    // whose error already says no train sent there can leave
+                    if (AutonomyChecks.STATION_AT_THE_END_OF_A_LINE.equals(key)) saidToLeaveNothing.add(finding.getTile());
+                }
+
+                assertEquals(saidToLeaveNothing.toString(), leaveNothing.toString(), name + ": the checker and the built"
+                    + " railway disagree about which stations a train can be sent on from");
+
+                assertEquals(saidReachedByNothing.toString(), reachedByNothing.toString(), name + ": the checker and the"
+                    + " built railway disagree about which stations no train can be sent to");
+
+                if ("live-snapshot".equals(name))
+                {
+                    assertTrue(saidReachedByNothing.toString().contains("1 - Main:2,5")
+                        && saidReachedByNothing.toString().contains("1 - Main:2,7"),
+                        "on the live snapshot, the two squares only a copy trains may not stop at reaches are not said to"
+                            + " be unreachable: " + saidReachedByNothing);
+                }
+
+                compared.add(name);
+            }
+            finally
+            {
+                if (scenario != null) scenario.close();
+            }
+        }
+
+        assertTrue(compared.contains("live-snapshot") && compared.size() > 1,
+            "the sweep compared too little to mean anything: " + compared);
     }
 
     /**

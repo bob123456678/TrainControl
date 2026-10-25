@@ -501,9 +501,9 @@ public class GraphReducer
     /**
      * The same, with squares that are CLOSED rather than merely barred.
      *
-     * `reachableTiles` takes the same `closed` set, so the editor's *test a path* tool and the findings panel cannot
-     * disagree about which way a train may go: a route this walk drew to a closed square would be one the runtime
-     * refuses.
+     * This walk is the editor's *test a path* tool, which runs while a setup is drawn and may not build; the findings
+     * read the build instead (`BuiltReach`).  `testAutonomyDiagramReducer` holds the two to one answer: a route drawn
+     * to a closed square would be one the runtime refuses.
      *
      * A closed square is neither a way through nor a destination, in EVERY tier, manual included: `isPathClear` refuses
      * it as an intermediate and as the final point, because inactive really means nothing can pass.
@@ -602,9 +602,8 @@ public class GraphReducer
                 // Tested HERE and not at the hop above: refusing the hop would throw away the search state for this square
                 // entirely, so the track BEYOND it would never be explored either, and a station reached first by a barred
                 // side and afterwards by an open one, which is any station with a reversing point past it, would be
-                // unroutable.  `reachableTiles` gates only its `reached.add` and walks on, so the two answer alike about the
-                // same railway (OB-120).  The search continues through this square below either way; what is refused is
-                // stopping here by this side.
+                // unroutable, while the build carries traffic through the barred copy (OB-120).  The search continues
+                // through this square below either way; what is refused is stopping here by this side.
                 //
                 // NOT A DESTINATION EITHER, IF CLOSED: "inactive really means nothing can pass".  Asked before the arrival
                 // test, not after it: after, the square is accepted as the destination and the search returns before the
@@ -653,142 +652,6 @@ public class GraphReducer
         Set<Side> sides = barred.get(tile);
 
         return sides != null && sides.contains(by);
-    }
-
-    /**
-     * Every tile a train standing at {@code from} can reach, honouring the arrival-side split exactly as
-     * findPath does.
-     *
-     * The plain adjacency over getEdges() over-reports this: it lets a run cross between the two
-     * independent curves of a double-curve sensor, because a Point alone does not remember which side a
-     * train came in by.  This is one (tile, arrival-side) BFS - the same frontier discipline findPath
-     * uses - collecting the tiles reached rather than reconstructing one path, so the reachability it
-     * reports is the reachability the emitted split graph and Layout.bfs actually have.
-     *
-     * @param from the square a train is standing on
-     * @param mayTurn squares where a train may turn round (reversal permitted)
-     * @param mustTurn squares where every arriving train must turn round
-     * @return the tiles reachable, including {@code from} itself
-     */
-    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
-    {
-        return reachableTiles(from, mayTurn, mustTurn, Collections.<TileKey, Set<Side>>emptyMap());
-    }
-
-    /**
-     * @param barred the sides each square refuses arrivals by (OB-120), as findPath takes them - so the
-     *        two walks cannot disagree about which runs exist
-     */
-    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
-        java.util.Map<TileKey, Set<Side>> barred)
-    {
-        return reachableTiles(from, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
-    }
-
-    /**
-     * The same, with squares that are CLOSED rather than merely barred.
-     *
-     * The two are different claims.  A barred side says "trains may pass through here but not stop", which is why the
-     * loop below reaches past it (OB-120).  A square switched out of service says "nothing may pass here": the cross
-     * drawn on it says exactly that, and `Layout.isPathClear` enforces it for every path, manual routes included.
-     *
-     * Barring every side of a closed square does NOT express that: the square would stop counting as reachable and the
-     * walk would go straight on through it, so the station beyond stayed reachable and the finding never fired.
-     *
-     * @param from where the train is
-     * @param mayTurn squares where turning round is allowed
-     * @param mustTurn squares where it is compulsory
-     * @param barred arrival sides closed off - passed through, not stopped at
-     * @param closed squares nothing may enter at all
-     * @return the squares a train could be sent to
-     */
-    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
-        java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
-    {
-        Set<TileKey> reached = new java.util.LinkedHashSet<>();
-
-        if (from == null || !points.containsKey(from)) return reached;
-
-
-        // The starting Point has no arrival side - the train is already standing there, and the
-        // question is whether the TRACK allows the journey onward.  Same as findPath's start state.
-        reached.add(from);
-
-        Set<String> visited = new java.util.LinkedHashSet<>();
-        Map<String, TileKey> tileOf = new LinkedHashMap<>();
-        Map<String, Side> sideOf = new LinkedHashMap<>();
-
-        String start = searchKey(from, null);
-        visited.add(start);
-        tileOf.put(start, from);
-        sideOf.put(start, null);
-
-        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
-        frontier.add(start);
-
-        while (!frontier.isEmpty())
-        {
-            String here = frontier.poll();
-
-            TileKey at = tileOf.get(here);
-            Side arrived = sideOf.get(here);
-
-            for (ReducedEdge edge : edges)
-            {
-                if (!edge.getStart().equals(at)) continue;
-
-                if (arrived != null)
-                {
-                    boolean back = edge.getExitSide() == arrived;
-
-                    // The same three-way rule findPath walks: where turning is compulsory the only move
-                    // is back; where it is optional, going back needs permission; otherwise the move
-                    // has to carry on along the track actually arrived on, not merely leave by some
-                    // other side - which is what confines a double curve to its own arm.
-                    if (mustTurn.contains(at))
-                    {
-                        if (!back) continue;
-                    }
-                    else if (back)
-                    {
-                        if (!mayTurn.contains(at)) continue;
-                    }
-                    else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
-                    {
-                        continue;
-                    }
-                }
-
-                // THROUGH a barred side, but not TO it (OB-120).
-                //
-                // Reached means "a train could be sent here", which is the question both callers ask - can this station
-                // reach another, can this reversing point reach anything.  A square a train may pass through but not stop
-                // at is not an answer to that, and the track beyond it is still perfectly reachable.  Refusing the move
-                // outright would make the findings describe a more restricted railway than the one that exists.
-                //
-                // NEITHER REACHED NOR ENTERED, IF CLOSED: **"Inactive really means nothing can pass."**  The START is
-                // exempt, and needs no clause: `from` is seeded before this loop and never tested here, so a train
-                // standing on a square that has been switched off can still be driven out by hand.
-                if (closed != null && closed.contains(edge.getEnd())) continue;
-
-                if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
-                {
-                    reached.add(edge.getEnd());
-                }
-
-
-                String next = searchKey(edge.getEnd(), edge.getEntrySide());
-
-                if (visited.add(next))
-                {
-                    tileOf.put(next, edge.getEnd());
-                    sideOf.put(next, edge.getEntrySide());
-                    frontier.add(next);
-                }
-            }
-        }
-
-        return reached;
     }
 
     /**

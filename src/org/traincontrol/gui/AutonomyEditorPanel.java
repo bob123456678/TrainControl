@@ -5089,7 +5089,7 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // Both ways, with the same may-turn and must-turn sets as the reachability check, so the two agree.
+        // Both ways, with the sets the build reads, so the path drawn agrees with the findings, which read the build.
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
 
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();

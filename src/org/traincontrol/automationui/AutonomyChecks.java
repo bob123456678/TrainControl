@@ -552,6 +552,8 @@ public class AutonomyChecks
      *        unbarred way in, mapped to how many (MT-361)
      * @param berthsBackedInto the squares a train can be backed into - reached tail first, after a rest on another
      *        terminus or a reversing point passed on the way - off the build; null where the setup does not build
+     * @param reach each square to the other stations a train there can be sent to, off the build (`BuiltReach`); null
+     *        where the setup does not build, and then nothing is said about reachability
      *
      * The two halves of the length comparison, supplied rather than derived: one lives on the
      * Locomotive in the model and the other is a point property, and neither is visible from the graph.
@@ -561,7 +563,7 @@ public class AutonomyChecks
         Set<TileKey> arrivalsClosable, Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
-        Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> facingsImpossible, Map<TileKey, Set<TileKey>> reach,
         Set<TileKey> closed,
         Map<TileKey, String> withoutTrainLength, Set<TileKey> withoutMaxLength,
         Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom, Map<TileKey, Integer> halfMeasured,
@@ -604,11 +606,10 @@ public class AutonomyChecks
         findings.addAll(checkNames(reducer));
         findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
 
-        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred, closed,
-            notAutoDestinations));
+        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, reach, notAutoDestinations));
         findings.addAll(checkTrappedArrivals(reducer, trapped, arrivalsClosable));
         findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
-        findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn, barred, closed));
+        findings.addAll(checkStations(reducer, termini, mustTurn, closed, reach));
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
@@ -875,8 +876,7 @@ public class AutonomyChecks
      * `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` say the same thing for STATIONS and only for
      * stations. A reversing point that is not a station had nothing watching it at all.
      *
-     * Reachability is asked of the reducer with the same turn sets the station walk uses, so this
-     * agrees with what the runtime will actually do rather than with plain tile adjacency.
+     * Reachability is the build's, as the station checks read it, so this agrees with what the runtime will do.
      *
      * A NOTICE, not a warning. It is a real fault when it is one, but "reaches no station" is also
      * true of a reversing point on a spur somebody is still drawing, and this list has been made
@@ -885,15 +885,16 @@ public class AutonomyChecks
      * @param reducer the reduced graph
      * @param mayTurn squares where a train may change direction
      * @param mustTurn squares where it must
-     * @param barred arrival sides closed off, passed through to reachableTiles so a station reachable
-     *               only by a barred side is not counted as reachable (OB-120)
+     * @param reach each square to the stations reachable from it, or null to say nothing
      * @return one finding per reversing square that leads nowhere
      */
     private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
-        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
-        Set<TileKey> closed, Set<TileKey> notAutoDestinations)
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TileKey>> reach,
+        Set<TileKey> notAutoDestinations)
     {
         List<Finding> findings = new ArrayList<>();
+
+        if (reach == null) return findings;
 
         Set<TileKey> reversing = new LinkedHashSet<>();
 
@@ -947,9 +948,7 @@ public class AutonomyChecks
             // how a list of findings stops being read.
             if (point.isStation()) continue;
 
-            // WITH the red arrows (OB-120): bars only ever remove runs, and a station reachable ONLY by a barred
-            // side must not count as reachable.
-            Set<TileKey> reachable = reducer.reachableTiles(tile, mayTurn, mustTurn, barred, closed);
+            Set<TileKey> reachable = reach.getOrDefault(tile, Collections.<TileKey>emptySet());
 
             boolean reachesAStation = false;
 
@@ -1640,8 +1639,7 @@ public class AutonomyChecks
     }
 
     private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
-        Set<TileKey> closed)
+        Set<TileKey> mustTurn, Set<TileKey> closed, Map<TileKey, Set<TileKey>> reach)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -1675,19 +1673,6 @@ public class AutonomyChecks
             stationTiles.add(station.getTile());
         }
 
-        // Reachability the way the RUNTIME has it, honouring the arrival-side split - not the plain
-        // tile adjacency, which lets a run cross between the two arms of a double curve and so reports
-        // a route Layout.bfs never takes.  Worked out once per station and read from below for both
-        // directions.
-        Map<TileKey, Set<TileKey>> reach = new LinkedHashMap<>();
-
-        for (ReducedPoint station : stations)
-        {
-            reach.put(station.getTile(),
-                // WITH the red arrows (OB-120).
-                reducer.reachableTiles(station.getTile(), mayTurn, mustTurn, barred, closed));
-        }
-
         // A STATION NOTHING CAN PASS IS SAID TO BE, and left out of the two sentences below (FR-101).
         for (ReducedPoint station : stations)
         {
@@ -1697,11 +1682,13 @@ public class AutonomyChecks
             }
         }
 
+        if (reach == null) return findings;
+
         for (ReducedPoint station : stations)
         {
             if (closed != null && closed.contains(station.getTile())) continue;
 
-            Set<TileKey> reachable = reach.get(station.getTile());
+            Set<TileKey> reachable = reach.getOrDefault(station.getTile(), Collections.<TileKey>emptySet());
 
             boolean reachesAStation = false;
 
@@ -1739,7 +1726,7 @@ public class AutonomyChecks
             {
                 if (other == station) continue;
 
-                if (reach.get(other.getTile()).contains(station.getTile()))
+                if (reach.getOrDefault(other.getTile(), Collections.<TileKey>emptySet()).contains(station.getTile()))
                 {
                     reachable = true;
                     break;
@@ -1837,8 +1824,6 @@ public class AutonomyChecks
         return true;
     }
 
-    // Reachability is never read from reducer.getEdges() as a plain Point-to-Point graph: that ignores
-    // the arrival-side split and lets a run cross between the two arms of a double curve, reporting a
-    // station pair reachable that the runtime never routes.  reducer.reachableTiles answers the
-    // split-aware question instead, which is the same one Layout.bfs and the editor's path test ask.
+    // Reachability is never worked out here: the reduction's edges know no arrival sides, turn sets or bars, and
+    // re-applying them by hand is a second answer that can drift from the build's.  `BuiltReach` reads the build.
 }

@@ -102,6 +102,7 @@ not fix it. Name the square.
 - `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`
 - `core.testTheLengthGuardsOnTheRealLayout`
+- `regression.testTheCheckerAgreesWithTheBuild`
 - `core.testEverySquareBuildsToTheCopiesTheSetupImplies`
 - `core.testTheRoomRuleCensusOnTheRealLayout`
 - `core.testWhichSquaresTheRoomRuleClosesOff`

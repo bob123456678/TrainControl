@@ -3810,45 +3810,32 @@ public class AutonomySession
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
+        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
+
+        BuiltReach reach = BuiltReach.of(built, byName);
+
         java.util.Set<String> stations = new java.util.HashSet<>();
 
         org.json.JSONArray points = built.getJSONArray("points");
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject p = points.getJSONObject(i);
+            String copy = points.getJSONObject(i).getString("name");
 
-            if (p.optBoolean("station", false)) stations.add(p.getString("name"));
+            if (reach.isStation(copy)) stations.add(copy);
         }
-
-        java.util.Map<String, java.util.List<String>> onward = new java.util.HashMap<>();
-
-        org.json.JSONArray edges = built.getJSONArray("edges");
-
-        for (int i = 0; i < edges.length(); i++)
-        {
-            org.json.JSONObject e = edges.getJSONObject(i);
-
-            String start = e.getString("start");
-
-            if (!onward.containsKey(start)) onward.put(start, new java.util.ArrayList<String>());
-
-            onward.get(start).add(e.getString("end"));
-        }
-
-        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
         for (String copy : stations)
         {
-            if (!onward.containsKey(copy)) continue;
+            if (!reach.leaves(copy)) continue;
 
             TileKey here = byName.get(copy);
 
-            if (here == null) continue;
+            if (here == null || out.containsKey(here)) continue;
 
-            if (reachesAStationElsewhere(copy, here, onward, stations, byName)) continue;
-
-            if (out.containsKey(here)) continue;
+            // Not stopped by a square out of service: this finding is an ERROR, and a closure is the operator's to make
+            // and undo.
+            if (!reach.stationsReachedFrom(copy, false).isEmpty()) continue;
 
             // Only where a sibling copy does get somewhere (`badCopies`).
             boolean healthySquare = false;
@@ -3857,52 +3844,33 @@ public class AutonomySession
             {
                 if (sibling.equals(copy) || !here.equals(byName.get(sibling))) continue;
 
-                if (onward.containsKey(sibling)
-                    && reachesAStationElsewhere(sibling, here, onward, stations, byName))
+                if (reach.leaves(sibling) && !reach.stationsReachedFrom(sibling, false).isEmpty())
                 {
                     healthySquare = true;
                     break;
                 }
             }
 
-            if (!healthySquare) continue;
-
-            out.put(here, copy);
+            if (healthySquare) out.put(here, copy);
         }
 
         return out;
     }
 
-    /** Whether a walk from one copy reaches a station on another square; stops at the first. */
-    private boolean reachesAStationElsewhere(String from, TileKey fromTile,
-        java.util.Map<String, java.util.List<String>> onward, java.util.Set<String> stations,
-        java.util.Map<String, TileKey> byName)
+    /**
+     * Each square to the other stations a train there can be sent to, off the build (`BuiltReach.bySquare`): the one
+     * answer every reachability finding reads.
+     * @param built the configuration as JSON, or null
+     * @param named the builder's own tile-name map, or null to ask for one here
+     * @return the reach, or null where the setup does not build, and then the findings say nothing about it
+     */
+    Map<TileKey, Set<TileKey>> reachForInspection(org.json.JSONObject built, java.util.Map<String, TileKey> named)
     {
-        java.util.Set<String> seen = new java.util.HashSet<>();
-        java.util.Deque<String> queue = new java.util.ArrayDeque<>();
+        if (reducer == null || built == null) return null;
 
-        seen.add(from);
-        queue.add(from);
+        BuiltReach reach = BuiltReach.of(built, named != null ? named : builder(null).tilesByName());
 
-        while (!queue.isEmpty())
-        {
-            java.util.List<String> next = onward.get(queue.poll());
-
-            if (next == null) continue;
-
-            for (String there : next)
-            {
-                if (!seen.add(there)) continue;
-
-                TileKey tile = byName.get(there);
-
-                if (stations.contains(there) && tile != null && !tile.equals(fromTile)) return true;
-
-                queue.add(there);
-            }
-        }
-
-        return false;
+        return reach == null ? null : reach.bySquare();
     }
 
     /** Whether another copy of the square is in `good` (copies with a way out, or in). */
@@ -5605,8 +5573,8 @@ public class AutonomySession
             trapped, arrivalsClosableAt(trapped), covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
             stationsWithNoSignal(), facingsThatCannotBeHeld(),
-            // Red arrows and shut squares, so the findings walk the usable railway (OB-120)
-            barredArrivals(),
+            // Where trains can get to, off the same build, red arrows (OB-120) and shut squares included
+            reachForInspection(inspected, namesForInspection),
             shutTiles(),
             // The length rule's two halves (FR-046), and their disagreements
             placedTrainsWithoutLength(), stationsWithoutMaxLength(), runIns, givenNoRoom,
@@ -5642,8 +5610,11 @@ public class AutonomySession
         // A sensor address two places share (FR-139)
         found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
 
-        // One finding for a station at the end of a line: "may" would draw a notice saying "must"
-        found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
+        // One finding for a station at the end of a line: "may" would draw a notice saying "must", and its error
+        // already says no train sent there can leave
+        found.removeIf(finding -> (AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
+            || AutonomyChecks.STATION_REACHES_NOTHING.equals(finding.getMessageKey())
+            || AutonomyChecks.TERMINUS_STRANDED.equals(finding.getMessageKey()))
             && endsOfLines.contains(finding.getTile()));
 
         AutonomyChecks.bySeverity(found);

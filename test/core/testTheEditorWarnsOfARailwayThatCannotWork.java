@@ -547,6 +547,12 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertNull(trappedAt(alpha), "a station at the end of a line is reported twice, an error and a warning, with"
             + " advice that disagrees: " + session.check());
 
+        // NOR THE WARNING THAT IT REACHES NOTHING, which the error already says (MUTATION: drop the two keys from the
+        // end-of-line removal in `AutonomySession.checkAfresh`)
+        assertEquals(findingsAbout(org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING, alpha)
+            + findingsAbout(org.traincontrol.automationui.AutonomyChecks.TERMINUS_STRANDED, alpha), 0,
+            "a station at the end of a line is also said to reach nothing, which its error already says: " + session.check());
+
         // TRAINS MUST CHANGE DIRECTION THERE
         session.setPointProperty(alpha, "mustReverse", Boolean.TRUE);
         session.rebuild();
@@ -1297,23 +1303,14 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     /**
      * The findings walk the railway a TRAIN can use, red arrows included (OB-120).
      *
-     * Found by a reviewer, and it is this project's most familiar defect wearing my own handwriting.
-     * When OB-120 taught the graph about barred arrivals I gave `reachableTiles` an overload that takes
-     * them, wrote a comment on it saying it existed "so the two walks cannot disagree", tested the
-     * reducer - and changed neither caller. Both went on asking the barred-less form. The test I wrote
-     * even says in its javadoc that teaching findPath and not reachableTiles "would have broken that
-     * quietly", which is exactly what shipped.
-     *
-     * What it cost: bars only ever REMOVE runs, so the findings saw more railway than a train can use.
-     * A station reachable only by a side that refuses arrivals counted as reachable, and the warning
-     * that would have said so stayed silent - while the path test on the same screen refused that very
-     * run. OB-122 is the ticket where Adam confirmed these warnings tell the truth and went and fixed
-     * his diagram on the strength of one.
+     * Bars only ever REMOVE runs, so findings blind to them see more railway than a train can use: a station
+     * reachable only by a side that refuses arrivals counts as reachable, while the path test on the same screen
+     * refuses that very run.
      *
      * The two halves are asserted together on purpose: without the bar the station is fine, with it
      * the station is stranded. Either alone could pass for the wrong reason.
      *
-     * MUTATION: dropping `barred` at either reachableTiles call site fails this.
+     * MUTATION: let `AutonomyBuilder.arrivalAllowed` ignore the bars, and this fails: the findings follow the build.
      */
     @Test
     public void testTheFindingsObeyTheRedArrows() throws Exception
@@ -1333,6 +1330,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.setStation(east, true);
         session.setPointName(east, "EastEnd");
+
+        // Trains turn round at the west end, or a train standing there faces the buffers and is sent nowhere
+        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
 
         session.rebuild();
 
@@ -1415,52 +1415,119 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * BOTH walks in the findings honour the red arrows, not just the one a fixture happens to drive.
+     * The findings ask the build where trains can get to, and work none of it out themselves.
      *
-     * The test above proves it for the station walk, by running a railway. It does not reach
-     * `checkReversingGoesSomewhere`, which walks the same graph for a different question - and the
-     * mutation run showed that: dropping `barred` from that second call site left the suite green.
+     * The reduction's edges know no arrival sides, turn sets or red arrows, so a walk over them has to re-apply the four
+     * authored sets by hand, and each re-application is a second answer that can drift from the railway's: OB-120 gave
+     * a bar to one such walk and not its sibling.  The two claims below are where the hand-made answer and the build's
+     * differed.
      *
-     * Which is the very shape this whole ticket is about. OB-120 added an overload, tested the
-     * overload, and left both callers asking the old one. Fixing one caller and testing only that one
-     * would have left the other exactly where it was.
-     *
-     * Read rather than run, and that is a real limit: building a reversing point whose reachable
-     * stations depend on a bar needs a fixture this class does not have. What this catches is a call
-     * site quietly losing its bars, which is how the defect arrived both times.
-     *
-     * MUTATION: dropping `barred` from either reachableTiles call fails this.
+     * MUTATION: call `reducer.findPath` (or any reducer walk) from `AutonomyChecks`, and this fails.
      */
     @Test
-    public void testBothFindingWalksAreGivenTheRedArrows() throws Exception
+    public void testTheFindingsAskTheBuildWhereTrainsCanGo() throws Exception
     {
         String checks = SourceOf.fileDeclaring("public class AutonomyChecks");
 
-        int asked = 0;
-        int withBars = 0;
+        assertFalse(checks.contains("findPath(") || checks.contains("reachableTiles("),
+            "the findings walk the reduction again, re-applying the turn sets, the red arrows and the closures by hand,"
+            + " instead of reading the reach the build gives them (BuiltReach)");
 
-        for (int at = checks.indexOf("reachableTiles("); at >= 0;
-            at = checks.indexOf("reachableTiles(", at + 1))
-        {
-            asked++;
+        assertTrue(checks.contains("checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, reach,")
+            && checks.contains("checkStations(reducer, termini, mustTurn, closed, reach)"),
+            "the two reachability checks are no longer both given the build's reach");
+    }
 
-            // To the end of the STATEMENT, not to the first closing bracket.
-            //
-            // `reachableTiles(station.getTile(), ...)` closes an inner bracket first, so stopping
-            // there read a perfectly correct call as missing its bars - this check failed on code that
-            // was right, which is the other way for a test to be wrong and just as expensive.
-            int end = checks.indexOf(';', at);
+    /**
+     * A station whose one copy cannot leave by a side the track goes reaches nothing, as the railway has it.
+     *
+     * Middle is reached from the east only, since the run west of it is one way, westward.  A train there faces west,
+     * and west is a dead end; no copy of Middle faces east, so the track east of it, which runs both ways, is no way out.
+     * The editor used to start its walk facing every way and so found EastEnd, while the built railway cannot get there:
+     * it is the railway that is right.
+     *
+     * MUTATION: start the square's walk from every way out of the square rather than from its copies, and this fails.
+     */
+    @Test
+    public void testAStationWhoseOnlyCopyCannotLeaveThatWayReachesNothing() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("OneCopy");
 
-            if (end > at && checks.substring(at, end).contains("barred")) withBars++;
-        }
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey middle = new TileKey("main", 3, 1);
+        TileKey east = new TileKey("main", 5, 1);
 
-        assertTrue(asked > 0, "nothing in the findings walks the graph any more");
+        session.setStation(middle, true);
+        session.setPointName(middle, "Middle");
+        session.setStation(east, true);
+        session.setPointName(east, "EastEnd");
+        session.setPointFlag(east, AutonomyBuilder.CAN_REVERSE, true);
+        session.rebuild();
 
-        assertEquals(withBars, asked,
-            "only " + withBars + " of the " + asked + " reachability walks in the findings are given "
-            + "the barred arrivals. Bars only ever REMOVE runs, so a walk without them sees more "
-            + "railway than a train can use - and the warning that a station reaches nothing stays "
-            + "silent about a station reachable only through a side that refuses arrivals");
+        assertFalse(strandedNames().contains("Middle"),
+            "precondition: with track both ways Middle already reaches no station: " + strandedNames());
+
+        assertTrue(session.setOneWayRun(middle, west) > 0, "precondition: the run west of Middle could not be made one-way");
+        session.rebuild();
+
+        assertEquals(session.arrivalSides(middle), Arrays.asList(Side.E),
+            "precondition: Middle is not reached from the east only, so it is not the one-copy shape");
+
+        assertTrue(strandedNames().contains("Middle"),
+            "Middle's one copy faces west, into a dead end, and no train there can face east: the railway routes it"
+                + " nowhere, and the editor did not say so: " + strandedNames());
+    }
+
+    /**
+     * A copy trains may not stop at does not hide a station copy that reaches nothing.
+     *
+     * Middle refuses arrivals from the east.  The copy a train sent there stands on came in from the west and faces
+     * east, into a dead end that is no station, so the train can go nowhere.  The barred copy faces west, to WestEnd,
+     * and a square-level answer that counted it said Middle was fine; the copy-level finding asks only among the
+     * station's own copies, so it was silent too.
+     *
+     * MUTATION: let `BuiltReach.bySquare` start from every copy of a station rather than from its station copies, and
+     * this fails.
+     */
+    @Test
+    public void testABarredCopyDoesNotHideAStrandedStation() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Barred");
+
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey middle = new TileKey("main", 3, 1);
+
+        session.setStation(west, true);
+        session.setPointName(west, "WestEnd");
+        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
+        session.setStation(middle, true);
+        session.setPointName(middle, "Middle");
+        session.rebuild();
+
+        assertFalse(strandedNames().contains("Middle"),
+            "precondition: unbarred, Middle already reaches no station: " + strandedNames());
+
+        session.setBarredArrivals(middle, new LinkedHashSet<>(Arrays.asList(Side.E)));
+        session.rebuild();
+
+        assertEquals(session.getBarredArrivals(middle), new LinkedHashSet<>(Arrays.asList(Side.E)),
+            "precondition: Middle does not refuse arrivals from the east");
+
+        assertTrue(strandedNames().contains("Middle"),
+            "a train sent to Middle arrives from the west and can only carry on into a dead end, and the editor said"
+                + " nothing, because the copy trains may not stop at reaches WestEnd: " + strandedNames());
+    }
+
+    /** The stations said to reach nothing, either way of saying it. */
+    private List<String> strandedNames()
+    {
+        List<String> out = new ArrayList<>(subjectsOf(org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING));
+
+        out.addAll(subjectsOf(org.traincontrol.automationui.AutonomyChecks.TERMINUS_STRANDED));
+
+        return out;
     }
 
     /**
@@ -1710,6 +1777,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.setStation(near, true);
         session.setStation(far, true);
+
+        // Trains turn round at the near end, or a train standing there faces the buffers and is sent nowhere
+        session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
 
         session.rebuild();
 
