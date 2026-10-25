@@ -499,6 +499,20 @@ behavior.md split, and tooling."): the behaviour.md split below, the JaCoCo reru
 tooling the study suggested (`newtest.py` for a new test class's bookkeeping, `redgreen.sh` for a claim's red and
 green in one run, `env.sh` for a worker's environment).
 
+**Next release: a comment pass on the tests** (Adam, 2026-10-24: "we can add that to the plan for the next release").
+Comments are 33% of `test/`'s characters (about 1M of its 3M estimated tokens), and `testCommentsStayLean` counts
+history and long blocks in `src/` only.
+- Comment-only passes with `docs/tools/lean.py`, the 23 test files over 2,000 lines first (82,000 lines, 17,000 of them
+  comments), Sonnet per file as for `src/`.
+- Kept, as CLAUDE.md says for tests: what each claim asserts and why it matters, the one `MUTATION:` note per claim,
+  and why a non-obvious wait or fixture was chosen.  Assertion messages are never edited.  Cut: history, review
+  rounds, restated code, and narratives of how a bug was found.
+- Proof: `comment-strip-compare.py` must compare the test classes' bytecode too (extend it if it compiles `src/` only),
+  and every class whose comments changed runs, since a few tests read other files' source.
+- Then `testCommentsStayLean` counts history and long blocks in `test/` as well, so the cut stays made.
+- Expected: a 30-40% cut of test comment characters, about 300-400k tokens, roughly a tenth of what reading the tests
+  costs.
+
 **Next release: the gui package split** (Adam, 2026-10-24: "add the package split to the next release plan, with the
 first step being reviewing the split for my approval").  `org.traincontrol.gui` holds 79 classes, 27 of them
 package-private, with about 450 package-private members used across its files (TrainControlUI 143,
