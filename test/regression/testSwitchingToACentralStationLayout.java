@@ -954,8 +954,9 @@ public class testSwitchingToACentralStationLayout
         // sandbox first.
         // 69 on 2026-10-19: ui.testTheAutonomyEditorsQuestionsChangeTheSetup and ui.testStartingAutonomyFromTheWindow
         // (FR-136 Phase 6) each build a window, opening a sandbox first.
-        assertEquals(checked, 69,
-            checked + " test classes were found to build a window, not the 69 there were when this "
+        // 70 on 2026-10-25: ui.testALocomotiveIconIsCachedForTheSizeItWasAskedAt, which opens a sandbox first.
+        assertEquals(checked, 70,
+            checked + " test classes were found to build a window, not the 70 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

@@ -8449,6 +8449,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         b.setOpaque(false);
     }
     
+    /** The height limit that means none: the key stays url + size, as a plain request has always been cached. */
+    private static final int NO_HEIGHT_LIMIT = Integer.MAX_VALUE;
+
     /**
      * Returns a scaled locomotive image
      * @param url
@@ -8458,28 +8461,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public Image getLocImage(String url, int size) throws IOException, Exception
     {
-        String key = url + Integer.toString(size);
-        
-        if (!TrainControlUI.getImageCache().containsKey(key))
-        {
-            Image img = ImageIO.read(new URL(url));
-            
-            if (img != null)
-            {
-                float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
-                TrainControlUI.getImageCache().put(key, 
-                    // img.getScaledInstance(size, (int) (size * aspect), 1)
-                    // Higher quality scaling
-                    ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(img), size, (int) (size * aspect))
-                );
-            }
-        }
-
-        return TrainControlUI.getImageCache().get(key);        
+        return getLocImageMaxHeight(url, size, NO_HEIGHT_LIMIT);
     }
     
     /**
-     * Returns a scaled locomotive image
+     * Returns a scaled locomotive image no taller than maxHeight (Integer.MAX_VALUE: no limit).  The limit is part of
+     * the cache key: one URL and width asked with and without a limit are two pictures.
      * @param url
      * @param size
      * @param maxHeight
@@ -8488,7 +8475,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public Image getLocImageMaxHeight(String url, int size, int maxHeight) throws IOException
     {
-        String key = url + Integer.toString(size);
+        String key = maxHeight == NO_HEIGHT_LIMIT ? url + size : url + size + 'x' + maxHeight;
         
         if (!TrainControlUI.getImageCache().containsKey(key))
         {
@@ -8499,7 +8486,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
                 
                 // Limit maximum height
-                if (size * aspect > maxHeight)
+                if (maxHeight != NO_HEIGHT_LIMIT && size * aspect > maxHeight)
                 {
                     size = (int) (size * (maxHeight / (size * aspect)));
                 }
