@@ -23,16 +23,13 @@ import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * An import of routes says that they arrive with their automatic firing off, and how to turn it on.
+ * An import of routes says that they arrive with their automatic firing off, and how to turn it on.  Every route read
+ * from a file is disarmed (Adam: "they should not be armed. The user can choose to do this when they are ready."),
+ * pinned in `testRoutes`; what was missing was any word of it.
  *
- * Every route read from a file is disarmed, whatever the file says - Adam, 2026-09-10: *"they should not be armed.
- * The user can choose to do this when they are ready."*  That rule is pinned in `testRoutes`.  What was missing was
- * any word of it: at 2.8.1 an import restored each route as it was saved, and a user restoring a backup onto a new
- * computer found out when a train ran through a sensor that used to set a road or cut the power.
- *
- * **Runs only where the run has its own copy of the data.**  An import deletes every route the model holds before it
- * adds the file's, and in a run that shares `LocDB.data` with the application that would be the operator's routes.
- * `one.sh` and `battery.sh` give every run its own copy (`Util.DATA_DIR_PROPERTY`); anywhere else this skips.
+ * Runs only where the run has its own copy of the data: an import deletes every route the model holds before it adds
+ * the file's, and in a run sharing `LocDB.data` that would be the operator's routes.  `one.sh` and `battery.sh` give
+ * every run its own copy (`Util.DATA_DIR_PROPERTY`); anywhere else this skips.
  *
  * MUTATION: take the notice out of `importRoutes` and this fails.
  *
@@ -93,11 +90,7 @@ public class testAnImportSaysItsRoutesAreOff
         }
     }
 
-    /**
-     * Two routes, one saved armed: both come in, and the log says they are off and where to turn them on.
-     *
-     * @throws Exception from the fixture
-     */
+    /** Two routes, one saved armed: both come in, and the log says they are off and where to turn them on. */
     @Test
     public void testAnImportSaysTheRoutesArriveOff() throws Exception
     {
@@ -113,7 +106,7 @@ public class testAnImportSaysItsRoutesAreOff
 
             JSONObject saved = fixture.toJSON();
 
-            // THE FIRST ONE WAS SAVED ARMED, which is what a 2.8.1 backup of a working railway holds.
+            // THE FIRST ONE WAS SAVED ARMED, as a 2.8.1 backup of a working railway holds it.
             saved.put("auto", i == 0);
 
             routes.put(saved);
@@ -132,24 +125,19 @@ public class testAnImportSaysItsRoutesAreOff
             + " was saved armed - and said nothing about it: a train runs through the sensor that used to set a road"
             + " or cut the power before anybody knows (REG-B3).  Logged: " + logged);
 
-        // AND NOTHING WAS ARMED ON THE WAY IN.  A route built from a file that says "auto" started its
-        // sensor monitor, which logs that the route is running, and was disarmed on the next line - so the log said
-        // a route was running just before saying every route had arrived off.
+        // AND NOTHING WAS ARMED ON THE WAY IN: a route built from a file that says "auto" started its sensor monitor,
+        // which logs that the route is running, before being disarmed on the next line.
         assertFalse(logged.contains(I18n.f("route.running", "REG-B3 probe 0")), "the route saved armed logged that"
             + " it was running while it was imported, just before the notice that the routes arrive off: it was"
             + " built armed and disarmed afterwards (REG2-C6).  Logged: " + logged);
     }
 
     /**
-     * Asked, the import turns automatic firing back on for the routes the file saved with it on - and only those.
-     *
-     * Adam, 2026-09-24: *"save the state in the file on export, and ask the user on import.  if they want them armed,
-     * arm them.  otherwise, don't."*  The export has always written each route's `auto`; the import threw it away, so a
-     * restored backup came back with every route off and nothing said which had been on.
+     * Asked, the import turns automatic firing back on for the routes the file saved with it on, and only those (Adam:
+     * "save the state in the file on export, and ask the user on import.  if they want them armed, arm them.
+     * otherwise, don't.").
      *
      * MUTATION: ignore the answer, or arm every route, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test(dependsOnMethods = "testAnImportSaysTheRoutesArriveOff")
     public void testAnImportArmsWhatWasSavedArmedWhenAsked() throws Exception
@@ -199,7 +187,7 @@ public class testAnImportSaysItsRoutesAreOff
         assertTrue(logged.contains(I18n.f("route.running", "REG2-C7 probe 0")), "the route turned back on is not"
             + " watching its sensor.  Logged: " + logged);
 
-        // NOT ASKED, NOTHING IS ARMED - the rule of 2026-09-10 stands for a No.
+        // NOT ASKED, NOTHING IS ARMED: the rule stands for a No.
         model.importRoutes(file, false);
 
         assertFalse(model.getRoute("REG2-C7 probe 0").isEnabled(), "answered No, the import still turned automatic"
@@ -207,14 +195,10 @@ public class testAnImportSaysItsRoutesAreOff
     }
 
     /**
-     * A routes file that names one route twice is refused whole, before anything is deleted (OB-253; Adam, 2026-10-08:
-     * *"Fix b5 and 253"*).  The import deletes every route and adds the file's, and the second of two routes sharing an id
-     * or a name was turned away as it was added - so a hand-edited or merged file lost that route, and every route it
-     * replaced was already gone.  Now the import says why, and the routes there before are kept.
+     * A routes file that names one route twice is refused whole, before anything is deleted (OB-253): a hand-edited or
+     * merged file lost the second of two routes sharing an id or a name, and every route it replaced was already gone.
      *
      * MUTATION: delete before looking for a repeat, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAFileThatNamesARouteTwiceIsRefusedWhole() throws Exception
@@ -265,13 +249,10 @@ public class testAnImportSaysItsRoutesAreOff
     }
 
     /**
-     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name.
-     * It named the second route's name and its number together, though only one of them repeated, so the
-     * operator looking for the repeat was sent first to a name or a number that appears once.
+     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name.  It
+     * named both though only one repeated.
      *
      * MUTATION: name both again, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheRefusalSaysWhatRepeats() throws Exception
