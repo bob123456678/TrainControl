@@ -154,8 +154,8 @@ public class RightClickMenuListener extends PopupListener
 
                 addSeparator();
 
-                // SHARED WITH THE LOCOMOTIVE DATABASE'S MENU, and on this menu's own level beside Manage Locomotive, for
-                // convenience (Adam, 2026-10-03); the key belongs to this menu
+                // Shared with the locomotive database's menu, and on this menu's own level beside Manage Locomotive;
+                // the key belongs to this menu
                 menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
                 menuItem.setToolTipText("Control+L");
                 add(menuItem);
@@ -171,24 +171,14 @@ public class RightClickMenuListener extends PopupListener
                 submenu.add(menuItem);
                 submenu.addSeparator();
 
-                // SHARED WITH THE LOCOMOTIVE DATABASE MENU (FR-047).
-                //
-                // These seven items were written out twice, here and in RightClickSelectorMenu, and
-                // had already drifted. They live in LocomotiveMenuItems now; the ORDER and the
-                // keyboard tooltips stay here, because those belong to this menu rather than to the
-                // locomotive.
-                //
-                // One deliberate difference: the locomotive is resolved ONCE, as the menu is built,
-                // where this used to ask the button again inside every listener. That is the same
-                // answer in every case that can happen with a popup open, and it is the better one -
-                // the menu should act on what it was opened for.
+                // Shared with the locomotive database menu (FR-047): these items live in LocomotiveMenuItems now; the
+                // ORDER and the keyboard tooltips stay here, as they belong to this menu.  The locomotive is resolved
+                // ONCE, as the menu is built, so the menu acts on what it was opened for.
                 final org.traincontrol.base.Locomotive subject = ui.getButtonLocomotive(source);
 
                 submenu.add(LocomotiveMenuItems.setLocalIcon(ui, subject, null));
 
-                // Through `subject`, like every other line here.  This asked the button twice more,
-                // three lines under the paragraph above saying the locomotive is resolved ONCE - the
-                // comment had the intent right and this one line did not follow it.
+                // Through `subject`, like every other line here, so the locomotive is resolved once.
                 if (subject != null && subject.getLocalImageURL() != null)
                 {
                     submenu.add(LocomotiveMenuItems.clearLocalIcon(ui, subject));
