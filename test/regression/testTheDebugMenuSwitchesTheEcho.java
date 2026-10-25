@@ -17,22 +17,21 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * Preferences > Debug switches the echo of sent commands, in debug and simulation only (Adam, 2026-09-24).
+ * Preferences > Debug switches the echo of sent commands, in debug and simulation only.
  *
- * *"it would be handy to have a preference option (only when in debug+simulate mode) to turn on and off echoing, so we
- * don't need to recompile every time"* - then *"this could go in the preferences menu, under a debug heading visible only
- * in this mode"*, and *"I'd rather have debug be a non-bold heading with a submenu that has the options"*.  Echoing is
+ * Adam: *"it would be handy to have a preference option (only when in debug+simulate mode) to turn on and off echoing,
+ * so we don't need to recompile every time"*, under *"a debug heading visible only in this mode"*.  Echoing is
  * `MarklinControlStation.DEBUG_SIMULATE_PACKETS`: with it on, a simulation answers every command as a Central Station
- * would, which is what lets the window follow a throttle reversal there (MT-488).
+ * would, which lets the window follow a throttle reversal there (MT-488).
  *
- * In a window started simulating and in debug, on a sandbox.  A test run is unattended, so the stored choice is neither
- * read into the flag nor written from it - a test must not switch echo on the operator's next launch.
+ * In a window started simulating and in debug, on a sandbox.  A test run is unattended, so the stored choice is
+ * neither read into the flag nor written from it.
  *
  * MUTATION: leave the checkbox out of the flag, or mount the menu whatever the mode, and a claim fails.
  *
- * And what a Central Station sends shows in that window (FR-136 Phase 6): the power cut at the station and a turnout
- * thrown there, each sent as the station sends it (`support.Packets`) and read off the window; and Sync Full Function
- * State asks the station, or does not, as its question is answered.
+ * And what a Central Station sends shows in that window (FR-136): the power cut at the station and a turnout thrown
+ * there, each sent as the station sends it (`support.Packets`) and read off the window; and Sync Full Function State
+ * asks the station, or does not, as its question is answered.
  *
  * @author Adam
  */
@@ -75,8 +74,6 @@ public class testTheDebugMenuSwitchesTheEcho
 
     /**
      * Preferences has a Debug submenu, in the ordinary face, holding the echo switch.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testPreferencesHasADebugSubmenu() throws Exception
@@ -94,8 +91,6 @@ public class testTheDebugMenuSwitchesTheEcho
 
     /**
      * Ticking it switches echo on, and unticking switches it off.
-     *
-     * @throws Exception from the event thread
      */
     @Test(dependsOnMethods = "testPreferencesHasADebugSubmenu")
     public void testTheSwitchTurnsTheEchoOnAndOff() throws Exception
@@ -119,8 +114,6 @@ public class testTheDebugMenuSwitchesTheEcho
     /**
      * Mounted only in debug and simulation, and the stored choice applied there - asked of the source, since this window
      * is in that mode and a second window in another is a second start in one JVM.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testItIsOfferedOnlyInDebugAndSimulation() throws Exception
@@ -140,8 +133,6 @@ public class testTheDebugMenuSwitchesTheEcho
      *
      * MUTATION: in `MarklinControlStation.receiveMessage`, take out the STOP branch's
      * `if (this.view != null) this.view.updatePowerState();`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAPowerCutAtTheStationShowsInTheWindow() throws Exception
@@ -181,8 +172,6 @@ public class testTheDebugMenuSwitchesTheEcho
      *
      * MUTATION: in `MarklinControlStation.receiveMessage`, take out
      * `this.view.repaintSwitch(accessory.getAddress() + 1, accessory.getDecoderType());`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testATurnoutThrownAtTheStationShowsOnItsKey() throws Exception
@@ -225,8 +214,6 @@ public class testTheDebugMenuSwitchesTheEcho
      * locomotive's state.
      *
      * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`, take out `this.model.allFunctionsOff();`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testSyncFullFunctionStateAnsweredYesAsksTheStation() throws Exception
@@ -264,8 +251,6 @@ public class testTheDebugMenuSwitchesTheEcho
      *
      * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`,
      * `if(dialogResult == JOptionPane.YES_OPTION)` to `if(true)`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testSyncFullFunctionStateAnsweredNoChangesNothing() throws Exception
