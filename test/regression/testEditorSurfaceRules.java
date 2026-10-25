@@ -1086,9 +1086,8 @@ public class testEditorSurfaceRules
      * - a highlight cannot take the mark away (MT-309): both marks are PAINTED over the icon, never tinted into it;
      * - there is exactly ONE wash, the painted one: the same tile with more transparency, applied in `paintComponent`
      *   as the icon is painted and before the train mark;
-     * - coverage is per edge for routing and per square for drawing, which differ at a switch, so a path over track
-     * that
-     *   shares metal with a covered edge is refused;
+     * - coverage is per edge for routing and per square for drawing, which differ at a switch, so a path over
+     *   track that shares metal with a covered edge is refused;
      * - only the track diagram viewer draws it.
      * Source-level, because it is all about what a Swing component draws.
      *
@@ -2778,8 +2777,8 @@ public class testEditorSurfaceRules
      *
      * MUTATION: in `AutonomyEditorPanel.promptBlockingPoints`, put the check-box label back to
      * `session.getStore().getPointName(tile)` and this fails.  Second: drop the `&& !already.contains(tile)` qualifier
-     * from the self-caption filter (the `getCaptionTarget(tile)` line in EditorPrompts.promptBlockingPoints); the
-     * needle is the whole statement because the qualifier also sits in the stations-only filter.
+     * from the self-caption filter in EditorPrompts (the whole statement is the needle; the qualifier also sits in
+     * the stations-only filter).
      */
     @Test
     public void testTheBlockedPointsPickerCarriesAndNamesWhatIsStored() throws Exception
