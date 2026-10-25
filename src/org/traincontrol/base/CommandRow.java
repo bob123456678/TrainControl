@@ -7,47 +7,32 @@ import java.util.List;
 /**
  * A route command as three things a person picks, rather than a line they have to type.
  *
- * The editable shape of every command TrainControl understands turns out to be the same three columns:
- * what KIND of thing this is, WHICH one, and what to do to it. An accessory is "Accessory / 12 /
- * turn"; a locomotive speed is "Speed / BR 628 / 40"; a stop is "Stop" and nothing else. Three columns
- * of dropdowns cover all of it, which is what lets the editor be a table instead of a text box with
- * syntax rules.
+ * Every command TrainControl understands is the same three columns: what KIND of thing this is, WHICH one, and what to
+ * do to it ("Accessory / 12 / turn", "Speed / BR 628 / 40", "Stop").  The conversion is testable: a command taken apart
+ * into columns and put back together must be the command it started as, or opening a route and pressing Save would
+ * quietly change it.
  *
- * The point of this class is that the conversion can be tested. A route edited through controls is
- * only safe if a command taken apart into columns and put back together is the command it started as -
- * otherwise opening a route and pressing Save would quietly change it.
- *
- * A kind this does not know is not lost. {@link #of} answers null, and the editor keeps that command
- * as it found it - the same rule the condition rows follow for a bracket.
+ * A kind this does not know is not lost: {@link #of} answers null, and the editor keeps that command as it found it.
  */
 public final class CommandRow
 {
     /**
-     * What a command does, as the editor offers it.
-     *
-     * Deliberately not RouteCommand.commandType: that enum carries kinds the editor has no controls
-     * for, and mapping them here rather than exposing them keeps "what can be edited" in one place.
+     * What a command does, as the editor offers it.  Deliberately not RouteCommand.commandType, which carries kinds the
+     * editor has no controls for.
      */
     public enum Kind
     {
         ACCESSORY,
 
-        // A signal, which is the same device as a switch at the same address with the same two
-        // states - accessoryType only decides which picture gets drawn.  Two kinds anyway, because
-        // "Signal 100 red" and "Switch 100 turn" are the same command said in the two vocabularies
-        // real people use, and being offered the wrong pair of words is being asked to translate
-        // your own layout.
-        //
-        // They BUILD identically, so nothing downstream has to know about the split; of() answers
-        // ACCESSORY for both, since a stored command carries no record of which it was, and the
-        // editor upgrades a row to SIGNAL when the layout says there is a signal at that address.
+        // A signal is the same device as a switch at the same address; accessoryType only decides the picture.  Two
+        // kinds anyway, because "Signal 100 red" and "Switch 100 turn" are the same command in the two vocabularies
+        // people use.  They BUILD identically; of() answers ACCESSORY for both, and the editor upgrades a row to SIGNAL
+        // when the layout has a signal at that address.
         SIGNAL,
 
-        // A three-way point: two motors at consecutive addresses, which a route holds as two
-        // ordinary accessory commands in a particular order with a pause between them.  One row
-        // rather than two because setting one by hand means knowing which motor moves first and why,
-        // and getting it wrong drives the point through a position nobody asked for.  ThreeWaySwitch
-        // is where the three shapes are written down; this is only the row that stands for one.
+        // A three-way point: two motors at consecutive addresses, held by a route as two accessory commands in order
+        // with a pause between.  One row, because setting one by hand means knowing which motor moves first.
+        // ThreeWaySwitch is where the three shapes are written down.
         THREE_WAY,
 
         FEEDBACK,
@@ -57,18 +42,14 @@ public final class CommandRow
         STOP,
         FUNCTIONS_OFF,
 
-        // The rest of what a route can do.  These were all readable and none of them buildable: a
-        // route that used one could be opened, and the row was kept grayed and untouched, but there
-        // was no way to add one.  AUTO_LOCOMOTIVE - a train at a sensor - is the condition the route editor's
-        // documentation used as its example, so until then the editor could not build the row it illustrated.
+        // The rest of what a route can do.
         LIGHTS_ON,
         AUTONOMY_LIGHTS_ON,
         ROUTE,
         AUTO_LOCOMOTIVE,
 
-        // The same condition asked the other way round: the train NOT standing at the sensor (FR-141).  One stored
-        // command, as Switch and Signal are; a kind of its own because this kind's setting is already the sensor's
-        // address, so unlike a sensor's on and off the way round has no cell to go in.
+        // The condition asked the other way round (FR-141).  One stored command, as Switch and Signal are; a kind of
+        // its own because its setting is already the sensor's address, so the way round has no cell to go in.
         AUTO_LOCOMOTIVE_NOT_AT
     }
 
@@ -141,16 +122,7 @@ public final class CommandRow
         return delay;
     }
 
-    /**
-     * What a kind is called in the interface.
-     *
-     * The enum names are how the code spells these - LOCOMOTIVE_DIRECTION, AUTONOMY_LIGHTS_ON - and
-     * they were being shown to the user as they are. A route editor is used by somebody who knows
-     * their railway and has no reason to know how a Java enum is written.
-     *
-     * @param kind the kind
-     * @return its name, in the user's language
-     */
+    /** What a kind is called in the interface: the enum names are not for people. */
     public static String labelFor(Kind kind)
     {
         if (kind == null) return "";
@@ -159,13 +131,8 @@ public final class CommandRow
     }
 
     /**
-     * The kind a label names, or null when nothing matches.
-     *
-     * By comparing against the labels rather than by parsing them, so the two directions cannot
-     * disagree - and so a translation can say anything it likes without breaking the editor.
-     *
-     * @param label what the dropdown is showing
-     * @return the kind
+     * The kind a label names, or null.  Compared against the labels rather than parsed, so the two directions cannot
+     * disagree and a translation can say anything.
      */
     public static Kind kindFor(String label)
     {
@@ -186,30 +153,10 @@ public final class CommandRow
     /**
      * Whether this kind is something a route can DO, as against something it can ask about.
      *
-     * AUTO_LOCOMOTIVE is "train X is standing at sensor 21", which is a fact rather than an
-     * instruction: there is nothing for a route to carry out. It was offered in the command list
-     * because the list offered every kind there is, and a route built with one would have been a
-     * route with a sentence in it that cannot be obeyed.
-     *
-     * FEEDBACK is the second of these, and it was offered here for the same reason (OB-141).
-     *
-     * Adam: "a route command should not be able to contain s88 sensors. these should only be in the
-     * conditions only." The model had always agreed with him - `RouteCommand.isConditionCommand()`
-     * answers true for feedback - and only this method disagreed.
-     *
-     * WHAT IT DID WHEN SELECTED, which is the half worth writing down: nothing. `MarklinRoute.execRoute`
-     * dispatches on a chain of isAccessory / isStop / isFunctionsOff / isAutonomyLightsOn / isLightsOn
-     * / isLocomotiveSpeed / isLocomotiveDirection / isFunction / isRoute, with no isFeedback branch and
-     * no final else, so the row fell through the lot. It sent nothing and logged nothing; its only
-     * effect was the sleep the loop takes for every row, which made an s88 command a pure delay wearing
-     * the name of an instruction. It was still saved, re-read and exported, so a route kept a sentence
-     * in it that could never be obeyed.
-     *
-     * A row that already holds one still opens and still shows, the way an AUTO_LOCOMOTIVE row always
-     * has - what changes is that no new one can be added.
-     *
-     * @param kind the kind
-     * @return true if a route may contain it as a command
+     * AUTO_LOCOMOTIVE is a fact, not an instruction, and FEEDBACK (OB-141) does nothing when a route runs:
+     * `MarklinRoute.execRoute` has no branch for it, so it only delayed the route.  Adam: "a route command should not
+     * be able to contain s88 sensors. these should only be in the conditions only."  A row that already holds one
+     * still opens and shows; no new one can be added.
      */
     public static boolean canBeACommand(Kind kind)
     {
@@ -217,13 +164,8 @@ public final class CommandRow
     }
 
     /**
-     * Whether this kind is a train at a sensor, either way round: AUTO_LOCOMOTIVE or AUTO_LOCOMOTIVE_NOT_AT (FR-141).
-     *
-     * Both have a locomotive for a target and a sensor's address for a setting, so every cell is offered and checked the
-     * same way for the two.
-     *
-     * @param kind the kind
-     * @return true for either of the two
+     * Whether this kind is a train at a sensor, either way round (FR-141).  Both have a locomotive for a target and a
+     * sensor's address for a setting, so every cell is offered and checked the same way.
      */
     public static boolean asksWhereATrainIs(Kind kind)
     {
@@ -252,17 +194,8 @@ public final class CommandRow
             case LOCOMOTIVE_SPEED: return "0";
             case FUNCTION: return "0:off";
 
-            // AUTO_LOCOMOTIVE never reaches here, and this arm is kept only to say so.
-            //
-            // The argument that used to stand here was that refusing is better than offering sensor 1
-            // to somebody who did not choose it.  That decision was reversed by `ef33f4a8`: the editor
-            // offers exactly sensor 1, by name, on the condition side.
-            //
-            // The replacement sentence was wrong too - it claimed a COMMAND row of this kind is
-            // refused until a sensor is typed, and there is no such state.  `canBeACommand` excludes
-            // the kind outright, the commands dropdown is built from that predicate, and the Kind cell
-            // is read-only on a row that already exists.  So this case is unreachable and identical to
-            // `default`; it stays as the place that record lives.
+            // Never reaches here: `canBeACommand` excludes the kind and the Kind cell is read-only on an existing row.
+            // Identical to `default`.
             case AUTO_LOCOMOTIVE:
             case AUTO_LOCOMOTIVE_NOT_AT: return "";
 
@@ -271,14 +204,8 @@ public final class CommandRow
     }
 
     /**
-     * The pause a new row of this kind starts with, in milliseconds.
-     *
-     * Nothing waits by default; a three-way is the exception, because the pause between its two
-     * motors is not a preference but the thing that stops the second starting while the first is
-     * still moving.
-     *
-     * @param kind the kind
-     * @return the delay to start with
+     * The pause a new row of this kind starts with, in milliseconds.  Nothing waits by default; a three-way's pause is
+     * what stops the second motor starting while the first is still moving.
      */
     public static int defaultDelayFor(Kind kind)
     {
@@ -293,23 +220,9 @@ public final class CommandRow
      * carrying one silently stops firing with no error anywhere - the condition editor offered all
      * seven kinds, which made that a two-click mistake.
      *
-     * AUTO_LOCOMOTIVE **is** offered, and this paragraph used to say it was not.
-     * `ef33f4a8` added it - *"an AUTONOMY CONDITION could be chosen and did nothing ... it starts on
-     * the first locomotive now, like every other kind starts on something"* - and
-     * `RouteEditorFrame.conditionKindChanged` supplies both halves the old sentence said the row could
-     * not have: the first locomotive for the target, and sensor 1 for the setting.  So the editor does
-     * build the row the route editor's documentation used as its example.
-     *
-     * **By method name, not by line**: the first version of this paragraph cited
-     * `RouteEditorFrame:3415-3419`, which was already wrong when it was copied here out of a review,
-     * and a stale line number in a javadoc outlives every edit above it with nothing able to notice.
-     *
-     * The other NINE kinds are absent, and for the original reason: a condition built from one is
-     * permanently false.  (This said **four**, and there was no version in which four was right:
-     * when `Kind` had seven members this predicate admitted two, so five were absent, and the enum
-     * already had thirteen on the day the sentence was written.)  One already in a
-     * route is preserved
-     * read-only, the way every other unsupported kind is.
+     * AUTO_LOCOMOTIVE is offered: `RouteEditorFrame.conditionKindChanged` supplies its first locomotive and sensor 1.
+     * The other nine kinds are absent because a condition built from one is permanently false; one already in a route
+     * is preserved read-only.
      */
     public static boolean canBeACondition(Kind kind)
     {
@@ -328,17 +241,8 @@ public final class CommandRow
     /**
      * Whether this kind can carry a delay.
      *
-     * EIGHT OF THE FOURTEEN CANNOT: FEEDBACK, STOP, FUNCTIONS_OFF, LIGHTS_ON,
-     * AUTONOMY_LIGHTS_ON, ROUTE, AUTO_LOCOMOTIVE and AUTO_LOCOMOTIVE_NOT_AT.  This sentence used to name
-     * the first three, and `Kind` has grown since.
-     *
-     * The reason is unchanged and is the thing to check this list against: `RouteCommand.toLine`
-     * writes a delay in its accessory, direction, speed and function branches and nowhere else, so a
-     * delay on any other kind is a number the file cannot carry.  Stated as a rule rather than as a
-     * roll-call because the roll-call is what went stale.
-     *
-     * This class already carries the identical correction fifty lines above, on `canBeACondition`:
-     * *"This said four, and there was no version in which four was right."*  Same file, same miscount.
+     * `RouteCommand.toLine` writes a delay in its accessory, direction, speed and function branches and nowhere else,
+     * so a delay on any other kind is a number the file cannot carry.
      */
     public static boolean hasDelay(Kind kind)
     {
@@ -347,19 +251,14 @@ public final class CommandRow
             || kind == Kind.THREE_WAY;
     }
 
-    /**
-     * Whether this kind takes a target at all, so the editor can gray the cell rather than offer a box
-     * that does nothing.
-     */
+    /** Whether this kind takes a target at all, so the editor can gray the cell. */
     public static boolean hasTarget(Kind kind)
     {
         return kind != Kind.STOP && kind != Kind.FUNCTIONS_OFF
             && kind != Kind.LIGHTS_ON && kind != Kind.AUTONOMY_LIGHTS_ON;
     }
 
-    /**
-     * Whether this kind takes a setting.
-     */
+    /** Whether this kind takes a setting. */
     public static boolean hasSetting(Kind kind)
     {
         return kind != Kind.STOP && kind != Kind.FUNCTIONS_OFF
@@ -368,19 +267,15 @@ public final class CommandRow
     }
 
     /**
-     * Whether the FUNCTION kind's extra number is needed - it is the only kind with three parts, so it
-     * borrows the target for the locomotive and packs "function:setting" into the setting.
+     * Whether the FUNCTION kind's extra number is needed: it borrows the target for the locomotive and packs
+     * "function:setting" into the setting.
      */
     public static boolean isFunction(Kind kind)
     {
         return kind == Kind.FUNCTION;
     }
 
-    /**
-     * The row behind a command, or null when the editor has no controls for it.
-     *
-     * @param command the command as stored
-     */
+    /** The row behind a command, or null when the editor has no controls for it. */
     public static CommandRow of(RouteCommand command)
     {
         if (command == null) return null;
@@ -399,7 +294,7 @@ public final class CommandRow
 
         if (command.isFunction())
         {
-            // The only kind with three parts, so the function number rides with its setting
+            // The only kind with three parts: the function number rides with its setting
             return new CommandRow(Kind.FUNCTION, command.getName(),
                 command.getFunction() + ":" + (command.getSetting() ? "on" : "off"),
                 null, command.getDelay());
@@ -434,8 +329,7 @@ public final class CommandRow
                 command.getName(), String.valueOf(command.getAddress()));
         }
 
-        // Anything a later version adds.  Answering null keeps the command exactly as it was found
-        // rather than losing it, which is why this method has always ended this way.
+        // Anything a later version adds: null keeps the command exactly as it was found
         return null;
     }
 
@@ -448,11 +342,8 @@ public final class CommandRow
     }
 
     /**
-     * The commands this row means - usually one, and two for a three-way point.
-     *
-     * Every caller that writes a route out goes through here rather than through toCommand, because
-     * a row that stands for two commands has no single command to return and asking for one would
-     * quietly write out half a point.
+     * The commands this row means: one, or two for a three-way point.  Every caller that writes a route out goes
+     * through here, since a row standing for two commands has no single command to return.
      *
      * @param protocol the decoder type for a row that carries none of its own
      * @return the commands, in the order they must be sent
@@ -503,9 +394,8 @@ public final class CommandRow
     {
         switch (kind)
         {
-            // A point is two commands, and there is no honest single one to hand back.  Reached only
-            // by a caller that has not been moved to toCommands, so it says so rather than writing
-            // out the first half of a point and losing the second.
+            // A point is two commands, with no honest single one to hand back; reached only by a caller not yet moved
+            // to toCommands.
             case THREE_WAY:
                 throw new IllegalArgumentException(I18n.t("route.errorThreeWayNeedsBoth"));
 
@@ -531,15 +421,11 @@ public final class CommandRow
                 return RouteCommand.RouteCommandAutoLocomotive(target,
                     number(setting, "route.wordAddress"), kind == Kind.AUTO_LOCOMOTIVE);
 
-            // One command either way.  The two kinds differ in the words the editor offers and in
-            // nothing else, and oneOf below has always accepted all four.
+            // One command either way: the two kinds differ only in the words the editor offers.
             case SIGNAL:
             case ACCESSORY:
-                // Red and green as well as turn and straight.  A signal and a switch are the same
-                // device here - the type only decides which picture is drawn - so the same two states
-                // have two pairs of names, and Accessory has always understood all four.  The editor
-                // understood two, so a route built against a signal in the words a signal uses was
-                // refused.
+                // Red and green as well as turn and straight: a signal and a switch are one device with two
+                // vocabularies.
                 return RouteCommand.RouteCommandAccessory(number(target, "route.wordAddress"), protocol,
                     oneOf(setting, "turn", "straight", "red", "green"));
 
@@ -595,17 +481,9 @@ public final class CommandRow
      * @throws IllegalArgumentException when the text is neither
      */
     /**
-     * The same, with a second name for each state.
+     * The same, with a second name for each state: a signal's red is a switch's turn, so both are accepted and the
+     * editor offers whichever belongs to the thing at that address.
      *
-     * A signal's red is a switch's turn: one device, one pair of states, two vocabularies. Rather
-     * than pick one and make the other wrong, both are accepted and the editor offers whichever
-     * belongs to the thing at that address.
-     *
-     * @param setting what the row says
-     * @param whenTrue the first name for the true state
-     * @param whenFalse the first name for the false state
-     * @param alsoTrue another name for the true state
-     * @param alsoFalse another name for the false state
      * @return the state, or a refusal naming what was expected
      */
     private static boolean oneOf(String setting, String whenTrue, String whenFalse,
@@ -657,10 +535,8 @@ public final class CommandRow
     }
 
     /**
-     * The rows behind a list of commands, with an entry per command.
-     *
-     * A command with no controls yields a null entry, so the caller keeps the original at that
-     * position rather than dropping it.
+     * The rows behind a list of commands.  A command with no controls yields a null entry, so the caller keeps the
+     * original there.
      */
     public static List<CommandRow> of(List<RouteCommand> commands)
     {
