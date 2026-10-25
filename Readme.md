@@ -402,7 +402,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.3
+* v3.0.3 [10/25/2026]
     - Locomotive Control
         - The window for choosing a locomotive's icon now has a `Clear Local Locomotive Icon` button, so the icon can be cleared where it is set.
     - Routes
@@ -421,6 +421,7 @@ Tab icons provided by Freepik.
         - Pasting a train on the Track Diagram onto a square that is not a station now says a train can only be placed at a station, instead of asking which way it faces.
         - Notices in the autonomy editor no longer push the diagram down: they float over its bottom edge, at most three lines with a scrollbar, and an X hides each one until the next.
         - In some languages, long phrases in the autonomy editor's `Track Directions` dropdown no longer make the window wider, and the column's buttons stay as wide as its dropdowns; the open list still shows them in full.
+        - The autonomy editor's right column now ends where its longest label or button ends in each language, so the track diagram gets the rest of the room.
         - In Danish, the autonomy editor's `Why not Moving?` button is now called `Kan toget køre?`, which fits the button instead of being cut short.
         - While autonomy or a route is running, the Layouts menu's page and layout items (such as `Create New Layout`, `Rename Current Page` and `Open Layout...`) now say "Edits are not allowed while autonomy or routes are running." instead of a message about locomotives.
         - While autonomy or a route is running, the autonomy setup's refusals now give one of two messages: "Edits are not allowed while autonomy or routes are running." for anything that changes the setup, the diagram, the timetable or the settings (including Import), and "Wait for the active locomotives to stop." for Export, and for loading or unloading a configuration while a route is running.  An item grayed out for this reason now says the same sentence when you point at it.

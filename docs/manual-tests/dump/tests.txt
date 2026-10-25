@@ -31701,7 +31701,7 @@ ordinal: 803
 anchor: mt-804
 date: 2026-10-24
 title: OB-364: the track editor's Text Labels box says what the page shows when it opens
-disposition: needs test
+disposition: fixed validated
 from: OB-364
 written: 2026-10-24
 reopened: no
@@ -31709,7 +31709,7 @@ body:
 | <a id="mt-804"></a>
 | ### MT-804 - 2026-10-24 - OB-364: the track editor's Text Labels box says what the page shows when it opens
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-364
 |
 | **Written:** 2026-10-24
@@ -31738,7 +31738,7 @@ ordinal: 804
 anchor: mt-805
 date: 2026-10-24
 title: OB-368: the Track Directions dropdown keeps the Station Labels dropdown's width in every language
-disposition: needs test
+disposition: fixed validated
 from: OB-368
 written: 2026-10-24
 reopened: no
@@ -31746,7 +31746,7 @@ body:
 | <a id="mt-805"></a>
 | ### MT-805 - 2026-10-24 - OB-368: the Track Directions dropdown keeps the Station Labels dropdown's width in every language
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-368
 |
 | **Written:** 2026-10-24
@@ -31917,7 +31917,7 @@ ordinal: 808
 anchor: mt-809
 date: 2026-10-24
 title: US English: gray, canceled and neighbors in the program's English text
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-24
 reopened: no
@@ -31925,7 +31925,7 @@ body:
 | <a id="mt-809"></a>
 | ### MT-809 - 2026-10-24 - US English: gray, canceled and neighbors in the program's English text
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-24
@@ -31961,7 +31961,7 @@ ordinal: 809
 anchor: mt-810
 date: 2026-10-24
 title: DD-B9: the editor warns that TopR1ParkLong and TopR1ParkShort cannot be reached, because the only way in is a copy where arrivals are barred
-disposition: needs test
+disposition: fixed validated
 from: DD-B9
 written: 2026-10-24
 reopened: no
@@ -31969,7 +31969,7 @@ body:
 | <a id="mt-810"></a>
 | ### MT-810 - 2026-10-24 - DD-B9: the editor warns that TopR1ParkLong and TopR1ParkShort cannot be reached, because the only way in is a copy where arrivals are barred
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** DD-B9
 |
 | **Written:** 2026-10-24
@@ -32114,7 +32114,7 @@ ordinal: 813
 anchor: mt-814
 date: 2026-10-24
 title: Layout menu items refused during a run say edits are not allowed (OB-370)
-disposition: needs test
+disposition: fixed validated
 from: OB-370
 written: 2026-10-24
 reopened: no
@@ -32122,7 +32122,7 @@ body:
 | <a id="mt-814"></a>
 | ### MT-814 - 2026-10-24 - Layout menu items refused during a run say edits are not allowed (OB-370)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-370
 |
 | **Written:** 2026-10-24
@@ -32152,7 +32152,7 @@ ordinal: 814
 anchor: mt-815
 date: 2026-10-24
 title: Name Everything's prompt wraps its question and keeps the keyboard (OB-371)
-disposition: needs test
+disposition: fixed validated
 from: OB-371
 written: 2026-10-24
 reopened: no
@@ -32160,7 +32160,7 @@ body:
 | <a id="mt-815"></a>
 | ### MT-815 - 2026-10-24 - Name Everything's prompt wraps its question and keeps the keyboard (OB-371)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-371
 |
 | **Written:** 2026-10-24
@@ -32305,7 +32305,7 @@ ordinal: 818
 anchor: mt-819
 date: 2026-10-24
 title: A train placed by the Track Diagram's Place on a station no train can leave is kept (OB-373)
-disposition: needs test
+disposition: fixed validated
 from: OB-373
 written: 2026-10-24
 reopened: no
@@ -32313,7 +32313,7 @@ body:
 | <a id="mt-819"></a>
 | ### MT-819 - 2026-10-24 - A train placed by the Track Diagram's Place on a station no train can leave is kept (OB-373)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-373
 |
 | **Written:** 2026-10-24
@@ -32342,7 +32342,7 @@ ordinal: 819
 anchor: mt-820
 date: 2026-10-24
 title: While a run holds the setup, its refusals give one of two messages (3.0.3 duplication work)
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-24
 reopened: no
@@ -32350,7 +32350,7 @@ body:
 | <a id="mt-820"></a>
 | ### MT-820 - 2026-10-24 - While a run holds the setup, its refusals give one of two messages (3.0.3 duplication work)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-24
@@ -32380,7 +32380,7 @@ ordinal: 820
 anchor: mt-821
 date: 2026-10-24
 title: A switch key looks the same when clicked, switched from outside and repainted (3.0.3 duplication work)
-disposition: needs test
+disposition: fixed validated
 from: FR-136
 written: 2026-10-24
 reopened: no
@@ -32388,7 +32388,7 @@ body:
 | <a id="mt-821"></a>
 | ### MT-821 - 2026-10-24 - A switch key looks the same when clicked, switched from outside and repainted (3.0.3 duplication work)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-136
 |
 | **Written:** 2026-10-24
@@ -32415,7 +32415,7 @@ ordinal: 821
 anchor: mt-822
 date: 2026-10-24
 title: While a run holds the setup, grayed items and refusals give one of two sentences (replaces MT-820)
-disposition: needs test
+disposition: fixed validated
 from: RSA77-C1
 written: 2026-10-24
 reopened: no
@@ -32423,7 +32423,7 @@ body:
 | <a id="mt-822"></a>
 | ### MT-822 - 2026-10-24 - While a run holds the setup, grayed items and refusals give one of two sentences (replaces MT-820)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** RSA77-C1
 |
 | **Written:** 2026-10-24
@@ -32455,7 +32455,7 @@ ordinal: 822
 anchor: mt-823
 date: 2026-10-25
 title: OB-375: the autonomy editor's right column is as wide as its dropdowns in every language
-disposition: needs test
+disposition: fixed validated
 from: OB-375
 written: 2026-10-25
 reopened: no
@@ -32463,7 +32463,7 @@ body:
 | <a id="mt-823"></a>
 | ### MT-823 - 2026-10-25 - OB-375: the autonomy editor's right column is as wide as its dropdowns in every language
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-375
 |
 | **Written:** 2026-10-25
@@ -32492,7 +32492,7 @@ ordinal: 823
 anchor: mt-824
 date: 2026-10-25
 title: OB-376: Name Everything and Rename... refuse a name another station or sensor already has
-disposition: needs test
+disposition: fixed validated
 from: OB-376
 written: 2026-10-25
 reopened: no
@@ -32500,7 +32500,7 @@ body:
 | <a id="mt-824"></a>
 | ### MT-824 - 2026-10-25 - OB-376: Name Everything and Rename... refuse a name another station or sensor already has
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-376
 |
 | **Written:** 2026-10-25
@@ -32535,7 +32535,7 @@ ordinal: 824
 anchor: mt-825
 date: 2026-10-25
 title: In Danish, the autonomy editor's second tool button reads Kan toget køre? in full
-disposition: needs test
+disposition: fixed validated
 from: OB-377
 written: 2026-10-25
 reopened: no
@@ -32543,7 +32543,7 @@ body:
 | <a id="mt-825"></a>
 | ### MT-825 - 2026-10-25 - In Danish, the autonomy editor's second tool button reads Kan toget køre? in full
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-377
 |
 | **Written:** 2026-10-25
@@ -32562,6 +32562,44 @@ body:
 | - Step 4: the editor closes; nothing was changed.
 |
 | *What this is:* OB-377.  In Danish the second button read "Hvorfor kører det ik...", cut off because its text needs more room than the column has.  It is now "Kan toget køre?", which fits.
+|
+tail:
+| ---
+|
+
+[test MT-826]
+ordinal: 825
+anchor: mt-826
+date: 2026-10-25
+title: The autonomy editor's right column ends where its widest text ends, in every language
+disposition: fixed validated
+from: MT-825
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-826"></a>
+| ### MT-826 - 2026-10-25 - The autonomy editor's right column ends where its widest text ends, in every language
+|
+| **Disposition:** fixed validated
+| **From:** MT-825
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Set TrainControl's language to Dansk and open the autonomy editor.
+| 2. Look at the column on the right, from Autonomiværktøjer at the top to Annuller at the bottom.
+| 3. Open the Kørselsretninger list, then close it without choosing.
+| 4. Close the editor with `Annuller`, switch to English, and open the autonomy editor again.
+| 5. Repeat steps 2 and 3, then once more in German.
+|
+| **Expected**
+|
+| - Step 2: the column ends just past its longest words, about where "Kan toget køre?", "Gem ændringer" and "Autonomiværktøjer" end, not with a wide gap after "Automatisk" or "Uopmålt spor".  The buttons and both dropdowns are the same width and their right edges line up.  No button text ends in "...".  The diagram takes the room the column gave up.
+| - Step 3: the list opens wider than the box if it needs to, so every phrase reads in full, even one the closed box cuts short.
+| - Step 5: the same in English and German.  The column is narrower than before in English and a little wider in German (157 pixels at your scale), because German's "Änderungen speichern" needs that.
+|
+| *What this is:* from MT-825.  Adam: "The sidebar should end about where I drew the red line".  The right column was a fixed 150 pixels in every language; it now ends where its widest text ends, about 120 pixels in Danish.  The window's own width doesn't change: if TrainControl remembers window sizes, it opens at the size you last left it.
 |
 tail:
 | ---

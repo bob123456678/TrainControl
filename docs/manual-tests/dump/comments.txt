@@ -29287,6 +29287,17 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-804 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
 [comment MT-805 0]
 who: Adam
 date: 2026-10-25
@@ -29300,6 +29311,17 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-805 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated: the failure was built as OB-375 and the column change, which passed as MT-823 and MT-826.
+|
+
 [comment MT-809 0]
 who: Adam
 date: 2026-10-25
@@ -29309,6 +29331,17 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-809 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment MT-810 0]
@@ -29322,6 +29355,17 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-810 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
 [comment MT-814 0]
 who: Adam
 date: 2026-10-25
@@ -29331,6 +29375,17 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-814 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment MT-815 0]
@@ -29346,6 +29401,17 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-815 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated: your note was built as OB-376, which passed as MT-824.
+|
+
 [comment MT-819 0]
 who: Adam
 date: 2026-10-25
@@ -29355,6 +29421,17 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-819 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment MT-820 0]
@@ -29379,6 +29456,17 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-820 2]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
 [comment MT-821 0]
 who: Adam
 date: 2026-10-25
@@ -29390,6 +29478,17 @@ text:
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-821 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
 [comment MT-822 0]
 who: Adam
 date: 2026-10-25
@@ -29399,6 +29498,17 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit 76d7c9f1, in Dansk - build\classes, compiled 24 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-822 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment MT-823 0]
@@ -29414,6 +29524,17 @@ text:
 | *Run against commit f0fa3854, in Dansk - build\classes, compiled 25 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-823 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated: your note (the column still wider than you wanted) was built as MT-826, which passed.
+|
+
 [comment MT-824 0]
 who: Adam
 date: 2026-10-25
@@ -29423,6 +29544,61 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit f0fa3854, in Dansk - build\classes, compiled 25 Oct 01:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-824 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
+[comment MT-825 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit f915aeeb, in Dansk - build\classes, compiled 25 Oct 01:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-825 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
+[comment MT-826 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| Works
+|
+
+[comment MT-826 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment OB-331 0]
