@@ -410,12 +410,18 @@ Tab icons provided by Freepik.
         - Moving a condition up or down now takes it past a whole bracketed group beside it, so `(A or B or C) and D` becomes `D and (A or B or C)`.
     - Track Diagram
         - The autonomy locomotive icon is now slightly see-through, so a label under it can still be made out.
+    - Track Diagram Bug Fixes
+        - In the layout editor, the `Text Labels` box now matches what the page shows when it opens, also after the autonomy editor has hidden the page's text.
     - Route Bug Fixes
         - The route editor now shows switch, signal, sensor, function and direction settings (such as straight, turn, on and off) in your language.
     - Autonomy Bug Fixes
         - Opening another layout, creating a new one or loading the Central Station's layout no longer keeps the previous railway's trains standing in memory; your locomotives stay in the database, and choosing the same layout again keeps its trains.
         - Pasting a train on the Track Diagram onto a square that is not a station now says a train can only be placed at a station, instead of asking which way it faces.
         - Notices in the autonomy editor no longer push the diagram down: they float over its bottom edge, at most three lines with a scrollbar, and an X hides each one until the next.
+        - In some languages, long phrases in the autonomy editor's `Track Directions` dropdown no longer make the window wider; the open list still shows them in full.
+        - The setup check's warning that no train can reach a station now also finds stations whose only way in is from a side where arrivals are refused.
+    - Automation API Bug Fixes
+        - The full autonomy example in the API guide now gives each train a preferred speed and starts the trains it chose, so it runs as written.
 * v3.0.2 [10/18/2026]
     - Autonomy Features
         - Right-clicking Return Home now offers `Run Trains to Their Homes`, which does the same as the button, and `Place All Trains at Their Homes`, which puts each homed train on its home in the setup without moving anything, so you can then move the real trains by hand.

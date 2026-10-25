@@ -471,7 +471,12 @@ learnings.  Also, we should use US English.")
 - **US English** everywhere: the English bundle, Readme.md, Automation.md and UI-standards.md now; comments and
   AutomationAPI.md after the workers on those files merge; behaviour.md with its compaction below.
 
-**Not yet worked: behaviour.md** (239 KB, 2,884 lines; about 60k tokens to read whole).  Split by functional area into
+**For the next release, on Adam's word of 2026-10-24** ("Move JaCoCo to the next release, along with the
+behavior.md split, and tooling."): the behaviour.md split below, the JaCoCo rerun under Measurement, and the builder
+tooling the study suggested (`newtest.py` for a new test class's bookkeeping, `redgreen.sh` for a claim's red and
+green in one run, `env.sh` for a worker's environment).
+
+**Next release: behaviour.md** (239 KB, 2,884 lines; about 60k tokens to read whole).  Split by functional area into
 one file per area with `behaviour.md` (to be `behavior.md`) as a short index (area, section, main classes, main tests);
 compact each to the rule, its why and its id; update the ~90 citations in code and tests in the same commit; prove
 with a script that every OB/MT/FR id and every quote of Adam survives.  Held until the current work's learnings are in.
@@ -514,9 +519,10 @@ with a script that every OB/MT/FR id and every quote of Adam survives.  Held unt
 - The test pass of issues 25 and 27-30 is done (`d9021d99`, `docs/refactor-3.0.3-for-adam.md`).  Issue 30's three
   classes read the operator's own state for the main folder (his saved keys, his always-on-top setting, his
   remembered window size); a class that copies his settings sets what it needs, never toggles it.
-- Issue 24 (the main window not put back on top, once under lanes in a worktree) is still unexplained.
+- Issue 24 (the main window not put back on top, once under lanes in a worktree) is settled: it is issue 30's
+  always-on-top claim reading Adam's own setting, which he changed during the run, fixed in `d9021d99`.
 
-**Measurement**
+**Measurement (next release)**
 - A JaCoCo rerun (stopped on Adam's word of 2026-10-20), outside the repository as before; the 2026-10-19 run gave
   81.5% of lines.
 
