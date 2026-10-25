@@ -10,57 +10,38 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.util.I18n;
 
 /**
- * Which way a train pasted onto a may-reverse square should face.
+ * Which way a train pasted onto a may-reverse square should face.  Adam: "If pasting at a 'may reverse' square, ask
+ * what direction the train should face."
  *
- * Adam, 2026-09-13: **"If pasting at a 'may reverse' square, ask what direction the train should
- * face."**
+ * The paste cannot work it out there: `facingByPath` answers on an ordinary square, but turning round is what a
+ * may-reverse square is FOR, so both headings are reachable and the walk's answer is whichever copy it landed on.
+ * `ArrivalSidePrompt` asks which side the tail lies on one question earlier; on a may-reverse square neither follows
+ * from the other.
  *
- * **Why the paste cannot work it out there, and can everywhere else.**  A train faces the way it will
- * leave.  On an ordinary square the walk answers that - `facingByPath` drives the train from where it
- * is standing to where it is being put down, and the copy it arrives on says which way it points.  A
- * may-reverse square is precisely where that stops being a fact: turning round is what the square is
- * FOR, so both headings are reachable and the walk's answer is whichever copy it happened to land on.
+ * The headings offered are the ones the square can hold (`AutonomySession.facingsFor`), not the four compass points;
+ * where only one is possible nothing is shown.
  *
- * That is the same reason `ArrivalSidePrompt` exists one question earlier, and the two are different
- * questions about the same paste: **which side the tail lies on** (where it came from) and **which way
- * the nose points** (where it will go).  On every other square the second follows from the first; on a
- * may-reverse square neither follows from anything, which is why both are asked there and nowhere
- * else.
- *
- * **The headings offered are the ones the square can hold** - `AutonomySession.facingsFor` - not the
- * four compass points.  A square with no rail to the north cannot hold a train facing north, and
- * offering it would teach the operator that the setting does nothing.  Where only one heading is
- * possible there is nothing to ask and nothing is shown.
- *
- * **A dismissed question moves nothing.**  Adam, on the arrival-side prompt and true of this one:
- * *"Simply don't place the train, leave it on the clipboard as if no paste had been done."*  So the
- * caller asks BEFORE the move, and `null` from `forPlacement` means "leave everything as it was" -
- * which is why `wouldAsk` exists separately, exactly as it does on the sibling prompt: a null that
- * means "nothing to ask" and a null that means "the operator said no" are different answers, and
- * reading them alike is a defect.
+ * A dismissed question moves nothing (Adam, on the arrival-side prompt: "Simply don't place the train, leave it on the
+ * clipboard as if no paste had been done."): the caller asks BEFORE the move, and `null` from `forPlacement` means
+ * "leave everything as it was".  `wouldAsk` exists separately because "nothing to ask" and "the operator said no" are
+ * different nulls.
  */
 public class FacingPrompt
 {
-    /**
-     * Never instantiated.
-     */
+    /** Never instantiated. */
     private FacingPrompt()
     {
     }
 
     /**
-     * The answer the next question gets, for a test that has to drive a real paste (MT-394).
-     *
-     * A modal dialog in a test hung this suite for twenty minutes on 2026-09-13, and the only claim
-     * written for this question read the source instead - which is how a paste that ignored the answer
-     * passed.  Null, the default, means the dialog is shown.
+     * The answer the next question gets, for a test that has to drive a real paste (MT-394): a modal dialog in a test
+     * hangs the suite, and reading the source instead let a paste that ignored the answer pass.  Null means the dialog
+     * is shown.
      */
     private static volatile org.traincontrol.automationui.TilePorts.Side answeredByATest;
 
     /**
-     * Makes every facing question answer this without showing a dialog, until reset with null.
-     *
-     * For tests only.  Nothing in the application calls it.
+     * Makes every facing question answer this without showing a dialog, until reset with null.  For tests only.
      *
      * @param answer the heading to answer with, or null to put the dialog back
      */
@@ -73,9 +54,8 @@ public class FacingPrompt
     private static volatile String askedAboutByATest;
 
     /**
-     * What the last facing question answered by a test named the square as - the text the dialog would have shown.
-     *
-     * For tests only.
+     * What the last facing question answered by a test named the square as, the text the dialog would have shown; for
+     * tests only.
      *
      * @return the square's name as asked, or null when nothing has been asked
      */
@@ -109,10 +89,9 @@ public class FacingPrompt
     }
 
     /**
-     * Asks which way a locomotive should face at a home it is not standing on (Adam, 2026-09-23, OB-282).
-     *
-     * *"prompt the user for the direction"* - a home is set facing the way the train stands there, and a train
-     * standing elsewhere has no facing on that square to take.  Return Home brings it back facing the answer.
+     * Asks which way a locomotive should face at a home it is not standing on (OB-282; Adam: "prompt the user for the
+     * direction"): a home is set facing the way the train stands there, and a train elsewhere has no facing on that
+     * square.
      *
      * @param canHold the headings a train may be homed in there - copies trains may arrive at
      * @param locomotive the locomotive being homed
@@ -134,10 +113,8 @@ public class FacingPrompt
     }
 
     /**
-     * Whether putting a train down here would really put a question to the operator.
-     *
-     * One heading is not a choice, and no headings at all is a square that cannot hold a train facing
-     * anywhere - in both cases the paste carries on with the answer it already had.
+     * Whether putting a train down here would really put a question to the operator: one heading is not a choice, and
+     * none is a square that cannot hold a train facing anywhere; in both the paste carries on with the answer it had.
      *
      * @param canHold the headings this square can hold
      * @return whether a dialog would be shown
@@ -148,11 +125,9 @@ public class FacingPrompt
     }
 
     /**
-     * The headings to offer, in compass order so the buttons do not move between squares.
-     *
-     * DEDUPLICATED and ORDERED here rather than at the caller, because `facingsFor` answers per COPY:
-     * a square with three copies facing east hands back east three times, and three identical buttons
-     * is a dialog that cannot be answered.
+     * The headings to offer, in compass order so the buttons do not move between squares.  Deduplicated and ordered
+     * here rather than at the caller, because `facingsFor` answers per COPY: three copies facing east would give three
+     * identical buttons.
      *
      * @param canHold what the square can hold
      * @return the distinct headings, north, east, south, west
@@ -172,14 +147,10 @@ public class FacingPrompt
     }
 
     /**
-     * What a heading is called on a button: "To the North (up)", not "From the North (up)" (OB-215).
-     *
-     * Adam, 2026-09-13: the first cut borrowed `ArrivalSidePrompt.labelFor`, whose words answer "where
-     * did the train come from" - so a question about which way a train FACES offered "from the north".
-     * The two questions are about opposite ends of the train and need opposite words.
-     *
-     * WHOLE KEYS, one per case, for the reason `ArrivalSidePrompt.keyFor` gives: the bundle check reads
-     * the source for the keys it must find, and a concatenated one would read as a key in no bundle.
+     * What a heading is called on a button: "To the North (up)", not "From the North (up)" (OB-215):
+     * `ArrivalSidePrompt.labelFor` answers where the train came from, and a question about which way it FACES needs the
+     * opposite end's words.  Whole keys, one per case, as `ArrivalSidePrompt.keyFor` explains: the bundle check reads
+     * the source for the keys it must find.
      *
      * @param heading the way the train would face
      * @return the button label, in the running language
@@ -198,14 +169,9 @@ public class FacingPrompt
     }
 
     /**
-     * Puts the question.
-     *
-     * `showOptionDialog` for the reason every dialog in this application uses it: the buttons of the
-     * input dialogs follow the SYSTEM language, so a German operator gets "OK" and "Abbrechen" mixed
-     * into an English window or the other way about.
-     *
-     * The walk's own answer is the default button where the square can hold it, so the operator who
-     * presses return gets what the paste would have done without asking.
+     * Puts the question with `showOptionDialog`, as every dialog here does: the buttons of the input dialogs follow the
+     * SYSTEM language.  The walk's own answer is the default button where the square can hold it, so return gives what
+     * the paste would have done without asking.
      *
      * @param parent what to center on
      * @param question the question, already worded
@@ -244,9 +210,8 @@ public class FacingPrompt
         }
         catch (Exception cannotAsk)
         {
-            // Nothing, and null stands - which every caller reads as a dismissal: the paste
-            // returns without moving the train, and the home door sets no home (OB-282).  The safe
-            // answer to a question that could not be asked is to do nothing it would have decided.
+            // Nothing, and null stands, which every caller reads as a dismissal: the paste moves nothing and the home
+            // door sets no home (OB-282).
         }
 
         return answer[0];
