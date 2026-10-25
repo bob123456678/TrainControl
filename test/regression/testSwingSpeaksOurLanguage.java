@@ -14,7 +14,7 @@ import org.traincontrol.util.I18n;
 
 /**
  * Swing's own words - a popup's title and buttons, the file chooser's buttons - are in TrainControl's language (OB-318;
- * Adam, 2026-10-04: *"the popup titles message and input are not always translated, nor are file chooser buttons."*).
+ * Adam: "the popup titles message and input are not always translated, nor are file chooser buttons.").
  *
  * Swing takes them from its own resources, by the computer's language, and has none for Danish, Dutch or Polish; so a
  * popup with no title of its own said "Message" or "Input", and the file chooser said Open and Cancel, in English.  They
@@ -57,8 +57,6 @@ public class testSwingSpeaksOurLanguage
      * computer's is.
      *
      * MUTATION: leave any of these words to Swing, and this fails.
-     *
-     * @throws Exception from the look and feel
      */
     @Test
     public void testAPopupSpeaksDanishWhereSwingCannot() throws Exception
@@ -98,8 +96,6 @@ public class testSwingSpeaksOurLanguage
      * Open tooltip - is TrainControl's after the install.
      *
      * MUTATION: install the look and feel without putting the words, and this fails.
-     *
-     * @throws Exception from the look and feel
      */
     @Test
     public void testTheInstallPutsTheWords() throws Exception
@@ -123,8 +119,6 @@ public class testSwingSpeaksOurLanguage
      * the name.
      *
      * MUTATION: leave any of these words to Swing, and this fails.
-     *
-     * @throws Exception from the look and feel
      */
     @Test
     public void testTheChoosersRarerWordsAreOurs() throws Exception
@@ -162,18 +156,15 @@ public class testSwingSpeaksOurLanguage
     }
 
     /**
-     * Every file chooser TrainControl makes takes its Look In list from the shell's answer asked once ahead of time, not
-     * asked again as it is built and at every change of folder (OB-323; Adam, 2026-10-05: *"there is an odd (brief but
-     * noticeable) delay before the file chooser opens for Layouts -> Open Layout..."*) - 1.0 to 1.8 s each on Adam's PC,
-     * 20 ms after.  And the list is still the shell's: every place Windows gives - Recent Items, Desktop, Documents, This
-     * PC and its drives, Network - and the folder the chooser is in (*"we don't want to sacrifice UX"*).  Asked of Swing's
-     * own test, `FilePane.usesShellFolder`, of the list, and of the source, which makes every chooser a
-     * `QuickFileChooser`.
+     * Every file chooser TrainControl makes takes its Look In list from the shell's answer asked once ahead of time,
+     * not asked again as it is built and at every change of folder (OB-323; Adam: "there is an odd (brief but
+     * noticeable) delay before the file chooser opens for Layouts -> Open Layout...": 1.0 to 1.8 s each on Adam's PC,
+     * 20 ms after).  And the list is still the shell's: every place Windows gives and the folder the chooser is in ("we
+     * don't want to sacrifice UX").  Asked of Swing's own test, `FilePane.usesShellFolder`, of the list, and of the
+     * source, which makes every chooser a `QuickFileChooser`.
      *
-     * MUTATION: let the chooser ask the shell itself again, leave the shell's places out of its list, or make one chooser a
-     * plain JFileChooser, and this fails.
-     *
-     * @throws Exception from the source tree
+     * MUTATION: let the chooser ask the shell itself again, leave the shell's places out of its list, or make one
+     * chooser a plain JFileChooser, and this fails.
      */
     @Test
     public void testEveryFileChooserSkipsTheShellsFolders() throws Exception
@@ -192,7 +183,6 @@ public class testSwingSpeaksOurLanguage
         assertEquals(usesShellFolder.invoke(null, made[0]), Boolean.FALSE, "TrainControl's file chooser asks the shell for"
             + " its Look In list itself, which costs a second or more each time it is built or changes folder (OB-323)");
 
-        // THE LIST IS THE SHELL'S, with the folder it is in
         Object shell = Class.forName("sun.awt.shell.ShellFolder").getMethod("get", String.class)
             .invoke(null, "fileChooserComboBoxFolders");
 
@@ -232,7 +222,6 @@ public class testSwingSpeaksOurLanguage
         assertTrue(listed.contains(here.getName()), "the chooser's Look In list does not name the folder it is in: "
             + listed);
 
-        // AND EVERY CHOOSER IS ONE
         java.util.regex.Pattern plain = java.util.regex.Pattern.compile("new\\s+(?:javax\\.swing\\.)?JFileChooser\\s*\\(");
 
         java.util.List<String> found = new java.util.ArrayList<>();
@@ -259,8 +248,6 @@ public class testSwingSpeaksOurLanguage
      * still listing the folder before, with an InternalError on the event thread.
      *
      * MUTATION: set the folder as given, without following a shortcut, and this fails.
-     *
-     * @throws Exception from the shortcut or the chooser
      */
     @Test
     public void testAShortcutToAFolderOpensTheFolder() throws Exception
@@ -274,7 +261,6 @@ public class testSwingSpeaksOurLanguage
             java.nio.file.Path target = java.nio.file.Files.createDirectory(base.resolve("target"));
             java.nio.file.Path link = base.resolve("to target.lnk");
 
-            // A WINDOWS SHORTCUT, made as Windows makes one
             Process made = new ProcessBuilder("powershell", "-NoProfile", "-NonInteractive", "-Command",
                 "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('" + link.toString().replace("'", "''") + "');"
                 + " $s.TargetPath = '" + target.toString().replace("'", "''") + "'; $s.Save()")
@@ -292,7 +278,6 @@ public class testSwingSpeaksOurLanguage
             {
                 javax.swing.JFileChooser chooser = new org.traincontrol.gui.widgets.QuickFileChooser(base.toString());
 
-                // as a double-click on it does
                 chooser.setCurrentDirectory(link.toFile());
 
                 landed[0] = chooser.getCurrentDirectory();
@@ -316,8 +301,6 @@ public class testSwingSpeaksOurLanguage
      * shell's values, the item type under "Modified" and no dates.
      *
      * MUTATION: leave the chooser's folder a plain one, and this fails.
-     *
-     * @throws Exception from the chooser
      */
     @Test
     public void testTheDetailsViewHasTheShellsColumns() throws Exception
@@ -349,8 +332,6 @@ public class testSwingSpeaksOurLanguage
      * again - a second each, which the next chooser waited behind.
      *
      * MUTATION: let a chooser ask beside an ask under way, or ask again with the drives the same, and this fails.
-     *
-     * @throws Exception from the chooser
      */
     @Test
     public void testTheShellIsAskedOnceAtATime() throws Exception
@@ -398,8 +379,6 @@ public class testSwingSpeaksOurLanguage
      * A folder of the test's own stands in for the Desktop, so the real one is never touched.
      *
      * MUTATION: ask again only when a drive comes or goes, and this fails.
-     *
-     * @throws Exception from the chooser
      */
     @Test
     public void testTheLookInListFollowsTheDesktop() throws Exception
@@ -444,7 +423,6 @@ public class testSwingSpeaksOurLanguage
 
             desktops.set(null, java.util.Collections.singletonList(standIn.toFile()));
 
-            // ASKED WITH THE STAND-IN AS THE DESKTOP
             org.traincontrol.gui.widgets.QuickFileChooser.askTheShellAhead();
 
             ((java.util.concurrent.Future<?>) asking.get(null)).get(60, java.util.concurrent.TimeUnit.SECONDS);
@@ -456,7 +434,6 @@ public class testSwingSpeaksOurLanguage
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "precondition:"
                 + " the shell was asked again with nothing changed");
 
-            // A FILE SAVED ON IT, which the list holds none of
             java.nio.file.Files.write(standIn.resolve("saved.txt"), new byte[] {1});
 
             standIn.toFile().setLastModified(standIn.toFile().lastModified() + 10000);
@@ -466,7 +443,6 @@ public class testSwingSpeaksOurLanguage
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "a file saved on"
                 + " the Desktop had the shell asked again for a list that holds only folders (RSA40-C3)");
 
-            // A FOLDER MADE ON IT
             java.nio.file.Files.createDirectory(standIn.resolve("made"));
 
             javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.widgets.QuickFileChooser()));
@@ -490,8 +466,6 @@ public class testSwingSpeaksOurLanguage
      * freezes"*): every chooser asked the shell for each item's icon on the event thread as it first painted.
      *
      * MUTATION: ask the shell for the icon every time, and this fails.
-     *
-     * @throws Exception from the chooser
      */
     @Test
     public void testTheShellsIconsAreKept() throws Exception
