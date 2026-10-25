@@ -94,7 +94,7 @@ public class DriveALocomotive
 
         //
         // Settings it remembers.  They are kept with the station's database, and the autonomy uses the preferred
-        // speed when it starts a train.
+        // speed when it starts a train.  This changes what is stored for this locomotive.
         //
         loco.setPreferredSpeed(30);
         loco.savePreferredFunctions();
@@ -108,7 +108,7 @@ public class DriveALocomotive
 
         found.add("after applying the preferred setup: F2 " + loco.getF(2) + ", speed " + loco.getSpeed());
 
-        // The function types decide which icon and behaviour each button has.  A copy is returned, so reading them
+        // The function types decide which icon and behavior each button has.  A copy is returned, so reading them
         // changes nothing.
         found.add("function types: " + Arrays.toString(loco.captureCustomizations().getTypes()));
 

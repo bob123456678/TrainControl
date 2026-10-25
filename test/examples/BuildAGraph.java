@@ -129,7 +129,7 @@ public class BuildAGraph
         found.add("leaving Pre Arrival: " + layout.getNeighbors(preArrival).size()
             + ", arriving at Pre Arrival: " + layout.getIncomingEdges(preArrival).size());
 
-        // These four ask whether every neighbour (or every incoming edge) is reversing, or inactive.  Reversing is for
+        // These four ask whether every neighbor (or every incoming edge) is reversing, or inactive.  Reversing is for
         // a station where the train turns round; inactive switches a point off for the autonomy.
         found.add("every way into Pre Arrival is from a reversing point: " + layout.hasOnlyReversingIncoming(preArrival));
 
@@ -149,7 +149,7 @@ public class BuildAGraph
         mainTrack.setReversing(false);
 
         //
-        // Finding a way, and measuring it.  Lengths are in the units you choose (centimetres, say), and are used by
+        // Finding a way, and measuring it.  Lengths are in the units you choose (centimeters, say), and are used by
         // the railway to tell whether a train fits.
         //
         layout.getEdge("Station 1", "Main Track").setLength(120);

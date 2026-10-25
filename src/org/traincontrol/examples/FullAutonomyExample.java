@@ -79,7 +79,9 @@ public class FullAutonomyExample
     
             //
             // Now we can run the locomotives!  Each runs at its preferred speed (saved with the locomotive), and
-            // the layout automatically chooses and executes an available route, one journey after another
+            // the layout automatically chooses and executes an available route, one journey after another.
+            // Warning: setPreferredSpeed changes the stored preferred speed of these locomotives, and the TrainControl
+            // UI saves it with its database.
             //
             data.getLocByName("SNCF 422365").setPreferredSpeed(30);
             data.getLocByName("140 024-1 DB AG").setPreferredSpeed(50);

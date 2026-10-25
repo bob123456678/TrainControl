@@ -17,10 +17,11 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * sensors it has passed, and when it has arrived.
  *
  * The graph is three points in a row: Platform A, a Crossing with a sensor, and Platform B.  On a simulated station the
- * layout plays the train past each sensor itself; on a real railway the train trips them.
+ * layout plays the train past each sensor itself; on a real railway the train trips them.  The sensors, the address and
+ * "Example train" are invented: replace them with your own track's before handing `run` a real station.
  *
- * Shows `setLocomotivesToRun`, `runLocomotives`, `stopLocomotives`, `isRunning`, `setMinDelay`, `setMaxDelay`,
- * `setSimulate`, the locomotive's `setCallback` with `Layout.CB_ROUTE_START`, `CB_ROUTE_PROG` and `CB_ROUTE_END`, the
+ * Shows `setLocomotivesToRun`, `runLocomotives`, `stopLocomotives`, `stopEveryTrainWhereItIs`, `isRunning`,
+ * `setMinDelay`, `setMaxDelay`, `setSimulate`, the locomotive's `setCallback` with `Layout.CB_ROUTE_START`, `CB_ROUTE_PROG` and `CB_ROUTE_END`, the
  * layout's own `setCallback`, `getActiveLocomotives`, `getStart`, `getDestination`, `getPointsInActivePath`,
  * `getReachedMilestones`, `getLatestMilestoneS88`, `getLastPointsReached`, `waitForS88Reached`,
  * `getLocomotiveLocation` and the locomotive's `getNumPaths`.
@@ -74,7 +75,7 @@ public class RunTrainsOnAGraph
 
         if (train == null) train = station.newMM2Locomotive(NAME, 62);
 
-        // The speed the railway drives it at, 1 to 100
+        // The speed the railway drives it at, 1 to 100.  This changes the locomotive's stored preferred speed.
         train.setPreferredSpeed(40);
 
         layout.getPoint("Platform A").setLocomotive(train);
@@ -151,13 +152,16 @@ public class RunTrainsOnAGraph
 
         found.add("the train arrived: " + made);
 
-        // Stop asks the train to finish the journey it is on and then stand.  Wait until the layout has finished.
+        // Stop asks the train to finish the journey it is on and then stand.  Wait a while for the layout to finish.
         layout.stopLocomotives();
 
         for (int waited = 0; waited < 20000 && layout.isRunning(); waited += 50)
         {
             Thread.sleep(50);
         }
+
+        // A train still under way (a sensor that never trips, say) must not be left running when this returns.
+        if (layout.isRunning()) layout.stopEveryTrainWhereItIs();
 
         for (Thread watcher : new ArrayList<>(watchers))
         {
