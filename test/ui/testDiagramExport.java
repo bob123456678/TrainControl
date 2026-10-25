@@ -682,4 +682,115 @@ public class testDiagramExport
             + "of tiles, their icons and their listeners, so this is a page of diagram retained per "
             + "editor opened - the shape of leak nobody notices until the day they do (FR-012)");
     }
+
+    /**
+     * The Layout menu's picture export asks for Small, Medium or Large, in that order, with no pixel counts (OB-374).
+     *
+     * Opened through the menu item's own action, and the question read off the screen as the user sees it.
+     *
+     * MUTATION: build the dialog's choices from the two sizes the export used to offer (with their pixel counts), or
+     * leave Medium out of `layoutSizes`.
+     */
+    @Test
+    public void testTheScreenshotMenuOffersSmallMediumAndLarge() throws Exception
+    {
+        java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("exportDiagramItem");
+        itemField.setAccessible(true);
+
+        final javax.swing.JMenuItem item = (javax.swing.JMenuItem) itemField.get(ui);
+
+        assertNotNull(item, "the Layout menu has no picture export item");
+
+        final List<String> offered = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        String question = org.traincontrol.util.I18n.t("layout.ui.promptDiagramSizeChoice");
+
+        try (support.Answering answering = support.Answering.start(message ->
+            {
+                if (!question.equals(message)) return null;
+
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (!(w instanceof javax.swing.JDialog) || !w.isShowing()) continue;
+
+                    for (java.awt.Component c : ((javax.swing.JDialog) w).getContentPane().getComponents())
+                    {
+                        if (!(c instanceof javax.swing.JOptionPane)) continue;
+
+                        Object[] values = ((javax.swing.JOptionPane) c).getSelectionValues();
+
+                        if (values != null) for (Object value : values) offered.add(String.valueOf(value));
+                    }
+                }
+
+                return offered.isEmpty() ? null : support.Answering.type(offered.get(0));
+            }))
+        {
+            SwingUtilities.invokeLater(() -> item.getActionListeners()[0].actionPerformed(
+                new java.awt.event.ActionEvent(item, java.awt.event.ActionEvent.ACTION_PERFORMED, "")));
+
+            assertTrue(answering.awaitAsked(1, 15000), "choosing the export asked nothing: " + answering.asked());
+            assertTrue(answering.asked().get(0).equals(question), "the export's first question was "
+                + answering.asked().get(0) + ", not the size");
+
+            // The save dialog that follows is canceled by the answerer; wait for it to go.
+            assertTrue(support.Settle.until(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof javax.swing.JDialog && w.isShowing()) return false;
+                }
+
+                return true;
+            }, 15000), "a dialog is still open after the size was answered");
+        }
+
+        assertEquals(offered, java.util.Arrays.asList(org.traincontrol.util.I18n.t("layout.ui.small"),
+            org.traincontrol.util.I18n.t("layout.ui.medium"), org.traincontrol.util.I18n.t("layout.ui.large")),
+            "the export should offer the pop-out window's Small, Medium and Large, in that order");
+
+        for (String size : offered)
+        {
+            assertFalse(size.matches(".*\\d.*"), "\"" + size + "\" spells out a pixel count; users know what they use");
+        }
+    }
+
+    /**
+     * Medium draws at the pop-out window's Medium tile size, between Small's and Large's, and the picture follows.
+     *
+     * MUTATION: answer the pop-out's Large size for Medium in `diagramTileSizeFor`.
+     */
+    @Test
+    public void testMediumExportsBetweenSmallAndLarge() throws Exception
+    {
+        java.lang.reflect.Method sizeFor;
+
+        try
+        {
+            sizeFor = TrainControlUI.class.getDeclaredMethod("diagramTileSizeFor", Object.class);
+        }
+        catch (NoSuchMethodException none)
+        {
+            fail("the export has no way to turn a picked size into a tile size");
+
+            return;
+        }
+
+        sizeFor.setAccessible(true);
+
+        int[] tile = new int[3];
+        int[] wide = new int[3];
+        String[] keys = {"layout.ui.small", "layout.ui.medium", "layout.ui.large"};
+
+        for (int i = 0; i < 3; i++)
+        {
+            tile[i] = (Integer) sizeFor.invoke(ui, org.traincontrol.util.I18n.t(keys[i]));
+            wide[i] = render(tile[i]).getWidth();
+        }
+
+        assertEquals(tile[1], TrainControlUI.MEDIUM_TILE_SIZE, "Medium is not the pop-out window's Medium size");
+        assertTrue(tile[0] < tile[1] && tile[1] < tile[2], "Medium is not between Small and Large: " + java.util.Arrays.toString(tile));
+        assertTrue(wide[0] < wide[1] && wide[1] < wide[2],
+            "the pictures do not grow with the size: " + java.util.Arrays.toString(wide));
+    }
 }

@@ -9034,6 +9034,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return showing == null ? null : showing.toString();
     }
 
+    /** Pixels per square for a size picked in the export dialog, the pop-out's own; null for no pick. */
+    private Integer diagramTileSizeFor(Object picked)
+    {
+        return picked == null ? null : layoutSizes.get(picked.toString());
+    }
+
     /**
      * Writes a diagram page to a picture file: asks which page, at what size, and where.  Drawn OFF the event thread
      * behind a spinner: it WAITS for tile images applied on the event thread, which holding would deadlock.
@@ -9064,20 +9070,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (page == null) return;
 
-        // Large or small, not a free pixel size, which is not a question about their railway.
-        Object[] sizes = {
-            I18n.f("layout.ui.diagramSizeLarge", DiagramExport.DEFAULT_TILE_SIZE),
-            I18n.f("layout.ui.diagramSizeSmall", DiagramExport.SCREEN_TILE_SIZE)
-        };
+        // The pop-out window's sizes, by its names, not a free pixel size, which is not a question about their railway.
+        Object[] sizes = layoutSizes.keySet().toArray();
 
         Object size = JOptionPane.showInputDialog(this, I18n.t("layout.ui.promptDiagramSizeChoice"),
             I18n.t("layout.ui.menuExportActiveDiagram"), JOptionPane.PLAIN_MESSAGE, null,
-            sizes, sizes[0]);
+            sizes, sizes[sizes.length - 1]);
 
-        if (size == null) return;
+        Integer tileSize = diagramTileSizeFor(size);
 
-        int tileSize = sizes[1].equals(size)
-            ? DiagramExport.SCREEN_TILE_SIZE : DiagramExport.DEFAULT_TILE_SIZE;
+        if (tileSize == null) return;
 
         javax.swing.JFileChooser chooser = new QuickFileChooser();
 
