@@ -18,27 +18,13 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A route drawn on the diagram is one line, with nothing missing out of the middle of it.
+ * A route drawn on the diagram is one line, with nothing missing out of the middle of it.  Adam reported gaps in the
+ * line the autonomy editor draws when a path is tested ("drawn segments are not connected over route tiles"), only in
+ * the editor's testing mode.
  *
- * Adam reported gaps in the line the autonomy editor draws when a path is tested - "drawn segments are
- * not connected over route tiles" - and later narrowed it: the running track diagram draws the same
- * route correctly, and only the editor's testing mode breaks.
- *
- * That narrowing rules out most of the machinery, and reading ruled out the rest of what I could check
- * from the outside: the reduced graph really does walk over route buttons (the sample layout has 43 of
- * them and the reduction crosses five), the editor annotates every square of its grid rather than a
- * filtered set, the two tracers compute their sides with the same method, and the registry that
- * publishes to the running diagram explicitly refuses to touch the editor's tiles.
- *
- * So this pins the one thing left that a test can reach: whether the sequence of squares the editor
- * draws through is CONTINUOUS. A line is drawn from the middle of each square to the sides it enters
- * and leaves by, and those sides come from comparing a square with its neighbors in the sequence - so
- * two squares that are not neighbors produce two stubs pointing at nothing, which is exactly what a
- * gap looks like.
- *
- * If this fails it names the two squares and what sits between them, which is the diagnosis.
- * If it passes, the fault is in the painting rather than in the route, and this stays as the guard
- * that says so.
+ * A line is drawn from the middle of each square to the sides it enters and leaves by, and those sides come from
+ * comparing a square with its neighbors in the sequence, so two squares that are not neighbors produce two stubs
+ * pointing at nothing.  If this fails it names the two squares and what sits between them.
  */
 public class testTracedPathIsContinuous
 {
@@ -71,11 +57,8 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * Every run of track the reduction knows is a chain of neighboring squares.
-     *
-     * Built exactly the way AutonomyEditorPanel.trace builds it - the squares between two sensors, with
-     * the sensors themselves put back in between, because the reduction hands over the track and the
-     * Points separately.
+     * Every run of track the reduction knows is a chain of neighboring squares, built the way AutonomyEditorPanel.trace
+     * builds it: the squares between two sensors, with the sensors themselves put back in between.
      */
     @Test
     public void testEveryReducedRunIsAChainOfNeighbours()
@@ -99,20 +82,14 @@ public class testTracedPathIsContinuous
                 TileGraph.TileKey previous = sequence.get(at - 1);
                 TileGraph.TileKey here = sequence.get(at);
 
-                // The same square twice is not a break - consecutive edges share the Point between
-                // them, so a run built by concatenation names it twice and the drawing skips it
+                // The same square twice is not a break: consecutive edges share the Point between them.
                 if (previous.equals(here)) continue;
 
                 if (TileGraph.gridSideTowards(previous, here) != null) continue;
 
-                // A PORTAL IS NOT A GAP.  A link or a tunnel joins two squares that are deliberately
-                // not neighbors - usually on different pages - and a train crossing one continues at
-                // its partner. There is no line to draw between them and none is missing: each page
-                // gets its own end of the run.
-                //
-                // Checked through the store's own pairing rather than assumed from "both ends are
-                // links". Two unrelated links that happened to be consecutive would be a real break,
-                // and "they are both links" would wave it through.
+                // A PORTAL IS NOT A GAP: a link or tunnel joins two squares that are deliberately not neighbors, and
+                // each page gets its own end of the run.  Checked through the store's own pairing, since two unrelated
+                // consecutive links would be a real break.
                 if (here.equals(session.getStore().getPortalPartner(previous))) continue;
 
                 breaks.add(previous + " -> " + here + " (" + describe(previous)
@@ -127,12 +104,8 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * And route buttons are part of those runs rather than something the track goes round.
-     *
-     * A route button carries no track meaning of its own and whatever line it sits on runs beneath it,
-     * so a layout that threads them through running track - this one has 43 - depends on the reduction
-     * walking over them. If it stopped doing that, the runs would still be continuous by the test
-     * above, because they would simply take another way.
+     * And route buttons are part of those runs rather than something the track goes round: this layout threads 43 of
+     * them through running track.
      */
     @Test
     public void testRouteButtonsAreWalkedOver()
@@ -157,24 +130,10 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * A square autonomy takes no notice of still shows the route that runs over it.
-     *
-     * This is the fault, and Adam found it from the picture: "it is just the route tiles with no
-     * connecting edge, could it be the greyout?" It was.
-     *
-     * A route button carries no track meaning of its own, so the editor grays it - there is nothing on
-     * it for the user to set, and offering a length or a direction would invite a click that does
-     * nothing. But the graying returned before drawing anything else, and that swallowed the tested
-     * route as well. "Nothing here to configure" had quietly come to mean "nothing here to draw",
-     * which are different things: a drawn route is not an invitation to change something, it is an
-     * answer to a question that was asked.
-     *
-     * It broke only in the editor because the running diagram draws routes through a different painter
-     * that has no notion of ignored at all - which is exactly the asymmetry Adam reported.
-     *
-     * Painted for real and read back off the image, because the whole bug was that a value was correct
-     * and never reached the screen. Anything short of looking at the pixels would have passed while it
-     * was broken.
+     * A square autonomy takes no notice of still shows the route that runs over it (Adam: "it is just the route tiles
+     * with no connecting edge, could it be the greyout?").  The graying returned before drawing anything else and
+     * swallowed the tested route; the running diagram uses a painter with no notion of ignored.  Painted for real and
+     * read back off the image, because the value was correct and never reached the screen.
      */
     @Test
     public void testAGreyedSquareStillShowsTheRouteThroughIt()
@@ -198,9 +157,7 @@ public class testTracedPathIsContinuous
             + "into 'draw everything on ignored squares', which is what the greying is there to stop");
     }
 
-    /**
-     * One annotation, grayed or not, carrying the given traces.
-     */
+    /** One annotation, grayed or not, carrying the given traces. */
     private static org.traincontrol.automationui.TileAnnotation annotation(boolean ignored,
         java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> traces)
     {
@@ -209,11 +166,8 @@ public class testTracedPathIsContinuous
     }
 
     /**
-     * Paints one tile and says whether anything strongly colored landed on it.
-     *
-     * The graying is white and a mid gray hatch, so anything with real color in it came from
-     * something else - which is all this needs to know, and it does not tie the test to the exact
-     * shade the route happens to be drawn in today.
+     * Paints one tile and says whether anything strongly colored landed on it: the graying is white and mid gray, so
+     * any real color came from something else.
      */
     private static boolean drawsSomethingOtherThanGrey(
         org.traincontrol.automationui.TileAnnotation annotation)
@@ -257,9 +211,7 @@ public class testTracedPathIsContinuous
         return false;
     }
 
-    /**
-     * What is at a square, for a failure message somebody can act on.
-     */
+    /** What is at a square, for a failure message somebody can act on. */
     private static String describe(TileGraph.TileKey tile)
     {
         LayoutDiagramComponent component = graph.getTiles().get(tile);
