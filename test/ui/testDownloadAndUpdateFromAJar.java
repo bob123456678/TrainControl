@@ -49,21 +49,15 @@ import support.Components;
 
 /**
  * Help > Download Update > Download & Update, from a jar it can replace: each way it stops short of the exit says why
- * and leaves the jar as it was (FR-125).
+ * and leaves the jar as it was (FR-125; Adam: "after downloading the new jar, it should take a backup, then start the
+ * update script and close TrainControl.").  A test runs from a folder of classes, where Download & Update is not
+ * offered, so each claim points `SelfUpdate.runningJarForTests` at a throwaway jar of its own (Adam: "OK on download
+ * update test hooks") and answers the real dialogs through `support.Answering`.
  *
- * Adam, 2026-10-12: *"after downloading the new jar, it should take a backup, then start the update script and close
- * TrainControl."*  A test runs from a folder of classes, where Download & Update is not offered, so each claim points
- * `SelfUpdate.runningJarForTests` at a throwaway jar in a folder of its own (Adam, 2026-10-19: "OK on download update
- * test hooks") and clicks the menu item, answering the real dialogs through `support.Answering`.
- *
- * **Nothing is fetched from the internet and nothing real is replaced.**  The window's update check is off before the
- * window is built; the new version is served by a server on this computer, under a version no release will have; the
- * download goes beside the throwaway jar; the backup goes into the run's own data folder and is deleted after each
- * claim.  A security manager refuses, and records, any process started and any exit while a claim runs, so a defect
- * that let the update reach the exit is a red here, not an updater on the desktop.
- *
- * The census in `regression.testSwitchingToACentralStationLayout` does not count this class: it takes the window
- * `init` builds, as `testDownloadUpdateFetchesTheNewVersion` does.
+ * Nothing is fetched from the internet and nothing real is replaced: the update check is off, the new version comes
+ * from a server on this computer under a version no release will have, and the backup goes into the run's own data
+ * folder.  A security manager refuses, and records, any process started and any exit while a claim runs.  The census in
+ * `regression.testSwitchingToACentralStationLayout` does not count this class: it takes the window `init` builds.
  *
  * MUTATIONS, each seen red: `downloadTheUpdate` not asking `whyThisUpdateMustWait` (the refused-while-running claim);
  * `closeNowForTheUpdate` not asking it again (the run-started-meanwhile claim); `installTheDownload` not stopping on
@@ -285,11 +279,8 @@ public class testDownloadAndUpdateFromAJar
     }
 
     /**
-     * Refused before anything is fetched while a run is going: the question offers Download & Update (there is a jar
-     * to replace), and pressing it says autonomy, a timetable, Return Home or a route must stop first.  The server is
-     * never asked and the jar's folder is as it was.
-     *
-     * @throws Exception from the window
+     * Refused before anything is fetched while a run is going: pressing Download & Update says autonomy, a timetable,
+     * Return Home or a route must stop first.  The server is never asked and the jar's folder is as it was.
      */
     @Test
     public void testItIsRefusedBeforeTheDownloadWhileARunIsGoing() throws Exception
@@ -320,9 +311,7 @@ public class testDownloadAndUpdateFromAJar
     /**
      * A run started while the download was under way stops the update at its exit (asked again there, since the
      * download and the backup take time): the refusal is said, the new version stays beside the jar unused, and the
-     * update is over - a second Download & Update is refused for the run, not as one still under way.
-     *
-     * @throws Exception from the window
+     * update is over.
      */
     @Test
     public void testARunStartedDuringTheDownloadStopsItAtTheExit() throws Exception
@@ -376,10 +365,8 @@ public class testDownloadAndUpdateFromAJar
     }
 
     /**
-     * A download that is not a whole TrainControl jar - here a page of text where the jar should be - is said to be
-     * so, and nothing is backed up, started or replaced.
-     *
-     * @throws Exception from the window
+     * A download that is not a whole TrainControl jar (a page of text where the jar should be) is said to be so;
+     * nothing is backed up, started or replaced.
      */
     @Test
     public void testADownloadThatIsNotAJarIsRefused() throws Exception
@@ -400,10 +387,7 @@ public class testDownloadAndUpdateFromAJar
 
     /**
      * A backup that does not finish stops the update (Adam: the update goes no further without it), naming what could
-     * not be saved - here a file in the layout's folder that something else holds locked - and nothing is started or
-     * replaced.
-     *
-     * @throws Exception from the window or the files
+     * not be saved; nothing is started or replaced.
      */
     @Test
     public void testAnUnfinishedBackupStopsIt() throws Exception
@@ -436,14 +420,9 @@ public class testDownloadAndUpdateFromAJar
     }
 
     /**
-     * A second Download & Update while the first is still under way - downloaded and backed up, its exit waiting for
-     * a dialog the user had open - is refused with "An update is already under way."  Only one download was made and
-     * no updater started; the first then stops at its exit for the run started meanwhile, as above.
-     *
-     * While the first downloads and backs up the menu item is grayed, so the user cannot ask twice then; the exit's wait
-     * for an open dialog is when the item is back and the update still under way.
-     *
-     * @throws Exception from the window
+     * A second Download & Update while the first is still under way (downloaded and backed up, its exit waiting for a
+     * dialog the user had open) is refused with "An update is already under way."  Only one download was made and no
+     * updater started.
      */
     @Test
     public void testASecondUpdateWhileOneIsUnderWayIsRefused() throws Exception
