@@ -18,25 +18,18 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A one-unit train does not make a station on the far side of the run unreachable (Adam, OB-207).
  *
- * *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length
- * of one.
+ * *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of one.
  *
- * **The mechanism, measured on his own railway before this was written.** A standing train covers whole
- * EDGES, and `Layout.isPathClear` then sweeps SHARED METAL: for every edge of a candidate path it asks
- * whether any edge sharing tiles with it is covered, through `getLockEdges()`. EN57-203 stood at
- * TunnelLongPark and covered `BottomMainA (westbound) -> TunnelLongPark`, twelve tiles across three
- * switches; the path `Tunnel -> BottomMainAPre -> BottomMainA` shares the last of those tiles with it, so
- * the path was refused - by a train lying inside the FIRST tile of that edge, nowhere near the shared
- * metal.
+ * A standing train covers whole EDGES, and `Layout.isPathClear` then sweeps SHARED METAL: for every edge of a candidate
+ * path it asks whether any edge sharing tiles with it is covered, through `getLockEdges()`.  EN57-203 stood at
+ * TunnelLongPark and covered `BottomMainA (westbound) -> TunnelLongPark`, twelve tiles across three switches; the path
+ * `Tunnel -> BottomMainAPre -> BottomMainA` shares the last of those tiles with it, so the path was refused by a train
+ * lying inside the FIRST tile of that edge, nowhere near the shared metal.  The refusal is right in principle and wrong
+ * in extent: the runtime cannot say which part of an edge a train is on, because `Edge` holds a length and no places.
  *
- * So the refusal is right in principle and wrong in extent, and the extent is the whole of the bug: the
- * runtime cannot say which part of an edge a train is on, because `Edge` holds a length and no places.
- *
- * **On his measured railway** (the snapshot refrozen 2026-09-23).  Until then it measured nothing, so
- * the tile behind TunnelLongPark was measured here to give the tail something to reach; now his own
- * measurements are what the train stands on - 2 on TunnelLongPark's square, 1 behind it - and nothing
- * is set by this class.  A one-unit train lies on its own square (OB-278), which is the first place of
- * the run into the park and nowhere near the metal the path shares.
+ * On his measured railway the train stands on his own measurements (2 on TunnelLongPark's square, 1 behind it) and
+ * nothing is set by this class.  A one-unit train lies on its own square (OB-278), which is the first place of the run
+ * into the park and nowhere near the metal the path shares.
  *
  * @author Adam
  */
@@ -75,9 +68,8 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         if (layout == null) throw new AssertionError("the snapshot did not build");
 
-        // NOTHING OF HIS STANDING ABOUT.  The snapshot refrozen 2026-09-23 has 75 407 DB at BottomMainA, the end of the
-        // very journey this class asks about - so the path was refused because its destination was occupied, which is
-        // true and is not the tail this class is about.
+        // NOTHING OF HIS STANDING ABOUT: the snapshot has 75 407 DB at BottomMainA, the end of the journey this class
+        // asks about, so the path would be refused because its destination was occupied.
         for (Point point : layout.getPoints())
         {
             if (point.getCurrentLocomotive() != null) layout.moveLocomotive(null, point.getName(), true);
@@ -117,8 +109,6 @@ public class testAShortTrainDoesNotBlockTheWholeRun
      *
      * MUTATION: this is the defect itself - before the locations reached the runtime, the shared-metal
      * sweep refused the path over track the train is nowhere near.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAOneUnitTrainLeavesTheRestOfTheRunUsable() throws Exception
@@ -187,12 +177,9 @@ public class testAShortTrainDoesNotBlockTheWholeRun
             + standing.getTrainLength() + " long, so the train fills it and there is no part of it left"
             + " for another train to use - which is not the case this test is about");
 
-        // AND THAT THE FINER ANSWER IS THE ONE BEING USED.
-        //
-        // Both edges fall back to the whole-edge sweep when the build did not describe them in places,
-        // and under that fallback the claim below is the defect and the control that follows passes for
-        // a reason that has nothing to do with this change. Say so here rather than let either be
-        // answered by the code this replaces.
+        // AND THAT THE FINER ANSWER IS THE ONE BEING USED: both edges fall back to the whole-edge sweep when the build
+        // did not describe them in places, and under that fallback the claim below is the defect and the control passes
+        // for an unrelated reason.
         assertFalse(behind.getPlaceIds().isEmpty(),
             "the covered run carries no places, so the narrowing this test is about cannot fire");
 
@@ -228,12 +215,8 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     }
 
     /**
-     * And the control: a train long enough to reach the shared metal still blocks it.
-     *
-     * Without this the claim above is satisfied by a railway that has stopped refusing anything, which is
-     * the direction this change could most easily go wrong in - it is a collision guard.
-     *
-     * @throws Exception from the railway
+     * And the control: a train long enough to reach the shared metal still blocks it.  Without this the claim above is
+     * satisfied by a railway that has stopped refusing anything, and it is a collision guard.
      */
     @Test(dependsOnMethods = "testAOneUnitTrainLeavesTheRestOfTheRunUsable")
     public void testATrainLongEnoughToReachItStillBlocksIt() throws Exception
@@ -271,9 +254,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
         }
     }
 
-    /**
-     * The Point standing for a square, by the name the setup gives it.
-     */
+    /** The Point standing for a square, by the name the setup gives it. */
     private static Point pointAt(TileKey square, String expected)
     {
         String name = session.getStationIndex().nameOf(square);
@@ -297,14 +278,10 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     }
 
     /**
-     * Adam's journey, Tunnel to BottomMainA, as the pair of copies a route joins.
-     *
-     * By route rather than by name.  This took the first Point whose name STARTED with "Tunnel" - which TunnelLongPark
-     * and TunnelLeftPark do too - and the first destination copy of BottomMainA, and on the railway refrozen 2026-09-23
-     * that was a copy no route from Tunnel reaches.  His journey arrives on the eastbound copy.
-     *
-     * @return the copy of Tunnel it starts from and the copy of BottomMainA it ends at
-     * @throws Exception from the search
+     * Adam's journey, Tunnel to BottomMainA, as the pair of copies a route joins: by route rather than by name, since
+     * the first Point whose name STARTS with "Tunnel" may be TunnelLongPark or TunnelLeftPark, and the first
+     * destination copy of BottomMainA may be one no route from Tunnel reaches.  His journey arrives on the eastbound
+     * copy.
      */
     private static Point[] tunnelToBottomMainA() throws Exception
     {
