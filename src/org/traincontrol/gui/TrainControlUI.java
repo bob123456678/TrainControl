@@ -5441,8 +5441,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The button's enabled state goes stale while the action stays live (OB-057: "after renaming a page, it says there
      * are errors, but the start autonomy button is still visible."), so every way to press it (this button, the diagram
      * strip's mirror, the station right-click item) asks the same check() the editor and the viewer panel show.
+     * Package-private for `RunGates.whyNoTrainMayBeSent`.
      */
-    private String whyAutonomyStartIsRefused()
+    String whyAutonomyStartIsRefused()
     {
         // Not over a layout that lives on the Central Station (OB-104): checked HERE as well as on the tab, because greying the tab
         // is an affordance and this is the action, the last thing between a defunct configuration and real switches.
@@ -5621,133 +5622,51 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route (autonomy's
-     * refusal does not cover it, as a route runs by hand with autonomy idle).  Package-private for `LocomotiveActions`'
-     * edit and delete doors; event thread only, as it shows a dialog.  True when the caller must not proceed.
+     * Delegates to `RunGates.refuseWhileARouteDrivesIt`.
      */
     boolean refuseWhileARouteDrivesIt(Component source, String name)
     {
-        if (this.model == null) return false;
-
-        org.traincontrol.base.Route running = this.model.runningRouteDriving(name);
-
-        if (running == null) return false;
-
-        JOptionPane.showMessageDialog(source == null ? this : source,
-            I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", name, running.getName()));
-
-        return true;
+        return RunGates.refuseWhileARouteDrivesIt(this, source, name);
     }
+
     /**
-     * `refuseWhileARouteDrivesIt` of each of these locomotives in turn: the first a running route drives is refused
-     * (OB-287).
+     * Delegates to `RunGates.refuseWhileARouteDrivesAny`.
      */
     private boolean refuseWhileARouteDrivesAny(Component source, java.util.Collection<String> names)
     {
-        for (String name : names)
-        {
-            if (refuseWhileARouteDrivesIt(source, name)) return true;
-        }
-
-        return false;
+        return RunGates.refuseWhileARouteDrivesAny(this, source, names);
     }
 
     /**
-     * Refuses to change the locomotive database while autonomy is running (Adam, MT-141: "Never allow any modifications
-     * to a running layout.  This includes locomotive database, the track diagram, the autonomy config, or the
-     * locomotive placements."), collected here so that a fifth door is one call.  True when the caller must not
-     * proceed.
+     * Delegates to `RunGates.refuseWhileAutonomyRunning`.
      */
-
     private boolean refuseWhileAutonomyRunning(Component source)
     {
-        return refuseWhile(source, false);
+        return RunGates.refuseWhileAutonomyRunning(this, source);
     }
 
     /**
-     * The same for a door that edits the setup or the diagram, which a route running also holds (`aRunHoldsTheSetup`):
-     * the same sentence while autonomy runs, one naming a route otherwise (OB-287).
+     * Delegates to `RunGates.refuseWhileARunHoldsTheSetup`.
      */
     boolean refuseWhileARunHoldsTheSetup(Component source)
     {
-        return refuseWhile(source, true);
-    }
-
-    /** `refuseWhileAutonomyRunning`, and with `aRoute` `refuseWhileARunHoldsTheSetup`. */
-    private boolean refuseWhile(Component source, boolean aRoute)
-    {
-        if (aRoute && (this.model == null || !this.model.isAutonomyRunning()) && aRunHoldsTheSetup())
-        {
-            JOptionPane.showMessageDialog(source == null || !source.isShowing() ? this : source,
-                I18n.t("ui.main.tooltip.placeAtHomesWhileRunning"));
-
-            return true;
-        }
-
-        if (this.model == null || !this.model.isAutonomyRunning()) return false;
-
-        // OVER THE MAIN WINDOW where the source is not showing (the popups sweep, on Adam's MT-703 note): a menu's item
-        // has left its window by the time it runs, and the message went to Swing's hidden frame - under an
-        // always-on-top main window
-        JOptionPane.showMessageDialog(source == null || !source.isShowing() ? this : source,
-            I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
-
-        return true;
+        return RunGates.refuseWhileARunHoldsTheSetup(this, source);
     }
 
     /**
-     * Refuses an autonomy action while an editor holds the diagram, and says why: the banner is one button drawn before
-     * the state it guards against, and loading would save the setup against a diagram somebody is editing (discarding
-     * tiles they meant to Cancel) and rebuild the window under the open editor.  True when the caller must not proceed.
+     * Delegates to `RunGates.refuseWhileEditorOpen`.
      */
     boolean refuseWhileEditorOpen()
     {
-        if (!isLayoutEditorOpen()) return false;
-
-        // The dialog goes to the event thread; the ANSWER does not wait for it (OB-078): two callers ask this from a raw worker thread
-        // (editRoute and the route-duplicate loop), and a modal JOptionPane built off the EDT mispaints and can deadlock.
-        // invokeLater rather than invokeAndWait: the caller has already decided to refuse, and blocking until a dialog is dismissed
-        // would hold a worker and, from the EDT, deadlock outright.
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
-        }
-        else
-        {
-            javax.swing.SwingUtilities.invokeLater(() ->
-                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen")));
-        }
-
-        return true;
+        return RunGates.refuseWhileEditorOpen(this);
     }
 
     /**
-     * What stops a train being sent now, or null: the one question every door that sends a train asks (the Auto tab,
-     * the diagram's destinations, Start, Execute Timetable and Return Home; Adam: "can all the checks go through a
-     * single door?").  In order: an open editor holds the diagram, and no setup edit is made during a run (OB-047,
-     * MT-135); no route running; a setup with errors sends nothing (MT-263); the power.  What a door asks besides is
-     * its own (`whyThisPathCannotBeTaken` for a hand send's path).  `startingAutonomy`: the door is Start, which words
-     * a broken setup its own way.
+     * Delegates to `RunGates.whyNoTrainMayBeSent`.
      */
     String whyNoTrainMayBeSent(boolean startingAutonomy)
     {
-        // OR ON ITS WAY: the editor is built in a posted task, and a send that ran in between passed this
-        if (anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
-
-        // NOR WHILE THE DIAGRAM RELOADS AFTER A PAGE DOOR: the reset at its end forgot a run started meanwhile
-        if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
-
-        // NOR WHILE A ROUTE RUNS: a run must not begin under one, or a turn held for the route (`turnsHeldByARoute`) would
-        // meet a run that began before it ended.  Adam: *"prevent starting autonomy etc if a route is still running"*
-        if (aRouteIsExecuting(this.model)) return routeRunningRefusal(executingRouteNames(this.model));
-
-        String broken = startingAutonomy ? whyAutonomyStartIsRefused() : whyAHandSendIsRefused();
-
-        if (broken != null) return broken;
-
-        if (this.model == null || !this.model.getPowerState()) return I18n.t("autolayout.ui.powerOnToStart");
-
-        return null;
+        return RunGates.whyNoTrainMayBeSent(this, startingAutonomy);
     }
 
     /**
@@ -21448,34 +21367,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Why a train may not be sent by hand right now, or null when it may (MT-263; Adam: "Start autonomy doesn't run autonomy, as
-     * expected - I get an error message saying errors must first be fixed.  Good.  But trains can still be moved manually via both the
-     * track diagram viewer and the autonomy tab, which should throw an error instead.").  A hand send runs over the railway the same
-     * setup built, so it is refused on the question Start is refused on - `autonomyHasErrors`.  Both hand doors ask it before the
-     * reversal question, so nothing is asked about a journey that is going to be refused; Execute Timetable and Return Home ask it too
-     * - named for the hand doors, where it was first asked.
-     *
-     * @return the sentence to show, or null
+     * Delegates to `RunGates.whyAHandSendIsRefused`.
      */
     public String whyAHandSendIsRefused()
     {
-        if (!autonomyHasErrors()) return null;
-
-        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
-
-        return whyAHandSendIsRefused(autonomyErrorCount(), asked == null ? 0 : asked.blockingProblemCount());
+        return RunGates.whyAHandSendIsRefused(this);
     }
 
     /**
-     * The words for a refused hand send: the setup's own - *"This setup cannot be used yet"*, with however many things
-     * there are to deal with - and never Start's, which say AUTONOMY cannot start.  Through the Start rule rather than
-     * beside it, so each sentence is still chosen in one place: the error findings where there are any, since those are
-     * what the editor lists, and otherwise the problems that stop the setup being built (`errors` and `blocking` are
-     * the counts).  Returns the sentence, already translated.
+     * Delegates to `RunGates.whyAHandSendIsRefused`.
      */
     public static String whyAHandSendIsRefused(int errors, int blocking)
     {
-        return whyAutonomyWillNotStart(0, errors > 0 ? errors : blocking, true);
+        return RunGates.whyAHandSendIsRefused(errors, blocking);
     }
 
     /**
@@ -21820,12 +21724,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * What a door refusing a setup edit says: its own sentence (`autonomyKey`) where autonomy is busy, and one naming a
-     * route too where something else holds the setup (`aRunHoldsTheSetup`).
+     * Delegates to `RunGates.whyTheSetupIsHeld`.
      */
     String whyTheSetupIsHeld(String autonomyKey)
     {
-        return I18n.t(isAutonomyBusy() ? autonomyKey : "ui.main.tooltip.placeAtHomesWhileRunning");
+        return RunGates.whyTheSetupIsHeld(this, autonomyKey);
     }
 
     /**

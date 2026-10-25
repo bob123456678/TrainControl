@@ -249,7 +249,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheOneGateAsksTheEditorTheSetupAndThePower() throws Exception
     {
-        String gate = code("String whyNoTrainMayBeSent(");
+        String gate = code("static String whyNoTrainMayBeSent(TrainControlUI ui");
 
         for (String asked : new String[] {"anEditorIsOpenOrOnItsWay()", "whyAutonomyStartIsRefused()", "whyAHandSendIsRefused()",
             "getPowerState()"})
@@ -363,8 +363,9 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Over the whole program's code.
         String source = SourceOf.allCode();
 
-        // One of each occurrence is the declaration of the method itself.
-        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 + occurrences(source, GATE) - 1;
+        // One of each occurrence is the declaration of the method itself; `refuseWhileAutonomyRunning` has two more, the
+        // window's delegator handing to `RunGates`' declaration.
+        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 3 + occurrences(source, GATE) - 1;
 
         // COUNTED INSIDE THE DECLARED DOORS, not from the list's own arithmetic.
         //

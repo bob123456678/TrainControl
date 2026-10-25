@@ -218,7 +218,7 @@ public class testErrorsStopTheSetupRunning
         // What it does is name both halves in one place, so that widening one and not the other fails
         // here rather than on Adam's railway.  If the guard's question changes, both assertions below
         // have to change together, and that is the point: they are the pair.
-        String guard = code("private String whyAutonomyStartIsRefused()");
+        String guard = code("    String whyAutonomyStartIsRefused()");
 
         assertTrue(guard.contains("hasErrors()"),
             "the guard no longer asks hasErrors().  If that is deliberate the affordance below has to "
@@ -593,7 +593,7 @@ public class testErrorsStopTheSetupRunning
     {
         String[][] sites =
         {
-            {"the guard itself", code("private String whyAutonomyStartIsRefused()")},
+            {"the guard itself", code("    String whyAutonomyStartIsRefused()")},
             {"the API's exception", code("public void requestStartAutonomy() throws Exception")},
             // THE CONSTRUCTOR for this one: the tooltip is built inside the menu's constructor.
             {"the greyed Start item's tooltip", code("private LayoutRightclickAutonomyMenu(")},

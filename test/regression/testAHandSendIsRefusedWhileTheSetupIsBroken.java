@@ -95,10 +95,10 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
         door("void sendATrainByHand(", "the one door both hand doors send through");
 
-        assertTrue(code("String whyNoTrainMayBeSent(").contains(REFUSAL), "the gate every door asks"
+        assertTrue(code("static String whyNoTrainMayBeSent(TrainControlUI ui").contains(REFUSAL), "the gate every door asks"
             + " does not ask " + REFUSAL + " - a hand send goes out over a setup Start refuses (MT-263)");
 
-        String body = code("public String " + REFUSAL);
+        String body = code("static String whyAHandSendIsRefused(TrainControlUI ui)");
 
         assertTrue(body.contains("autonomyHasErrors()"), REFUSAL + " does not ask autonomyHasErrors(), the question"
             + " Start is refused on - so a hand send and Start can disagree about the same setup: " + body);
