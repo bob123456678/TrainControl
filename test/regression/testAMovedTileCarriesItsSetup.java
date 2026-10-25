@@ -24,33 +24,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A station, and the train standing on it, travel with the tile when it is dragged.
  *
- * Adam, MT-171: "stations do not travel with a moved tile. they vanish until the tile is moved back,
- * at which point the loc is vanished."
+ * Adam, MT-171: "stations do not travel with a moved tile. they vanish until the tile is moved back, at which point the
+ * loc is vanished."
  *
- * **This test does not reproduce that, and that is worth saying plainly rather than leaving it to be
- * inferred from a green run.** It was written to reproduce it, the way the rename half of the same
- * entry was reproduced, and it drives the editor's own gesture: move the component on the diagram
- * exactly as `LayoutEditor` does - clear the source square, set the component's coordinates, add it at
- * the destination - then `session.moveTiles`, then the capture that runs when the editor closes, then
- * the save, then re-read everything from disk.
+ * **This test does not reproduce that.**  It drives the editor's own gesture: move the component on the diagram exactly
+ * as `LayoutEditor` does (clear the source square, set the component's coordinates, add it at the destination), then
+ * `session.moveTiles`, the capture that runs when the editor closes, the save, and a re-read from disk.  Four variants
+ * all carry the station, the name and the locomotive correctly in both directions, adding no error to the setup: to an
+ * isolated empty square, one square along onto occupied track, each move in its own session, and both moves in one
+ * session.
  *
- * Four variants were tried, and all four carry the station, the name and the locomotive correctly, in
- * both directions, adding no error to the setup:
- *
- * - to an isolated empty square, which disconnects the station from the run
- * - one square along, onto occupied track, which is the ordinary nudge
- * - each move in its own session, as a restart between them would give
- * - both moves in one session with a single capture at the end, as one editing sitting gives
- *
- * So the data is right. What is left, and what this cannot see, is the DISPLAY: nothing in the editor
- * is told to redraw the autonomy overlay when `moveTiles` rebuilds the graph - `touched()` rebuilds and
- * notifies nobody. A station whose marker is not repainted looks exactly like a station that did not
- * travel, and that is the same shape of fault as the timetable one, where the data was perfect
- * throughout and the panel was never repainted. Unconfirmed, and this comment is a lead rather than a
- * finding.
- *
- * The test is kept regardless. There was no coverage at all of a moved tile carrying its setup through
- * a save and a reload, and the rename work showed what a gap like that costs.
+ * So the data is right; what is left, and what this cannot see, is the DISPLAY: nothing is told to redraw the autonomy
+ * overlay when `moveTiles` rebuilds the graph (`touched()` notifies nobody).  Unconfirmed, a lead rather than a
+ * finding.  The test is kept regardless: nothing else covered a moved tile carrying its setup through a save and a
+ * reload.
  */
 public class testAMovedTileCarriesItsSetup
 {
@@ -63,12 +50,9 @@ public class testAMovedTileCarriesItsSetup
     }
 
     /**
-     * Moved to an isolated square and back, each move its own sitting.
-     *
-     * The isolated square matters: a station that no longer joins the run either side of it stops
-     * being a Point, which is deliberate and documented. Its SETUP must survive that - the station,
-     * the name and the train are still recorded, and reconnecting the track brings it all back with
-     * nothing to re-enter.
+     * Moved to an isolated square and back, each move its own sitting.  A station that no longer joins the run either
+     * side stops being a Point, deliberately; its SETUP must survive that, and reconnecting the track brings it all
+     * back.
      */
     @Test
     public void testAStationCarriesItsTrainToAnIsolatedSquareAndBack() throws Exception
@@ -77,11 +61,8 @@ public class testAMovedTileCarriesItsSetup
     }
 
     /**
-     * And the ordinary nudge: one square along, onto track that is already there.
-     *
-     * A different path through `moveTiles` - the destination is a landing square that gets forgotten
-     * before the arriving square's setup is written over it - so it is worth its own run rather than
-     * being assumed to behave like the one above.
+     * And the ordinary nudge, one square along onto existing track: a different path through `moveTiles`, where the
+     * landing square is forgotten before the arriving square's setup is written over it.
      */
     @Test
     public void testAStationCarriesItsTrainOneSquareOntoOccupiedTrack() throws Exception
@@ -89,9 +70,7 @@ public class testAMovedTileCarriesItsSetup
         roundTrip(false);
     }
 
-    /**
-     * @param isolated true to move to an empty corner, false to nudge one square onto occupied track
-     */
+    /** Isolated: move to an empty corner; otherwise nudge one square onto occupied track. */
     private void roundTrip(boolean isolated) throws Exception
     {
         File folder = aWorkingCopy();
@@ -180,9 +159,9 @@ public class testAMovedTileCarriesItsSetup
         Set<String> appeared = new LinkedHashSet<>(reportedAfter);
         appeared.removeAll(reportedBefore);
 
-        // THE TRACK THE NUDGE BROKE: the station lands on the next square and leaves a gap behind it, so it now stands
-        // at the end of a line with its train facing the gap - both errors since 2026-10-01, and both about the new
-        // geometry, not a setup the move damaged.  The way back below still demands the count come back exactly.
+        // THE TRACK THE NUDGE BROKE: the station lands on the next square and leaves a gap behind it, so it stands at
+        // the end of a line with its train facing the gap - errors about the new geometry, not a setup the move
+        // damaged.  The way back still demands the count come back exactly.
         if (!isolated)
         {
             appeared.remove(AutonomyChecks.STATION_AT_THE_END_OF_A_LINE + " | " + name);
@@ -252,17 +231,10 @@ public class testAMovedTileCarriesItsSetup
     }
 
     /**
-     * WHICH errors are reported, not how many.
-     *
-     * A count was enough until a check started reporting per COPY rather than per square, and the
-     * isolated half of this test moves a station somewhere no track joins - where it emits no arrival
-     * copies at all, so its copy-level finding has nothing left to attach to and goes away. The count
-     * then falls by one and an assertion written to catch a move DAMAGING the setup fails because the
-     * move made the report shorter.
-     *
-     * The set says what the count was reaching for: no error may APPEAR. A finding that disappears
-     * because the thing it described stopped existing is not a regression, and the round trip below
-     * still demands the count come back exactly, which is where a genuinely lost finding would show.
+     * WHICH errors are reported, not how many.  The isolated half moves a station where no track joins, so its
+     * copy-level finding has nothing left to attach to and goes away, and a count assertion written to catch a move
+     * DAMAGING the setup fails because the report got shorter.  No error may APPEAR; the round trip still demands the
+     * count come back exactly, where a genuinely lost finding shows.
      */
     private static Set<String> errors(AutonomySession session)
     {
@@ -272,10 +244,8 @@ public class testAMovedTileCarriesItsSetup
         {
             if (finding.getSeverity() == AutonomyChecks.Severity.ERROR)
             {
-                // NOT the square. That is the one thing this test changes on purpose, so a finding
-                // keyed by it is new after every move and the check can never pass. The subject is the
-                // station's name, which travels with the tile - so the same complaint about the same
-                // station reads as the same finding wherever it has been dragged to.
+                // NOT the square, which this test changes on purpose; the subject is the station's name, which travels
+                // with the tile.
                 out.add(finding.getMessageKey() + " | " + finding.getSubject());
             }
         }
