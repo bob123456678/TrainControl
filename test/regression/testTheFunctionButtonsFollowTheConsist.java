@@ -17,31 +17,21 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * The function buttons offer what the CONSIST can drive, not what its head can (Adam, MT-359).
+ * The function buttons offer what the CONSIST can drive, not what its head can (MT-359; Adam: "does it propagate to
+ * the UI check that determines which function buttons are active?").
  *
- * *"does it propagate to the UI check that determines which function buttons are active?"*  It did not.
+ * The model half was right: `setF` accepts the whole consist's range, so an MM2 head with an MFX member drives f6
+ * through the member (`core.testMultiUnitMembership`).  The window went on lighting buttons from `getNumF()`, the
+ * HEAD's own count, so the function worked from a shortcut, a route or autonomy and was grayed on screen.  The guard
+ * and the affordance asking different questions is OB-057/OB-090 arriving in a third place.
  *
- * **The model half has been right since 2026-09-11** - `setF` accepts the whole consist's range, so an
- * MM2 head with an MFX member drives f6 through the member, and `core.testMultiUnitMembership
- * .testAConsistCanDriveEveryFunctionItsMembersHave` covers it.  The window went on lighting buttons from
- * `getNumF()`, the HEAD's own count, so that function worked from a keyboard shortcut, a route or
- * autonomy and was grayed on screen - and the F20-F31 tab was removed outright.  The guard and the
- * affordance asking different questions is `OB-057`/`OB-090` arriving in a third place.
+ * Driven through `repaintLoc`, which the window calls when the active locomotive changes, because whether a button is
+ * enabled is decided there and every model-level question answers the same before and after the fix.
  *
- * **Driven through `repaintLoc`**, which is what the window calls when the active locomotive changes,
- * rather than by reading a predicate: whether a button is enabled is decided there, and every
- * model-level question answers the same before and after the fix.
- *
- * **No icons past the head's range, on Adam's word** - *"It's ok if those function types are default and
- * the buttons show no icons if the head is mm2."*  That is not laziness: `getFunctionType` and
- * `getFunctionIconUrl` read tables sized to the head's own decoder, which is the hazard `getF`'s javadoc
- * warns about.
- *
- * **And no TEXT either** (Adam, OB-213): *"don't print 'F<x>' text labels on the function buttons - keep
- * the label blank as is the default."*  The first cut wrote "F6" into them, reasoning that a button with
- * neither icon nor text says nothing about itself.  It says what every other iconless function button on
- * this window says, which is the point - these are ordinary buttons whose decoder has no picture for
- * them, and a number on some buttons and not others reads as a difference in kind where there is none.
+ * No icons past the head's range, on Adam's word ("the buttons show no icons if the head is mm2"): `getFunctionType`
+ * and `getFunctionIconUrl` read tables sized to the head's own decoder.  And no TEXT either (OB-213: "keep the label
+ * blank as is the default"): they are ordinary buttons whose decoder has no picture, and a number on some and not
+ * others reads as a difference in kind.
  *
  * MUTATION: put `getNumF()` back in either loop and the first claim fails; light every button regardless
  * and the two-MM2 control fails; write the number back into the label and the blank-label claim fails.
@@ -94,11 +84,7 @@ public class testTheFunctionButtonsFollowTheConsist
         }
     }
 
-    /**
-     * An MM2 head with an MFX member lights the buttons its member can drive.
-     *
-     * @throws Exception from the window
-     */
+    /** An MM2 head with an MFX member lights the buttons its member can drive. */
     @Test
     public void testAMixedConsistLightsTheWiderRange() throws Exception
     {
@@ -128,12 +114,8 @@ public class testTheFunctionButtonsFollowTheConsist
     }
 
     /**
-     * And a consist of two MM2s still stops where MM2 stops.
-     *
-     * Without this the claim above is satisfied by lighting every button for every locomotive, which
-     * is the direction this change would most easily go wrong in.
-     *
-     * @throws Exception from the window
+     * And a consist of two MM2s still stops where MM2 stops: otherwise the claim above is satisfied by lighting every
+     * button.
      */
     @Test(dependsOnMethods = "testAMixedConsistLightsTheWiderRange")
     public void testAnAllMM2ConsistKeepsTheMM2Range() throws Exception
@@ -151,36 +133,14 @@ public class testTheFunctionButtonsFollowTheConsist
     }
 
     /**
-     * What the window was actually looking at, appended to a failure.
+     * The last locomotive asked for is the one the window draws, however quickly the two requests came.  The guard
+     * returned without doing anything while an earlier render was unfinished, so a request made in that window was
+     * dropped; the repair keeps it and runs it when the painting finishes.
      *
-     * This claim failed once inside a full battery on 2026-09-13 and passes on its own, and the
-     * message named only the conclusion - which leaves guessing between three unrelated causes: the
-     * head not being the MM2 it was asked for, the member resolving to something else by NAME
-     * (consists are held by name and looked up in the model's database, so a collision resolves to a
-     * different locomotive), or the window drawing a different locomotive than the one this set.
+     * Only that re-run can make this pass: the renderer is held BEFORE it posts a render asked for a locomotive that is
+     * not the one shown, and the mixed consist is asked for while the render is certainly in flight.
      *
-     * A flaky guard reads as protection while providing none, and one that cannot say why costs an
-     * investigation every time it fires. This is the cheapest thing that tells the three apart.
-     *
-     * @param head the consist's head, as this test built it
-     * @return a description, ready to append
-     */
-    /**
-     * The last locomotive asked for is the one the window draws, however quickly the two requests came.
-     *
-     * The guard this pins against returned without doing anything while an earlier render was unfinished, so a
-     * request made in that window was dropped and the window went on showing the first locomotive's function
-     * buttons.  The repair keeps such a request and runs it when the painting finishes.
-     *
-     * **Only that re-run can make this pass.**  The renderer is held BEFORE it posts a render asked for a
-     * locomotive that is not the one shown - so when that painting runs it leaves the panel alone - and the
-     * mixed consist is asked for while the render is certainly in flight.  Nothing but the deferred re-run in
-     * `renderFinished` then draws the mixed consist.  The first version of this held the renderer after posting,
-     * by which time the painting could already have cleared the flag, and the deferral went untested.
-     *
-     * MUTATION, run: delete the `renderActiveLoc(force, locs)` at the end of `renderFinished` and this goes red.
-     *
-     * @throws Exception from the window
+     * MUTATION: delete the `renderActiveLoc(force, locs)` at the end of `renderFinished` and this goes red.
      */
     @Test(dependsOnMethods = {"testAMixedConsistLightsTheWiderRange", "testAnAllMM2ConsistKeepsTheMM2Range"})
     public void testTheLastLocomotiveAskedForIsTheOneDrawn() throws Exception
@@ -250,14 +210,10 @@ public class testTheFunctionButtonsFollowTheConsist
 
     /**
      * A locomotive's direction echo does not build the autonomy session on the thread it arrives on.
-     *
-     * `followDirectionChanges` runs inside the window's monitor, from `repaintLoc`, on whatever thread the
-     * Central Station's message came in on - and it asked `getAutonomySession()`, the lazy builder that parses
-     * every page and can rewrite files.  The rule written for exactly this, at `repaintTimetable`, is to read
-     * the field.  The event thread takes that monitor at the end of every locomotive render, so a
-     * session built there held the whole window up for the length of a parse.
-     *
-     * @throws Exception from the window or reflection
+     * `followDirectionChanges` runs inside the window's monitor, from `repaintLoc`, on whatever thread the Central
+     * Station's message came in on, and it asked `getAutonomySession()`, the lazy builder that parses every page; the
+     * event thread takes that monitor at the end of every locomotive render, so a session built there held the whole
+     * window up.  The rule is to read the field, as `repaintTimetable` does.
      */
     @Test
     public void testADirectionEchoDoesNotBuildTheSession() throws Exception
@@ -369,16 +325,9 @@ public class testTheFunctionButtonsFollowTheConsist
     }
 
     /**
-     * A button the consist can drive past its head's own range carries no text (Adam, OB-213).
-     *
-     * *"For the buttons on multi-unit Mm2 locomotives paired with mfx/dcc ones, don't print 'F<x>'
-     * text labels on the function buttons - keep the label blank as is the default."*
-     *
-     * Asserted on the same consist the first claim lights, because the two are one gesture: the button
-     * is offered AND it looks like every other iconless one. A claim about the enablement alone passed
-     * happily while the label said "F6".
-     *
-     * @throws Exception from the window
+     * A button the consist can drive past its head's own range carries no text (OB-213).  Asserted on the same consist
+     * the first claim lights, because the button is offered AND looks like every other iconless one; a claim about
+     * enablement alone passed while the label said "F6".
      */
     @Test(dependsOnMethods = "testAMixedConsistLightsTheWiderRange")
     public void testTheWidenedButtonsCarryNoText() throws Exception
@@ -424,13 +373,9 @@ public class testTheFunctionButtonsFollowTheConsist
 
         active.setAccessible(true);
 
-        // WAIT FOR THE WINDOW'S OWN RENDER, BEFORE AND AFTER (2026-09-14).
-        //
-        // `repaintLoc` returns without doing anything while an earlier render is still running, and the
-        // render itself goes to a worker and back through `invokeLater`.  So a `show` straight after
-        // another `show` - which is what `testTheWidenedButtonsCarryNoText` does after the all-MM2 claim
-        // - could have its repaint dropped, and the buttons read were the previous consist's: f6 grayed
-        // for a consist that can drive it.  One pump of the event thread was never a wait for either.
+        // WAIT FOR THE WINDOW'S OWN RENDER, BEFORE AND AFTER: `repaintLoc` returns without doing anything while an
+        // earlier render is running, so a `show` straight after another could have its repaint dropped and read the
+        // previous consist's buttons.  One pump of the event thread was never a wait for either.
         waitForTheRender();
 
         active.set(ui, loc);
