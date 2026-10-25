@@ -306,6 +306,115 @@ public class testTheApiExamplesRun
     }
 
     /**
+     * `FullAutonomyExample` (in src/, with AutomationAPI.md) sets a train off by itself: one of its two trains leaves,
+     * no faster than the preferred speed the example gives it, under its station's signal set green, and the other
+     * waits for the track the two share.  Its code is called by reflection, since its only public door is a `main`
+     * that opens a real station; the run it starts has no handle, so it is ended by retiring every Layout, which stops
+     * a journey at its next check.  The trains, accessories and sensors it names are made where the station lacks
+     * them, and the preferred speeds it writes are put back.
+     *
+     * MUTATION: in `Layout.runLocomotives`, drop `this.running = true;`, and no train sets off.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFullAutonomyExampleSetsATrainOff() throws Exception
+    {
+        final String[] trains = {"SNCF 422365", "140 024-1 DB AG"};
+        final int[] speeds = {30, 50};
+        final String[] signals = {"Signal 1", "Signal 2"};
+
+        java.util.Map<String, Integer> preferredWas = new java.util.HashMap<>();
+        java.util.List<String> made = new java.util.ArrayList<>();
+
+        for (int i = 0; i < trains.length; i++)
+        {
+            if (station.getLocByName(trains[i]) == null)
+            {
+                station.newMM2Locomotive(trains[i], 70 + i);
+                made.add(trains[i]);
+            }
+
+            preferredWas.put(trains[i], station.getLocByName(trains[i]).getPreferredSpeed());
+        }
+
+        for (int address : new int[] {1, 2})
+        {
+            if (station.getAccessoryByName("Signal " + address) == null)
+            {
+                station.newSignal(address, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+            }
+
+            if (!station.isFeedbackSet(Integer.toString(address))) station.newFeedback(address, null);
+
+            station.setFeedbackState(Integer.toString(address), false);
+        }
+
+        if (station.getAccessoryByName("Switch 10") == null)
+        {
+            station.newSwitch(10, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+        }
+
+        if (!station.isFeedbackSet("3")) station.newFeedback(3, null);
+
+        station.setFeedbackState("3", false);
+
+        station.go();
+
+        assertTrue(station.waitForPowerState(true, 10000), "precondition: the power did not come on");
+
+        try
+        {
+            Method code = Class.forName("org.traincontrol.examples.FullAutonomyExample")
+                .getDeclaredMethod("execCode", MarklinControlStation.class);
+
+            code.setAccessible(true);
+            code.invoke(null, station);
+
+            int moving = -1;
+
+            for (int waited = 0; waited < 30000 && moving < 0; waited += 100)
+            {
+                for (int i = 0; i < trains.length; i++)
+                {
+                    if (station.getLocByName(trains[i]).getSpeed() > 0) moving = i;
+                }
+
+                if (moving < 0) Thread.sleep(100);
+            }
+
+            assertTrue(moving >= 0, "neither of the example's trains set off within 30 seconds");
+
+            for (int i = 0; i < trains.length; i++)
+            {
+                assertEquals(station.getLocByName(trains[i]).getPreferredSpeed(), speeds[i], trains[i]
+                    + " was not given the preferred speed the example says");
+            }
+
+            // At most that speed: it is slowed for the arrival once past the shared track
+            assertTrue(station.getLocByName(trains[moving]).getSpeed() <= speeds[moving], trains[moving]
+                + " runs faster than the preferred speed the example gives it: "
+                + station.getLocByName(trains[moving]).getSpeed());
+
+            assertTrue(station.getAccessoryByName(signals[moving]).isGreen(), trains[moving] + " set off with "
+                + signals[moving] + " not green");
+
+            assertEquals(station.getLocByName(trains[1 - moving]).getSpeed(), 0, trains[1 - moving] + " set off too,"
+                + " over the track the two trains share");
+        }
+        finally
+        {
+            org.traincontrol.automation.Layout.retireEveryLayout();
+
+            for (String train : trains)
+            {
+                station.getLocByName(train).setSpeed(0);
+                station.getLocByName(train).setPreferredSpeed(preferredWas.get(train));
+            }
+
+            for (String train : made) station.deleteLoc(train);
+        }
+    }
+
+    /**
      * Each example takes its station as a parameter, has a main to run by itself, and none opens a real station: the
      * only init in the folder is the simulation.
      */
