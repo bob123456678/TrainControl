@@ -40,16 +40,13 @@ import support.WireRecorder.Sent;
 
 /**
  * Driving a train from the main window, as the operator does every session: the keys, the buttons and the sliders of
- * the keyboard tab, and what reaches the railway when they are used (FR-136 Phase 6).
+ * the keyboard tab, and what reaches the railway when they are used (FR-136 Phase 6).  Each claim acts as the
+ * operator (`support.Keys`, a click, a drag, an answered dialog) and asserts both what the locomotive or accessory
+ * now is and the command the control station was given (`support.WireRecorder`), so a key that changed the window
+ * and sent nothing, or the wrong thing, fails.
  *
- * Each claim acts as the operator: a key pressed on the keyboard tab (`support.Keys`), a button clicked, a slider
- * dragged, a dialog answered.  Each asserts what the locomotive or the accessory now is and the command the control
- * station was given (`support.WireRecorder`), so a key that changed the window and sent nothing, or sent the wrong
- * thing, fails.
- *
- * The railway is a sandbox with no Central Station: the model runs in debug, so every command it would send is logged
- * and read back.  The power is turned off and on by the packets a Central Station sends back, given to
- * `receiveMessage`.
+ * The railway is a sandbox with no Central Station: the model runs in debug, so every command it would send is
+ * logged and read back, and the power is switched by packets given to `receiveMessage`.
  *
  * MUTATION: each claim names the change to the program that turns it red.
  *
@@ -151,11 +148,7 @@ public class testDrivingFromTheKeyboard
         }
     }
 
-    /**
-     * Both trains standing, facing forward, every function off, the power on, and the first one shown.
-     *
-     * @throws Exception from the window
-     */
+    /** Both trains standing, facing forward, every function off, the power on, and the first one shown. */
     @BeforeMethod
     public void standStill() throws Exception
     {
@@ -179,8 +172,6 @@ public class testDrivingFromTheKeyboard
      * Reverse stops the train and turns it backwards, on the railway and on the buttons; Forward turns it back.
      *
      * MUTATION: `DIR_FORWARD` for `DIR_BACKWARD` in `backwardLoc`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testReverseAndForwardTurnTheTrain() throws Exception
@@ -209,8 +200,6 @@ public class testDrivingFromTheKeyboard
      * Control with the arrows forces a direction; a plain arrow turns the train whichever way it faces.
      *
      * MUTATION: `forwardLoc()` in the Control+LEFT arm of `LocControlPanelKeyPressed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheArrowKeysTurnTheTrain() throws Exception
@@ -250,8 +239,6 @@ public class testDrivingFromTheKeyboard
      * A function button switches its function on, and a second click off, on the railway as well as the window.
      *
      * MUTATION: `!b.isSelected()` for the state in `ProcessFunction`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAFunctionButtonSwitchesItsFunction() throws Exception
@@ -284,8 +271,6 @@ public class testDrivingFromTheKeyboard
      * f0-f9, Control plus a digit for f10-f19, Control and Alt plus a digit for f20-f29, and the number pad.
      *
      * MUTATION: `switchF(12)` in the Control+1 arm of `LocControlPanelKeyPressed`, and this fails at Control+1.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testEveryKindOfFunctionShortcutReachesItsFunction() throws Exception
@@ -343,8 +328,6 @@ public class testDrivingFromTheKeyboard
      * between climb in order.
      *
      * MUTATION: `SixButtonActionPerformed` in the VK_5 arm of `LocControlPanelKeyPressed`, and this fails at 5.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDigitKeysSetTheSpeedTheirButtonsSet() throws Exception
@@ -409,8 +392,6 @@ public class testDrivingFromTheKeyboard
      * railway.
      *
      * MUTATION: `SPEED_STEP * 3` for `SPEED_STEP * 2` in the Alt+UP arm, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testUpAndDownStepTheSpeed() throws Exception
@@ -446,8 +427,6 @@ public class testDrivingFromTheKeyboard
      * Shift brings the shown train to speed 0, and leaves the other one running.
      *
      * MUTATION: `setLocSpeed(1)` in `ShiftButtonActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testShiftBringsTheShownTrainToZero() throws Exception
@@ -470,8 +449,6 @@ public class testDrivingFromTheKeyboard
      * emergency stop is sent.
      *
      * MUTATION: `stopAllLocs()` for `stopLoc()` in `SpacebarButtonActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testSpaceStopsOnlyTheShownTrain() throws Exception
@@ -497,8 +474,6 @@ public class testDrivingFromTheKeyboard
      * Enter stops every train on the railway: the emergency stop is sent and each running train is brought to 0.
      *
      * MUTATION: take the `stopAllLocs()` call out of `AltEmergencyStopActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testEnterStopsEveryTrain() throws Exception
@@ -510,8 +485,6 @@ public class testDrivingFromTheKeyboard
      * The Enter button on screen does what the key does.
      *
      * MUTATION: as for the key.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheEmergencyStopButtonStopsEveryTrain() throws Exception
@@ -548,8 +521,6 @@ public class testDrivingFromTheKeyboard
      * then sends the power-on command, and the railway's answer grays it again.
      *
      * MUTATION: `go()` for `stop()` in `PowerOffActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testPowerOffAndOnReachTheRailway() throws Exception
@@ -589,8 +560,6 @@ public class testDrivingFromTheKeyboard
      * Alt+G turns the power on and Escape turns it off.
      *
      * MUTATION: `stop()` for `go()` in the Alt+G arm of `LocControlPanelKeyPressed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAltGAndEscapeSwitchThePower() throws Exception
@@ -622,8 +591,6 @@ public class testDrivingFromTheKeyboard
      * Dragging the main slider sets the shown train to the slider's speed when it is let go.
      *
      * MUTATION: `setLocSpeed(SpeedSlider.getValue() / 2)` in `SpeedSliderDragged`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheMainSliderSetsTheSpeedWhereItIsLetGo() throws Exception
@@ -648,8 +615,6 @@ public class testDrivingFromTheKeyboard
      * A double right-click on the main slider turns the shown train round.
      *
      * MUTATION: `setLocSpeed(...)` for `switchDirection()` in `MainSpeedSliderClicked`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testADoubleRightClickOnTheMainSliderTurnsTheTrain() throws Exception
@@ -670,8 +635,6 @@ public class testDrivingFromTheKeyboard
      * The slider under a key drives that key's train, whichever train is shown.
      *
      * MUTATION: drive `activeLoc` instead of the slider's own locomotive in `updateSliderSpeed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAKeysSliderDrivesItsOwnTrain() throws Exception
@@ -698,8 +661,6 @@ public class testDrivingFromTheKeyboard
      * A double right-click on a key's slider stops that key's train and turns it round.
      *
      * MUTATION: take `l.switchDirection()` out of `sliderClickedSynced`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testADoubleRightClickOnAKeysSliderStopsAndTurnsItsTrain() throws Exception
@@ -727,8 +688,6 @@ public class testDrivingFromTheKeyboard
      * Clicking a letter key on screen shows the train on it, and marks that key as the one in use.
      *
      * MUTATION: show `this.currentButton` instead of the key clicked in `LetterButtonPressed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testClickingALetterKeyShowsItsTrain() throws Exception
@@ -760,8 +719,6 @@ public class testDrivingFromTheKeyboard
      * Prev Keyboard shows the block before again.
      *
      * MUTATION: `keyboardNumber + 2` in `NextKeyboardActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheAccessoryKeyboardPagesOnAndBack() throws Exception
@@ -809,8 +766,6 @@ public class testDrivingFromTheKeyboard
      * Backspace brings the next tab of the keyboard forward, and Alt+Backspace the one before.
      *
      * MUTATION: `getSelectedIndex() + 2` in the BACK_SPACE arm of `LocControlPanelKeyPressed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testBackspaceCyclesTheKeyboardTabs() throws Exception
@@ -859,8 +814,6 @@ public class testDrivingFromTheKeyboard
      * Locomotives > Turn Off All Functions turns off what is on, on every train, and tells the railway.
      *
      * MUTATION: take `this.model.allFunctionsOff()` out of `turnOffFunctionsMenuItemActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTurnOffAllFunctionsReachesEveryTrain() throws Exception
@@ -888,8 +841,6 @@ public class testDrivingFromTheKeyboard
      * An accessory button switches its accessory, and the command reaches the railway; a second click switches it back.
      *
      * MUTATION: `!b.isSelected()` for the state in `UpdateSwitchState`'s `setAccessoryState`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnAccessoryButtonSwitchesItsAccessory() throws Exception
@@ -923,8 +874,6 @@ public class testDrivingFromTheKeyboard
      * With the power off, an accessory button asks first; Cancel puts the button back and sends nothing.
      *
      * MUTATION: let a Cancel through in `keyboardSwitchAllowed` (take out `return refuse(button)`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testWithThePowerOffCancelLeavesTheAccessoryAlone() throws Exception
@@ -962,8 +911,6 @@ public class testDrivingFromTheKeyboard
      * With the power off, "Proceed" switches the accessory and leaves the power off.
      *
      * MUTATION: answer 1 as a refusal in `keyboardSwitchAllowed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testWithThePowerOffProceedSwitchesAndLeavesThePowerOff() throws Exception
@@ -993,8 +940,6 @@ public class testDrivingFromTheKeyboard
      * With the power off, "Turn the power on and proceed" sends the power-on command, and the accessory's after it.
      *
      * MUTATION: take `this.model.go()` out of `UpdateSwitchState`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testWithThePowerOffTurningItOnComesFirst() throws Exception
