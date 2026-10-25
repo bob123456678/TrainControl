@@ -90,6 +90,9 @@ By script, at the start, before other branches are open: `git mv`, package and i
   PopupListener) and the 278 test files with 30 or more comment lines, in eight Sonnet sets.  The 35 files that open
   branches touch go in a ninth set once those branches are merged; the 29 tests with fewer than 30 comment lines are
   left as they are.  Then the ratchet pins are lowered once, before `testCommentsStayLean` counts `test/`.
+  Done the same day: 322 files trimmed (16 src, 306 tests) on dev at `d5c19e79` and `47eb0cb9`, each proved
+  comment-only by `comment-strip-compare.py` (bytecode for src, tokens for tests), with the history pin lowered from 120
+  to 106 and the long-block pin from 26 to 25.  A few files already under about 15% comments were left as they are.
 - The duplicated-code ratchet test (Java port of `dupscan.py`'s tokenizer), and the approved pre-2.7.0 merges.
 - behaviour.md split by area, with a short index; citations updated in the same commit.
 - Builder tooling: `newtest.py`, `redgreen.sh`, `env.sh`, a watchdog for a dialog nobody answers, an affected-classes
