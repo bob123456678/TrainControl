@@ -16,12 +16,10 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * A station whose name is drawn in two places is one finding, and an import or a move never captions it twice
- * (OB-341).
+ * A station whose name is drawn in two places is one finding, and an import or a move never captions it twice (OB-341).
  *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3);
+ * `AutonomySessionFixture` builds the session and layout folder every claim starts from.
  *
  * @author Adam
  */
@@ -29,15 +27,10 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 {
 
     /**
-     * An imported station is labeled on its own square, and so raises no unlabeled-station error.
-     *
-     * Every station has to be shown on the diagram - it is an error not to be - so an import that
-     * named fifty stations and captioned none would have handed back fifty errors to clear by hand,
-     * which is not a migration anybody would finish.
-     *
-     * The station's own square is the one place that is always right: it exists, it is on the page the
-     * reader is looking at, and unlike a search for nearby blank space it cannot land the label on
-     * somebody else's track.
+     * An imported station is labeled on its own square, and so raises no unlabeled-station error: every station has to
+     * be shown on the diagram, and an import naming fifty would otherwise hand back fifty errors to clear by hand. The
+     * station's own square always exists and is on the page the reader is looking at, unlike a search for nearby blank
+     * space.
      */
     @Test
     public void testAnImportedStationIsLabelledOnItsOwnSquare() throws Exception
@@ -73,11 +66,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station nobody has labeled is an error, not a warning.
-     *
-     * The railway runs perfectly well unlabeled, which was the old argument for a warning - true of
-     * the trains and beside the point for the person watching them.  A setup whose stations cannot be
-     * found on the diagram is not one anybody can supervise.
+     * A station nobody has labeled is an error, not a warning: the trains run unlabeled, but a setup whose stations
+     * cannot be found on the diagram is not one anybody can supervise.
      */
     @Test
     public void testAnUnlabelledStationIsAnError() throws Exception
@@ -114,21 +104,16 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station whose name is drawn in two places is an error that names the station and both squares (OB-341).
+     * A station whose name is drawn in two places is an error that names the station and both squares (OB-341). Every
+     * door of the editor keeps one station to one caption (OB-256), so the state arrives from outside them, and the
+     * file is the door used here: a setup saved, a second caption written into its `captions`, and the setup opened
+     * again.
      *
-     * Adam, 2026-10-12, on a sandbox layout whose setup held two captions for St01: *"add code to make this be an error
-     * in the autonomy validator (i.e. if someone edits the file by hand externally)"*.  Every door of the editor keeps
-     * one station to one caption (OB-256), so the state arrives from outside them, and the file is the door used here: a
-     * setup saved, a second caption written into its `captions`, and the setup opened again.
-     *
-     * One finding for the station, on its own square, carrying both caption squares and their number.  THE CONTROLS are
-     * the same setup before the edit - one station captioned once beside itself, another on its own square - and the
-     * station once it is no station, whose captions are kept but not drawn.
+     * One finding for the station, on its own square, carrying both caption squares and their number. THE CONTROLS are
+     * the same setup before the edit and the station once it is no station, whose captions are kept but not drawn.
      *
      * MUTATION: leave the error out, report a station with one caption, or count a square that is no station, and this
-     * fails.  A station named on its own square and beside it is NOT an error (it is drawn once): the next claims.
-     *
-     * @throws Exception from the session or the setup file
+     * fails.
      */
     @Test
     public void testAStationShownTwiceIsAnErrorNamingTheStationAndBothSquares() throws Exception
@@ -195,7 +180,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         assertEquals(new LinkedHashSet<>(finding.getRelated()), new LinkedHashSet<>(Arrays.asList(beside, further)),
             "the finding does not point at both caption squares");
 
-        // WHAT THE READER IS TOLD, as the editor renders it: {0} the station, {1} the finding's subject, {2} the count
+        // What the reader is told, as the editor renders it: {0} the station, {1} the finding's subject, {2} the count
         String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), edited.describeTile(finding.getAbout()),
             finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
 
@@ -215,16 +200,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * One finding per station however many places its name is drawn in, and the editor's own doors clear it (OB-341).
-     *
-     * Three captions beside one station and two beside another are two findings, the first counting three; the first
-     * station is also captioned on its own square, which gives way to them and is not counted.  The sentence tells the
-     * reader to stop showing the station on all but one square, and to show it on the one to keep: both go through
-     * `setCaption`, the door the editor's menu uses, so doing as it says is what ends the finding.
+     * The sentence tells the reader to stop showing the station on all but one square, and to show it on the one to
+     * keep: both go through `setCaption`, the door the editor's menu uses, so doing as it says ends the finding.
      *
      * MUTATION: one finding per caption square, counting the station's own square, or not clearing when the extra ones
      * go, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAStationShownInThreePlacesIsOneErrorAndTheEditorClearsIt() throws Exception
@@ -285,17 +265,12 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station named on its own square and beside it is drawn once, so it is no error (OB-341).
-     *
-     * That is the shape of Adam's own railway - TopMainR2 is captioned on `5:6,4` and on `5:6,5` in `cs2_sample_layout`
-     * and every fixture copied from it - and `TrainControlUI.autonomyCaptionAt` draws it ONCE, the beside one (MT-337).
-     * The check counts what is drawn, by the session's `isCaptionDrawn` that the drawing asks as well, so the shape is no
-     * finding; a second caption beside the station makes it two names and is one.  St59 and St00AA in the sandbox that
-     * raised this are the same shape.
+     * A station named on its own square and beside it is drawn once, so it is no error (OB-341): the shape of Adam's
+     * own railway, where `TrainControlUI.autonomyCaptionAt` draws it ONCE, the beside one (MT-337). The check counts
+     * what is drawn, by the session's `isCaptionDrawn` that the drawing asks as well; a second caption beside the
+     * station makes it two names.
      *
      * MUTATION: count the station's own square as a place, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAStationNamedOnItsOwnSquareAndBesideItIsDrawnOnceAndIsNoError() throws Exception
@@ -339,14 +314,10 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * What is stale is not counted (OB-341): a caption on a page that is gone.
-     *
-     * Two captions beside a station are an error, but one of them on a page the session no longer has is not drawn
-     * anywhere.  The control is the station with a second caption that is on a page, which is reported.
+     * What is stale is not counted (OB-341): a caption on a page that is gone is not drawn anywhere. The control is the
+     * station with a second caption that is on a page, which is reported.
      *
      * MUTATION: leave out the page test in `isCaptionDrawn`, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testStaleCaptionsAreNotCounted() throws Exception
@@ -375,16 +346,12 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station that is no Point is reported when its name is drawn twice on a page (OB-341).
-     *
-     * The rule's promise is an ERROR exactly where the diagram draws a name twice on a page, and the diagram draws a
-     * caption for any station - `getCaptionTarget` asks only that the square be one - whether or not the railway built a
-     * Point there.  Two such stations: a sensor with no track to it, and a station on a page left out of autonomy whose
-     * captions sit on a page that is drawn.  No door of the editor makes either; a setup edited by hand does.
+     * A station that is no Point is reported when its name is drawn twice on a page (OB-341): the diagram draws a
+     * caption for any station whether or not the railway built a Point there (`getCaptionTarget` asks only that the
+     * square be one). Two such stations: a sensor with no track to it, and a station on a page left out of autonomy
+     * whose captions sit on a page that is drawn. A setup edited by hand can make either.
      *
      * MUTATION: ask whether the station is a Point in `stationsShownMoreThanOnce`, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAStationThatIsNoPointIsReportedWhenItsNameIsDrawnTwice() throws Exception
@@ -429,16 +396,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station unnamed and out of service is not reported for what is not drawn (OB-341).
-     *
-     * The diagram draws no caption for a station that is both unnamed and switched off (Adam, 2026-08-31: *"hide the label
-     * if empty and nothing can pass."*), so two captions beside it are nothing drawn twice - and its automatic name already
-     * has an error of its own, which `checkStationLabels` avoids doubling.  Named, it keeps its caption however it is
-     * switched; unnamed and in service it draws its dash.  Both of those are reported.
+     * A station unnamed and out of service is not reported for what is not drawn (OB-341): the diagram draws no caption
+     * for it (*"hide the label if empty and nothing can pass."*), and its automatic name already has an error of its
+     * own, which `checkStationLabels` avoids doubling. Named, or unnamed and in service, it is drawn and reported.
      *
      * MUTATION: leave the rule out of `isCaptionDrawn`, and the first assertion fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAnUnnamedStationOutOfServiceIsNotReportedForWhatIsNotDrawn() throws Exception
@@ -484,16 +446,12 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * The finding is filed on the first square the name is drawn on, and counted and clicked to there (OB-341).
-     *
-     * Two captions of a station on page B, the station on page A: the editor files a finding, counts it for the page and
-     * jumps to it by the square it is filed on, so one filed on the station's own square put the count on A and the click on
-     * A, where the squares to look at are not.  It is filed on B's first square and is ABOUT the station, which is what the
-     * sentence names.
+     * The finding is filed on the first square the name is drawn on, and counted and clicked to there (OB-341): the
+     * editor counts it for the page and jumps to the square it is filed on, so one filed on the station's own page
+     * would send the click where the squares to look at are not. It is ABOUT the station, which is what the sentence
+     * names.
      *
      * MUTATION: file it on the station's own square, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testTheFindingIsFiledOnThePageThatDrawsTheNameTwice() throws Exception
@@ -531,11 +489,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         assertTrue(said.contains("second 3,2") && said.contains("second 3,3"), "the sentence does not name the squares: " + said);
     }
 
-    /**
-     * A station on a page left out of autonomy is not reported (OB-341), as it is not built.
-     *
-     * @throws Exception from the session
-     */
+    /** A station on a page left out of autonomy is not reported (OB-341), as it is not built. */
     @Test
     public void testAStationOnAPageLeftOutOfAutonomyIsNotReported() throws Exception
     {
@@ -558,16 +512,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station named on its own square and on another page is drawn on both, and is no error (OB-341).
-     *
-     * Adam, 2026-10-12: *"The duplicate caption check should be per page.  It is OK to show on another page what is going
-     * on on another."*  MT-337's trouble was the two landing next to each other, which two pages never do, so the station's
-     * own caption gives way only to a caption on its OWN page.  A caption on a page that is not drawn - one left out of
-     * autonomy, which no window draws (`LayoutGrid.hidesStationCaptions`), or one that is gone - is drawn nowhere.
+     * A station named on its own square and on another page is drawn on both, and is no error (OB-341): the check is
+     * per page, and the station's own caption gives way only to a caption on its OWN page. A caption on a page that is
+     * not drawn (left out of autonomy, `LayoutGrid.hidesStationCaptions`, or gone) is drawn nowhere.
      *
      * MUTATION: let the own caption give way to a caption on another page, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAStationNamedOnItsOwnSquareAndOnAnotherPageIsDrawnOnBoth() throws Exception
@@ -615,17 +564,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * Only a page that draws a station's name twice is an error, and the finding names that page's squares (OB-341).
-     *
-     * Two captions beside the station on its own page and one on another page: one finding, with the two.  Two on the
-     * OTHER page and one beside the station: one finding, with the other page's two, named with their page, and not the
-     * lone one.  A caption beside the station on each of two pages is nothing to report, and one page's two that are not
-     * drawn - the page left out of autonomy, or gone - are not two names.
-     *
-     * Adam, 2026-10-12: *"The duplicate caption check should be per page."*
+     * Two on the station's own page and one on another is one finding with the two; two on the OTHER page is one
+     * finding with the other page's two, named with their page; a caption beside the station on each page, or two on a
+     * page that is not drawn, are not two names.
      *
      * MUTATION: count the captions of all pages together, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testOnlyAPageThatDrawsTheNameTwiceIsAnErrorAndTheFindingNamesItsSquares() throws Exception
@@ -701,15 +644,10 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * The squares are named in reading order, and the stations are listed in it, whatever order the setup holds them in
-     * (OB-341).
-     *
-     * A file's captions load in the order the JSON gives them, which is no order at all, so the sentence and the list
-     * would change from one open to the next.  Put in through the store in the opposite order, so that only sorting gives
-     * the answer.
+     * (OB-341): a file's captions load in JSON order, which is no order at all. Put in through the store in the
+     * opposite order, so that only sorting gives the answer.
      *
      * MUTATION: leave the sorts out of `stationsShownMoreThanOnce`, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testTheSquaresAreNamedInReadingOrderWhateverOrderTheSetupHoldsThem() throws Exception
@@ -748,17 +686,12 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * An import does not caption a station the setup already shows somewhere else (OB-341).
-     *
-     * `importBundle` merges the file's `captions` square by square, keeping what is already there and filling the gaps -
-     * and a square the setup had no caption on is a gap whether or not the STATION it names is shown elsewhere.  Importing
-     * onto a layout whose stations an old-file import had captioned on their own squares gave each station named in the
-     * file a second caption beside the first: the state the setup check now calls an error.  A station the setup shows
-     * nowhere still gets the file's caption, or an import onto a fresh setup would lose them all.
+     * An import does not caption a station the setup already shows somewhere else (OB-341): `importBundle` merges the
+     * file's `captions` square by square, and a square with no caption is a gap whether or not the STATION it names is
+     * shown elsewhere. A station the setup shows nowhere still gets the file's caption, or an import onto a fresh setup
+     * would lose them all.
      *
      * MUTATION: take the guard out of the `captions` merge in `importBundle`, and this fails.
-     *
-     * @throws Exception from the sessions
      */
     @Test
     public void testAnImportDoesNotCaptionAStationTheSetupAlreadyShows() throws Exception
@@ -811,15 +744,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * A file that names one station in several places gives the setup one of them, and always the same one (OB-341).
-     *
-     * The import takes only the stations the setup does not caption yet, and a file's own repeats are not exempt.  org.json
-     * holds the file's keys in no order, so which survived would be an accident of their hashes; the squares are taken in
-     * reading order - page, row, column - and the first is kept.  The keys below hash in an order that is NOT reading order,
-     * so only the sort puts the right one first.
+     * org.json holds the file's keys in no order, so the squares are taken in reading order (page, row, column) and the
+     * first is kept; the keys below hash in an order that is NOT reading order, so only the sort puts the right one
+     * first.
      *
      * MUTATION: take the keys in the order the file gives them, and this fails.
-     *
-     * @throws Exception from the sessions
      */
     @Test
     public void testAnImportThatNamesAStationSeveralTimesKeepsTheFirstSquare() throws Exception
@@ -865,16 +794,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * An import keeps a caption on another page than the station's own, and still skips a second on one page (OB-341).
-     *
-     * Adam, 2026-10-12: *"The duplicate caption check should be per page."*  The merge takes a caption of the file's only
-     * when the station has none yet ON THAT CAPTION'S PAGE, the file's own repeats included, in the order of the squares.
-     * So a station the setup captions on its own square gets the file's caption on the other page, and the file's second
-     * caption beside it on the station's page is the one that is not taken.
+     * An import keeps a caption on another page than the station's own, and still skips a second on one page (OB-341):
+     * the merge takes a caption of the file's only when the station has none yet ON THAT CAPTION'S PAGE, the file's own
+     * repeats included, in the order of the squares.
      *
      * MUTATION: compare the stations alone, without their page, and this fails.
-     *
-     * @throws Exception from the sessions
      */
     @Test
     public void testAnImportKeepsACaptionOnAnotherPageAndSkipsASecondOnThePage() throws Exception
@@ -919,17 +843,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * Showing a station's name on another page ADDS a caption there; on the same page it MOVES the one that was there, and
-     * Stop Showing takes off only the one clicked (OB-341).
-     *
-     * Adam, 2026-10-12, ruled that Show Station Here goes per page like the check: on a page where the station has no
-     * caption it adds one and keeps the captions on other pages, and on the same page it still moves it, so each page
-     * shows the name at most once.  `clearCaptions` takes off only the captions on the
-     * new one's page, and `setCaption`, `placeCaption` and `moveCaption` go through it.
+     * Showing a station's name on another page ADDS a caption there; on the same page it MOVES the one that was there,
+     * and Stop Showing takes off only the one clicked (OB-341). `clearCaptions` takes off only the captions on the new
+     * one's page, and `setCaption`, `placeCaption` and `moveCaption` go through it.
      *
      * MUTATION: clear the station's captions on every page, as before, and this fails at the first step.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testShowingAStationNameOnAnotherPageAddsAndOnTheSamePageMoves() throws Exception
@@ -973,7 +891,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         assertTrue(session.captionsFor(station).contains(thereToo), "placing the name on the station's page took the"
             + " other page's caption off");
 
-        // AND THE OWN PAGE'S MOVED (FR-136): a placement that did nothing leaves the caption on the square it was put on
+        // And the own page's caption moved (FR-136): a placement that did nothing leaves the caption on the square it
+        // was put on
         TileKey shown = null;
 
         for (TileKey where : session.captionsFor(station))
@@ -1001,16 +920,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A legacy label on another page still captions a station that is captioned on its own page, and one on a page that has
-     * a caption of it does not (OB-256, OB-341).
-     *
-     * The migration captions a station only where it has none ON THAT PAGE.  The same-page meaning is
-     * `testALegacyLabelDoesNotCaptionAStationTwice`; this is the counterpart on the next page, whose label becomes a
-     * caption there and leaves the one on the first page.
+     * A legacy label on another page still captions a station that is captioned on its own page, and one on a page that
+     * has a caption of it does not (OB-256, OB-341). The counterpart on the next page of
+     * `testALegacyLabelDoesNotCaptionAStationTwice`.
      *
      * MUTATION: caption the label's square only when the station has no caption anywhere, as before, and this fails.
-     *
-     * @throws Exception from the session or the page files
      */
     @Test
     public void testALegacyLabelOnAnotherPageStillCaptionsAStationShownOnItsOwnPage() throws Exception
@@ -1055,14 +969,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * The old-file import captions a station on its own square only where it has no caption on its page (OB-256, OB-341).
-     *
-     * One station has a caption of a setup edited by hand on ANOTHER page, and is still captioned on its own square; the
-     * other has one beside it on its own page, and is not.
+     * The old-file import captions a station on its own square only where it has no caption on its page (OB-256,
+     * OB-341): one station has a hand-edited caption on ANOTHER page and is still captioned on its own square; the
+     * other has one beside it on its own page and is not.
      *
      * MUTATION: caption only a station with no caption anywhere, as before, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testTheOldFileImportCaptionsAStationOnlyWhereItHasNoneOnItsPage() throws Exception
@@ -1119,15 +1030,9 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * Asking to show a station's name moves the caption rather than adding a second one on the same page (OB-341: on
-     * another page it adds one, which is `testShowingAStationNameOnAnotherPageAddsAndOnTheSamePageMoves`).
-     *
-     * This used to refuse when the station was already shown somewhere, which left the user to find
-     * and delete the old caption first - and once importing began captioning every station on its own
-     * square, made the action appear to do nothing at all on a freshly imported setup.
-     *
-     * The count is the assertion: two captions for one station is the thing being prevented, and it is
-     * exactly what a refusal-turned-into-a-placement would produce if the old one were not cleared.
+     * Asking to show a station's name moves the caption rather than adding a second one on the same page (OB-341; on
+     * another page it adds, see `testShowingAStationNameOnAnotherPageAddsAndOnTheSamePageMoves`). The count is the
+     * assertion: two captions for one station is what a placement would produce if the old one were not cleared.
      */
     @Test
     public void testShowingAStationNameMovesItRatherThanAddingASecond() throws Exception
