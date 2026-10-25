@@ -145,8 +145,6 @@ public class testTheOwnTailArithmetic
      * leaving the switch to coming back to it.
      *
      * MUTATION: stop timing the route's own places, and this fails.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testARouteThatComesBackOverItselfIsJudged() throws Exception
@@ -173,8 +171,6 @@ public class testTheOwnTailArithmetic
      *
      * MUTATION: time a route's own place from where the head reached it, and this fails - the figure is 5, and a
      * four-unit train goes.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testARouteIsTimedFromTheFarEndOfAPlace() throws Exception
@@ -202,8 +198,6 @@ public class testTheOwnTailArithmetic
      * says two; in one piece, one; with nothing to measure, nothing - whatever the places themselves measure.
      *
      * MUTATION: count the runtime's own pieces instead of the marks, or count a piece once per place, and this fails.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testTheNoteCountsWhatMassAssignAsksFor() throws Exception
@@ -261,8 +255,6 @@ public class testTheOwnTailArithmetic
      * nothing of it.
      *
      * MUTATION: count only the stretches wholly between, and this fails.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testTheStretchTheTrainComesBackInIsCounted() throws Exception
@@ -301,8 +293,6 @@ public class testTheOwnTailArithmetic
     /**
      * A way round with no measured square on it is not judged - *"only apply if lengths are specified"* - however much
      * of the body in front of the place it comes back to is measured.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testAWayRoundWithNothingMeasuredIsNotJudged() throws Exception
@@ -323,8 +313,6 @@ public class testTheOwnTailArithmetic
      *
      * The route comes up behind the body: to B after 5 measured units - 8 from where B begins to be left - and then to
      * A, whose way round is 6.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testTheRefusalNamesTheTightestReturn() throws Exception
@@ -351,8 +339,6 @@ public class testTheOwnTailArithmetic
      * short piece drawn over several squares having fewer units than squares, and counting squares told Adam's that 21
      * of its squares on the way round had none.  Coarser than the pieces lengths are given in: an edge
      * measured only at its switch is not counted.
-     *
-     * @throws Exception from the rule
      */
     @Test
     public void testAPartlyMeasuredWayRoundSaysSo() throws Exception
