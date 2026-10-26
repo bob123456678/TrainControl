@@ -1160,14 +1160,16 @@ public class testTheLayoutEditorManagesPages
     /** The windows the questions hang off, one per question opened while it watches. */
     private static final class Owners implements AutoCloseable
     {
-        private final List<Window> owners = Collections.synchronizedList(new ArrayList<>());
+        private final Map<JDialog, Window> owners = Collections.synchronizedMap(new java.util.IdentityHashMap<>());
 
+        // Any of the question's window events counts it, once: a question answered at once can close before its
+        // WINDOW_OPENED is delivered, and its WINDOW_CLOSED always is
         private final java.awt.event.AWTEventListener opened = event ->
         {
-            if (event.getID() == java.awt.event.WindowEvent.WINDOW_OPENED && event.getSource() instanceof JDialog
+            if (event.getSource() instanceof JDialog && !owners.containsKey(event.getSource())
                 && Components.find((JDialog) event.getSource(), JOptionPane.class, null) != null)
             {
-                owners.add(((JDialog) event.getSource()).getOwner());
+                owners.put((JDialog) event.getSource(), ((JDialog) event.getSource()).getOwner());
             }
         };
 
@@ -1191,7 +1193,7 @@ public class testTheLayoutEditorManagesPages
         {
             synchronized (owners)
             {
-                for (Window owner : owners)
+                for (Window owner : owners.values())
                 {
                     assertTrue(owner == expected, "a question hangs off " + (owner == null ? null
                         : owner.getName() + " " + owner.getClass().getSimpleName()) + ", not the editor");
