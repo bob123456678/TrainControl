@@ -400,7 +400,10 @@ public class testTheMenusComeBackAtOneMoment
                 String said = tip.replaceAll("<[^>]*>", " ").replace("&lt;", "<").replace("&gt;", ">")
                     .replace("&amp;", "&").replaceAll("\\s+", " ").trim();
 
-                if (said.length() > limit) wrong.add("(" + said.length() + "): " + said);
+                // A Recent Layouts item's tip is its folder's path: the user's data, not wording, so only its wrap counts
+                boolean aPath = new java.io.File(said).isAbsolute();
+
+                if (said.length() > limit && !aPath) wrong.add("(" + said.length() + "): " + said);
                 else if (!tip.contains("width") && !fitsOnALine(said)) wrong.add("(unwrapped): " + said);
             }
 
