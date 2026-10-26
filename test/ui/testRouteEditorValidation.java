@@ -1080,6 +1080,63 @@ public class testRouteEditorValidation
     }
 
     /**
+     * Add Condition and the plus join the new condition with the word of the last condition's level, as Insert
+     * Condition Below does: "21 or 22" plus Add gives "21 or 22 or 1", not a level that disagrees with itself.
+     *
+     * MUTATION: in `ConditionTable.addRow`, join with `Joiner.AND` always, and Add gives "21 or 22 and 1", flagged.
+     */
+    @Test
+    public void testAddConditionJoinsWithTheLevelsWord() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            java.awt.Rectangle plus = support.Components.onTheEventThread(
+                () -> table.getCellRect(table.getRowCount() - 1, 0, true));
+
+            javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(table,
+                new java.awt.Point(plus.x + 40, plus.y + plus.height + 6), 5000);
+
+            assertNotNull(menu, "a right-click below the lines opened no menu");
+
+            support.Mouse.choose(item(menu, "route.ui.menuAddCondition"));
+
+            assertEquals(levels(frame), " 0:21 0OR 0:22 0OR 0:1", "Add Condition after \"21 or 22\" joins with its"
+                + " level's 'or'");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:21 0AND 1:22 1OR 1:23")));
+
+            clickCell(table, frame.conditionRowsForTest().size(), UP_ARROW, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 1:22 1OR 1:23 1OR 1:1", "the plus after \"21 and (22 or 23)\""
+                + " joins with the group's 'or'");
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the plus made is flagged: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()));
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
      * FR-147, what an edit changed: after a move, an indent, an outdent or the plus, the condition that changed is
      * selected and "Reads as" shows it in bold, where it now sits in the sentence.
      *

@@ -411,6 +411,25 @@ public class testRestoreFromBackup
     {
         File archive = backUp();
 
+        String[] where = leaveATrainWhereARunWould(model, ui, RUN_TRAIN);
+
+        restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
+
+        assertTrue(Components.waitFor(() -> guard.exits().contains(0), 30000), "TrainControl did not close after the"
+            + " restore");
+
+        assertEquals(trainOn(entriesOf(newBeforeRestore()), sandbox.getFolder().getName(), where), RUN_TRAIN, "the"
+            + " backup taken before the restore does not have " + RUN_TRAIN + " on " + where[1] + ", where the run left"
+            + " it");
+    }
+
+    /**
+     * Leaves a new train where a stopped run would: the active configuration loaded, and the train standing on a free
+     * station of the railway at rest that the setup does not name it on.  Answers {the configuration, the square}.
+     */
+    static String[] leaveATrainWhereARunWould(MarklinControlStation model, TrainControlUI ui, String train)
+        throws Exception
+    {
         final String active = ui.getAutonomySession() == null ? null
             : ui.getAutonomySession().getStore().getActiveConfiguration();
 
@@ -423,9 +442,8 @@ public class testRestoreFromBackup
 
         Components.settle();
 
-        model.newMM2Locomotive(RUN_TRAIN, 78);
+        model.newMM2Locomotive(train, 78);
 
-        // Where a run leaves a train: standing on a station of the stopped railway that the setup does not name it on
         final String[] square = new String[1];
 
         SwingUtilities.invokeAndWait(() ->
@@ -436,7 +454,7 @@ public class testRestoreFromBackup
             {
                 if (point.isDestination() && !point.isOccupied())
                 {
-                    point.setLocomotive(model.getLocByName(RUN_TRAIN));
+                    point.setLocomotive(model.getLocByName(train));
 
                     square[0] = String.valueOf(ui.getAutonomySession().tileForPointName(point.getName()));
 
@@ -449,25 +467,37 @@ public class testRestoreFromBackup
 
         assertFalse(model.getAutoLayout().isRunning(), "precondition: the railway is not at rest");
 
-        restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
+        return new String[] {active, square[0]};
+    }
 
-        assertTrue(Components.waitFor(() -> guard.exits().contains(0), 30000), "TrainControl did not close after the"
-            + " restore");
+    /** Takes a train `leaveATrainWhereARunWould` left off the railway and out of the database. */
+    static void takeTheTrainAway(MarklinControlStation model, String train) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.isOccupied() && train.equals(point.getCurrentLocomotive().getName())) point.setLocomotive(null);
+            }
+        });
 
-        Map<String, byte[]> before = entriesOf(newBeforeRestore());
+        model.deleteLoc(train);
+    }
 
-        String setup = sandbox.getFolder().getName() + "/config/autonomy/configuration-" + active + ".json";
+    /** The train an archive's setup names on the square `leaveATrainWhereARunWould` answered, or null. */
+    static String trainOn(Map<String, byte[]> archive, String layout, String[] where)
+    {
+        String setup = layout + "/config/autonomy/configuration-" + where[0] + ".json";
 
-        assertNotNull(before.get(setup), "the backup taken before the restore has no " + setup + ": " + before.keySet());
+        assertNotNull(archive.get(setup), "the archive has no " + setup + ": " + archive.keySet());
 
-        org.json.JSONObject points = new org.json.JSONObject(new String(before.get(setup), StandardCharsets.UTF_8))
+        org.json.JSONObject points = new org.json.JSONObject(new String(archive.get(setup), StandardCharsets.UTF_8))
             .getJSONObject("points");
 
-        org.json.JSONObject loc = points.optJSONObject(square[0]) == null ? null
-            : points.getJSONObject(square[0]).optJSONObject("loc");
+        org.json.JSONObject loc = points.optJSONObject(where[1]) == null ? null
+            : points.getJSONObject(where[1]).optJSONObject("loc");
 
-        assertEquals(loc == null ? null : loc.optString("name"), RUN_TRAIN, "the backup taken before the restore does"
-            + " not have " + RUN_TRAIN + " on " + square[0] + ", where the run left it");
+        return loc == null ? null : loc.optString("name");
     }
 
     /**
@@ -655,6 +685,83 @@ public class testRestoreFromBackup
         }
     }
 
+    /**
+     * A layout whose `config` is itself a link (a shared folder linked in) is restored through the link: `config` is
+     * still the link afterwards, and the folder it points at holds the backup's files, a file added since gone.
+     *
+     * MUTATION: in `Archive.writeLayout`, `deleteTree` the linked `config` as any other, and the restore replaces the
+     * link with a folder of its own.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testALinkedConfigFolderIsRestoredThroughTheLink() throws Exception
+    {
+        File archive = backUp();
+
+        Path config = new File(sandbox.getFolder(), "config").toPath();
+
+        Path shared = Files.createTempDirectory("tc-restore-shared-config");
+
+        File added = new File(shared.toFile(), "added since the backup.txt");
+
+        try
+        {
+            copyTree(config, shared);
+
+            Files.write(added.toPath(), "added".getBytes(StandardCharsets.UTF_8));
+
+            assertTrue(Util.deleteTree(config.toFile(), 0), "precondition: the layout's config could not be moved");
+
+            linkTo(config, shared);
+
+            restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
+
+            assertTrue(Components.waitFor(() -> guard.exits().contains(0), 30000), "TrainControl did not close after"
+                + " the restore");
+
+            assertTrue(Util.isLink(config.toFile()), "the restore replaced the linked config with a folder of its own");
+
+            assertFalse(added.exists(), "a file added to the linked folder since the backup is still there");
+
+            String page = sandbox.getFolder().getName() + "/config/gleisbild.cs2";
+
+            Map<String, byte[]> held = entriesOf(archive);
+
+            assertNotNull(held.get(page), "precondition: the backup has no " + page + ": " + held.keySet());
+
+            assertTrue(Arrays.equals(Files.readAllBytes(shared.resolve("gleisbild.cs2")), held.get(page)), "the linked"
+                + " folder does not hold the backup's gleisbild.cs2");
+        }
+        finally
+        {
+            // The class's later claims open the layout from a folder of its own again
+            if (Util.isLink(config.toFile()) && Files.exists(config, LinkOption.NOFOLLOW_LINKS))
+            {
+                Files.delete(config);
+
+                copyTree(shared, config);
+            }
+
+            Util.deleteTree(shared.toFile(), 0);
+        }
+    }
+
+    /** Copies a folder's files and folders into another, made where missing. */
+    private static void copyTree(Path from, Path to) throws Exception
+    {
+        try (java.util.stream.Stream<Path> walk = Files.walk(from))
+        {
+            for (Path each : (Iterable<Path>) walk::iterator)
+            {
+                Path into = to.resolve(from.relativize(each).toString());
+
+                if (Files.isDirectory(each)) Files.createDirectories(into);
+                else Files.copy(each, into, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+    }
+
     /** A folder link: a junction on Windows, which needs no administrator, else a symbolic link. */
     private static void linkTo(Path link, Path target) throws Exception
     {
@@ -827,7 +934,7 @@ public class testRestoreFromBackup
         else TrainControlUI.getPrefs().put(key, value);
     }
 
-    private static Map<String, byte[]> entriesOf(File archive) throws Exception
+    static Map<String, byte[]> entriesOf(File archive) throws Exception
     {
         Map<String, byte[]> held = new TreeMap<>();
 

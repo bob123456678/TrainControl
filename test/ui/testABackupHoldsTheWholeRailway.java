@@ -46,6 +46,8 @@ import support.Components;
  */
 public class testABackupHoldsTheWholeRailway
 {
+    private static final String RUN_TRAIN = "Backup run train";
+
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static TrainControlUI ui;
@@ -200,6 +202,34 @@ public class testABackupHoldsTheWholeRailway
             + " the layout's own name (MT-159).  Holds: " + held.keySet());
 
         assertEquals(different, new ArrayList<String>(), "these files of the layout differ in the backup from the folder");
+    }
+
+    /**
+     * The backup holds where a stopped run left the trains: the run is folded into the setup before the archive is
+     * written, so restoring it does not put a train back on the square it set off from while the one it stands on
+     * reads free.
+     *
+     * MUTATION: take the fold out of `backupDataMenuItemActionPerformed`, and the archive holds the setup as the run
+     * found it.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheBackupHoldsWhereAStoppedRunLeftTheTrains() throws Exception
+    {
+        String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, RUN_TRAIN);
+
+        try
+        {
+            File archive = backUp(Answering.press(I18n.t("ui.ok")), new ArrayList<>());
+
+            assertEquals(testRestoreFromBackup.trainOn(entriesOf(archive), sandbox.getFolder().getName(), where),
+                RUN_TRAIN, "the backup does not have " + RUN_TRAIN + " on " + where[1] + ", where the run left it");
+        }
+        finally
+        {
+            testRestoreFromBackup.takeTheTrainAway(model, RUN_TRAIN);
+        }
     }
 
     /** Show Files, at the end of the backup, opens the folder the archive is in (OB-311). */

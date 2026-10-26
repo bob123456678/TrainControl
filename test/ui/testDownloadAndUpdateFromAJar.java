@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
@@ -502,6 +503,79 @@ public class testDownloadAndUpdateFromAJar
         assertEquals(requests.get(), before + 1, "two updates downloaded the new version");
 
         assertTheJarAndTheProgramAreAsTheyWere();
+    }
+
+    /**
+     * The update's backup holds where a stopped run left the trains: the run is folded into the setup before the
+     * archive is written.  The exit is held by a dialog of the user's while a run is started, so it stops there.
+     *
+     * MUTATION: take the fold out of `installTheDownload`, and the archive holds the setup as the run found it.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheBackupHoldsWhereAStoppedRunLeftTheTrains() throws Exception
+    {
+        final String train = "Update run train";
+
+        final String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, train);
+
+        final int before = requests.get();
+
+        gate = new CountDownLatch(1);
+
+        final JDialog open = new JDialog(ui, "the user's own dialog", true);
+
+        try (Answering answering = Answering.start(rule()))
+        {
+            SwingUtilities.invokeLater(item::doClick);
+
+            assertTrue(Components.waitFor(() -> requests.get() > before, 30000), "the download never started: "
+                + answering.asked());
+
+            SwingUtilities.invokeLater(() ->
+            {
+                open.setSize(200, 100);
+                open.setVisible(true);
+            });
+
+            assertTrue(Components.waitFor(open::isShowing, 10000), "precondition: the user's dialog did not open");
+
+            gate.countDown();
+
+            assertTrue(Components.waitFor(() -> item.isEnabled()
+                && I18n.t("ui.main.downloadUpdate").equals(item.getText()), 90000), "the update did not reach its"
+                + " exit: " + answering.asked());
+
+            model.getAutoLayout().setStagingInProgress(true);
+
+            SwingUtilities.invokeLater(open::dispose);
+
+            assertTrue(answering.awaitAsked(2, 30000), "the exit did not stop for the run: " + answering.asked());
+
+            Components.settle();
+        }
+        finally
+        {
+            SwingUtilities.invokeLater(open::dispose);
+
+            testRestoreFromBackup.takeTheTrainAway(model, train);
+        }
+
+        Set<String> made = archives();
+
+        made.removeAll(archivesBefore);
+
+        made.removeIf(name -> !name.endsWith(".zip"));
+
+        assertEquals(made.size(), 1, "the update did not write one backup: " + made);
+
+        File archive = new File(backupFolder(), made.iterator().next());
+
+        Map<String, byte[]> held = testRestoreFromBackup.entriesOf(archive);
+
+        assertEquals(testRestoreFromBackup.trainOn(held, sandbox.getFolder().getName(), where), train, "the update's"
+            + " backup does not have " + train + " on " + where[1] + ", where the run left it");
     }
 
     /** No updater started, no exit asked for, the jar itself unchanged and no copy of it beside it. */
