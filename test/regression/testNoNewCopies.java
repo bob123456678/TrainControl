@@ -27,7 +27,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 135;
+    private static final int GROUPS_ALLOWED = 134;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -130,7 +130,6 @@ public class testNoNewCopies
         "RouteEditorFrame:2 (65)",
         "RouteEditorFrame:2 (65)",
         "RouteEditorFrame:2 (62)",
-        "RouteEditorFrame:2 (61)",
         "RowIcons:2 (77)",
         "RowIcons:2 (64)",
         "StationCaption:2 (86)",
