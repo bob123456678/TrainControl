@@ -1323,6 +1323,15 @@ public class testRouteEditorValidation
             {" 0:21", 0, "Below", " 0:21 0AND 0:1", 2, "#21 and #1"},
         };
 
+        insertsAsTheCasesSay(cases);
+    }
+
+    /**
+     * Each case's Insert Condition, chosen from a right-click: {start, line, Above or Below, the outline after, the
+     * selected line after, how Reads as reads after}.
+     */
+    private static void insertsAsTheCasesSay(final Object[][] cases) throws Exception
+    {
         final org.traincontrol.gui.RouteEditorFrame frame = open();
 
         try
@@ -1358,6 +1367,166 @@ public class testRouteEditorValidation
             support.Mouse.closeMenus();
 
             close(frame);
+        }
+    }
+
+    /**
+     * FR-150: Insert Condition on a joining word puts one new condition at the word's own level, joined by that same
+     * word, and selects it: on the "or" of "(21 and 22) or (24 and 25)" it gives "(21 and 22) or new or (24 and 25)",
+     * on the first group's "and" "(21 and new and 22)".  Above (just before the word's right-hand side) and Below (just
+     * after its left-hand side) give the same outline, as the new line sits between two copies of the word either way.
+     *
+     * MUTATION: in `offerConditionMenu`, enable the two inserts on a condition line only, and they are grayed here.
+     */
+    @Test
+    public void testInsertOnAWordLineJoinsByThatWord() throws Exception
+    {
+        needsADisplay();
+
+        final String twoGroups = " 1:21 1AND 1:22 0OR 1:24 1AND 1:25";
+        final String orGroup = " 0:21 0AND 1:22 1OR 1:23";
+
+        final Object[][] cases = {
+            {twoGroups, 3, "Above", " 1:21 1AND 1:22 0OR 0:1 0OR 1:24 1AND 1:25", 4,
+                "(#21 and #22) or #1 or (#24 and #25)"},
+            {twoGroups, 3, "Below", " 1:21 1AND 1:22 0OR 0:1 0OR 1:24 1AND 1:25", 4,
+                "(#21 and #22) or #1 or (#24 and #25)"},
+            {twoGroups, 1, "Above", " 1:21 1AND 1:1 1AND 1:22 0OR 1:24 1AND 1:25", 2,
+                "(#21 and #1 and #22) or (#24 and #25)"},
+            {twoGroups, 1, "Below", " 1:21 1AND 1:1 1AND 1:22 0OR 1:24 1AND 1:25", 2,
+                "(#21 and #1 and #22) or (#24 and #25)"},
+            {twoGroups, 5, "Above", " 1:21 1AND 1:22 0OR 1:24 1AND 1:1 1AND 1:25", 6,
+                "(#21 and #22) or (#24 and #1 and #25)"},
+            {orGroup, 3, "Below", " 0:21 0AND 1:22 1OR 1:1 1OR 1:23", 4, "#21 and (#22 or #1 or #23)"},
+            {orGroup, 1, "Above", " 0:21 0AND 0:1 0AND 1:22 1OR 1:23", 2, "#21 and #1 and (#22 or #23)"},
+        };
+
+        insertsAsTheCasesSay(cases);
+    }
+
+    /**
+     * FR-151: after Insert Condition Above or Below, Add Condition, the plus, or an arrow, the keyboard is on the new or
+     * moved line's address cell, so a digit starts editing that cell as it does after one click on it; the action
+     * itself opens no editor.  The keyboard is put elsewhere in the window before each, as a user's may be.
+     *
+     * MUTATION: in `ConditionTable.pick`, select the row alone with `setRowSelectionInterval`, and a digit edits
+     * nothing.
+     */
+    @Test
+    public void testANewOrMovedConditionIsReadyToTypeInto() throws Exception
+    {
+        needsADisplay();
+
+        final String three = " 0:21 0AND 0:22 0AND 0:23";
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(three));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+            final javax.swing.JTextField elsewhere = support.Components.find(frame, javax.swing.JTextField.class,
+                f -> f.isEditable() && f.isShowing());
+
+            assertNotNull(elsewhere, "the route editor has no field to put the keyboard in");
+
+            clickCell(table, 2, ADDRESS, 0);
+
+            assertEquals(digitEdits(frame, table), "line 2 column 5",
+                "precondition: one click on line 2's address and a digit do not edit it, so the fixture's keyboard"
+                + " does not reach the table");
+
+            // What is done, and the line that then holds the condition it made or moved
+            final Object[][] cases = {
+                {"Insert Condition Above on line 2", 2},
+                {"Insert Condition Below on line 2", 4},
+                {"Add Condition below the lines", 6},
+                {"the plus", 6},
+                {"the up arrow on line 4", 2},
+                {"the down arrow on line 0", 2},
+                {"Move Down on line 2", 4},
+            };
+
+            for (Object[] c : cases)
+            {
+                String did = (String) c[0];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    frame.setConditionRowsForTest(fromLevels(three));
+                    elsewhere.requestFocusInWindow();
+                });
+
+                support.Components.settle();
+
+                assertSame(support.Keys.focusOwnerOf(frame), elsewhere, "precondition: the keyboard is in a field");
+
+                if (did.startsWith("Insert")) rightClickAndChoose(table, 2, "route.ui.menuInsertCondition"
+                    + did.split(" ")[2]);
+                else if (did.startsWith("Add")) rightClickAndChoose(table, 5, "route.ui.menuAddCondition");
+                else if (did.equals("the plus")) clickCell(table, 5, UP_ARROW, 0);
+                else if (did.startsWith("the up arrow")) clickCell(table, 4, UP_ARROW, 0);
+                else if (did.startsWith("the down arrow")) clickCell(table, 0, DOWN_ARROW, 0);
+                else rightClickAndChoose(table, 2, "route.ui.menuMoveDown");
+
+                int line = (Integer) c[1];
+
+                assertEquals(selectedLine(table), line, did + " did not select the line: " + levels(frame));
+                assertFalse(support.Components.onTheEventThread(() -> table.isEditing()),
+                    did + " opened an editor by itself");
+                assertEquals(digitEdits(frame, table), "line " + line + " column " + ADDRESS,
+                    "after " + did + " a digit does not edit the line's address: " + levels(frame));
+            }
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * Presses 7 where the window sends the keyboard, as a focused window would take it, and says which cell it began
+     * editing; the edit is then canceled.  The focus owner is answered from the window, as a test window is usually not
+     * the one the operating system has focused.
+     */
+    private static String digitEdits(final org.traincontrol.gui.RouteEditorFrame frame, final javax.swing.JTable table)
+    {
+        final java.awt.Component owner = support.Keys.focusOwnerOf(frame);
+        java.awt.KeyboardFocusManager real = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
+        java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(new java.awt.DefaultKeyboardFocusManager()
+        {
+            @Override
+            public java.awt.Component getFocusOwner()
+            {
+                return owner;
+            }
+        });
+
+        try
+        {
+            support.Keys.press(owner, java.awt.event.KeyEvent.VK_7);
+
+            return support.Components.onTheEventThread(() ->
+            {
+                String out = table.isEditing()
+                    ? "line " + table.getEditingRow() + " column " + table.getEditingColumn() : "nothing";
+
+                if (table.isEditing()) table.getCellEditor().cancelCellEditing();
+
+                return out;
+            });
+        }
+        finally
+        {
+            java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(real);
         }
     }
 
@@ -1851,6 +2020,9 @@ public class testRouteEditorValidation
     private static final int INDENT_MARK = 2;
     private static final int OUTDENT_MARK = 3;
     private static final int NOTHING_TO_EDIT = 7;
+
+    /** The column a condition's sensor or switch number is typed into. */
+    private static final int ADDRESS = 5;
 
     /** Clicks the first line and Shift-clicks the last, where a press neither edits nor moves anything. */
     private static void selectLines(javax.swing.JTable table, int first, int last) throws Exception
