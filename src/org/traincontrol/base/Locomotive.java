@@ -1571,7 +1571,11 @@ public abstract class Locomotive
             new java.util.HashMap<>(this.getLocalFunctionImageURLs()));
     }
 
-    /** Makes this locomotive's customizations the ones in a snapshot; null does nothing. */
+    /**
+     * Makes this locomotive's customizations the ones in a snapshot.
+     *
+     * @param was the snapshot, or null to do nothing
+     */
     public void applyCustomizations(Customizations was)
     {
         if (was == null) return;

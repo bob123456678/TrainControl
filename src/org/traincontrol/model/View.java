@@ -28,6 +28,8 @@ public interface View
      * when the railway looks like it does now", and half of what a condition can say is about sensors.  Named for what
      * happened rather than for what to redraw: the tiles repaint themselves.
      *
+     * @param name the feedback's name, as a route command spells it
+     * @param state whether it is now occupied
      */
     public void feedbackChanged(String name, boolean state);
 
