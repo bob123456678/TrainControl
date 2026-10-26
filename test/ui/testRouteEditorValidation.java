@@ -950,6 +950,285 @@ public class testRouteEditorValidation
     }
 
     /**
+     * OB-379, Adam's steps: "(a and b and c) or (d and e and f)", the plus adds g at the end, and g's up arrow pressed
+     * four times gives "(a and b and c and g) or (d and e and f)" with g still selected; its down arrow takes it back.
+     * Adam: "The problem is that g is swapped with c unless the user indents (which is illogical)".
+     *
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and the fourth press gives "(a and b and g) or (c and d
+     * and e and f)".
+     */
+    @Test
+    public void testAConditionAddedAtTheEndMovesUpIntoTheGroupAbove() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26")));
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            clickCell(table, frame.conditionRowsForTest().size(), UP_ARROW, 0);
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26 1AND 1:1",
+                "precondition: the plus adds g (sensor 1) at the end of the second group");
+
+            int g = frame.conditionRowsForTest().size() - 1;
+
+            for (int press = 1; press <= 4; press++)
+            {
+                clickCell(table, g, UP_ARROW, 0);
+
+                g = selectedLine(table);
+            }
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 1AND 1:23 1AND 1:1 0OR 1:24 1AND 1:25 1AND 1:26",
+                "four presses of g's up arrow should give (a and b and c and g) or (d and e and f)");
+
+            assertEquals(g, 6, "g is no longer the selected line after the move");
+
+            clickCell(table, g, DOWN_ARROW, 0);
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 1AND 1:23 0OR 1:1 1AND 1:24 1AND 1:25 1AND 1:26",
+                "g's down arrow takes it back to the front of the second group");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147: a right-click on a condition offers Insert Condition Above and Below and the line's own actions, each
+     * enabled exactly where its mark does something; Insert puts a new condition at the line's level, joined by its
+     * level's word, and selects it; a right-click on a mark opens the menu without working the mark; and a right-click
+     * below the lines offers Add Condition.  Adam: "so we can also insert by right clicking."
+     *
+     * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and Insert Condition
+     * Below on 22 gives "21 or 22 and 1", flagged.
+     */
+    @Test
+    public void testARightClickInsertsAConditionAndOffersTheLinesActions() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1OR 1:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            // Under the plus, where the table is empty: the window opens tall enough for a few more lines
+            java.awt.Rectangle plus = support.Components.onTheEventThread(
+                () -> table.getCellRect(table.getRowCount() - 1, 0, true));
+
+            javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(table,
+                new java.awt.Point(plus.x + 40, plus.y + plus.height + 6), 5000);
+
+            assertNotNull(menu, "a right-click below the lines opened no menu");
+            assertEquals(offered(menu), "+route.ui.menuAddCondition", "the menu below the lines");
+
+            support.Mouse.choose(item(menu, "route.ui.menuAddCondition"));
+
+            assertEquals(levels(frame), " 1:21 1OR 1:22 0AND 0:23 0AND 0:1", "Add Condition adds one at the end");
+            assertEquals(selectedLine(table), 6, "and selects it");
+
+            menu = rightClickCell(table, 2, NOTHING_TO_EDIT);
+
+            assertNotNull(menu, "a right-click on condition 22 opened no menu");
+
+            assertEquals(offered(menu), "+route.ui.menuInsertConditionAbove +route.ui.menuInsertConditionBelow"
+                + " +route.ui.menuMoveUp -route.ui.menuMoveDown +route.ui.menuIndent +route.ui.menuOutdent"
+                + " +ui.delete", "the menu on 22 in (21 or 22) and 23 and 1, enabled (+) or not (-)");
+
+            assertEquals(selectedLine(table), 2, "the line right-clicked is the one selected");
+
+            support.Mouse.choose(item(menu, "route.ui.menuInsertConditionBelow"));
+
+            assertEquals(levels(frame), " 1:21 1OR 1:22 1OR 1:1 0AND 0:23 0AND 0:1",
+                "Insert Condition Below puts sensor 1 under 22, in its group and joined by its 'or'");
+            assertEquals(selectedLine(table), 4, "and the new condition is selected");
+
+            menu = rightClickCell(table, 4, UP_ARROW);
+
+            assertNotNull(menu, "a right-click on the up arrow opened no menu");
+            assertEquals(levels(frame), " 1:21 1OR 1:22 1OR 1:1 0AND 0:23 0AND 0:1",
+                "a right-click on a mark worked the mark");
+
+            support.Mouse.choose(item(menu, "route.ui.menuInsertConditionAbove"));
+
+            assertEquals(levels(frame), " 1:21 1OR 1:22 1OR 1:1 1OR 1:1 0AND 0:23 0AND 0:1",
+                "Insert Condition Above puts one above, in the same group");
+            assertEquals(selectedLine(table), 4, "and selects it");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147, what an edit changed: after a move, an indent, an outdent or the plus, the condition that changed is
+     * selected and "Reads as" shows it in bold, where it now sits in the sentence.
+     *
+     * MUTATION: in `describe`, drop the bold round a chosen condition, and no condition is bold.
+     */
+    @Test
+    public void testTheReadingShowsTheConditionAnEditChanged() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(flat(21, "AND", 22, "AND",
+                23)));
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            clickCell(table, 4, UP_ARROW, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:23 0AND 0:22", "precondition: 23 moved up");
+            assertEquals(selectedLine(table), 2, "23 is selected after its move");
+            assertEquals(bold(frame), "[S88 #23]", "after the move, Reads as: " + frame.readsAsForTest());
+
+            clickCell(table, 2, INDENT_MARK, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 1:23 0AND 0:22", "precondition: 23 indented");
+            assertEquals(bold(frame), "[S88 #23]", "after the indent, Reads as: " + frame.readsAsForTest());
+
+            clickCell(table, 2, OUTDENT_MARK, 0);
+
+            assertEquals(bold(frame), "[S88 #23]", "after the outdent, Reads as: " + frame.readsAsForTest());
+
+            clickCell(table, frame.conditionRowsForTest().size(), UP_ARROW, 0);
+
+            assertEquals(selectedLine(table), 6, "the condition the plus added is selected");
+            assertEquals(bold(frame), "[S88 #1]", "after the plus, Reads as: " + frame.readsAsForTest());
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    private static javax.swing.JTable conditionTable(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+            t -> "ConditionTable".equals(t.getClass().getSimpleName()));
+
+        assertNotNull(table, "the route editor has no condition table");
+
+        return table;
+    }
+
+    private static int selectedLine(final javax.swing.JTable table)
+    {
+        return support.Components.onTheEventThread(() -> table.getSelectedRow());
+    }
+
+    /** A right-click in the middle of one cell, and the menu it opened. */
+    private static javax.swing.JPopupMenu rightClickCell(final javax.swing.JTable table, int line, int column)
+    {
+        java.awt.Rectangle cell = support.Components.onTheEventThread(() -> table.getCellRect(line, column, true));
+
+        return support.Mouse.rightClickAt(table, new java.awt.Point(cell.x + cell.width / 2,
+            cell.y + cell.height / 2), 5000);
+    }
+
+    /** The menu's items as their message keys, each marked + when enabled and - when not. */
+    private static String offered(final javax.swing.JPopupMenu menu)
+    {
+        String[] keys = {"route.ui.menuInsertConditionAbove", "route.ui.menuInsertConditionBelow",
+            "route.ui.menuAddCondition", "route.ui.menuMoveUp", "route.ui.menuMoveDown", "route.ui.menuIndent",
+            "route.ui.menuOutdent", "ui.delete"};
+
+        StringBuilder out = new StringBuilder();
+
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (!(part instanceof javax.swing.JMenuItem)) continue;
+
+            javax.swing.JMenuItem item = (javax.swing.JMenuItem) part;
+            String named = item.getText();
+
+            for (String key : keys)
+            {
+                if (I18n.t(key).equals(item.getText())) named = key;
+            }
+
+            out.append(out.length() == 0 ? "" : " ").append(item.isEnabled() ? "+" : "-").append(named);
+        }
+
+        return out.toString();
+    }
+
+    private static javax.swing.JMenuItem item(javax.swing.JPopupMenu menu, String key)
+    {
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof javax.swing.JMenuItem && I18n.t(key).equals(((javax.swing.JMenuItem) part).getText()))
+            {
+                return (javax.swing.JMenuItem) part;
+            }
+        }
+
+        throw new AssertionError("the menu has no " + key + ": " + offered(menu));
+    }
+
+    /** The bold parts of "Reads as" other than the joining words, each cut to its sensor: "[S88 #23]". */
+    private static String bold(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        java.util.regex.Matcher bold = java.util.regex.Pattern.compile("<b>(.*?)</b>").matcher(
+            support.Components.onTheEventThread(() -> frame.readsAsForTest()));
+
+        while (bold.find())
+        {
+            String text = bold.group(1).replaceAll("<[^>]*>", "").trim();
+
+            if (text.equals(I18n.t("route.ui.joinAnd")) || text.equals(I18n.t("route.ui.joinOr"))) continue;
+
+            java.util.regex.Matcher sensor = java.util.regex.Pattern.compile("S88 #\\d+").matcher(text);
+
+            out.add(sensor.find() ? sensor.group() : text);
+        }
+
+        return out.toString();
+    }
+
+    /** An outline written as `levels` prints one: " 1:21 1AND 0:4", each condition on a sensor that is on. */
+    private static java.util.List<org.traincontrol.base.ConditionOutline.Row> fromLevels(String levels)
+    {
+        java.util.List<org.traincontrol.base.ConditionOutline.Row> out = new java.util.ArrayList<>();
+
+        for (String part : levels.trim().split(" "))
+        {
+            int depth = part.charAt(0) - '0';
+
+            out.add(part.charAt(1) == ':'
+                ? org.traincontrol.base.ConditionOutline.Row.condition(depth, feedback(Integer.parseInt(part.substring(2))))
+                : org.traincontrol.base.ConditionOutline.Row.joining(depth,
+                    org.traincontrol.base.ConditionOutline.Joiner.valueOf(part.substring(1))));
+        }
+
+        return out;
+    }
+
+    /**
      * OB-367: a setting is shown in the user's language, in the cell and in "Reads as", and stored as the word the
      * route file holds.
      *

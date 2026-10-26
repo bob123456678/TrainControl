@@ -117,7 +117,22 @@ public final class Mouse
      */
     public static JPopupMenu rightClick(Component on, long millis)
     {
-        click(on, MouseEvent.BUTTON3, 1, 0);
+        enter(on);
+
+        return rightClickAt(on, middle(on), millis);
+    }
+
+    /**
+     * A right click at one point of the component, such as a table's cell, and the pop-up menu it opened.
+     *
+     * @param millis how long to wait for the menu
+     * @return the menu on screen, or null when none opened in time
+     */
+    public static JPopupMenu rightClickAt(Component on, Point at, long millis)
+    {
+        post(on, MouseEvent.MOUSE_PRESSED, at, InputEvent.BUTTON3_DOWN_MASK, 1, MouseEvent.BUTTON3, false);
+        post(on, MouseEvent.MOUSE_RELEASED, at, 0, 1, MouseEvent.BUTTON3, true);
+        post(on, MouseEvent.MOUSE_CLICKED, at, 0, 1, MouseEvent.BUTTON3, false);
 
         Components.waitFor(() -> Components.popupShowing() != null, millis);
 

@@ -496,6 +496,62 @@ public class testRouteEditorLocked
         return found;
     }
 
+    /**
+     * FR-147: a right-click on a locked route's conditions opens no menu; on an ordinary route's it opens one, or the
+     * locked half would pass on a window with no menu at all.
+     *
+     * MUTATION: in `offerConditionMenu`, drop `locked || !conditionsEditable ||`, and the locked route offers Add
+     * Condition.
+     */
+    @Test
+    public void testALockedRoutesConditionsOfferNoMenu() throws Exception
+    {
+        needsADisplay();
+
+        for (boolean owned : new boolean[]{false, true})
+        {
+            final org.traincontrol.gui.RouteEditorFrame frame = open(locked(owned));
+
+            try
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    frame.pack();
+                    frame.setVisible(true);
+                });
+
+                javax.swing.JTable conditions = null;
+
+                for (javax.swing.JTable table : tablesIn(frame.getContentPane()))
+                {
+                    if ("ConditionTable".equals(table.getClass().getSimpleName())) conditions = table;
+                }
+
+                assertNotNull(conditions, "the route editor has no condition table");
+
+                javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(conditions, new java.awt.Point(60, 60),
+                    owned ? 500 : 5000);
+
+                if (owned)
+                {
+                    assertNull(menu, "a right-click on a route belonging to the Central Station opened a menu on its"
+                        + " conditions, offering changes the station undoes on the next sync");
+                }
+                else
+                {
+                    assertNotNull(menu, "a right-click on an ordinary route's conditions opened no menu, so the locked"
+                        + " half proves nothing");
+                }
+            }
+            finally
+            {
+                support.Mouse.closeMenus();
+
+                close(frame);
+            }
+        }
+    }
+
     /** A route with one command in it, locked or not. */
     private static Route locked(boolean owned)
     {

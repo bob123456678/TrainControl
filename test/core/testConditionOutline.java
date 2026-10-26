@@ -393,8 +393,8 @@ public class testConditionOutline
     }
 
     /**
-     * The nesting is the logic, so moving a condition must not deform it: "1 and (2 or 3)" with 2 moved up is
-     * "2 and (1 or 3)", not a condition pulled out of its group.
+     * The nesting is the logic, so moving a condition must not deform it: "1 and (2 or 3)" with 3 moved up is
+     * "1 and (3 or 2)", not a condition pulled out of its group.
      */
     @Test
     public void testMovingAConditionDoesNotDeformTheNesting()
@@ -406,9 +406,9 @@ public class testConditionOutline
             joining(1, ConditionOutline.Joiner.OR),
             condition(1, 3));
 
-        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 2, -1);
+        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 4, -1);
 
-        assertEquals(describe(ConditionOutline.toExpression(moved)), "and(2,(or(1,3)))",
+        assertEquals(describe(ConditionOutline.toExpression(moved)), "and(1,(or(3,2)))",
             "the shape is untouched; only which condition sits where in it changed");
     }
 
@@ -474,6 +474,275 @@ public class testConditionOutline
             "and a word's place is settled by the conditions around it, not by an arrow");
 
         assertTrue(ConditionOutline.canMove(rows, 2, -1), "the last condition can come up");
+    }
+
+    /**
+     * OB-379: "(1 and 2 and 3) or (7 and 4 and 5 and 6)" with 7 moved up is "(1 and 2 and 3 and 7) or (4 and 5 and 6)":
+     * at its group's edge a condition joins the group past the shallower word, at that group's near end and by its
+     * word, and moving it down goes back.  Adam: "The problem is that g is swapped with c".
+     *
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and 7 trades places with 3.
+     */
+    @Test
+    public void testAConditionMovedPastItsGroupsEdgeJoinsTheNextGroup()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 3),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 7), joining(1, ConditionOutline.Joiner.AND), condition(1, 4),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 5), joining(1, ConditionOutline.Joiner.AND),
+            condition(1, 6));
+
+        List<ConditionOutline.Row> up = ConditionOutline.moved(rows, 6, -1);
+
+        assertEquals(levels(up), " 1:1 1AND 1:2 1AND 1:3 1AND 1:7 0OR 1:4 1AND 1:5 1AND 1:6",
+            "7 crosses into the first group at its own level, joined by that group's 'and'");
+        assertEquals(ConditionOutline.landing(rows, 6, -1), 6, "and the editor keeps it selected on its new line");
+        assertTrue(ConditionOutline.problems(up).isEmpty(), "nothing is flagged: " + levels(up));
+        assertEquals(levels(ConditionOutline.moved(up, 6, 1)), levels(rows), "moving it down goes back");
+        assertEquals(ConditionOutline.landing(up, 6, 1), 6, "landing on its old line");
+
+        // Nested deeper, and a group left with one condition: "1 or (2 and (3 or 4) and (5 or 6))", 5 moved up.
+        List<ConditionOutline.Row> deep = outline(
+            condition(0, 1), joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 2), joining(1, ConditionOutline.Joiner.AND),
+            condition(2, 3), joining(2, ConditionOutline.Joiner.OR), condition(2, 4),
+            joining(1, ConditionOutline.Joiner.AND),
+            condition(2, 5), joining(2, ConditionOutline.Joiner.OR), condition(2, 6));
+
+        List<ConditionOutline.Row> joined = ConditionOutline.moved(deep, 8, -1);
+
+        assertEquals(levels(joined), " 0:1 0OR 1:2 1AND 2:3 2OR 2:4 2OR 2:5 1AND 2:6",
+            "5 joins (3 or 4) by its 'or', and 6 is left on its own at its level");
+        assertTrue(ConditionOutline.problems(joined).isEmpty(), "nothing is flagged: " + levels(joined));
+        assertEquals(ConditionOutline.landing(deep, 8, -1), 8, "5 lands on its new line");
+        assertEquals(levels(ConditionOutline.moved(joined, 8, 1)), levels(deep),
+            "moving 5 down rejoins 6, by the 'or' it brings, since 6 alone has no word");
+    }
+
+    /**
+     * OB-379: with no group at a condition's level across its group's edge, there is no arrow that way: outdenting is
+     * how a condition leaves a group.  "1 and (2 or 3)": 2 does not trade places with 1.
+     *
+     * MUTATION: in `intoTheNextGroup`, drop `if (!atThisLevel) return null;`, and 2 can move up.
+     */
+    @Test
+    public void testNoArrowWhereThereIsNoGroupAcrossTheEdge()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 4));
+
+        assertFalse(ConditionOutline.canMove(rows, 2, -1), "2 offered a way up out of its group: " + levels(rows));
+        assertFalse(ConditionOutline.canMove(rows, 4, 1), "3 offered a way down out of its group: " + levels(rows));
+        assertEquals(levels(ConditionOutline.moved(rows, 2, -1)), levels(rows), "and a move asked for changes nothing");
+        assertEquals(ConditionOutline.landing(rows, 2, -1), 2, "and lands where it was");
+
+        assertTrue(ConditionOutline.canMove(rows, 0, 1), "the control: 1 still moves past the whole group (FR-144)");
+        assertTrue(ConditionOutline.canMove(rows, 4, -1), "and 3 still trades with 2 inside it");
+    }
+
+    /**
+     * OB-379, over generated outlines: from any outline that reads, every move offered leaves one that reads (no word
+     * joining nothing, side by side with another or at an end), keeps every condition, lands on the one moved, and
+     * leaves every OTHER condition among the same companions at its level.  A trade across a group's edge moves a
+     * second condition into another group, which the last check catches.
+     *
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and condition 4 of the first outline trades with 3.
+     */
+    @Test
+    public void testEveryMoveFromAReadableOutlineStillReads()
+    {
+        java.util.Random random = new java.util.Random(379);
+        List<List<ConditionOutline.Row>> outlines = new ArrayList<>();
+
+        // Adam's: "(a and b and c) or (d and e and f)" with g added at the end
+        outlines.add(outline(
+            condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 3), joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 4), joining(1, ConditionOutline.Joiner.AND), condition(1, 5),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 6), joining(1, ConditionOutline.Joiner.AND),
+            condition(1, 7)));
+
+        // Typed a row at a time, and as `of` writes a route's condition (which steps two levels at a time)
+        for (int tries = 0; tries < 200000 && outlines.size() < 600; tries++)
+        {
+            List<ConditionOutline.Row> candidate = tries % 3 == 0
+                ? ConditionOutline.of(tree(random, 1 + random.nextInt(6), new int[]{1}))
+                : typed(random, 2 + random.nextInt(6));
+
+            if (reads(candidate)) outlines.add(candidate);
+        }
+
+        assertTrue(outlines.size() >= 600, "only " + outlines.size() + " readable outlines were generated");
+
+        int moves = 0;
+        int edges = 0;
+
+        for (List<ConditionOutline.Row> rows : outlines)
+        {
+            for (int line = 0; line < rows.size(); line++)
+            {
+                for (int by = -1; by <= 1; by += 2)
+                {
+                    String where = levels(rows) + ", line " + line + (by < 0 ? " up" : " down");
+                    List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
+
+                    if (!ConditionOutline.canMove(rows, line, by))
+                    {
+                        assertEquals(levels(after), levels(rows), "a move not offered changed " + where);
+                        continue;
+                    }
+
+                    moves++;
+
+                    int edge = line + by;
+
+                    if (rows.get(edge).isJoiner() && rows.get(edge).getDepth() < rows.get(line).getDepth()) edges++;
+
+                    where += " gives" + levels(after);
+
+                    assertTrue(reads(after), "the outline no longer reads: " + where);
+
+                    assertEquals(sorted(addresses(after)), sorted(addresses(rows)), "a condition came or went: " + where);
+
+                    int moved = rows.get(line).getCommand().getAddress();
+
+                    assertEquals(after.get(ConditionOutline.landing(rows, line, by)).getCommand().getAddress(), moved,
+                        "the line it lands on is not the condition moved: " + where);
+
+                    for (int other : addresses(rows))
+                    {
+                        if (other == moved) continue;
+
+                        assertEquals(companions(after, other, moved), companions(rows, other, moved),
+                            "condition " + other + " changed company at its level: " + where);
+                    }
+                }
+            }
+        }
+
+        assertTrue(edges > 100, "only " + edges + " of " + moves + " moves crossed a group's edge");
+    }
+
+    /** A row at a time: alternating conditions and words, each at most one level deeper than the line above. */
+    private static List<ConditionOutline.Row> typed(java.util.Random random, int conditions)
+    {
+        List<ConditionOutline.Row> out = new ArrayList<>();
+        int depth = random.nextInt(2);
+
+        for (int n = 1; n <= conditions; n++)
+        {
+            if (n > 1)
+            {
+                depth = random.nextInt(depth + 2);
+                out.add(joining(Math.min(depth, 3), random.nextBoolean()
+                    ? ConditionOutline.Joiner.AND : ConditionOutline.Joiner.OR));
+                depth = Math.min(3, random.nextInt(depth + 2));
+            }
+
+            out.add(condition(depth, n));
+        }
+
+        return out;
+    }
+
+    /** A random condition with this many sensors, numbered on from `next`. */
+    private static NodeExpression tree(java.util.Random random, int sensors, int[] next)
+    {
+        if (sensors == 1) return sensor(next[0]++);
+
+        int left = 1 + random.nextInt(sensors - 1);
+        NodeExpression a = tree(random, left, next);
+        NodeExpression b = tree(random, sensors - left, next);
+        NodeExpression joined = random.nextBoolean() ? new NodeAnd(a, b) : new NodeOr(a, b);
+
+        return random.nextInt(4) == 0 ? new NodeGroup(java.util.Arrays.asList(joined)) : joined;
+    }
+
+    /** Whether an outline reads: nothing flagged, and words only ever between two conditions. */
+    private static boolean reads(List<ConditionOutline.Row> rows)
+    {
+        if (rows.isEmpty() || !ConditionOutline.whatIsWrong(rows).isEmpty()) return false;
+
+        for (int line = 0; line < rows.size(); line++)
+        {
+            boolean between = line > 0 && line < rows.size() - 1;
+
+            if (rows.get(line).isJoiner() != (line % 2 == 1) || (rows.get(line).isJoiner() && !between)) return false;
+        }
+
+        return rows.size() % 2 == 1;
+    }
+
+    private static List<Integer> addresses(List<ConditionOutline.Row> rows)
+    {
+        List<Integer> out = new ArrayList<>();
+
+        for (ConditionOutline.Row row : rows)
+        {
+            if (!row.isJoiner()) out.add(row.getCommand().getAddress());
+        }
+
+        return out;
+    }
+
+    private static List<Integer> sorted(List<Integer> list)
+    {
+        List<Integer> out = new ArrayList<>(list);
+
+        java.util.Collections.sort(out);
+
+        return out;
+    }
+
+    /** The other conditions at a condition's own level in its group, leaving out one. */
+    private static java.util.Set<Integer> companions(List<ConditionOutline.Row> rows, int address, int without)
+    {
+        int line = 0;
+
+        while (rows.get(line).isJoiner() || rows.get(line).getCommand().getAddress() != address) line++;
+
+        int depth = rows.get(line).getDepth();
+        int first = line;
+        int last = line;
+
+        while (first > 0 && rows.get(first - 1).getDepth() >= depth) first--;
+        while (last + 1 < rows.size() && rows.get(last + 1).getDepth() >= depth) last++;
+
+        java.util.Set<Integer> out = new java.util.TreeSet<>();
+
+        for (int at = first; at <= last; at++)
+        {
+            ConditionOutline.Row row = rows.get(at);
+
+            if (!row.isJoiner() && row.getDepth() == depth && row.getCommand().getAddress() != without)
+            {
+                out.add(row.getCommand().getAddress());
+            }
+        }
+
+        return out;
+    }
+
+    /** Each line as depth and sensor, or depth and word: " 1:1 1AND 0:4". */
+    private static String levels(List<ConditionOutline.Row> rows)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (ConditionOutline.Row row : rows)
+        {
+            out.append(" ").append(row.getDepth())
+                .append(row.isJoiner() ? String.valueOf(row.getJoiner()) : ":" + row.getCommand().getAddress());
+        }
+
+        return out.toString();
     }
 
     /**
