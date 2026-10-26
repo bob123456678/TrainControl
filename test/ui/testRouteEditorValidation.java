@@ -1219,6 +1219,78 @@ public class testRouteEditorValidation
         }
     }
 
+    /**
+     * FR-147, the menu's items after an insert: a condition inserted, moved to the front of the next group and outdented
+     * sits between the "or" and the group's "and", which now joins nothing and is red.  Deleting it takes that "and",
+     * not the "or": "(21 and 22) or (24 and 25)" is left as it was, not merged into "21 and 22 and 24 and 25" with
+     * nothing red to say so.
+     *
+     * MUTATION: in `ConditionTable.removeAt`, always take the word before a condition when it is at the condition's own
+     * depth, and the "or" between the groups goes.
+     */
+    @Test
+    public void testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            rightClickAndChoose(table, 2, "route.ui.menuInsertConditionBelow");
+            rightClickAndChoose(table, 4, "route.ui.menuMoveDown");
+            rightClickAndChoose(table, 4, "route.ui.menuOutdent");
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 0:1 1AND 1:24 1AND 1:25",
+                "precondition: the inserted condition, moved down and outdented, stands before the second group");
+
+            rightClickAndChoose(table, 4, "ui.delete");
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 1:24 1AND 1:25",
+                "deleting it should leave (21 and 22) or (24 and 25); Reads as: " + plainReading(frame));
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the delete left is flagged: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()));
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /** A right-click on a line where no press edits anything, and the menu item chosen; it must be enabled. */
+    private static void rightClickAndChoose(javax.swing.JTable table, int line, String key)
+    {
+        javax.swing.JPopupMenu menu = rightClickCell(table, line, NOTHING_TO_EDIT);
+
+        assertNotNull(menu, "a right-click on line " + line + " opened no menu");
+
+        javax.swing.JMenuItem chosen = item(menu, key);
+
+        assertTrue(chosen.isEnabled(), key + " is grayed on line " + line + ": " + offered(menu));
+
+        support.Mouse.choose(chosen);
+    }
+
+    /** "Reads as" without its markup. */
+    private static String plainReading(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        return support.Components.onTheEventThread(() -> frame.readsAsForTest()).replaceAll("<[^>]*>", "")
+            .replaceAll("\\s+", " ").trim();
+    }
+
     private static javax.swing.JTable conditionTable(org.traincontrol.gui.RouteEditorFrame frame)
     {
         javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
