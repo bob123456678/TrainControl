@@ -104,6 +104,10 @@ By script, at the start, before other branches are open: `git mv`, package and i
   (`9799c527`..`68ceff2a`, `9864e1dc`), except Add Blank Page and Rename during a run: they ask the name before the
   refusal, in code from before 2.7.0, so their claim still calls the handler.
 - The JaCoCo rerun, outside the repository.
+- Core-package comment pass (Adam: "Do the sonnet comment trim workers for 3.0.4"): the 27 files in `automation`,
+  `base`, `marklin`, `model`, `util` and `examples` no trim had reached, plus `HomeStaging` and `LayoutDiagram`; only
+  lines written since 2.7.0 by Claude, the scripting API's public javadoc kept as user documentation.  Four Sonnet sets
+  in `w-core1`..`4` from `f35e9d89`.
 - TrainControlUI split, four more extractions by delegation as in 3.0.3 (sizing on `4d36b0c6`; Adam picked C6, C8,
   C10 and C13 of the 18 candidates).  One class per commit, a battery per phase, in this order:
   - C8 `LayoutMenus`: the layout, diagram and recent-layout menus and the editor's page buttons (779 lines out, 2 from
