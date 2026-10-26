@@ -32964,3 +32964,89 @@ body:
 tail:
 | ---
 |
+
+[test MT-836]
+ordinal: 835
+anchor: mt-836
+date: 2026-10-25
+title: Route editor: a condition moved up past its group's edge joins the group above
+disposition: needs test
+from: OB-379
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-836"></a>
+| ### MT-836 - 2026-10-25 - Route editor: a condition moved up past its group's edge joins the group above
+|
+| **Disposition:** needs test
+| **From:** OB-379
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "OB-379 test", and add one command (any switch).
+| 2. In the conditions list, press the green plus six times.  Set the six conditions to S88 1, 2, 3, 4, 5 and 6 (the Name/Address column), all "on".
+| 3. Change the word between S88 3 and S88 4 to "or" (the words show red for now).  Click S88 1, Shift-click S88 3, and press the indent mark once.  Click S88 4, Shift-click S88 6, and press the indent mark once.  Nothing is red, and "Reads as" says (S88 #1 on and S88 #2 on and S88 #3 on) or (S88 #4 on and S88 #5 on and S88 #6 on).
+| 4. Press the green plus once more and set the new condition to S88 7 ("g").  It lands at the end of the second group.
+| 5. Press S88 7's up arrow four times.
+| 6. Press S88 7's down arrow once.
+| 7. Close the window with Cancel and discard the route.
+|
+| **Expected**
+|
+| - After step 5, "Reads as" says (S88 #1 on and S88 #2 on and S88 #3 on and S88 #7 on) or (S88 #4 on and S88 #5 on and S88 #6 on).  S88 7 is the last line of the first group, at the same indent as S88 1 to 3, and it is still selected.  S88 3 has not moved.
+| - The first three presses move S88 7 up inside the second group; the fourth carries it over the "or" into the first group.  Nothing turns red at any step.
+| - After step 6, S88 7 is back at the front of the second group: (... and S88 #3 on) or (S88 #7 on and S88 #4 on and ...).
+|
+| *What this is:* Adam: "If we have (a and b and c) or (d and e and f), and the user adds g at the end but wants to move it up so the expression becomes (a and b and c and g) or (d and e and f). The problem is that g is swapped with c unless the user indents (which is illogical) so we get (a and b and g) or (c and d and e and f)."
+|
+tail:
+| ---
+|
+
+[test MT-837]
+ordinal: 836
+anchor: mt-837
+date: 2026-10-25
+title: Route editor: right-click to insert and edit conditions, with the changed one bold in Reads as
+disposition: needs test
+from: FR-147
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-837"></a>
+| ### MT-837 - 2026-10-25 - Route editor: right-click to insert and edit conditions, with the changed one bold in Reads as
+|
+| **Disposition:** needs test
+| **From:** FR-147
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "FR-147 test", and add one command (any switch).
+| 2. Right-click the empty white space of the conditions list and choose `Add Condition`.  Do it twice more, and set the three conditions to S88 1, 2 and 3 (the Name/Address column).  Change the word between S88 2 and S88 3 to "or", then click S88 1, Shift-click S88 2 and press the indent mark once: (S88 1 and S88 2) or S88 3.
+| 3. Right-click S88 2 and look at the menu, then choose `Insert Condition Below`.  Set the new condition to S88 4.
+| 4. Right-click S88 1 and choose `Insert Condition Above`.  Set the new condition to S88 5.
+| 5. Right-click the up arrow beside S88 4 and choose `Move Up`.
+| 6. Right-click S88 3 and choose `Indent`, then right-click it again and choose `Outdent`.
+| 7. Right-click S88 5 and choose `Delete`.
+| 8. Close the window with Cancel and discard the route.
+|
+| **Expected**
+|
+| - Step 2: each `Add Condition` adds a condition at the end and selects it; it is the only item on that menu.
+| - Step 3: the menu offers `Insert Condition Above`, `Insert Condition Below`, `Move Up`, `Move Down`, `Indent`, `Outdent` and `Delete`.  `Move Down` is grayed (there is no group at S88 2's level past the "or"); the others are available.  The new condition goes under S88 2, at its indent and joined by "and": (S88 1 and S88 2 and S88 4) or S88 3.
+| - Step 4: the new condition goes above S88 1, in the same group: (S88 5 and S88 1 and S88 2 and S88 4) or S88 3.
+| - Step 5: the right-click opens the menu and does not move anything by itself; `Move Up` then swaps S88 4 and S88 2.
+| - Step 6: S88 3 goes one level in and back out.
+| - After every step from 2 to 6, the condition that changed is the selected line, and in "Reads as" under the list that condition is in bold, so you can see where it now sits in the sentence.  Clicking any other condition moves the bold to it.
+| - Step 7: S88 5 and the "and" after it are gone.
+| - Nothing turns red at any step.
+|
+| *What this is:* Adam: "also consider making editing easier so it's clearer what's changing, and so we can also insert by right clicking."
+|
+tail:
+| ---
+|

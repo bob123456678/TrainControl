@@ -4130,3 +4130,19 @@ kind: bug
 what: Fixed on dev (f5b33109): the download asks for a binary file; ui.testDownloadUpdateFetchesTheNewVersion's server refuses one that does not, as GitHub does (red 3 of 5 without the fix)
 state: needs test
 became: MT-835
+
+[receipt OB-379]
+seq: 516
+filed: 2026-10-25
+kind: bug
+what: Fixed on dev (7dc0244a): a condition moved past its group's edge joins the neighboring group at its near end, and no arrow is offered where there is none; claims in core.testConditionOutline and ui.testRouteEditorValidation, red first
+state: needs test
+became: MT-836
+
+[receipt FR-147]
+seq: 517
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (7dc0244a): a right-click menu on the conditions (Insert Above and Below, the moves, Indent, Outdent, Delete; Add Condition below the lines), and the selected condition bold in Reads as
+state: needs test
+became: MT-837
