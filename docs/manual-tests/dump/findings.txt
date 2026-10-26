@@ -39394,6 +39394,171 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
 
+[finding RSA79-B1 in RSA79.md]
+line: 26
+severity: B
+title: Every file and folder under OneDrive reads as a link, so Restore from Backup cannot empty a layout kept there
+disposition: Not a defect - executed on 2026-10-25 with JDK 1.8.0_361 on Adam's machine: `Files.readAttributes(p, BasicFileAttributes
+evidence: Util.java:365
+commit_id: 288cff8d
+cited_by:
+status: Closed
+status_note: Not a defect - executed with JDK 1.8.0_361: OneDrive folders are not links to Util.isLink (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-B2 in RSA79.md]
+line: 69
+severity: B
+title: File > Backup TrainControl Data and the update's backup still archive the setup from before the last run
+disposition: Fixed - `6027c388`: `BackupAction.foldTheStoppedRun` folds where a stopped run left the trains when no layout editor is 
+evidence: BackupAction.java:267
+commit_id: 6027c388
+cited_by:
+status: Closed
+status_note: Fixed in 6027c388 - 3.0.4 validation round 2, RSA79
+
+[finding RSA79-C1 in RSA79.md]
+line: 103
+severity: C
+title: Add Condition joins with AND, while Insert Condition Below joins with the level's word
+disposition: Fixed - `6027c388`: Add Condition and the bottom row's plus join the new condition with `ConditionOutline.wordOfTheLevel
+evidence:
+commit_id: 6027c388
+cited_by:
+status: Closed
+status_note: Fixed in 6027c388 - 3.0.4 validation round 2, RSA79
+
+[finding RSA79-C2 in RSA79.md]
+line: 120
+severity: C
+title: A restore detaches a layout whose config folder is itself a link
+disposition: Fixed - `6027c388`: when `config` is a link, the restore empties it child by child and writes through it, so the layout 
+evidence:
+commit_id: 6027c388
+cited_by:
+status: Closed
+status_note: Fixed in 6027c388 - 3.0.4 validation round 2, RSA79
+
+[finding RSA79-C3 in RSA79.md]
+line: 136
+severity: C
+title: `deleteTree`'s javadoc gives a reason for its depth guard that no longer holds
+disposition: Fixed - `6027c388`: the javadoc gives the current rule (a link is removed, never entered; no more than 32 folders down; 
+evidence: Util.java:315
+commit_id: 6027c388
+cited_by:
+status: Closed
+status_note: Fixed in 6027c388 - 3.0.4 validation round 2, RSA79
+
+[finding RSA79-D1 in RSA79.md]
+line: 147
+severity: D
+title: RSA78-B1's disposition is true for the restore
+disposition: Not a defect - checked as described.
+evidence: RestoreAction.java:93
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D10 in RSA79.md]
+line: 284
+severity: D
+title: The Readme's new v3.0.4 lines
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D2 in RSA79.md]
+line: 164
+severity: D
+title: RSA78-C1's disposition is true
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D3 in RSA79.md]
+line: 178
+severity: D
+title: RSA78-C2's disposition is true, and the undo cannot write over a folder the shadow does not hold
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D4 in RSA79.md]
+line: 197
+severity: D
+title: RSA78-C3's disposition is true on Windows junctions, and `deleteTree`'s callers are safe
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D5 in RSA79.md]
+line: 210
+severity: D
+title: RSA78-C4 and C5: the messages
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D6 in RSA79.md]
+line: 224
+severity: D
+title: RSA78-C6, C7, C8 and the bookkeeping
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 279b8bf9
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D7 in RSA79.md]
+line: 237
+severity: D
+title: OB-380: the stub stands for GitHub, and nothing else that fetches from GitHub has the gap today
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D8 in RSA79.md]
+line: 253
+severity: D
+title: OB-379: `plan`, `intoTheNextGroup` and `inserted` keep the outline readable
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
+[finding RSA79-D9 in RSA79.md]
+line: 270
+severity: D
+title: FR-147: the menu on a locked or read-only route, and the bold reading
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 2, RSA79)
+
 [finding RSA8-B1 in RSA8.md]
 line: 26
 severity: B

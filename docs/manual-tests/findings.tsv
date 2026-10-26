@@ -3595,6 +3595,21 @@ RSA78-D6	RSA78.md	Closed	Not a defect - checked as described.	OB-374: the pictur
 RSA78-D7	RSA78.md	Closed	Not a defect - checked as described.	RSA76-C5: Test a Path starts where the findings do
 RSA78-D8	RSA78.md	Closed	Not a defect - checked as described.	The shorter messages: placeholders, languages, counts
 RSA78-D9	RSA78.md	Closed	Not a defect - checked as described.	The package moves
+RSA79-B1	RSA79.md	Closed	Not a defect - executed on 2026-10-25 with JDK 1.8.0_361 on Adam's machine: `Files.readAtt	Every file and folder under OneDrive reads as a link, so Restore from Backup cannot empty a layout kept there
+RSA79-B2	RSA79.md	Closed	Fixed - `6027c388`: `BackupAction.foldTheStoppedRun` folds where a stopped run left the tr	File > Backup TrainControl Data and the update's backup still archive the setup from before the last run
+RSA79-C1	RSA79.md	Closed	Fixed - `6027c388`: Add Condition and the bottom row's plus join the new condition with `C	Add Condition joins with AND, while Insert Condition Below joins with the level's word
+RSA79-C2	RSA79.md	Closed	Fixed - `6027c388`: when `config` is a link, the restore empties it child by child and wri	A restore detaches a layout whose config folder is itself a link
+RSA79-C3	RSA79.md	Closed	Fixed - `6027c388`: the javadoc gives the current rule (a link is removed, never entered; 	`deleteTree`'s javadoc gives a reason for its depth guard that no longer holds
+RSA79-D1	RSA79.md	Closed	Not a defect - checked as described.	RSA78-B1's disposition is true for the restore
+RSA79-D10	RSA79.md	Closed	Not a defect - checked as described.	The Readme's new v3.0.4 lines
+RSA79-D2	RSA79.md	Closed	Not a defect - checked as described.	RSA78-C1's disposition is true
+RSA79-D3	RSA79.md	Closed	Not a defect - checked as described.	RSA78-C2's disposition is true, and the undo cannot write over a folder the shadow does not hold
+RSA79-D4	RSA79.md	Closed	Not a defect - checked as described.	RSA78-C3's disposition is true on Windows junctions, and `deleteTree`'s callers are safe
+RSA79-D5	RSA79.md	Closed	Not a defect - checked as described.	RSA78-C4 and C5: the messages
+RSA79-D6	RSA79.md	Closed	Not a defect - checked as described.	RSA78-C6, C7, C8 and the bookkeeping
+RSA79-D7	RSA79.md	Closed	Not a defect - checked as described.	OB-380: the stub stands for GitHub, and nothing else that fetches from GitHub has the gap today
+RSA79-D8	RSA79.md	Closed	Not a defect - checked as described.	OB-379: `plan`, `intoTheNextGroup` and `inserted` keep the outline readable
+RSA79-D9	RSA79.md	Closed	Not a defect - checked as described.	FR-147: the menu on a locked or read-only route, and the bold reading
 RSA8-B1	RSA8.md	Closed	Fixed - a build for inspection settles the timetable for the look and puts it back (Autono	The Autonomy menu's Pages tick loses every timetable entry set aside for a page when it is ticked back in: the findings refresh it runs before its rel
 RSA8-B2	RSA8.md	Closed	Fixed - a move moves what the carry of names remembers (squareOfNameSeen) with the squares	A move of stations in the track editor - saved, cancelled or undone - rebinds the timetable's legs through them to the stations now on the squares the
 RSA8-B3	RSA8.md	Closed	Fixed with B2 - the undo point holds the railway's squares and an undo puts them back, as 	The track editor's Ctrl+Z after a move puts back the page's setup and not the railway's squares, which round 23 now moves: while a declined edit waits
