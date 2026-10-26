@@ -615,6 +615,26 @@ text:
 | Adam on MT-831: "Fold in the duplicate and combine options from the main UI's menu, then disable the main UI's menu (keep it hidden for now in case we want to revert) and replace it with Manage Pages... option that opens the layout editor on top of the main window and pops open its JMenu."
 |
 
+[issue FR-147]
+ordinal: 52
+inbox: yes
+kind: feature request
+title: Route editor: insert conditions by right-click, and show clearly what an edit changes
+filed: 2026-10-25
+filed_at: 2026-10-25 18:12
+raised_from: Adam, hands-on testing
+build: ee85b123
+text:
+| ### FR-147 - 2026-10-25 - Route editor: insert conditions by right-click, and show clearly what an edit changes
+|
+| **Kind:** feature request  
+| **Raised from:** Adam, hands-on testing  
+| **Filed:** 2026-10-25 18:12  
+| **Build:** ee85b123
+|
+| Adam, on the same report: "also consider making editing easier so it's clearer what's changing, and so we can also insert by right clicking."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -1069,4 +1089,24 @@ text:
 | **Build:** af5bdfeb
 |
 | Adam on MT-830: "When I had cs2_sample_layout open and switched to another (call it B), cs2_sample_layout wasn't in the menu.  But when I switched back to cs2_sample_layout manually, B was listed there."  Cause: a folder is recorded only when a layout is opened, so the one loaded at start-up is not in the list until it is opened again.
+|
+
+[issue OB-379]
+ordinal: 51
+inbox: yes
+kind: bug
+title: Route editor: moving a condition up past the edge of its group swaps it with a condition in the next group
+filed: 2026-10-25
+filed_at: 2026-10-25 18:12
+raised_from: Adam, hands-on testing
+build: ee85b123
+text:
+| ### OB-379 - 2026-10-25 - Route editor: moving a condition up past the edge of its group swaps it with a condition in the next group
+|
+| **Kind:** bug  
+| **Raised from:** Adam, hands-on testing  
+| **Filed:** 2026-10-25 18:12  
+| **Build:** ee85b123
+|
+| Adam: "If we have (a and b and c) or (d and e and f), and the user adds g at the end but wants to move it up so the expression becomes (a and b and c and g) or (d and e and f). The problem is that g is swapped with c unless the user indents (which is illogical) so we get (a and b and g) or (c and d and e and f)."  Cause: `ConditionOutline.moved` trades the condition with the nearest condition that way, whatever group it is in, and every line keeps its level, so at a group's edge the trade crosses into the other group.  Moving past a whole group at the same level (FR-144) is the only case that moves rather than trades.
 |
