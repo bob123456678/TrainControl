@@ -1531,6 +1531,141 @@ public class testRouteEditorValidation
     }
 
     /**
+     * FR-152: a taller window gives its extra height to the conditions, and the commands keep the height they have at
+     * the packed size, where the two sections are as tall as each other as before.
+     *
+     * MUTATION: in `build`, lay the middle panel out with a plain `new GridLayout(2, 1, 0, 8)`, and the commands take
+     * half of the extra height.
+     */
+    @Test
+    public void testATallerWindowGivesTheConditionsTheRoom() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            support.Components.settle();
+
+            final javax.swing.JTable conditions = conditionTable(frame);
+            final javax.swing.JTable commands = support.Components.find(frame, javax.swing.JTable.class,
+                t -> "CommandTable".equals(t.getClass().getSimpleName()));
+
+            assertNotNull(commands, "the route editor has no command table");
+
+            final int[] packed = support.Components.onTheEventThread(() -> new int[]{frame.getHeight(),
+                commands.getParent().getHeight(), conditions.getParent().getHeight(),
+                section(commands).getHeight(), section(conditions).getHeight()});
+
+            assertEquals(packed[3], packed[4], "at the packed size the two sections are not as tall as each other");
+
+            // As tall as the screen allows, as maximizing does: Windows keeps a window within the screen's height.
+            final int room = support.Components.onTheEventThread(() ->
+                frame.getGraphicsConfiguration().getBounds().height - frame.getHeight());
+
+            assertTrue(room >= 150, "precondition: the screen has no room for a taller window: " + room);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setSize(frame.getWidth(), frame.getHeight() + room);
+                frame.validate();
+            });
+
+            support.Components.settle();
+
+            final int[] tall = support.Components.onTheEventThread(() -> new int[]{frame.getHeight(),
+                commands.getParent().getHeight(), conditions.getParent().getHeight()});
+
+            int grown = tall[0] - packed[0];
+
+            assertTrue(grown >= 150, "precondition: the window did not grow: " + grown);
+            assertTrue(tall[2] - packed[2] >= grown * 9 / 10, "the window grew by " + grown
+                + " pixels and the conditions by only " + (tall[2] - packed[2]));
+            assertTrue(tall[1] - packed[1] <= grown / 20, "the window grew by " + grown + " pixels and the commands by "
+                + (tall[1] - packed[1]));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /** The titled section a table sits in: the panel round its scroll pane. */
+    private static java.awt.Container section(javax.swing.JTable table)
+    {
+        return javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, table).getParent();
+    }
+
+    /**
+     * FR-153: the lines an edit changed are drawn pale, fading back to the table's white within about a second.  Move
+     * Down on the first of "21 and 22 and 23" lights the two conditions that traded places, never the 23 it left.
+     *
+     * MUTATION: in `ConditionTable.shift`, drop the `showChanges` call, and the moved line is white at once.
+     */
+    @Test
+    public void testAnEditShowsWhichLinesItChanged() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            rightClickAndChoose(table, 0, "route.ui.menuMoveDown");
+
+            assertEquals(levels(frame), " 0:22 0AND 0:21 0AND 0:23", "precondition: Move Down on 21 swaps it with 22");
+
+            // A selected line wears the selection's color, so the selection is cleared to see the line's own.
+            javax.swing.SwingUtilities.invokeAndWait(table::clearSelection);
+
+            assertNotEquals(background(table, 2), java.awt.Color.WHITE,
+                "just after Move Down the moved line is drawn as every other line is");
+
+            long until = System.currentTimeMillis() + 1500;
+
+            // The fade's own time is what is tested, so the claim waits it out, looking at the untouched line meanwhile
+            while (System.currentTimeMillis() < until)
+            {
+                assertEquals(background(table, 4), java.awt.Color.WHITE, "the line Move Down left alone is lit");
+
+                Thread.sleep(100);
+            }
+
+            assertEquals(background(table, 2), java.awt.Color.WHITE,
+                "1.5 seconds after Move Down the moved line has not faded back to white");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /** A line's background as the table paints its Kind cell. */
+    private static java.awt.Color background(final javax.swing.JTable table, final int line)
+    {
+        return support.Components.onTheEventThread(() ->
+            table.prepareRenderer(table.getCellRenderer(line, 4), line, 4).getBackground());
+    }
+
+    /**
      * FR-150: a right-click on a joining word offers both inserts (testInsertOnAWordLineJoinsByThatWord says where they
      * go); FR-147: a right-click inside a selection of several lines keeps it, so the menu's Indent acts on them all,
      * and Insert Below then puts one under the line clicked and selects it alone; a right-click outside the selection
