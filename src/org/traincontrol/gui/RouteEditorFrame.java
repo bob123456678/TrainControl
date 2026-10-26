@@ -228,7 +228,29 @@ public class RouteEditorFrame extends JFrame
 
         content.add(header(), BorderLayout.NORTH);
 
-        JPanel middle = new JPanel(new GridLayout(2, 1, 0, 8));
+        JPanel middle = new JPanel(new GridLayout(2, 1, 0, 8)
+        {
+            /** As a grid up to the packed height; past it the conditions take the extra (FR-152). */
+            @Override
+            public void layoutContainer(java.awt.Container parent)
+            {
+                if (parent.getComponentCount() != 2)
+                {
+                    super.layoutContainer(parent);
+
+                    return;
+                }
+
+                java.awt.Insets in = parent.getInsets();
+                int width = parent.getWidth() - in.left - in.right;
+                int height = parent.getHeight() - in.top - in.bottom - getVgap();
+                int packed = (preferredLayoutSize(parent).height - in.top - in.bottom - getVgap()) / 2;
+                int top = Math.min(packed, height / 2);
+
+                parent.getComponent(0).setBounds(in.left, in.top, width, top);
+                parent.getComponent(1).setBounds(in.left, in.top + top + getVgap(), width, height - top);
+            }
+        });
 
         middle.setBackground(java.awt.Color.WHITE);
 
