@@ -314,20 +314,11 @@ public class Util
 
     /**
      * Removes a file, or a folder and everything under it.  A link (a symbolic link, or a junction on Windows) is
-     * removed itself, never what it points at.
-     *
-     * Written for FR-020's temporary download: the Central Station layout is fetched into a scratch
-     * folder, zipped, and then has no reason to exist.  Leaving it would put a stale copy of the
-     * diagram somewhere nobody is looking, which is its own hazard on a machine where the whole point
-     * is knowing which copy is current.
-     *
-     * Depth-guarded like addToZip, for the same reason: a symlink loop would otherwise recurse for
-     * ever, and this one DELETES.
-     *
-     * Never throws.  Failing to tidy up must not turn a completed backup into an error.
+     * removed itself, never what it points at, so no link can loop it.  It goes no more than 32 folders down, so
+     * a deeper tree is not removed whole.  Never throws: a caller tidying up must not fail over it.
      *
      * @param file what to remove
-     * @param depth recursion guard
+     * @param depth how deep `file` is in the tree being removed; 0 for its root
      * @return whether everything asked for is gone
      */
     public static boolean deleteTree(File file, int depth)

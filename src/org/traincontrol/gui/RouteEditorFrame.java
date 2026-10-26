@@ -3985,24 +3985,19 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Adds a condition with the word that joins it to what is already there, both lines at once; the word is
-         * written, so one click makes it "or".
+         * Adds a condition with the word that joins it to what is already there, both lines at once, at the last
+         * condition's level and joined by that level's word, as Insert Condition Below joins one.
          */
         void addRow()
         {
-            int depth = 0;
+            int last = rows.size() - 1;
 
-            for (int at = rows.size() - 1; at >= 0; at--)
-            {
-                if (!rows.get(at).isJoiner())
-                {
-                    depth = rows.get(at).getDepth();
-                    break;
-                }
-            }
+            while (last >= 0 && rows.get(last).isJoiner()) last--;
 
-            if (!rows.isEmpty()) rows.add(ConditionOutline.Row.joining(depth,
-                ConditionOutline.Joiner.AND));
+            int depth = last < 0 ? 0 : rows.get(last).getDepth();
+
+            if (!rows.isEmpty()) rows.add(ConditionOutline.Row.joining(depth, last < 0 ? ConditionOutline.Joiner.AND
+                : ConditionOutline.wordOfTheLevel(rows, last)));
 
             RouteCommand fresh = freshCondition();
 

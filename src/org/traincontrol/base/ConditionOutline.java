@@ -516,8 +516,15 @@ public final class ConditionOutline
         return out;
     }
 
-    /** The first word at a line's own level in the group it is in, which `whatIsWrong` takes as the one meant. */
-    private static Joiner wordOfTheLevel(List<Row> rows, int line)
+    /**
+     * The first word at a line's own level in the group it is in, which `whatIsWrong` takes as the one meant; AND
+     * where the level has none yet.  A new condition at that level is joined by it.
+     *
+     * @param rows the outline
+     * @param line a line in it
+     * @return the level's word
+     */
+    public static Joiner wordOfTheLevel(List<Row> rows, int line)
     {
         int depth = rows.get(line).getDepth();
         int start = line;

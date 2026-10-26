@@ -108,7 +108,8 @@ public final class BackupAction
         {
             // Written LIVE first, so the archive holds the state as it is now.  WITHOUT the session capture: that would
             // commit whatever was open in the autonomy editor from a thread that is not the event thread, and the
-            // editor's Cancel could not undo it (discardEdits re-reads the file just written).
+            // editor's Cancel could not undo it (discardEdits re-reads the file just written).  Its callers fold the
+            // stopped run first, on the event thread.
             this.ui.saveState(false, false);
             this.ui.getModel().saveState(false);
 
@@ -262,10 +263,23 @@ public final class BackupAction
     }
 
     /**
+     * Folds where a stopped run left the trains into the setup, so a backup holds it.  On the event thread, and only
+     * with no layout editor open: the fold would commit the editor's unsaved edits, and opening one folds (OB-144).
+     *
+     * @param ui the window whose setup is folded
+     */
+    public static void foldTheStoppedRun(TrainControlUI ui)
+    {
+        if (!ui.isLayoutEditorOpen()) ui.captureRunningLayout();
+    }
+
+    /**
      * File > Backup TrainControl Data: writes the backup off the event thread and says what it holds.
      */
     public void backupDataMenuItemActionPerformed()
     {
+        foldTheStoppedRun(this.ui);
+
         new Thread(() ->
         {
             // The writing is backupData's, which an update takes too (FR-125); the reporting is the menu's alone.

@@ -240,12 +240,15 @@ public final class UpdateFlow
 
         try
         {
+            // Just before the backup, so a run stopped during the download is in it too
+            javax.swing.SwingUtilities.invokeAndWait(() -> BackupAction.foldTheStoppedRun(this.ui));
+
             backup = this.ui.backupData();
 
             why = backup.isComplete() ? null
                 : backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData") : String.join(", ", backup.unsaved);
         }
-        catch (RuntimeException | Error e)
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException | RuntimeException | Error e)
         {
             backup = null;
 

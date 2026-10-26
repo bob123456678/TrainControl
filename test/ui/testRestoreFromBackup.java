@@ -699,6 +699,13 @@ public class testRestoreFromBackup
     {
         File archive = backUp();
 
+        // Read now: a backup taken in the same second, as the restore's own can be, is written under its name
+        Map<String, byte[]> held = entriesOf(archive);
+
+        String page = sandbox.getFolder().getName() + "/config/gleisbild.cs2";
+
+        assertNotNull(held.get(page), "precondition: the backup has no " + page + ": " + held.keySet());
+
         Path config = new File(sandbox.getFolder(), "config").toPath();
 
         Path shared = Files.createTempDirectory("tc-restore-shared-config");
@@ -723,12 +730,6 @@ public class testRestoreFromBackup
             assertTrue(Util.isLink(config.toFile()), "the restore replaced the linked config with a folder of its own");
 
             assertFalse(added.exists(), "a file added to the linked folder since the backup is still there");
-
-            String page = sandbox.getFolder().getName() + "/config/gleisbild.cs2";
-
-            Map<String, byte[]> held = entriesOf(archive);
-
-            assertNotNull(held.get(page), "precondition: the backup has no " + page + ": " + held.keySet());
 
             assertTrue(Arrays.equals(Files.readAllBytes(shared.resolve("gleisbild.cs2")), held.get(page)), "the linked"
                 + " folder does not hold the backup's gleisbild.cs2");

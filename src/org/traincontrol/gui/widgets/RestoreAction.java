@@ -409,14 +409,28 @@ public final class RestoreAction
             return said.toString().trim();
         }
 
-        /** The layout's `config` emptied and written again, so a file added since the backup does not stay. */
+        /**
+         * The layout's `config` emptied and written again, so a file added since the backup does not stay.  A `config`
+         * that is itself a link (a shared folder) is written through, so the layout stays linked to it.
+         */
         void writeLayout(File to) throws IOException
         {
             if (layoutName == null) return;
 
             File config = new File(to, CONFIG);
 
-            if (config.exists() && !Util.deleteTree(config, 0)) throw new IOException(config.getPath());
+            if (config.isDirectory() && Util.isLink(config))
+            {
+                File[] children = config.listFiles();
+
+                if (children == null) throw new IOException(config.getPath());
+
+                for (File child : children)
+                {
+                    if (!Util.deleteTree(child, 0)) throw new IOException(child.getPath());
+                }
+            }
+            else if (config.exists() && !Util.deleteTree(config, 0)) throw new IOException(config.getPath());
 
             for (Map.Entry<String, byte[]> file : layout.entrySet()) write(new File(config, file.getKey()), file.getValue());
         }
