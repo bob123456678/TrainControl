@@ -715,6 +715,46 @@ text:
 | Asked whether a line added by an insert, Add Condition or an arrow should be ready to type into rather than need a double-click, Adam chose: "Ready to type": the keyboard goes to the new line's address cell.
 |
 
+[issue FR-152]
+ordinal: 59
+inbox: yes
+kind: feature request
+title: for 3.0.4: route editor: the conditions get the extra height when the window grows
+filed: 2026-10-25
+filed_at: 2026-10-25 23:17
+raised_from: noticed while testing - not from a particular test
+build: commit 6930d4bf
+text:
+| ### FR-152 - 2026-10-25 - for 3.0.4: route editor: the conditions get the extra height when the window grows
+|
+| **Kind:** feature request  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 23:17  
+| **Build:** commit 6930d4bf
+|
+| Adam, on the route editor's conditions: "It may also be beneficial to more clearly animate/show what is changing, or make this condition window scale vertically as the window is maximized, for more space."
+|
+
+[issue FR-153]
+ordinal: 60
+inbox: yes
+kind: feature request
+title: for 3.0.4: route editor: an edit to the conditions shows which lines it changed
+filed: 2026-10-25
+filed_at: 2026-10-25 23:17
+raised_from: noticed while testing - not from a particular test
+build: commit 6930d4bf
+text:
+| ### FR-153 - 2026-10-25 - for 3.0.4: route editor: an edit to the conditions shows which lines it changed
+|
+| **Kind:** feature request  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 23:17  
+| **Build:** commit 6930d4bf
+|
+| Adam, on the route editor's conditions: "It may also be beneficial to more clearly animate/show what is changing, or make this condition window scale vertically as the window is maximized, for more space."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
