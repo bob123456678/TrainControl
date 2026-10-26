@@ -2376,6 +2376,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.runningLayoutSync.captureRunningLayout(underWayToo);
     }
 
+    /**
+     * The fold a backup takes first, answering what kept it from being written, or null.  Skipped while an editor holds
+     * the setup (it would commit the editor's unsaved edits; opening one folds, OB-144) or a rebuild from the setup is
+     * under way (it would fold the railway from before the edit over it; the rebuild folds after).
+     */
+    public Exception foldForABackup()
+    {
+        if (anEditorIsOpenOrOnItsWay() || refreshesUnderWay.get() > 0) return null;
+
+        return this.runningLayoutSync.fold(false);
+    }
+
     /** Drops the setup so the next request reads it again; called when the layout changes underneath it. */
     public void resetAutonomySession()
     {

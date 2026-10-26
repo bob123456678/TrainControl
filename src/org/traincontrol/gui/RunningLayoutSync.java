@@ -61,12 +61,20 @@ final class RunningLayoutSync
      */
     void captureRunningLayout(boolean underWayToo)
     {
+        Exception failed = fold(underWayToo);
+
+        if (failed != null) this.ui.getModel().log(failed);
+    }
+
+    /** `captureRunningLayout`'s fold, answering what kept it from being written; null when written or not needed. */
+    Exception fold(boolean underWayToo)
+    {
         if (this.ui.autonomySession() == null || this.ui.getActiveDiagramConfiguration() == null
             || this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()
             || !this.ui.getModel().getAutoLayout().isValid()
             || (!underWayToo && this.ui.getModel().getAutoLayout().isRunning()))
         {
-            return;
+            return null;
         }
 
         // While a setup edit waits for a load, what the railway owns and nothing of the setup's: the edit is in the
@@ -92,10 +100,12 @@ final class RunningLayoutSync
             // in place, and Cancel re-reads into new page objects, so reconciling would delete the settings of every
             // square the user deleted and thought better of.
             this.ui.autonomySession().saveWithoutReconciling();
+
+            return null;
         }
         catch (Exception e)
         {
-            this.ui.getModel().log(e);
+            return e;
         }
     }
 

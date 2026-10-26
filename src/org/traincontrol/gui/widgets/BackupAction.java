@@ -253,6 +253,14 @@ public final class BackupAction
             this.unsaved = unsaved;
         }
 
+        /** Adds, first, what could not be saved before the backup began; null adds nothing. */
+        BackupOutcome after(String failed)
+        {
+            if (failed != null) this.unsaved.add(0, failed);
+
+            return this;
+        }
+
         /**
          * @return whether the archive was written with everything in it
          */
@@ -263,14 +271,30 @@ public final class BackupAction
     }
 
     /**
-     * Folds where a stopped run left the trains into the setup, so a backup holds it.  On the event thread, and only
-     * with no layout editor open: the fold would commit the editor's unsaved edits, and opening one folds (OB-144).
+     * Folds where a stopped run left the trains into the setup, so a backup holds it (`TrainControlUI.foldForABackup`).
+     * On the event thread.
      *
      * @param ui the window whose setup is folded
+     * @return why the fold could not be written, for the backup to name as a part it could not save; null otherwise
      */
-    public static void foldTheStoppedRun(TrainControlUI ui)
+    public static String foldTheStoppedRun(TrainControlUI ui)
     {
-        if (!ui.isLayoutEditorOpen()) ui.captureRunningLayout();
+        Exception failed;
+
+        try
+        {
+            failed = ui.foldForABackup();
+        }
+        catch (RuntimeException e)
+        {
+            failed = e;
+        }
+
+        if (failed == null) return null;
+
+        if (ui.getModel() != null) ui.getModel().log(failed);
+
+        return String.valueOf(failed);
     }
 
     /**
@@ -278,12 +302,12 @@ public final class BackupAction
      */
     public void backupDataMenuItemActionPerformed()
     {
-        foldTheStoppedRun(this.ui);
+        final String folded = foldTheStoppedRun(this.ui);
 
         new Thread(() ->
         {
             // The writing is backupData's, which an update takes too (FR-125); the reporting is the menu's alone.
-            final BackupOutcome done = this.ui.backupData();
+            final BackupOutcome done = this.ui.backupData().after(folded);
 
             final List<String> unsaved = done.unsaved;
 
