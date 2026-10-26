@@ -1270,6 +1270,278 @@ public class testRouteEditorValidation
         }
     }
 
+    /**
+     * FR-147: Insert Condition Above and Below, chosen from a right-click, put one new condition directly next to the
+     * line clicked, at its depth, in its group and joined by its level's word, and change nothing else; the new line is
+     * selected and bold in "Reads as", which reads as expected.  Covers flat "and" and "or" lists, "(a and b and
+     * c) or (d and e and f)" at a, c, d and f, a nested group's first and last lines, two levels in, and one condition.
+     *
+     * MUTATION: in `ConditionOutline.wordOfTheLevel`, drop the walk back to the group's first line, and Insert Below on
+     * the last line of "(22 or 23 or 24)" joins with "and".
+     */
+    @Test
+    public void testInsertConditionPutsOneNextToTheLineClicked() throws Exception
+    {
+        needsADisplay();
+
+        final String flatAnd = " 0:21 0AND 0:22 0AND 0:23";
+        final String flatOr = " 0:21 0OR 0:22 0OR 0:23";
+        final String twoGroups = " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26";
+
+        // start, line, Above or Below, the outline after, the selected line after, how Reads as reads after
+        final Object[][] cases = {
+            {flatAnd, 0, "Above", " 0:1 0AND 0:21 0AND 0:22 0AND 0:23", 0, "#1 and #21 and #22 and #23"},
+            {flatAnd, 2, "Above", " 0:21 0AND 0:1 0AND 0:22 0AND 0:23", 2, "#21 and #1 and #22 and #23"},
+            {flatAnd, 4, "Below", " 0:21 0AND 0:22 0AND 0:23 0AND 0:1", 6, "#21 and #22 and #23 and #1"},
+            {flatOr, 0, "Above", " 0:1 0OR 0:21 0OR 0:22 0OR 0:23", 0, "#1 or #21 or #22 or #23"},
+            {flatOr, 2, "Below", " 0:21 0OR 0:22 0OR 0:1 0OR 0:23", 4, "#21 or #22 or #1 or #23"},
+            {twoGroups, 0, "Above", " 1:1 1AND 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26", 0,
+                "(#1 and #21 and #22 and #23) or (#24 and #25 and #26)"},
+            {twoGroups, 0, "Below", " 1:21 1AND 1:1 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26", 2,
+                "(#21 and #1 and #22 and #23) or (#24 and #25 and #26)"},
+            {twoGroups, 4, "Above", " 1:21 1AND 1:22 1AND 1:1 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26", 4,
+                "(#21 and #22 and #1 and #23) or (#24 and #25 and #26)"},
+            {twoGroups, 4, "Below", " 1:21 1AND 1:22 1AND 1:23 1AND 1:1 0OR 1:24 1AND 1:25 1AND 1:26", 6,
+                "(#21 and #22 and #23 and #1) or (#24 and #25 and #26)"},
+            {twoGroups, 6, "Above", " 1:21 1AND 1:22 1AND 1:23 0OR 1:1 1AND 1:24 1AND 1:25 1AND 1:26", 6,
+                "(#21 and #22 and #23) or (#1 and #24 and #25 and #26)"},
+            {twoGroups, 6, "Below", " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:1 1AND 1:25 1AND 1:26", 8,
+                "(#21 and #22 and #23) or (#24 and #1 and #25 and #26)"},
+            {twoGroups, 10, "Above", " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:1 1AND 1:26", 10,
+                "(#21 and #22 and #23) or (#24 and #25 and #1 and #26)"},
+            {twoGroups, 10, "Below", " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26 1AND 1:1", 12,
+                "(#21 and #22 and #23) or (#24 and #25 and #26 and #1)"},
+            {" 0:21 0AND 1:22 1OR 1:23 1OR 1:24 0AND 0:25", 2, "Above",
+                " 0:21 0AND 1:1 1OR 1:22 1OR 1:23 1OR 1:24 0AND 0:25", 2, "#21 and (#1 or #22 or #23 or #24) and #25"},
+            {" 0:21 0AND 1:22 1OR 1:23 1OR 1:24 0AND 0:25", 6, "Below",
+                " 0:21 0AND 1:22 1OR 1:23 1OR 1:24 1OR 1:1 0AND 0:25", 8, "#21 and (#22 or #23 or #24 or #1) and #25"},
+            {" 1:21 1OR 2:22 2AND 2:23 0AND 0:24", 2, "Above", " 1:21 1OR 2:1 2AND 2:22 2AND 2:23 0AND 0:24", 2,
+                "(#21 or (#1 and #22 and #23)) and #24"},
+            {" 1:21 1OR 2:22 2AND 2:23 0AND 0:24", 4, "Below", " 1:21 1OR 2:22 2AND 2:23 2AND 2:1 0AND 0:24", 6,
+                "(#21 or (#22 and #23 and #1)) and #24"},
+            {" 0:21", 0, "Above", " 0:1 0AND 0:21", 0, "#1 and #21"},
+            {" 0:21", 0, "Below", " 0:21 0AND 0:1", 2, "#21 and #1"},
+        };
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            for (Object[] c : cases)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                    frame.setConditionRowsForTest(fromLevels((String) c[0])));
+
+                String did = "Insert Condition " + c[2] + " on line " + c[1] + " of" + c[0];
+
+                rightClickAndChoose(table, (Integer) c[1], "route.ui.menuInsertCondition" + c[2]);
+
+                assertEquals(levels(frame), c[3], did);
+                assertEquals(selectedLine(table), c[4], did + ": the new condition is not the selected line");
+                assertEquals(bold(frame), "[S88 #1]", did + ": Reads as " + frame.readsAsForTest());
+                assertEquals(readsLike(frame), c[5], did + ": Reads as " + plainReading(frame));
+                assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                    did + " left a red word: " + levels(frame));
+            }
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147: a right-click on a joining word offers no insert, as there is no line of its own level to stand beside;
+     * a right-click inside a selection of several lines keeps it, so the menu's Indent acts on them all, and Insert
+     * Below then puts one under the line clicked and selects it alone; a right-click outside the selection picks the
+     * line clicked.
+     *
+     * MUTATION: in `offerConditionMenu`, select the line clicked whether or not it is already selected, and the
+     * selection of three is lost.
+     */
+    @Test
+    public void testInsertFromAWordLineOrASelection() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            for (int word : new int[]{1, 3})
+            {
+                javax.swing.JPopupMenu menu = rightClickCell(table, word, NOTHING_TO_EDIT);
+
+                assertNotNull(menu, "a right-click on the word on line " + word + " opened no menu");
+                assertFalse(item(menu, "route.ui.menuInsertConditionAbove").isEnabled()
+                    || item(menu, "route.ui.menuInsertConditionBelow").isEnabled(),
+                    "a word line offers an insert: " + offered(menu));
+
+                support.Mouse.closeMenus();
+            }
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24")));
+
+            selectLines(table, 2, 4);
+
+            javax.swing.JPopupMenu menu = rightClickCell(table, 4, NOTHING_TO_EDIT);
+
+            assertNotNull(menu, "a right-click inside the selection opened no menu");
+            assertEquals(java.util.Arrays.toString(support.Components.onTheEventThread(() -> table.getSelectedRows())),
+                "[2, 3, 4]", "a right-click inside a selection of several lines changed it");
+
+            support.Mouse.choose(item(menu, "route.ui.menuInsertConditionBelow"));
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:1 0AND 0:24",
+                "Insert Condition Below from inside the selection puts one under the line clicked");
+            assertEquals(java.util.Arrays.toString(support.Components.onTheEventThread(() -> table.getSelectedRows())),
+                "[6]", "the new condition alone is selected");
+
+            selectLines(table, 2, 4);
+
+            rightClickAndChoose(table, 0, "route.ui.menuInsertConditionAbove");
+
+            assertEquals(levels(frame), " 0:1 0AND 0:21 0AND 0:22 0AND 0:23 0AND 0:1 0AND 0:24",
+                "Insert Condition Above on a line outside the selection puts one above that line");
+            assertEquals(selectedLine(table), 0, "and selects it");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147: a condition inserted into a saved route is filled in by double-clicking its address, and the insert is
+     * unsaved work, so Cancel asks before closing and the route keeps the conditions it was saved with.
+     *
+     * MUTATION: in `stateSignature`, leave out the condition rows, and Cancel closes without asking.
+     */
+    @Test
+    public void testAnInsertedConditionIsTypedIntoAndCancelKeepsTheSavedRoute() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.marklin.MarklinRoute route = new org.traincontrol.marklin.MarklinRoute(null, "Saved",
+            4243, new java.util.ArrayList<>(java.util.Collections.singletonList(
+                RouteCommand.RouteCommandAccessory(80, Accessory.accessoryDecoderType.MM2, true))), 0,
+            org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, true,
+            org.traincontrol.base.ConditionOutline.toExpression(fromLevels(" 1:21 1AND 1:22 0OR 0:23")));
+
+        final org.traincontrol.gui.RouteEditorFrame[] opened = new org.traincontrol.gui.RouteEditorFrame[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            opened[0] = new org.traincontrol.gui.RouteEditorFrame(null, route.getName(), route);
+            opened[0].pack();
+            opened[0].setVisible(true);
+        });
+
+        final org.traincontrol.gui.RouteEditorFrame frame = opened[0];
+
+        try
+        {
+            final javax.swing.JTable table = conditionTable(frame);
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 0:23", "precondition: the saved route's conditions");
+            assertFalse(frame.hasUnsavedWork(), "precondition: the route opens with nothing unsaved");
+
+            rightClickAndChoose(table, 0, "route.ui.menuInsertConditionBelow");
+
+            clickCell(table, 2, 5, 0, 2);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                if (table.getEditorComponent() instanceof javax.swing.JTextField)
+                {
+                    ((javax.swing.JTextField) table.getEditorComponent()).setText("7");
+                    table.getCellEditor().stopCellEditing();
+                }
+            });
+
+            assertEquals(levels(frame), " 1:21 1AND 1:7 1AND 1:22 0OR 0:23",
+                "a double-click on the new condition's address and typing 7 did not make it sensor 7");
+            assertEquals(bold(frame), "[S88 #7]", "Reads as " + frame.readsAsForTest());
+
+            final javax.swing.JButton cancel = support.Components.find(frame, javax.swing.JButton.class,
+                b -> I18n.t("route.ui.frameCancel").equals(b.getText()));
+
+            assertNotNull(cancel, "the route editor has no Cancel button");
+
+            try (support.Answering answering = support.Answering.start(asked -> support.Answering.pressAt(0)))
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> cancel.doClick(0));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Cancel after an insert closed without asking");
+
+                support.Components.settle();
+            }
+
+            assertFalse(support.Components.onTheEventThread(() -> frame.isDisplayable()),
+                "answering Yes to Cancel's question left the window open");
+            assertEquals(levelsOf(org.traincontrol.base.ConditionOutline.of(route.getConditions())),
+                " 1:21 1AND 1:22 0OR 0:23", "Cancel changed the saved route's conditions");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * "Reads as" cut to its brackets, sensors and joining words: "(#21 and #1) or #23".  The words are matched in the
+     * current language and written in English.
+     */
+    private static String readsLike(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        String and = I18n.t("route.ui.joinAnd");
+        String or = I18n.t("route.ui.joinOr");
+        String reading = plainReading(frame);
+
+        reading = reading.substring(reading.indexOf("S88 #") < 0 ? reading.length()
+            : Math.max(0, reading.lastIndexOf(':', reading.indexOf("S88 #")) + 1));
+
+        java.util.regex.Matcher part = java.util.regex.Pattern.compile("\\(|\\)|#\\d+|(?<![\\w#])("
+            + java.util.regex.Pattern.quote(and) + "|" + java.util.regex.Pattern.quote(or) + ")(?!\\w)")
+            .matcher(reading);
+
+        StringBuilder out = new StringBuilder();
+
+        while (part.find())
+        {
+            String token = part.group().equals(and) ? "and" : part.group().equals(or) ? "or" : part.group();
+
+            boolean tight = token.equals(")") || out.length() == 0 || out.charAt(out.length() - 1) == '(';
+
+            out.append(tight ? "" : " ").append(token);
+        }
+
+        return out.toString();
+    }
+
     /** A right-click on a line where no press edits anything, and the menu item chosen; it must be enabled. */
     private static void rightClickAndChoose(javax.swing.JTable table, int line, String key)
     {
@@ -1594,6 +1866,13 @@ public class testRouteEditorValidation
     private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers)
         throws Exception
     {
+        clickCell(table, line, column, modifiers, 1);
+    }
+
+    /** The same, as a click of `count` presses: 2 is a double-click. */
+    private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers,
+        final int count) throws Exception
+    {
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
             java.awt.Rectangle cell = table.getCellRect(line, column, true);
@@ -1603,21 +1882,26 @@ public class testRouteEditorValidation
             long now = System.currentTimeMillis();
 
             table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
-                modifiers | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, 1, false,
+                modifiers | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, count, false,
                 java.awt.event.MouseEvent.BUTTON1));
             table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_RELEASED, now + 1,
-                modifiers, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+                modifiers, x, y, count, false, java.awt.event.MouseEvent.BUTTON1));
             table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED, now + 1,
-                modifiers, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+                modifiers, x, y, count, false, java.awt.event.MouseEvent.BUTTON1));
         });
     }
 
     /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
     private static String levels(org.traincontrol.gui.RouteEditorFrame frame)
     {
+        return levelsOf(frame.conditionRowsForTest());
+    }
+
+    private static String levelsOf(java.util.List<org.traincontrol.base.ConditionOutline.Row> rows)
+    {
         StringBuilder out = new StringBuilder();
 
-        for (org.traincontrol.base.ConditionOutline.Row row : frame.conditionRowsForTest())
+        for (org.traincontrol.base.ConditionOutline.Row row : rows)
         {
             out.append(" ").append(row.getDepth()).append(row.isJoiner() ? String.valueOf(row.getJoiner())
                 : ":" + CommandRow.of(row.getCommand()).getTarget());
