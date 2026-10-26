@@ -13,7 +13,8 @@ later on", then "actually, add C10 and a validator iteration on it to today's li
    `setAutonomyDependentTabs`), then the session's life (`getAutonomySession`, `resetAutonomySession`,
    `prepareAutonomyReload`, `unloadAutonomy`, `repairAutonomyLocomotive`, `refreshAutonomyFindings`,
    `refreshAutonomyPrompt`).  Same rules as C8, C6 and C13.
-3. One Opus validator round on C10, then its fixes.
+3. One Opus validator round on C10, then its fixes.  Done: step one `500ed626`, step two `59ddfba0` (TrainControlUI 22,153 to 21,502 lines;
+   `AutonomyLifecycle` 791); RSA82 found no A or B, C1 (a test race) and C2 (a comment) fixed, D1-D8 clean.
 4. The JaCoCo rerun, outside the repository, so it measures the code after C10.
 5. Worktree cleanup.
 

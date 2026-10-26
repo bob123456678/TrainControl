@@ -39966,6 +39966,116 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
 
+[finding RSA82-C1 in RSA82.md]
+line: 20
+severity: C
+title: The red test's own Yes-answerer can close the "nothing started" message before the test starts listening
+disposition: Fixed - `995c777c`: the claim keeps the list `answeringYes` returns and accepts the message from either answerer. Not ru
+evidence:
+commit_id: 995c777c
+cited_by:
+status: Closed
+status_note: Fixed in 995c777c - 3.0.5 validation round 1, RSA82
+
+[finding RSA82-C2 in RSA82.md]
+line: 52
+severity: C
+title: A moved comment says "this window" in a class that is not a window
+disposition: Fixed - `f4875320`: "synchronized on the main window".
+evidence:
+commit_id: f4875320
+cited_by:
+status: Closed
+status_note: Fixed in f4875320 - 3.0.5 validation round 1, RSA82
+
+[finding RSA82-D1 in RSA82.md]
+line: 66
+severity: D
+title: The fifteen bodies are a pure move
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D2 in RSA82.md]
+line: 105
+severity: D
+title: Nothing can reach `AutonomyLifecycle` before its field is set
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D3 in RSA82.md]
+line: 120
+severity: D
+title: The session keeps the same thread guarantees
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D4 in RSA82.md]
+line: 138
+severity: D
+title: The widened members are all newer than 2026-05-01, and nothing outside writes them
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: b81e511d
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D5 in RSA82.md]
+line: 159
+severity: D
+title: `ui.autonomySettingsTab.loadAutoLayoutSettings()` is the call the private delegator made
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D6 in RSA82.md]
+line: 170
+severity: D
+title: Each edited test still reads the moved body and checks what it did
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D7 in RSA82.md]
+line: 201
+severity: D
+title: No path through the moved code can suppress or delay the "nothing started" message
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
+[finding RSA82-D8 in RSA82.md]
+line: 218
+severity: D
+title: The step-one accessors and the re-keyed pin
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 500ed626
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B
