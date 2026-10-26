@@ -1,7 +1,7 @@
 # autonomy-bundles
 
 **Three autonomy setups Adam exported from his railway**, as the Autonomy menu's export writes them (a bundle:
-`shared`, `configuration` and `version` 1).  Not a railway: there are no pages here.  A test imports a bundle into
+`shared`, `configuration` and `version` 1), **and one autonomy.json from 2.7.4c**.  Not a railway: there are no pages here.  A test imports a bundle into
 an empty store over the pages of another fixture and builds what it says.
 
 | File | What it is |
@@ -9,6 +9,7 @@ an empty store over the pages of another fixture and builds what it says.
 | `Autonomy 1b.json` | The setup that got stuck, which `core.testRouteInventory` reports as "2-stuck-1b" |
 | `Autonomy 1d.json` | A later one, with more barred arrivals and turnout directions |
 | `Autonomy 1e.json` | The latest of the three |
+| `autonomy-2.7.4c.json` | Adam's `autonomy.json` from 2.7.4c, the old graph format the import door reads; the same bytes as MT-298's and MT-491's supplied file |
 
 ## Where it came from
 
@@ -34,3 +35,4 @@ which the runners copy into the run's own data folder).
 ## Used by
 
 - `core.testRouteInventory`
+- `regression.testTheImportDoorReadsAnOldFile`
