@@ -4070,17 +4070,19 @@ public class RouteEditorFrame extends JFrame
 
             if (!joiner)
             {
-                // The word at this row's own depth, not always the one before it: the first row of a group has the
-                // outer word before it, one level shallower.  Deleting the 2 of `1 or (2 and 3)` would take the `or`
-                // and leave `[1(0), and(1), 3(1)]`.  A word at another depth is left for `tidy()`.
-                boolean before = line - 1 >= 0 && rows.get(line - 1).isJoiner()
-                    && rows.get(line - 1).getDepth() == depth;
+                // Between two words the deeper goes, the one before on a tie: deleting the 2 of `1 or (2 and 3)` takes
+                // the `and`, and an outdented first row of a group has its group's word after it, joining nothing,
+                // where taking the `or` would merge two groups with nothing flagged.  A single word at another depth is
+                // left for `tidy()`.
+                boolean wordBefore = line - 1 >= 0 && rows.get(line - 1).isJoiner();
+                boolean wordAfter = line < rows.size() && rows.get(line).isJoiner();
 
-                boolean after = line < rows.size() && rows.get(line).isJoiner()
-                    && rows.get(line).getDepth() == depth;
-
-                if (before) rows.remove(line - 1);
-                else if (after) rows.remove(line);
+                if (wordBefore && wordAfter)
+                {
+                    rows.remove(rows.get(line).getDepth() > rows.get(line - 1).getDepth() ? line : line - 1);
+                }
+                else if (wordBefore && rows.get(line - 1).getDepth() == depth) rows.remove(line - 1);
+                else if (wordAfter && rows.get(line).getDepth() == depth) rows.remove(line);
             }
             else if (line < rows.size())
             {
