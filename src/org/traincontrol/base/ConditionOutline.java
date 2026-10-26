@@ -550,6 +550,79 @@ public final class ConditionOutline
     }
 
     /**
+     * The lines of `after` an edit changed from `before`, for the editor to show them (FR-153): those outside the
+     * longest run of lines the two share, a word counting for more than a condition so that two conditions that traded
+     * places are shown rather than a word between them.  Where nothing in `after` is new, as after a delete, the first
+     * line that is not the one `before` had there, or the last line where the end was removed.
+     *
+     * @param before the outline before the edit
+     * @param after the outline after it
+     * @return line indices into `after`; empty where the two are the same
+     */
+    public static Set<Integer> changed(List<Row> before, List<Row> after)
+    {
+        Set<Integer> out = new LinkedHashSet<>();
+
+        if (after == null || after.isEmpty()) return out;
+
+        List<Row> was = before == null ? new ArrayList<Row>() : before;
+        int n = was.size();
+        int m = after.size();
+
+        // best[i][j]: the most that the lines from i of `was` and from j of `after` can share
+        int[][] best = new int[n + 1][m + 1];
+
+        for (int i = n - 1; i >= 0; i--)
+        {
+            for (int j = m - 1; j >= 0; j--)
+            {
+                best[i][j] = Math.max(best[i + 1][j], best[i][j + 1]);
+
+                if (same(was.get(i), after.get(j)))
+                {
+                    best[i][j] = Math.max(best[i][j], best[i + 1][j + 1] + worth(after.get(j)));
+                }
+            }
+        }
+
+        int i = 0;
+
+        for (int j = 0; j < m;)
+        {
+            if (i < n && same(was.get(i), after.get(j)) && best[i][j] == best[i + 1][j + 1] + worth(after.get(j)))
+            {
+                i++;
+                j++;
+            }
+            else if (i < n && best[i][j] == best[i + 1][j]) i++;
+            else out.add(j++);
+        }
+
+        if (!out.isEmpty() || n == m) return out;
+
+        int at = 0;
+
+        while (at < m && at < n && same(was.get(at), after.get(at))) at++;
+
+        out.add(Math.min(at, m - 1));
+
+        return out;
+    }
+
+    /** The same line: the same word, or the very same condition, at the same depth. */
+    private static boolean same(Row a, Row b)
+    {
+        if (a.getDepth() != b.getDepth() || a.isJoiner() != b.isJoiner()) return false;
+
+        return a.isJoiner() ? a.getJoiner() == b.getJoiner() : a.getCommand() == b.getCommand();
+    }
+
+    private static int worth(Row row)
+    {
+        return row.isJoiner() ? 3 : 2;
+    }
+
+    /**
      * The group a condition would move past: the word beside it is at its own level, and the term past that word is
      * nested deeper.  Answers {first, last} of the group's lines, or null where the neighbor is a single condition or
      * nothing.

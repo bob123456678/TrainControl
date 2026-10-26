@@ -951,6 +951,9 @@ public class RouteEditorFrame extends JFrame
     /** For a line that says something the rest of its level does not agree with. */
     private static final java.awt.Color WRONG = new java.awt.Color(190, 30, 30);
 
+    /** A pale yellow for the lines an edit changed (FR-153), apart from the selection's blue and WRONG's red. */
+    private static final java.awt.Color CHANGED_LINE = new java.awt.Color(255, 236, 140);
+
     /** Says how the two halves of this window fit together. */
     private void showHelp()
     {
@@ -3989,6 +3992,7 @@ public class RouteEditorFrame extends JFrame
         /** Add Condition and the plus: a new condition, appended as `append` does, and selected. */
         void addRow()
         {
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
             RouteCommand fresh = freshCondition();
 
             append(fresh);
@@ -3996,6 +4000,7 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
             select(fresh);
+            showChanges(before);
         }
 
         /**
@@ -4033,6 +4038,7 @@ public class RouteEditorFrame extends JFrame
             if (line < 0 || line >= rows.size()) return;
 
             RouteCommand fresh = freshCondition();
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
             List<ConditionOutline.Row> after = ConditionOutline.inserted(rows, line, by, fresh);
 
             rows.clear();
@@ -4041,6 +4047,7 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
             select(fresh);
+            showChanges(before);
         }
 
         /** Selects the line holding this very condition, so an edit leaves the changed one picked. */
@@ -4063,6 +4070,60 @@ public class RouteEditorFrame extends JFrame
         {
             changeSelection(line, ADDRESS, false, false);
             requestFocusInWindow();
+        }
+
+        /** The lines the last edit changed, and how strongly they still show: 1 just after it, 0 once faded. */
+        private java.util.Set<Integer> changed = java.util.Collections.emptySet();
+        private float glow;
+
+        /** 25 steps of 40 ms: the highlight is gone a second after the edit. */
+        private final javax.swing.Timer fading = new javax.swing.Timer(40, e -> fade());
+
+        /** The renderer last tinted, cleared before the next cell: a table's renderer keeps a background it is given. */
+        private java.awt.Component tinted;
+
+        /** Lights the lines that differ from `before` and starts their fade (FR-153); a later edit restarts it. */
+        private void showChanges(List<ConditionOutline.Row> before)
+        {
+            changed = ConditionOutline.changed(before, rows);
+            glow = 1f;
+            fading.restart();
+            repaint();
+        }
+
+        private void fade()
+        {
+            glow = Math.max(0f, glow - 0.04f);
+
+            if (glow == 0f) fading.stop();
+
+            repaint();
+        }
+
+        @Override
+        public java.awt.Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int line, int column)
+        {
+            if (tinted != null) tinted.setBackground(null);
+
+            tinted = null;
+
+            java.awt.Component out = super.prepareRenderer(renderer, line, column);
+
+            if (glow > 0f && changed.contains(line))
+            {
+                // Half as strong on the selection, whose light ink would vanish into the yellow.
+                float strength = isRowSelected(line) ? glow / 2 : glow;
+                java.awt.Color under = out.getBackground();
+
+                out.setBackground(new java.awt.Color(
+                    Math.round(CHANGED_LINE.getRed() * strength + under.getRed() * (1 - strength)),
+                    Math.round(CHANGED_LINE.getGreen() * strength + under.getGreen() * (1 - strength)),
+                    Math.round(CHANGED_LINE.getBlue() * strength + under.getBlue() * (1 - strength))));
+
+                tinted = out;
+            }
+
+            return out;
         }
 
         /** The conditions on the selected lines, by identity: two lines can ask the same thing. */
@@ -4094,6 +4155,7 @@ public class RouteEditorFrame extends JFrame
         {
             if (line < 0 || line >= rows.size()) return;
 
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
             boolean joiner = rows.get(line).isJoiner();
 
             // Before the removal, because the term a word joins on is found by comparing depths with it.
@@ -4135,6 +4197,7 @@ public class RouteEditorFrame extends JFrame
 
             settle();
             model.fireTableDataChanged();
+            showChanges(before);
         }
 
         /**
@@ -4149,6 +4212,7 @@ public class RouteEditorFrame extends JFrame
 
             int landed = ConditionOutline.landing(rows, line, by);
 
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
             List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
 
             rows.clear();
@@ -4159,6 +4223,7 @@ public class RouteEditorFrame extends JFrame
             model.fireTableDataChanged();
 
             pick(landed);
+            showChanges(before);
         }
 
         /**
@@ -4216,6 +4281,7 @@ public class RouteEditorFrame extends JFrame
         {
             if (line < 0 || line >= rows.size()) return;
 
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
             int[] chosen = chosenLines();
 
             if (chosen != null && line >= chosen[0] && line <= chosen[1])
@@ -4238,6 +4304,8 @@ public class RouteEditorFrame extends JFrame
                 {
                     setRowSelectionInterval(Math.min(moving[0], rows.size() - 1), Math.min(moving[1], rows.size() - 1));
                 }
+
+                showChanges(before);
 
                 return;
             }
@@ -4275,6 +4343,7 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
             setRowSelectionInterval(line, line);
+            showChanges(before);
         }
 
         /** Pulls the outline back into a shape it can have, afterwards, rather than refusing a move. */
