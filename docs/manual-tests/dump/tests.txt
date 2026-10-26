@@ -32934,7 +32934,7 @@ ordinal: 834
 anchor: mt-835
 date: 2026-10-25
 title: Download Update fetches the new version without an error 406
-disposition: needs test
+disposition: fixed validated
 from: OB-380
 written: 2026-10-25
 reopened: no
@@ -32942,7 +32942,7 @@ body:
 | <a id="mt-835"></a>
 | ### MT-835 - 2026-10-25 - Download Update fetches the new version without an error 406
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-380
 |
 | **Written:** 2026-10-25

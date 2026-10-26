@@ -29743,6 +29743,17 @@ text:
 | *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-835 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Confirmed on 2026-10-25 against GitHub, as you asked ("download the 3.0.3 jar and confirm the 406 fix"), with JDK 1.8.0_361 and dev's own Util code: the latest release (3.0.3, releases/download/v3_0_3/TrainControl.jar) asked for with Java's default Accept header, as 3.0.3 does, answers HTTP 406 Not Acceptable; Util.downloadFile, which now sends Accept: application/octet-stream, saved all 4,613,932 bytes, and their SHA-256 (ea42f7d6...5b23) is the digest GitHub gives for the asset. Validated by that run; the in-app steps can be repeated once a release newer than 3.0.4 is out.
+|
+
 [comment MT-836 0]
 who: Adam
 date: 2026-10-25
