@@ -74,53 +74,36 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 106;
+    private static final int HISTORY_ALLOWED = 31;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
-        "src/org/traincontrol/automation/Edge.java (7)",
-        "src/org/traincontrol/automation/HomeStaging.java (2)",
-        "src/org/traincontrol/automation/Point.java (13)",
-        "src/org/traincontrol/automation/TimetablePath.java (2)",
+        "src/org/traincontrol/automation/Point.java (2)",
         "src/org/traincontrol/automationui/AutonomyBuilder.java (2)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
-        "src/org/traincontrol/base/LayoutDiagram.java (1)",
-        "src/org/traincontrol/base/LayoutDiagramComponent.java (5)",
-        "src/org/traincontrol/base/Locomotive.java (4)",
-        "src/org/traincontrol/base/NodeExpression.java (2)",
-        "src/org/traincontrol/base/Route.java (3)",
-        "src/org/traincontrol/base/RouteCommand.java (4)",
+        "src/org/traincontrol/base/LayoutDiagramComponent.java (1)",
+        "src/org/traincontrol/base/Locomotive.java (3)",
+        "src/org/traincontrol/base/NodeExpression.java (1)",
+        "src/org/traincontrol/base/RouteCommand.java (1)",
         "src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java (1)",
         "src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java (1)",
         "src/org/traincontrol/gui/LayoutLabel.java (1)",
         "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (5)",
         "src/org/traincontrol/gui/locomotive/RightClickFunctionMenu.java (1)",
         "src/org/traincontrol/marklin/MarklinControlStation.java (4)",
-        "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
-        "src/org/traincontrol/marklin/MarklinLocomotive.java (2)",
-        "src/org/traincontrol/marklin/MarklinRoute.java (23)",
         "src/org/traincontrol/marklin/file/CS2File.java (6)",
-        "src/org/traincontrol/marklin/udp/CSDetect.java (1)",
-        "src/org/traincontrol/marklin/udp/NetworkProxy.java (3)",
-        "src/org/traincontrol/model/View.java (4)",
-        "src/org/traincontrol/model/ViewListener.java (1)",
-        "src/org/traincontrol/util/ImageUtil.java (2)",
-        "src/org/traincontrol/util/Util.java (4)",
+        "src/org/traincontrol/marklin/udp/NetworkProxy.java (1)",
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 25;
+    private static final int LONG_BLOCKS_ALLOWED = 13;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
-        "src/org/traincontrol/automation/Point.java (2)",
         "src/org/traincontrol/automationui/AutonomyBuilder.java (1)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
         "src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java (2)",
         "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (3)",
-        "src/org/traincontrol/marklin/MarklinFeedback.java (1)",
-        "src/org/traincontrol/marklin/MarklinLocomotive.java (2)",
-        "src/org/traincontrol/marklin/MarklinRoute.java (7)",
         "src/org/traincontrol/marklin/file/CS2File.java (6)",
     };
 
