@@ -675,6 +675,46 @@ text:
 | Adam, on MT-834: "Works.  Add a sort pages option, too, which shows a popup instructing users to rename pages instead, because they are shown in alphabetical/numerical order."
 |
 
+[issue FR-150]
+ordinal: 57
+inbox: yes
+kind: feature request
+title: for 3.0.4: route editor: Insert Condition from a word line
+filed: 2026-10-25
+filed_at: 2026-10-25 23:16
+raised_from: noticed while testing - not from a particular test
+build: commit c6f9d3bb
+text:
+| ### FR-150 - 2026-10-25 - for 3.0.4: route editor: Insert Condition from a word line
+|
+| **Kind:** feature request  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 23:16  
+| **Build:** commit c6f9d3bb
+|
+| Asked whether a right-click on a word line (an "and", or the "or" between groups) should insert there rather than show Insert grayed, Adam chose: "Insert at the word": the new condition goes in at the word's own level, joined by that word.
+|
+
+[issue FR-151]
+ordinal: 58
+inbox: yes
+kind: feature request
+title: for 3.0.4: route editor: a new condition is ready to type into
+filed: 2026-10-25
+filed_at: 2026-10-25 23:16
+raised_from: noticed while testing - not from a particular test
+build: commit c6f9d3bb
+text:
+| ### FR-151 - 2026-10-25 - for 3.0.4: route editor: a new condition is ready to type into
+|
+| **Kind:** feature request  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 23:16  
+| **Build:** commit c6f9d3bb
+|
+| Asked whether a line added by an insert, Add Condition or an arrow should be ready to type into rather than need a double-click, Adam chose: "Ready to type": the keyboard goes to the new line's address cell.
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
