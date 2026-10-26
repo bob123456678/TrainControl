@@ -524,7 +524,7 @@ final class AutonomyLifecycle
 
             // The window still shows the old name (MT-153): station labels and the locomotive panel repaint only when
             // called.  Posted, not called: this runs on the event thread inside a rename dialog, and
-            // updateVisiblePoints is synchronized on this window and reaches into the layout, so taking both locks in
+            // updateVisiblePoints is synchronized on the main window and reaches into the layout, so taking both locks in
             // that order here deadlocks.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
