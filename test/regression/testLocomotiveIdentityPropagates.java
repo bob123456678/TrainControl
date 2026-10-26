@@ -618,7 +618,7 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testTheWindowRepairsTheSetupOnDiskWithNoSession() throws Exception
     {
-        String method = withoutComments(SourceOf.declaration("private void repairAutonomyLocomotive("));
+        String method = withoutComments(SourceOf.declaration("    void repairAutonomyLocomotive("));
 
         assertTrue(method.contains("repairLocomotiveOnDisk"),
             "repairAutonomyLocomotive does not repair the setup on disk when no session is built, so "

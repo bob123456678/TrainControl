@@ -158,7 +158,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
         // anywhere, `openLayoutEditor` brings that window forward as the Edit item does, and asking the refusal first
         // would show "Close the editor first" in exactly the state that item handles.
-        {"public void refreshAutonomyPrompt(", EDITOR,
+        {"    void refreshAutonomyPrompt(", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
             + "under an open editor); its Fix Setup button opens the editor, which brings an open one "

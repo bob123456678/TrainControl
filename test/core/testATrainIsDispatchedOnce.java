@@ -1961,7 +1961,7 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testTheReloadsYesIsTheRailwaysOwnStop() throws Exception
     {
-        String source = SourceOf.declaration("public boolean prepareAutonomyReload()");
+        String source = SourceOf.declaration("    boolean prepareAutonomyReload()");
 
         String door = source.substring(0, source.indexOf("resetLayoutStationLabels();"));
 

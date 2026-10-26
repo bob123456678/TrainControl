@@ -46,7 +46,7 @@ public class testTheWindowAttachesItsRefreshCallback
         // are written by methods that only run when something calls them.  Adam: "I renamed MY 1106 to MY Y1106. It
         // vanished from autonomy, with MY 1106 still placed and at location ???? in the UI."  The method itself,
         // comments blanked.
-        String body = SourceOf.withoutComments(SourceOf.declaration("private void repairAutonomyLocomotive("));
+        String body = SourceOf.withoutComments(SourceOf.declaration("    void repairAutonomyLocomotive("));
 
         // The CALL, with its parentheses, comments stripped first: a body that merely mentions "updateVisiblePoints" in
         // a comment would satisfy a bare `contains`.

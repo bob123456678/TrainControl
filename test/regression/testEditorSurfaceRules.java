@@ -2592,7 +2592,7 @@ public class testEditorSurfaceRules
     {
         String label = codeOf("public void openAutonomyEditorIfItCan()");
 
-        String ui = codeOf("public void refreshAutonomyPrompt()");
+        String ui = codeOf("    void refreshAutonomyPrompt()");
 
         assertTrue(label.contains("openAutonomyEditor(null)"), "the label no longer opens the editor");
 
