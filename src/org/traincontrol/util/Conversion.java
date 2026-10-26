@@ -14,12 +14,8 @@ import java.time.ZoneId;
 public class Conversion
 {
     /**
-     * Formats a duration given in MILLISECONDS as h:mm:ss.
-     *
-     * The name says seconds and the body divides by a thousand, so the name is wrong, not the body -
-     * every caller passes milliseconds and every caller is right.  Documented rather than renamed: the
-     * method is public, the four callers here are not necessarily all of them, and a silent rename is a
-     * worse trap than a name that now carries a correction.
+     * Formats a duration given in MILLISECONDS as h:mm:ss.  The name says seconds but every caller passes milliseconds;
+     * documented rather than renamed, because the method is public and a silent rename is a worse trap.
      *
      * @param ms the duration in milliseconds
      * @return h:mm:ss
