@@ -436,7 +436,7 @@ public class testErrorsStopTheSetupRunning
     @Test
     public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
     {
-        String ui = SourceOf.declaration("private void ensureDiagramStrip()");
+        String ui = SourceOf.declaration("    void ensureDiagramStrip()");
 
         int from = ui.indexOf("autonomyDiagramStrip = new javax.swing.JPanel");
 
@@ -444,7 +444,7 @@ public class testErrorsStopTheSetupRunning
 
         String body = SourceOf.withoutComments(ui.substring(from, Math.min(ui.length(), from + 4000)));
 
-        assertTrue(body.contains(".replace(this.LayoutArea, stacked)"),
+        assertTrue(body.contains(".replace(ui.layoutArea(), stacked)"),
             "the strip is no longer moved out of the scroll pane with GroupLayout.replace, so it is "
             + "back to scrolling sideways with the diagram - which is OB-148's flicker and takes the "
             + "controls off screen with it");
