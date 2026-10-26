@@ -86,52 +86,27 @@ public class Util
      */
     public static final String BACKUP_FOLDER = "tc_backup";
 
-    /**
-     * What a data file's backup is named when the file would not read and is about to be written over: this, then
-     * the time, then the file's own name.  The user interface state and the locomotive database both keep such a
-     * copy.
-     */
+    /** The name prefix of a data file's backup, made when the file would not read and is about to be written over. */
     public static final String UNREADABLE_BACKUP_PREFIX = "unreadable";
 
     /**
-     * Folder (relative to the working directory) that cropped locomotive icons are written to.
-     *
-     * Local locomotive icons had no storage of their own before FR-022: setLocIcon simply remembered
-     * the path of the file the user picked, and the picture stayed wherever the user keeps their
-     * pictures.  A CROP has to live somewhere, because it is a new picture that did not exist before,
-     * and it must not be written next to - still less over - the original.  Adam picks these out of
-     * his own photo folders, and a program that quietly deposits files there, or edits the photo it
-     * was shown, has done something he did not ask for and cannot easily undo.
-     *
-     * So it goes beside the application's own data, in the working directory, next to the locomotive
-     * database whose lifetime it shares: an icon is only meaningful while the locomotive that
-     * references it exists, and both are lost together if the folder is moved without the other.
+     * Where cropped locomotive icons are written (FR-022): beside the application's data, never next to or over the
+     * user's own photo.
      */
     public static final String LOC_ICON_FOLDER = "tc_loc_icons";
 
-    /**
-     * The system property a test run names its own data folder with - see `dataPath`.
-     */
+    /** The system property a test run names its own data folder with; see `dataPath`. */
     public static final String DATA_DIR_PROPERTY = "traincontrol.dataDir";
 
-    /**
-     * The system property a test run names its own preference node with - see `preferencesFor`.
-     */
+    /** The system property a test run names its own preference node with; see `preferencesFor`. */
     public static final String PREFERENCES_PROPERTY = "traincontrol.preferences";
 
-    /**
-     * Where a test run's own preference nodes live, one per run, under the user root.
-     */
+    /** Where a test run's own preference nodes live, one per run, under the user root. */
     public static final String ISOLATED_PREFERENCES_ROOT = "traincontrol-test-runs";
 
     /**
-     * Where one of the application's data files is: the working directory - unless a test run has named a folder of
-     * its own.
-     *
-     * Adam, 2026-09-23: *"does my app really have to stay closed? I thought the battery got isolated earlier."*  Every
-     * test JVM read and wrote the working directory's `LocDB.data` and `UIState.data`, which his running application
-     * keeps there too.  `docs/tools/one.sh` and `battery.sh` copy the two into a folder of the run's own and name it in
-     * `traincontrol.dataDir`; with the property unset this is the bare name, exactly what every call site used before.
+     * Where one of the application's data files is: the working directory, unless a test run named a folder of its own
+     * in `traincontrol.dataDir`, which keeps a running application's files out of the tests.
      *
      * @param name the file's name - `LocDB.data`, `UIState.data`, the backup folder
      * @return its path
@@ -146,15 +121,9 @@ public class Util
     }
 
     /**
-     * The preference node for a class's package: the user node - unless a test run has named a node of its own.
-     *
-     * The same reason as `dataPath`, and a sharper one: `LayoutSandbox` points this node's layout path at a sandbox for
-     * the length of a test class, and an application starting meanwhile would open the sandbox.  A run names itself in
-     * `traincontrol.preferences`, and gets `traincontrol-test-runs/<run>/<package path>`, which starts as a copy of the
-     * real node - so a class sees the settings it always saw - and which the runner deletes at the end.  The real node
-     * is only ever read.
-     *
-     * A run that cannot build its node does not fall back to the real one, which is the sharing this exists to end.
+     * The preference node for a class's package: the user node, unless a test run named a node of its own in
+     * `traincontrol.preferences`.  That node starts as a copy of the real one, which is only ever read, and a run that
+     * cannot build it does not fall back to the real one.
      *
      * @param owner a class in the package
      * @return the node
@@ -252,14 +221,9 @@ public class Util
     }
 
     /**
-     * Returns the file a cropped locomotive icon should be written to, creating
-     * {@link #LOC_ICON_FOLDER} if it is not there yet.
-     *
-     * Unlike getBackupPath there is no fall back to the current directory.  A backup that lands
-     * beside the file it protects is still a backup; an icon written into the working directory
-     * would sit among the application's own data files under a name nobody would recognize as ours,
-     * and it would never be cleaned up.  Null instead, so the caller can leave the locomotive
-     * pointing at the uncropped original - which is exactly what it did before this existed.
+     * Returns the file a cropped locomotive icon should be written to, creating {@link #LOC_ICON_FOLDER} if needed.
+     * Unlike getBackupPath there is no fall back to the working directory: an icon among the application's own data
+     * files would never be cleaned up.
      *
      * @param fileName the intended file name, already sanitized
      * @return the file to write to, or null if the folder could not be created
@@ -277,13 +241,8 @@ public class Util
     }
 
     /**
-     * Whether a URL points at a file this application wrote into {@link #LOC_ICON_FOLDER}.
-     *
-     * The one question that decides whether a locomotive icon file may be DELETED.  Everything in
-     * that folder was written by us and is disposable; everything outside it is the user's own
-     * picture, picked out of their own folders, and is never ours to touch.  Asked before replacing
-     * a crop and before clearing an icon, so that re-cropping a locomotive twenty times leaves one
-     * file rather than twenty.
+     * Whether a URL points at a file this application wrote into {@link #LOC_ICON_FOLDER}: the one question that
+     * decides whether an icon file may be deleted.  Everything outside that folder is the user's own picture.
      *
      * @param url the locomotive's local image URL, may be null
      * @return true only if the URL resolves to a file inside the icon folder
@@ -298,16 +257,15 @@ public class Util
 
             File dir = new File(LOC_ICON_FOLDER).getCanonicalFile();
 
-            // Canonical on both sides, and the parent rather than the path: a name that walks out of
-            // the folder ("..") resolves before the comparison, so it cannot be smuggled past this.
+            // Canonical, and the parent rather than the path: a name that walks out of the folder ("..") cannot pass.
             File parent = file.getCanonicalFile().getParentFile();
 
             return parent != null && parent.equals(dir);
         }
         catch (URISyntaxException | IllegalArgumentException | IOException e)
         {
-            // Not a file URL, or unreadable.  Anything we cannot positively identify as ours is
-            // treated as the user's, which is the safe direction for a question that gates a delete.
+            // Not a file URL, or unreadable: anything not positively ours is the user's, the safe answer for a delete
+            // gate.
             return false;
         }
     }
@@ -369,8 +327,7 @@ public class Util
     }
 
     /**
-     * For tests: told what `showInFileManager` would do - "open <folder>" or "select <file>" - instead of a file manager
-     * being started on the desktop.  Null for the real one.
+     * For tests: told what `showInFileManager` would do ("open <folder>" or "select <file>"); null for the real one.
      */
     private static volatile java.util.function.Consumer<String> fileManagerForTests;
 
@@ -383,16 +340,9 @@ public class Util
     }
 
     /**
-     * Opens the operating system's file manager on the folder a file is in (FR-019).
-     *
-     * THE FOLDER ITSELF, NOT THE FILE SELECTED IN IT (OB-311; Adam, 2026-10-03: "show files after backup opened by
-     * documents folder, not the tc_backup folder").  On Windows this asked Explorer to select the file
-     * (`explorer /select,`), and an Explorer that cannot take the path it is given - spaces, a folder it will not resolve
-     * - opens its default place instead, Documents, with nothing said.  Opened as a folder, it cannot land anywhere else;
-     * the backups are named by date, so the newest sorts last.
-     *
-     * Never throws.  Failing to open a file manager must not turn a successful backup into an error
-     * dialog; the path is already in the log either way.
+     * Opens the operating system's file manager on the folder a file is in (FR-019).  The folder itself, not the file
+     * selected in it (OB-311): Explorer's /select, falls back to Documents, silently, on a path it cannot resolve.
+     * Never throws: failing to open a file manager must not turn a successful backup into an error dialog.
      *
      * @param file the file whose folder to open, or null to open the folder given
      * @param folder the folder to fall back to
@@ -417,28 +367,15 @@ public class Util
         }
         catch (java.io.IOException | RuntimeException e)
         {
-            // Deliberately silent beyond the log. The backup succeeded; not being able to show it is
-            // not a failure of the backup, and a second dialog saying so would be noise on top of the
-            // one the user just dismissed.
+            // Silent beyond the log: the backup succeeded, and a second dialog would be noise.
         }
     }
 
     /**
-     * Writes a set of files and folders into one zip.
-     *
-     * FR-015, Adam: "the backup menu option should export a zip file with the locdb and uistate files,
-     * track diagram files, and autonomy files - effectively, all state."
-     *
-     * The argument for one archive rather than a folder of copies is the 23 August restore. The
-     * autonomy setup is keyed by PAGE ID, and those ids are defined by `config/gleisbild.cs2` - so
-     * `setup.json` on its own means nothing, and a `gleisbild.cs2` from a different day silently
-     * reattaches every station to the wrong page. The pieces are only a backup together, and an
-     * archive is the only form that cannot be half-copied, half-restored, or separated on the way to
-     * wherever the user keeps it.
-     *
-     * A source that does not exist is skipped rather than failing the whole archive: a layout held on
-     * the Central Station has no local config folder, and a first run has no UI state yet. Neither is
-     * an error, and neither should cost the user the rest of their backup.
+     * Writes a set of files and folders into one zip (FR-015).  One archive rather than a folder of copies: the
+     * autonomy setup is keyed by page id, defined by `config/gleisbild.cs2`, so the pieces mean nothing apart and only
+     * an archive cannot be half-copied or half-restored.  A source that does not exist is skipped, not an error: a
+     * layout held on the Central Station has no local config folder, and a first run has no UI state.
      *
      * @param zip where to write
      * @param sources entry name inside the archive -> file or folder on disk
@@ -472,11 +409,7 @@ public class Util
         return failed;
     }
 
-    /**
-     * One file, or one folder and everything under it.
-     *
-     * @param depth guards against a symlink loop, the same way copyInto does
-     */
+    /** One file, or one folder and everything under it; `depth` guards against a symlink loop. */
     private static void addToZip(java.util.zip.ZipOutputStream out, File source, String name,
         List<String> failed, int depth)
     {
@@ -506,23 +439,15 @@ public class Util
         }
         catch (IOException | RuntimeException e)
         {
-            // Named individually, so "some files could not be copied" can say which - a file held open
-            // by a sync client is the everyday case here and the user can act on it.
+            // Named individually: a file held open by a sync client is the everyday case, and the user can act on it.
             failed.add(name + ": " + e);
         }
     }
 
     /**
-     * Copies a folder and everything under it into the backup area.
-     *
-     * Added because the backup did not cover the track diagrams or the autonomy setup - it saved the
-     * locomotive database, the window state and autonomy.json, which was the whole story while the
-     * diagram lived on the Central Station and autonomy lived in one file.  It is not the whole story
-     * now: station captions, names, directions and every configuration live in config/autonomy beside
-     * the diagram, and for a locally stored layout that folder is the only copy there is.
-     *
-     * Best effort per file.  A backup that stops at the first unreadable file is a backup of nothing,
-     * and the names of what it could not take are more use than an exception.
+     * Copies a folder and everything under it into the backup area, best effort per file: a backup that stops at the
+     * first unreadable file is a backup of nothing, and the names of what it could not take are more use than an
+     * exception.
      *
      * @param source the folder to copy
      * @param intoName what to call it inside the backup folder
@@ -542,13 +467,8 @@ public class Util
     }
 
     /**
-     * The deepest a backup will go.
-     *
-     * A guard against a directory tree that is not a tree.  The visited set below catches a junction
-     * that points at one of its own ancestors, which is the ordinary case; this catches the ones it
-     * cannot - a pair of junctions pointing at each other through paths that never repeat, and simply
-     * absurd nesting.  Recursion here runs on the backup thread, and a StackOverflowError there would
-     * take the whole backup down mid-copy.
+     * The deepest a backup will go: a guard against a tree that is not a tree (junctions pointing at each other through
+     * paths that never repeat), whose recursion would overflow the stack on the backup thread.
      */
     private static final int MAX_BACKUP_DEPTH = 64;
 
@@ -563,10 +483,8 @@ public class Util
                 return;
             }
 
-            // Followed once.  isDirectory follows junctions and symbolic links, so one pointing back up
-            // its own tree is an infinite walk that ends in a path too long to create - a spray of
-            // failures naming directories the user never made - or, with long paths enabled, in a stack
-            // overflow.  The real path is what tells two names for one directory apart.
+            // Followed once: isDirectory follows junctions and links, so one pointing up its own tree walks forever.
+            // The real path tells two names for one directory apart.
             String real;
 
             try
@@ -610,9 +528,7 @@ public class Util
         }
         catch (IOException e)
         {
-            // The path, not just the name.  Two files called the same thing in different folders are
-            // one line each and indistinguishable, which is no use to somebody trying to find out what
-            // did not get backed up.
+            // The path, not the name: two same-named files in different folders must be told apart.
             failed.add(source.getPath());
         }
     }
@@ -633,23 +549,13 @@ public class Util
     }
 
     /**
-     * Makes a page name safe to use as a local filename.
+     * Makes a page name safe to use as a local filename.  Page names are free text (the Central Station index, the
+     * rename box), and one with a path separator or a forbidden character could land the write outside the layouts
+     * folder or leave a half-written layout.
      *
-     * Page names are free text - they come out of the Central Station index, or out of the rename box -
-     * and one carrying a path separator or a character the filesystem forbids used to be joined
-     * straight onto the layouts folder.  On download that made the write land outside the folder, or
-     * fail part way through and leave a half-written layout the next sync reads as authoritative.
-     *
-     * Applied on BOTH sides on purpose.  The local read locates a page by the name in the index, so
-     * sanitizing only the write produces a file the reader cannot find.
-     *
-     * Here in Util rather than on CS2File, which is where it started, because there are three writers
-     * and one of them is LayoutDiagram - which is in base and must not reach into the Marklin
-     * package to ask.  CS2File.sanitizeFilename now delegates here, so every existing caller is
-     * unchanged and there is still one implementation.
-     *
-     * Only characters that are actually unusable are replaced, so ordinary names with spaces, dashes
-     * and accented letters are returned untouched and existing local layouts load exactly as before.
+     * Applied on both sides on purpose: the local read locates a page by the name in the index.  Here rather than on
+     * CS2File because LayoutDiagram, in base, must not reach into the Marklin package; CS2File.sanitizeFilename
+     * delegates here.  Only unusable characters are replaced, so existing local layouts load as before.
      *
      * @param name the page name
      * @return the name with anything unusable replaced by an underscore
@@ -662,21 +568,11 @@ public class Util
     }
 
     /**
-     * Writes a file without ever leaving the target truncated.
-     *
-     * Opening a file for writing empties it immediately, so from the first byte until the last is
-     * flushed the only copy of the data is incomplete - and if the process dies in that window, or the
-     * write throws part way, what was there before is gone.  For the files this exists to protect
-     * (the locomotive database, the UI state, autonomy.json) that is the operator's accumulated work,
-     * and the loss is silent: an unreadable database reads as a first launch, and the next Central
-     * Station sync repopulates the locomotive list so the customizations look mislaid rather than
-     * destroyed.
-     *
-     * The content is therefore staged in a sibling file and moved into place only once it is complete
-     * and closed - the same shape downloadFile uses so that an interrupted download never looks like a
-     * finished one.  A failed write deletes the staging file and leaves the previous contents exactly
-     * as they were.  REPLACE_EXISTING rather than ATOMIC_MOVE: the rename window is nanoseconds
-     * against a write window of milliseconds to seconds, and ATOMIC_MOVE is not supported everywhere.
+     * Writes a file without ever leaving the target truncated: opening a file for writing empties it at once, so a
+     * crash or failed write mid-way would silently lose the operator's work (the locomotive database, the UI state,
+     * autonomy.json).  The content is staged in a sibling file and moved into place only once complete, as downloadFile
+     * does.  A failed write deletes the staging file and leaves the previous contents.  REPLACE_EXISTING rather than
+     * ATOMIC_MOVE, which is not supported everywhere and whose window is nanoseconds against seconds.
      *
      * @param target the file to end up with
      * @param body writes the content to the stream it is given; need not close it
@@ -704,16 +600,9 @@ public class Util
             throw e;
         }
 
-        // AND THE STAGING FILE GOES EITHER WAY.
-        //
-        // The catch above deletes it when the WRITE fails, with a comment about a half-written file
-        // accumulating beside the target.  The move was outside that, so the Windows failure - a
-        // target somebody holds open - left the staging file behind, which is how a probe
-        // found a `LocDB.data.part` sitting next to a corrupt `LocDB.data`.
-        //
-        // Deleted rather than kept as a recovery artifact.  It holds the GOOD data, which is an
-        // argument for keeping it - but a file nothing reads, nothing mentions, and nothing cleans
-        // up is litter whatever it contains, and the caller is told the save failed.
+        // The staging file goes either way: a failed move (a target held open on Windows) must not leave a
+        // `LocDB.data.part` beside a corrupt target.  Deleted, not kept as a recovery artifact: nothing reads it, and
+        // the caller is told the save failed.
         try
         {
             Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -726,8 +615,8 @@ public class Util
             }
             catch (RuntimeException cannotTidy)
             {
-                // Nothing.  The move's failure is what the caller needs to hear about, and losing it
-                // behind a failure to tidy up after it would be the worse trade.
+                // Nothing: the move's failure is what the caller needs to hear about, not a failure to tidy up after
+                // it.
             }
 
             throw moveFailed;
@@ -809,16 +698,9 @@ public class Util
     }
     
     /**
-     * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0).
-     *
-     * FOUND BY THE NUMBER, NOT BY THE LETTER (C5).  This was split("v")[1], which assumes the name
-     * carries exactly one "v" and that it is the one in front of the version.  Neither holds: a name
-     * with no "v" threw, and a name with any other "v" - "TrainControl Preview v3.0.0" - handed back a
-     * piece of the name itself, which is the worse of the two.  A throw at least reaches the caller's
-     * catch and is logged; "iew " compares as older than the running version, so the update check
-     * decides there is nothing new and says nothing at all.
-     *
-     * Release names are typed by hand at tag time, which is what makes this reachable.
+     * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0), found by the number
+     * rather than by the letter: a name with no "v", or another "v" ("TrainControl Preview v3.0.0"), must not throw or
+     * hand back a piece of the name, which would hide a real update.  Release names are typed by hand at tag time.
      *
      * @param gitHubReleaseInfo
      * @return the version, or null when the name carries no number
@@ -827,17 +709,10 @@ public class Util
     {
         String name = gitHubReleaseInfo.getString("name");
 
-        // THE ONE AFTER THE "v" FIRST.  Matching the first number outright was the same
-        // mistake as the original, pointing the other way: "TrainControl 2026 Edition v3.0.0" gave
-        // "2026" - newer than anything, so the menu offers an update that does not exist - and
-        // "Build 1 v3.0.0" gave "1", which compares as older and hides a real release in silence.
-        // Release names are typed by hand at tag time and carry both a "v" and, sometimes, other
-        // numbers.
-        // The "v" has to BE the tag marker, not the last letter of a word.  Without the left
-        // boundary "Nov2026 build - TrainControl v3.0.0" matched the v of "Nov" and invented 2026, and
-        // taking the FIRST anchored match made "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0"
-        // report 2.6, which compares older and hides the release. Longest wins among the anchored ones,
-        // for the same reason it does among the bare numbers below.
+        // The number after the "v" first: matching the first number outright gives "2026" for "TrainControl 2026
+        // Edition v3.0.0".  The "v" must be the tag marker (a left boundary), not the end of a word ("Nov2026 build"),
+        // and the longest anchored match wins, so "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0" does not
+        // report 2.6.
         java.util.regex.Matcher tagged = java.util.regex.Pattern
             .compile("(?<![A-Za-z0-9])[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
 
@@ -853,13 +728,12 @@ public class Util
 
         if (anchored != null) return anchored;
 
-        // No "v" at all, which used to throw.  Then the longest version-shaped number wins, so a
-        // three-part version beats a stray year or build number beside it.
+        // No "v" at all: the longest version-shaped number wins, so a three-part version beats a stray year or build
+        // number.
         java.util.regex.Matcher version =
             java.util.regex.Pattern.compile("[0-9]+(?:[.][0-9]+)*").matcher(name);
 
-        // Null rather than a guess.  A name with no number in it has no version to report, and the
-        // caller can say so; handing back part of the name is how this went silent.
+        // Null rather than a guess: a name with no number has no version to report.
         String best = null;
 
         while (version.find())
@@ -926,12 +800,7 @@ public class Util
 
         StringBuilder content = new StringBuilder();
 
-        // TRY-WITH-RESOURCES, so a bad response does not keep the connection.
-        //
-        // The plain close() at the end was skipped by anything thrown from readLine, which leaked the
-        // reader and the HTTPS connection under it.  Every other fetch in this project was converted
-        // for exactly this reason - CS2File.parseFile, parseJSONArray, ping and isCS3 each carry the
-        // note - and this one was missed because it is the only fetch outside CS2File.
+        // Try-with-resources, so a bad response does not keep the connection (readLine can throw before a plain close).
         try (BufferedReader in = CS2File.fetchURL(apiUrl))
         {
             String inputLine;
