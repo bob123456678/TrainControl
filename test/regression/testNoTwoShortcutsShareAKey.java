@@ -68,7 +68,7 @@ public class testNoTwoShortcutsShareAKey
 
         HANDLERS.put(MAIN, new String[][] {
             {null, "private void LocControlPanelKeyPressed("},
-            {null, "private boolean locomotiveGestureOnDiagram("}});
+            {null, "    boolean locomotiveGestureOnDiagram("}});
     }
 
     /**

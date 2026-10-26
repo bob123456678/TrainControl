@@ -625,12 +625,12 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " buttons on it");
 
         // THE PASTE ASKS IT, and asks it before anything moves.
-        String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("    boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
-        assertTrue(flat.contains("if (mayTurnHere(aimed) && getAutonomySession() != null)"),
+        assertTrue(flat.contains("if (mayTurnHere(aimed) && ui.getAutonomySession() != null)"),
             "the paste no longer asks the facing question at may-reverse squares (Adam, 2026-09-13)");
 
-        assertTrue(flat.contains("if (facingChosenAtTheLanding == null) return true;"),
+        assertTrue(flat.contains("if (ui.facingChosenAtTheLanding == null) return true;"),
             "a dismissed facing question no longer leaves the railway untouched. Adam's rule for the"
             + " question one step above it: \"simply don't place the train, leave it on the clipboard"
             + " as if no paste had been done\"");
@@ -639,7 +639,7 @@ public class testAPasteDoesNotTurnTheTrainRound
         String placement = SourceOf.declaration("private void rememberPlacement(").replaceAll("\\s+", " ");
 
         assertTrue(placement.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
-            + " facingChosenAtTheLanding;") && placement.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
+            + " ui.facingChosenAtTheLanding;") && placement.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
             "the operator's answer is no longer what gets written, so the question is asked and then"
             + " overruled by the walk it exists to replace");
     }
@@ -730,23 +730,23 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " answer that could be wrong");
 
         // THE SHAPE, in the file.
-        String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("    boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains(
-            "boolean stillLifted = this.model == null || this.model.getAutoLayout() == null"
-            + " || this.model.getAutoLayout().getLocomotiveLocation(placing) == null;"),
+            "boolean stillLifted = ui.getModel() == null || ui.getModel().getAutoLayout() == null"
+            + " || ui.getModel().getAutoLayout().getLocomotiveLocation(placing) == null;"),
             "the paste no longer works out whether the cut train is still off the railway. Without"
             + " that test the remembered heading is preferred for as long as the clipboard is loaded,"
             + " including after the train has been put back by another door - and the remembered"
             + " heading is then the stale reading this branch exists to avoid, pointing the other way"
             + " (SVV-C5)");
 
-        assertTrue(flat.contains("if (this.cutFacing != null && placing == this.cutLocomotive"
+        assertTrue(flat.contains("if (ui.cutFacing != null && placing == ui.cutLocomotive"
             + " && stillLifted"),
             "the clipboard branch no longer requires all three of a remembered heading, the train"
             + " being the cut one, and that train being off the railway (MT-368, SVV-C5)");
 
-        assertTrue(flat.contains("getAutonomySession().facingsFor(aimed).containsValue(this.cutFacing)"),
+        assertTrue(flat.contains("ui.getAutonomySession().facingsFor(aimed).containsValue(ui.cutFacing)"),
             "the clipboard heading is no longer checked against what the landing can hold, so a paste"
             + " can leave a train facing a way its new square has no rail for (MT-377: \"as long as"
             + " the direction isnt flipped\")");

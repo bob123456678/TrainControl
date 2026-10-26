@@ -230,7 +230,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD (D3-C4): taking a train off a square, offered only when"
             + " isAutonomyBusy() is false");
 
-        ALLOWED.put("TrainControlUI.java#locomotiveGestureOnDiagram",
+        ALLOWED.put("DiagramLocGestures.java#locomotiveGestureOnDiagram",
             "ON THE EVENT THREAD (D3-C4): a paste or a clear on the diagram, one gesture at a time");
 
         ALLOWED.put("RunningLayoutSync.java#putTheTrainsBack",

@@ -227,7 +227,7 @@ public class testEditorSurfaceRules
         // And project-wide, as a named LIST rather than a count, following testTriggerWaitsSayNothing: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
-            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java",
+            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramLocGestures.java",
                 // GraphLocAssign is the DIALOG both assignment doors show, so what accepting it means is written once,
                 // with it; both callers repaint right after.
                 "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
@@ -236,8 +236,7 @@ public class testEditorSurfaceRules
                 "RunningLayoutSync.java",
                 // SessionImport is the legacy import's facings, written behind AutonomyViewerPanel.importLegacyGraph,
                 // which reloads the railway after.
-                "SessionImport.java",
-                "TrainControlUI.java"),
+                "SessionImport.java"),
             "a facing is written to the setup from a file this rule has not been told about. Each of "
             + "the three known ones redraws in its own way - the menu through placementChanged(), the "
             + "diagram's right-click through updateVisiblePoints() as part of MOVING a locomotive, and "
@@ -246,7 +245,7 @@ public class testEditorSurfaceRules
 
         // THE FOURTH, SAYING WHICH OF THOSE IT IS (Adam, 2026-09-06).
         //
-        // `TrainControlUI.rememberPlacement` is the second half of the third one.  The rule already
+        // `DiagramLocGestures.rememberPlacement` is the second half of the third one.  The rule already
         // knows about the track diagram's right-click menu; this is the same diagram's DRAG, which
         // moves a locomotive by hand and lands in a different class because the drop is handled by the
         // window rather than by the popup.  It redraws the same way - `updateVisiblePoints()` is
@@ -1870,7 +1869,7 @@ public class testEditorSurfaceRules
     public void testADismissedArrivalQuestionPlacesNothing() throws Exception
     {
         // Renamed, `SourceOf.declaration` fails: point it at whatever handles a paste onto the diagram
-        String drop = codeOf("private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
+        String drop = codeOf("    boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
 
         int asked = drop.indexOf("ArrivalSidePrompt.forPlacement(");
         int moved = drop.indexOf("moveLocomotive(placing.getName()");
@@ -3937,9 +3936,9 @@ public class testEditorSurfaceRules
             + " two doors onto one field again - the shape MT-246 and OB-039 were both filed for");
 
         // AND THE PLACEMENT DOORS, which reach the marks through updateVisiblePoints.
-        String gesture = codeOf("private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
+        String gesture = codeOf("    boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)");
 
-        assertTrue(gesture.contains("this.updateVisiblePoints();"),
+        assertTrue(gesture.contains("ui.updateVisiblePoints();"),
             "the diagram's Control+X / Control+V / Delete door no longer refreshes the marks, so a"
             + " train moved from the keyboard leaves its old squares greyed - which is OB-180 exactly");
     }

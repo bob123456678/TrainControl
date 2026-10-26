@@ -277,9 +277,9 @@ public class testAPastedTrainKeepsItsDirection
     @Test
     public void testTheDoorWalksToTheLandingBeforeItMovesTheTrain() throws Exception
     {
-        String door = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(");
+        String door = SourceOf.declaration("    boolean locomotiveGestureOnDiagram(");
 
-        int walk = door.indexOf("facingAtTheLanding = getAutonomySession() == null");
+        int walk = door.indexOf("ui.facingAtTheLanding = ui.getAutonomySession() == null");
 
         assertTrue(walk > 0,
             "the door no longer works out where the train will be facing. Without it the paste has no"

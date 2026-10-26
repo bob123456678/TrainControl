@@ -547,7 +547,12 @@ public class testTheTailIsPickedOnTheDiagram
             tailField.setAccessible(true);
             tailField.set(ui, "N");
 
-            final java.lang.reflect.Method remember = TrainControlUI.class.getDeclaredMethod("rememberPlacement",
+            // The paste door is DiagramLocGestures', which the window holds
+            final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("diagramLocGestures");
+            held.setAccessible(true);
+            final Object gestures = held.get(ui);
+
+            final java.lang.reflect.Method remember = gestures.getClass().getDeclaredMethod("rememberPlacement",
                 Point.class, TileKey.class);
             remember.setAccessible(true);
 
@@ -556,7 +561,7 @@ public class testTheTailIsPickedOnTheDiagram
             {
                 try
                 {
-                    remember.invoke(ui, q.tunnel, tile);
+                    remember.invoke(gestures, q.tunnel, tile);
                 }
                 catch (Exception failed)
                 {
@@ -827,7 +832,12 @@ public class testTheTailIsPickedOnTheDiagram
         tailField.setAccessible(true);
         tailField.set(ui, "N");
 
-        final java.lang.reflect.Method remember = TrainControlUI.class.getDeclaredMethod("rememberPlacement",
+        // The paste door is DiagramLocGestures', which the window holds
+        final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("diagramLocGestures");
+        held.setAccessible(true);
+        final Object gestures = held.get(ui);
+
+        final java.lang.reflect.Method remember = gestures.getClass().getDeclaredMethod("rememberPlacement",
             Point.class, TileKey.class);
         remember.setAccessible(true);
 
@@ -837,7 +847,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                remember.invoke(ui, q.tunnel, tile);
+                remember.invoke(gestures, q.tunnel, tile);
             }
             catch (Exception failed)
             {

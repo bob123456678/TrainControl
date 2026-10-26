@@ -389,7 +389,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             {"private void placeFacing(String locName, String pointName,", "the diagram menu's Place"},
             {"private void removeLocomotiveHere(Point current)", "the diagram menu's Remove"},
             {"public boolean commitChanges()", "the assign dialog"},
-            {"private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)", "the window's paste"},
+            {"    boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)", "the window's paste"},
             {"    static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,"
                 + "\n        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,"
                 + "\n        java.util.Set<String> placementsJustEdited)", "the rebuild's put-back"},
