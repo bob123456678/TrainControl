@@ -143,7 +143,7 @@ public class testNoNewCopies
         "TileGraph:2 (64)",
         "TrainControlUI:2 (225)",
         "TrainControlUI:2 (209)",
-        "TrainControlUI:2 (177)",
+        "TrainControlUI:3 (177)", // the form-accessor runs TimetableTab, AutonomySettingsTab and LayoutMenus read through
         "TrainControlUI:2 (93)",
         "TrainControlUI:2 (89)",
         "TrainControlUI:2 (83)",
