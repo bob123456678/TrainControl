@@ -409,6 +409,7 @@ Tab icons provided by Freepik.
         - Messages and tooltips across the app are shorter, in every language, and long lists in popups now scroll in a Details box instead of stretching the window.
         - `File` > `Restore from Backup` puts back a backup made with `Backup TrainControl Data`: your locomotives and routes, the window state and keyboard pages, cropped locomotive icons and the layout folder.  It shows what will be replaced first, saves your current data as a backup whose name ends in `before-restore` (restore that file to undo), and then closes TrainControl; start it again to use the restored data.
         - The `Layouts` menu has `Recent Layouts`, the last five layouts you opened, for quick switching.
+        - `Help` > `Download Update` works again: GitHub had started refusing the download with an error (406).  If you have 3.0.3 or an older version, download 3.0.4 once by hand from the releases page.
     - Track Diagram
         - The layout editor has a `Manage Pages` menu to add a blank page, rename, duplicate or delete the page being edited, or combine it with the pages it links to, without leaving the editor.  `Layouts` > `Manage Pages...` opens the editor with that menu showing, in place of the old `Manage Pages` submenu.
         - `Save Current Track Diagram as a Picture...` now offers Small, Medium and Large, the same sizes as the pop-out window, without spelling out pixel counts.

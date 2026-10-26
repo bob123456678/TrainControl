@@ -4122,3 +4122,11 @@ kind: feature request
 what: Duplicate and Combine in the editor's Manage Pages; main menu hidden behind Manage Pages...
 state: needs test
 became: MT-834
+
+[receipt OB-380]
+seq: 515
+filed: 2026-10-25
+kind: bug
+what: Fixed on dev (f5b33109): the download asks for a binary file; ui.testDownloadUpdateFetchesTheNewVersion's server refuses one that does not, as GitHub does (red 3 of 5 without the fix)
+state: needs test
+became: MT-835

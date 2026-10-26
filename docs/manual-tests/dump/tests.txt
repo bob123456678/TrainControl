@@ -32928,3 +32928,39 @@ body:
 tail:
 | ---
 |
+
+[test MT-835]
+ordinal: 834
+anchor: mt-835
+date: 2026-10-25
+title: Download Update fetches the new version without an error 406
+disposition: needs test
+from: OB-380
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-835"></a>
+| ### MT-835 - 2026-10-25 - Download Update fetches the new version without an error 406
+|
+| **Disposition:** needs test
+| **From:** OB-380
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| This can be run once a release newer than 3.0.4 is on GitHub: the menu offers a download only when there is a newer
+| version.
+|
+| 1. Start TrainControl 3.0.4 (not 3.0.3 or earlier, which still get the error).
+| 2. `Help` > `Download Update`, and choose `Download`.
+|
+| **Expected**
+|
+| - The download finishes and the notice says where the new jar is.  No error 406, and no other error.
+|
+| *What this is:* OB-380.  Adam: "I strangely got a 406 error when downloading the new jar via the update menu."
+|
+tail:
+| ---
+|
