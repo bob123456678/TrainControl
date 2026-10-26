@@ -521,24 +521,35 @@ Tab icons provided by Freepik.
             - Autonomy is set up directly on your track diagram, with no separate graph or JSON file.  It needs a track diagram stored on this computer, and offers to download one from your Central Station.
             - Setups are saved as named configurations you can copy, rename, export and import, including an older autonomy.json.  Old "Point:name" station labels are imported automatically.
             - The setup is checked before it runs: click a finding to go to its square, or let the autonomy button fix the errors.
+            - If an edit cannot be applied yet, the last working setup stays loaded and a notice says so.
+            - Anything that would change the setup is grayed out while trains are running.
             - The track diagram's `Autonomy Setup` menu opens the editor on the square you right-clicked.  In the editor, drag station labels and click stations to pick them.
+            - Set a train's length from the locomotive's right-click menu, and pick the stations for `Unavailable While Occupied` by clicking them.
+            - `Show Trains` hides the editor's trains, and making an unnamed sensor a station asks for its name.
             - Control+X, Control+V and Delete pick up, put down and remove the train at a station on the track diagram.
             - Bulk Tools fill in missing track and train lengths, reopen one-way track, and set or restore every train's home.
             - Stations can have exit and entry guard signals, accept trains from one side only, be taken out of service, or allow only chosen locomotives.
             - Pause a train from its station's right-click menu (`Is Active`).
             - Choose how trains pick their route: shortest track, fewest stations, or the station that has waited longest.
+            - Track with no recorded length counts as one unit, so the track length options work on an unmeasured layout.
+            - `Atomic Routes` stays on until every track and train autonomy uses has a length.
             - Right-click a train to see where it can be sent.
             - Switches without a decoder can be drawn as Static switches.
             - A running train's route is drawn on the track: blue ahead, gray behind, the train in orange.
+            - A page link switched off for autonomy is grayed out on the track diagram.
+            - The editor can show only the directions trains may run, and the track diagram can draw them in green.
+            - Names of stations autonomy never chooses can be hidden (`Preferences` > `Autonomy` > `Show Inactive Labels`).
             - When a train is not moving, the locomotive list and the `Why not Moving?` tool say why.
             - Autonomy pauses when the track power goes off and resumes when it comes back.
             - `Autonomy` > `Documentation` opens the automation guide.
+            - The autonomy setup is translated into all eight languages.
         - Routes
             - A new route editor builds commands from lists, and shows conditions as an indented list.
             - Commands captured from the layout can also be used as conditions, and routes from the Central Station open read-only.
             - Each route has a play button, and `Find Route` accepts part of a name.
             - While autonomy runs, a route asks before changing a switch under a train or turning a signal green at an occupied platform.
             - Imported routes arrive with `Automatically Fire` off, and you are asked whether to turn it back on.
+            - Deleting or saving a route made in TrainControl no longer forces a full sync with the Central Station.
         - Track Diagram
             - Stations are marked with a circle, diamond or square, and each train with a small locomotive.
             - Station labels are light gray ovals that no longer cover their square.
