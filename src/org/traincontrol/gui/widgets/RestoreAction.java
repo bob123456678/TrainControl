@@ -357,18 +357,21 @@ public final class RestoreAction
             }
         }
 
-        /** Whether `config` holds exactly the archived layout's files, byte for byte, and no link. */
+        /**
+         * Whether `config` holds exactly the archived layout's files, byte for byte, and no link below it.  A `config`
+         * that is itself a link (a shared folder) is followed, as `writeLayout` writes through it.
+         */
         boolean isHeldBy(File config)
         {
             Map<String, byte[]> found = new TreeMap<>();
 
             Path root = config.toPath();
 
-            try (java.util.stream.Stream<Path> walk = Files.walk(root))
+            try (java.util.stream.Stream<Path> walk = Files.walk(root, java.nio.file.FileVisitOption.FOLLOW_LINKS))
             {
                 for (Path file : (Iterable<Path>) walk::iterator)
                 {
-                    if (Util.isLink(file.toFile())) return false;
+                    if (!file.equals(root) && Util.isLink(file.toFile())) return false;
 
                     if (!Files.isDirectory(file)) found.put(root.relativize(file).toString().replace('\\', '/'),
                         Files.readAllBytes(file));
