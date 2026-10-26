@@ -3691,6 +3691,15 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private boolean settleUnsavedWork()
     {
+        return settleUnsavedWork("layout.ui.confirmSwitchWithUnsavedWork");
+    }
+
+    /**
+     * `settleUnsavedWork` with the question's key: a page action keeps the window, so it does not ask about a switch.
+     * @param question the message key of the question
+     */
+    private boolean settleUnsavedWork(String question)
+    {
         boolean unsaved = isAutonomyMode() ? hasUnsavedAutonomyWork() : canUndo();
 
         // Cleared first, so no Discard from last time stands.
@@ -3706,7 +3715,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             int answer = JOptionPane.showOptionDialog(
                 this,
-                I18n.t("layout.ui.confirmSwitchWithUnsavedWork"),
+                I18n.t(question),
                 I18n.t("layout.ui.dialogSwitchConfirmation"),
                 JOptionPane.YES_NO_CANCEL_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
@@ -3762,7 +3771,8 @@ public class LayoutEditor extends PositionAwareJFrame
         // Nobody points at the old page now (OB-198).
         autonomyHover = null;
 
-        if (!settleUnsavedWork()) return;
+        if (!settleUnsavedWork(pageAction != null
+            ? "layout.ui.confirmPageActionWithUnsavedWork" : "layout.ui.confirmSwitchWithUnsavedWork")) return;
 
         // Committed (FR-036), after the question: nothing else starts a switch until this one arrives.  Only the frame
         // survives; the teardown runs in full.  Posted (OB-016); the viewer's shape does not depend on the race with

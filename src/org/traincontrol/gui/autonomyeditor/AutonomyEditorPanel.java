@@ -1251,7 +1251,7 @@ public class AutonomyEditorPanel extends JPanel
 
         clearLengths.setEnabled(measured > 0);
         clearLengths.setToolTipText(wrapped(measured > 0
-            ? bulkClearWarning("autosetup.ui.tipClearAllTrackLengths", measured)
+            ? bulkClearCounted("autosetup.ui.tipClearAllTrackLengths", measured)
             : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
 
         bulk.add(clearLengths);
@@ -1264,7 +1264,7 @@ public class AutonomyEditorPanel extends JPanel
 
         clearMaxima.setEnabled(limited > 0);
         clearMaxima.setToolTipText(wrapped(limited > 0
-            ? bulkClearWarning("autosetup.ui.tipClearAllMaxTrainLengths", limited)
+            ? bulkClearCounted("autosetup.ui.tipClearAllMaxTrainLengths", limited)
             : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
 
         bulk.add(clearMaxima);
@@ -1276,7 +1276,7 @@ public class AutonomyEditorPanel extends JPanel
 
         allowAll.setEnabled(oneWay > 0);
         allowAll.setToolTipText(wrapped(oneWay > 0
-            ? bulkClearWarning("autosetup.ui.tipAllowEveryPath", oneWay)
+            ? bulkClearCounted("autosetup.ui.tipAllowEveryPath", oneWay)
             : I18n.t("autosetup.ui.infoNothingOneWay")));
 
         bulk.add(allowAll);
@@ -6300,7 +6300,7 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         if (JOptionPane.showOptionDialog(owner(),
-            bulkClearQuestion("autolayout.ui.confirmAllowEveryPath", shut),
+            bulkClearCounted("autolayout.ui.confirmAllowEveryPath", shut),
             I18n.f("autolayout.ui.menuAllowEveryPath", shut),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -6336,7 +6336,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // What Cancel does depends on the surface, as `clearLocomotivesWarning` chooses.
         if (JOptionPane.showOptionDialog(owner(),
-            bulkClearQuestion("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
+            bulkClearCounted("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
             I18n.f("autolayout.ui.menuClearAllTrackLengths", measured.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -6368,7 +6368,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // The track-length clear's two sentences.
         if (JOptionPane.showOptionDialog(owner(),
-            bulkClearQuestion("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
+            bulkClearCounted("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
             I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -6420,8 +6420,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The sentence a bulk clear shows on this surface, from one builder for dialog and tooltip (FR-112): on the track
-     * diagram's menu it is immediate, in the editor Cancel undoes it; the key's "AtOnce" sibling is the former.
+     * The sentence a bulk clear shows on this surface (FR-112): on the track diagram's menu it is immediate, in the
+     * editor Cancel undoes it; the key's "AtOnce" sibling is the former.  For a count not before a noun.
      * @param key the message key for the editor's sentence, whose "AtOnce" sibling is the other one
      * @param count how many squares the clear will touch
      * @return the sentence, already translated
@@ -6431,8 +6431,8 @@ public class AutonomyEditorPanel extends JPanel
         return I18n.f(onThisSurface(key), count);
     }
 
-    /** The bulk clear's question, in the form its count takes: "1 square", not "1 squares". */
-    private String bulkClearQuestion(String key, int count)
+    /** `bulkClearWarning` for a count before a noun, in the form it takes: "1 square", not "1 squares". */
+    private String bulkClearCounted(String key, int count)
     {
         return I18n.f(onThisSurface(key) + I18n.countForm(count), count);
     }
