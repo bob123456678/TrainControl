@@ -487,18 +487,28 @@ public final class ConditionOutline
 
     /**
      * The outline with a new condition above or below a line, at that line's level and joined by its level's word (AND
-     * where the level has none yet), as the editor's Insert Condition makes one (FR-147).
+     * where the level has none yet), as the editor's Insert Condition makes one (FR-147).  On a word line it goes at
+     * the word's own level, joined by that word (FR-150); above and below then agree, the new condition sitting between
+     * two copies of the word.
      *
      * @param by -1 for above, 1 for below
-     * @return a new list, or a copy unchanged where the line is not a condition
+     * @return a new list, or a copy unchanged where the line is not in the outline
      */
     public static List<Row> inserted(List<Row> rows, int line, int by, RouteCommand command)
     {
         List<Row> out = rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
 
-        if (line < 0 || line >= out.size() || out.get(line).isJoiner() || by == 0) return out;
+        if (line < 0 || line >= out.size() || by == 0) return out;
 
         int depth = out.get(line).getDepth();
+
+        if (out.get(line).isJoiner())
+        {
+            out.add(line + 1, Row.joining(depth, out.get(line).getJoiner()));
+            out.add(line + 1, Row.condition(depth, command));
+
+            return out;
+        }
         Row word = Row.joining(depth, wordOfTheLevel(out, line));
         Row fresh = Row.condition(depth, command);
 

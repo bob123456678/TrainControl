@@ -1531,10 +1531,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147: a right-click on a joining word offers no insert, as there is no line of its own level to stand beside;
-     * a right-click inside a selection of several lines keeps it, so the menu's Indent acts on them all, and Insert
-     * Below then puts one under the line clicked and selects it alone; a right-click outside the selection picks the
-     * line clicked.
+     * FR-150: a right-click on a joining word offers both inserts (testInsertOnAWordLineJoinsByThatWord says where they
+     * go); FR-147: a right-click inside a selection of several lines keeps it, so the menu's Indent acts on them all,
+     * and Insert Below then puts one under the line clicked and selects it alone; a right-click outside the selection
+     * picks the line clicked.
      *
      * MUTATION: in `offerConditionMenu`, select the line clicked whether or not it is already selected, and the
      * selection of three is lost.
@@ -1562,9 +1562,9 @@ public class testRouteEditorValidation
                 javax.swing.JPopupMenu menu = rightClickCell(table, word, NOTHING_TO_EDIT);
 
                 assertNotNull(menu, "a right-click on the word on line " + word + " opened no menu");
-                assertFalse(item(menu, "route.ui.menuInsertConditionAbove").isEnabled()
-                    || item(menu, "route.ui.menuInsertConditionBelow").isEnabled(),
-                    "a word line offers an insert: " + offered(menu));
+                assertTrue(item(menu, "route.ui.menuInsertConditionAbove").isEnabled()
+                    && item(menu, "route.ui.menuInsertConditionBelow").isEnabled(),
+                    "a word line does not offer both inserts: " + offered(menu));
 
                 support.Mouse.closeMenus();
             }

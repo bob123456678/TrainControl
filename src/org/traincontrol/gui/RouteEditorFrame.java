@@ -1922,10 +1922,8 @@ public class RouteEditorFrame extends JFrame
         {
             if (!table.isRowSelected(line)) table.setRowSelectionInterval(line, line);
 
-            boolean condition = !table.rows.get(line).isJoiner();
-
-            menu.add(menuItem("route.ui.menuInsertConditionAbove", condition, () -> table.insertBeside(line, -1)));
-            menu.add(menuItem("route.ui.menuInsertConditionBelow", condition, () -> table.insertBeside(line, 1)));
+            menu.add(menuItem("route.ui.menuInsertConditionAbove", true, () -> table.insertBeside(line, -1)));
+            menu.add(menuItem("route.ui.menuInsertConditionBelow", true, () -> table.insertBeside(line, 1)));
             menu.addSeparator();
             menu.add(markItem(table, line, UP, MOVE_UP, "route.ui.menuMoveUp"));
             menu.add(markItem(table, line, DOWN, MOVE_DOWN, "route.ui.menuMoveDown"));
@@ -4004,13 +4002,13 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * A new condition above or below a line (FR-147), at its level and joined by its level's word.
+         * A new condition above or below a line (FR-147) as `ConditionOutline.inserted` places it.
          *
          * @param by -1 for above, 1 for below
          */
         void insertBeside(int line, int by)
         {
-            if (line < 0 || line >= rows.size() || rows.get(line).isJoiner()) return;
+            if (line < 0 || line >= rows.size()) return;
 
             RouteCommand fresh = freshCondition();
             List<ConditionOutline.Row> after = ConditionOutline.inserted(rows, line, by, fresh);
