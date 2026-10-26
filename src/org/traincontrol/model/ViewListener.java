@@ -63,14 +63,9 @@ public interface ViewListener
     public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType);
 
     /**
-     * The same state, WITHOUT registering an accessory that is not there (C13).
-     *
-     * `getAccessoryState` creates a switch on a miss.  That is deliberate on a command path and wrong
-     * on every path that is only looking: evaluating a route condition, or painting a keyboard key,
-     * registered every address it asked about and the invented accessories persisted.
-     *
-     * The ANSWER is identical - `getAccessoryState` creates the switch unswitched and then returns
-     * false, so an absent accessory has always read as not switched.  Only the side effect differs.
+     * The same state, WITHOUT registering an accessory that is not there: `getAccessoryState` creates a switch on a
+     * miss, which is deliberate on a command path and wrong where one is only looking (a route condition, a keyboard
+     * key).  The answer is identical (an absent accessory reads as not switched); only the side effect differs.
      *
      * @param address
      * @param decoderType
@@ -140,9 +135,8 @@ public interface ViewListener
     public boolean hasAutoLayout();
 
     /**
-     * Forgets the automation graph, so that nothing is loaded.  Everything else here either replaces one
-     * graph with another or creates one on demand, so without this a layout given a configuration could
-     * never be returned to having none.
+     * Forgets the automation graph, so that nothing is loaded.  Everything else here replaces a graph or creates one,
+     * so without this a layout given a configuration could never be returned to having none.
      */
     public void clearAutoLayout();
 
@@ -204,8 +198,8 @@ public interface ViewListener
     public List<String> routesSavedArmed(String json);
 
     /**
-     * The routes the last import split because each put an emergency stop among other commands, each with the stop route
-     * it now fires in the stop's place (Adam, 2026-09-25).
+     * The routes the last import split because each put an emergency stop among other commands, each with the stop
+     * route it now fires in the stop's place.
      *
      * @return pairs of route and stop route; empty when the last import split nothing
      */
