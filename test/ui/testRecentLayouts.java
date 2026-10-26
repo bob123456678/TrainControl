@@ -197,6 +197,33 @@ public class testRecentLayouts
     }
 
     /**
+     * Each item reads its place in the list, "1. ", "2. " and so on, then what it showed before: the folder's name, or
+     * its whole path when two listed folders share a name (FR-148).  What an item opens is still the folder its
+     * tooltip names.
+     *
+     * MUTATION: drop the number from the item's text in `refreshRecentLayouts`, and the items read as before.
+     */
+    @Test
+    public void testEachItemIsNumberedInTheOrderShown() throws Exception
+    {
+        File x = new File(second.toFile(), "x" + File.separator + "same");
+        File y = new File(second.toFile(), "y" + File.separator + "same");
+        File lone = new File(second.toFile(), "lone");
+        File other = new File(second.toFile(), "other");
+
+        record(lone.getAbsolutePath(), x.getAbsolutePath(), y.getAbsolutePath(), other.getAbsolutePath(),
+            sandbox.getFolder().getAbsolutePath(), new File(second.toFile(), "last").getAbsolutePath());
+
+        assertEquals(listed(JMenuItem::getText), Arrays.asList("1. lone", "2. " + x.getAbsolutePath(),
+            "3. " + y.getAbsolutePath(), "4. other", "5. last"), "Recent Layouts does not number its items in the"
+            + " order shown, over the name or the whole path");
+
+        assertEquals(shown(), Arrays.asList(lone.getAbsolutePath(), x.getAbsolutePath(), y.getAbsolutePath(),
+            other.getAbsolutePath(), new File(second.toFile(), "last").getAbsolutePath()),
+            "numbering changed what the items open or their order");
+    }
+
+    /**
      * A folder that has gone is said once, with its path, taken off the list, and the open layout stays.
      *
      * MUTATION: drop `forgetRecentLayout` from `openRecentLayout`, and the gone folder stays listed.
@@ -288,6 +315,12 @@ public class testRecentLayouts
     /** Opens the Layouts menu as a click does, so it is brought up to date, and gives the listed folders' paths. */
     private static List<String> shown()
     {
+        return listed(testRecentLayouts::pathOf);
+    }
+
+    /** Opens the Layouts menu as a click does, and gives what the function reads off each Recent Layouts item. */
+    private static List<String> listed(java.util.function.Function<JMenuItem, String> reading)
+    {
         final JMenu layouts = (JMenu) Components.withText(ui, I18n.t("ui.main.toolbar.layouts"));
 
         assertNotNull(layouts, "the window has no Layouts menu");
@@ -297,11 +330,11 @@ public class testRecentLayouts
             layouts.setSelected(true);
             layouts.setSelected(false);
 
-            List<String> paths = new ArrayList<>();
+            List<String> read = new ArrayList<>();
 
-            for (int i = 0; i < recentMenu().getItemCount(); i++) paths.add(pathOf(recentMenu().getItem(i)));
+            for (int i = 0; i < recentMenu().getItemCount(); i++) read.add(reading.apply(recentMenu().getItem(i)));
 
-            return paths;
+            return read;
         });
     }
 

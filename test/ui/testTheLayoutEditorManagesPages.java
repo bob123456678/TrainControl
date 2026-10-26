@@ -1082,6 +1082,86 @@ public class testTheLayoutEditorManagesPages
         assertTrue(item.isEnabled(), "Manage Pages... stayed grayed with the local layout back");
     }
 
+    /**
+     * Sort Pages... in the Manage Pages menu says once, over the editor, that pages are listed in the order of their
+     * names and that renaming changes it (FR-149), and changes nothing: the pages, the folder, the window and its
+     * unsaved work, and the page the main window shows are as they were.
+     *
+     * MUTATION: leave Sort Pages... out of `mountPageMenu`, and the menu has no such item.
+     */
+    @Test
+    public void testSortPagesSaysToRenameAndChangesNothing() throws Exception
+    {
+        sortPagesSaysToRenameAndChangesNothing(false);
+    }
+
+    /**
+     * Sort Pages... is not refused while a route runs, as it changes nothing: it says the same sentence and no
+     * refusal.
+     *
+     * MUTATION: build Sort Pages... with `pageMenuItem`, and the run refuses it.
+     */
+    @Test
+    public void testSortPagesIsNotRefusedWhileARouteRuns() throws Exception
+    {
+        sortPagesSaysToRenameAndChangesNothing(true);
+    }
+
+    private void sortPagesSaysToRenameAndChangesNothing(boolean routeRuns) throws Exception
+    {
+        final String page = "2 - Bottom";
+
+        Watched editor = editPage(page, false);
+
+        turnASquare(editor);
+
+        showInTheMainWindow("1 - Main");
+
+        if (routeRuns) aRouteRuns();
+
+        List<String> pages = model.getLayoutList();
+
+        Map<String, String> before = fingerprint();
+
+        javax.swing.JMenu menu = Components.find(editor.window, javax.swing.JMenu.class,
+            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+
+        assertNotNull(menu, "the layout editor has no Manage Pages menu");
+
+        Components.press(menu);
+
+        assertTrue(Components.waitFor(() -> pageMenuOpenIn(editor.window), 10000), "the editor's Manage Pages menu did"
+            + " not open");
+
+        try (Owners owners = new Owners())
+        {
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+            {
+                click(editor, "ui.main.toolbar.sortPages");
+
+                assertTrue(answering.awaitAsked(1, 10000), "Sort Pages... said nothing");
+
+                Components.settle();
+
+                assertEquals(answering.asked(), Collections.singletonList(I18n.t("layout.ui.infoSortPages")),
+                    "Sort Pages... did not say once that pages are listed by name and are renamed to reorder them");
+            }
+
+            assertEquals(owners.count(), 1, "Sort Pages... opened more than one dialog");
+
+            owners.allAre(editor.window);
+        }
+
+        editor.isAsItWas(page);
+
+        assertEquals(model.getLayoutList(), pages, "Sort Pages... changed the pages");
+
+        assertEquals(fingerprint(), before, "Sort Pages... changed the layout's folder");
+
+        assertEquals(String.valueOf(pageList().getSelectedItem()), "1 - Main", "Sort Pages... moved the main"
+            + " window's page");
+    }
+
     // ------------------------------------------------------------------------------------------------ the window
 
     /** An editor window, with what has been done to the window itself. */
