@@ -708,19 +708,13 @@ public class testRestoreFromBackup
 
         Path config = new File(sandbox.getFolder(), "config").toPath();
 
-        Path shared = Files.createTempDirectory("tc-restore-shared-config");
+        Path shared = linkTheConfig();
 
         File added = new File(shared.toFile(), "added since the backup.txt");
 
         try
         {
-            copyTree(config, shared);
-
             Files.write(added.toPath(), "added".getBytes(StandardCharsets.UTF_8));
-
-            assertTrue(Util.deleteTree(config.toFile(), 0), "precondition: the layout's config could not be moved");
-
-            linkTo(config, shared);
 
             restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
 
@@ -736,14 +730,71 @@ public class testRestoreFromBackup
         }
         finally
         {
-            // The class's later claims open the layout from a folder of its own again
-            if (Util.isLink(config.toFile()) && Files.exists(config, LinkOption.NOFOLLOW_LINKS))
-            {
-                Files.delete(config);
+            Files.deleteIfExists(added.toPath());
 
-                copyTree(shared, config);
-            }
+            unlinkTheConfig(shared);
+        }
+    }
 
+    /**
+     * Copies the sandbox's `config` into a new folder and makes `config` a link to it.  Skips, with `config` untouched,
+     * where no folder link can be made.  Answers the linked folder, for `unlinkTheConfig`.
+     */
+    private static Path linkTheConfig() throws Exception
+    {
+        Path config = new File(sandbox.getFolder(), "config").toPath();
+
+        Path shared = Files.createTempDirectory("tc-restore-shared-config");
+
+        copyTree(config, shared);
+
+        Path probe = sandbox.getFolder().toPath().resolve("config-link-probe");
+
+        String failed = link(probe, shared);
+
+        if (failed != null)
+        {
+            Util.deleteTree(shared.toFile(), 0);
+
+            throw new SkipException("no folder link can be made here: " + failed);
+        }
+
+        Files.delete(probe);
+
+        try
+        {
+            assertTrue(Util.deleteTree(config.toFile(), 0), "precondition: the layout's config could not be moved");
+
+            linkTo(config, shared);
+        }
+        catch (Exception | AssertionError e)
+        {
+            unlinkTheConfig(shared);
+
+            throw e;
+        }
+
+        return shared;
+    }
+
+    /**
+     * Gives the sandbox a real `config` again, copied from `shared`, unless it already is a folder holding
+     * `gleisbild.cs2`; only then deletes `shared`, which may be the only copy.  The class's later claims all open it.
+     */
+    private static void unlinkTheConfig(Path shared) throws Exception
+    {
+        Path config = new File(sandbox.getFolder(), "config").toPath();
+
+        if (Util.isLink(config.toFile()) || !Files.isRegularFile(config.resolve("gleisbild.cs2")))
+        {
+            if (Util.isLink(config.toFile()) && Files.exists(config, LinkOption.NOFOLLOW_LINKS)) Files.delete(config);
+            else if (Files.exists(config, LinkOption.NOFOLLOW_LINKS)) Util.deleteTree(config.toFile(), 0);
+
+            copyTree(shared, config);
+        }
+
+        if (!Util.isLink(config.toFile()) && Files.isRegularFile(config.resolve("gleisbild.cs2")))
+        {
             Util.deleteTree(shared.toFile(), 0);
         }
     }
@@ -766,11 +817,26 @@ public class testRestoreFromBackup
     /** A folder link: a junction on Windows, which needs no administrator, else a symbolic link. */
     private static void linkTo(Path link, Path target) throws Exception
     {
+        String failed = link(link, target);
+
+        assertTrue(failed == null, "precondition: no junction could be made: " + failed);
+    }
+
+    /** Makes a folder link as `linkTo` does; answers why it could not, or null. */
+    private static String link(Path link, Path target) throws Exception
+    {
         if (!System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).startsWith("windows"))
         {
-            Files.createSymbolicLink(link, target);
+            try
+            {
+                Files.createSymbolicLink(link, target);
 
-            return;
+                return null;
+            }
+            catch (java.io.IOException | UnsupportedOperationException e)
+            {
+                return String.valueOf(e);
+            }
         }
 
         Process made = new ProcessBuilder("cmd", "/c", "mklink", "/J", link.toString(), target.toString())
@@ -778,7 +844,7 @@ public class testRestoreFromBackup
 
         String said = new String(toBytes(made.getInputStream()), StandardCharsets.UTF_8);
 
-        assertEquals(made.waitFor(), 0, "precondition: no junction could be made: " + said);
+        return made.waitFor() == 0 ? null : said;
     }
 
     /** The newest backup named as taken before a restore that this claim made. */
