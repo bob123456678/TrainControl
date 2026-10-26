@@ -3,6 +3,7 @@ package ui;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -28,6 +32,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
@@ -51,6 +57,8 @@ import support.Components;
 public class testRestoreFromBackup
 {
     private static final String PROBE = "FR-124 probe route";
+    private static final String RUN_TRAIN = "FR-124 run train";
+    private static final String OTHER_LAYOUT = "FR-124 another layout";
 
     private static support.LayoutSandbox sandbox;
 
@@ -189,14 +197,7 @@ public class testRestoreFromBackup
 
         assertFalse(Components.onTheEventThread(ui::isDisplayable), "the window is still open after the restore");
 
-        File shadow = null;
-
-        for (String name : backupFolder().list())
-        {
-            if (!backupsBefore.contains(name) && name.endsWith(RestoreAction.BEFORE_RESTORE_SUFFIX)) shadow = new File(backupFolder(), name);
-        }
-
-        assertNotNull(shadow, "no backup named as taken before a restore is in " + backupFolder());
+        File shadow = newBeforeRestore();
 
         assertTrue(said.get(1).contains(shadow.getName()), "the end of the restore does not name the backup taken before"
             + " it: " + said.get(1));
@@ -393,6 +394,303 @@ public class testRestoreFromBackup
 
         assertEquals(said, Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")), "Restore from Backup"
             + " did not refuse, before asking anything, while a route runs");
+    }
+
+    /**
+     * The backup taken before a restore holds where a stopped run left the trains: the run is folded into the setup
+     * before that backup is written, so undoing the restore does not put a train back on the square it set off from
+     * while the one it stands on reads free.
+     *
+     * MUTATION: take `captureRunningLayout()` out of `restoreFromBackup`, and the backup holds the setup as the run
+     * found it.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheBackupBeforeARestoreHoldsWhereTheRunLeftTheTrains() throws Exception
+    {
+        File archive = backUp();
+
+        final String active = ui.getAutonomySession() == null ? null
+            : ui.getAutonomySession().getStore().getActiveConfiguration();
+
+        assertNotNull(active, "precondition: the test layout's setup has no active configuration");
+
+        SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(ui::getActiveDiagramConfiguration) != null,
+            30000), "precondition: the configuration " + active + " did not load");
+
+        Components.settle();
+
+        model.newMM2Locomotive(RUN_TRAIN, 78);
+
+        // Where a run leaves a train: standing on a station of the stopped railway that the setup does not name it on
+        final String[] square = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            Layout running = model.getAutoLayout();
+
+            for (Point point : running.getPoints())
+            {
+                if (point.isDestination() && !point.isOccupied())
+                {
+                    point.setLocomotive(model.getLocByName(RUN_TRAIN));
+
+                    square[0] = String.valueOf(ui.getAutonomySession().tileForPointName(point.getName()));
+
+                    break;
+                }
+            }
+        });
+
+        assertNotNull(square[0], "precondition: the running layout has no free station to leave a train on");
+
+        assertFalse(model.getAutoLayout().isRunning(), "precondition: the railway is not at rest");
+
+        restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
+
+        assertTrue(Components.waitFor(() -> guard.exits().contains(0), 30000), "TrainControl did not close after the"
+            + " restore");
+
+        Map<String, byte[]> before = entriesOf(newBeforeRestore());
+
+        String setup = sandbox.getFolder().getName() + "/config/autonomy/configuration-" + active + ".json";
+
+        assertNotNull(before.get(setup), "the backup taken before the restore has no " + setup + ": " + before.keySet());
+
+        org.json.JSONObject points = new org.json.JSONObject(new String(before.get(setup), StandardCharsets.UTF_8))
+            .getJSONObject("points");
+
+        org.json.JSONObject loc = points.optJSONObject(square[0]) == null ? null
+            : points.getJSONObject(square[0]).optJSONObject("loc");
+
+        assertEquals(loc == null ? null : loc.optString("name"), RUN_TRAIN, "the backup taken before the restore does"
+            + " not have " + RUN_TRAIN + " on " + square[0] + ", where the run left it");
+    }
+
+    /**
+     * Checking an archive's locomotive database logs nothing of a database being loaded, for a readable one or a
+     * broken one: the archive is only inspected, and the live database is not read again.
+     *
+     * MUTATION: in `Archive.readsAsALocomotiveDatabase`, read the staged file with `station.restoreState`, and the log
+     * says a database was loaded.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testCheckingAnArchiveLogsNoDatabaseLoad() throws Exception
+    {
+        File good = backUp();
+
+        Path folder = Files.createTempDirectory("tc-restore-log");
+
+        final List<String> logged = Collections.synchronizedList(new ArrayList<>());
+
+        Handler listening = new Handler()
+        {
+            @Override
+            public void publish(LogRecord record)
+            {
+                logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        Logger station = Logger.getLogger(MarklinControlStation.class.getName());
+
+        station.addHandler(listening);
+
+        try
+        {
+            File broken = new File(folder.toFile(), "broken-database.zip");
+
+            writeZip(broken, Collections.singletonMap(MarklinControlStation.DATA_FILE_NAME,
+                "not a database".getBytes(StandardCharsets.UTF_8)));
+
+            restore(broken, I18n.t("ui.restoreButton"), 1, 2000);
+
+            restore(good, I18n.t("ui.cancel"), 1, 2000);
+        }
+        finally
+        {
+            station.removeHandler(listening);
+
+            Util.deleteTree(folder.toFile(), 0);
+        }
+
+        for (String key : new String[] {"log.databaseLoadedFromFile", "log.databaseInitDefault", "log.databaseBadDataFile"})
+        {
+            assertFalse(logged.contains(I18n.t(key)), "checking an archive logged \"" + I18n.t(key) + "\": " + logged);
+        }
+    }
+
+    /**
+     * Restoring the backup taken before a restore that moved TrainControl to another layout's folder takes it back to
+     * the folder it left, which still holds that layout, not to a copy of it beside the data files.
+     *
+     * MUTATION: in `layoutDestination`, ignore the folder the archive names, and the undo ends on a new folder.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testUndoingARestoreReturnsToTheLayoutFolderItLeft() throws Exception
+    {
+        String layoutWas = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        String layout = sandbox.getFolder().getName();
+
+        File other = new File(Util.dataPath(OTHER_LAYOUT)).getAbsoluteFile();
+
+        Path folder = Files.createTempDirectory("tc-restore-undo");
+
+        try
+        {
+            Map<String, byte[]> elsewhere = new TreeMap<>();
+
+            for (Map.Entry<String, byte[]> entry : entriesOf(backUp()).entrySet())
+            {
+                elsewhere.put(entry.getKey().replace(layout + "/config/", OTHER_LAYOUT + "/config/"), entry.getValue());
+            }
+
+            File zip = new File(folder.toFile(), "other-layout.zip");
+
+            writeZip(zip, elsewhere);
+
+            restore(zip, I18n.t("ui.restoreButton"), 2, 1000);
+
+            assertTrue(Components.waitFor(() -> guard.exits().size() == 1, 30000), "TrainControl did not close after"
+                + " the restore");
+
+            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
+                .getAbsoluteFile(), other, "precondition: the restore did not move TrainControl to the other layout");
+
+            File undo = newBeforeRestore();
+
+            // TrainControl started again, on the folder the restore left it on
+            SwingUtilities.invokeAndWait(ui::dispose);
+
+            model.stop();
+
+            model = support.TestStation.simulatedWithWindow();
+
+            ui = (TrainControlUI) model.getGUI();
+
+            assertNotNull(ui, "the model has no window");
+
+            Components.settle();
+
+            restore(undo, I18n.t("ui.restoreButton"), 2, 1000);
+
+            assertTrue(Components.waitFor(() -> guard.exits().size() == 2, 30000), "TrainControl did not close after"
+                + " restoring " + undo.getName());
+
+            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
+                .getAbsoluteFile(), sandbox.getFolder().getAbsoluteFile(), "restoring the backup taken before the"
+                + " restore did not take TrainControl back to the layout folder it left");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, layoutWas);
+
+            Util.deleteTree(folder.toFile(), 0);
+            Util.deleteTree(other, 0);
+
+            // Where the undo would have put a copy; never the sandbox itself
+            File copy = new File(Util.dataPath(layout)).getAbsoluteFile();
+
+            if (!copy.equals(sandbox.getFolder().getAbsoluteFile())) Util.deleteTree(copy, 0);
+        }
+    }
+
+    /**
+     * Emptying the layout's folder for a restore deletes a folder link in it, not what the link points at: the files
+     * of a shared folder linked into the layout are still there afterwards.
+     *
+     * MUTATION: in `Util.deleteTree`, descend into a link as into a folder, and the shared folder's file is deleted.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testEmptyingTheLayoutDeletesALinkNotWhatItPointsAt() throws Exception
+    {
+        File archive = backUp();
+
+        Path shared = Files.createTempDirectory("tc-restore-shared");
+
+        File kept = new File(shared.toFile(), "kept.txt");
+
+        Files.write(kept.toPath(), "shared".getBytes(StandardCharsets.UTF_8));
+
+        Path link = new File(sandbox.getFolder(), "config/FR-124 linked").toPath();
+
+        try
+        {
+            linkTo(link, shared);
+
+            restore(archive, I18n.t("ui.restoreButton"), 2, 1000);
+
+            assertTrue(Components.waitFor(() -> guard.exits().contains(0), 30000), "TrainControl did not close after"
+                + " the restore");
+
+            assertTrue(kept.isFile(), "emptying the layout's folder deleted a file in the folder a link there points at");
+
+            assertFalse(Files.exists(link, LinkOption.NOFOLLOW_LINKS), "the link is still in the restored layout");
+        }
+        finally
+        {
+            if (Files.exists(link, LinkOption.NOFOLLOW_LINKS)) Files.delete(link);
+
+            Util.deleteTree(shared.toFile(), 0);
+        }
+    }
+
+    /** A folder link: a junction on Windows, which needs no administrator, else a symbolic link. */
+    private static void linkTo(Path link, Path target) throws Exception
+    {
+        if (!System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).startsWith("windows"))
+        {
+            Files.createSymbolicLink(link, target);
+
+            return;
+        }
+
+        Process made = new ProcessBuilder("cmd", "/c", "mklink", "/J", link.toString(), target.toString())
+            .redirectErrorStream(true).start();
+
+        String said = new String(toBytes(made.getInputStream()), StandardCharsets.UTF_8);
+
+        assertEquals(made.waitFor(), 0, "precondition: no junction could be made: " + said);
+    }
+
+    /** The newest backup named as taken before a restore that this claim made. */
+    private File newBeforeRestore()
+    {
+        File shadow = null;
+
+        for (String name : newBackups())
+        {
+            if (name.endsWith(RestoreAction.BEFORE_RESTORE_SUFFIX))
+            {
+                File found = new File(backupFolder(), name);
+
+                if (shadow == null || found.lastModified() > shadow.lastModified()) shadow = found;
+            }
+        }
+
+        assertNotNull(shadow, "no backup named as taken before a restore is in " + backupFolder());
+
+        return shadow;
     }
 
     /**
