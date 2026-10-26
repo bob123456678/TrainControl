@@ -48,8 +48,8 @@ public class MarklinFeedback extends Feedback
     @Override
     public void addTile(LayoutLabel l)
     {   
-        // The labels this one replaces go now.  See LayoutLabel.forgetReplaced: nothing else can drop
-        // them on the main window, so without this every rebuilt page stayed registered for ever.
+        // The labels this one replaces go now; nothing else can drop them on the main window
+        // (LayoutLabel.forgetReplaced).
         LayoutLabel.forgetReplaced(this.tiles, l);
 
         this.tiles.add(l);
@@ -131,23 +131,9 @@ public class MarklinFeedback extends Feedback
             );
         }
 
-        // AND ANYTHING WATCHING FOR ONE, WHICH IS WHAT `parseMessage` DOES.
-        //
-        // A module changes state two ways and only one of them announced it.  `parseMessage` - a sensor
-        // arriving over the wire - calls this; `setState` is every OTHER way, and it did not.  Its
-        // callers are clicking an s88 tile on the track diagram, the simulation's own announce and
-        // clear, and the restore at start-up, so the route editor's capture could not see a sensor the
-        // operator had just clicked.
-        //
-        // **The capture cannot tell a clicked sensor from a wired one and should not**: a route the
-        // operator is recording is about what the railway did, not about which code path said so.
-        //
-        // This used to be a comment inside the isDebug block saying "if we want to capture route
-        // commands in the future, we could call a method in the model here".  Both halves had stopped
-        // being true: the method exists, and the sibling twenty lines above calls it.
-        //
-        // Outside the isDebug block, which is where that comment sat - announcing only in debug mode
-        // would make the capture depend on a logging setting.
+        // And anything watching for one, as `parseMessage` does: a clicked s88 tile, the simulation's announce and
+        // clear and the start-up restore all come through `setState`, and the route editor's capture should see a
+        // sensor however it changed.  Outside the isDebug block so the capture does not depend on a logging setting.
         this.network.feedbackChanged(this.getName(), val);
 
         this.updateTiles();
