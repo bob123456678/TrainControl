@@ -1110,3 +1110,23 @@ text:
 |
 | Adam: "If we have (a and b and c) or (d and e and f), and the user adds g at the end but wants to move it up so the expression becomes (a and b and c and g) or (d and e and f). The problem is that g is swapped with c unless the user indents (which is illogical) so we get (a and b and g) or (c and d and e and f)."  Cause: `ConditionOutline.moved` trades the condition with the nearest condition that way, whatever group it is in, and every line keeps its level, so at a group's edge the trade crosses into the other group.  Moving past a whole group at the same level (FR-144) is the only case that moves rather than trades.
 |
+
+[issue OB-380]
+ordinal: 53
+inbox: yes
+kind: bug
+title: Download Update fails with HTTP 406: GitHub refuses Java's default Accept header for the jar
+filed: 2026-10-25
+filed_at: 2026-10-25 18:16
+raised_from: Adam, hands-on testing
+build: ee85b123
+text:
+| ### OB-380 - 2026-10-25 - Download Update fails with HTTP 406: GitHub refuses Java's default Accept header for the jar
+|
+| **Kind:** bug  
+| **Raised from:** Adam, hands-on testing  
+| **Filed:** 2026-10-25 18:16  
+| **Build:** ee85b123
+|
+| Adam: "I strangely got a 406 error when downloading the new jar via the update menu."  Reproduced on 2026-10-25 with HEAD requests to the v3_0_3 asset (https://github.com/bob123456678/TrainControl/releases/download/v3_0_3/TrainControl.jar): with Java 8's default request headers (User-Agent Java/1.8.0_361, Accept "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2") GitHub answers 406 Not Acceptable; with Accept: application/octet-stream it redirects to release-assets.githubusercontent.com and answers 200.  `Util.downloadFile` sets no Accept header.  Every released version has it, so users of 3.0.3 and earlier must download 3.0.4 from the releases page by hand.
+|
