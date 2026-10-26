@@ -61,7 +61,7 @@ public class testEveryMessageKeyIsAskedFor
         "autolayout.ui.pathPreference",
         "autolayout.ui.tooltip.pathPreference",
 
-        // AutonomyEditorPanel.bulkClearWarning -> <key> or <key>AtOnce, for the three bulk clears.
+        // AutonomyEditorPanel.bulkClearCounted -> <key> or <key>AtOnce, plus One and Few, for the three bulk clears.
         "autolayout.ui.confirmClearAll",
         // and for Allow Every Path (FR-108), which warns as they do
         "autolayout.ui.confirmAllowEveryPath",
