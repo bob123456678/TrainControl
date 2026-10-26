@@ -136,6 +136,8 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "runningLayoutSync", "src/org/traincontrol/gui/RunningLayoutSync.java", "RunningLayoutSync", WINDOW,
             "TrainControlUI", "ui." },
+        { "editorWindows", "src/org/traincontrol/gui/EditorWindows.java", "EditorWindows", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**

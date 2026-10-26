@@ -516,22 +516,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     RouteEditorFrame routeEditor;
 
-    /**
-     * Whether every window holding unsaved work is willing to be closed: the exit's first question (`WindowClosed` ends
-     * in `System.exit`).  The layout editor is asked first (OB-070).
-     */
+    /** Delegates to `EditorWindows.everyOpenWindowMaySettle`. */
     public boolean everyOpenWindowMaySettle()
     {
-        if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit()) return false;
-
-        // A non-modal frame with its own discard question; without it File > Exit would drop typing silently.
-        return routeEditor == null || !routeEditor.isDisplayable() || routeEditor.maySettleBeforeExit();
+        return this.editorWindows.everyOpenWindowMaySettle();
     }
 
-    /** Whether the route editor holds work the exit would throw away: `maySettleBeforeExit` without the dialog. */
+    /** Delegates to `EditorWindows.routeEditorHasUnsavedWork`. */
     public boolean routeEditorHasUnsavedWork()
     {
-        return routeEditor != null && routeEditor.isDisplayable() && routeEditor.hasUnsavedWork();
+        return this.editorWindows.routeEditorHasUnsavedWork();
     }
 
     // Popup references
@@ -2567,7 +2561,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Redraws the pop-up diagrams whose captions differ from the setup's (OB-341): their labels are registered under
      * their own window, so the main window's rebuild never lets go of them.  The others stay, so none flickers.
      */
-    private void refreshPopupsWhoseCaptionsChanged()
+    void refreshPopupsWhoseCaptionsChanged()
     {
         if (!javax.swing.SwingUtilities.isEventDispatchThread())
         {
@@ -3374,88 +3368,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return autonomyTileMenus;
     }
 
-    /**
-     * Opens the diagram editor in autonomy mode on a tile's page and reveals it; a null tile just opens the current
-     * page.
-     */
+    /** Delegates to `EditorWindows.openAutonomyEditor`. */
     public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile)
     {
-        openAutonomyEditor(tile, null);
+        this.editorWindows.openAutonomyEditor(tile);
     }
 
-    /** As above, also outlining {@code related}, the squares a finding names beside its own (MT-505); may be null. */
+    /** Delegates to `EditorWindows.openAutonomyEditor`. */
     public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile,
         final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> related)
     {
-        openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile, false, related);
+        this.editorWindows.openAutonomyEditor(tile, related);
     }
 
-    /** Selects the page being edited before a window is built, since the editor edits one page. */
+    /** Delegates to `EditorWindows.selectLayoutPage`. */
     public void selectLayoutPage(String page)
     {
-        if (page != null) this.LayoutList.setSelectedItem(page);
+        this.editorWindows.selectLayoutPage(page);
     }
 
-    /**
-     * Whether the Edit button may be pressed; an editor switching page or mode does not close, so it restores the
-     * button.
-     */
+    /** Delegates to `EditorWindows.setEditLayoutEnabled`. */
     public void setEditLayoutEnabled(boolean enabled)
     {
-        // Remembered, not applied: "an editor is open" and "there is a layout to edit" (OB-126) are re-asked
-        // separately.
-        this.noEditorOpen = enabled;
-
-        applyLayoutEditingAvailability();
+        this.editorWindows.setEditLayoutEnabled(enabled);
     }
 
-    /** Lights or grays everything that edits the track diagram; call it on every transition that changes the answer. */
+    /** Delegates to `EditorWindows.applyLayoutEditingAvailability`. */
     void applyLayoutEditingAvailability()
     {
-        // Also no editor window: a switch's hand-over says no editor is open while its window still is.
-        boolean live = this.noEditorOpen && !isLayoutEditorOpen() && layoutCanBeEdited();
-
-        this.editLayoutButton.setEnabled(live);
-
-        // Manage Pages goes with it: it is the same permission, asked about the same folder.
-        if (this.modifyLocalLayoutMenu != null) this.modifyLocalLayoutMenu.setEnabled(live);
-
-        // Lit with an editor open too, as it brings that editor forward
-        if (this.managePagesItem != null) this.managePagesItem.setEnabled(layoutCanBeEdited());
-
-        // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
-        // stay lit while an editor is open (OB-057).  Set here rather than at the four places that enable the layout
-        // button.
-        if (this.editAutonomyFromSettings != null)
-        {
-            this.editAutonomyFromSettings.setEnabled(live);
-        }
+        this.editorWindows.applyLayoutEditingAvailability();
     }
 
-    /** Whether there is a track diagram of the user's own to edit (OB-126): not with a CS layout or none loaded. */
+    /** Delegates to `EditorWindows.layoutCanBeEdited`. */
     boolean layoutCanBeEdited()
     {
-        return isLayoutLoaded() && isLocalLayout();
+        return this.editorWindows.layoutCanBeEdited();
     }
 
-    /**
-     * Whether a track diagram is loaded (OB-127): stored because `getLayoutList().isEmpty()` asked at many places gave
-     * different answers.  Volatile: set on the event thread, read from the workers that rebuild the grid.
-     */
-    private volatile boolean layoutLoaded = false;
-
-    /** Whether a track diagram is loaded; the stored answer. */
+    /** Delegates to `EditorWindows.isLayoutLoaded`. */
     public boolean isLayoutLoaded()
     {
-        return this.layoutLoaded;
+        return this.editorWindows.isLayoutLoaded();
     }
 
-    /** Stores the model's answer; the only assignment to {@link #layoutLoaded}. */
+    /** Delegates to `EditorWindows.updateLayoutLoaded`. */
     private void updateLayoutLoaded()
     {
-        this.layoutLoaded = this.model != null
-            && this.model.getLayoutList() != null
-            && !this.model.getLayoutList().isEmpty();
+        this.editorWindows.updateLayoutLoaded();
     }
 
     /**
@@ -3475,260 +3434,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
     }
 
-    /** Why the Edit Layout button is gray, as a message key (OB-126); asks in `layoutCanBeEdited`'s order. */
+    /** Delegates to `EditorWindows.reasonLayoutIsNotEditable`. */
     private String reasonLayoutIsNotEditable()
     {
-        String why = whyLayoutCannotBeEdited();
-
-        // Never null in practice; a dialog saying "null" would be worse than a slightly wrong sentence.
-        return why != null ? why : "autosetup.ui.errorEditorAlreadyOpen";
+        return this.editorWindows.reasonLayoutIsNotEditable();
     }
 
+    /** Delegates to `EditorWindows.whyLayoutCannotBeEdited`. */
     public String whyLayoutCannotBeEdited()
     {
-        if (!isLayoutLoaded())
-        {
-            return "layout.ui.errorNoLayoutLoaded";
-        }
-
-        if (!isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
-
-        // Last: it is about a window, not the layout, and the caller may answer it by bringing that window forward.
-        if (!this.noEditorOpen) return "autosetup.ui.errorEditorAlreadyOpen";
-
-        return null;
+        return this.editorWindows.whyLayoutCannotBeEdited();
     }
 
     /** Whether no editor window is currently open - the caller's half of the availability answer. */
-    private boolean noEditorOpen = true;
+    boolean noEditorOpen = true;
 
-    /** Remembers the editor the user last chose in the sidebar; not called for a mode forced back to the track. */
+    /** Delegates to `EditorWindows.rememberEditorChoice`. */
     public void rememberEditorChoice(boolean autonomy)
     {
-        prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, autonomy);
+        this.editorWindows.rememberEditorChoice(autonomy);
     }
 
-    /**
-     * Why the autonomy editor would refuse to open, as a message key, or null (FR-026): openLayoutEditor's refusals in
-     * its order, with the same keys (`testEditorSurfaceRules`).  An editor already open is no refusal when a window can
-     * be brought forward.
-     */
+    /** Delegates to `EditorWindows.whyAutonomyEditorCannotOpen`. */
     public String whyAutonomyEditorCannotOpen()
     {
-        if (!this.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
-
-        // A setup that is there but would not read is not a layout with nowhere to keep one; both keys are answered
-        // here.
-        if (this.getAutonomySession() == null)
-        {
-            return whyTheSetupCannotBeRead() != null
-                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit";
-        }
-
-        // Not while a route runs either: the edit refusal's own sentence (`RunGates.refuseWhileARunHoldsTheSetup`)
-        if (this.aRunHoldsTheSetup()) return RunGates.NO_EDITS_WHILE_RUNNING;
-
-        if (!this.editLayoutButton.isEnabled() && !isLayoutEditorOpen())
-        {
-            return "autosetup.ui.errorEditorAlreadyOpen";
-        }
-
-        return null;
+        return this.editorWindows.whyAutonomyEditorCannotOpen();
     }
 
-    /** A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show; an unreadable setup says why. */
+    /** Delegates to `EditorWindows.sayWhyAutonomyEditorCannotOpen`. */
     public String sayWhyAutonomyEditorCannotOpen(String why)
     {
-        if ("autosetup.ui.errorSetupUnreadable".equals(why))
-        {
-            return I18n.f("autosetup.ui.errorSetupUnreadable", String.valueOf(whyTheSetupCannotBeRead()));
-        }
-
-        return I18n.t(why);
+        return this.editorWindows.sayWhyAutonomyEditorCannotOpen(why);
     }
 
+    /** Delegates to `EditorWindows.openLayoutEditor`. */
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal)
     {
-        openLayoutEditor(page, autonomy, reveal, false);
+        this.editorWindows.openLayoutEditor(page, autonomy, reveal);
     }
 
-    /**
-     * Opens the layout editor, on a page, in a mode: the one way in, so the guards cannot drift.  `page` null is the
-     * page the main window shows; `autonomy` TRUE is the setup, FALSE the track, null the last used; `reveal` is a
-     * square to scroll to and flash.  `remember` is whether this counts as the user CHOOSING a mode to come back to:
-     * most ways in do not, and remembering them would silently change what the Edit button does next time.
-     */
+    /** Delegates to `EditorWindows.openLayoutEditor`. */
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember)
     {
-        openLayoutEditor(page, autonomy, reveal, remember, null);
+        this.editorWindows.openLayoutEditor(page, autonomy, reveal, remember);
     }
 
-    /**
-     * As above, with {@code outline}, the squares a finding names beside the revealed one, outlined with it (or null).
-     */
-    private void openLayoutEditor(String page, Boolean autonomy,
-        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember,
-        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)
-    {
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles"));
-            return;
-        }
-
-        // What can be OPENED is any session at all (a setup with blocking errors will not load, and the editor is the
-        // only place to fix them); what can be DEFAULTED to is a configuration actually chosen.
-        final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        // When last time is no longer possible (a setup since unloaded): the track, silently, since the user asked to
-        // edit.
-        boolean wantsAutonomy = autonomy == null
-            ? prefs.getBoolean(LAST_EDITOR_AUTONOMY_PREF, false) && editableAutonomySession() != null
-            : autonomy;
-
-        if (wantsAutonomy && session == null)
-        {
-            // An explicit request says why it cannot be honored; a remembered one just falls back
-            if (autonomy != null)
-            {
-                // With the reason when the setup is there and would not read (the two keys whyAutonomyEditorCannotOpen
-                // answers).
-                JOptionPane.showMessageDialog(this, whyTheSetupCannotBeRead() != null
-                    ? I18n.f("autosetup.ui.errorSetupUnreadable", whyTheSetupCannotBeRead())
-                    : I18n.t("autosetup.ui.errorNoSetupToEdit"));
-                return;
-            }
-
-            wantsAutonomy = false;
-        }
-
-        // Neither editor while trains run (OB-047): a tile could be moved or deleted under a train on its way to it.
-        // No silent fallback, as falling back means opening something; a route counts too (`aRunHoldsTheSetup`).
-        if (refuseWhileARunHoldsTheSetup(this)) return;
-
-        // One editor at a time, gated on the same button: two editors share one LayoutDiagram and one edit flag, so
-        // closing either sets edit false under the other and re-enables the button for a third.
-        if (!this.editLayoutButton.isEnabled())
-        {
-            // Bring the editor FORWARD when there is one (OB-058); the dialog is for a disabled button with no editor
-            // to show.
-            if (isLayoutEditorOpen())
-            {
-                showOpenEditor();
-                return;
-            }
-
-            // Which of the three reasons (OB-126); the already-open case was handled above.
-            JOptionPane.showMessageDialog(this, I18n.t(reasonLayoutIsNotEditable()));
-            return;
-        }
-
-        setEditLayoutEnabled(false);
-
-        // the editor edits one page, so the page has to be selected before it is opened
-        if (page != null) this.LayoutList.setSelectedItem(page);
-
-        // Remembered only when it is a choice: not when the mode was forced back to the track, a temporary fact about
-        // right now.
-        if (remember && autonomy != null)
-        {
-            prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
-        }
-
-        // Folds where the trains actually are into the setup before the editor snapshots it (OB-144): a run leaves a
-        // locomotive's position in `Point.currentLoc` alone, so Save would write back where the train STARTED.  Before
-        // the constructor, which takes the undo point; a no-op with no session, no active configuration, or a run in
-        // progress.
-        captureRunningLayout();
-
-        final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
-
-        // Whether a square was clicked in the editor this one replaces, asked now since the build is posted
-        final boolean carried = clickCarried;
-
-        // Set until the posted build shows the editor; every door that sends a train asks this too
-        this.editorOnItsWay = true;
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try
-            {
-                // Trains may have started since the question above (Start's worker, a staging flow): refuse, say so,
-                // give Edit back.
-                if (refuseWhileARunHoldsTheSetup(this, () ->
-                    {
-                        this.editorOnItsWay = false;
-
-                        setEditLayoutEnabled(true);
-                    }))
-                {
-                    return;
-                }
-
-                LayoutEditor editor = openEditor = new LayoutEditor(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-                );
-
-                this.setAlwaysOnTop(false);
-
-                editor.render();
-
-                if (opening != null) editor.setAutonomyMode(opening);
-
-                if (carried) editor.carryTheClick();
-
-                // Runs after render()'s own posted task shows the editor
-                javax.swing.SwingUtilities.invokeLater(() -> this.editorOnItsWay = false);
-
-                // Posted twice: render() and setAutonomyMode only QUEUE the work that builds the grid, so reveal must
-                // wait for it.
-                if (reveal != null)
-                {
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                        javax.swing.SwingUtilities.invokeLater(() ->
-                        {
-                            editor.reveal(reveal);
-
-                            // Outline what the finding names beside it, as the editor's own list does (OB-352); a door
-                            // that is not a finding passes none
-                            if (outline != null && editor.getAutonomyPanel() != null)
-                            {
-                                editor.getAutonomyPanel().outlineTheNotice(reveal, outline);
-                            }
-                        }));
-                }
-            }
-            catch (Exception | Error e)
-            {
-                // Give the button back, or autonomy setup is unreachable until restart.
-                setEditLayoutEnabled(true);
-
-                this.editorOnItsWay = false;
-
-                // Rethrow an Error after giving the button back, or Edit would stay grayed for the session with no
-                // editor anywhere
-                if (e instanceof Error) throw (Error) e;
-
-                if (this.model.isDebug()) this.model.log((Exception) e);
-            }
-        });
-    }
-
-    /**
-     * The setup, if there is any point opening: a CHOSEN configuration even if it did not load, since the editor is the
-     * only place to fix its errors.  Null when there is nothing to set up.
-     */
+    /** Delegates to `EditorWindows.editableAutonomySession`. */
     public org.traincontrol.automationui.AutonomySession editableAutonomySession()
     {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        return session != null && session.getStore().getActiveConfiguration() != null ? session : null;
+        return this.editorWindows.editableAutonomySession();
     }
 
     /**
@@ -4653,49 +4409,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The setup and the running railway kept in step: the folds, the rebuild and the settings as built. */
     private final RunningLayoutSync runningLayoutSync = new RunningLayoutSync(this);
 
+    /** Delegates to `EditorWindows.isLayoutEditorOpen`. */
     public boolean isLayoutEditorOpen()
     {
-        // The editor, not the button that opens it (OB-126): the button is also grayed for a Central Station layout.
-        return anEditorWindow() != null;
+        return this.editorWindows.isLayoutEditorOpen();
     }
 
-    /**
-     * An editor window of this window's that is still there, or null (newest first).  Asked of the windows, not of
-     * `openEditor` or the Edit button, which a switch between editors gives back early.
-     */
+    /** Delegates to `EditorWindows.anEditorWindow`. */
     LayoutEditor anEditorWindow()
     {
-        if (openEditor != null && openEditor.isDisplayable()) return openEditor;
-
-        for (java.awt.Frame frame : java.awt.Frame.getFrames())
-        {
-            if (frame instanceof LayoutEditor && frame.isDisplayable() && ((LayoutEditor) frame).isEditorOf(this))
-            {
-                return (LayoutEditor) frame;
-            }
-        }
-
-        return null;
+        return this.editorWindows.anEditorWindow();
     }
 
-    /** An editor window has gone: Edit and the doors beside it ask again.  Called from `LayoutEditor.dispose`. */
+    /** Delegates to `EditorWindows.editorWindowClosed`. */
     public void editorWindowClosed()
     {
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
-        {
-            applyLayoutEditingAvailability();
-
-            applyAlwaysOnTop();
-        }
-        else
-        {
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                applyLayoutEditingAvailability();
-
-                applyAlwaysOnTop();
-            });
-        }
+        this.editorWindows.editorWindowClosed();
     }
 
     /** The windows this one opens follow its always-on-top, heard from the window's own property. */
@@ -4713,16 +4442,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /** The operator's always-on-top setting, except while an editor window is open; see `editorWindowClosed`. */
+    /** Delegates to `EditorWindows.applyAlwaysOnTop`. */
     private void applyAlwaysOnTop()
     {
-        boolean editing = this.openEditor != null && this.openEditor.isDisplayable();
-
-        setAlwaysOnTop(!editing && prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
+        this.editorWindows.applyAlwaysOnTop();
     }
 
     /** The editor window, held (a JFrame has no owner) so a refusing menu can offer a way back (OB-033). */
-    private LayoutEditor openEditor;
+    LayoutEditor openEditor;
 
     /**
      * Diagram refreshes under way, read by the one gate: a run started in between ran the railway built before the
@@ -4733,105 +4460,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     final java.util.concurrent.atomic.AtomicInteger refreshesUnderWay = new java.util.concurrent.atomic.AtomicInteger();
 
     /** An editor asked for and not yet shown; read by `anEditorIsOpenOrOnItsWay`.  Event thread only. */
-    private boolean editorOnItsWay;
+    boolean editorOnItsWay;
 
-    /**
-     * The layout editor's window while one is open where it can be seen, or null: for a question that has to open in
-     * front of it (MT-575).  NOT a minimized one: on Windows its owned windows hide with it, leaving a modal invisible.
-     */
+    /** Delegates to `EditorWindows.openLayoutEditorWindow`. */
     java.awt.Window openLayoutEditorWindow()
     {
-        return openEditor != null && openEditor.isDisplayable() && openEditor.isShowing()
-            && (openEditor.getExtendedState() & java.awt.Frame.ICONIFIED) == 0 ? openEditor : null;
+        return this.editorWindows.openLayoutEditorWindow();
     }
 
-    /** Brings the open editor forward, for the menu item that says "it is over there". */
+    /** Delegates to `EditorWindows.showOpenEditor`. */
     public void showOpenEditor()
     {
-        LayoutEditor shown = anEditorWindow();
-
-        if (shown == null) return;
-
-        shown.setVisible(true);
-        shown.toFront();
-        shown.requestFocus();
+        this.editorWindows.showOpenEditor();
     }
 
-    /** Whether the editor about to open starts knowing a square was clicked; set only during `openCarryingTheClick`. */
-    private boolean clickCarried = false;
-
-    /**
-     * Opens an editor in place of one that closed itself to change page, carrying whether a square had been clicked.
-     * Cleared whatever the opening does, so a refused opening cannot hand the click to the next Edit.
-     */
+    /** Delegates to `EditorWindows.openCarryingTheClick`. */
     public void openCarryingTheClick(boolean clicked, Runnable open)
     {
-        clickCarried = clicked;
-
-        try
-        {
-            open.run();
-        }
-        finally
-        {
-            clickCarried = false;
-        }
+        this.editorWindows.openCarryingTheClick(clicked, open);
     }
 
-    /**
-     * An autonomy editor closing (Save, Cancel, a jump): the refresh is counted before its window goes and taken over
-     * by the posted `autonomyEditorClosed`.
-     *
-     * @param then run after `autonomyEditorClosed`, on the event thread, or null
-     */
+    /** Delegates to `EditorWindows.autonomyEditorClosedFromTheEditor`. */
     public void autonomyEditorClosedFromTheEditor(final Runnable then)
     {
-        refreshesUnderWay.incrementAndGet();
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try
-            {
-                autonomyEditorClosed();
-
-                if (then != null) then.run();
-            }
-            finally
-            {
-                refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1));
-            }
-        });
+        this.editorWindows.autonomyEditorClosedFromTheEditor(then);
     }
 
+    /** Delegates to `EditorWindows.autonomyEditorClosed`. */
     public void autonomyEditorClosed()
     {
-        // reapplies the stored preference, which is what the diagram path does here too
-        windowAlwaysOnTopMenuItemActionPerformed(null);
-
-        setEditLayoutEnabled(true);
-
-        repaintLayout();
-
-        refreshPopupsWhoseCaptionsChanged();
-
-        // Refresh the banner too: an editor closing never called its one decider, so a fix left it stale.
-        refreshAutonomyPrompt();
-
-        // The running graph is rebuilt from what the setup now says: an edit that changes how a square SPLITS changes
-        // its copies and their names.  Not while trains are moving.
-        rebuildRunningLayoutFromSetup();
-
-        // The file is written (Adam: "on exit or editor load or editor close, save to the setup file.").  AFTER the
-        // rebuild: capturing first would fold the pre-edit running layout over the configuration.
-        captureRunningLayout();
+        this.editorWindows.autonomyEditorClosed();
     }
 
-    /** Opens the setup editor on a named page, switching the diagram to it first (a menu names no page). */
+    /** Delegates to `EditorWindows.openAutonomyEditorOnPage`. */
     public void openAutonomyEditorOnPage(String page)
     {
-        // A menu item that names the setup editor is somebody saying which editor they want
-        openLayoutEditor(page, Boolean.TRUE, null, true);
+        this.editorWindows.openAutonomyEditorOnPage(page);
     }
+
+    /** The window's editors: opening, closing, and whether the diagram may be edited. */
+    private final EditorWindows editorWindows = new EditorWindows(this);
 
     /** The diagram's keyboard gestures and the turns they write. */
     private final DiagramLocGestures diagramLocGestures = new DiagramLocGestures(this);
@@ -20212,6 +19880,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JMenu modifyLocalLayoutMenu()
     {
         return this.modifyLocalLayoutMenu;
+    }
+
+    javax.swing.JButton editLayoutButton()
+    {
+        return this.editLayoutButton;
+    }
+
+    javax.swing.JComboBox sizeList()
+    {
+        return this.SizeList;
+    }
+
+    javax.swing.JButton editAutonomyFromSettings()
+    {
+        return this.editAutonomyFromSettings;
     }
 
     javax.swing.JMenuItem openCS3AppMenuItem()

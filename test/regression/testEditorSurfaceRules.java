@@ -1001,7 +1001,7 @@ public class testEditorSurfaceRules
     public void testTheFullEditorShortcutAsksTheEditorsOwnRefusals() throws Exception
     {
         // Gone, `SourceOf.declaration` fails: it is the one answer to 'would the editor open'.
-        String predicate = codeOf("public String whyAutonomyEditorCannotOpen()");
+        String predicate = codeOf("    String whyAutonomyEditorCannotOpen()");
 
         // The five-argument form, which the others hand on to.  Not found, SourceOf fails rather than this test reading
         // nothing.
@@ -1384,7 +1384,7 @@ public class testEditorSurfaceRules
 
         // AND THE THIRD SAVE MOMENT.  Exit, editor open and editor close all call captureRunningLayout, so
         // the file always says where the trains are.
-        String closed = codeOf("public void autonomyEditorClosed()");
+        String closed = codeOf("    void autonomyEditorClosed()");
 
         assertTrue(closed.contains("captureRunningLayout()"),
             "closing the editor no longer writes the setup file, so where the trains are is lost until"
@@ -2153,7 +2153,7 @@ public class testEditorSurfaceRules
         String exit = codeOf("private void WindowClosed(")
             .replace("everyOpenWindowMaySettle()", "maySettleBeforeExit()");
 
-        String asksBoth = codeOf("public boolean everyOpenWindowMaySettle()");
+        String asksBoth = codeOf("    boolean everyOpenWindowMaySettle()");
 
         // BOTH WINDOWS, NAMED: "contains maySettleBeforeExit" was satisfied by the route editor's call alone, so
         // deleting the layout editor's left File > Exit discarding a page without asking (OB-070).
@@ -2663,12 +2663,12 @@ public class testEditorSurfaceRules
     @Test
     public void testWhetherAnEditorIsOpenIsAskedOfTheEditor() throws Exception
     {
-        String open = codeOf("public boolean isLayoutEditorOpen()");
+        String open = codeOf("    boolean isLayoutEditorOpen()");
 
         // AND INTO anEditorWindow, which asks the editor windows
         if (open.contains("anEditorWindow()"))
         {
-            open = codeOf("LayoutEditor anEditorWindow()");
+            open = SourceOf.withoutComments(memberOf("final class EditorWindows", "LayoutEditor anEditorWindow()"));
         }
 
         assertTrue(open.contains("openEditor"),
@@ -2935,8 +2935,8 @@ public class testEditorSurfaceRules
         }
 
         // THE EXPLANATION covers every branch of the RULE.
-        String rule = codeOf("boolean layoutCanBeEdited()");
-        String why = codeOf("public String whyLayoutCannotBeEdited()");
+        String rule = SourceOf.withoutComments(memberOf("final class EditorWindows", "boolean layoutCanBeEdited()"));
+        String why = codeOf("    String whyLayoutCannotBeEdited()");
 
         // THE FLAG, not an inference (Adam: "we just need a layout loaded flag in the TrainControlUI class,
         // rather than something that infers").
