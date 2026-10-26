@@ -2373,7 +2373,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void captureRunningLayout(boolean underWayToo)
     {
-        this.runningLayoutSync.captureRunningLayout(underWayToo);
+        Exception failed = this.runningLayoutSync.captureRunningLayout(underWayToo);
+
+        if (failed != null) this.model.log(failed);
     }
 
     /**
@@ -2385,7 +2387,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (anEditorIsOpenOrOnItsWay() || refreshesUnderWay.get() > 0) return null;
 
-        return this.runningLayoutSync.fold(false);
+        return this.runningLayoutSync.captureRunningLayout(false);
     }
 
     /** Drops the setup so the next request reads it again; called when the layout changes underneath it. */

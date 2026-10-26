@@ -49,7 +49,9 @@ final class RunningLayoutSync
      */
     void captureRunningLayout()
     {
-        captureRunningLayout(false);
+        Exception failed = captureRunningLayout(false);
+
+        if (failed != null) this.ui.getModel().log(failed);
     }
 
     /**
@@ -58,16 +60,9 @@ final class RunningLayoutSync
      * that a railway reading busy is not folded.
      *
      * @param underWayToo whether to fold a railway that holds a path
+     * @return what kept the fold from being written, for the caller to log or report; null when written or not needed
      */
-    void captureRunningLayout(boolean underWayToo)
-    {
-        Exception failed = fold(underWayToo);
-
-        if (failed != null) this.ui.getModel().log(failed);
-    }
-
-    /** `captureRunningLayout`'s fold, answering what kept it from being written; null when written or not needed. */
-    Exception fold(boolean underWayToo)
+    Exception captureRunningLayout(boolean underWayToo)
     {
         if (this.ui.autonomySession() == null || this.ui.getActiveDiagramConfiguration() == null
             || this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()
