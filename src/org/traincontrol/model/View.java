@@ -24,28 +24,18 @@ public interface View
     public void repaintSwitch(int id, Accessory.accessoryDecoderType protocol);
 
     /**
-     * A feedback has changed state.
+     * A feedback has changed state.  Only the route editor's capture wants this: capturing a CONDITION means "run this
+     * when the railway looks like it does now", and half of what a condition can say is about sensors.  Named for what
+     * happened rather than for what to redraw: the tiles repaint themselves.
      *
-     * Only the route editor's capture wants this, and it wants it for the same reason it wants
-     * repaintSwitch: capturing a CONDITION means "run this when the railway looks like it does now",
-     * and half of what a condition can say is about sensors.  Switches reached the editor because
-     * their repaint already came this way and feedback had no callback at all - so a sensor triggered
-     * while capturing simply did nothing, with the tick box still ticked.
-     *
-     * Named for what happened rather than for what to redraw: the tiles repaint themselves.
-     *
-     * @param name the feedback's name, as a route command spells it
-     * @param state whether it is now occupied
      */
     public void feedbackChanged(String name, boolean state);
 
     /**
-     * Follows a locomotive's new name into the autonomy setup, in every configuration.
-     *
-     * The setup holds locomotives by NAME - the placement, the home assignment and the exclusion list -
-     * and it lives with the interface rather than with the model, so the model cannot repair it itself.
-     * Left alone, a configuration that was not active at the time goes on naming a locomotive that no
-     * longer exists, and parseAuto answers a name it cannot find by invalidating the whole layout.
+     * Follows a locomotive's new name into the autonomy setup, in every configuration.  The setup holds locomotives by
+     * NAME and lives with the interface rather than the model, so the model cannot repair it itself; left alone, an
+     * inactive configuration goes on naming a locomotive that no longer exists, and parseAuto answers a name it cannot
+     * find by invalidating the whole layout.
      *
      * @param from the old name
      * @param to the new name
@@ -105,48 +95,28 @@ public interface View
     public void routeFinished(Route r);
 
     /**
-     * Asks whether to carry on with a route that has hit a conflict PART WAY THROUGH.
+     * Asks whether to carry on with a route that has hit a conflict PART WAY THROUGH.  The model hands the question to
+     * whoever is at the door, as emergencyStopTriggered hands over the fact that a route cut the power.
      *
-     * The model does not put up dialogs, and this is not it doing so: it is the model handing the
-     * question to whoever is at the door, exactly as emergencyStopTriggered above hands over the fact
-     * that a route cut the power.
+     * Only asked when a person started the route (the routes tab or the diagram's route tile).  The s88 trigger door
+     * has nobody to ask, so it sets none of its accessories and runs the rest.
      *
-     * Only asked when a person started the route - the routes tab or the diagram's route tile. The
-     * s88 trigger door has nobody to ask, so it sets none of its accessories and runs the rest
-     * (the route does not stop on its own).
+     * THIS BLOCKS THE ROUTE, not merely its accessories: it is called on the route's own thread, and everything after
+     * the conflicting accessory (speeds, functions off, chained routes) waits for the answer, because running a route's
+     * speeds while its turnouts are not set is worse than making the operator answer first.
      *
-     * Adam, 2026-08-25, choosing between three ways of handling the case: "ask me, at the two human
-     * doors". The alternative he turned down was letting the route finish and merely logging it,
-     * which is the one that can move a switch under a train.
-     *
-     * **THIS BLOCKS THE ROUTE, not merely its accessories.**  It is called on the route's
-     * own thread, and everything after the conflicting accessory - locomotive speeds, functions off,
-     * chained routes - waits for the answer.  The javadoc used to say the answer was about "the rest
-     * of its accessories", which understated it by the width of a route.
-     *
-     * That IS the right behavior, and it is worth saying why rather than leaving it to be read as an
-     * oversight: the answer decides whether this route's ironwork gets set, and running its speeds
-     * while its turnouts are not set is worse than making the operator answer first.
-     *
-     * **A route carrying an emergency stop never gets here.**  `MarklinRoute` tests
-     * `hasEmergencyStop()` before asking, on Adam's ruling of 2026-09-01 - "emergency stop should
-     * never conflict or prompt" - so the one command that must not wait on a
-     * person does not.
-     *
-     * That was briefly untrue: `MT-247` took the clause out of the midway condition on 2026-09-06 and
-     * left the identical one standing in the pre-route screen, so a stop-carrying route was waved past
-     * the screen and asked here instead.  Both doors carve it out again.
+     * A route carrying an emergency stop never gets here: `MarklinRoute` tests `hasEmergencyStop()` before asking
+     * (MT-247), as "emergency stop should never conflict or prompt".  Both doors carve it out.
      *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started
-     * @param reason the message key the route would have logged for this refusal, so the question
-     *  names the right one of the two: a turnout on a locked path, or a signal protecting a
-     *  platform with a train parked at it
-     * @return true to set this accessory and run the rest of the route; false to CANCEL THE ROUTE -
-     *  nothing further of it runs, which is Adam's ruling of 2026-09-06 (`MT-247`): "cancel should
-     *  cancel everything.  OK should fire everything."  What has already gone out before the
-     *  conflicting command - earlier accessories, speeds, functions - has gone out; the cancel is
-     *  about the rest
+     * @param reason the message key the route would have logged for this refusal, so the question names the right one
+     * of
+     *  the two: a turnout on a locked path, or a signal protecting a platform with a train parked at it
+     * @return true to set this accessory and run the rest of the route; false to CANCEL THE ROUTE: "cancel should
+     * cancel
+     *  everything.  OK should fire everything."  What has already gone out before the conflicting command has gone out;
+     *  the cancel is about the rest
      */
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason);
 
