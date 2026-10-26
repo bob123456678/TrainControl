@@ -3651,7 +3651,8 @@ public class testTheImportDoorReadsAnOldFile
             final File old = new File(folder, "MT-491-autonomy-2.7.4c.json");
             final File exported = new File(folder, "mine.json");
 
-            java.nio.file.Files.copy(new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json").toPath(), old.toPath());
+            java.nio.file.Files.copy(new File(support.Scenario.folderFor("autonomy-bundles"), "autonomy-2.7.4c.json").toPath(),
+                old.toPath());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -3832,7 +3833,8 @@ public class testTheImportDoorReadsAnOldFile
 
             final File old = new File(sandbox.getFolder(), "MT-491-autonomy-2.7.4c.json");
 
-            java.nio.file.Files.copy(new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json").toPath(), old.toPath());
+            java.nio.file.Files.copy(new File(support.Scenario.folderFor("autonomy-bundles"), "autonomy-2.7.4c.json").toPath(),
+                old.toPath());
 
             AutonomySession session = ui[0].getAutonomySession();
 
