@@ -110,13 +110,11 @@ public interface View
      *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started
-     * @param reason the message key the route would have logged for this refusal, so the question names the right one
-     * of
-     *  the two: a turnout on a locked path, or a signal protecting a platform with a train parked at it
+     * @param reason the message key the route would have logged for this refusal, so the question names the right
+     *  one: a turnout on a locked path, or a signal protecting a platform with a train parked at it
      * @return true to set this accessory and run the rest of the route; false to CANCEL THE ROUTE: "cancel should
-     * cancel
-     *  everything.  OK should fire everything."  What has already gone out before the conflicting command has gone out;
-     *  the cancel is about the rest
+     *  cancel everything.  OK should fire everything."  What has already gone out before the conflicting command has
+     *  gone out; the cancel is about the rest
      */
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason);
 
