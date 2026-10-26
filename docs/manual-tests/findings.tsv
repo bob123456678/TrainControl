@@ -3624,6 +3624,18 @@ RSA8-D3	RSA8.md	Closed	Checked - clean, apart from RSA8-B3 (Ctrl+Z) and RSA8-B2 
 RSA8-D4	RSA8.md	Closed	Checked - clean as code, apart from RSA8-C1 (nothing shows it) and RSA8-B1 (the loss it sh	RSA7-B2's fix, as code: `applyPages` is refused while autonomy runs and rebuilds the railway after it
 RSA8-D5	RSA8.md	Closed	Checked - clean, apart from RSA8-B1, B2, B4, B5 and B6.	The timetable aside where it holds: the editor's box, the menu out and the box in, a restart, the store's renames and moves, a page deleted, Clear, th
 RSA8-D6	RSA8.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA80-C1	RSA80.md	Closed	Fixed - `09abb948`: the fold a backup takes (`TrainControlUI.foldForABackup`, through `Bac	The update's fold can land between an autonomy editor's Save and the rebuild, and fold the old railway over the saved setup
+RSA80-C2	RSA80.md	Closed	Fixed - `09abb948`, `ab6b9aa4`: `captureRunningLayout(boolean)` answers what kept the fold	A fold that fails is logged, not reported, so the backup and the update go on as complete
+RSA80-C3	RSA80.md	Closed	Fixed - `7d2c8593`: `BackupAction.freeArchiveName` adds -2, -3 when a backup made in the s	Two backups in the same second share one name, and the second truncates the first before it writes
+RSA80-C4	RSA80.md	Closed	Fixed - `747778a0`: confirmed by the claim; `Archive.isHeldBy` follows a `config` that is 	An undo never returns to a linked `config`, so it detaches the layout onto a copy
+RSA80-C5	RSA80.md	Closed	Fixed - `fd788bcd`: the claim copies `config` and probes a link before touching it, skips 	The linked-config claim deletes the sandbox's only copy of `config` when the junction cannot be made
+RSA80-C6	RSA80.md	Closed	Fixed - `0d828ad6`: `ConditionTable.append` joins by the level's word for Add Condition, t	Capturing into the conditions still joins with AND: the twin of RSA79-C1
+RSA80-D1	RSA80.md	Closed	Not a defect - checked as described.	RSA79-B2's disposition is true: both callers fold, on the event thread, without a deadlock
+RSA80-D2	RSA80.md	Closed	Not a defect - checked as described.	RSA79-C1's disposition is true: `addRow` traced on the outlines the brief names
+RSA80-D3	RSA80.md	Closed	Not a defect - checked as described.	RSA79-C2's disposition is true, and `writeLayout` through a link whose target is missing, a file, or shared
+RSA80-D4	RSA80.md	Closed	Not a defect - checked as described.	RSA79-C3's disposition is true
+RSA80-D5	RSA80.md	Closed	Not a defect - checked as described.	The shared fixture leaves nothing a later claim or class reads, apart from C5
+RSA80-D6	RSA80.md	Closed	Not a defect - checked as described.	The records and the ratchet
 RSA9-B1	RSA9.md	Closed	Fixed on Adam's ruling (2026-09-30: "stop the timetable run upon encountering an invalid p	A refused timetable entry leaves its train where it stands: where that train's next entry starts where the refused one would have taken it, the run re
 RSA9-B2	RSA9.md	Closed	Fixed - what the carry of names remembers is taken as the editor opens (beginEditSession -	The editor's Cancel after a station's name moved to another station - two names swapped, or a freed name reused - rebinds the timetable's legs to the
 RSA9-C1	RSA9.md	Closed	Fixed - the undo point holds each stored leg by where it is (keyedLegsOf: a road by its sq	Ctrl+Z puts every configuration's stored legs back by position into points maps that `restorePage` has just rebuilt in another order: two trains' road

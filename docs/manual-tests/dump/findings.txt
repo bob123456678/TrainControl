@@ -39713,6 +39713,138 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.0 release review, round 21 (the release validator, eighth round), 2026-09-25).
 
+[finding RSA80-C1 in RSA80.md]
+line: 14
+severity: C
+title: The update's fold can land between an autonomy editor's Save and the rebuild, and fold the old railway over the saved setup
+disposition: Fixed - `09abb948`: the fold a backup takes (`TrainControlUI.foldForABackup`, through `BackupAction.foldTheStoppedRun`) 
+evidence: UpdateFlow.java:244
+commit_id: 09abb948
+cited_by:
+status: Closed
+status_note: Fixed in 09abb948 - 3.0.4 validation round 3, RSA80
+
+[finding RSA80-C2 in RSA80.md]
+line: 61
+severity: C
+title: A fold that fails is logged, not reported, so the backup and the update go on as complete
+disposition: Fixed - `09abb948`, `ab6b9aa4`: `captureRunningLayout(boolean)` answers what kept the fold from being written; the menu 
+evidence: UpdateFlow.java:255
+commit_id: 09abb948
+cited_by:
+status: Closed
+status_note: Fixed in 09abb948 - 3.0.4 validation round 3, RSA80
+
+[finding RSA80-C3 in RSA80.md]
+line: 81
+severity: C
+title: Two backups in the same second share one name, and the second truncates the first before it writes
+disposition: Fixed - `7d2c8593`: `BackupAction.freeArchiveName` adds -2, -3 when a backup made in the same second has the name (calle
+evidence: Util.java:457
+commit_id: 7d2c8593
+cited_by:
+status: Closed
+status_note: Fixed in 7d2c8593 - 3.0.4 validation round 3, RSA80
+
+[finding RSA80-C4 in RSA80.md]
+line: 104
+severity: C
+title: An undo never returns to a linked `config`, so it detaches the layout onto a copy
+disposition: Fixed - `747778a0`: confirmed by the claim; `Archive.isHeldBy` follows a `config` that is itself a link and refuses a li
+evidence: RestoreAction.java:361
+commit_id: 747778a0
+cited_by:
+status: Closed
+status_note: Fixed in 747778a0 - 3.0.4 validation round 3, RSA80
+
+[finding RSA80-C5 in RSA80.md]
+line: 127
+severity: C
+title: The linked-config claim deletes the sandbox's only copy of `config` when the junction cannot be made
+disposition: Fixed - `fd788bcd`: the claim copies `config` and probes a link before touching it, skips when no link can be made, and 
+evidence:
+commit_id: fd788bcd
+cited_by:
+status: Closed
+status_note: Fixed in fd788bcd - 3.0.4 validation round 3, RSA80
+
+[finding RSA80-C6 in RSA80.md]
+line: 145
+severity: C
+title: Capturing into the conditions still joins with AND: the twin of RSA79-C1
+disposition: Fixed - `0d828ad6`: `ConditionTable.append` joins by the level's word for Add Condition, the plus and a capture alike. C
+evidence: RouteEditorFrame.java:1080
+commit_id: 0d828ad6
+cited_by:
+status: Closed
+status_note: Fixed in 0d828ad6 - 3.0.4 validation round 3, RSA80
+
+[finding RSA80-D1 in RSA80.md]
+line: 162
+severity: D
+title: RSA79-B2's disposition is true: both callers fold, on the event thread, without a deadlock
+disposition: Not a defect - checked as described.
+evidence: BackupAction.java:286
+commit_id: 4a541d1a
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
+
+[finding RSA80-D2 in RSA80.md]
+line: 184
+severity: D
+title: RSA79-C1's disposition is true: `addRow` traced on the outlines the brief names
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
+
+[finding RSA80-D3 in RSA80.md]
+line: 206
+severity: D
+title: RSA79-C2's disposition is true, and `writeLayout` through a link whose target is missing, a file, or shared
+disposition: Not a defect - checked as described.
+evidence: RestoreAction.java:416
+commit_id: 6027c388
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
+
+[finding RSA80-D4 in RSA80.md]
+line: 230
+severity: D
+title: RSA79-C3's disposition is true
+disposition: Not a defect - checked as described.
+evidence: Util.java:315
+commit_id: 6027c388
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
+
+[finding RSA80-D5 in RSA80.md]
+line: 241
+severity: D
+title: The shared fixture leaves nothing a later claim or class reads, apart from C5
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
+
+[finding RSA80-D6 in RSA80.md]
+line: 260
+severity: D
+title: The records and the ratchet
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 4d36b0c6
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B
