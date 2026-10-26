@@ -2555,7 +2555,7 @@ public class testEditorSurfaceRules
 
         // BOTH PRESENT, then ordered.  `indexOf` answers -1 for something absent, and -1 is less than
         // every real index, so deleting the unsaved-work question outright would make the order check pass.
-        int asks = leave.indexOf("settleUnsavedWork()");
+        int asks = leave.indexOf("settleUnsavedWork(");
         int raises = leave.indexOf("changingPage = true");
 
         assertTrue(asks >= 0,
