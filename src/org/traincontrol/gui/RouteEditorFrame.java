@@ -4026,8 +4026,21 @@ public class RouteEditorFrame extends JFrame
         {
             for (int line = 0; line < rows.size(); line++)
             {
-                if (rows.get(line).getCommand() == command) setRowSelectionInterval(line, line);
+                if (rows.get(line).getCommand() == command) pick(line);
             }
+        }
+
+        /** The column a condition's sensor or switch number is typed into. */
+        private static final int ADDRESS = 5;
+
+        /**
+         * Selects a line with the keyboard on its address, as one click there does, so a digit starts editing it
+         * (FR-151): a refresh of the table forgets the column a key edits.
+         */
+        private void pick(int line)
+        {
+            changeSelection(line, ADDRESS, false, false);
+            requestFocusInWindow();
         }
 
         /** The conditions on the selected lines, by identity: two lines can ask the same thing. */
@@ -4123,7 +4136,7 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
 
-            setRowSelectionInterval(landed, landed);
+            pick(landed);
         }
 
         /**
