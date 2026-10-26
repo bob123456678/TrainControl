@@ -2158,6 +2158,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * Opens a locomotive database with the reader `restoreState` uses, which resolves the class names older versions
+     * wrote.  Reading through it loads nothing, logs nothing and leaves `isDatabaseLoadFailed` alone.
+     *
+     * @param in the database's bytes
+     * @return the reader
+     * @throws IOException if the stream's header cannot be read
+     */
+    public ObjectInputStream databaseReader(InputStream in) throws IOException
+    {
+        return new CustomObjectInputStream(in);
+    }
+
+    /**
      * Whether the last restoreState found a database file it could not read.
      *
      * False for a first launch - nothing there is nothing to lose - and false after a load that

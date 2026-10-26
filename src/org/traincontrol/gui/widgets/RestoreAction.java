@@ -5,8 +5,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +79,7 @@ public final class RestoreAction
         }
 
         final File layoutTo = archive.layoutName == null ? null
-            : layoutDestination(archive.layoutName, this.ui.localLayoutPath());
+            : layoutDestination(archive, this.ui.localLayoutPath());
 
         Object[] choices = {I18n.t("ui.restoreButton"), I18n.t("ui.cancel")};
 
@@ -83,6 +88,9 @@ public final class RestoreAction
 
         // A route can start while the question is up; the exit's question about unsaved windows, as this ends in one
         if (this.ui.refuseWhileARunHoldsTheSetup(this.ui) || !this.ui.everyOpenWindowMaySettle()) return;
+
+        // Where a stopped run left the trains, into the setup before the backup taken first and the exit without saves
+        this.ui.captureRunningLayout();
 
         final String[] said = new String[1];
 
@@ -103,6 +111,8 @@ public final class RestoreAction
             File named = new File(shadow.archive.getPath().replaceFirst("\\.zip$", BEFORE_RESTORE_SUFFIX));
 
             File kept = shadow.archive.renameTo(named) ? named : shadow.archive;
+
+            recordTheLayoutFolder(kept);
 
             wrote[0] = true;
 
@@ -134,6 +144,25 @@ public final class RestoreAction
         });
     }
 
+    /** Names the open layout's folder in the backup taken before a restore, so restoring that file goes back to it. */
+    private void recordTheLayoutFolder(File shadow)
+    {
+        String open = this.ui.localLayoutPath();
+
+        if (open == null || open.isEmpty()) return;
+
+        try (FileSystem zip = FileSystems.newFileSystem(shadow.toPath(), (ClassLoader) null))
+        {
+            Files.write(zip.getPath(Archive.LAYOUT_FOLDER), new File(open).getAbsolutePath()
+                .getBytes(StandardCharsets.UTF_8));
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // Without it the file restores as any other backup does
+            if (this.ui.getModel() != null) this.ui.getModel().log(String.valueOf(e));
+        }
+    }
+
     /** Ends the program without `WindowClosed`'s saves, which would write the state from before the restore. */
     private void closeWithoutSaving()
     {
@@ -143,17 +172,27 @@ public final class RestoreAction
     }
 
     /**
-     * Where an archived layout goes: the open layout when it has the archived name, else a folder of that name beside
-     * the data files, else, when that already holds a layout, a new one beside it.  Only the open layout is replaced,
-     * and the backup taken first holds it.  The archive keeps the folder's name, not its place.
+     * Where an archived layout goes: the open layout when it has the archived name; else the folder a backup taken
+     * before a restore names, while it holds exactly the archived layout; else a folder of that name beside the data
+     * files, else, when that already holds a layout, a new one beside it.  Only the open layout's files are changed,
+     * and the backup taken first holds them.  A File &gt; Backup archive keeps the folder's name, not its place.
      */
-    private static File layoutDestination(String name, String open)
+    private static File layoutDestination(Archive archive, String open)
     {
+        String name = archive.layoutName;
+
         if (open != null && !open.isEmpty())
         {
             File current = new File(open).getAbsoluteFile();
 
             if (current.equals(new File(current.getParentFile(), name))) return current;
+        }
+
+        if (archive.layoutFolder != null)
+        {
+            File left = new File(archive.layoutFolder).getAbsoluteFile();
+
+            if (left.getName().equals(name) && archive.isHeldBy(new File(left, Archive.CONFIG))) return left;
         }
 
         File beside = new File(Util.dataPath(name)).getAbsoluteFile();
@@ -178,12 +217,16 @@ public final class RestoreAction
     /** An archive's parts, read and checked; mirrors what `BackupAction.writeTheBackup` puts in. */
     static final class Archive
     {
-        private static final String CONFIG = "config";
+        static final String CONFIG = "config";
+
+        /** In a backup taken before a restore only: the folder its layout was in. */
+        static final String LAYOUT_FOLDER = "before-restore-layout-folder.txt";
 
         byte[] locomotives;
         byte[] windowState;
         byte[] autonomyFile;
         String layoutName;
+        String layoutFolder;
 
         /** Under the layout's `config`, and under the icon folder, by their path there. */
         final Map<String, byte[]> layout = new TreeMap<>();
@@ -222,7 +265,7 @@ public final class RestoreAction
                 throw unreadable(zip, MarklinControlStation.DATA_FILE_NAME);
             }
 
-            if (read.windowState != null && !readsAsAList(read.windowState))
+            if (read.windowState != null && !readsAsAList(read.windowState, ObjectInputStream::new))
             {
                 throw unreadable(zip, TrainControlUI.DATA_FILE_NAME);
             }
@@ -269,6 +312,7 @@ public final class RestoreAction
             if (at.length == 1 && MarklinControlStation.DATA_FILE_NAME.equals(name)) locomotives = content;
             else if (at.length == 1 && TrainControlUI.DATA_FILE_NAME.equals(name)) windowState = content;
             else if (at.length == 1 && TrainControlUI.AUTONOMY_FILE_NAME.equals(name)) autonomyFile = content;
+            else if (at.length == 1 && LAYOUT_FOLDER.equals(name)) layoutFolder = new String(content, StandardCharsets.UTF_8);
             else if (at.length == 1 && "routes.json".equals(name))
             {
                 // The routes are in the locomotive database too; this export is for Import Routes
@@ -288,48 +332,22 @@ public final class RestoreAction
             return true;
         }
 
-        /** Through the station's own reader, which knows the older formats, then its mark put back for the live file. */
+        /** Through the station's own reader, which knows the older formats, without loading it or touching its mark. */
         private static boolean readsAsALocomotiveDatabase(byte[] content, ViewListener model)
         {
-            if (!(model instanceof MarklinControlStation)) return false;
-
-            MarklinControlStation station = (MarklinControlStation) model;
-
-            boolean liveWasUnreadable = station.isDatabaseLoadFailed();
-
-            File staged = null;
-
-            try
-            {
-                staged = File.createTempFile("tc-restore", ".data");
-
-                Files.write(staged.toPath(), content);
-
-                station.restoreState(staged.getPath());
-
-                boolean reads = !station.isDatabaseLoadFailed();
-
-                // The mark describes the live file and decides whether the exit keeps a copy of it before saving
-                if (station.isDatabaseLoadFailed() != liveWasUnreadable)
-                {
-                    station.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
-                }
-
-                return reads;
-            }
-            catch (IOException e)
-            {
-                return false;
-            }
-            finally
-            {
-                if (staged != null) staged.delete();
-            }
+            return model instanceof MarklinControlStation
+                && readsAsAList(content, ((MarklinControlStation) model)::databaseReader);
         }
 
-        private static boolean readsAsAList(byte[] content)
+        /** Opens serialized bytes for reading. */
+        private interface Reader
         {
-            try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(content)))
+            ObjectInputStream open(InputStream in) throws IOException;
+        }
+
+        private static boolean readsAsAList(byte[] content, Reader reader)
+        {
+            try (ObjectInputStream in = reader.open(new ByteArrayInputStream(content)))
             {
                 return in.readObject() instanceof List;
             }
@@ -337,6 +355,38 @@ public final class RestoreAction
             {
                 return false;
             }
+        }
+
+        /** Whether `config` holds exactly the archived layout's files, byte for byte, and no link. */
+        boolean isHeldBy(File config)
+        {
+            Map<String, byte[]> found = new TreeMap<>();
+
+            Path root = config.toPath();
+
+            try (java.util.stream.Stream<Path> walk = Files.walk(root))
+            {
+                for (Path file : (Iterable<Path>) walk::iterator)
+                {
+                    if (Util.isLink(file.toFile())) return false;
+
+                    if (!Files.isDirectory(file)) found.put(root.relativize(file).toString().replace('\\', '/'),
+                        Files.readAllBytes(file));
+                }
+            }
+            catch (IOException | RuntimeException e)
+            {
+                return false;
+            }
+
+            if (!found.keySet().equals(layout.keySet())) return false;
+
+            for (Map.Entry<String, byte[]> file : layout.entrySet())
+            {
+                if (!Arrays.equals(file.getValue(), found.get(file.getKey()))) return false;
+            }
+
+            return true;
         }
 
         /** The confirmation's list: each part and what it replaces. */

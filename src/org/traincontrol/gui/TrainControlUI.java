@@ -2365,7 +2365,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.runningLayoutSync.keepThePendingTurnsAcross(load);
     }
 
-    void captureRunningLayout()
+    /** Folds where a stopped run left the trains into the setup, and writes it (`RunningLayoutSync`). */
+    public void captureRunningLayout()
     {
         this.runningLayoutSync.captureRunningLayout();
     }

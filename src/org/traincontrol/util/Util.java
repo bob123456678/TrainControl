@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -312,7 +313,8 @@ public class Util
     }
 
     /**
-     * Removes a file, or a folder and everything under it.
+     * Removes a file, or a folder and everything under it.  A link (a symbolic link, or a junction on Windows) is
+     * removed itself, never what it points at.
      *
      * Written for FR-020's temporary download: the Central Station layout is fetched into a scratch
      * folder, zipped, and then has no reason to exist.  Leaving it would put a stale copy of the
@@ -330,11 +332,13 @@ public class Util
      */
     public static boolean deleteTree(File file, int depth)
     {
-        if (file == null || !file.exists() || depth > 32) return false;
+        if (file == null || depth > 32) return false;
 
         try
         {
-            if (file.isDirectory())
+            if (!Files.exists(file.toPath(), LinkOption.NOFOLLOW_LINKS)) return false;
+
+            if (file.isDirectory() && !isLink(file))
             {
                 File[] children = file.listFiles();
 
@@ -349,6 +353,27 @@ public class Util
         catch (RuntimeException e)
         {
             return false;
+        }
+    }
+
+    /**
+     * Whether a path is a symbolic link or a Windows junction, which `File.isDirectory` answers true for.
+     *
+     * @param file the path
+     * @return true for a link, and for a path whose kind cannot be read
+     */
+    public static boolean isLink(File file)
+    {
+        try
+        {
+            java.nio.file.attribute.BasicFileAttributes kind = Files.readAttributes(file.toPath(),
+                java.nio.file.attribute.BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+
+            return kind.isSymbolicLink() || kind.isOther();
+        }
+        catch (IOException | RuntimeException e)
+        {
+            return true;
         }
     }
 
