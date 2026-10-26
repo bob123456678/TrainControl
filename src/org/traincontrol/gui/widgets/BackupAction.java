@@ -76,6 +76,19 @@ public final class BackupAction
     }
 
     /**
+     * The archive's file, `-2`, `-3` added while a backup made in the same second has the name, so none is written
+     * over.  Its callers hold `oneBackupAtATime`, so no other backup takes the name between the check and the write.
+     */
+    private static File freeArchiveName(String prefix)
+    {
+        File archive = new File(Util.getBackupPath(prefix + "-TrainControl.zip"));
+
+        for (int n = 2; archive.exists(); n++) archive = new File(Util.getBackupPath(prefix + "-TrainControl-" + n + ".zip"));
+
+        return archive;
+    }
+
+    /**
      * `backupData`'s body, which only `backupData` calls.  It takes no lock of its own: it is called only through
      * `TrainControlUI.backupData`, which holds `oneBackupAtATime` around it.
      *
@@ -210,7 +223,7 @@ public final class BackupAction
 
             if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
 
-            backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
+            backupArchive = freeArchiveName(prefixForBackup());
 
             unsaved.addAll(Util.zipInto(backupArchive, state));
 
