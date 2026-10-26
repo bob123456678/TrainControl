@@ -33050,3 +33050,41 @@ body:
 tail:
 | ---
 |
+
+[test MT-838]
+ordinal: 837
+anchor: mt-838
+date: 2026-10-25
+title: Route editor: deleting an outdented condition keeps the word between the groups
+disposition: needs test
+from: OB-381
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-838"></a>
+| ### MT-838 - 2026-10-25 - Route editor: deleting an outdented condition keeps the word between the groups
+|
+| **Disposition:** needs test
+| **From:** OB-381
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "Delete test", and add one command.
+| 2. Add conditions S88 1, 2, 3 and 4 with the plus.  Change the word between S88 2 and S88 3 to "or".  Indent S88 1 to
+|    2 and S88 3 to 4, so "Reads as" says (S88 #1 on and S88 #2 on) or (S88 #3 on and S88 #4 on).
+| 3. Right-click S88 2, choose `Insert Condition Below`, and set the new condition to S88 5.
+| 4. Right-click S88 5 and choose `Move Down`, then right-click it again and choose `Outdent`.  The "and" under it turns
+|    red.
+| 5. Right-click S88 5 and choose `Delete`.
+| 6. Close with `Cancel` and discard the route.
+|
+| **Expected**
+|
+| - After step 5, "Reads as" says (S88 #1 on and S88 #2 on) or (S88 #3 on and S88 #4 on): the "or" between the groups is
+|   still there, and nothing is red.
+|
+tail:
+| ---
+|

@@ -1170,3 +1170,23 @@ text:
 |
 | Adam: "I strangely got a 406 error when downloading the new jar via the update menu."  Reproduced on 2026-10-25 with HEAD requests to the v3_0_3 asset (https://github.com/bob123456678/TrainControl/releases/download/v3_0_3/TrainControl.jar): with Java 8's default request headers (User-Agent Java/1.8.0_361, Accept "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2") GitHub answers 406 Not Acceptable; with Accept: application/octet-stream it redirects to release-assets.githubusercontent.com and answers 200.  `Util.downloadFile` sets no Accept header.  Every released version has it, so users of 3.0.3 and earlier must download 3.0.4 from the releases page by hand.
 |
+
+[issue OB-381]
+ordinal: 56
+inbox: yes
+kind: bug
+title: Route editor: deleting the first condition of a group after outdenting it took the word between the groups, merging them
+filed: 2026-10-25
+filed_at: 2026-10-25 23:06
+raised_from: noticed while testing - not from a particular test
+build: commit 680a8ef5
+text:
+| ### OB-381 - 2026-10-25 - Route editor: deleting the first condition of a group after outdenting it took the word between the groups, merging them
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-25 23:06  
+| **Build:** commit 680a8ef5
+|
+| Found while checking the conditions' right-click menu (Adam: "make sure the right-click menus for inserting route conditions work correctly"). In (21 and 22) or (24 and 25), a condition outdented to the front of the second group and then deleted took the "or", leaving 21 and 22 and 24 and 25 with nothing shown red. Insert worked correctly in every case checked.
+|

@@ -4146,3 +4146,11 @@ kind: feature request
 what: Built on dev (7dc0244a): a right-click menu on the conditions (Insert Above and Below, the moves, Indent, Outdent, Delete; Add Condition below the lines), and the selected condition bold in Reads as
 state: fixed validated
 became: MT-837
+
+[receipt OB-381]
+seq: 518
+filed: 2026-10-25
+kind: bug
+what: Fixed on dev (37e47a20): a deleted condition between two words takes the deeper word; claim ui.testRouteEditorValidation.testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups, red first
+state: needs test
+became: MT-838
