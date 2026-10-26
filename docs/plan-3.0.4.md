@@ -103,13 +103,14 @@ By script, at the start, before other branches are open: `git mv`, package and i
 - RSA76-C6, C10 and D7: claims driven by the user's gesture, an independent oracle for the reach claim.  Done
   (`9799c527`..`68ceff2a`, `9864e1dc`), except Add Blank Page and Rename during a run: they ask the name before the
   refusal, in code from before 2.7.0, so their claim still calls the handler.
-- The JaCoCo rerun, outside the repository.
+- The JaCoCo rerun, outside the repository, after the release (Adam: "JaCoCo can follow the release itself").
 - Core-package comment pass (Adam: "Do the sonnet comment trim workers for 3.0.4"): the 27 files in `automation`,
   `base`, `marklin`, `model`, `util` and `examples` no trim had reached, plus `HomeStaging` and `LayoutDiagram`; only
   lines written since 2.7.0 by Claude, the scripting API's public javadoc kept as user documentation.  Four Sonnet sets
   in `w-core1`..`4` from `f35e9d89`.
 - TrainControlUI split, four more extractions by delegation as in 3.0.3 (sizing on `4d36b0c6`; Adam picked C6, C8,
-  C10 and C13 of the 18 candidates).  One class per commit, a battery per phase, in this order:
+  C10 and C13 of the 18 candidates).  One class per commit, a battery per phase, in this order (C8 `de5cd9c1`, C6
+  `d047a286`, C13 `7b49f40d` done; C10 moved to 3.1.0 to keep the release close):
   - C8 `LayoutMenus`: the layout, diagram and recent-layout menus and the editor's page buttons (779 lines out, 2 from
     before 2.7.0).  Its one widened member from before 2.7.0, `getLocalLayoutPath`, waits for Adam's word; the move
     goes without it if a delegator serves.
@@ -120,12 +121,14 @@ By script, at the start, before other branches are open: `git mv`, package and i
   - C10 `AutonomyLifecycle`, in two steps: the menu and controls mounting, then the session's life (1,476 lines out,
     23 from before 2.7.0, 59 test files call it through delegators).
   - Rules: bodies from before 2.7.0 move with only their receivers requalified; every `synchronized` method keeps the
-    window's lock; the preferences node stays TrainControlUI's; no test hooks.  Then one validator round on the split.
+    window's lock; the preferences node stays TrainControlUI's; no test hooks.  The split's validator round is RSA81.
 
 ## 5. Release
 
-Validator rounds to convergence, a full battery, then `docs/RELEASE.md`.
+Validator rounds to convergence, a full battery, then `docs/RELEASE.md`.  Adam, 2026-10-26: "send out an opus
+validator on all changes since the last validator run, and iterate up to twice."  RSA81 reads `4d36b0c6..9c82bbbb`
+(the RSA80 fixes, the core comment pass, C8, C6, C13, OB-381, FR-148 to FR-153); up to two more rounds on its fixes.
 
-Not in 3.0.4: the rest of the 3.1.0 list.  Also for 3.1.0 (Adam: "We can do the sandbox idea for the next release"): run the window
+Not in 3.0.4: the rest of the 3.1.0 list, and the split's C10.  Also for 3.1.0 (Adam: "We can do the sandbox idea for the next release"): run the window
 tests inside Windows Sandbox, so they keep off his desktop; he turns the feature on, then the runners hand runs into
 it.  In 3.0.4, `support.WindowsNotOnTop` turns back a test window the app leaves on top.
