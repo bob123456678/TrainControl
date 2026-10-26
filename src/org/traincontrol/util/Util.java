@@ -771,6 +771,9 @@ public class Util
         connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
 
+        // GitHub answers 406 to a release download that does not accept a binary file, as Java's default header does not
+        connection.setRequestProperty("Accept", "application/octet-stream");
+
         File partialFile = new File(saveOutputFile.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
 
         long totalBytes = connection.getContentLengthLong();
