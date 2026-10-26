@@ -29647,6 +29647,17 @@ text:
 | *Run against commit af5bdfeb, in Dansk - build\classes, compiled 25 Oct 12:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-830 1]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
 [comment MT-831 0]
 who: Adam
 date: 2026-10-25
@@ -29658,6 +29669,78 @@ text:
 | Seems to work.  Fold in the duplicate and combine options from the main UI's menu, then disable the main UI's menu (keep it hidden for now in case we want to revert) and replace it with Manage Pages... option that opens the layout editor on top of the main window and pops open its JMenu.
 |
 | *Run against commit af5bdfeb, in Dansk - build\classes, compiled 25 Oct 12:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-831 1]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-833 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-25 (triage).** Works, with notes.
+|
+| Works, prefix each with an index number (1. , 2., 3., and so on)
+|
+| *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-834 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-25 (triage).** Works, with notes.
+|
+| Works.  Add a sort pages option, too, which shows a popup instructing users to rename pages instead, because they are shown in alphabetical/numerical order.
+|
+| *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-835 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Could not run this
+text:
+| **Adam, 2026-10-25 (triage).** Could not run this.
+|
+| can't test because the version is newer does the download work on your end?
+|
+| *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-836 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-837 0]
+who: Adam
+date: 2026-10-25
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-25 (triage).** Works.
+|
+| *Run against commit 680a8ef5, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
 [comment OB-331 0]
