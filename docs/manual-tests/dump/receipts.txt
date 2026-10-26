@@ -4096,7 +4096,7 @@ seq: 511
 filed: 2026-10-25
 kind: feature request
 what: Layouts > Recent Layouts, the last five (b51abca6)
-state: needs test
+state: fixed validated
 became: MT-830
 
 [receipt FR-109]
@@ -4104,7 +4104,7 @@ seq: 512
 filed: 2026-10-04
 kind: feature request
 what: Manage Pages menu in the layout editor, window kept open (63818b2e)
-state: needs test
+state: fixed validated
 became: MT-831
 
 [receipt OB-378]
@@ -4136,7 +4136,7 @@ seq: 516
 filed: 2026-10-25
 kind: bug
 what: Fixed on dev (7dc0244a): a condition moved past its group's edge joins the neighboring group at its near end, and no arrow is offered where there is none; claims in core.testConditionOutline and ui.testRouteEditorValidation, red first
-state: needs test
+state: fixed validated
 became: MT-836
 
 [receipt FR-147]
@@ -4144,5 +4144,5 @@ seq: 517
 filed: 2026-10-25
 kind: feature request
 what: Built on dev (7dc0244a): a right-click menu on the conditions (Insert Above and Below, the moves, Indent, Outdent, Delete; Add Condition below the lines), and the selected condition bold in Reads as
-state: needs test
+state: fixed validated
 became: MT-837

@@ -635,6 +635,46 @@ text:
 | Adam, on the same report: "also consider making editing easier so it's clearer what's changing, and so we can also insert by right clicking."
 |
 
+[issue FR-148]
+ordinal: 54
+inbox: yes
+kind: feature request
+title: for 3.0.4: number the Recent Layouts
+filed: 2026-10-25
+filed_at: 2026-10-25 22:59
+raised_from: MT-833
+build: commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### FR-148 - 2026-10-25 - for 3.0.4: number the Recent Layouts
+|
+| **Kind:** feature request  
+| **Raised from:** MT-833  
+| **Filed:** 2026-10-25 22:59  
+| **Build:** commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| Adam, on MT-833: "Works, prefix each with an index number (1. , 2., 3., and so on)"
+|
+
+[issue FR-149]
+ordinal: 55
+inbox: yes
+kind: feature request
+title: for 3.0.4: a Sort Pages item in Manage Pages that explains pages are listed in order of their names
+filed: 2026-10-25
+filed_at: 2026-10-25 22:59
+raised_from: MT-834
+build: commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### FR-149 - 2026-10-25 - for 3.0.4: a Sort Pages item in Manage Pages that explains pages are listed in order of their names
+|
+| **Kind:** feature request  
+| **Raised from:** MT-834  
+| **Filed:** 2026-10-25 22:59  
+| **Build:** commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| Adam, on MT-834: "Works.  Add a sort pages option, too, which shows a popup instructing users to rename pages instead, because they are shown in alphabetical/numerical order."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes

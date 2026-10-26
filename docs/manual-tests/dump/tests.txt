@@ -32725,7 +32725,7 @@ ordinal: 829
 anchor: mt-830
 date: 2026-10-25
 title: Layouts > Recent Layouts lists the last five layouts opened
-disposition: needs test
+disposition: fixed validated
 from: FR-145
 written: 2026-10-25
 reopened: no
@@ -32733,7 +32733,7 @@ body:
 | <a id="mt-830"></a>
 | ### MT-830 - 2026-10-25 - Layouts > Recent Layouts lists the last five layouts opened
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-145
 |
 | **Written:** 2026-10-25
@@ -32766,7 +32766,7 @@ ordinal: 830
 anchor: mt-831
 date: 2026-10-25
 title: Add, rename and delete pages from the layout editor, with the window kept open
-disposition: needs test
+disposition: fixed validated
 from: FR-109
 written: 2026-10-25
 reopened: no
@@ -32774,7 +32774,7 @@ body:
 | <a id="mt-831"></a>
 | ### MT-831 - 2026-10-25 - Add, rename and delete pages from the layout editor, with the window kept open
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-109
 |
 | **Written:** 2026-10-25
@@ -32970,7 +32970,7 @@ ordinal: 835
 anchor: mt-836
 date: 2026-10-25
 title: Route editor: a condition moved up past its group's edge joins the group above
-disposition: needs test
+disposition: fixed validated
 from: OB-379
 written: 2026-10-25
 reopened: no
@@ -32978,7 +32978,7 @@ body:
 | <a id="mt-836"></a>
 | ### MT-836 - 2026-10-25 - Route editor: a condition moved up past its group's edge joins the group above
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-379
 |
 | **Written:** 2026-10-25
@@ -33010,7 +33010,7 @@ ordinal: 836
 anchor: mt-837
 date: 2026-10-25
 title: Route editor: right-click to insert and edit conditions, with the changed one bold in Reads as
-disposition: needs test
+disposition: fixed validated
 from: FR-147
 written: 2026-10-25
 reopened: no
@@ -33018,7 +33018,7 @@ body:
 | <a id="mt-837"></a>
 | ### MT-837 - 2026-10-25 - Route editor: right-click to insert and edit conditions, with the changed one bold in Reads as
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-147
 |
 | **Written:** 2026-10-25

@@ -29658,6 +29658,17 @@ text:
 | *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-830 2]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
 [comment MT-831 0]
 who: Adam
 date: 2026-10-25
@@ -29680,6 +29691,17 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-831 2]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment MT-833 0]
@@ -29732,6 +29754,17 @@ text:
 | *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-836 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
+|
+
 [comment MT-837 0]
 who: Adam
 date: 2026-10-25
@@ -29741,6 +29774,17 @@ text:
 | **Adam, 2026-10-25 (triage).** Works.
 |
 | *Run against commit 680a8ef5, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-837 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works* of 2026-10-25.
 |
 
 [comment OB-331 0]
