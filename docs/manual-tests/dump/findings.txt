@@ -39130,6 +39130,270 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.3 validation round 2, RSA77 (ab54c48b..063a3ed6; 0 A, 0 B, 4 C; converged) (2026-10-24))
 
+[finding RSA78-B1 in RSA78.md]
+line: 30
+severity: B
+title: Restore from Backup drops where the last run left the trains, from the railway and from the before-restore backup
+disposition: Fixed - `288cff8d`: Restore from Backup folds the stopped run on the event thread before the shadow backup. Claim `testT
+evidence: RestoreAction.java:92
+commit_id: 288cff8d
+cited_by:
+status: Closed
+status_note: Fixed in 288cff8d - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C1 in RSA78.md]
+line: 73
+severity: C
+title: Checking the archive runs the live database's reader: its log lines, and its unreadable-database mark
+disposition: Fixed - `288cff8d`: the archive's database is read in memory through `MarklinControlStation.databaseReader`, with no log
+evidence: RestoreAction.java:292
+commit_id: 288cff8d
+cited_by:
+status: Closed
+status_note: Fixed in 288cff8d - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C2 in RSA78.md]
+line: 93
+severity: C
+title: Undoing a restore that moved TrainControl to a new layout folder lands on a copy, not the original
+disposition: Fixed - `288cff8d`: the before-restore file records the folder it came from, and restoring it goes back there when that 
+evidence: RestoreAction.java:150
+commit_id: 288cff8d
+cited_by:
+status: Closed
+status_note: Fixed in 288cff8d - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C3 in RSA78.md]
+line: 111
+severity: C
+title: Emptying the layout's config follows directory links
+disposition: Fixed - `288cff8d`: `Util.deleteTree` deletes a link or junction itself, never what it points at. Claim `testEmptyingThe
+evidence: RestoreAction.java:369
+commit_id: 288cff8d
+cited_by:
+status: Closed
+status_note: Fixed in 288cff8d - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C4 in RSA78.md]
+line: 123
+severity: C
+title: The bulk-clear tooltips still say "1 squares"
+disposition: Fixed - `4a61792a`: the three bulk-clear tooltips use the dialogs' counted builder (One and Few forms, 8 languages). Cla
+evidence: AutonomyEditorPanel.java:6435
+commit_id: 4a61792a
+cited_by:
+status: Closed
+status_note: Fixed in 4a61792a - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C5 in RSA78.md]
+line: 136
+severity: C
+title: Three messages read wrong after the shortening
+disposition: Fixed - `4a61792a`, `7b4622b5`: the reachability remedy names switching the station on, the exit question parses, and th
+evidence: messages.properties:2055
+commit_id: 4a61792a
+cited_by:
+status: Closed
+status_note: Fixed in 4a61792a, 7b4622b5 - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C6 in RSA78.md]
+line: 154
+severity: C
+title: A new comment carries a date
+disposition: Fixed - `7105a669`: the dated quote is out of the slots comment.
+evidence: slots.sh:31
+commit_id: 7105a669
+cited_by:
+status: Closed
+status_note: Fixed in 7105a669 - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C7 in RSA78.md]
+line: 166
+severity: C
+title: Two trims cut a mutation record
+disposition: Fixed - `7105a669`: both mutation records are back, one line each.
+evidence: testAReversalCommandIsEmitted.java:273
+commit_id: 7105a669
+cited_by:
+status: Closed
+status_note: Fixed in 7105a669 - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-C8 in RSA78.md]
+line: 182
+severity: C
+title: OB-370's run claim clicks three items of the submenu FR-146 hid
+disposition: Fixed - `7105a669`: the claim says the three items sit in the hidden submenu and where the editor's own doors are claime
+evidence:
+commit_id: 7105a669
+cited_by:
+status: Closed
+status_note: Fixed in 7105a669 - 3.0.4 validation round 1, RSA78
+
+[finding RSA78-D1 in RSA78.md]
+line: 197
+severity: D
+title: FR-124's archive checks, what is replaced, and a restore that stops part way
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D10 in RSA78.md]
+line: 319
+severity: D
+title: RSA76-D7: SettledQuestion's hooks
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D11 in RSA78.md]
+line: 328
+severity: D
+title: The rewritten claims fail for the reasons they give
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 9799c527
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D12 in RSA78.md]
+line: 341
+severity: D
+title: The behaviour split keeps the rules
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 5b91d77c
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D13 in RSA78.md]
+line: 351
+severity: D
+title: The comment trims, sampled
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D14 in RSA78.md]
+line: 362
+severity: D
+title: The v3.0.4 changelog and the Readme's restore section
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D15 in RSA78.md]
+line: 372
+severity: D
+title: Tooling and ratchets
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D2 in RSA78.md]
+line: 217
+severity: D
+title: FR-145 Recent Layouts and OB-378
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D3 in RSA78.md]
+line: 231
+severity: D
+title: FR-109 and FR-146 page management in the layout editor
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D4 in RSA78.md]
+line: 246
+severity: D
+title: p1, the icon cache: no runtime cost
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D5 in RSA78.md]
+line: 257
+severity: D
+title: p3, p4, p6, p7 and p8 are behavior-preserving
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D6 in RSA78.md]
+line: 270
+severity: D
+title: OB-374: the picture export's sizes
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D7 in RSA78.md]
+line: 279
+severity: D
+title: RSA76-C5: Test a Path starts where the findings do
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D8 in RSA78.md]
+line: 291
+severity: D
+title: The shorter messages: placeholders, languages, counts
+disposition: Not a defect - checked as described.
+evidence: RouteEditorFrame.java:2644
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
+[finding RSA78-D9 in RSA78.md]
+line: 306
+severity: D
+title: The package moves
+disposition: Not a defect - checked as described.
+evidence: AutonomyEditorPanel.java:243
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 1, RSA78)
+
 [finding RSA8-B1 in RSA8.md]
 line: 26
 severity: B

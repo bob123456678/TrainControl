@@ -3571,6 +3571,30 @@ RSA77-D6	RSA77.md	Closed	Not a defect	Clusters 18, 38 and 224 are behavior-prese
 RSA77-D7	RSA77.md	Closed	Not a defect	Cluster 43 paints a switch key as before
 RSA77-D8	RSA77.md	Closed	Not a defect	OB-373 saves the diagram's Place without a facing, and logs a failed save
 RSA77-D9	RSA77.md	Closed	Not a defect	The range's Readme lines follow the house rules
+RSA78-B1	RSA78.md	Closed	Fixed - `288cff8d`: Restore from Backup folds the stopped run on the event thread before t	Restore from Backup drops where the last run left the trains, from the railway and from the before-restore backup
+RSA78-C1	RSA78.md	Closed	Fixed - `288cff8d`: the archive's database is read in memory through `MarklinControlStatio	Checking the archive runs the live database's reader: its log lines, and its unreadable-database mark
+RSA78-C2	RSA78.md	Closed	Fixed - `288cff8d`: the before-restore file records the folder it came from, and restoring	Undoing a restore that moved TrainControl to a new layout folder lands on a copy, not the original
+RSA78-C3	RSA78.md	Closed	Fixed - `288cff8d`: `Util.deleteTree` deletes a link or junction itself, never what it poi	Emptying the layout's config follows directory links
+RSA78-C4	RSA78.md	Closed	Fixed - `4a61792a`: the three bulk-clear tooltips use the dialogs' counted builder (One an	The bulk-clear tooltips still say "1 squares"
+RSA78-C5	RSA78.md	Closed	Fixed - `4a61792a`, `7b4622b5`: the reachability remedy names switching the station on, th	Three messages read wrong after the shortening
+RSA78-C6	RSA78.md	Closed	Fixed - `7105a669`: the dated quote is out of the slots comment.	A new comment carries a date
+RSA78-C7	RSA78.md	Closed	Fixed - `7105a669`: both mutation records are back, one line each.	Two trims cut a mutation record
+RSA78-C8	RSA78.md	Closed	Fixed - `7105a669`: the claim says the three items sit in the hidden submenu and where the	OB-370's run claim clicks three items of the submenu FR-146 hid
+RSA78-D1	RSA78.md	Closed	Not a defect - checked as described.	FR-124's archive checks, what is replaced, and a restore that stops part way
+RSA78-D10	RSA78.md	Closed	Not a defect - checked as described.	RSA76-D7: SettledQuestion's hooks
+RSA78-D11	RSA78.md	Closed	Not a defect - checked as described.	The rewritten claims fail for the reasons they give
+RSA78-D12	RSA78.md	Closed	Not a defect - checked as described.	The behaviour split keeps the rules
+RSA78-D13	RSA78.md	Closed	Not a defect - checked as described.	The comment trims, sampled
+RSA78-D14	RSA78.md	Closed	Not a defect - checked as described.	The v3.0.4 changelog and the Readme's restore section
+RSA78-D15	RSA78.md	Closed	Not a defect - checked as described.	Tooling and ratchets
+RSA78-D2	RSA78.md	Closed	Not a defect - checked as described.	FR-145 Recent Layouts and OB-378
+RSA78-D3	RSA78.md	Closed	Not a defect - checked as described.	FR-109 and FR-146 page management in the layout editor
+RSA78-D4	RSA78.md	Closed	Not a defect - checked as described.	p1, the icon cache: no runtime cost
+RSA78-D5	RSA78.md	Closed	Not a defect - checked as described.	p3, p4, p6, p7 and p8 are behavior-preserving
+RSA78-D6	RSA78.md	Closed	Not a defect - checked as described.	OB-374: the picture export's sizes
+RSA78-D7	RSA78.md	Closed	Not a defect - checked as described.	RSA76-C5: Test a Path starts where the findings do
+RSA78-D8	RSA78.md	Closed	Not a defect - checked as described.	The shorter messages: placeholders, languages, counts
+RSA78-D9	RSA78.md	Closed	Not a defect - checked as described.	The package moves
 RSA8-B1	RSA8.md	Closed	Fixed - a build for inspection settles the timetable for the look and puts it back (Autono	The Autonomy menu's Pages tick loses every timetable entry set aside for a page when it is ticked back in: the findings refresh it runs before its rel
 RSA8-B2	RSA8.md	Closed	Fixed - a move moves what the carry of names remembers (squareOfNameSeen) with the squares	A move of stations in the track editor - saved, cancelled or undone - rebinds the timetable's legs through them to the stations now on the squares the
 RSA8-B3	RSA8.md	Closed	Fixed with B2 - the undo point holds the railway's squares and an undo puts them back, as 	The track editor's Ctrl+Z after a move puts back the page's setup and not the railway's squares, which round 23 now moves: while a declined edit waits
