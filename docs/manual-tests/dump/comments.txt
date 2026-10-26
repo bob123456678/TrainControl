@@ -29717,6 +29717,17 @@ text:
 | *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-833 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works, with notes* of 2026-10-25; the note is built as FR-148 and tested by MT-839.
+|
+
 [comment MT-834 0]
 who: Adam
 date: 2026-10-25
@@ -29728,6 +29739,17 @@ text:
 | Works.  Add a sort pages option, too, which shows a popup instructing users to rename pages instead, because they are shown in alphabetical/numerical order.
 |
 | *Run against commit b2471486, in Dansk - build\classes, compiled 25 Oct 22:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-834 1]
+who: Claude
+date: 2026-10-25
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-25.**
+|
+| Validated on your *Works, with notes* of 2026-10-25; the note is built as FR-149 and tested by MT-840.
 |
 
 [comment MT-835 0]

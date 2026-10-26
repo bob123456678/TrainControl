@@ -32851,7 +32851,7 @@ ordinal: 832
 anchor: mt-833
 date: 2026-10-25
 title: Recent Layouts lists the layout open at start-up
-disposition: needs test
+disposition: fixed validated
 from: OB-378
 written: 2026-10-25
 reopened: no
@@ -32859,7 +32859,7 @@ body:
 | <a id="mt-833"></a>
 | ### MT-833 - 2026-10-25 - Recent Layouts lists the layout open at start-up
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-378
 |
 | **Written:** 2026-10-25
@@ -32888,7 +32888,7 @@ ordinal: 833
 anchor: mt-834
 date: 2026-10-25
 title: Duplicate and combine pages from the layout editor, opened from Layouts > Manage Pages...
-disposition: needs test
+disposition: fixed validated
 from: FR-146
 written: 2026-10-25
 reopened: no
@@ -32896,7 +32896,7 @@ body:
 | <a id="mt-834"></a>
 | ### MT-834 - 2026-10-25 - Duplicate and combine pages from the layout editor, opened from Layouts > Manage Pages...
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-146
 |
 | **Written:** 2026-10-25
@@ -33084,6 +33084,80 @@ body:
 |
 | - After step 5, "Reads as" says (S88 #1 on and S88 #2 on) or (S88 #3 on and S88 #4 on): the "or" between the groups is
 |   still there, and nothing is red.
+|
+tail:
+| ---
+|
+
+[test MT-839]
+ordinal: 838
+anchor: mt-839
+date: 2026-10-25
+title: Recent Layouts numbers its items
+disposition: needs test
+from: FR-148
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-839"></a>
+| ### MT-839 - 2026-10-25 - Recent Layouts numbers its items
+|
+| **Disposition:** needs test
+| **From:** FR-148
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Open at least three different layouts in turn with `Layouts` > `Open Layout...` (call the last one C), so that the list has at least two entries besides the open one.  If two of them have folders of the same name in different places, so much the better.
+| 2. Open `Layouts` > `Recent Layouts` and read the items.  Hover over one.
+| 3. Click the second item.  Then open `Layouts` > `Recent Layouts` again.
+|
+| **Expected**
+|
+| - Step 2: each item starts with its place in the list, "1. ", "2. ", "3. " and so on, followed by what it showed before (the layout's folder name, or its whole path when two listed layouts share a name).  The order is the same as before (most recent first, the open layout not listed), and the tooltip is still the folder's full path.
+| - Step 3: the layout that was second opens, not another one.  The list is numbered again from "1. ", without the layout now open.
+|
+| *What this is:* FR-148.  Adam, on MT-833: "Works, prefix each with an index number (1. , 2., 3., and so on)"
+|
+tail:
+| ---
+|
+
+[test MT-840]
+ordinal: 839
+anchor: mt-840
+date: 2026-10-25
+title: Manage Pages has a Sort Pages... item that says how to change the page order
+disposition: needs test
+from: FR-149
+written: 2026-10-25
+reopened: no
+body:
+| <a id="mt-840"></a>
+| ### MT-840 - 2026-10-25 - Manage Pages has a Sort Pages... item that says how to change the page order
+|
+| **Disposition:** needs test
+| **From:** FR-149
+|
+| **Written:** 2026-10-25
+|
+| **Steps**
+|
+| 1. Open a local layout with at least three pages.  Choose `Layouts` > `Manage Pages...`.
+| 2. In the editor's `Manage Pages` menu, choose `Sort Pages...`.
+| 3. Read the message and press OK.  Look at the pages in the editor's sidebar and in the main window's page list.
+| 4. Turn a square in the editor so it has unsaved work, then choose `Manage Pages` > `Sort Pages...` again and press OK.
+| 5. Start a route.  In the editor, choose `Manage Pages` > `Sort Pages...`.  Stop the route.
+|
+| **Expected**
+|
+| - Step 2: the menu lists Sort Pages... with the other items.  One information message appears over the editor, reading: "Pages are listed in order of their names. To change the order, rename them, for example starting each name with a number: 01, 02, 03."
+| - Step 3: nothing has changed: the same pages in the same order, the editor on the same page, the main window's page list unchanged.
+| - Step 4: the same message again, and nothing asked about the unsaved work; the turned square is still there to save.
+| - Step 5: the same message appears even while the route runs (it changes nothing, so it is not refused); no "stop the route first" message.
+|
+| *What this is:* FR-149.  Adam, on MT-834: "Add a sort pages option, too, which shows a popup instructing users to rename pages instead, because they are shown in alphabetical/numerical order."
 |
 tail:
 | ---

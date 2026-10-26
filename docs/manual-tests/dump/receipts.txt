@@ -4112,7 +4112,7 @@ seq: 513
 filed: 2026-10-25
 kind: bug
 what: Record the outgoing local layout when another is opened
-state: needs test
+state: fixed validated
 became: MT-833
 
 [receipt FR-146]
@@ -4120,7 +4120,7 @@ seq: 514
 filed: 2026-10-25
 kind: feature request
 what: Duplicate and Combine in the editor's Manage Pages; main menu hidden behind Manage Pages...
-state: needs test
+state: fixed validated
 became: MT-834
 
 [receipt OB-380]
@@ -4154,3 +4154,19 @@ kind: bug
 what: Fixed on dev (37e47a20): a deleted condition between two words takes the deeper word; claim ui.testRouteEditorValidation.testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups, red first
 state: needs test
 became: MT-838
+
+[receipt FR-148]
+seq: 519
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (6f8a7c72): Recent Layouts numbers its items; claim ui.testRecentLayouts.testEachItemIsNumberedInTheOrderShown, red first
+state: needs test
+became: MT-839
+
+[receipt FR-149]
+seq: 520
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (9e09b53e, 5d0cd419): Sort Pages... in the editor's Manage Pages menu says how to change the order, and changes nothing; claims in ui.testTheLayoutEditorManagesPages, red first
+state: needs test
+became: MT-840
