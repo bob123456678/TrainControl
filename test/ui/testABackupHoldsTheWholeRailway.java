@@ -232,6 +232,96 @@ public class testABackupHoldsTheWholeRailway
         }
     }
 
+    /**
+     * A stopped run whose fold into the setup cannot be written makes the backup incomplete, and the backup says why:
+     * the archive would otherwise hold the setup as the run found it, behind a dialog saying all is well.
+     *
+     * MUTATION: in `foldTheStoppedRun`, answer null whatever the fold did, and the backup says it is complete.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAFoldThatCannotBeWrittenLeavesTheBackupIncomplete() throws Exception
+    {
+        String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, RUN_TRAIN);
+
+        // Read-only, so the fold's write fails while the backup can still read it
+        File setup = new File(sandbox.getFolder(), "config/autonomy/configuration-" + where[0] + ".json");
+
+        try
+        {
+            assertTrue(setup.isFile() && setup.setReadOnly(), "precondition: " + setup + " could not be made read-only");
+
+            List<String> said = new ArrayList<>();
+
+            backUp(Answering.press(I18n.t("ui.ok")), said);
+
+            assertTrue(said.get(0).contains(setup.getName()), "the backup did not say that the run could not be"
+                + " written into " + setup.getName() + ": " + said);
+        }
+        finally
+        {
+            setup.setWritable(true);
+
+            testRestoreFromBackup.takeTheTrainAway(model, RUN_TRAIN);
+        }
+    }
+
+    /**
+     * Two backups in the same second are two archives: the second does not take the first one's name and write over
+     * it.
+     *
+     * MUTATION: in `writeTheBackup`, name the archive without looking for one already there, and the two are one.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTwoBackupsInOneSecondAreTwoArchives() throws Exception
+    {
+        final File folder = new File(Util.dataPath(Util.BACKUP_FOLDER)).getAbsoluteFile();
+
+        Set<String> added = new HashSet<>();
+
+        boolean sameSecond = false;
+
+        // A backup takes well under a second here; retried until both fall in one
+        for (int tries = 0; tries < 10 && !sameSecond; tries++)
+        {
+            final Set<String> before = new HashSet<>(Arrays.asList(folder.list() == null ? new String[0]
+                : folder.list()));
+
+            long started = System.currentTimeMillis() / 1000;
+
+            ui.backupData();
+            ui.backupData();
+
+            sameSecond = System.currentTimeMillis() / 1000 == started;
+
+            added.clear();
+
+            for (String name : folder.list() == null ? new String[0] : folder.list())
+            {
+                if (!before.contains(name))
+                {
+                    added.add(name);
+
+                    made.add(new File(folder, name));
+                }
+            }
+        }
+
+        if (!sameSecond) throw new SkipException("no two backups here fell in the same second");
+
+        assertEquals(added.size(), 2, "two backups in the same second did not leave two archives: " + added);
+
+        String page = sandbox.getFolder().getName() + "/config/gleisbild.cs2";
+
+        for (String name : added)
+        {
+            assertNotNull(entriesOf(new File(folder, name)).get(page), name + " is not a whole backup: it has no " + page);
+        }
+    }
+
     /** Show Files, at the end of the backup, opens the folder the archive is in (OB-311). */
     @Test
     public void testShowFilesOpensTheBackupFolder() throws Exception

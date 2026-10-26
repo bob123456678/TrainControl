@@ -1137,6 +1137,43 @@ public class testRouteEditorValidation
     }
 
     /**
+     * A capture into the conditions joins with the word of the last condition's level, as Add Condition does: "21 or
+     * 22" and a captured accessory gives "21 or 22 or" it, an outline Save takes, not a level that disagrees with
+     * itself.
+     *
+     * MUTATION: in `appendCommand`, join a captured condition with `Joiner.AND` always, and the outline is flagged.
+     */
+    @Test
+    public void testACaptureIntoTheConditionsJoinsWithTheLevelsWord() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22"));
+                frame.setCapturingIntoConditions(true);
+                frame.appendCommand(RouteCommand.RouteCommandAccessory(23, Accessory.accessoryDecoderType.MM2, true)
+                    .toLine(null).trim());
+            });
+
+            assertTrue(levels(frame).startsWith(" 0:21 0OR 0:22 0OR 0:"), "a capture after \"21 or 22\" does not join"
+                + " with its level's 'or': " + levels(frame));
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the capture made is flagged: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
      * FR-147, what an edit changed: after a move, an indent, an outdent or the plus, the condition that changed is
      * selected and "Reads as" shows it in bold, where it now sits in the sentence.
      *

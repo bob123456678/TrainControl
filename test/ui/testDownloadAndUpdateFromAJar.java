@@ -578,6 +578,285 @@ public class testDownloadAndUpdateFromAJar
             + " backup does not have " + train + " on " + where[1] + ", where the run left it");
     }
 
+    /**
+     * A stopped run whose fold into the setup cannot be written stops the update as an incomplete backup does, and the
+     * reason names the file: the archive would otherwise hold the setup as the run found it.
+     *
+     * MUTATION: in `installTheDownload`, ignore what `foldTheStoppedRun` answers, and the update goes on to its exit.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAFoldThatCannotBeWrittenStopsTheUpdate() throws Exception
+    {
+        final String train = "Update fold train";
+
+        final String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, train);
+
+        // Read-only, so the fold's write fails while the backup can still read it
+        final File setup = new File(sandbox.getFolder(), "config/autonomy/configuration-" + where[0] + ".json");
+
+        final int before = requests.get();
+
+        gate = new CountDownLatch(1);
+
+        List<String> said;
+
+        try (Answering answering = Answering.start(rule()))
+        {
+            assertTrue(setup.isFile() && setup.setReadOnly(), "precondition: " + setup + " could not be made read-only");
+
+            SwingUtilities.invokeLater(item::doClick);
+
+            assertTrue(Components.waitFor(() -> requests.get() > before, 30000), "the download never started: "
+                + answering.asked());
+
+            // An update that goes on is stopped at its exit, for a run started since
+            model.getAutoLayout().setStagingInProgress(true);
+
+            gate.countDown();
+
+            assertTrue(answering.awaitAsked(2, 90000), "Download & Update said too little: " + answering.asked());
+
+            Components.settle();
+
+            said = answering.asked();
+        }
+        finally
+        {
+            setup.setWritable(true);
+
+            testRestoreFromBackup.takeTheTrainAway(model, train);
+        }
+
+        assertTrue(said.get(1).contains(setup.getName()) && !said.get(1).equals(I18n.t("ui.update.refusedWhileRunning")),
+            "the update did not stop at its backup for a run that could not be written into " + setup.getName() + ": "
+            + said);
+
+        assertEquals(guard.refused(), Collections.emptyList(), "the update went past where it should have stopped");
+    }
+
+    /**
+     * Download & Update's fold, reaching the event thread between an autonomy editor's Save and the rebuild that Save
+     * posts, does not fold the railway from before the edit over the saved setup: a train the editor took off stays
+     * off.  The edit and Save are one event, made once the update has posted its fold, so the edit's own rebuild has not
+     * run either.  The exit is held by a dialog of the user's while a run is started, so it stops there.
+     *
+     * MUTATION: in `foldTheStoppedRun`, skip only while an editor window is open, and the archive and the setup have the
+     * train back.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheUpdatesFoldDoesNotUndoAnEditorsSave() throws Exception
+    {
+        final String train = "Update edit train";
+
+        final String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, train);
+
+        final org.traincontrol.automationui.TileGraph.TileKey[] square = new org.traincontrol.automationui.TileGraph.TileKey[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.isOccupied() && train.equals(point.getCurrentLocomotive().getName()))
+                {
+                    square[0] = ui.getAutonomySession().tileForPointName(point.getName());
+                }
+            }
+        });
+
+        assertNotNull(square[0], "precondition: " + train + " stands on no square of the railway");
+
+        final int before = requests.get();
+
+        final JDialog open = new JDialog(ui, "the user's own dialog", true);
+
+        org.traincontrol.gui.layouteditor.LayoutEditor editor = null;
+
+        try (Answering answering = Answering.start(rule()))
+        {
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(square[0].getPage()));
+
+            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(100);
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window.isShowing() && window instanceof org.traincontrol.gui.layouteditor.LayoutEditor)
+                    {
+                        editor = (org.traincontrol.gui.layouteditor.LayoutEditor) window;
+                    }
+                }
+            }
+
+            assertNotNull(editor, "the autonomy editor did not open on " + square[0].getPage());
+
+            Components.settle();
+
+            final org.traincontrol.gui.layouteditor.LayoutEditor editing = editor;
+
+            final String remove = I18n.f("autosetup.ui.menuRemoveLocomotive", train);
+
+            final javax.swing.JMenuItem[] removeItem = new javax.swing.JMenuItem[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Component each : editing.getAutonomyPanel().buildTileMenu(square[0], null).getComponents())
+                {
+                    if (each instanceof javax.swing.JMenuItem && remove.equals(((javax.swing.JMenuItem) each).getText()))
+                    {
+                        removeItem[0] = (javax.swing.JMenuItem) each;
+                    }
+                }
+            });
+
+            assertNotNull(removeItem[0], "precondition: the editor's setup does not have " + train + " on " + where[1]);
+
+            java.lang.reflect.Field saveField = editing.getClass().getDeclaredField("saveButton");
+
+            saveField.setAccessible(true);
+
+            final AbstractButton save = (AbstractButton) saveField.get(editing);
+
+            gate = new CountDownLatch(1);
+
+            SwingUtilities.invokeLater(item::doClick);
+
+            assertTrue(Components.waitFor(() -> requests.get() > before, 30000), "the download never started: "
+                + answering.asked());
+
+            final int asked = answering.asked().size();
+
+            final boolean[] posted = new boolean[1];
+
+            final boolean[] closed = new boolean[1];
+
+            // One event: the update posts its fold while this holds the event thread, then the edit and its Save
+            SwingUtilities.invokeLater(() ->
+            {
+                gate.countDown();
+
+                for (long end = System.currentTimeMillis() + 60000; !posted[0] && System.currentTimeMillis() < end; )
+                {
+                    posted[0] = theUpdateWaitsForTheEventThread();
+
+                    if (!posted[0]) sleep(50);
+                }
+
+                if (!posted[0]) return;
+
+                removeItem[0].doClick();
+
+                save.doClick();
+
+                closed[0] = !editing.isDisplayable();
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    open.setSize(200, 100);
+                    open.setVisible(true);
+                });
+            });
+
+            assertTrue(Components.waitFor(open::isShowing, 90000), "precondition: the user's dialog did not open");
+
+            assertTrue(posted[0], "precondition: the update never waited on the event thread for its fold");
+
+            assertTrue(closed[0], "precondition: Save did not close the editor");
+
+            assertEquals(answering.asked().size(), asked, "precondition: the edit or Save asked something, which lets"
+                + " the fold run with the editor open: " + answering.asked());
+
+            assertTrue(Components.waitFor(() -> item.isEnabled()
+                && I18n.t("ui.main.downloadUpdate").equals(item.getText()), 90000), "the update did not reach its"
+                + " exit: " + answering.asked());
+
+            model.getAutoLayout().setStagingInProgress(true);
+
+            SwingUtilities.invokeLater(open::dispose);
+
+            assertTrue(answering.awaitAsked(asked + 1, 30000), "the exit did not stop for the run: " + answering.asked());
+
+            Components.settle();
+        }
+        finally
+        {
+            SwingUtilities.invokeLater(open::dispose);
+
+            if (editor != null && editor.isDisplayable())
+            {
+                final java.awt.Window closing = editor;
+
+                try (Answering leaving = Answering.start(message -> Answering.pressAt(0)))
+                {
+                    SwingUtilities.invokeLater(() -> closing.dispatchEvent(
+                        new java.awt.event.WindowEvent(closing, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+
+                    Components.waitFor(() -> !closing.isDisplayable(), 15000);
+                }
+            }
+
+            testRestoreFromBackup.takeTheTrainAway(model, train);
+        }
+
+        Set<String> made = archives();
+
+        made.removeAll(archivesBefore);
+
+        made.removeIf(name -> !name.endsWith(".zip"));
+
+        assertEquals(made.size(), 1, "the update did not write one backup: " + made);
+
+        Map<String, byte[]> held = testRestoreFromBackup.entriesOf(new File(backupFolder(), made.iterator().next()));
+
+        assertEquals(testRestoreFromBackup.trainOn(held, sandbox.getFolder().getName(), where), null, "the update's"
+            + " backup has " + train + " back on " + where[1] + ", which the editor's Save took off");
+
+        Map<String, byte[]> onDisk = new java.util.TreeMap<>();
+
+        String name = sandbox.getFolder().getName() + "/config/autonomy/configuration-" + where[0] + ".json";
+
+        onDisk.put(name, Files.readAllBytes(new File(sandbox.getFolder(), "config/autonomy/configuration-" + where[0]
+            + ".json").toPath()));
+
+        assertEquals(testRestoreFromBackup.trainOn(onDisk, sandbox.getFolder().getName(), where), null, "the setup has "
+            + train + " back on " + where[1] + ", which the editor's Save took off");
+    }
+
+    /** Whether the update's worker is waiting in `installTheDownload` for the event thread to run its fold. */
+    private static boolean theUpdateWaitsForTheEventThread()
+    {
+        for (Map.Entry<Thread, StackTraceElement[]> thread : Thread.getAllStackTraces().entrySet())
+        {
+            boolean waits = false;
+
+            for (StackTraceElement frame : thread.getValue())
+            {
+                if (frame.getMethodName().equals("invokeAndWait")) waits = true;
+
+                if (waits && frame.getMethodName().equals("installTheDownload")) return thread.getKey().getState()
+                    == Thread.State.WAITING;
+            }
+        }
+
+        return false;
+    }
+
+    private static void sleep(long millis)
+    {
+        try
+        {
+            Thread.sleep(millis);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     /** No updater started, no exit asked for, the jar itself unchanged and no copy of it beside it. */
     private void assertTheJarAndTheProgramAreAsTheyWere() throws Exception
     {

@@ -644,6 +644,92 @@ public class testRestoreFromBackup
     }
 
     /**
+     * The same undo returns to a layout folder whose `config` is a link (a shared folder linked in), not to a copy of
+     * it beside the data files: the link is followed when the folder is checked for the archived layout.
+     *
+     * MUTATION: in `Archive.isHeldBy`, walk `config` without following it, and the undo ends on a new folder.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testUndoingARestoreReturnsToALayoutWhoseConfigIsALink() throws Exception
+    {
+        String layoutWas = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        String layout = sandbox.getFolder().getName();
+
+        File other = new File(Util.dataPath(OTHER_LAYOUT)).getAbsoluteFile();
+
+        Path folder = Files.createTempDirectory("tc-restore-undo-linked");
+
+        Path shared = linkTheConfig();
+
+        try
+        {
+            Map<String, byte[]> elsewhere = new TreeMap<>();
+
+            for (Map.Entry<String, byte[]> entry : entriesOf(backUp()).entrySet())
+            {
+                elsewhere.put(entry.getKey().replace(layout + "/config/", OTHER_LAYOUT + "/config/"), entry.getValue());
+            }
+
+            File zip = new File(folder.toFile(), "other-layout.zip");
+
+            writeZip(zip, elsewhere);
+
+            restore(zip, I18n.t("ui.restoreButton"), 2, 1000);
+
+            assertTrue(Components.waitFor(() -> guard.exits().size() == 1, 30000), "TrainControl did not close after"
+                + " the restore");
+
+            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
+                .getAbsoluteFile(), other, "precondition: the restore did not move TrainControl to the other layout");
+
+            File undo = newBeforeRestore();
+
+            SwingUtilities.invokeAndWait(ui::dispose);
+
+            model.stop();
+
+            model = support.TestStation.simulatedWithWindow();
+
+            ui = (TrainControlUI) model.getGUI();
+
+            assertNotNull(ui, "the model has no window");
+
+            Components.settle();
+
+            restore(undo, I18n.t("ui.restoreButton"), 2, 1000);
+
+            assertTrue(Components.waitFor(() -> guard.exits().size() == 2, 30000), "TrainControl did not close after"
+                + " restoring " + undo.getName());
+
+            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
+                .getAbsoluteFile(), sandbox.getFolder().getAbsoluteFile(), "restoring the backup taken before the"
+                + " restore did not take TrainControl back to the layout folder it left, whose config is a link");
+
+            assertTrue(Util.isLink(new File(sandbox.getFolder(), "config")), "the undo replaced the linked config");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, layoutWas);
+
+            Util.deleteTree(folder.toFile(), 0);
+            Util.deleteTree(other, 0);
+
+            // Where the undo would have put a copy; never the sandbox itself
+            for (String name : new String[] {layout, layout + "-restored"})
+            {
+                File copy = new File(Util.dataPath(name)).getAbsoluteFile();
+
+                if (!copy.equals(sandbox.getFolder().getAbsoluteFile())) Util.deleteTree(copy, 0);
+            }
+
+            unlinkTheConfig(shared);
+        }
+    }
+
+    /**
      * Emptying the layout's folder for a restore deletes a folder link in it, not what the link points at: the files
      * of a shared folder linked into the layout are still there afterwards.
      *
