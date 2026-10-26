@@ -1492,11 +1492,108 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Presses 7 where the window sends the keyboard, as a focused window would take it, and says which cell it began
-     * editing; the edit is then canceled.  The focus owner is answered from the window, as a test window is usually not
-     * the one the operating system has focused.
+     * FR-151: a digit typed on a line's address replaces what the cell held, as a spreadsheet does, so 7 on a new
+     * condition makes it sensor 7; a double-click opens the cell to change part of it, and what is typed is added.
+     *
+     * MUTATION: in `ConditionTable.editCellAt`, drop the `selectAll`, and the new condition becomes sensor 17.
+     */
+    @Test
+    public void testTypingOnAnAddressReplacesIt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            rightClickAndChoose(table, 2, "route.ui.menuInsertConditionBelow");
+
+            asIfFocused(frame, owner -> typeADigit(owner, '7'));
+            commit(table);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:7 0AND 0:23",
+                "7 typed on the new condition did not make it sensor 7");
+            assertEquals(bold(frame), "[S88 #7]", "Reads as " + frame.readsAsForTest());
+
+            clickCell(table, 0, ADDRESS, 0, 2);
+
+            final java.awt.Component field = support.Components.onTheEventThread(() -> table.getEditorComponent());
+
+            assertNotNull(field, "a double-click on line 0's address did not open it");
+
+            typeADigit(field, '7');
+            commit(table);
+
+            assertEquals(levels(frame), " 0:217 0AND 0:22 0AND 0:7 0AND 0:23",
+                "7 typed after a double-click on sensor 21 did not add to it");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /** A digit as the keyboard types it: pressed, typed and released, each dispatched to one component. */
+    private static void typeADigit(final java.awt.Component on, final char digit)
+    {
+        support.Components.onTheEventThread(() ->
+        {
+            long now = System.currentTimeMillis();
+
+            on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_PRESSED, now, 0,
+                java.awt.event.KeyEvent.VK_0 + digit - '0', digit));
+            on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_TYPED, now, 0,
+                java.awt.event.KeyEvent.VK_UNDEFINED, digit));
+            on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_RELEASED, now + 1, 0,
+                java.awt.event.KeyEvent.VK_0 + digit - '0', digit));
+
+            return null;
+        });
+
+        support.Components.settle();
+    }
+
+    /** Ends the table's edit as Enter does, keeping what was typed. */
+    private static void commit(final javax.swing.JTable table)
+    {
+        support.Components.onTheEventThread(() -> table.isEditing() && table.getCellEditor().stopCellEditing());
+    }
+
+    /**
+     * Presses 7 where the window sends the keyboard and says which cell it began editing; the edit is then canceled.
      */
     private static String digitEdits(final org.traincontrol.gui.RouteEditorFrame frame, final javax.swing.JTable table)
+    {
+        asIfFocused(frame, owner -> support.Keys.press(owner, java.awt.event.KeyEvent.VK_7));
+
+        return support.Components.onTheEventThread(() ->
+        {
+            String out = table.isEditing()
+                ? "line " + table.getEditingRow() + " column " + table.getEditingColumn() : "nothing";
+
+            if (table.isEditing()) table.getCellEditor().cancelCellEditing();
+
+            return out;
+        });
+    }
+
+    /**
+     * Keys pressed where the window sends the keyboard, as a focused window takes them.  The focus owner is answered
+     * from the window, as a test window is usually not the one the operating system has focused.
+     */
+    private static void asIfFocused(final org.traincontrol.gui.RouteEditorFrame frame,
+        final java.util.function.Consumer<java.awt.Component> keys)
     {
         final java.awt.Component owner = support.Keys.focusOwnerOf(frame);
         java.awt.KeyboardFocusManager real = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -1512,17 +1609,7 @@ public class testRouteEditorValidation
 
         try
         {
-            support.Keys.press(owner, java.awt.event.KeyEvent.VK_7);
-
-            return support.Components.onTheEventThread(() ->
-            {
-                String out = table.isEditing()
-                    ? "line " + table.getEditingRow() + " column " + table.getEditingColumn() : "nothing";
-
-                if (table.isEditing()) table.getCellEditor().cancelCellEditing();
-
-                return out;
-            });
+            keys.accept(owner);
         }
         finally
         {
