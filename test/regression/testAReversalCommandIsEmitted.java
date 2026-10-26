@@ -275,6 +275,8 @@ public class testAReversalCommandIsEmitted
      * itself out, this is where it shows: the loop in `executePathInternal` offers `path.get(i).getEnd()` to the
      * mid-path reversal branch for every edge INCLUDING THE LAST, and the arrival block below asks the same question of
      * the same square.
+     *
+     * MUTATION: none; this is OB-189's test of the double-turn theory, and a pass says the theory is wrong.
      */
     @Test
     public void testTwoLegsStillTurnTheTrainExactlyOnce() throws Exception

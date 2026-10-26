@@ -28,9 +28,9 @@
 
 SLOT_BASE="${TC_LOCK:-${TEMP:-${TMP:-/tmp}}/traincontrol-battery.lock}"
 
-# How many slots there are: one per four logical processors plus two, from two to eight (Adam, 2026-10-25: "Can we
-# increase test concurrency by 1 or 2?"; 7 on his 20-thread machine).  From the processor count only, so every
-# runner on the machine counts the same number whenever it asks; TC_SLOTS overrides it.
+# How many slots there are: one per four logical processors plus two, from two to eight (7 on a 20-thread machine).
+# From the processor count only, so every runner on the machine counts the same number whenever it asks; TC_SLOTS
+# overrides it.
 slot_count()
 {
     n="${TC_SLOTS:-}"

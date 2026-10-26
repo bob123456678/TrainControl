@@ -207,6 +207,8 @@ public class testTheCheckerAgreesWithTheBuild
         Map<TileKey, Set<TileKey>> reach = reachFromEachStation();
 
         // A floor like its siblings': without it "both sets are empty" and "the checker is silently broken" look alike.
+        // MUTATION that survives: make `AutonomyChecks.checkStations` never report STATION_UNREACHABLE; the floor
+        // misses it whenever no station is left unreached once the closed ones are taken out.
         assertFalse(reach.isEmpty(),
             "reachFromEachStation() examined no stations at all, so the comparison below is between "
             + "two empty sets and proves nothing about whether the checker and the build agree");

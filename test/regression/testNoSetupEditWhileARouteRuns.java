@@ -902,6 +902,8 @@ public class testNoSetupEditWhileARouteRuns
             // them, so a click reaches their doors only when the run began with the menu open.
             final javax.swing.JMenu layouts = layoutsMenu(ui);
 
+            // Duplicate, Combine and Delete sit in the Manage Pages submenu FR-146 hid, so these clicks reach no door
+            // a user has; the editor's own page items are claimed in ui.testTheLayoutEditorManagesPages.
             for (String item : LAYOUT_ITEMS)
             {
                 final JMenuItem door = itemCalled(layouts, I18n.t(item));
