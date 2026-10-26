@@ -128,7 +128,7 @@ public class testDiagramDrawingSettings
     @Test
     public void testTheDrawingSettingsAreOneGroupUnderAutonomy() throws Exception
     {
-        String group = SourceOf.declaration("private void buildDiagramDrawingMenu()");
+        String group = SourceOf.declaration("void buildDiagramDrawingMenu()");
 
         assertTrue(group.contains("autonomyToolbarMenu.addSeparator()"),
             "the divider above the group is gone, so the three settings run on from whatever is "
@@ -166,9 +166,9 @@ public class testDiagramDrawingSettings
     @Test
     public void testTurningTheArrowsOnRefreshesWhatIsActuallyShown() throws Exception
     {
-        String group = SourceOf.declaration("private void buildDiagramDrawingMenu()");
+        String group = SourceOf.declaration("void buildDiagramDrawingMenu()");
 
-        assertTrue(group.contains("autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown()"),
+        assertTrue(group.contains("ui.autonomyOverlayToggle != null && ui.autonomyOverlayToggle.isOverlayShown()"),
             "the arrows setting refreshes the autonomy layer without asking whether that layer is "
             + "being shown - so switching the arrows on would turn the whole static overlay on with "
             + "them, and with no toggle built yet it would throw");
@@ -219,7 +219,7 @@ public class testDiagramDrawingSettings
 
         // Place by place as well: the declaration, the accessor, and the menu's tick and write.
         assertEquals(countsIn("DIAGRAM_RESTRICTION_ARROWS", "public static final String DIAGRAM_RESTRICTION_ARROWS",
-            "public static boolean diagramShowsRestrictionArrows()", "private void buildDiagramDrawingMenu()"),
+            "public static boolean diagramShowsRestrictionArrows()", "void buildDiagramDrawingMenu()"),
             java.util.Arrays.asList(1, 1, 2), keyNamed);
     }
 

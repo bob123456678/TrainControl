@@ -278,12 +278,13 @@ public class testDiagramExport
             // itself unexercised.
             SwingUtilities.invokeAndWait(() -> list.setSelectedItem(onScreen));
 
-            // The exact private call the active-page menu item makes.
-            java.lang.reflect.Method activeLayoutPage =
-                TrainControlUI.class.getDeclaredMethod("activeLayoutPage");
+            // The exact private call the active-page menu item makes, on the window's Layouts menu (LayoutMenus).
+            Object menus = layoutMenus();
+
+            java.lang.reflect.Method activeLayoutPage = menus.getClass().getDeclaredMethod("activeLayoutPage");
             activeLayoutPage.setAccessible(true);
 
-            Object reportedActive = activeLayoutPage.invoke(ui);
+            Object reportedActive = activeLayoutPage.invoke(menus);
 
             assertEquals(reportedActive, onScreen,
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
@@ -765,9 +766,11 @@ public class testDiagramExport
     {
         java.lang.reflect.Method sizeFor;
 
+        Object menus = layoutMenus();
+
         try
         {
-            sizeFor = TrainControlUI.class.getDeclaredMethod("diagramTileSizeFor", Object.class);
+            sizeFor = menus.getClass().getDeclaredMethod("diagramTileSizeFor", Object.class);
         }
         catch (NoSuchMethodException none)
         {
@@ -784,7 +787,7 @@ public class testDiagramExport
 
         for (int i = 0; i < 3; i++)
         {
-            tile[i] = (Integer) sizeFor.invoke(ui, org.traincontrol.util.I18n.t(keys[i]));
+            tile[i] = (Integer) sizeFor.invoke(menus, org.traincontrol.util.I18n.t(keys[i]));
             wide[i] = render(tile[i]).getWidth();
         }
 
@@ -792,5 +795,15 @@ public class testDiagramExport
         assertTrue(tile[0] < tile[1] && tile[1] < tile[2], "Medium is not between Small and Large: " + java.util.Arrays.toString(tile));
         assertTrue(wide[0] < wide[1] && wide[1] < wide[2],
             "the pictures do not grow with the size: " + java.util.Arrays.toString(wide));
+    }
+
+    /** The window's Layouts menu, which holds the export's private steps. */
+    private static Object layoutMenus() throws Exception
+    {
+        java.lang.reflect.Field menus = TrainControlUI.class.getDeclaredField("layoutMenus");
+
+        menus.setAccessible(true);
+
+        return menus.get(ui);
     }
 }

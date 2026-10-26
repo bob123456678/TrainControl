@@ -2669,7 +2669,7 @@ public class testEditorSurfaceRules
         // AND INTO anEditorWindow, which asks the editor windows
         if (open.contains("anEditorWindow()"))
         {
-            open = codeOf("private LayoutEditor anEditorWindow()");
+            open = codeOf("LayoutEditor anEditorWindow()");
         }
 
         assertTrue(open.contains("openEditor"),
@@ -2936,7 +2936,7 @@ public class testEditorSurfaceRules
         }
 
         // THE EXPLANATION covers every branch of the RULE.
-        String rule = codeOf("private boolean layoutCanBeEdited()");
+        String rule = codeOf("boolean layoutCanBeEdited()");
         String why = codeOf("public String whyLayoutCannotBeEdited()");
 
         // THE FLAG, not an inference (Adam: "we just need a layout loaded flag in the TrainControlUI class,
@@ -3001,20 +3001,20 @@ public class testEditorSurfaceRules
     public void testTheLayoutMenuNamesItsGroups() throws Exception
     {
         // Gone, `SourceOf.declaration` fails: nothing mounts the Layout menu headings any more
-        String mount = codeOf("private void mountLayoutHeadings()");
+        String mount = codeOf("void mountLayoutHeadings()");
 
         assertTrue(mount.contains("headingLocalLayout") && mount.contains("headingCentralStationLayout"),
             "one of the two Layout menu headings is gone, so a menu whose halves do different things "
             + "to different railways no longer says which is which");
 
         // Placed relative to the items they head, not at fixed indices - everything above them moves.
-        assertTrue(mount.contains("indexOnLayoutMenu(chooseLocalDataFolderMenuItem)")
-                && mount.contains("indexOnLayoutMenu(switchCSLayoutMenuItem)"),
+        assertTrue(mount.contains("indexOnLayoutMenu(ui.chooseLocalDataFolderMenuItem())")
+                && mount.contains("indexOnLayoutMenu(ui.switchCSLayoutMenuItem())"),
             "the headings are placed by counting rather than by looking their neighbours up, so the "
             + "next item added to this menu puts them in the wrong place");
 
         // THE TRAP.
-        String guard = codeOf("private void guardLayoutMenu()");
+        String guard = codeOf("void guardLayoutMenu()");
 
         assertTrue(guard.contains("child == localHeading || child == centralStationHeading"),
             "the headings are no longer exempt from the enable/disable sweep, so they come back "
@@ -3028,13 +3028,13 @@ public class testEditorSurfaceRules
             + "does nothing when clicked");
 
         // The export sits with the pop-out.
-        String export = codeOf("private void buildDiagramExportMenu()");
+        String export = codeOf("void buildDiagramExportMenu()");
 
-        assertTrue(export.contains("indexOnLayoutMenu(popUpAllMenuItem)"),
+        assertTrue(export.contains("indexOnLayoutMenu(ui.popUpAllMenuItem())"),
             "the picture export is no longer placed beside the pop-out - it goes back to the foot of "
             + "the menu, below the Central Station group it has nothing to do with");
 
-        assertFalse(export.contains("layoutMenu.addSeparator()"),
+        assertFalse(export.contains("layoutMenu().addSeparator()"),
             "the export still adds a separator of its own, which now cuts the pop-out group in half");
     }
 
@@ -3072,12 +3072,12 @@ public class testEditorSurfaceRules
     @Test
     public void testThePopOutAndExportSitBelowTheStationSection() throws Exception
     {
-        String mount = codeOf("private void mountLayoutHeadings()");
+        String mount = codeOf("void mountLayoutHeadings()");
 
-        int heading = mount.indexOf("layoutMenu.add(centralStationHeading");
-        int removed = mount.indexOf("layoutMenu.remove(popUpAllMenuItem)");
-        int readded = mount.indexOf("layoutMenu.add(popUpAllMenuItem)");
-        int export = mount.indexOf("layoutMenu.add(exportDiagramItem)");
+        int heading = mount.indexOf("layoutMenu().add(centralStationHeading");
+        int removed = mount.indexOf("layoutMenu().remove(ui.popUpAllMenuItem())");
+        int readded = mount.indexOf("layoutMenu().add(ui.popUpAllMenuItem())");
+        int export = mount.indexOf("layoutMenu().add(ui.exportDiagramItem)");
 
         // Both present before either is ordered - indexOf answers -1 for something absent.
         assertTrue(heading >= 0, "the Central Station heading is no longer mounted");

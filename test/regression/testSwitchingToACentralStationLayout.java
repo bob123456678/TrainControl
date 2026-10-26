@@ -145,11 +145,11 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testTheLayoutMenuAndPanelAreDeactivatedTogether() throws Exception
     {
-        String body = SourceOf.declaration("private void guardLayoutMenu()");
+        String body = SourceOf.declaration("void guardLayoutMenu()");
 
         // The answer is fresh when the menu opens because the menu asks `applyLayoutEditingAvailability`, the one owner
         // of that property, rather than guardLayoutMenu writing it too; that is asserted below.
-        for (String item : new String[] { "editPageMenu", "popUpAllMenuItem" })
+        for (String item : new String[] { "editPageMenu", "popUpAllMenuItem()" })
         {
             assertTrue(body.contains(item + ".setEnabled("),
                 "guardLayoutMenu no longer decides whether " + item + " is available, so it stays "
@@ -362,8 +362,9 @@ public class testSwitchingToACentralStationLayout
             + "the diagram rebuild, and the clear a Central Station switch performs. A flag that is "
             + "not refreshed where the truth moves is staler than the inference it replaced");
 
-        // And each of those properties has a single writer.
-        assertEquals(SourceOf.occurrences("popUpAllMenuItem.setEnabled("), 1,
+        // And each of those properties has a single writer, by the field or through the window's accessor.
+        assertEquals(SourceOf.occurrences("popUpAllMenuItem.setEnabled(")
+            + SourceOf.occurrences("popUpAllMenuItem().setEnabled("), 1,
             "All Layouts is set from more than one place again. repaintPathLabel used to set it TRUE "
             + "unconditionally for a local layout and re-enable it moments after the menu guard had "
             + "greyed it - the same two-writers fault a reviewer already fixed for Manage Pages");

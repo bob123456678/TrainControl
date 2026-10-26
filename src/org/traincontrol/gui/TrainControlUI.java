@@ -351,12 +351,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // the locomotive list can say the same thing in the same color
     public static final Color COLOR_AT_HOME = new Color(0, 200, 210);
 
-    private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
+    javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
 
     private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
 
-    private javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
-    private javax.swing.JCheckBoxMenuItem allowedDirectionsMenuItem;
+    javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
 
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
@@ -1021,8 +1020,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
            
         // Restore UI component state
         mountRoutingLogic();
-        buildDiagramDrawingMenu();
-        buildDiagramExportMenu();
+        layoutMenus.buildDiagramDrawingMenu();
+        layoutMenus.buildDiagramExportMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
@@ -2429,439 +2428,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         refreshConfigurationTitles();
     }
 
-    /**
-     * Grays the Layout menu while an editor has the diagram and offers the way back (OB-033): saving or rebuilding then
-     * commits edits the editor has not saved.  Applied when the menu opens, when the answer is certainly current.
-     */
-    private void guardLayoutMenu()
-    {
-        if (layoutMenu == null) return;
-
-        boolean busy = isLayoutEditorOpen();
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            java.awt.Component child = layoutMenu.getMenuComponent(i);
-
-            if (child == goToEditorItem) continue;
-
-            // A heading is a disabled label by design; do not switch it back on.
-            if (child == localHeading || child == centralStationHeading) continue;
-
-            // Taken away, never handed back: `repaintPathLabel` owns the Central Station items and grays them when none
-            // is reachable (OB-098), which IS their guard (the switch action checks no connection).
-            // initializeLocalLayoutMenuItem likewise: its listener disables it before createAndApplyEmptyLayout runs
-            // off the EDT, and only the completion callback re-enables it.
-            if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem
-                || child == initializeLocalLayoutMenuItem)
-            {
-                if (busy) child.setEnabled(false);
-
-                continue;
-            }
-
-            child.setEnabled(!busy);
-        }
-
-        applyLayoutEditingAvailability();
-
-        refreshDataSourceLabel();
-
-        // The items that need a local layout to act on (OB-128); left alone when an editor is open.
-        if (!busy)
-        {
-            boolean workable = layoutCanBeEdited();
-
-            // Manage Pages is not set here: this menu, opening on its own schedule, disagreed with the owner,
-            // `applyLayoutEditingAvailability`, during a layout database rebuild.
-            if (editPageMenu != null) editPageMenu.setEnabled(workable && isLayoutLoaded());
-
-            refreshRecentLayouts();
-
-            // Pop-outs and the picture export need loaded pages, not a local folder (a Central Station diagram works),
-            // and the export would be handed the null page that activeLayoutPage returns when the selector is empty.
-            boolean loaded = isLayoutLoaded();
-
-            if (popUpAllMenuItem != null) popUpAllMenuItem.setEnabled(loaded);
-
-            if (exportDiagramItem != null) exportDiagramItem.setEnabled(loaded);
-
-            // Its own question: excluded from the loop above, and its only other writer never re-enables it, so opening
-            // this menu once with an editor open grayed it for the session on a CS3.
-            if (openCS3AppMenuItem != null) openCS3AppMenuItem.setEnabled(
-                this.model != null && this.model.isCS3());
-        }
-
-        // While autonomy runs or a route holds the setup (`aRunHoldsTheSetup`), what changes the diagram or the folder
-        // is grayed with the reason (each also refuses on the click, MT-141); the folder, pop-outs, picture and CS3 app
-        // stay.
-        boolean running = isAutonomyBusy() || (this.model != null && this.model.isAutonomyRunning())
-            || aRunHoldsTheSetup();
-
-        String why = running ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
-
-        greyForTheRun(chooseLocalDataFolderMenuItem, running, false, why);
-        greyForTheRun(recentLayoutsMenu, running, false, why);
-        greyForTheRun(modifyLocalLayoutMenu, running, false, why);
-        greyForTheRun(managePagesItem, running, false, why);
-        greyForTheRun(editPageMenu, running, false, why);
-        greyForTheRun(initializeLocalLayoutMenuItem, running, true, why);
-
-        // The two Central Station items' owner works them out again once they are given back
-        if (greyForTheRun(switchCSLayoutMenuItem, running, true, why)
-            | greyForTheRun(downloadCSLayoutMenuItem, running, true, why))
-        {
-            repaintPathLabel();
-        }
-
-        if (goToEditorItem == null)
-        {
-            goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
-
-            goToEditorItem.addActionListener(e -> showOpenEditor());
-
-            layoutMenu.add(goToEditorItem, 0);
-        }
-
-        goToEditorItem.setVisible(busy);
-    }
-
-    /** The "an editor has this diagram" item on the Layout menu. */
-    private javax.swing.JMenuItem goToEditorItem;
-
-    /** What a Layout menu item had before a run grayed it: whether it was live, and its tooltip */
-    private static final String GREYED_FOR_THE_RUN = "greyedForTheRun";
-
-    /**
-     * Grays the item with `why` as its tooltip while a run goes and gives the tooltip back after it (the enabled state
-     * too, when `owned` by something else); returns true when it was given back just now.
-     */
-    private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
-    {
-        if (item == null) return false;
-
-        Object[] kept = (Object[]) item.getClientProperty(GREYED_FOR_THE_RUN);
-
-        if (running)
-        {
-            if (kept == null)
-            {
-                item.putClientProperty(GREYED_FOR_THE_RUN, new Object[] {item.isEnabled(), item.getToolTipText()});
-            }
-
-            item.setEnabled(false);
-
-            item.setToolTipText(AutonomyEditorPanel.wrapped(why));
-
-            return false;
-        }
-
-        if (kept == null) return false;
-
-        item.putClientProperty(GREYED_FOR_THE_RUN, null);
-
-        if (owned) item.setEnabled((Boolean) kept[0]);
-
-        item.setToolTipText((String) kept[1]);
-
-        return true;
-    }
-
-    /** The two section labels on the Layout menu. */
-    private javax.swing.JMenuItem localHeading;
-    private javax.swing.JMenuItem centralStationHeading;
-
-    /**
-     * Preferences > Debug, in debug and simulation only.  Echo Sent Commands is `DEBUG_SIMULATE_PACKETS`: a simulation
-     * then answers every command as a Central Station would, so the window can follow a throttle reversal (MT-488).
-     * An unattended test sets the flag in code, so there the stored choice is neither read into it nor written from it.
-     */
-    private void mountDebugMenu()
-    {
-        if (this.model == null || !this.model.isDebug() || !this.model.isSimulation()) return;
-
-        if (interfaceMenu == null) return;
-
-        // On in every simulation: otherwise it answers nothing it sends (power, switch, route) and autonomy cannot run.
-        // Turned on at each start and said where the stored choice was off; the menu item still turns it off.
-        if (!isUnattended())
-        {
-            boolean wasOn = prefs.getBoolean(ECHO_COMMANDS_PREF, false);
-
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
-
-            prefs.putBoolean(ECHO_COMMANDS_PREF, true);
-
-            if (!wasOn)
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(this, I18n.t("ui.main.infoEchoTurnedOn")));
-            }
-        }
-
-        javax.swing.JMenu debug = new javax.swing.JMenu(I18n.t("ui.main.toolbar.debug"));
-
-        final javax.swing.JCheckBoxMenuItem echo =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.echoCommands"));
-
-        echo.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("ui.main.toolbar.tooltip.echoCommands")));
-
-        echo.setSelected(org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS);
-
-        echo.addActionListener(e ->
-        {
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echo.isSelected();
-
-            if (!isUnattended()) prefs.putBoolean(ECHO_COMMANDS_PREF, echo.isSelected());
-        });
-
-        debug.add(echo);
-
-        interfaceMenu.add(debug);
-    }
-
-    /** A disabled bold item as a label (as LayoutRightclickAutonomyMenu): a plain grayed item looks unavailable. */
-    private javax.swing.JMenuItem menuHeading(String text)
-    {
-        javax.swing.JMenuItem heading = new javax.swing.JMenuItem(text);
-
-        heading.setEnabled(false);
-        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
-
-        return heading;
-    }
-
-    /**
-     * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward, with its Manage
-     * Pages menu open (FR-146).  It stands in for the Manage Pages menu, hidden on Adam's word: to bring that back,
-     * drop its `setVisible(false)` here and this item.
-     */
-    private void mountManagePages()
-    {
-        if (layoutMenu == null || modifyLocalLayoutMenu == null || managePagesItem != null) return;
-
-        managePagesItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.managePages"));
-
-        managePagesItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.modifyLayout"));
-
-        managePagesItem.addActionListener(e -> openManagePages());
-
-        int at = indexOnLayoutMenu(modifyLocalLayoutMenu);
-
-        if (at >= 0) layoutMenu.add(managePagesItem, at);
-        else layoutMenu.add(managePagesItem);
-
-        modifyLocalLayoutMenu.setVisible(false);
-    }
-
     /** Layouts > Manage Pages..., in place of the hidden menu of that name. */
-    private javax.swing.JMenuItem managePagesItem;
-
-    /** Edit's way in, then the editor's page menu, posted twice to follow the editor's posted build and show. */
-    private void openManagePages()
-    {
-        openLayoutEditor(null, null, null);
-
-        javax.swing.SwingUtilities.invokeLater(() -> javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            LayoutEditor shown = anEditorWindow();
-
-            if (shown != null) shown.openPageMenu();
-        }));
-    }
-
-    /** Items are looked up, not counted, as everything above the headings moves. */
-    private void mountLayoutHeadings()
-    {
-        if (layoutMenu == null || localHeading != null) return;
-
-        localHeading = menuHeading(I18n.t("ui.main.toolbar.headingLocalLayout"));
-        centralStationHeading = menuHeading(I18n.t("ui.main.toolbar.headingCentralStationLayout"));
-
-        int local = indexOnLayoutMenu(chooseLocalDataFolderMenuItem);
-
-        if (local >= 0) layoutMenu.add(localHeading, local);
-
-        int station = indexOnLayoutMenu(switchCSLayoutMenuItem);
-
-        if (station >= 0) layoutMenu.add(centralStationHeading, station);
-
-        // Below both sections: both take whatever is loaded and put it in a window or a file, so they sit under no
-        // heading, moved together and in order so the export stays beside the pop-out.
-        if (popUpAllMenuItem != null)
-        {
-            layoutMenu.remove(popUpAllMenuItem);
-
-            if (exportDiagramItem != null) layoutMenu.remove(exportDiagramItem);
-
-            layoutMenu.addSeparator();
-            layoutMenu.add(popUpAllMenuItem);
-
-            if (exportDiagramItem != null) layoutMenu.add(exportDiagramItem);
-        }
-
-        tidyLayoutMenuSeparators();
-    }
-
-    /** Walks the children, not the generated `jSeparator8` and `jSeparator24`, which the designer renumbers. */
-    private void tidyLayoutMenuSeparators()
-    {
-        if (layoutMenu == null) return;
-
-        boolean previousWasSeparator = true;
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            boolean separator = layoutMenu.getMenuComponent(i) instanceof javax.swing.JSeparator;
-
-            if (separator && previousWasSeparator)
-            {
-                layoutMenu.remove(i);
-
-                i--;
-
-                continue;
-            }
-
-            previousWasSeparator = separator;
-        }
-
-        // And a trailing one, which the loop above cannot see because nothing follows it.
-        int last = layoutMenu.getMenuComponentCount() - 1;
-
-        if (last >= 0 && layoutMenu.getMenuComponent(last) instanceof javax.swing.JSeparator)
-        {
-            layoutMenu.remove(last);
-        }
-    }
-
-    private int indexOnLayoutMenu(java.awt.Component item)
-    {
-        if (layoutMenu == null || item == null) return -1;
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            if (layoutMenu.getMenuComponent(i) == item) return i;
-        }
-
-        return -1;
-    }
-
-    /**
-     * Empties the track diagram panel when there is no longer a diagram (OB-128), as a grayed tab holding the last
-     * railway looks live.  The page cache stays: its grids belong to pages that may come back with their captions.
-     */
-    private void clearLayoutPanel()
-    {
-        if (InnerLayoutPanel == null) return;
-
-        InnerLayoutPanel.removeAll();
-        InnerLayoutPanel.revalidate();
-        InnerLayoutPanel.repaint();
-    }
-
-    /**
-     * Names the current data source on the menu item that opens it (FR-040), asked from `guardLayoutMenu` when somebody
-     * looks.  A local layout whose pages are not loaded is None, not Local: the folder a preference points at would
-     * describe a railway not on screen.
-     */
-    private void refreshDataSourceLabel()
-    {
-        if (showCurrentLayoutFolderMenuItem == null) return;
-
-        String source;
-
-        // isLayoutLoaded(), not the raw getLayoutList().isEmpty() (see the layoutLoaded field), so this item cannot
-        // disagree with guardLayoutMenu's during a refreshLayouts() rebuild.
-        if (this.model == null || !isLayoutLoaded())
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceNone");
-        }
-        else if (isLocalLayout())
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceLocal");
-        }
-        else
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceCentralStation");
-        }
-
-        showCurrentLayoutFolderMenuItem.setText(I18n.f("ui.main.toolbar.dataSource", source));
-    }
-
-    /** "Edit Layout Page..." on the Layouts menu, one entry per page; rebuilt on every mount as the pages change. */
-    private void mountEditPageMenu()
-    {
-        if (layoutMenu == null) return;
-
-        if (editPageMenu != null) layoutMenu.remove(editPageMenu);
-
-        editPageMenu = new javax.swing.JMenu(I18n.t("layout.ui.menuEditLayoutPage"));
-
-        editPageMenu.setToolTipText(
-            AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipEditLayoutPage")));
-
-        List<String> pages = this.model == null ? new ArrayList<>() : this.model.getLayoutList();
-
-        for (final String page : pages)
-        {
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(page);
-
-            item.addActionListener(event -> openLayoutEditor(page, null, null));
-
-            editPageMenu.add(item);
-        }
-
-        editPageMenu.setEnabled(!pages.isEmpty() && isLocalLayout());
-
-        // Directly under Manage Pages, its other half (OB-021); add() would put it at the bottom.
-        int under = -1;
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            if (layoutMenu.getMenuComponent(i) == modifyLocalLayoutMenu)
-            {
-                under = i;
-                break;
-            }
-        }
-
-        if (under >= 0) layoutMenu.add(editPageMenu, under + 1);
-        else layoutMenu.add(editPageMenu);
-    }
+    javax.swing.JMenuItem managePagesItem;
 
     /** The one Edit Layout Page menu, rebuilt rather than duplicated. */
-    private javax.swing.JMenu editPageMenu;
-
-    /** Drops separators that separate nothing (OB-021), leading and trailing ones too; swept, not removed by index. */
-    private void tidySeparators(javax.swing.JMenu menu)
-    {
-        if (menu == null) return;
-
-        boolean previousWasSeparator = true;
-
-        for (int i = 0; i < menu.getMenuComponentCount(); )
-        {
-            boolean separator = menu.getMenuComponent(i) instanceof javax.swing.JSeparator;
-
-            if (separator && previousWasSeparator)
-            {
-                menu.remove(i);
-                continue;
-            }
-
-            previousWasSeparator = separator;
-
-            i++;
-        }
-
-        while (menu.getMenuComponentCount() > 0
-            && menu.getMenuComponent(menu.getMenuComponentCount() - 1)
-                instanceof javax.swing.JSeparator)
-        {
-            menu.remove(menu.getMenuComponentCount() - 1);
-        }
-    }
+    javax.swing.JMenu editPageMenu;
 
     /** The autonomy menu, built in code as its items are rebuilt from the configurations on disk at each opening. */
     private AutonomyMenu autonomyMenu;
@@ -3126,9 +2697,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Above the no-session return: these concern the Layout menu, not a session, and a Central Station layout
         // always has a null `session`, so below it the guard, the data-source label and the headings would never exist
         // for it.
-        mountLayoutHeadings();
-        mountManagePages();
-        mountRecentLayouts();
+        layoutMenus.mountLayoutHeadings();
+        layoutMenus.mountManagePages();
+        layoutMenus.mountRecentLayouts();
         mountRestoreFromBackup();
         mountFindRoute();
 
@@ -3139,7 +2710,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 @Override
                 public void menuSelected(javax.swing.event.MenuEvent e)
                 {
-                    guardLayoutMenu();
+                    layoutMenus.guardLayoutMenu();
                 }
 
                 @Override
@@ -3165,7 +2736,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Built but not shown: it stays as the home of the actions the Autonomy menu runs (a few hundred lines of
         // dialogs and file handling).
 
-        mountEditPageMenu();
+        layoutMenus.mountEditPageMenu();
     }
 
     /** Re-attaches the timetable and status panels: callbacks live on the Layout, which parseAuto replaces (OB-097). */
@@ -3862,7 +3433,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Whether there is a track diagram of the user's own to edit (OB-126): not with a CS layout or none loaded. */
-    private boolean layoutCanBeEdited()
+    boolean layoutCanBeEdited()
     {
         return isLayoutLoaded() && isLocalLayout();
     }
@@ -5092,7 +4663,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * An editor window of this window's that is still there, or null (newest first).  Asked of the windows, not of
      * `openEditor` or the Edit button, which a switch between editors gives back early.
      */
-    private LayoutEditor anEditorWindow()
+    LayoutEditor anEditorWindow()
     {
         if (openEditor != null && openEditor.isDisplayable()) return openEditor;
 
@@ -6326,7 +5897,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The band holding the banner and the controls, kept so its color can follow whether autonomy sees this page. */
     private javax.swing.JPanel autonomyDiagramStrip;
 
-    private AutonomyOverlayToggle autonomyOverlayToggle;
+    AutonomyOverlayToggle autonomyOverlayToggle;
 
     /** Whether the strip's copy of the run buttons already follows the real ones, apart from the strip existing. */
     private boolean listeningToRunButtons;
@@ -6979,7 +6550,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // Once the model says which mode this is.
-        mountDebugMenu();
+        layoutMenus.mountDebugMenu();
                 
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
@@ -8948,231 +8519,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * The three settings that decide what an autonomy setup DRAWS on the ordinary track diagram.  None needs a setup
-     * loaded: `showStaticAutonomyLayer` returns when there is no session, graph or configuration.
-     */
-    private void buildDiagramDrawingMenu()
-    {
-        if (autonomyToolbarMenu == null) return;
-
-        autonomyToolbarMenu.addSeparator();
-
-        // Built here (generated blocks drop hand-written items).  On by default: a vanishing caption surprises more.
-        final javax.swing.JCheckBoxMenuItem show = new javax.swing.JCheckBoxMenuItem(
-            I18n.t("autolayout.ui.menuShowInactiveLabels"),
-            prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT));
-
-        show.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels")));
-
-        show.addActionListener(event ->
-        {
-            prefs.putBoolean(SHOW_INACTIVE_LABELS_PREF, show.isSelected());
-
-            // Applied to what is already drawn; the grid rebuilds only for other reasons.
-            refreshCaptionVisibility();
-        });
-
-        autonomyToolbarMenu.add(show);
-
-        this.greyStationLabelsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
-
-        this.greyStationLabelsMenuItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.greyStationLabels")));
-
-        this.greyStationLabelsMenuItem.setSelected(stationLabelsAreGrey());
-
-        this.greyStationLabelsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(STATION_LABELS_GREY, this.greyStationLabelsMenuItem.isSelected());
-
-            // The grid, not a repaint: a caption's color is chosen when it is built.
-            repaintLayout();
-        });
-
-        autonomyToolbarMenu.add(this.greyStationLabelsMenuItem);
-
-        this.restrictionArrowsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.restrictionArrows"));
-
-        this.restrictionArrowsMenuItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restrictionArrows")));
-
-        this.restrictionArrowsMenuItem.setSelected(
-            prefs.getBoolean(DIAGRAM_RESTRICTION_ARROWS, true));
-
-        this.restrictionArrowsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(DIAGRAM_RESTRICTION_ARROWS,
-                this.restrictionArrowsMenuItem.isSelected());
-
-            // The annotation layer, not the grid; handed the overlay's own state, which is safe with no setup loaded.
-            showStaticAutonomyLayer(
-                autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
-        });
-
-        autonomyToolbarMenu.add(this.restrictionArrowsMenuItem);
-
-        // And the green (FR-110), chosen apart from the red: either, or both.
-        this.allowedDirectionsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
-
-        this.allowedDirectionsMenuItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.allowedDirections")));
-
-        this.allowedDirectionsMenuItem.setSelected(diagramShowsAllowedDirections());
-
-        this.allowedDirectionsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(DIAGRAM_ALLOWED_DIRECTIONS, this.allowedDirectionsMenuItem.isSelected());
-
-            showStaticAutonomyLayer(
-                autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
-        });
-
-        autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
-    }
-
-    /**
-     * "Save diagram as a picture", on the Layout menu; built by hand so the feature is one method and one class.
-     */
-    private void buildDiagramExportMenu()
-    {
-        if (layoutMenu == null) return;
-
-        // One item, for the page on screen: a second one asking which page was rarely worth a menu line.
-        javax.swing.JMenuItem active =
-            new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
-
-        active.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("layout.ui.tooltipExportActiveDiagram")));
-
-        active.addActionListener(event -> exportDiagram(activeLayoutPage()));
-
-        // Beside the pop-out, both making a picture in a window of their own; looked up rather than counted.
-        int beside = indexOnLayoutMenu(popUpAllMenuItem);
-
-        if (beside >= 0) layoutMenu.add(active, beside + 1);
-        else layoutMenu.add(active);
-
-        // Kept so guardLayoutMenu can gray it by name (OB-128).
-        exportDiagramItem = active;
-    }
-
-    private javax.swing.JMenuItem exportDiagramItem;
-
-    /**
-     * The diagram page currently on screen, or null when there is none.
-     *
-     * The selector's own answer rather than a remembered one, so it cannot disagree with what the
-     * user is looking at.
-     */
-    private String activeLayoutPage()
-    {
-        Object showing = this.LayoutList == null ? null : this.LayoutList.getSelectedItem();
-
-        return showing == null ? null : showing.toString();
-    }
-
-    /** Pixels per square for a size picked in the export dialog, the pop-out's own; null for no pick. */
-    private Integer diagramTileSizeFor(Object picked)
-    {
-        return picked == null ? null : layoutSizes.get(picked.toString());
-    }
-
-    /**
-     * Writes a diagram page to a picture file: asks which page, at what size, and where.  Drawn OFF the event thread
-     * behind a spinner: it WAITS for tile images applied on the event thread, which holding would deadlock.
-     *
-     * @param page the page to draw, or null to ask which one
-     */
-    private void exportDiagram(String page)
-    {
-        java.util.List<String> pages = this.model.getLayoutList();
-
-        if (pages == null || pages.isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorNoDiagramToExport"));
-
-            return;
-        }
-
-        // A page that is no longer there - a rename or a reload between opening the menu and choosing
-        // from it - falls back to asking rather than exporting the wrong thing or nothing
-        if (page != null && !pages.contains(page)) page = null;
-
-        if (page == null)
-        {
-            page = (String) JOptionPane.showInputDialog(this,
-                I18n.t("layout.ui.promptWhichDiagram"), I18n.t("layout.ui.menuExportDiagram"),
-                JOptionPane.PLAIN_MESSAGE, null, pages.toArray(), pages.get(0));
-        }
-
-        if (page == null) return;
-
-        // The pop-out window's sizes, by its names, not a free pixel size, which is not a question about their railway.
-        Object[] sizes = layoutSizes.keySet().toArray();
-
-        Object size = JOptionPane.showInputDialog(this, I18n.t("layout.ui.promptDiagramSizeChoice"),
-            I18n.t("layout.ui.menuExportActiveDiagram"), JOptionPane.PLAIN_MESSAGE, null,
-            sizes, sizes[sizes.length - 1]);
-
-        Integer tileSize = diagramTileSizeFor(size);
-
-        if (tileSize == null) return;
-
-        javax.swing.JFileChooser chooser = new QuickFileChooser();
-
-        chooser.setDialogTitle(I18n.t("layout.ui.menuExportDiagram"));
-
-        // A sensible name that is also a legal one, since a page may be called anything at all
-        chooser.setSelectedFile(new java.io.File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
-
-        if (chooser.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
-
-        java.io.File destination = chooser.getSelectedFile();
-
-        if (!destination.getName().toLowerCase().endsWith(".png"))
-        {
-            destination = new java.io.File(destination.getParentFile(), destination.getName() + ".png");
-        }
-
-        final java.io.File writeTo = destination;
-        final int pixels = tileSize;
-        final String chosen = page;
-        final Exception[] failed = new Exception[1];
-
-        // Off the event thread, behind the spinner: the render WAITS for tile images decoded on the event thread.
-        BusyDialog.run(this, I18n.t("layout.ui.busyExportingDiagram"),
-            () ->
-            {
-                try
-                {
-                    DiagramExport.writePng(this.model.getLayout(chosen), pixels, this, writeTo);
-                }
-                catch (Exception e)
-                {
-                    failed[0] = e;
-                }
-            },
-            () ->
-            {
-                if (failed[0] != null)
-                {
-                    this.model.log(failed[0]);
-
-                    JOptionPane.showMessageDialog(this,
-                        I18n.f("layout.ui.errorDiagramExportFailed",
-                            String.valueOf(failed[0].getMessage())));
-
-                    return;
-                }
-
-                this.log(I18n.f("layout.ui.infoDiagramExported", writeTo.getAbsolutePath()));
-
-                showFileExplorer(writeTo.getParentFile());
-            });
-    }
+    javax.swing.JMenuItem exportDiagramItem;
 
     public ExecutorService getTileImageLoader()
     {
@@ -17842,7 +17189,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
 
     /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
-    private void openLayoutFolder(File folder)
+    void openLayoutFolder(File folder)
     {
         layoutFolderIs(folder.getPath());
 
@@ -21235,6 +20582,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The layout's folder and its pages (Duplicate, Rename, Add Blank Page, Combine, Create New Layout, Download). */
     private final LayoutFileActions layoutFileActions = new LayoutFileActions(this);
 
+    /** The Layouts menu, its Recent Layouts and picture export, the drawing settings and the Debug menu. */
+    private final LayoutMenus layoutMenus = new LayoutMenus(this);
+
     /** The route list: running, editing, duplicating, bulk arming, finding and refreshing routes. */
     private final RouteListPanel routeListPanel = new RouteListPanel(this);
 
@@ -21262,6 +20612,61 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JMenuItem initializeLocalLayoutMenuItem()
     {
         return this.initializeLocalLayoutMenuItem;
+    }
+
+    javax.swing.JMenu layoutMenu()
+    {
+        return this.layoutMenu;
+    }
+
+    javax.swing.JMenu interfaceMenu()
+    {
+        return this.interfaceMenu;
+    }
+
+    javax.swing.JMenu autonomyToolbarMenu()
+    {
+        return this.autonomyToolbarMenu;
+    }
+
+    javax.swing.JMenuItem chooseLocalDataFolderMenuItem()
+    {
+        return this.chooseLocalDataFolderMenuItem;
+    }
+
+    javax.swing.JMenuItem switchCSLayoutMenuItem()
+    {
+        return this.switchCSLayoutMenuItem;
+    }
+
+    javax.swing.JMenuItem downloadCSLayoutMenuItem()
+    {
+        return this.downloadCSLayoutMenuItem;
+    }
+
+    javax.swing.JMenu modifyLocalLayoutMenu()
+    {
+        return this.modifyLocalLayoutMenu;
+    }
+
+    javax.swing.JMenuItem openCS3AppMenuItem()
+    {
+        return this.openCS3AppMenuItem;
+    }
+
+    javax.swing.JMenuItem popUpAllMenuItem()
+    {
+        return this.popUpAllMenuItem;
+    }
+
+    javax.swing.JMenuItem showCurrentLayoutFolderMenuItem()
+    {
+        return this.showCurrentLayoutFolderMenuItem;
+    }
+
+    javax.swing.JPanel innerLayoutPanel()
+    {
+        return this.InnerLayoutPanel;
     }
 
     /** The autonomy session as the field holds it now; null until one is built. */
@@ -23147,7 +22552,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (left != null && !left.equals(new File(path).getAbsoluteFile())) recent.add(leaving);
 
-            for (String folder : recentLayoutsWithout(path))
+            for (String folder : LayoutMenus.recentLayoutsWithout(path))
             {
                 if (!new File(folder).getAbsoluteFile().equals(left)) recent.add(folder);
             }
@@ -23159,113 +22564,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** How many folders Layouts &gt; Recent Layouts lists (FR-145). */
-    private static final int RECENT_LAYOUTS_SHOWN = 5;
-
-    /** The recorded layout folders, most recent first, without `open` and without repeats (by `File.equals`). */
-    private static List<String> recentLayoutsWithout(String open)
-    {
-        List<String> kept = new ArrayList<>();
-
-        Set<File> seen = new HashSet<>();
-
-        if (open != null && !open.isEmpty()) seen.add(new File(open).getAbsoluteFile());
-
-        for (String path : prefs.get(RECENT_LAYOUTS_PREF, "").split("\n"))
-        {
-            if (!path.isEmpty() && seen.add(new File(path).getAbsoluteFile())) kept.add(path);
-        }
-
-        return kept;
-    }
-
-    /** Takes a folder off Recent Layouts (FR-145). */
-    private static void forgetRecentLayout(String path)
-    {
-        List<String> kept = new ArrayList<>();
-
-        for (String recorded : prefs.get(RECENT_LAYOUTS_PREF, "").split("\n"))
-        {
-            if (!recorded.isEmpty() && !new File(recorded).getAbsoluteFile().equals(new File(path).getAbsoluteFile()))
-            {
-                kept.add(recorded);
-            }
-        }
-
-        prefs.put(RECENT_LAYOUTS_PREF, String.join("\n", kept));
-    }
-
-    /** Layouts &gt; Recent Layouts (FR-145), rebuilt each time the Layouts menu opens. */
-    private javax.swing.JMenu recentLayoutsMenu;
-
-    private void mountRecentLayouts()
-    {
-        if (layoutMenu == null || recentLayoutsMenu != null) return;
-
-        recentLayoutsMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.recentLayouts"));
-
-        recentLayoutsMenu.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.recentLayouts")));
-
-        int open = indexOnLayoutMenu(chooseLocalDataFolderMenuItem);
-
-        if (open >= 0) layoutMenu.add(recentLayoutsMenu, open + 1);
-        else layoutMenu.add(recentLayoutsMenu);
-
-        refreshRecentLayouts();
-    }
-
-    /** The open layout is not listed; a name two folders share is shown as the whole path. */
-    private void refreshRecentLayouts()
-    {
-        if (recentLayoutsMenu == null) return;
-
-        recentLayoutsMenu.removeAll();
-
-        List<String> shown = recentLayoutsWithout(getLocalLayoutPath());
-
-        shown = shown.subList(0, Math.min(shown.size(), RECENT_LAYOUTS_SHOWN));
-
-        Map<String, Integer> named = new HashMap<>();
-
-        for (String path : shown) named.merge(new File(path).getName(), 1, Integer::sum);
-
-        for (final String path : shown)
-        {
-            String name = new File(path).getName();
-
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(named.get(name) > 1 || name.isEmpty() ? path : name);
-
-            item.setToolTipText(AutonomyEditorPanel.wrappedIfLong(path));
-
-            item.addActionListener(e -> openRecentLayout(path));
-
-            recentLayoutsMenu.add(item);
-        }
-
-        recentLayoutsMenu.setEnabled(!shown.isEmpty());
-    }
-
-    /** Open Layout's rules, without its chooser; a folder that has gone is said once and taken off the list. */
-    private void openRecentLayout(String path)
-    {
-        if (refuseWhileARunHoldsTheSetup(this)) return;
-
-        if (refuseWhileEditorOpen()) return;
-
-        File folder = new File(path);
-
-        if (!folder.isDirectory())
-        {
-            forgetRecentLayout(path);
-
-            refreshRecentLayouts();
-
-            JOptionPane.showMessageDialog(this, I18n.f("ui.main.toolbar.errorRecentLayoutGone", path));
-
-            return;
-        }
-
-        openLayoutFolder(folder);
-    }
+    static final int RECENT_LAYOUTS_SHOWN = 5;
 
     /**
      * A chooser for a layout folder, opening beside this computer's last one (OB-308): switching to the Central Station
@@ -23490,7 +22789,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     // And emptied, not just grayed (OB-128): the grid stayed mounted, so anything that reached this tab
                     // showed the railway just unloaded, looking live.
-                    clearLayoutPanel();
+                    layoutMenus.clearLayoutPanel();
                     // this.KeyboardTab.remove(this.layoutPanel);
                 }
                 else 

@@ -3066,8 +3066,14 @@ public class testNoSetupEditDuringARun
 
             answeringKeepOpen(asked, going);
 
-            // THE START'S DEBUG MENU, which reads the stored choice
-            final java.lang.reflect.Method mount = TrainControlUI.class.getDeclaredMethod("mountDebugMenu");
+            // THE START'S DEBUG MENU, which reads the stored choice; LayoutMenus mounts it
+            final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("layoutMenus");
+
+            held.setAccessible(true);
+
+            final Object menus = held.get(ui[0]);
+
+            final java.lang.reflect.Method mount = menus.getClass().getDeclaredMethod("mountDebugMenu");
 
             mount.setAccessible(true);
 
@@ -3075,7 +3081,7 @@ public class testNoSetupEditDuringARun
             {
                 try
                 {
-                    mount.invoke(ui[0]);
+                    mount.invoke(menus);
                 }
                 catch (Exception e)
                 {

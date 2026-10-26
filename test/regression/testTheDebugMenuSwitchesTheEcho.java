@@ -118,7 +118,7 @@ public class testTheDebugMenuSwitchesTheEcho
     @Test
     public void testItIsOfferedOnlyInDebugAndSimulation() throws Exception
     {
-        String body = SourceOf.withoutComments(SourceOf.declaration("private void mountDebugMenu()"));
+        String body = SourceOf.withoutComments(SourceOf.declaration("void mountDebugMenu()"));
 
         assertTrue(body.contains("isDebug()") && body.contains("isSimulation()"), "the Debug submenu is not held to"
             + " debug and simulation - \"visible only in this mode\": " + body);
