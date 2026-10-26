@@ -736,11 +736,17 @@ public class testRestoreFromBackup
             {
                 File archive = new File(backupFolder(), name);
 
-                // These come from the working directory, where a restore would write them back
+                // These come from the working directory, where a restore would write them back: a checkout that holds
+                // them (the main one can) skips rather than risk them
                 for (String entry : entriesOf(archive).keySet())
                 {
-                    assertFalse(entry.startsWith(Util.LOC_ICON_FOLDER + "/") || entry.equals(TrainControlUI.AUTONOMY_FILE_NAME),
-                        "precondition: the working directory holds " + entry + ", which the restore would write back");
+                    if (entry.startsWith(Util.LOC_ICON_FOLDER + "/") || entry.equals(TrainControlUI.AUTONOMY_FILE_NAME))
+                    {
+                        archive.delete();
+
+                        throw new SkipException("the working directory holds " + entry + ", which a restore would write"
+                            + " over");
+                    }
                 }
 
                 return archive;
