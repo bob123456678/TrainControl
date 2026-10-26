@@ -4136,6 +4136,14 @@ public class LayoutEditor extends PositionAwareJFrame
         combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
 
         menu.add(combine);
+
+        // Changes nothing, so a run does not refuse it: not a `pageMenuItem`
+        javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
+
+        sort.setFocusable(false);
+        sort.addActionListener(e -> JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoSortPages")));
+
+        menu.add(sort);
         menu.addSeparator();
         menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
 
