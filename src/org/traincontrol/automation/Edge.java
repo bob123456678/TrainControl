@@ -25,36 +25,16 @@ import org.traincontrol.util.Util;
 public class Edge
 {
     /**
-     * HOW MANY CLAIMS ARE STANDING ON THIS EDGE, not whether any is.
-     *
-     * This was a boolean, and a boolean cannot hold two claims.  Two different edges may name this one
-     * as a lock edge - which is what a crossing looks like when the editor writes it - and with a
-     * boolean the second claim wrote the same true as the first while the FIRST release wrote false
-     * for both, freeing track a second train was still crossing.
-     *
-     * Every raise is matched by exactly one release.  setOccupied raises this edge and each of its
-     * lock edges; setUnoccupied lowers both; the two "LockedEdge" methods are the same operations
-     * without the cascade, and exist so that a lock relation cannot recurse.
-     *
-     * FLOORED AT ZERO rather than allowed to go negative - see release().
+     * How many claims are standing on this edge, not whether any is: a boolean cannot hold two claims, and the first
+     * release would free track a second train is still crossing.  setOccupied raises this edge and each of its lock
+     * edges and setUnoccupied lowers them; the "LockedEdge" methods do the same without the cascade, so a lock relation
+     * cannot recurse.  Floored at zero (see release()).
      */
     private int occupancy;
     /**
-     * How many paths are RUNNING OVER this rail, as against holding it clear (OB-269).
-     *
-     * `occupancy` counts both: a path increments every edge it runs over AND every edge in each of
-     * those edges' `lockEdges`, so an edge can carry a claim because of rail it merely shares.  That
-     * is right for `isOccupied`, and right for the accessory protection in `getActiveAccs` - a held
-     * throat's turnouts must not be thrown either way.
-     *
-     * It is too wide for one question, and only one: whether a CANDIDATE path may use this rail.
-     * Both sides of that transaction walk `lockEdges` forwards, so a candidate sharing rail with an
-     * edge that shares rail with a running path was refused while sharing nothing with the path
-     * itself.  Adam's case, 2026-09-22: `BottomSecondary -> TunnelPre -> Tunnel` refused
-     * `BottomInner -> BottomInnerOtherside`, naming `12,7 -> Tunnel` - eight tiles shared with the
-     * run, three with the hop, and none at all between the run and the hop.
-     *
-     * So this counts the narrow thing, `isRunOver` asks it, and `occupancy` is left alone.
+     * How many paths are running over this rail, as against holding it clear (OB-269).  `occupancy` counts both,
+     * because a path also claims every edge in each of its edges' `lockEdges`; that is right for `isOccupied` and
+     * `getActiveAccs`, but too wide for whether a candidate path may use this rail, which `isRunOver` answers.
      */
     private int runOver;
     private final Point start;
@@ -63,23 +43,14 @@ public class Edge
     private int length = 0;
 
     /**
-     * The track between the last switch on this edge and the Point it ends at (Adam, 2026-09-02).
+     * The track between the last switch on this edge and the Point it ends at.  `Integer.MIN_VALUE` (the default) when
+     * the edge crosses no switch, as every hand-written or pre-3.0.0 configuration leaves it: such an edge does not
+     * bound where a train may come to rest.  `-1` when it crosses one and nothing in the stretch after it is measured:
+     * bounded but unknown, which this guard declines to act on.
      *
-     * `Integer.MIN_VALUE` - the default - when this edge crosses no switch, which is what a
-     * hand-written configuration and every pre-3.0.0 file will leave it as.  Such an edge does not
-     * bound where a train may come to rest, and `Layout.measuredRoomAtTheEndOf` walks back past it.
-     *
-     * `-1` when it does cross one and NOTHING in the stretch after it is measured: the room is bounded
-     * but unknown, and unknown is the case this guard declines to act on.
-     *
-     * **Not "some tile is unmeasured", which is what this said until 2026-09-08** - that was the rule
-     * Adam replaced two days earlier: *"you need to measure total distance between points, not validate
-     * that every edge has a length > 0.  It is only indeterminate if the entire logical segment has
-     * length 0."*  An unmeasured tile now contributes nothing and the rest still counts, so a partly
-     * measured stretch answers with what is known rather than throwing it away.
-     *
-     * Not authored anywhere.  It is derived from the diagram by `GraphReducer`, which is the only part
-     * of the system that knows which tiles an edge is made of.
+     * Adam: "you need to measure total distance between points, not validate that every edge has a length > 0.  It is
+     * only indeterminate if the entire logical segment has length 0."  An unmeasured tile contributes nothing and the
+     * rest still counts.  Derived from the diagram by `GraphReducer`, never authored.
      */
     private int roomAtTheEnd = Integer.MIN_VALUE;
 
@@ -323,31 +294,12 @@ public class Edge
     }
     
     /**
-     * The side of the END point this edge comes in by, as the BUILD names it.
+     * The side of the END point this edge comes in by, as the build names it.  A Point may be the far end of a run that
+     * turns corners, so the compass direction of the neighboring Point (`Layout.sideTowards`) is not the side the metal
+     * leaves by; the arrival write, the tail walk and the operator doors all read this one vocabulary (OB-182).
      *
-     * **Two vocabularies used to describe one thing, and only one of them blocked track.** A Point is
-     * the far end of a reduced run that may cross several tiles and turn corners, so the compass
-     * direction of the NEIGHBORING POINT - which is what `Layout.sideTowards` answers - is not the
-     * side the metal actually leaves by. A rail leaving north and curving east reaches a neighbor
-     * lying east: the geometry says "E" and the track says "N". On a straight they agree, which is why
-     * it survived everywhere anybody looked.
-     *
-     * Adam met both halves of it: *"placing a train on bottommainc asks about arrival from the west or
-     * the north, whereas it should be east or west"* (OB-182), and before that the same square offering
-     * the wrong pair on a paste. The doors were corrected once to read the build and reverted the same
-     * day - because `arrivedFrom` is CONSUMED by `edgesCoveredByStandingTrains`, which matched it
-     * against the geometry, so correct labels meant nothing matched on a curve and the track behind a
-     * standing train stopped being blocked at all.
-     *
-     * So the answer is not to pick a side but to give the model the one the builder already has. The
-     * builder knows this when it emits the edge; it travels in the configuration; and the arrival
-     * write, the tail walk and the operator doors all read it. One vocabulary rather than two that
-     * have to agree.
-     *
-     * Null for a configuration written before this existed, and for one built by hand in a test. Every
-     * reader falls back to the geometry when it is null, which is exactly the old behavior - so an
-     * old file keeps working and is wrong in the way it has always been wrong, rather than newly
-     * blocking nothing.
+     * Null for a configuration written before this existed or built by hand; every reader then falls back to the
+     * geometry.
      */
     private String entrySide = null;
 
@@ -368,21 +320,11 @@ public class Edge
     }
 
     /**
-     * The places this edge runs over, in order from its start, and what each of them measures (OB-207).
-     *
-     * **Without these an edge is covered whole or not at all.** A standing train's tail is measured in
-     * units and an edge knew only its total, so `Layout` could say "this edge is fouled" and never
-     * "this edge is fouled as far as here" - and a one-unit train parked at the end of a twelve-tile
-     * run refused every path that shared any tile of it.
-     *
-     * Written by the builder from `GraphReducer.placesAlong`, which is where the lock relation comes
-     * from as well, so what an edge says about its own metal and what it says about its rivals cannot
-     * disagree. The lengths sum to `getLength()`: the arriving square counts and the departing one does
-     * not, the same convention the reducer measures by.
-     *
-     * Empty for a hand-written configuration, for one written before 3.0.0, and for a test graph built
-     * by hand. Every reader falls back to the whole-edge answer when they are empty, which is exactly
-     * what it did before - an old file is no worse off than it was.
+     * The places this edge runs over, in order from its start, and what each measures (OB-207).  Without these an edge
+     * is covered whole or not at all: a one-unit train parked at the end of a twelve-tile run refused every path
+     * sharing any tile of it.  Written by the builder from `GraphReducer.placesAlong`; the lengths sum to
+     * `getLength()`, the arriving square counting and the departing one not.  Empty for a hand-written or pre-3.0.0
+     * configuration, where every reader falls back to the whole-edge answer.
      */
     private List<String> placeIds = Collections.emptyList();
 
@@ -422,7 +364,7 @@ public class Edge
     }
 
     /**
-     * The places answered 0 on purpose (Adam, 2026-09-23: *"stop listing answered zeros as missing"*).
+     * The places answered 0 on purpose (Adam: *"stop listing answered zeros as missing"*).
      *
      * They measure 0 - track of no length, which a leg answered throughout is measured as (`isMeasured`) - and a refusal
      * that counts the squares with no length leaves them out: the operator has already answered them.
@@ -448,12 +390,12 @@ public class Edge
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for on this edge, place by place: the key of the piece, switch or shared
-     * square each place lies in, where that still wants a length (OB-297; Adam, 2026-09-24: *"Locations of
-     * switches are known."*).  The own-tail note counts these, so it asks for exactly what the editor offers.
+     * What Mass Assign Lengths would ask a length for on this edge, place by place: the key of the piece, switch or
+     * shared square each place lies in, where that still wants a length (OB-297).  The own-tail note counts these, so
+     * it asks for exactly what the editor offers.
      *
-     * Written by the build.  A configuration built before has none, and says so (`knowsPiecesToMeasure`): its edges are
-     * then read whole, as the note read them until then.
+     * Written by the build; a configuration built before has none, and says so (`knowsPiecesToMeasure`), and its edges
+     * are read whole.
      */
     private java.util.Map<String, String> piecesToMeasure = Collections.emptyMap();
 
@@ -489,22 +431,15 @@ public class Edge
     }
 
     /**
-     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track of
-     * no length (Adam, 2026-09-24: *"0 lengths count as measures, so non-atomic should be allowed"*; and Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
+     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track
+     * of no length.  Adam: *"0 lengths count as measures, so non-atomic should be allowed"*.
      *
-     * **The question every length rule asks** of a leg with no length: the Atomic Routes gate
-     * (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for (`Layout.pathIsUnmeasured`), the
-     * route in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question - and
-     * the own-tail rule, which asks it of the places on a way round, since a way round begins and ends inside a leg: a
-     * return is judged once the way round has a length on it or every place on it answered (`Layout.measuredThroughout`;
-     * OB-300; Adam, 2026-10-10, asked: into 3.0.0 - until then it judged only a way round that had run some
-     * length, and let a train round a loop answered 0 into its own body).  An
-     * answered leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them.  They
-     * ask it together because they must agree: a route in that counted on past an answered 0 while the tail walk stopped
-     * there admitted a train whose tail lay on track nothing claimed (before the tail walk asked it too).  Every
-     * place must be answered - a square nobody answered, a switch or crossing on it included, leaves the leg unmeasured,
-     * as Mass Assign Lengths still asks for it.  Without places, which a hand-written configuration has none of, only a
-     * length says so.
+     * The question every length rule asks of a leg with no length (the Atomic Routes gate, the release escape, the
+     * route in, the room walk, the tail walk, the berth rule and the own-tail rule), so they must agree: an answered
+     * leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them
+     * (`Layout.measuredThroughout`, OB-300).  Every place must be answered - a square nobody answered, a switch or
+     * crossing on it included, leaves the leg unmeasured, as Mass Assign Lengths still asks for it.  Without places,
+     * which a hand-written configuration has none of, only a length says so.
      *
      * @return true when the edge is measured
      */
@@ -543,9 +478,8 @@ public class Edge
     /**
      * @return whether this edge crosses a switch, and so bounds where a train may come to rest
      *
-     * **"A switch" in the room rule** is what bounds a berth's room (`GraphReducer.boundsTheRoom`): a switch, or a
-     * turnout drawn permanent (FR-097) - and not either square of a crossing made of two permanent Ys (OB-320).  Every
-     * statement of the rule that says "switch" means this.
+     * "A switch" in the room rule is what bounds a berth's room (`GraphReducer.boundsTheRoom`): a switch, or a turnout
+     * drawn permanent (FR-097), but not either square of a crossing made of two permanent Ys (OB-320).
      */
     public boolean crossesASwitch()
     {
@@ -606,39 +540,20 @@ public class Edge
     }
 
     /**
-     * Whether this edge is held by another route, which is the question a LOCK edge asks.
+     * Whether this edge is held by another route, which is the question a LOCK edge asks: the reservation flag and
+     * nothing else.  A lock edge is track held clear so that two routes cannot take one throat at the same time; it is
+     * not a claim on the point beyond it, and a train standing there is not using the throat.
      *
-     * The reservation flag and nothing else.  A lock edge is track held clear so that two routes cannot
-     * take one throat at the same time; it is not a claim on the point beyond it, and a train standing
-     * at that point is not using the throat.
+     * That is how the graph is built: reduction cuts an edge at every sensor, so a Point's tile is an endpoint of the
+     * edges that meet there and an intermediate step of none, and a train stands on a sensor.
      *
-     * That is not a judgment call, it is how the graph is built.  Reduction cuts an edge at every
-     * sensor, so a Point's tile is an ENDPOINT of the edges that meet there and an intermediate step of
-     * none of them - on the author's layout, 54 sensor tiles and 259 intermediate tiles with not one
-     * tile in both.  A train stands on a sensor.  The track a lock edge protects is the rest of the
-     * run.  They cannot be the same piece of rail.
+     * Locks need not be symmetric (GraphEdgeEdit writes one direction only), and nothing here relies on it: the SAME
+     * list is used in both directions of the transaction - locking a path writes this flag onto every edge in each of
+     * its edges' lockEdges, and checking one reads it off every edge in each of its edges' lockEdges - so an asymmetric
+     * relation still refuses both orderings.
      *
-     * Nothing is given up by asking the narrow question - but NOT because locks are symmetric, which
-     * is what this said and is not true. GraphReducer writes symmetric locks; GraphEdgeEdit only
-     * writes one direction, and the sample layout that ships carries 104 asymmetric relations out of
-     * 118 (Layout says so, and counts them). Reasoning from symmetry here would be reasoning from
-     * something the data contradicts.
-     *
-     * What holds instead is that the SAME list is used in both directions of the transaction: locking
-     * a path writes this flag onto every edge in each of its edges' lockEdges, and checking one reads
-     * the flag off every edge in each of its edges' lockEdges. So an asymmetric relation - X naming Y
-     * where Y does not name X - still refuses both orderings: one is caught by the write, the other by
-     * the read. A train standing beyond a junction is stopped whichever direction the relation happens
-     * to have been written in.
-     *
-     * That is not the same claim as "a route locks the edges it crosses AND checks the edges that lock
-     * it", which is what this said until review pointed out there is no reverse scan anywhere - both
-     * operations walk lockEdges forwards. The conclusion was right and the mechanism described was
-     * not, in a comment this repository treats as load-bearing. The parked train is stopped by the lock, which is what
-     * a lock is for - not by being counted as an obstruction it is not standing on.
-     *
-     * Left as an occupancy question, a train parked next to a junction was a permanent roadblock for
-     * every route across that junction, and two such trains could deadlock with no way out for either.
+     * Counted as occupancy instead, a train parked next to a junction would block every route across it, and two such
+     * trains could deadlock.
      *
      * @param loc the locomotive asking, kept for symmetry with isOccupied and for future ownership
      */
@@ -647,17 +562,15 @@ public class Edge
         return occupancy > 0;
     }
     /**
-     * Whether a path is RUNNING OVER this rail, rather than holding it clear (OB-269).
+     * Whether a path is running over this rail, rather than holding it clear (OB-269): the narrow half of `isLockHeld`.
+     * A lock edge carries a claim either because a path runs over it or because it shares rail with one that does, and
+     * refusing a candidate for the second refuses it for rail nothing is on.  Adam: *"nothing should disturb the
+     * ability to go from bottominner to bottominnerotherside unless trains are crossing down, or passing through either
+     * of those stations"*.
      *
-     * The narrow half of `isLockHeld`, and the difference is the whole of Adam's finding: a lock edge
-     * carries a claim either because a path runs over it, or because it shares rail with one that
-     * does.  Refusing a candidate for the second refuses it for rail nothing is on - against his rule
-     * that *"nothing should disturb the ability to go from bottominner to bottominnerotherside unless
-     * trains are crossing down, or passing through either of those stations"*.
-     *
-     * **Asked in exactly two places, both in `isPathClear`:** of a candidate's lock edges, and of the
-     * same rail in the other direction.  Everything else keeps `isLockHeld`, because a reserved
-     * throat's accessories must stay protected whether the reservation is direct or shared.
+     * Asked in exactly two places, both in `isPathClear`: of a candidate's lock edges, and of the same rail in the
+     * other direction.  Everything else keeps `isLockHeld`, because a reserved throat's accessories must stay protected
+     * whether the reservation is direct or shared.
      *
      * @param loc the locomotive asking, kept for symmetry with its siblings
      * @return true when some path is running over this rail
@@ -682,10 +595,9 @@ public class Edge
         // first and dereferencing the second let another thread clear the point in between - which threw
         // a NullPointerException inside isPathClear, on a locomotive thread
         //
-        // The whole BLOCK, not just this Point: a square emitted as several copies is one piece of
-        // track, and a train on the eastbound copy of a platform is on the platform.  Asking only this
-        // copy let a second train be routed onto its twin, which is a collision.  On a Point with no
-        // block - anything hand-written - this is exactly getCurrentLocomotive.
+        // The whole block, not just this Point: a square emitted as several copies is one piece of track, so asking
+        // only this copy let a second train be routed onto its twin.  On a Point with no block this is exactly
+        // getCurrentLocomotive.
         Locomotive endLocomotive = wholeBlock
             ? this.end.getBlockLocomotive() : this.end.getCurrentLocomotive();
 
@@ -698,26 +610,14 @@ public class Edge
     }
 
     /**
-     * Gives up one claim, and never fewer than none.
+     * Gives up one claim, and never fewer than none.  The floor is a contract: configureAndLockPath counts an edge as
+     * taken BEFORE it takes it, so that an edge a throw leaves occupied is still inside the range its recovery
+     * releases.
      *
-     * The floor is not defensive tidiness, it is a contract something already depends on.
-     * configureAndLockPath counts an edge as taken BEFORE it takes it, so that an edge a throw leaves
-     * occupied is still inside the range its recovery releases.
-     *
-     * **Its comment used to add "setUnoccupied on an edge that is already clear does nothing", and
-     * this javadoc used to endorse that: "it still does nothing"**. It is not
-     * true here. The floor holds for THIS edge, and then `setUnoccupied` cascades
-     * `setLockedEdgeUnoccupied()` to every entry in `lockEdges`, each decrementing its own count with
-     * no knowledge of whether this edge was ever taken. A reader who followed the `Layout` comment to
-     * its source was told the claim had been checked, in the one file that could have refuted it.
-     *
-     * What makes the over-release unreachable is narrower, and is written at the call site rather than
-     * here: `setOccupied` increments as its first statement, so an edge counted and then thrown past
-     * has already been incremented and its release is correct. Only locked siblings a mid-loop throw
-     * never reached could be released untaken.
-     *
-     * Going negative would be worse than either: an edge released once too often would need two claims
-     * before it read as occupied again, so the NEXT train to lock it would find it free.
+     * The floor holds for THIS edge only: `setUnoccupied` cascades `setLockedEdgeUnoccupied()` to every entry in
+     * `lockEdges`, each decrementing its own count.  What makes an over-release unreachable is written at the call
+     * site: `setOccupied` increments as its first statement, so only locked siblings a mid-loop throw never reached
+     * could be released untaken.  Going negative would be worse: the next train to lock the edge would find it free.
      */
     private void release()
     {
@@ -756,7 +656,7 @@ public class Edge
     {
         occupancy++;
 
-        // AND THIS ONE IS BEING RUN OVER, which the propagated claims below are not (OB-269).
+        // This one is being run over; the propagated claims below are not (OB-269).
         runOver++;
         
         for (Edge e : this.lockEdges)
@@ -772,10 +672,8 @@ public class Edge
     {
         release();
 
-        // THE SAME FLOOR, FOR THE SAME REASON (see `release`): `configureAndLockPath` counts
-        // an edge as taken BEFORE it takes it, so a release can arrive for a claim that was
-        // never made - and going negative would leave the NEXT train finding occupied rail
-        // free, which is the worse direction of the two.
+        // The same floor as `release`: a release can arrive for a claim that was never made, and going negative would
+        // leave the next train finding occupied rail free.
         if (this.runOver > 0) this.runOver--;
         
         for (Edge e : this.lockEdges)
@@ -842,22 +740,14 @@ public class Edge
         // what every hand-written and pre-3.0.0 configuration should read as.
         if (this.crossesASwitch()) jsonObj.put("roomAtTheEnd", this.getRoomAtTheEnd());
 
-        // THE ARRIVAL SIDE, WHICH THIS METHOD DID NOT WRITE.
-        //
-        // Layout.fromJSON reads `entrySide`, AutonomyBuilder writes it when it traces a diagram, and the
-        // field's own javadoc says it travels in the configuration - so the program's export was not a
-        // configuration the program could reload.  Measured on the baseline configuration: 101 edges have
-        // an arrival side and Export JSON then Load JSON brought back none of them, which costs
-        // arrival-side reasoning - which side of a station a train comes in on, and so what counts as a
-        // reversal - on any layout that has been through the export.
-        //
-        // Written only when there is one, like roomAtTheEnd above: an absent key means "not traced", which
-        // is what a hand-written configuration and anything built before the diagram work should read as.
+        // The arrival side, written only when there is one: Layout.fromJSON reads `entrySide`, so without it an export
+        // is not a configuration the program can reload, and arrival-side reasoning (which side of a station a train
+        // comes in on, so what counts as a reversal) is lost.  An absent key means "not traced", like roomAtTheEnd
+        // above.
         if (this.entrySide != null) jsonObj.put("entrySide", this.entrySide);
 
-        // AND THE PLACES, for the same reason as just above: an export that drops them is not
-        // a configuration this program can reload, and reloading without them silently returns the
-        // whole-edge coverage that OB-207 is about.
+        // And the places, for the same reason: reloading without them silently returns the whole-edge coverage
+        // (OB-207).
         if (!this.placeIds.isEmpty())
         {
             List<JSONObject> placeList = new LinkedList<>();
