@@ -1084,26 +1084,8 @@ public class RouteEditorFrame extends JFrame
                 // that Save is going to throw away.
                 if (!conditionsEditable) return;
 
-                // Required as well as whatever is there, as capturing several things in a row means; the word goes in
-                // as its own line.
-                int depth = 0;
-
-                for (int at = conditions.rows.size() - 1; at >= 0; at--)
-                {
-                    if (!conditions.rows.get(at).isJoiner())
-                    {
-                        depth = conditions.rows.get(at).getDepth();
-                        break;
-                    }
-                }
-
-                if (!conditions.rows.isEmpty())
-                {
-                    conditions.rows.add(ConditionOutline.Row.joining(depth,
-                        ConditionOutline.Joiner.AND));
-                }
-
-                conditions.rows.add(ConditionOutline.Row.condition(depth, parsed));
+                // Joined by the word of the last condition's level, as Add Condition joins one
+                conditions.append(parsed);
 
                 conditions.fireTableDataChanged();
 
@@ -3984,11 +3966,24 @@ public class RouteEditorFrame extends JFrame
             return super.getCellEditor(line, column);
         }
 
+        /** Add Condition and the plus: a new condition, appended as `append` does, and selected. */
+        void addRow()
+        {
+            RouteCommand fresh = freshCondition();
+
+            append(fresh);
+
+            settle();
+            model.fireTableDataChanged();
+            select(fresh);
+        }
+
         /**
          * Adds a condition with the word that joins it to what is already there, both lines at once, at the last
-         * condition's level and joined by that level's word, as Insert Condition Below joins one.
+         * condition's level and joined by that level's word, as Insert Condition Below joins one: Add Condition, the
+         * plus and a capture.
          */
-        void addRow()
+        void append(RouteCommand condition)
         {
             int last = rows.size() - 1;
 
@@ -3999,13 +3994,7 @@ public class RouteEditorFrame extends JFrame
             if (!rows.isEmpty()) rows.add(ConditionOutline.Row.joining(depth, last < 0 ? ConditionOutline.Joiner.AND
                 : ConditionOutline.wordOfTheLevel(rows, last)));
 
-            RouteCommand fresh = freshCondition();
-
-            rows.add(ConditionOutline.Row.condition(depth, fresh));
-
-            settle();
-            model.fireTableDataChanged();
-            select(fresh);
+            rows.add(ConditionOutline.Row.condition(depth, condition));
         }
 
         /** What a new condition asks until it is filled in. */
