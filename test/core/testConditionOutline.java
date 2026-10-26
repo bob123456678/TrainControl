@@ -525,7 +525,7 @@ public class testConditionOutline
      * OB-379: with no group at a condition's level across its group's edge, there is no arrow that way: outdenting is
      * how a condition leaves a group.  "1 and (2 or 3)": 2 does not trade places with 1.
      *
-     * MUTATION: in `intoTheNextGroup`, drop `if (!atThisLevel) return null;`, and 2 can move up.
+     * MUTATION: in `plan`, fall through to the trade where `intoTheNextGroup` finds no group, and 2 trades with 1.
      */
     @Test
     public void testNoArrowWhereThereIsNoGroupAcrossTheEdge()
