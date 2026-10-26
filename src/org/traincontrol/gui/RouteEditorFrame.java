@@ -4072,6 +4072,24 @@ public class RouteEditorFrame extends JFrame
             requestFocusInWindow();
         }
 
+        /**
+         * An address edit begun by a key replaces the cell's text, as a spreadsheet does, so 7 gives 7 (FR-151); one
+         * begun by a double-click keeps the text, to change part of it.
+         */
+        @Override
+        public boolean editCellAt(int line, int column, java.util.EventObject e)
+        {
+            boolean editing = super.editCellAt(line, column, e);
+
+            if (editing && column == ADDRESS && e instanceof java.awt.event.KeyEvent
+                && getEditorComponent() instanceof javax.swing.text.JTextComponent)
+            {
+                ((javax.swing.text.JTextComponent) getEditorComponent()).selectAll();
+            }
+
+            return editing;
+        }
+
         /** The lines the last edit changed, and how strongly they still show: 1 just after it, 0 once faded. */
         private java.util.Set<Integer> changed = java.util.Collections.emptySet();
         private float glow;
