@@ -126,4 +126,6 @@ By script, at the start, before other branches are open: `git mv`, package and i
 
 Validator rounds to convergence, a full battery, then `docs/RELEASE.md`.
 
-Not in 3.0.4: the rest of the 3.1.0 list.
+Not in 3.0.4: the rest of the 3.1.0 list.  Also for 3.1.0 (Adam: "We can do the sandbox idea for the next release"): run the window
+tests inside Windows Sandbox, so they keep off his desktop; he turns the feature on, then the runners hand runs into
+it.  In 3.0.4, `support.WindowsNotOnTop` turns back a test window the app leaves on top.
