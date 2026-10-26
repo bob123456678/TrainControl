@@ -394,9 +394,8 @@ abstract public class Route
      */
     private static boolean trainStandsAt(Layout layout, Locomotive loc, String s88)
     {
-        // The run's bookkeeping caught up with the train first, and no longer: while the train stands on the sensor its
-        // run has not yet recorded it (the gap in which a route fired by that sensor asks); a sensor it has not reached
-        // never will.
+        // Lets the run record a train standing on the sensor it waits for (the gap in which a route fired by that
+        // sensor asks); no wait for a sensor the train has not reached or one already recorded.
         layout.waitForTheRunToRecord(loc, 3000);
 
         // The last milestone reached, while the locomotive is running a path

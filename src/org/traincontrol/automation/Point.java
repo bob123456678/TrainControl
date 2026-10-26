@@ -255,8 +255,8 @@ public class Point
      */
     public Point setPriority(Integer value)
     {
-        // Null means "no priority" (0): the priority dialog sends null when the box is cleared, and stored as null it
-        // threw NullPointerException from the path comparator and from toJSON's `!= 0`.
+        // Null means "no priority" (0): the priority dialog sends null when the box is cleared, and the path comparator
+        // and toJSON's `!= 0` need a number.
         this.priority = (value == null) ? 0 : value;
 
         return this;
@@ -778,7 +778,7 @@ public class Point
 
     /**
      * Whether this and another Point are the same piece of track (MT-165): a train on any copy of a square is standing
-     * on that platform, so a rule about the square must not compare Points (`Layout.claimHome` once did).
+     * on that platform, so a rule about the square must not compare Points.
      *
      * @param other the other Point, or null
      * @return true when a train on one is standing where a train on the other is standing

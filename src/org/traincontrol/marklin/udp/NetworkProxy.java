@@ -185,7 +185,7 @@ public class NetworkProxy
         catch (IOException e)
         {
             // The model is set AFTER this class is constructed, and the control station's constructor transmits before
-            // it gets there; a send failing in that window threw a NullPointerException out of this catch block.
+            // it gets there, so a send can fail with no model to log to.
             if (this.model != null)
             {
                 this.model.logf(
