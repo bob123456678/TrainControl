@@ -756,11 +756,14 @@ final class LayoutMenus
 
         for (String path : shown) named.merge(new File(path).getName(), 1, Integer::sum);
 
+        int number = 0;
+
         for (final String path : shown)
         {
             String name = new File(path).getName();
 
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(named.get(name) > 1 || name.isEmpty() ? path : name);
+            javax.swing.JMenuItem item = new javax.swing.JMenuItem(++number + ". "
+                + (named.get(name) > 1 || name.isEmpty() ? path : name));
 
             item.setToolTipText(AutonomyEditorPanel.wrappedIfLong(path));
 
