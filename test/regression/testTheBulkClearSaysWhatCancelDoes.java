@@ -1,6 +1,7 @@
 package regression;
 
 import javax.swing.SwingUtilities;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -264,6 +265,84 @@ public class testTheBulkClearSaysWhatCancelDoes
             "only " + namingCancel + " of this editor's bulk clears say what Cancel does, and there are"
             + " three - the locomotives, the track lengths and the station maxima.  One of them is showing"
             + " the track diagram's sentence, which promises the clear is already saved. Tooltips: " + tips);
+    }
+
+    /**
+     * The tooltips count as the dialogs do: one measured square or one station is "1 square", not "1 squares", and two
+     * take the plural, in every language (`I18n.countForm`).  Asked of the built menu, on the editor surface.
+     *
+     * MUTATION: build the track-length and station-maximum tooltips with `I18n.f(onThisSurface(key), count)`, as the
+     * locomotive tooltip is, and the "1 squares" check fails.
+     */
+    @Test
+    public void testTheTooltipsCountOneSquareAsOneSquare() throws Exception
+    {
+        session.clearEveryTileLength();
+        session.clearEveryMaxTrainLength();
+
+        java.util.List<TileKey> squares = new java.util.ArrayList<>(session.getGraph().getTiles().keySet());
+
+        session.setTileLength(squares.get(0), 5);
+
+        TileKey station = null;
+
+        for (TileKey square : squares)
+        {
+            if (station == null && session.assignMaxTrainLength(square, 40)) station = square;
+        }
+
+        assertNotNull(station, "precondition: no station took a maximum, so there is no station tooltip to read");
+
+        session.rebuild();
+
+        assertEquals(session.tilesWithALength().size(), 1, "precondition: not exactly one measured square");
+        assertEquals(session.tilesWithAMaxTrainLength().size(), 1, "precondition: not exactly one limited station");
+
+        String oneLength = tipOf("autolayout.ui.menuClearAllTrackLengths", 1);
+        String oneStation = tipOf("autolayout.ui.menuClearAllMaxTrainLengths", 1);
+
+        assertFalse(oneLength.contains("1 squares"), "one measured square is called '1 squares': " + oneLength);
+        assertFalse(oneStation.contains("1 stations"), "one limited station is called '1 stations': " + oneStation);
+
+        assertTrue(oneLength.contains(I18n.f("autosetup.ui.tipClearAllTrackLengthsOne", 1)),
+            "the track-length tooltip for one square is not the singular sentence: " + oneLength);
+
+        assertTrue(oneStation.contains(I18n.f("autosetup.ui.tipClearAllMaxTrainLengthsOne", 1)),
+            "the station-maximum tooltip for one station is not the singular sentence: " + oneStation);
+
+        session.setTileLength(squares.get(1), 5);
+        session.rebuild();
+
+        String twoLengths = tipOf("autolayout.ui.menuClearAllTrackLengths", 2);
+
+        assertTrue(twoLengths.contains(I18n.f("autosetup.ui.tipClearAllTrackLengths" + I18n.countForm(2), 2)),
+            "the track-length tooltip for two squares is not the sentence for two: " + twoLengths);
+
+        session.clearEveryTileLength();
+        session.clearEveryMaxTrainLength();
+    }
+
+    /** The tooltip of the Bulk Tools item whose label is `key` counting `count`, as the built menu carries it. */
+    private static String tipOf(String key, int count) throws Exception
+    {
+        final String label = I18n.f(key, count);
+        final String[] tip = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu bulk = editor.getAutonomyPanel().buildBulkMenuForTest();
+
+            for (int at = 0; at < bulk.getItemCount(); at++)
+            {
+                javax.swing.JMenuItem item = bulk.getItem(at);
+
+                if (item != null && label.equals(item.getText())) tip[0] = item.getToolTipText();
+            }
+        });
+
+        assertNotNull(tip[0], "no Bulk Tools item reads '" + label + "' with a tooltip");
+
+        return tip[0];
     }
 
     /**

@@ -519,7 +519,7 @@ public class testTheLayoutEditorManagesPages
 
         int[] turned = turnASquare(editor);
 
-        final String unsaved = I18n.t("layout.ui.confirmSwitchWithUnsavedWork");
+        final String unsaved = I18n.t("layout.ui.confirmPageActionWithUnsavedWork");
 
         try (Answering answering = Answering.start(message -> unsaved.equals(message)
             ? Answering.press(I18n.t("layout.ui.switchSave")) : Answering.type(renamed)))
@@ -545,6 +545,45 @@ public class testTheLayoutEditorManagesPages
 
         assertFalse(Components.onTheEventThread(editor.window::canUndo), "the editor still has unsaved work after"
             + " Save");
+    }
+
+    /**
+     * Rename Current Page with a square turned and unsaved asks its own question, not the sidebar's: no page or mode
+     * was chosen and the window stays, so it must not talk of changing either or of the editor closing.
+     *
+     * MUTATION: `settleUnsavedWork` asks `layout.ui.confirmSwitchWithUnsavedWork` for a page action too, and this
+     * fails.
+     */
+    @Test
+    public void testRenameAsksItsOwnQuestionAboutUnsavedWork() throws Exception
+    {
+        final String page = "5 - Test";
+
+        Watched editor = editPage(page, false);
+
+        turnASquare(editor);
+
+        try (Answering answering = Answering.start(message -> message.equals(page)
+            ? Answering.type("5 - Renamed") : Answering.press(I18n.t("layout.ui.switchCancel"))))
+        {
+            click(editor, "ui.main.toolbar.renameCurrentPage");
+
+            assertTrue(answering.awaitAsked(2, 10000), "the rename did not ask for a name and about the unsaved work: "
+                + answering.asked());
+
+            Components.settle();
+
+            String question = answering.asked().get(1);
+
+            assertFalse(question.equals(I18n.t("layout.ui.confirmSwitchWithUnsavedWork")),
+                "Rename Current Page asked the page-or-mode switch's question, which talks of the editor closing and"
+                + " reopening: " + question);
+
+            assertEquals(question, I18n.t("layout.ui.confirmPageActionWithUnsavedWork"),
+                "Rename Current Page asked something else about the unsaved work");
+        }
+
+        editor.isAsItWas(page);
     }
 
     /**
@@ -580,7 +619,7 @@ public class testTheLayoutEditorManagesPages
 
             turnASquare(editor);
 
-            final String unsaved = I18n.t("layout.ui.confirmSwitchWithUnsavedWork");
+            final String unsaved = I18n.t("layout.ui.confirmPageActionWithUnsavedWork");
 
             try (Answering answering = Answering.start(message -> unsaved.equals(message)
                 ? Answering.press(I18n.t("layout.ui.switchCancel")) : Answering.type("P6 Blank")))
@@ -622,7 +661,7 @@ public class testTheLayoutEditorManagesPages
 
         int[] turned = turnASquare(editor);
 
-        final String unsaved = I18n.t("layout.ui.confirmSwitchWithUnsavedWork");
+        final String unsaved = I18n.t("layout.ui.confirmPageActionWithUnsavedWork");
 
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchSave"))))
         {
@@ -796,7 +835,7 @@ public class testTheLayoutEditorManagesPages
 
             turnASquare(editor);
 
-            final String unsaved = I18n.t("layout.ui.confirmSwitchWithUnsavedWork");
+            final String unsaved = I18n.t("layout.ui.confirmPageActionWithUnsavedWork");
 
             try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.switchCancel"))))
             {
