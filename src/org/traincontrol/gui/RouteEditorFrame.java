@@ -257,6 +257,12 @@ public class RouteEditorFrame extends JFrame
 
         readsAs.setVerticalAlignment(JLabel.TOP);
 
+        // The selected condition is bold in the reading, so an edit shows where it now sits in the sentence (FR-147).
+        conditions.getSelectionModel().addListSelectionListener(e ->
+        {
+            if (!locked && !e.getValueIsAdjusting()) updateReadsAs();
+        });
+
         // Answers whether the route would fire right now, which a condition list cannot show.
         testButton = button(I18n.t("route.ui.testCondition"), this::testAgainstTheRailway);
 
@@ -1506,36 +1512,39 @@ public class RouteEditorFrame extends JFrame
         // A run of rows joined by the same word is a group, and a change of word starts a new one.  Bold operators and
         // colored settings are markup, so everything the conditions carry is escaped on the way in.
         return "<html>" + I18n.f("route.ui.frameReadsAs",
-            describe(ConditionOutline.toExpression(conditions.rows))) + "</html>";
+            describe(ConditionOutline.toExpression(conditions.rows), conditions.chosenConditions())) + "</html>";
     }
 
     /**
      * An expression in words, for the reading under the conditions.
      *
      * @param node the expression
+     * @param chosen the conditions selected in the table, drawn in bold (FR-147)
      * @return what it says
      */
-    private String describe(NodeExpression node)
+    private String describe(NodeExpression node, java.util.Set<RouteCommand> chosen)
     {
         if (node == null) return "";
 
         if (node instanceof org.traincontrol.base.NodeRouteCommand)
         {
-            return shortly(((org.traincontrol.base.NodeRouteCommand) node).getRouteCommand());
+            RouteCommand command = ((org.traincontrol.base.NodeRouteCommand) node).getRouteCommand();
+
+            return chosen.contains(command) ? "<b>" + shortly(command) + "</b>" : shortly(command);
         }
 
         if (node instanceof org.traincontrol.base.NodeAnd)
         {
-            return describe(((org.traincontrol.base.NodeAnd) node).getLeft())
+            return describe(((org.traincontrol.base.NodeAnd) node).getLeft(), chosen)
                 + " <b>" + marked(I18n.t("route.ui.joinAnd")) + "</b> "
-                + describe(((org.traincontrol.base.NodeAnd) node).getRight());
+                + describe(((org.traincontrol.base.NodeAnd) node).getRight(), chosen);
         }
 
         if (node instanceof org.traincontrol.base.NodeOr)
         {
-            return describe(((org.traincontrol.base.NodeOr) node).getLeft())
+            return describe(((org.traincontrol.base.NodeOr) node).getLeft(), chosen)
                 + " <b>" + marked(I18n.t("route.ui.joinOr")) + "</b> "
-                + describe(((org.traincontrol.base.NodeOr) node).getRight());
+                + describe(((org.traincontrol.base.NodeOr) node).getRight(), chosen);
         }
 
         if (node instanceof org.traincontrol.base.NodeGroup)
@@ -1545,7 +1554,7 @@ public class RouteEditorFrame extends JFrame
             for (NodeExpression inside
                 : ((org.traincontrol.base.NodeGroup) node).getExpressions())
             {
-                out.append(describe(inside));
+                out.append(describe(inside, chosen));
             }
 
             return out.append(")").toString();
@@ -1689,19 +1698,10 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void mousePressed(java.awt.event.MouseEvent e)
             {
-                int row = table.rowAtPoint(e.getPoint());
-                int column = table.columnAtPoint(e.getPoint());
+                // A right-click on the conditions opens their menu rather than working the mark under it.
+                if (table instanceof ConditionTable && !javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
 
-                if (row < 0 || column < 0) return;
-
-                // Only where there is a mark: an empty cell (the top row has no way up) stays empty.
-                Object value = table.getValueAt(row, column);
-
-                if (MOVE_UP.equals(value)) moveRow(table, row, -1);
-                else if (MOVE_DOWN.equals(value)) moveRow(table, row, 1);
-                else if (DELETE_ROW.equals(value)) deleteRow(table, row);
-                else if (COPY_ROW.equals(value)) duplicateRow(table, row);
-                else if (ADD_HERE.equals(value)) addTo(table);
+                pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
         });
 
@@ -1894,9 +1894,87 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void mousePressed(java.awt.event.MouseEvent e)
             {
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
+
                 pressIndentMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
         });
+    }
+
+    /** What a press on a row's mark does: the mark's own value says whether it may. */
+    private void pressRowMark(JTable table, int row, int column)
+    {
+        if (row < 0 || column < 0) return;
+
+        // Only where there is a mark: an empty cell (the top row has no way up) stays empty.
+        Object value = table.getValueAt(row, column);
+
+        if (MOVE_UP.equals(value)) moveRow(table, row, -1);
+        else if (MOVE_DOWN.equals(value)) moveRow(table, row, 1);
+        else if (DELETE_ROW.equals(value)) deleteRow(table, row);
+        else if (COPY_ROW.equals(value)) duplicateRow(table, row);
+        else if (ADD_HERE.equals(value)) addTo(table);
+    }
+
+    /**
+     * The right-click menu on the conditions (FR-147): inserting beside a line, and the line's marks in words, each
+     * enabled exactly when its mark is drawn and doing what a press on it does.  Below the lines, Add Condition.
+     */
+    private void offerConditionMenu(java.awt.event.MouseEvent e)
+    {
+        final ConditionTable table = conditions;
+
+        if (locked || !conditionsEditable || !table.isShowing()) return;
+
+        if (table.isEditing()) table.getCellEditor().stopCellEditing();
+
+        final int line = table.rowAtPoint(e.getPoint());
+
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        if (line < 0 || line >= table.rows.size())
+        {
+            menu.add(menuItem("route.ui.menuAddCondition", true, () -> addTo(table)));
+        }
+        else
+        {
+            if (!table.isRowSelected(line)) table.setRowSelectionInterval(line, line);
+
+            boolean condition = !table.rows.get(line).isJoiner();
+
+            menu.add(menuItem("route.ui.menuInsertConditionAbove", condition, () -> table.insertBeside(line, -1)));
+            menu.add(menuItem("route.ui.menuInsertConditionBelow", condition, () -> table.insertBeside(line, 1)));
+            menu.addSeparator();
+            menu.add(markItem(table, line, UP, MOVE_UP, "route.ui.menuMoveUp"));
+            menu.add(markItem(table, line, DOWN, MOVE_DOWN, "route.ui.menuMoveDown"));
+            menu.add(markItem(table, line, INDENT, INDENT_ROW, "route.ui.menuIndent"));
+            menu.add(markItem(table, line, OUTDENT, OUTDENT_ROW, "route.ui.menuOutdent"));
+            menu.addSeparator();
+            menu.add(markItem(table, line, CONDITION_DELETE, DELETE_ROW, "ui.delete"));
+        }
+
+        menu.show(table, e.getX(), e.getY());
+    }
+
+    /** A menu item standing for the mark in one cell. */
+    private javax.swing.JMenuItem markItem(final ConditionTable table, final int line, final int column, String mark,
+        String key)
+    {
+        return menuItem(key, mark.equals(table.getValueAt(line, column)), () ->
+        {
+            if (column == INDENT || column == OUTDENT) pressIndentMark(table, line, column);
+            else pressRowMark(table, line, column);
+        });
+    }
+
+    private static javax.swing.JMenuItem menuItem(String key, boolean enabled, Runnable action)
+    {
+        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t(key));
+
+        item.setEnabled(enabled);
+        item.addActionListener(e -> action.run());
+
+        return item;
     }
 
     /** What a press on an indent mark does: the mark's own value says whether it may. */
@@ -3849,6 +3927,18 @@ public class RouteEditorFrame extends JFrame
 
             actOnRowMarks(this, CONDITION_DELETE, UP, DOWN, UP);
             actOnIndentMarks(this);
+
+            // To the bottom of its scroll pane, so a right-click below the last line reaches the menu (FR-147).
+            setFillsViewportHeight(true);
+
+            addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+            {
+                @Override
+                protected void showPopup(java.awt.event.MouseEvent e)
+                {
+                    offerConditionMenu(e);
+                }
+            });
         }
 
         private final javax.swing.table.TableCellEditor kindEditor;
@@ -3914,11 +4004,62 @@ public class RouteEditorFrame extends JFrame
             if (!rows.isEmpty()) rows.add(ConditionOutline.Row.joining(depth,
                 ConditionOutline.Joiner.AND));
 
-            rows.add(ConditionOutline.Row.condition(depth,
-                RouteCommand.RouteCommandFeedback(1, true)));
+            RouteCommand fresh = freshCondition();
+
+            rows.add(ConditionOutline.Row.condition(depth, fresh));
 
             settle();
             model.fireTableDataChanged();
+            select(fresh);
+        }
+
+        /** What a new condition asks until it is filled in. */
+        private RouteCommand freshCondition()
+        {
+            return RouteCommand.RouteCommandFeedback(1, true);
+        }
+
+        /**
+         * A new condition above or below a line (FR-147), at its level and joined by its level's word.
+         *
+         * @param by -1 for above, 1 for below
+         */
+        void insertBeside(int line, int by)
+        {
+            if (line < 0 || line >= rows.size() || rows.get(line).isJoiner()) return;
+
+            RouteCommand fresh = freshCondition();
+            List<ConditionOutline.Row> after = ConditionOutline.inserted(rows, line, by, fresh);
+
+            rows.clear();
+            rows.addAll(after);
+
+            settle();
+            model.fireTableDataChanged();
+            select(fresh);
+        }
+
+        /** Selects the line holding this very condition, so an edit leaves the changed one picked. */
+        private void select(RouteCommand command)
+        {
+            for (int line = 0; line < rows.size(); line++)
+            {
+                if (rows.get(line).getCommand() == command) setRowSelectionInterval(line, line);
+            }
+        }
+
+        /** The conditions on the selected lines, by identity: two lines can ask the same thing. */
+        java.util.Set<RouteCommand> chosenConditions()
+        {
+            java.util.Set<RouteCommand> out = java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<RouteCommand, Boolean>());
+
+            for (int line : getSelectedRows())
+            {
+                if (line < rows.size() && !rows.get(line).isJoiner()) out.add(rows.get(line).getCommand());
+            }
+
+            return out;
         }
 
         void removeSelected()
@@ -3978,10 +4119,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Moves a condition past the one above or below it, leaving the outline's shape alone.  Not by moving the line:
-         * the joining words are lines of their own, so lifting one line would put the condition next to the word above
-         * and tidy() would sweep a word away, changing when the route fires.  The two conditions trade places and every
-         * word stays; "A and (B or C)" with B moved up is "B and (A or C)".
+         * Moves a condition one place up or down by the rule `ConditionOutline.moved` holds, and keeps it selected.
          *
          * @param line the row that was pressed
          * @param by -1 for up, 1 for down
@@ -3997,7 +4135,7 @@ public class RouteEditorFrame extends JFrame
             rows.clear();
             rows.addAll(after);
 
-            // No tidy(): nothing about the shape changed, only which condition sits where in it.
+            // No tidy(): from an outline that reads, moved() gives one that reads.
             settle();
             model.fireTableDataChanged();
 

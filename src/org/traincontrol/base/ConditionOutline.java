@@ -287,25 +287,83 @@ public final class ConditionOutline
     }
 
     /**
-     * The outline with one condition moved past the condition above or below it.
+     * The outline with one condition moved one place up or down.
      *
      * Not by moving the LINE: the joining words are lines of their own, so lifting a condition one line puts it next to
      * the word above rather than past it, and a word with nothing on one side is thrown away when the outline is
-     * straightened ("A and B" with B moved up came back as "A B", a change to when the route fires).  So the two
-     * conditions trade places and every word and level stays where it was: "A and (B or C)" with B moved up is "B and
-     * (A or C)".
+     * straightened ("A and B" with B moved up came back as "A B", a change to when the route fires).  So within a level
+     * the two conditions trade places and every word and level stays where it was: "A and (B or C)" with C moved up is
+     * "A and (C or B)".
      *
      * A condition whose neighbor at its own level is a whole group moves past the group instead (FR-144): "(A or B or
      * C) and D" with D moved up is "D and (A or B or C)", every line keeping its level.
+     *
+     * A condition at the edge of its group, where the word beside it is shallower, crosses into the neighboring group
+     * at its own level (OB-379): "(A and B) or (C and D)" with C moved up is "(A and B and C) or (D)", joined by that
+     * group's word, and the group it left loses it and one word.  With no group at its level across the edge it does
+     * not move: outdenting is how a condition leaves a group.
      *
      * @param by -1 for up, 1 for down
      * @return a new list in the new order, or a copy unchanged where there is nowhere to go
      */
     public static List<Row> moved(List<Row> rows, int line, int by)
     {
-        List<Row> out = new ArrayList<>();
+        Move move = plan(rows, line, by);
 
-        if (rows != null) out.addAll(rows);
+        if (move != null) return move.rows;
+
+        return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+    }
+
+    /**
+     * Whether a move that way changes anything.  The editor draws the arrow only then: an arrow that does nothing reads
+     * as the feature being broken.
+     */
+    public static boolean canMove(List<Row> rows, int line, int by)
+    {
+        return plan(rows, line, by) != null;
+    }
+
+    /**
+     * Where the condition a move takes ends up, so the editor can keep it selected: its line after moved(), or the line
+     * itself.
+     */
+    public static int landing(List<Row> rows, int line, int by)
+    {
+        Move move = plan(rows, line, by);
+
+        return move == null ? line : move.landing;
+    }
+
+    /** A move worked out once, so `moved`, `canMove` and `landing` cannot disagree. */
+    private static final class Move
+    {
+        final List<Row> rows;
+        final int landing;
+
+        Move(List<Row> rows, int landing)
+        {
+            this.rows = rows;
+            this.landing = landing;
+        }
+    }
+
+    /** The outline after moving one condition, and its new line; null where it has nowhere to go. */
+    private static Move plan(List<Row> rows, int line, int by)
+    {
+        if (rows == null || line < 0 || line >= rows.size() || by == 0 || rows.get(line).isJoiner()) return null;
+
+        by = by < 0 ? -1 : 1;
+
+        int edge = line + by;
+
+        if (edge >= 0 && edge < rows.size() && rows.get(edge).isJoiner()
+            && rows.get(edge).getDepth() < rows.get(line).getDepth())
+        {
+            return intoTheNextGroup(rows, line, by);
+        }
+
+        List<Row> out = new ArrayList<>(rows);
 
         int[] group = groupBeside(out, line, by);
 
@@ -335,43 +393,143 @@ public final class ConditionOutline
 
             out.addAll(after);
 
-            return out;
+            return new Move(out, by < 0 ? group[0] : group[1]);
         }
 
         int to = destination(out, line, by);
 
-        if (to < 0) return out;
+        if (to < 0) return null;
 
         RouteCommand moving = out.get(line).getCommand();
 
         out.set(line, out.get(line).about(out.get(to).getCommand()));
         out.set(to, out.get(to).about(moving));
 
+        return new Move(out, to);
+    }
+
+    /**
+     * A condition at its group's edge joins the group past the shallower word beside it, at that group's near end.  The
+     * word it leaves with is its own level's; a condition alone at its level leaves with the deeper of the two words
+     * round it, as that is the one left joining nothing.
+     */
+    private static Move intoTheNextGroup(List<Row> rows, int line, int by)
+    {
+        int depth = rows.get(line).getDepth();
+        int edge = line + by;
+        int near = edge + by;
+
+        if (near < 0 || near >= rows.size() || rows.get(near).getDepth() < depth) return null;
+
+        int far = near;
+
+        while (far + by >= 0 && far + by < rows.size() && rows.get(far + by).getDepth() >= depth) far += by;
+
+        int first = Math.min(near, far);
+        int last = Math.max(near, far);
+
+        Joiner word = null;
+        boolean atThisLevel = false;
+
+        for (int at = first; at <= last; at++)
+        {
+            if (rows.get(at).getDepth() != depth) continue;
+
+            atThisLevel = true;
+
+            if (rows.get(at).isJoiner() && word == null) word = rows.get(at).getJoiner();
+        }
+
+        if (!atThisLevel) return null;
+
+        int behind = line - by;
+        boolean anything = behind >= 0 && behind < rows.size();
+
+        if (anything && !rows.get(behind).isJoiner()) return null;
+
+        Row own = anything && rows.get(behind).getDepth() == depth ? rows.get(behind) : null;
+
+        // A lone condition across the edge has no word of its own yet: it takes the one this condition brings.
+        if (word == null)
+        {
+            if (first != last || rows.get(first).isJoiner() || own == null) return null;
+
+            word = own.getJoiner();
+        }
+
+        int drop = !anything ? edge
+            : own != null || rows.get(behind).getDepth() >= rows.get(edge).getDepth() ? behind : edge;
+
+        List<Row> out = new ArrayList<>(rows);
+        Row moving = rows.get(line);
+        int at = by < 0 ? edge : edge + 1;
+
+        for (int gone : new int[]{Math.max(line, drop), Math.min(line, drop)})
+        {
+            out.remove(gone);
+
+            if (gone < at) at--;
+        }
+
+        if (by < 0)
+        {
+            out.add(at, Row.joining(depth, word));
+            out.add(at + 1, moving);
+
+            return new Move(out, at + 1);
+        }
+
+        out.add(at, moving);
+        out.add(at + 1, Row.joining(depth, word));
+
+        return new Move(out, at);
+    }
+
+    /**
+     * The outline with a new condition above or below a line, at that line's level and joined by its level's word (AND
+     * where the level has none yet), as the editor's Insert Condition makes one (FR-147).
+     *
+     * @param by -1 for above, 1 for below
+     * @return a new list, or a copy unchanged where the line is not a condition
+     */
+    public static List<Row> inserted(List<Row> rows, int line, int by, RouteCommand command)
+    {
+        List<Row> out = rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+
+        if (line < 0 || line >= out.size() || out.get(line).isJoiner() || by == 0) return out;
+
+        int depth = out.get(line).getDepth();
+        Row word = Row.joining(depth, wordOfTheLevel(out, line));
+        Row fresh = Row.condition(depth, command);
+
+        if (by < 0)
+        {
+            out.add(line, word);
+            out.add(line, fresh);
+        }
+        else
+        {
+            out.add(line + 1, fresh);
+            out.add(line + 1, word);
+        }
+
         return out;
     }
 
-    /**
-     * Whether there is another condition that way for this one to trade places with.  The editor draws the arrow only
-     * then: an arrow that does nothing reads as the feature being broken.
-     */
-    public static boolean canMove(List<Row> rows, int line, int by)
+    /** The first word at a line's own level in the group it is in, which `whatIsWrong` takes as the one meant. */
+    private static Joiner wordOfTheLevel(List<Row> rows, int line)
     {
-        return destination(rows, line, by) >= 0;
-    }
+        int depth = rows.get(line).getDepth();
+        int start = line;
 
-    /**
-     * Where the condition a move takes ends up, so the editor can keep it selected: its line after moved(), or the line
-     * itself.
-     */
-    public static int landing(List<Row> rows, int line, int by)
-    {
-        int[] group = groupBeside(rows, line, by);
+        while (start > 0 && rows.get(start - 1).getDepth() >= depth) start--;
 
-        if (group != null) return by < 0 ? group[0] : group[1];
+        for (int at = start; at < rows.size() && rows.get(at).getDepth() >= depth; at++)
+        {
+            if (rows.get(at).isJoiner() && rows.get(at).getDepth() == depth) return rows.get(at).getJoiner();
+        }
 
-        int to = destination(rows, line, by);
-
-        return to < 0 ? line : to;
+        return Joiner.AND;
     }
 
     /**
