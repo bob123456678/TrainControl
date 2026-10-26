@@ -18,7 +18,7 @@ changes anything (§3). Nothing has been built on it.
 Older comments, the tracker and these files cite review findings (`RGD-B2`, `MON-C6`; `EN57-203` is a locomotive but
 `DY3-C7` is a finding). The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **5,756 rows for 5,399
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **5,767 rows for 5,410
 findings**, because a finding written up in two documents has a row for each, and reading the row count as a finding
 count is a mistake three documents have made - with the document they came from, the line in it, the severity, what it
 was about, the file and line of the evidence, the commit that fixed it where one is named, and the source files that

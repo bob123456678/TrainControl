@@ -39845,6 +39845,127 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.4 validation round 3, RSA80)
 
+[finding RSA81-C1 in RSA81.md]
+line: 17
+severity: C
+title: The comment pass left history in four rewritten comments, and blurred what one wait waits for
+disposition: Fixed - the four comments state the rule without the history, and `trainStandsAt`'s says what `waitForTheRunToRecord` wa
+evidence: Route.java:397
+commit_id: 22b0dbee
+cited_by:
+status: Closed
+status_note: Fixed in 4b3d69a5 - 3.0.4 validation round 4, RSA81
+
+[finding RSA81-D1 in RSA81.md]
+line: 41
+severity: D
+title: RSA80-C1's disposition is true, and the new refresh guard loses nothing through any door a user can reach
+disposition: Not a defect - checked as described.
+evidence: LayoutFileActions.java:485
+commit_id: 4d36b0c6
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D10 in RSA81.md]
+line: 243
+severity: D
+title: FR-148, FR-149, the on-top watcher, `680a8ef5` and the Readme's v3.0.4 lines
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 680a8ef5
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D2 in RSA81.md]
+line: 69
+severity: D
+title: RSA80-C2's disposition is true
+disposition: Not a defect - checked as described.
+evidence: RunningLayoutSync.java:50
+commit_id: 4d36b0c6
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D3 in RSA81.md]
+line: 92
+severity: D
+title: RSA80-C3's disposition is true: `freeArchiveName`'s -2, -3
+disposition: Not a defect - checked as described.
+evidence: RestoreAction.java:111
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D4 in RSA81.md]
+line: 108
+severity: D
+title: RSA80-C4's disposition is true: `isHeldBy` with FOLLOW_LINKS
+disposition: Not a defect - checked as described.
+evidence: RestoreAction.java:363
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D5 in RSA81.md]
+line: 120
+severity: D
+title: RSA80-C5's disposition is true
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D6 in RSA81.md]
+line: 131
+severity: D
+title: RSA80-C6's disposition is true
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D7 in RSA81.md]
+line: 143
+severity: D
+title: The three TrainControlUI splits are pure moves
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: de5cd9c1
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D8 in RSA81.md]
+line: 181
+severity: D
+title: The route editor's conditions (OB-381, FR-150 to FR-153) hold on the cases the brief names
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
+[finding RSA81-D9 in RSA81.md]
+line: 217
+severity: D
+title: The core-package comment pass kept the contracts callers need
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: A D finding: checked and clean (3.0.4 validation round 4, RSA81)
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B
