@@ -4170,3 +4170,35 @@ kind: feature request
 what: Built on dev (9e09b53e, 5d0cd419): Sort Pages... in the editor's Manage Pages menu says how to change the order, and changes nothing; claims in ui.testTheLayoutEditorManagesPages, red first
 state: needs test
 became: MT-840
+
+[receipt FR-150]
+seq: 521
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (896e63b2): Insert Condition Above and Below on an and/or line insert at that word; claims in ui.testRouteEditorValidation, red first
+state: needs test
+became: MT-841
+
+[receipt FR-151]
+seq: 522
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (996f20f3, 628fa575): a new or moved condition is selected with the keyboard on it, and a key on a condition's address replaces it while a double-click adds to it; claims in ui.testRouteEditorValidation, red first
+state: needs test
+became: MT-842
+
+[receipt FR-152]
+seq: 523
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (6d1cbfb3): the conditions take the extra height of a taller route editor; claims in ui.testRouteEditorValidation, red first
+state: needs test
+became: MT-843
+
+[receipt FR-153]
+seq: 524
+filed: 2026-10-25
+kind: feature request
+what: Built on dev (9f4954b0): the lines an insert, add, move, indent, outdent or delete changed light pale yellow and fade in about a second; claims in ui.testRouteEditorValidation, red first
+state: needs test
+became: MT-844

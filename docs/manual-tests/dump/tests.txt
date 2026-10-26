@@ -33162,3 +33162,188 @@ body:
 tail:
 | ---
 |
+
+[test MT-841]
+ordinal: 840
+anchor: mt-841
+date: 2026-10-26
+title: Route editor: Insert Condition from a joining word inserts at that word (FR-150)
+disposition: needs test
+from: FR-150
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-841"></a>
+| ### MT-841 - 2026-10-26 - Route editor: Insert Condition from a joining word inserts at that word (FR-150)
+|
+| **Disposition:** needs test
+| **From:** FR-150
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "Word insert", and add one command.
+| 2. Add conditions S88 1, 2, 3 and 4 with the plus.  Change the word between S88 2 and S88 3 to "or".  Indent S88 1 to
+|    2 and S88 3 to 4, so "Reads as" says (S88 #1 on and S88 #2 on) or (S88 #3 on and S88 #4 on).
+| 3. Right-click the "or" line.
+| 4. Choose `Insert Condition Above` and set the new condition to S88 5.
+| 5. Right-click the "and" line between S88 1 and S88 2 and choose `Insert Condition Below`; set the new condition to
+|    S88 6.
+| 6. Right-click the "or" just above S88 5 and choose `Insert Condition Below`; set the new condition to S88 7.
+| 7. Close with `Cancel` and discard the route.
+| 8. If you have a route from the Central Station (its window title ends "from the Central Station, and cannot be
+|    changed here"), open it and right-click a word line in its conditions; otherwise skip this step.
+|
+| **Expected**
+|
+| - At step 3 the menu offers `Insert Condition Above` and `Insert Condition Below`, neither grayed.
+| - After step 4 the new line sits at the outer level, between two "or" lines, and is selected; "Reads as" says
+|   (S88 #1 on and S88 #2 on) or S88 #5 on or (S88 #3 on and S88 #4 on).  Nothing is red.
+| - After step 5 the new line sits inside the first group, between two "and" lines, and is selected; "Reads as" says
+|   (S88 #1 on and S88 #6 on and S88 #2 on) or S88 #5 on or (S88 #3 on and S88 #4 on).
+| - After step 6 S88 7 sits just under that "or", at the outer level: "Reads as" says (S88 #1 on and S88 #6 on and S88 #2
+|   on) or S88 #7 on or S88 #5 on or (S88 #3 on and S88 #4 on).  On a word line Above and Below put the new condition in
+|   the same place (between two copies of the word).
+| - At step 8 no menu opens: a route from the Central Station cannot be changed here.
+|
+tail:
+| ---
+|
+
+[test MT-842]
+ordinal: 841
+anchor: mt-842
+date: 2026-10-26
+title: Route editor: a new or moved condition is ready to type into (FR-151)
+disposition: needs test
+from: FR-151
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-842"></a>
+| ### MT-842 - 2026-10-26 - Route editor: a new or moved condition is ready to type into (FR-151)
+|
+| **Disposition:** needs test
+| **From:** FR-151
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "Typing test", and add one command.
+| 2. Add conditions S88 1, 2 and 3 with the plus, typing each number after a double-click as today.
+| 3. Click in the route's name field, so the keyboard is there.  Right-click S88 2, choose `Insert Condition Above`, and
+|    without clicking anything type 7.
+| 4. Press Enter.  Right-click S88 2 and choose `Insert Condition Below`, then type 8 and press Enter.
+| 5. Right-click below the last line, choose `Add Condition`, then type 9 and press Enter.
+| 6. Press the plus at the bottom of the conditions, then type 4 and press Enter.
+| 7. Press the up arrow on the last line (S88 4), then type 5 and press Enter.
+| 8. Press the down arrow on the first line, then type 6 and press Enter.
+| 9. Click once on S88 2's address and type 22, then press Enter.
+| 10. Double-click S88 3's address, type 1 and press Enter.
+| 11. Close with `Cancel` and discard the route.
+|
+| **Expected**
+|
+| - After each Insert, Add Condition, plus or arrow, the line it made or moved is selected and no cell is open for
+|   editing until a key is typed.
+| - At step 3 typing 7 opens the new line's address cell (the column the sensor number goes in) and the 7 replaces
+|   what it held, as in a spreadsheet: Enter gives S88 7.  No double-click is needed.
+| - The same holds at steps 4 to 6 for the new line, and at steps 7 and 8 for the line that moved (it keeps the selection
+|   and the keyboard after the move): each typed number replaces the line's address.
+| - At step 9 the line becomes S88 22: typing on any condition's address after one click replaces it, not only on a new
+|   line.
+| - At step 10 the double-click keeps the text, so the 1 is added at the end: the line becomes S88 31.
+|
+tail:
+| ---
+|
+
+[test MT-843]
+ordinal: 842
+anchor: mt-843
+date: 2026-10-26
+title: Route editor: a taller window gives the conditions the room (FR-152)
+disposition: needs test
+from: FR-152
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-843"></a>
+| ### MT-843 - 2026-10-26 - Route editor: a taller window gives the conditions the room (FR-152)
+|
+| **Disposition:** needs test
+| **From:** FR-152
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`.  Note how tall the Commands and Conditions sections are when the window
+|    opens.
+| 2. Add six or more conditions with the plus, so the conditions list scrolls.
+| 3. Maximize the route editor window.
+| 4. Restore it, then drag its bottom edge down by a few inches.
+| 5. Drag the bottom edge back up past where it started.
+| 6. Close with `Cancel` and discard the route.
+|
+| **Expected**
+|
+| - At step 1 the window opens at the same size as before, with the two sections the same height as each other, as
+|   before.
+| - At step 3 the Conditions section takes all of the extra height and shows more lines; the Commands section stays
+|   about the height it was at step 1.
+| - At step 4 the same: the extra height goes to the conditions.
+| - At step 5, once the window is shorter than it opened, the two sections share the height evenly again, as before.
+|
+tail:
+| ---
+|
+
+[test MT-844]
+ordinal: 843
+anchor: mt-844
+date: 2026-10-26
+title: Route editor: an edit shows which condition lines it changed (FR-153)
+disposition: needs test
+from: FR-153
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-844"></a>
+| ### MT-844 - 2026-10-26 - Route editor: an edit shows which condition lines it changed (FR-153)
+|
+| **Disposition:** needs test
+| **From:** FR-153
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "Highlight test", and add one command.
+| 2. Add conditions S88 1, 2, 3 and 4 with the plus, typing each number after a double-click.
+| 3. Right-click S88 2 and choose `Insert Condition Below`; once the yellow has gone, set the new condition to S88 5.
+| 4. Press the down arrow on S88 1.
+| 5. Right-click S88 3 and choose `Indent`; then right-click it again and choose `Outdent`.
+| 6. Press the trash on the last line.
+| 7. Press the down arrow on S88 1, then within half a second press the up arrow on the last line.
+| 8. Change the kind of a line, or type a new address into one.
+| 9. Close with `Cancel` and discard the route.
+|
+| **Expected**
+|
+| - After each of steps 3 to 7 the lines the edit changed light up pale yellow and fade back to white in about a second:
+|   at step 3 the new condition and its "and"; at step 4 the two conditions that traded places, not the words or the
+|   other lines; at step 5 the lines whose indent changed; at step 6 the condition now last (the deleted line was the
+|   last, so the one above it takes its place).
+| - The yellow is clearly not the selection's blue and not the red of a wrong word.  On the selected line it shows more
+|   faintly over the blue and the text stays readable.
+| - At step 7 the second press lights its own lines and the fade starts again; the first press's lines go back to
+|   white.
+| - Nothing opens, no sound plays, and the selection, typing and Save work as before while a line is lit.
+| - Step 8 lights nothing: only insert, add, move, indent, outdent and delete do.
+|
+tail:
+| ---
+|

@@ -413,6 +413,10 @@ Tab icons provided by Freepik.
     - Routes
         - In the route editor, right-click a condition to insert one above or below it, move, indent or delete it; right-click below the list to add one.  The condition you just changed is shown in bold in the `Reads as` line, so you can see where it sits.
         - Moving a condition up or down past the edge of its group now moves it into the next group, instead of swapping it with a condition there.
+        - Right-clicking an `and` or `or` line offers `Insert Condition Above` and `Below` too, and puts the new condition at that word.
+        - A new or moved condition is selected and ready to type into.  Typing a number on a selected condition replaces its address, as in a spreadsheet; a double-click still adds to the text.
+        - The conditions get the extra height when the route editor is maximized or made taller.
+        - After an insert, move, indent, outdent or delete, the lines it changed light up pale yellow for a moment.
     - Track Diagram
         - The layout editor has a `Manage Pages` menu to add a blank page, rename, duplicate or delete the page being edited, or combine it with the pages it links to, without leaving the editor; its `Sort Pages...` says how to change the order the pages are listed in.  `Layouts` > `Manage Pages...` opens the editor with that menu showing, in place of the old `Manage Pages` submenu.
         - `Save Current Track Diagram as a Picture...` now offers Small, Medium and Large, the same sizes as the pop-out window, without spelling out pixel counts.
