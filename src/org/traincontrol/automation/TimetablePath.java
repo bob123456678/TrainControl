@@ -20,22 +20,15 @@ public class TimetablePath
     private final List<Edge> path;
     private long executionTime;
     
-    // MILLISECONDS to the next execution, despite the name.  Precalculated externally.
-    //
-    // Every writer and reader uses milliseconds: `Layout` stores a difference of two
-    // `System.currentTimeMillis()` stamps and compares it against another one, `TrainControlUI`
-    // multiplies the operator's typed seconds by 1000 on the way in and divides by 1000 to display it,
-    // and `testLayoutTimetable` asserts 10000 for a ten-second gap.  The name and this comment were
-    // the only two things in the chain that said seconds.
-    //
-    // Renaming it would touch nine call sites and every one of them is right; what was wrong is that
-    // the field lied to the tenth person to read it.
+    // MILLISECONDS to the next execution, despite the name.  Precalculated externally.  Every writer and reader uses
+    // milliseconds (`Layout` stores a difference of two currentTimeMillis stamps, `TrainControlUI` converts the
+    // operator's seconds); renaming it would touch nine call sites that are all right.
     private long secondsToNext = 0;
 
-    // AN ENTRY THE RAILWAY CANNOT BUILD, kept as it was written (Adam, 2026-09-30: "Just keep the entries, and if a path
-    // is run that contains a point on a disabled page, reject it with an error as we do with other autonomy paths"): a
-    // Point on a page left out of autonomy is not on the railway, so its path has no edges.  Dropped at the load, the
-    // next fold wrote the shorter timetable over the configuration and the entry was gone for good.
+    // An entry the railway cannot build, kept as it was written ("Just keep the entries, and if a path is run that
+    // contains a point on a disabled page, reject it with an error as we do with other autonomy paths"): a Point on a
+    // page left out of autonomy is not on the railway, so its path has no edges.  Dropped at the load, it would be gone
+    // for good at the next fold.
     private final JSONObject unbuilt;
     private final String whyNot;
 
@@ -53,9 +46,7 @@ public class TimetablePath
         setExecutionTime(executionTime);
     }
 
-    /**
-     * An entry as written, whose path the railway cannot build.
-     */
+    /** An entry as written, whose path the railway cannot build. */
     private TimetablePath(Locomotive loc, JSONObject written, String whyNot, long executionTime)
     {
         this.loc = loc;
@@ -91,50 +82,33 @@ public class TimetablePath
     }
 
     /**
-     * Whether the train was turned at the end of this path when it was recorded by hand.
-     *
-     * @return the answer, or null for an entry recorded from autonomy or before this was kept
+     * Whether the train was turned at the end of this path when recorded by hand; null when recorded from autonomy or
+     * before this was kept.
      */
     public Boolean getTurnAtTheEnd()
     {
         return turnAtTheEnd;
     }
 
-    /**
-     * Records whether the train was turned at the end of this path.
-     *
-     * @param turnAtTheEnd the answer, or null
-     */
+    /** Records whether the train was turned at the end of this path; null for no answer. */
     public void setTurnAtTheEnd(Boolean turnAtTheEnd)
     {
         this.turnAtTheEnd = turnAtTheEnd;
     }
 
-    /**
-     * Whether the railway can run this entry.
-     *
-     * @return whether it can
-     */
+    /** Whether the railway can run this entry. */
     public boolean isRunnable()
     {
         return this.unbuilt == null;
     }
 
-    /**
-     * Why the railway cannot run this entry, or null.
-     *
-     * @return the reason
-     */
+    /** Why the railway cannot run this entry, or null. */
     public String whyNotRunnable()
     {
         return this.whyNot;
     }
 
-    /**
-     * The name of the Point this entry starts at.
-     *
-     * @return the name
-     */
+    /** The name of the Point this entry starts at. */
     public String getStartName()
     {
         if (this.unbuilt == null) return getStart().getName();
@@ -146,11 +120,7 @@ public class TimetablePath
         return first == null ? null : first.optString("start", null);
     }
 
-    /**
-     * The name of the Point this entry ends at.
-     *
-     * @return the name
-     */
+    /** The name of the Point this entry ends at. */
     public String getEndName()
     {
         if (this.unbuilt == null) return getEnd().getName();
@@ -316,7 +286,7 @@ public class TimetablePath
         JSONArray pathArray = json.getJSONArray("path");
         List<Edge> path = new ArrayList<>();
 
-        // A PATH THE RAILWAY CANNOT BUILD keeps the entry, as written, to be refused when it is run (Adam, 2026-09-30)
+        // A path the railway cannot build keeps the entry, as written, to be refused when it is run
         String whyNot = null;
 
         for (int i = 0; i < pathArray.length() && whyNot == null; i++)
