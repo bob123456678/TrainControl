@@ -404,6 +404,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.5
 * v3.0.4 [10/26/2026]
     - New Features
         - Interface
