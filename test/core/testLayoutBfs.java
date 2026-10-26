@@ -36,7 +36,7 @@ import org.testng.annotations.Test;
  * one point by several different routes.  testExcludedPathFallsBackToAnAlternativeViaASharedPoint below
  * fails if anyone makes that change.
  *
- * SINCE OB-229 (2026-09-15) bfs does not extend a route through a terminus that is not its end - a route the
+ * SINCE OB-229 bfs does not extend a route through a terminus that is not its end - a route the
  * railway refuses anyway, which spent the squares beyond it.  Nothing in this file marks a terminus, so what it pins
  * is unchanged; `core.testARouteIsFoundPastATerminus` holds the new rule.
  *

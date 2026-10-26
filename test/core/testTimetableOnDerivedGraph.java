@@ -25,14 +25,9 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * Capture a timetable on a graph DERIVED FROM THE TRACK DIAGRAM, then replay it and check it ran.
- *
- * Every other timetable test builds its layout by hand with createPoint, so until now nothing had ever
- * captured against the graph the new autonomy actually produces.  That graph differs in the one way
- * that matters here: a station is several Points, named apart by the side trains arrive from, and a
- * timetable records a route by the NAMES of its points.  So the question this answers is whether a
- * captured route still means the same thing after the trains have moved and the graph has been asked
- * to run it again.
+ * Capture a timetable on a graph DERIVED FROM THE TRACK DIAGRAM, then replay it and check it ran.  A station on that
+ * graph is several Points, named apart by the side trains arrive from, and a timetable records a route by the NAMES of
+ * its points: does a captured route still mean the same thing after the trains have moved?
  *
  * The shape of the run is Adam's:
  *
@@ -65,22 +60,14 @@ public class testTimetableOnDerivedGraph
     /** How many locomotives to place, when the layout has that many stations to spare. */
     private static final int TRAINS = 3;
 
-    /**
-     * How long autonomy runs, once it has actually dispatched something.  Long enough to capture
-     * several moves.
-     */
+    /** How long autonomy runs, once it has dispatched something; long enough to capture several moves. */
     private static final int RUN_SECONDS = 12;
 
     /**
-     * How long to wait for autonomy to dispatch ANYTHING before giving up (OB-114, OB-132).
-     *
-     * This used to be a flat `Thread.sleep(RUN_SECONDS * 1000L)` with no wait for a first move - fine
-     * on the small hand-built layouts most timetable tests use, where dispatch is close to instant, but
-     * this test derives a real graph from the frozen snapshot and does a real path search before its first
-     * command. On a machine running a full battery - several JVMs at once, autonomy competing for CPU -
-     * that search can take much longer than twelve seconds, and a skip after a short fixed sleep cannot
-     * tell "nothing to see here" from "the clock ran out before the railway did anything". Matches the
-     * ceiling testTimetableCaptureThroughARealRun uses for the same reason.
+     * How long to wait for autonomy to dispatch ANYTHING before giving up (OB-114, OB-132).  This derives a real graph
+     * from the frozen snapshot and does a real path search before its first command, which on a machine running a full
+     * battery can take far longer than twelve seconds, and a skip after a short fixed sleep cannot tell "nothing to
+     * see here" from "the clock ran out".  Matches the ceiling testTimetableCaptureThroughARealRun uses.
      */
     private static final long STARTUP_CEILING_MS = 240000;
 
@@ -98,14 +85,8 @@ public class testTimetableOnDerivedGraph
     private static final Random RANDOM = new Random(SEED);
 
     /**
-     * The configuration this runs against, by name.
-     *
-     * This named "Autonomy 1", which exists nowhere in the fixture's config/autonomy/ (the
-     * fixture holds only configuration-Main.json, and setup.json's own activeConfiguration is "Main") -
-     * so the guard in derivedLayout() that is supposed to select it deterministically never matched,
-     * and every run silently fell through to "whichever happened to be active", which the comment
-     * there says must not happen.  It only ever worked by coincidence, because Main is also the only
-     * configuration the fixture has.
+     * The configuration this runs against, by name: it must exist in the fixture's config/autonomy/ or
+     * derivedLayout()'s guard never matches.
      */
     private static final String CONFIGURATION = "Main";
 
@@ -126,17 +107,14 @@ public class testTimetableOnDerivedGraph
         }
     }
 
-    // 600s: room for STARTUP_CEILING_MS (240s) plus a run, two settle waits (up to 90s each) and a
-    // replay, without the harness timing this out before the diagnostics in runCaptureAndReplay get a
-    // chance to say why.
+    // 600s: room for STARTUP_CEILING_MS (240s) plus a run, two settle waits (up to 90s each) and a replay.
     @Test(timeOut = 600000)
     public void testACapturedTimetableReplaysOverTheSameTrack() throws Exception
     {
         Layout layout = derivedLayout();
 
-        // A stuck replay must FAIL rather than hang.  The shipped bound is three minutes, because a
-        // train may legitimately wait a long while for another to clear - here that would just mean a
-        // test that takes three minutes to say something is wrong.
+        // A stuck replay must FAIL rather than hang; the shipped bound is three minutes, because a train may
+        // legitimately wait that long for another to clear.
         long stuckWas = Layout.TIMETABLE_STUCK_MS;
         Layout.TIMETABLE_STUCK_MS = 20000;
 
@@ -168,16 +146,9 @@ public class testTimetableOnDerivedGraph
             throw new AssertionError("fewer than two locomotives could be placed - nothing to capture");
         }
 
-        // Where EVERY train began, not just the ones this test placed.
-        //
-        // The configuration carries its own placements, so the graph holds more locomotives than were
-        // put there here - and all of them move once autonomy starts.  Restoring only the placed ones
-        // left the rest wherever the run finished, and a captured route then found its track occupied
-        // by a train the replay had never accounted for.
-        //
-        // One of them was worse than misplaced: restoring a train onto a square whose sibling copy held
-        // another swept that other one off the graph entirely, which is the block rule working exactly
-        // as it should and a thing this test has to plan for rather than trip over.
+        // Where EVERY train began, not just the ones this test placed: the configuration carries its own placements
+        // and they all move once autonomy starts.  Restoring a train onto a square whose sibling copy held another
+        // sweeps that other off the graph (the block rule at work), which this test has to plan for.
         java.util.Map<String, String> startedAt = new java.util.LinkedHashMap<>();
 
         // Only the ones standing on a STATION.
@@ -209,11 +180,7 @@ public class testTimetableOnDerivedGraph
             }
         }
 
-        // THE ONES THIS TEST PLACED, not a count of all of them.
-        //
-        // `startedAt` is filled by walking every locomotive on the graph, and the configuration parks
-        // trains all over the railway - so a count comparison was satisfied by the fixture's own
-        // placements and a locomotive this test placed could fail to land without anything noticing.
+        // The ones this test PLACED, not a count of all of them: the configuration parks trains all over the railway.
         assertTrue(startedAt.keySet().containsAll(locomotives),
             "a locomotive this test placed is not recorded as restorable, so it did not land where it "
             + "was put - which is what this assertion exists to catch.  Placed: " + locomotives
@@ -221,11 +188,8 @@ public class testTimetableOnDerivedGraph
 
         // capture
         //
-        // Emptied first.  A configuration carries its own saved timetable - it rides along in the
-        // globals - so parseAuto loads one, and capture APPENDS.  Without this the snapshot is four
-        // entries of somebody else's run followed by this one's, and a replay then tries to drive
-        // routes whose preconditions were never going to hold: trains stand nowhere near the start of
-        // an entry recorded on a different day.
+        // Emptied first: a configuration carries its own saved timetable, parseAuto loads it and capture APPENDS, so
+        // the replay would drive routes whose preconditions never held.
         layout.setTimetable(new ArrayList<TimetablePath>());
 
         assertTrue(layout.getTimetableSnapshot().isEmpty(),
@@ -236,11 +200,8 @@ public class testTimetableOnDerivedGraph
 
         layout.runLocomotives();
 
-        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114, the same fix
-        // testTimetableCaptureThroughARealRun applies for the same reason). A derived 56-point graph
-        // does a real path search before its first dispatch, and this test used to give up after a
-        // flat twelve-second sleep - which cannot tell "the fixture has nothing to route" from "the
-        // clock ran out before a loaded machine got to it" (OB-132).
+        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114, OB-132): a derived 56-point graph does
+        // a real path search before its first dispatch.
         boolean moved = false;
 
         long startupDeadline = System.currentTimeMillis() + STARTUP_CEILING_MS;
@@ -286,9 +247,8 @@ public class testTimetableOnDerivedGraph
 
         // put everyone back
         //
-        // Twice through.  A single pass can sweep a train that has already been restored, because
-        // placing onto one copy of a square clears the others - so the first pass settles the
-        // arrangement and the second repairs anything the first displaced.
+        // Twice through: placing onto one copy of a square clears the others, so the second pass repairs anything the
+        // first displaced.
         // Off the graph first, so they cannot hold track the replay needs
         for (String square : cannotRestore)
         {
@@ -402,29 +362,17 @@ public class testTimetableOnDerivedGraph
     }
 
     /**
-     * The configuration the current track diagram produces, parsed and made safe to run.
-     *
-     * The pages come from the FIXTURE ITSELF, parsed directly with CS2File - the same way
-     * testTracedPathIsContinuous does it - rather than from model.getLayoutList(), which reads
-     * whatever TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF names on this machine.  The autonomy store
-     * opened two lines below is that folder's; pairing it with pages from a DIFFERENT layout silently
-     * derives a graph that is neither one thing nor the other.
+     * The configuration the current track diagram produces, parsed and made safe to run.  The pages come from the
+     * FIXTURE ITSELF via CS2File, not model.getLayoutList(), which reads whatever LAYOUT_OVERRIDE_PATH_PREF names on
+     * this machine; pairing one folder's autonomy store with another layout's pages derives a graph that is neither.
      */
     private static Layout derivedLayout() throws Exception
     {
-        // THE SNAPSHOT, not test/test_layout (OB-132).
-        //
-        // Adam: "we should have a test fixture that doesn't change, and is a snapshot of my current
-        // layout."
-        //
-        // This test starts autonomy on the derived graph and records where the trains go. On
-        // test/test_layout nothing moves inside the run window - several of its points are marked inactive
-        // and its Main configuration leaves too few live destinations - so it threw a SkipException
-        // every time, and a class that skips everything covers nothing while reading as green.
-        //
-        // test/test_layout_snapshot is a real railway with somewhere for trains to go. It is frozen for the
-        // same reason test/test_layout is; its README says why re-taking it would quietly turn every
-        // assertion here into a statement about the railway rather than about the code.
+        // The snapshot, not test/test_layout (OB-132).  Adam: "we should have a test fixture that doesn't change, and
+        // is a snapshot of my current layout."  On test/test_layout nothing moves inside the run window, so it threw a
+        // SkipException every time, and a class that skips everything reads as green.  test/test_layout_snapshot is
+        // frozen for the same reason; its README says why re-taking it would turn every assertion here into a statement
+        // about the railway rather than the code.
         File folder = new File("test/test_layout_snapshot");
 
         if (!folder.isDirectory())
@@ -439,30 +387,17 @@ public class testTimetableOnDerivedGraph
 
         List<LayoutDiagram> pages = parser.parseLayout(new java.util.LinkedList<MarklinAccessory>());
 
-        // THE IRONWORK, without which two thirds of the track does not connect (OB-132).
-        //
-        // parseLayout is handed an empty accessory list, so every switch and signal tile comes back
-        // with an address on it and nothing behind that address.  testTheCheckerAgreesWithTheBuild
-        // says what that costs in as many words, and wires them in its own setup for the same reason.
-        //
-        // This test is the one that actually tries to RUN trains, so it is the one that most needs
-        // points it can throw - and it was the one not doing it.  It derived a graph with the ironwork
-        // missing, could configure no path, dispatched nothing, and reported that honestly as a skip.
-        // A class that skips everything reads as green, which is how this survived several batteries.
+        // The ironwork, without which two thirds of the track does not connect (OB-132): parseLayout is handed an
+        // empty accessory list, so every switch and signal tile has an address and nothing behind it, and no path can
+        // be configured (see testTheCheckerAgreesWithTheBuild).  A class that skips everything reads as green.
         wireAccessories(pages);
 
         AutonomySession session = new AutonomySession(folder);
 
         session.open(pages);
 
-        // The configuration Adam actually runs.  Deriving whichever happened to be active last would
-        // make this test describe a different railway from one machine to the next.
-        // A GUARD, not a preference.
-        //
-        // The `if` meant a fixture without this configuration silently fell back to whichever was
-        // active last, which is the very thing the comment above forbids - and the reason it has always
-        // worked is that Main is the only configuration the fixture has.  That is a coincidence, and
-        // this class's own javadoc says so.
+        // The configuration Adam actually runs, as a GUARD and not a preference: a fixture without it would silently
+        // fall back to whichever was active last, and the railway described would differ from one machine to the next.
         assertTrue(session.getStore().getConfigurationNames().contains(CONFIGURATION),
             "the fixture has no configuration called " + CONFIGURATION + ", so this test would have "
             + "described whichever railway happened to be active instead.  Has: "
@@ -501,11 +436,8 @@ public class testTimetableOnDerivedGraph
     }
 
     /**
-     * Stations trains can simply stand at and be sent from.
-     *
-     * Termini and reversing points are excluded deliberately: both put conditions on which locomotives
-     * may rest there, and a random placement that happened to pick one would fail for a reason that has
-     * nothing to do with timetables.
+     * Stations trains can simply stand at and be sent from: termini and reversing points put conditions on which
+     * locomotives may rest there.
      */
     private static List<Point> ordinaryStations(Layout layout)
     {
@@ -519,8 +451,7 @@ public class testTimetableOnDerivedGraph
 
             if (p.isTerminus() || p.isReversing()) continue;
 
-            // One per SQUARE.  The copies of a split station are one piece of track, so offering both
-            // to a random placement would sometimes put two trains on one platform.
+            // One per SQUARE: the copies of a split station are one piece of track.
             String block = p.getBlock() == null ? p.getName() : p.getBlock();
 
             if (!blocksTaken.add(block)) continue;
@@ -531,9 +462,7 @@ public class testTimetableOnDerivedGraph
         return out;
     }
 
-    /**
-     * Puts up to TRAINS locomotives on randomly chosen stations, and returns the ones that took.
-     */
+    /** Puts up to TRAINS locomotives on randomly chosen stations, and returns the ones that took. */
     private static List<String> placeRandomly(Layout layout, List<Point> stations)
     {
         List<Point> shuffled = new ArrayList<>(stations);
@@ -556,9 +485,7 @@ public class testTimetableOnDerivedGraph
         return placed;
     }
 
-    /**
-     * Waits for every locomotive to stop, so an assertion is made about a settled railway.
-     */
+    /** Waits for every locomotive to stop, so an assertion is made about a settled railway. */
     private static void awaitStopped(Layout layout) throws InterruptedException
     {
         long deadline = System.currentTimeMillis() + SETTLE_TIMEOUT_MS;
@@ -581,10 +508,7 @@ public class testTimetableOnDerivedGraph
         return out.toString();
     }
 
-    /**
-     * The names of a list of stations, for a diagnostic message - so a skip names what it found
-     * rather than only how many.
-     */
+    /** The names of a list of stations, for a diagnostic message, so a skip names what it found. */
     private static String stationNames(List<Point> stations)
     {
         StringBuilder out = new StringBuilder();
@@ -614,13 +538,8 @@ public class testTimetableOnDerivedGraph
         return out.toString().trim();
     }
     /**
-     * Gives every switch and signal tile a real Accessory, the way the application does.
-     *
-     * A diagram parsed on its own carries addresses and no objects, and the reduction cannot join
-     * track through a point it has no accessory for.  Copied in shape from
-     * testTheCheckerAgreesWithTheBuild, which needs the same thing for the same reason.
-     *
-     * @param pages the parsed diagram
+     * Gives every switch and signal tile a real Accessory, the way the application does: a diagram parsed on its own
+     * carries addresses and no objects, and the reduction cannot join track through a point it has no accessory for.
      */
     private static void wireAccessories(List<LayoutDiagram> pages)
     {
@@ -649,9 +568,7 @@ public class testTimetableOnDerivedGraph
         }
     }
 
-    /**
-     * One accessory, addressed the way the station addresses them.
-     */
+    /** One accessory, addressed the way the station addresses them. */
     private static MarklinAccessory accessory(int logicalAddress,
         org.traincontrol.base.Accessory.accessoryType type,
         org.traincontrol.base.Accessory.accessoryDecoderType protocol)

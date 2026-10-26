@@ -11,33 +11,22 @@ import support.SourceOf;
 /**
  * The three doors that refuse to start autonomy say the same thing, and it names the count (MT-263).
  *
- * **Two of the three told the operator to wait for trains that were not running.**  Autonomy refuses on
- * `hasErrors()`, which covers a graph that will not build at all - and in that state the error COUNT is
- * zero, because nothing turned the problem into a finding.  The grayed Start item's tooltip and the
- * scripting API's exception both chose their wording on that count alone, so they fell through to *"wait
- * for the trains to stop"*: an instruction to wait for something that will never happen.  The guard
- * gained that arm and its two twins did not, and they stood like that for a week.
+ * Two of the three told the operator to wait for trains that were not running: autonomy refuses on `hasErrors()`, which
+ * covers a graph that will not build at all, and there the error COUNT is zero because nothing turned the problem into
+ * a finding.  The grayed Start item's tooltip and the scripting API's exception chose their wording on that count alone
+ * and fell through to "wait for the trains to stop".  Then, even once that was closed, those two read "one thing has to
+ * be dealt with first" for ANY number of blocking problems, because neither asked how many (MT-263's step 5: "with
+ * three blocking problems, the start door should say three, not 'one thing'"; the shape OB-090 wore twice).
  *
- * **And then the count itself.**  Even once the fall-through was closed, those two read *"one thing has
- * to be dealt with first"* for ANY number of blocking problems, because neither asked how many there
- * were.  The Start dialog had been given the count and its twins had not - the shape
- * that OB-090 wore twice.  MT-263's step 5, *"with three blocking problems, the start door should say
- * three, not 'one thing'"*, was red at two of the three doors when this was written.
- *
- * **Asked of the arithmetic, and then of the doors.**  What went wrong is words chosen from the wrong
- * number, so the rule is asked directly with the numbers put in - no railway has to be broken three
- * different ways to ask it.  The second claim reads the three call sites, because pinning the rule alone
- * would leave what was actually wrong as the only thing nothing checks.
+ * **Asked of the arithmetic, and then of the doors:** the rule is asked directly with the numbers put in, so no railway
+ * has to be broken three ways; the second claim reads the three call sites, because pinning the rule alone would leave
+ * what was actually wrong unchecked.
  *
  * @author Adam
  */
 public class testTheRefusalToStartSaysWhichThing
 {
-    /**
-     * The four answers, in the order the rule has to ask them.
-     *
-     * @throws Exception from the reflection
-     */
+    /** The four answers, in the order the rule has to ask them. */
     @Test
     public void testTheWordingFollowsWhatIsActuallyWrong() throws Exception
     {
@@ -45,8 +34,8 @@ public class testTheRefusalToStartSaysWhichThing
         assertEquals(said(2, 0, true), I18n.f("autolayout.ui.errorCannotStartWithErrors", 2),
             "with two error findings the refusal does not name them");
 
-        // THREE BLOCKING PROBLEMS AND NO FINDINGS: name how many.  MT-263's step 5, and the state is a
-        // graph that will not build - where the count is zero because nothing made it a finding.
+        // THREE BLOCKING PROBLEMS AND NO FINDINGS: name how many (MT-263's step 5); the graph will not build, so the
+        // count is zero because nothing made it a finding.
         assertEquals(said(0, 3, true), I18n.f("autosetup.ui.errorCannotBuildDetail", 3),
             "three blocking problems are reported as one thing to deal with, which is what DY3-C7 filed"
             + " and what two of the three doors went on doing");
@@ -75,21 +64,15 @@ public class testTheRefusalToStartSaysWhichThing
     }
 
     /**
-     * All three doors take their words from that one rule.
-     *
-     * Read rather than driven: one is a modal dialog, one a grayed tooltip built inside a menu that
-     * needs a loaded setup and a right-click, and the third throws from the scripting API.  What matters
-     * is that none of them words the refusal itself any more - so this looks for the ternaries that are
-     * gone, not only for the call that replaced them.
-     *
-     * @throws Exception from the files
+     * All three doors take their words from that one rule.  Read rather than driven (one is a modal dialog, one a
+     * grayed tooltip built inside a menu, the third throws from the scripting API): none may word the refusal itself
+     * any more, so this looks for the ternaries that are gone, not only for the call that replaced them.
      */
     @Test
     public void testNoDoorWordsItItself() throws Exception
     {
-        // The program's code, comments blanked: two of the three mentions of the
-        // singular sentence in the main window are comments describing where the choosing USED to be, and a count
-        // that reads those is counting history rather than code.
+        // The program's code, comments blanked: two mentions of the singular sentence in the main window are comments
+        // about where the choosing was, and a count that reads those counts history.
         String ui = SourceOf.allCode();
 
         // The diagram menu's file, whole; the autonomy page has a sentence of its own, so it is left out of the counts
@@ -124,15 +107,7 @@ public class testTheRefusalToStartSaysWhichThing
             + " (which words its own); it belongs to the rule alone");
     }
 
-    /**
-     * What the rule says for a given state.
-     *
-     * @param errors how many error findings
-     * @param blocking how many blocking problems
-     * @param broken whether the setup will not run at all
-     * @return the sentence
-     * @throws Exception from the reflection
-     */
+    /** What the rule says for a given state. */
     private static String said(int errors, int blocking, boolean broken) throws Exception
     {
         Method rule = TrainControlUI.class.getDeclaredMethod("whyAutonomyWillNotStart",
@@ -143,13 +118,7 @@ public class testTheRefusalToStartSaysWhichThing
         return (String) rule.invoke(null, errors, blocking, broken);
     }
 
-    /**
-     * How many times a name appears in a file.
-     *
-     * @param source the file's text
-     * @param what the name
-     * @return the count
-     */
+    /** How many times a name appears in a file. */
     private static int count(String source, String what)
     {
         int seen = 0;

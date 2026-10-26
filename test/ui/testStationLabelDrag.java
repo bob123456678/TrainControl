@@ -2,22 +2,17 @@ package ui;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.StationCaption;
+import org.traincontrol.gui.widgets.StationCaption;
 import support.SourceOf;
 
 /**
  * FR-035, and the arrow that moves to the other side of the label.
  *
- * Two things Adam asked for on 2026-08-27:
- *
- * "If going south or west, move the arrow to the other side of the label." That rule is pure - a
- * string and a glyph - so it is driven directly below.
- *
- * "In the autonomy editor ONLY, make it possible to move around station labels (only) by clicking and
- * dragging them. Do not make tiles or anything else movable." A drag gesture cannot be performed by a
- * test without a window, a railway and a mouse, so what is checked here is the part that can be wrong
- * without anybody noticing: WHAT the gesture is attached to, and whether the mark drawn during the
- * drag asks the same question the drop will.
+ * Adam: "If going south or west, move the arrow to the other side of the label." That rule is pure (a string and a
+ * glyph), so it is driven directly.  And: "In the autonomy editor ONLY, make it possible to move around station labels
+ * (only) by clicking and dragging them. Do not make tiles or anything else movable." A drag cannot be performed
+ * without a window, a railway and a mouse, so what is checked is the part that can be wrong unnoticed: WHAT the
+ * gesture is attached to, and whether the mark drawn during the drag asks the same question the drop will.
  *
  * @author Adam
  */
@@ -26,11 +21,8 @@ public class testStationLabelDrag
     /**
      * A south or west arrow leads the name; north and east follow it.
      *
-     * Adam: "if going south or west, move the arrow to the other side of the label."
-     *
-     * It falls out right for a rotated caption without a special case, which is worth knowing rather
-     * than rediscovering: a rotated caption reads bottom to top, so the START of the string is the
-     * BOTTOM of the pill - exactly where a downward arrow belongs.
+     * It falls out right for a rotated caption without a special case: a rotated caption reads bottom to top, so the
+     * START of the string is the BOTTOM of the pill, where a downward arrow belongs.
      *
      * MUTATION: having `arrowLeads` answer for north and east instead puts every arrow on the wrong
      * side and fails both halves.
@@ -47,7 +39,6 @@ public class testStationLabelDrag
         assertFalse(StationCaption.arrowLeads(StationCaption.ARROW_N), "a north arrow should follow");
         assertFalse(StationCaption.arrowLeads(StationCaption.ARROW_E), "an east arrow should follow");
 
-        // And the join itself.
         assertEquals(StationCaption.withArrow("Bahnhof", StationCaption.ARROW_N),
             "Bahnhof " + StationCaption.ARROW_N, "a north arrow is not after the name");
 
@@ -67,11 +58,8 @@ public class testStationLabelDrag
     }
 
     /**
-     * Both places that join a name to an arrow go through the one rule.
-     *
-     * There are two: the caption showing one train, and the crowded caption showing two. They used to
-     * join with `+`, in different files, and two spellings of one rule are two rules - a platform with
-     * one train on it would have got the new placement and a platform with two would have kept the old.
+     * Both places that join a name to an arrow go through the one rule: the caption showing one train, and the crowded
+     * caption showing two.  Joining with `+` in different files would be two spellings of one rule, which is two rules.
      *
      * MUTATION: putting `cut + arrow` back in LayoutGrid fails this.
      */
@@ -82,7 +70,6 @@ public class testStationLabelDrag
             "the single caption joins its arrow with something other than the shared rule, so which "
             + "side the arrow goes on is now decided in two places");
 
-        // A second caller beside the single caption's
         assertTrue(SourceOf.occurrences("StationCaption.withArrow(")
                 > SourceOf.occurrences("StationCaption.withArrow(cut, arrow)"),
             "the crowded caption - two trains on one platform - joins its arrows its own way, so a "
@@ -92,9 +79,8 @@ public class testStationLabelDrag
     /**
      * The drag is attached to station captions in the autonomy editor, and to nothing else.
      *
-     * Adam: "do not make tiles or anything else movable." The guard is the whole of that promise, and
-     * the label added a few lines further down the same method is the ADDRESS label - the sensor's
-     * number - which must not become draggable by being caught in the same net.
+     * Adam: "do not make tiles or anything else movable." The label added a few lines further down the same method is
+     * the ADDRESS label (the sensor's number), which must not become draggable by being caught in the same net.
      *
      * MUTATION: dropping `captioned != null` from the guard, or attaching the gesture at the second
      * add, fails this.
@@ -108,11 +94,8 @@ public class testStationLabelDrag
             "the drag is no longer limited to captions in the autonomy editor - either the running "
             + "diagram's labels have become draggable, or the user's own writing has");
 
-        // TWO handles, named (Adam, 2026-08-27: "have it fire on the label or the tile").
-        //
-        // Counted AND named. A bare count would have to be raised every time a handle is added, and
-        // raising it is exactly what somebody would do after attaching the gesture to the wrong thing
-        // - the label added a few lines further down this method is the sensor's ADDRESS.
+        // TWO handles, named: "have it fire on the label or the tile".  Counted AND named, since a bare count would be
+        // raised by somebody who attached the gesture to the wrong thing (the sensor's ADDRESS label below).
         assertTrue(grid.contains("dragCaption(text, text,"),
             "the label itself is no longer a handle, so a caption cannot be picked up by the pill");
 
@@ -132,27 +115,21 @@ public class testStationLabelDrag
     /**
      * What the drag mark says and what the drop does are one question.
      *
-     * The mark drawn under the pointer while dragging asks `canDropCaption`, and `canDropCaption` and
-     * `moveCaption` both ask `refuseCaptionDrop`. A highlight with a rule of its own would offer a
-     * square the drop then refused, which is the fault behind OB-057, OB-090 and one of this morning's
-     * review findings - the third time this year.
+     * The mark asks `canDropCaption`, and `canDropCaption` and `moveCaption` both ask `refuseCaptionDrop`.  A highlight
+     * with a rule of its own would offer a square the drop then refused (OB-057, OB-090).
      *
      * MUTATION: having the mark answer `over != null` fails the first assertion; giving moveCaption
      * its own copy of the checks fails the count.
      *
-     * WHAT THIS CANNOT SEE, stated because it was found by trying it: a mark that still CALLS
-     * canDropCaption inside an expression that has been neutered - `over != null && false && ...` -
-     * passes, because the name is still in the file. A source scan reads names, not meaning. It
-     * catches the call being removed or replaced, which is how this would actually regress; it does
-     * not catch the answer being thrown away. Only driving a real drag would, and that needs a window,
-     * a railway and a mouse.
+     * CANNOT SEE: a mark that still CALLS canDropCaption inside a neutered expression (`over != null && false && ...`)
+     * passes, because a source scan reads names, not meaning.  It catches the call being removed or replaced, not the
+     * answer being thrown away; only driving a real drag would.
      */
     @Test
     public void testTheDragMarkAsksTheDropItsOwnQuestion() throws Exception
     {
         String panel = SourceOf.allCode();
 
-        // The mark is chosen while the caption is dragged
         assertTrue(SourceOf.declaration("private static void dragCaption(").contains("canDropCaption("),
             "the square marked under the pointer is chosen by something other than the rule that "
             + "will decide the drop, so a square can be shown as a target and then refuse");
@@ -174,13 +151,9 @@ public class testStationLabelDrag
     /**
      * The picture taken of a dragged label is the PILL, not the component around it.
      *
-     * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while
-     * held down)."
-     *
-     * A caption's cell runs to the bottom of the diagram - that is how it gets positioned, with a top
-     * inset - so the component is mostly empty. Photographing all of it would give a ghost hundreds of
-     * pixels tall whose visible part hangs a long way from the pointer, which reads as the drag having
-     * picked up nothing.
+     * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while held down)."  A
+     * caption's cell runs to the bottom of the diagram, so photographing all of it would give a ghost hundreds of
+     * pixels tall hanging a long way from the pointer.
      *
      * MUTATION: having `drawnBounds` return the component's own bounds fails the crop assertion - the
      * ink lands in a corner instead of the middle.
@@ -216,7 +189,6 @@ public class testStationLabelDrag
             "the pill is as tall as its whole component, so cropping to it saves nothing and the "
             + "ghost would carry the empty room the caption is placed with");
 
-        // And the crop really does hold the pill: paint it the way the drag does and look.
         java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
             drawn.width, drawn.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
 
@@ -238,20 +210,16 @@ public class testStationLabelDrag
     /**
      * The picked-up label is always put back down.
      *
-     * A release arrives whether or not a drag ever started, and whether or not the drop is accepted.
-     * If putting it down were conditional on any of that, a refused drop - or a press that turned out
-     * to be a click - would leave a floating copy of the caption on the window's drag layer with
-     * nothing left to move it, sitting over the diagram until the editor was rebuilt.
+     * A release arrives whether or not a drag started and whether or not the drop is accepted; if putting it down were
+     * conditional on any of that, a refused drop or a press that was a click would leave a floating copy on the
+     * window's drag layer until the editor was rebuilt.
      *
      * MUTATION: moving `hideCaptionGhost` below the early return fails this.
      *
-     * `hideCaptionGhost()` is called TWICE in this method - once inside the wrong-button
-     * branch, ahead of THAT branch's own `return;`, and once more, unconditionally, ahead of the
-     * real "did this actually move anything" question. Anchoring on the first occurrence of each
-     * name, as this test used to, finds the wrong-button branch's own pairing every time and can
-     * never fail - true before the real fix and true after it was undone. Anchored instead on
-     * `boolean moved = dragging[0];`, the line that sits directly above the real, unconditional
-     * put-down and exists nowhere else in the method.
+     * `hideCaptionGhost()` is called TWICE in the method (inside the wrong-button branch, and unconditionally ahead of
+     * the real "did this actually move anything" question), so anchoring on the first occurrence of each name can never
+     * fail.  Anchored instead on `boolean moved = dragging[0];`, directly above the real put-down and nowhere else in
+     * the method.
      */
     @Test
     public void testThePickedUpLabelIsAlwaysPutDown() throws Exception
@@ -268,8 +236,7 @@ public class testStationLabelDrag
         int down = released.indexOf("hideCaptionGhost()", movedRead);
         int leaves = released.indexOf("if (!moved", movedRead);
 
-        // Proved present, and past the wrong-button branch's own pairing, before they are
-        // ordered - an absent term made this pass unconditionally before.
+        // Proved present, and past the wrong-button branch's own pairing, before they are ordered.
         assertTrue(down > movedRead, "the floating copy of the label is never removed after a "
             + "real drag ends, so it stays on the window after the drag ends");
 
@@ -285,13 +252,9 @@ public class testStationLabelDrag
     /**
      * Only the LEFT button picks a station label up.
      *
-     * Found by a reviewer. Every button started a drag, so a right-press on a captioned square that
-     * wandered more than DRAG_SLOP before release moved the label instead of opening the properties
-     * menu - and `mouseClicked` never fired, so the menu did not open either. A gesture meant to ask
-     * about a square silently rearranged it.
-     *
-     * The distinction was already being made on the click path in the same adapter, which is what
-     * makes this a miss rather than a decision.
+     * Every button started a drag, so a right-press on a captioned square that wandered past DRAG_SLOP moved the label
+     * instead of opening the properties menu, and `mouseClicked` never fired either.  The click path in the same
+     * adapter already made the distinction.
      *
      * MUTATION: dropping the button test lets any press begin a drag and fails this.
      */
@@ -306,11 +269,8 @@ public class testStationLabelDrag
             "any mouse button now starts a station-label drag, so a right-press that wanders a few "
             + "pixels moves the label and swallows the menu that was being asked for");
 
-        // "dragging[0] = false" occurs TWICE in this method - once in the wrong-button
-        // branch this assertion is about, and once more on the ordinary path a few lines later.
-        // Searching the whole method body for the substring passes on the second occurrence alone,
-        // so deleting the first (the actual fix this test protects) would go unnoticed. Scoped to
-        // just the wrong-button branch instead.
+        // "dragging[0] = false" occurs TWICE in this method (the wrong-button branch and the ordinary path), so
+        // searching the whole body would pass on the second alone; scoped to just the wrong-button branch.
         String wrongButton = SourceOf.declarationIn(pressed,
             "if (!javax.swing.SwingUtilities.isLeftMouseButton(e))");
 
@@ -318,11 +278,8 @@ public class testStationLabelDrag
             "a press of the wrong button clears the start point but leaves the drag armed, so the "
             + "ghost freezes and the eventual release still commits a move");
 
-        // AND THE RELEASE, which is where the move is actually committed.
-        //
-        // The first version of this test asserted a token in mousePressed and never mentioned this
-        // method - so a right-release part way through a left-drag still dropped the label, at
-        // wherever the pointer had reached, with no drop mark having been shown there.
+        // AND THE RELEASE, which is where the move is committed: a right-release part way through a left-drag must not
+        // still drop the label.
         String released = SourceOf.declarationIn(drag, "public void mouseReleased(MouseEvent e)");
 
         assertTrue(released.contains("isLeftMouseButton"),
@@ -333,18 +290,12 @@ public class testStationLabelDrag
     /**
      * A label cannot be dropped on the grid's spacers, which are not squares.
      *
-     * Found by a reviewer. The grid ends in a dummy row and a dummy column that stop long labels
-     * misaligning it, and they are LayoutLabels with real bounds like every tile - so the drop
-     * accepted them. Worse, the mark showed GREEN first: a spacer carries no component, and a square
-     * with nothing on it may legitimately hold a caption. The label was then stored against a square
-     * the drawing loop skips before it ever looks for one, so it simply vanished, and the setup kept an
-     * entry nothing could draw.
-     *
-     * The strip along the bottom runs the whole width of the diagram, directly below the last row of
-     * track - exactly where somebody would drop a label for a station on that row.
+     * The grid ends in a dummy row and column that stop long labels misaligning it, and they are LayoutLabels with real
+     * bounds, so the drop accepted them; the mark showed GREEN first (a spacer carries no component, and a square with
+     * nothing on it may hold a caption), and the label then vanished, stored against a square the drawing loop skips.
+     * The strip along the bottom is exactly where somebody would drop a label for a station on the last row.
      *
      * Read rather than run: reaching `tileUnder` needs a built grid, a window and a drag in progress.
-     * What can silently go wrong is the test being deleted, which is visible.
      *
      * MUTATION: removing the spacer check from tileUnder fails this.
      */

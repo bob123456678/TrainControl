@@ -291,9 +291,9 @@ public class testLayoutTiles
     /**
      * A second accessory highlight stops the first, so only one restore ever fires.
      *
-     * A three-way drives twice, 350 ms apart, and each drive highlights the tile.  The first timer used to be left
-     * running: it fired 2.25 seconds after ITS start, part-way through the second highlight, and put the plain icon
-     * back over it - the tile stopped looking highlighted while it still was.  Counted rather than looked at,
+     * A three-way drives twice, 350 ms apart, and each drive highlights the tile.  The first timer must not be left
+     * running: it would fire 2.25 seconds after ITS start, part-way through the second highlight, and put the plain
+     * icon back over it - the tile would stop looking highlighted while it still was.  Counted rather than looked at,
      * because what distinguishes the two is how many restores happen, not which picture is up.
      *
      * @throws Exception from the event thread
@@ -350,7 +350,7 @@ public class testLayoutTiles
     }
 
     /**
-     * And the second highlight is DRAWN (OB-333, OB-334; Adam, 2026-10-11: *"when autonomy is running, I don't see yellow
+     * And the second highlight is DRAWN (OB-333, OB-334; Adam: *"when autonomy is running, I don't see yellow
      * highlights for switches and signals on my track diagram"*).  A square changed again while its first highlight was
      * up laid the new yellow over its picture and then ended the first highlight - whose end puts the plain picture back,
      * over the yellow just laid - so it showed nothing for the whole hold while a highlight was armed.  Autonomy changes

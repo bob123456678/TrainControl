@@ -17,27 +17,18 @@ import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A platform with two protecting signals throws BOTH of them.
+ * A platform with two protecting signals throws BOTH of them (MT-023, Adam: "Does not work - only first is set to red.
+ * Selection process is ok.").
  *
- * MT-023, Adam: "Does not work - only first is set to red. Selection process is ok."
+ * A station may be reachable from each end, so it may be protected by a signal on each approach.  They are commanded
+ * together and show the same aspect, because a platform guarded at one end and open at the other is worse than one
+ * guarded at neither: it looks protected.
  *
- * A station may be reachable from each end, so it may be protected by a signal on each approach. They
- * are commanded together and show the same aspect - they say the same thing about the same platform -
- * and a platform guarded at one end and open at the other is worse than one guarded at neither,
- * because it looks protected.
- *
- * **Why this test is at the layout rather than in the editor.** Reading the chain settled where it is
- * NOT: the store keeps a list, `protectingSignalNames` maps every one of them, the builder writes one
- * as a bare string and several as an array, `fromJSON` reads both shapes back (testAutoLayout covers
- * that), and the aspect is memoized per ACCESSORY rather than per Point - with a comment recording that
- * keying it per Point was itself a bug, because one copy of a square wrote a memo while standing empty
- * and the signal stayed green with a train at the platform.
- *
- * Every link handles several. What no test covered was the end of the chain actually being reached for
- * more than one - which is exactly what "only first is set to red" describes.
- *
- * `refreshAllProtectingSignals` is public and asks each signal directly, without the "only while
- * running" guard that protects the per-occupancy path, so this needs no trains and no hardware.
+ * This is at the layout rather than in the editor because every link of the chain handles several (the store keeps a
+ * list, `fromJSON` reads both shapes back, the aspect is memoized per ACCESSORY rather than per Point), and what no
+ * test covered was the end of the chain actually being reached for more than one.  `refreshAllProtectingSignals` is
+ * public and asks each signal directly, without the "only while running" guard of the per-occupancy path, so this needs
+ * no trains and no hardware.
  *
  * @author Adam
  */
@@ -75,9 +66,7 @@ public class testBothProtectingSignalsAreThrown
         if (model != null) model.stop();
     }
 
-    /**
-     * Occupied: both red. Empty again: both green.
-     */
+    /** Occupied: both red.  Empty again: both green. */
     @Test
     public void testAPlatformGuardedAtBothEndsThrowsBothSignals() throws Exception
     {
@@ -124,17 +113,10 @@ public class testBothProtectingSignalsAreThrown
     /**
      * Deleting a locomotive takes it off the railway, not just out of the lists.
      *
-     * `locDeleted` sweeps six things - the run list, the active
-     * locomotives, the milestones, each Point's exclusions, each Point's home, and the home claims -
-     * and does not clear the locomotive STANDING on a Point.
-     *
-     * Two consequences, both bad. The square stays occupied by a train that no longer exists, so
-     * nothing can ever be routed through it again; and `Point.toJSON` writes the name back out, so the
-     * next load reports a locomotive that is not in the database and **invalidates the whole
-     * configuration** - which answers null for every point in it, so the railway simply stops working.
-     *
-     * The same shape as the exclusions and the home two lines above it, both of which had to be added
-     * later for exactly this reason. Their own comments say so.
+     * `locDeleted` sweeps six things (the run list, the active locomotives, the milestones, each Point's exclusions,
+     * each Point's home, and the home claims) but not the locomotive STANDING on a Point.  The square then stays
+     * occupied by a train that no longer exists, and `Point.toJSON` writes the name back out, so the next load reports
+     * a locomotive that is not in the database and **invalidates the whole configuration**.
      */
     @Test
     public void testDeletingALocomotiveTakesItOffThePointItStandsOn() throws Exception
@@ -167,33 +149,24 @@ public class testBothProtectingSignalsAreThrown
     /**
      * Protection re-asserts after something else has moved the signal.
      *
-     * `TilePorts` gives a SIGNAL tile a GREEN configuration command,
-     * so a path configured across one commands it green through `getConfigCommands` - and
-     * `configureAndLockPath` does that AFTER reserving the point, in the same loop: `e.getEnd().reserve`
-     * then `configureEdge(e)`. The same `Accessory`, driven behind protection's back.
+     * `TilePorts` gives a SIGNAL tile a GREEN configuration command, so a path configured across one commands it green
+     * through `getConfigCommands`, and `configureAndLockPath` does that AFTER reserving the point: the same
+     * `Accessory`, driven behind protection's back.  `signalAspects` remembers what protection last COMMANDED rather
+     * than what the signal is showing, so it then sends nothing, and the signal stays green over an occupied platform
+     * until the train leaves.
      *
-     * `signalAspects` remembers what protection last COMMANDED rather than what the signal is showing,
-     * so from then on it agrees with itself and sends nothing. The signal stays green over an occupied
-     * platform until the train leaves, and no later occupancy change corrects it.
+     * **What this test does NOT assert.**  Adam's ruling: "This shouldn't happen. The protecting signal is at the
+     * destination, so the destination shouldn't be in the middle. If a train just passes through (legally, i.e. there
+     * is no lock edge preventing it), then you would set the signal to green and set the destination's to red (if
+     * any)."  So which aspect "wins" is not a question the railway is asked; this asserts only that protection may not
+     * be SILENTLY SKIPPED because of something it remembers.
      *
-     * **What this test does NOT assert.** Adam's ruling, 2026-08-23: "This shouldn't happen. The
-     * protecting signal is at the destination, so the destination shouldn't be in the middle. If a
-     * train just passes through (legally, i.e. there is no lock edge preventing it), then you would set
-     * the signal to green and set the destination's to red (if any)." A signal a path crosses and a
-     * signal protecting the destination are two different signals, so which aspect "wins" is not a
-     * question the railway is supposed to be asked. This asserts only the part that holds either way:
-     * protection may not be SILENTLY SKIPPED because of something it remembers. Whatever moved the
-     * signal, the next occupancy change is decided by looking.
+     * The memo is still wanted: it keeps `configureAndLockPath` from putting a burst of accessory traffic under the
+     * layout monitor.  It just may not be the only thing asked, and the accessory's own state is the one record that
+     * cannot go stale behind somebody's back.
      *
-     * The memo is still wanted. It is what keeps `configureAndLockPath` from putting a burst of
-     * accessory traffic under the layout monitor, one command per point it reserves, on the thread the
-     * interface also needs. It just may not be the only thing asked - and the accessory's own state is
-     * set optimistically by every caller, protection and path configuration alike, so it is the one
-     * record that cannot go stale behind somebody's back.
-     *
-     * Two platforms share one signal so that both triggers see the square CLAIMED. With one platform
-     * the clearing transition would write the memo false in between and the second command would be
-     * sent for the ordinary reason, testing nothing.
+     * Two platforms share one signal so that both triggers see the square CLAIMED.  With one platform the clearing
+     * transition would write the memo false in between and the second command would be sent for the ordinary reason.
      */
     @Test
     public void testProtectionReassertsAfterSomethingElseMovesTheSignal() throws Exception
@@ -245,9 +218,8 @@ public class testBothProtectingSignalsAreThrown
         // condition under which protection speaks at all - see the hand-dispatch test below.
         layout.setCallback("memo watcher", (edges, l, started) ->
         {
-            // Once. A start is announced again as the train passes each milestone, and a second run
-            // of this block read the signal back AFTER it had already driven it green - which reads
-            // exactly like protection having failed at the first step.
+            // Once: a start is announced again at each milestone, and a second run would read the signal back after it
+            // had driven it green, which reads like protection having failed.
             if (!Boolean.TRUE.equals(started) || !watched.compareAndSet(false, true)) return null;
 
             layout.getPoint("MP P").setLocomotive(first);
@@ -288,20 +260,13 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A dispatch does not touch a signal it has nothing to do with (OB-166).
      *
-     * Adam: "when sending a train from bottominnerotherside to bottominner, signal 64 goes from red to
-     * green unnecessarily."  And his ruling on it: "Signals should only be touched when a route
-     * activates."
+     * Adam: "when sending a train from bottominnerotherside to bottominner, signal 64 goes from red to green
+     * unnecessarily."  And his ruling on it: "Signals should only be touched when a route activates."
      *
-     * Measured on his own layout before this was written. Signal 64 protects TopMainR2's two copies
-     * and nothing else; both were empty; and the only route between the two points he named does not
-     * command it. What moved it was the sweep - `refreshAllProtectingSignals` re-commanding every
-     * protecting signal on the layout from current occupancy, the first time anything is dispatched
-     * by hand. An empty platform is commanded GREEN, so a signal he had red went green because a train
-     * elsewhere started moving.
-     *
-     * The platform here is EMPTY and the signal is RED, which is the state a route leaves behind. A
-     * dispatch between two other points is not a route activating over this signal, so nothing may
-     * command it.
+     * What moved it was the sweep: `refreshAllProtectingSignals` re-commanding every protecting signal from current
+     * occupancy the first time anything is dispatched by hand, and an empty platform is commanded GREEN.  The platform
+     * here is EMPTY and the signal is RED, the state a route leaves behind; a dispatch between two other points is not
+     * a route activating over this signal, so nothing may command it.
      *
      * MUTATION: putting any of the three refreshAllProtectingSignals() calls back fails this.
      */
@@ -354,13 +319,13 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train passing a station leaves that station's guards alone (OB-315, OB-316).
+     * A train passing a station leaves that station's guards alone (OB-315).
      *
-     * Adam, 2026-10-03: *"I think the root cause for the last two is that the exit guard signals are applied for more than
-     * just the arrival station."*  They were: an exit guard was red while its platform was claimed, and a locked path
-     * claims every station along it - so each station a train only passed turned its exit guard red until the path let
-     * it go.  And his question, *"check if the same issue applies to the entry guards, not just exit"*: the entry guard is
-     * thrown only where a journey ends, so a passing train leaves it alone - asserted here beside the exit guard.
+     * Adam: *"I think the root cause for the last two is that the exit guard signals are applied for more than just the
+     * arrival station."*  An exit guard was red while its platform was claimed, and a locked path claims every station
+     * along it, so each station a train only passed turned its exit guard red until the path let it go.  The entry
+     * guard (*"check if the same issue applies to the entry guards, not just exit"*) is thrown only where a journey
+     * ends, so a passing train leaves it alone; asserted here beside the exit guard.
      *
      * Watched through the whole run, because the red a passing train left lasted only while the path held the station.
      *
@@ -456,13 +421,11 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A station a train only passes reads as passed while the train hands over from its claim to its journey.
      *
-     * The hand-over writes the journey and then takes the claim away.  The guard's rule read the journey first and the
-     * claim second, so a refresh whose two reads straddled the hand-over found the train in neither, read it as standing
-     * at the station it was passing, and turned that station's exit guard red for the whole passage - OB-315's symptom,
-     * through a race.  `pathHeldBy` reads the claims first for exactly this.
-     *
-     * The straddle made certain: the claim taken, and a journeys' map whose read by this thread performs the hand-over
-     * itself, after the value is read.
+     * The hand-over writes the journey and then takes the claim away.  The guard's rule must read the claims first
+     * (`pathHeldBy`), or a refresh whose two reads straddle the hand-over finds the train in neither, reads it as
+     * standing at the station it was passing, and turns that exit guard red for the whole passage (OB-315's symptom, by
+     * a race).  The straddle is made certain: the claim taken, and a journeys' map whose read by this thread performs
+     * the hand-over itself, after the value is read.
      *
      * MUTATION: read the journey first again, and this fails.
      *
@@ -545,45 +508,24 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A hand dispatch does NOT touch the signal of a train standing elsewhere (reversed).
+     * A hand dispatch does NOT touch the signal of a train standing elsewhere (OB-166).
      *
-     * The test next door covers the DESTINATION of the dispatched train. This one is about a train
-     * nobody dispatched, and it is the case the sweep exists for.
+     * The test next door covers the DESTINATION of the dispatched train; this one is about a train nobody dispatched.
+     * While nothing is running the protection refresh is deliberately silent (driving real signals from a setup gesture
+     * is what that silence prevents), so a train placed at a protected platform while idle produces NO occupancy change
+     * and nothing commands that platform's signal on its own.
      *
-     * While nothing is running the protection refresh is deliberately silent - trains are placed and
-     * taken off by hand then, and driving real signals from a setup gesture is what that silence
-     * exists to prevent. So a train placed at a protected platform while idle produces NO occupancy
-     * change, and nothing will ever command that platform's signal on its own.
+     * A hand dispatch leaves a standing train's signal alone (Adam: "Signals should only be touched when a route
+     * activates."), and the sweep is off all three doors.
      *
-     * **THE ASSERTION WAS REVERSED AND THIS PARAGRAPH WAS NOT** (corrected 2026-09-03).
-     *
-     * What follows described the fault as it stood before `OB-166`: `runLocomotives` and
-     * `executeTimetableInternal` swept every protecting signal the moment they set `running`;
-     * `executePath` - the diagram's right-click dispatch - became a full run in the MT-139 work and did
-     * not inherit the sweep, so starting autonomy threw a platform red and hand-dispatching a different
-     * train left it green with a train standing at it.  Adam's rule was quoted for it: "the same thing
-     * should happen in manual operation vs auto".
-     *
-     * `OB-166` settled it the other way - a hand dispatch leaves a standing train's signal alone, which
-     * is what this method is named for - and the sweep came off all three doors.  The assertion was
-     * changed from `assertTrue` to `assertFalse` and this text was left describing the opposite.
-     *
-     * MUTATION: putting the `refreshAllProtectingSignals()` call back into `executePath` fails this
-     * test, which is the direction that matters now.  (It said "removing", which was backwards:
-     * removing it is what makes this pass.)
+     * MUTATION: putting the `refreshAllProtectingSignals()` call back into `executePath` fails this test.
      */
     @Test
     public void testAHandDispatchLeavesAStandingTrainsSignalAlone() throws Exception
     {
-        // Its OWN addresses (validation pass, C-3).
-        //
-        // This took 47431-47433, which testAThrowWhileLockingReleasesTheTrack builds LK A/B/C on -
-        // and a simulated dispatch clears its feedback from a DETACHED thread, so on a loaded machine
-        // the clear had not landed when the sibling ran and its path read as occupied. Two failures in
-        // eighteen runs, with the reason in the log: "Expects feedback 47432 to be clear".
-        //
-        // The test next door already avoids this by using a range of its own and says so. This one
-        // took the busy addresses instead.
+        // Its OWN addresses: 47431-47433 are testAThrowWhileLockingReleasesTheTrack's, and a simulated dispatch clears
+        // its feedback from a DETACHED thread, so on a loaded machine the clear may not have landed when the sibling
+        // ran.
         for (String feedback : new String[] {"47441", "47442", "47443"})
         {
             if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
@@ -633,17 +575,10 @@ public class testBothProtectingSignalsAreThrown
         assertTrue(layout.executePath(path, driving, 30, null),
             "the hand dispatch did not complete, so nothing below tests anything");
 
-        // NOT PROTECTED, as of Adam's ruling of 2026-08-31: "Signals should only be touched when a
-        // route activates."
-        //
-        // This required the opposite. The sweep that made it
-        // true also RELEASED - it commanded every empty protected platform green - so a hand dispatch
-        // drove signals a route had set, which is OB-166. He ruled the sweep out, and this is what
-        // that costs: a train placed by hand at a protected platform keeps whatever aspect its signal
-        // already showed until a route activates over it.
-        //
-        // Kept and inverted rather than deleted, because the cost is the interesting part of the
-        // record.
+        // NOT PROTECTED (Adam: "Signals should only be touched when a route activates."): the sweep that made this true
+        // also RELEASED, commanding every empty protected platform green, so a hand dispatch drove signals a route had
+        // set (OB-166).  A train placed by hand at a protected platform keeps whatever aspect its signal already showed
+        // until a route activates over it.
         assertFalse(far.isSwitched(),
             "a dispatch between two other points commanded the signal of a platform it has nothing "
             + "to do with - which is the sweep coming back");
@@ -654,32 +589,23 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train dispatched BY HAND protects the platform it is heading for.
+     * A train dispatched BY HAND protects the platform it is heading for (MT-139).
      *
-     * Adam's ruling: "The same thing should happen in
-     * manual operation vs auto - the same switches and signals set, and guards applied."
+     * Adam's ruling: "The same thing should happen in manual operation vs auto - the same switches and signals set, and
+     * guards applied."
      *
-     * Today it does not. `refreshProtectingSignal` returns unless `isRunning()`, and a hand dispatch
-     * from the diagram's right-click menu is a bare `new Thread` straight into `executePath` - it never
-     * touches `locomotiveThreads`, and `activeLocomotives` is written AFTER `configureAndLockPath` has
-     * already reserved every point on the route. So during the one phase that matters, none of
-     * isRunning()'s three terms is true and the destination's signal is never commanded.
+     * `refreshProtectingSignal` returns unless `isRunning()`, and a hand dispatch from the diagram's right-click menu
+     * is a bare `new Thread` straight into `executePath`: it never touches `locomotiveThreads`, and `activeLocomotives`
+     * is written AFTER `configureAndLockPath` has reserved every point on the route.  So during the one phase that
+     * matters none of isRunning()'s three terms is true and the destination's signal is never commanded; it closes only
+     * when the train itself claims the destination.
      *
-     * The window is the approach: the platform is reserved for this train, and the signal guarding it
-     * still shows GREEN to the next one. It closes only when the train itself claims the destination,
-     * by which time it is standing there.
+     * The guard's comment records the defect it exists for - "cutting a locomotive off a platform with Control+X drove
+     * its protecting signals on the spot, which is hardware moving in response to a setup gesture" - which must stay
+     * fixed; the distinction is "is a train under way", not "is autonomy running".
      *
-     * **Why the guard is not simply wrong.** Its comment records the defect it exists for - "cutting a
-     * locomotive off a platform with Control+X drove its protecting signals on the spot, which is
-     * hardware moving in response to a setup gesture". That is still true and must stay fixed. The
-     * distinction it draws is just the wrong one: not "is autonomy running" but "is a train under way",
-     * and a hand dispatch is a train under way.
-     *
-     * **Observed from the start callback**, which fires immediately after the path is locked, rather
-     * than by polling a running train. By then `activeLocomotives` holds the locomotive, so isRunning()
-     * has become true - but nothing asks the destination again, so what the callback sees is the aspect
-     * chosen back when the path was locked. Deterministic, and it is the exact moment the approach
-     * begins.
+     * **Observed from the start callback**, which fires right after the path is locked: isRunning() has become true but
+     * nothing asks the destination again, so the callback sees the aspect chosen when the path was locked.
      */
     @Test
     public void testAHandDispatchedTrainProtectsItsDestination() throws Exception
@@ -740,21 +666,14 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A dispatch that is TURNED AWAY leaves the signals alone.
      *
-     * Found by review, which reproduced it: the sweep the test above is about ran at the very top of
-     * `executePath`, before all eight of the checks that can refuse a dispatch. So asking for a bad one
-     * - a speed out of range, an empty path, a train that is not at the start, one that is already
-     * running - commanded every protecting signal on the layout on the way to being told no.
+     * The sweep ran at the very top of `executePath`, before the eight checks that can refuse a dispatch, so asking for
+     * a bad one (a speed out of range, an empty path, a train that is not at the start, one already running) commanded
+     * every protecting signal on the way to being told no, and they stayed: the per-occupancy refresh is silent while
+     * nothing runs.  The railway is not commanded while the operator is still deciding what it should look like, and a
+     * refusal is that moment.
      *
-     * And they stayed. The thread count falls straight back to zero, `isRunning()` goes false, and the
-     * per-occupancy refresh is deliberately silent while nothing runs - so nothing would correct them
-     * until something else started a run.
-     *
-     * The rule being broken is one this class's own subject states for itself: the railway is not
-     * commanded while the operator is still deciding what it should look like. A refusal is that
-     * moment.
-     *
-     * Speed zero is the refusal used here because it is the earliest one that needs no fixture of its
-     * own - `errorInvalidSpeed`, before anything is locked or reserved.
+     * Speed zero is the refusal used because it is the earliest one that needs no fixture of its own
+     * (`errorInvalidSpeed`, before anything is locked or reserved).
      *
      * MUTATION: moving `refreshAllProtectingSignals()` back above the checks in `executePath` - which
      * is where it was - fails this test.
@@ -821,29 +740,19 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A failure while LOCKING a path releases what it has taken.
      *
-     * The two returned-false failures of `configureAndLockPath` are
-     * handled - `handleMisconfiguredPath` plus `takingPath.remove` - and a THROWN one was not. It
-     * escaped the lock loop into `executePath`'s catch, whose comment says why it deliberately does not
-     * unlock:
+     * A THROWN failure of `configureAndLockPath` escaped the lock loop into `executePath`'s catch, whose comment says
+     * why it deliberately does not unlock: "The locomotive may be physically standing on those edges, and releasing
+     * them would let another train be routed into occupied track."  That is true of a failure MID-RUN and false of a
+     * failure while locking: `loc.setSpeed(speed)` is not issued until `configureAndLockPath` has returned, so the
+     * train has not moved.
      *
-     *   "The locomotive may be physically standing on those edges, and releasing them would let another
-     *   train be routed into occupied track."
+     * Left behind otherwise, and never cleared: every edge taken so far stays occupied with its lock edges, so that
+     * track is refused to every train; and `reserve` has put the locomotive on those Points without sweeping, so
+     * `pickPath` can take a mid-path Point it is not standing on and configure a whole route for a departure from a
+     * station the train is not at.
      *
-     * That is true of a failure MID-RUN and false of a failure while locking: `loc.setSpeed(speed)` is
-     * not issued until after configureAndLockPath has returned, so the train has not moved. The rule was
-     * lifted from the case whose precondition made it safe.
-     *
-     * Two things were left behind, and neither ever clears. Every edge taken so far stays occupied for
-     * the rest of the session, along with its lock edges - so that track is refused to every train.
-     * And `reserve` has already put the locomotive on those Points and deliberately does not sweep, so
-     * it is recorded at several places at once; `pickPath` then takes the first Point in iteration order
-     * where the locomotive matches, which can be a mid-path Point it is not standing on, and configures
-     * a whole route - real ironwork - for a departure from a station the train is not at.
-     *
-     * The throw is injected rather than provoked. `configureEdge` reaches `setSwitched`, which calls
-     * into Swing on the driving thread and then onto the network, and neither can be made to fail on
-     * demand from a test. What the fix is about is not which call throws but what is left behind when
-     * one does.
+     * The throw is injected rather than provoked: `configureEdge` reaches `setSwitched`, which calls into Swing and
+     * then the network, and neither can be made to fail on demand.  What matters is what is left behind when one does.
      */
     @Test
     public void testAThrowWhileLockingReleasesTheTrack() throws Exception
@@ -866,13 +775,9 @@ public class testBothProtectingSignalsAreThrown
 
         Edge first = layout.createEdge("LK A", "LK B");
 
-        // The second edge fails the moment the path tries to set it up - after the first has been
-        // locked and this one's Point reserved.
-        // Not on the FIRST ask.  isPathClear previews the configuration of every edge before anything is
-        // locked - its own comment says so - so a subclass that throws unconditionally throws there, with
-        // nothing taken yet and nothing to leave behind.  That version of this test passed against the
-        // unfixed code, which is the trap worth recording: the injected failure has to land where the
-        // real one would.
+        // The second edge fails the moment the path tries to set it up, after the first has been locked and this one's
+        // Point reserved.  Not on the FIRST ask: `isPathClear` previews the configuration of every edge before anything
+        // is locked, so an unconditional throw lands there with nothing taken and nothing to leave behind.
         final java.util.concurrent.atomic.AtomicInteger asked =
             new java.util.concurrent.atomic.AtomicInteger();
 
@@ -922,11 +827,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A layout with one platform guarded at each end.
-     *
-     * The s88 numbers and the run-wide delays are here because `fromJSON` invalidates the WHOLE layout
-     * over a missing one - and an invalidated layout answers null for every point in it, which reads
-     * exactly like the signals having been dropped.
+     * A layout with one platform guarded at each end.  The s88 numbers and the run-wide delays are here because
+     * `fromJSON` invalidates the WHOLE layout over a missing one, which reads like the signals having been dropped.
      */
     private String twoSignalLayout()
     {
@@ -945,8 +847,8 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train that arrives at a station as the end of its journey throws the station's entry guard red (FR-096).
      *
-     * Adam, 2026-09-23: *"a signal that turns red after arrival at the final designation"*, and *"The next route
-     * sets it green, so that is out of scope."*
+     * Adam: *"a signal that turns red after arrival at the final designation"*, and *"The next route sets it green, so
+     * that is out of scope."*
      *
      * Through a real hand dispatch, as `testAHandDispatchedTrainProtectsItsDestination` above is: the claim is about
      * the call in `executePath` where the arrival is recorded, not about the method it calls.
@@ -1089,9 +991,9 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train leaving a terminus is let past its exit guard (OB-340).
      *
-     * Adam, 2026-10-12: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped
-     * by that guard would remain stuck."*  No route out commands this guard - it stands on the station's own track - and
-     * the journey setting off still claims the platform, so protection held the guard red over the train meant to leave.
+     * Adam: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped by that
+     * guard would remain stuck."*  No route out commands this guard - it stands on the station's own track - and the
+     * journey setting off still claims the platform, so protection held the guard red over the train meant to leave.
      * The first edge out now sets it GREEN with its own accessories, and holds it as it holds them.
      *
      * Read where the train sets off (its departure functions, just before it is given its speed) and again at the first
@@ -1245,8 +1147,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train leaving a through station turns its exit guards green too (OB-340; Adam, 2026-10-12: *"extend the rule to
-     * MAY TURN stations too.  just make the exit guard green when something departs."*).
+     * A train leaving a through station turns its exit guards green too (OB-340; Adam: *"extend the rule to MAY TURN
+     * stations too.  just make the exit guard green when something departs."*).
      *
      * Its exit signal is its route's to set, green as the route is claimed, as before; a guard no route out commands, which
      * the journey's own claim held red, now turns green with the first edge's accessories, is held GREEN with them, and
@@ -1371,7 +1273,7 @@ public class testBothProtectingSignalsAreThrown
      * An exit guard a terminus shares with another platform turns GREEN for the train leaving the terminus, though another
      * train stands on that platform, and protection leaves it green while the first edge out holds it - asked again by an
      * occupancy change there on the way; once the journey has given its track back it is RED for the train standing
-     * there (OB-340; Adam's ruling of 2026-10-12 on a shared guard).
+     * there (OB-340; Adam's ruling on a shared guard).
      *
      * MUTATION: leave the guards out of what the first edge sets, and the first claim fails; let protection turn red a
      * signal a path holds green, and the second does.

@@ -825,13 +825,13 @@ class Inventory(object):
 
     def _forms(self):
         gui_dir = os.path.join(self.root, 'src', 'org', 'traincontrol', 'gui')
-        for name in sorted(os.listdir(gui_dir)):
-            if not name.endswith('.form'):
-                continue
-            rel = 'src/org/traincontrol/gui/' + name[:-5] + '.java'
+        # Walked, not listed: gui has sub-packages.  Ordered by file name, as the flat listing was.
+        forms = [(name, folder) for folder, _, names in os.walk(gui_dir) for name in names if name.endswith('.form')]
+        for name, folder in sorted(forms):
+            rel = os.path.relpath(os.path.join(folder, name[:-5] + '.java'), self.root).replace(os.sep, '/')
             jf = self.program.files.get(rel)
             try:
-                tree = ET.parse(os.path.join(gui_dir, name))
+                tree = ET.parse(os.path.join(folder, name))
             except ET.ParseError:
                 continue
             cls = name[:-5]

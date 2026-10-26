@@ -31,18 +31,12 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * The sample layout Create New Layout unpacks says nothing about moves no train can make (OB-361).
- *
- * Adam: *"In the new sample layout, there is a note saying Signal 3 guards station a (and b) on the way in, even though
- * trains can't arrive that way because switch 1 only allows one direction.  Signal 3 is set as the exit guard. Also, in
- * the viewer, there are excessive red arrows shown to the east of feedback 4, even though these aren't visible in the
- * editor. See the screenshot.  There is also a note about trains reaching MainLine from the west could not go on.
- * MainLine isn't a station, and it is impossible for trains to arrive from the west anyway, so both these conditions
- * should disqualify the notice."*
+ * The sample layout Create New Layout unpacks says nothing about moves no train can make (OB-361): "it is impossible
+ * for trains to arrive from the west anyway, so both these conditions should disqualify the notice."
  *
  * The shipped `sample_layout.zip`, unpacked as Create New Layout unpacks it, in a sandbox.  Trains run from either
- * station east past their exit guard (Signal 3 when Adam wrote the above; the square at 9,5, renumbered since), up to
- * PostDeparture, west along the top through MainLine and down to PreArrival.
+ * station east past their exit guard (the square at 9,5), up to PostDeparture, west along the top through MainLine and
+ * down to PreArrival.
  *
  * @author Adam
  */
@@ -88,11 +82,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         for (File folder : unpacked) deleteQuietly(folder);
     }
 
-    /**
-     * Its two stations build, with one exit guard for both (the signal at 9,5).
-     *
-     * @throws Exception from the railway
-     */
+    /** Its two stations build, with one exit guard for both (the signal at 9,5). */
     @Test
     public void testTheTwoStationsBuild() throws Exception
     {
@@ -112,13 +102,11 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * The stations' exit guard (Adam's Signal 3) is not said to guard either station on the way in: trains pass it only
-     * leaving them, as each one's own exit guard.
+     * The stations' exit guard is not said to guard either station on the way in: trains pass it only leaving them, as
+     * each one's own exit guard.
      *
-     * MUTATION: count the way in from where it leaves the station before - past that station's exit guard - and this
+     * MUTATION: count the way in from where it leaves the station before, past that station's exit guard, and this
      * fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testSignal3IsNotSaidToGuardAWayIn() throws Exception
@@ -165,8 +153,6 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
      * No arrival is said to be trapped: MainLine is no station, and no train reaches it from the west.
      *
      * MUTATION: give the notice at a square that is no station, or for a side no train arrives by, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testNoArrivalIsSaidToBeTrapped() throws Exception
@@ -191,18 +177,16 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * The track diagram draws on every square the arrows the autonomy editor draws there: east of MainLine, one arrow for
-     * the run up to PostDeparture, saying it runs one way.
+     * The track diagram draws on every square the arrows the autonomy editor draws there: east of MainLine, one arrow
+     * for the run up to PostDeparture, saying it runs one way.
      *
-     * MUTATION: draw a run's squares that say otherwise than its first on the track diagram, or draw a run's first square
-     * with its own direction rather than the run's, and this fails.
-     *
-     * @throws Exception from the panel
+     * MUTATION: draw a run's squares that say otherwise than its first on the track diagram, or draw a run's first
+     * square with its own direction rather than the run's, and this fails.
      */
     @Test
     public void testTheDiagramDrawsTheEditorsArrows() throws Exception
     {
-        org.traincontrol.gui.AutonomyEditorPanel panel = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> { });
 
         panel.refresh();
 
@@ -247,15 +231,13 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * The run east of MainLine is stored one way on all its squares, 10,3 included, and opening the sample has nothing to
-     * bring into line (OB-361; Adam, on OB-321: *"Any disagreement should be corrected so that the viewer displays the
-     * source of truth"*).  The sample shipped with 10,3 both ways until Adam's update of 2026-10-18; the correction itself
-     * is claimed in `testTheDiagramDrawsWhatTrainsMayDo.testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds`.
+     * The run east of MainLine is stored one way on all its squares, 10,3 included, and opening the sample has nothing
+     * to bring into line (OB-361): "Any disagreement should be corrected so that the viewer displays the source of
+     * truth".  The correction itself is claimed in
+     * `testTheDiagramDrawsWhatTrainsMayDo.testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds`.
      *
-     * MUTATION: ship the sample with 10,3 both ways again, or have the opening bring a consistent run into line, and this
-     * fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: ship the sample with 10,3 both ways again, or have the opening bring a consistent run into line, and
+     * this fails.
      */
     @Test
     public void testTheRunEastOfMainLineIsStoredOneWay() throws Exception
@@ -287,23 +269,21 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /**
      * A click on one arrow changes that arrow alone: every other square's stored directions, and what it draws on the
-     * track diagram and in the editor, are as they were (Adam, on OB-361's correction: *"if I click on an arrow, it should
-     * only affect itself, not other tiles with arrows."*).  Every square that draws an arrow is clicked in turn; a run's
-     * arrow is the whole run, whose squares are its arrow's.
+     * track diagram and in the editor, are as they were ("if I click on an arrow, it should only affect itself").
+     * Every square that draws an arrow is clicked in turn; a run's arrow is the whole run, whose squares are its
+     * arrow's.
      *
      * MUTATION: let a click, or the correction that follows it, touch another run, and this fails.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testAClickOnOneArrowChangesThatArrowAlone() throws Exception
     {
         AutonomySession fresh = openOn(unpackTheSample());
 
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(fresh, null, () -> { }));
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(fresh, null, () -> { }));
 
         int clicked = 0;
 
@@ -346,14 +326,11 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * The One-Way tool sets the runs of the two squares clicked, as well as the track between them, and leaves nothing for
-     * the correction to bring into line (OB-361).  It used to set only the squares between: clicked from 10,3 to 5,1 on
-     * the sample with no directions, it left 10,3 both ways in a run one way - the shipped sample exactly - and 5,1's run,
-     * west of MainLine, both ways from end to end.
+     * The One-Way tool sets the runs of the two squares clicked, as well as the track between them, and leaves nothing
+     * for the correction to bring into line (OB-361): setting only the squares between would leave 10,3 both ways
+     * in a run one way (the shipped sample) and 5,1's run both ways from end to end.
      *
      * MUTATION: leave the clicked squares' runs out again, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testTheOneWayToolSetsTheRunsOfTheSquaresClicked() throws Exception
@@ -393,13 +370,11 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * A square of a run built over in the track diagram editor - a straight dropped on it, as the sample's 10,3 was -
-     * keeps its run's direction, and nothing is said: it is the edit, not a setup that disagreed (OB-361).  The editor's
-     * drop clears what was set on the square with `forgetTiles`, after the tile is placed and turned (OB-360).
+     * A square of a run built over in the track diagram editor (a straight dropped on it) keeps its run's direction,
+     * and nothing is said: it is the edit, not a setup that disagreed (OB-361).  The editor's drop clears what was set
+     * on the square with `forgetTiles`, after the tile is placed and turned.
      *
      * MUTATION: say it as a correction, or leave the square both ways, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testASquareBuiltOverKeepsItsRunsDirection() throws Exception
@@ -422,7 +397,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /** Each square's stored directions and the marks it draws on the track diagram and in the editor, in one line. */
     private static java.util.Map<TileKey, String> everyArrow(AutonomySession on,
-        org.traincontrol.gui.AutonomyEditorPanel panel)
+        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel)
     {
         java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
 
@@ -447,10 +422,10 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /** A click on a square in the editor, as the mouse gives it. */
-    private static void click(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square) throws Exception
+    private static void click(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
         cycle.setAccessible(true);
 
@@ -478,13 +453,11 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * Every sensor on the sample has an address of its own, and the setup check says nothing about a shared one (FR-139).
-     * Station A and PostDeparture shared address 1 until Adam's update of 2026-10-18; the warning itself is claimed in
+     * Every sensor on the sample has an address of its own, and the setup check says nothing about a shared one
+     * (FR-139).  The warning itself is claimed in
      * `testTheEditorWarnsOfARailwayThatCannotWork.testASensorAddressOnTwoSquaresIsSaidOnce`.
      *
      * MUTATION: ship the sample with two sensors on one address again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testNoSensorAddressIsShared() throws Exception
@@ -519,12 +492,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         return layout;
     }
 
-    /**
-     * The shipped sample, unpacked into a folder of its own as Create New Layout unpacks it.
-     *
-     * @return the folder
-     * @throws IOException if the zip cannot be read
-     */
+    /** The shipped sample, unpacked into a folder of its own as Create New Layout unpacks it. */
     private static File unpackTheSample() throws IOException
     {
         File into = Files.createTempDirectory("tc-ob361-sample").toFile();

@@ -13,25 +13,20 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Return Home shows that it is working while its plan is worked out, and stops when there is an answer.
+ * Return Home shows that it is working while its plan is worked out, and stops when there is an answer (FR-077: *"there
+ * needs to be a spinner on the return home button while it is calculating"*).
  *
- * Adam, FR-077, 2026-09-13: *"there needs to be a spinner on the return home button while it is
- * calculating"*.
+ * Through the real button's door, `requestReturnToHome`, with the planning held up rather than hoped to be slow: the
+ * test holds the railway's monitor, which the plan's first step (`HomeStaging.snapshot`) needs. Released, the plan
+ * completes, and the mark has to go. Nothing is asked of the event thread while the monitor is held, since a repaint
+ * that wanted it would wait for this test and this test for the repaint; the button is read directly, safe for a
+ * reference read of an icon.
  *
- * **Through the real button's door**, `requestReturnToHome`, with the planning held up rather than hoped
- * to be slow: the test holds the railway's monitor, which the plan's first step - `HomeStaging.snapshot`,
- * reading the homes - needs, so the plan is certainly still being worked out while the button is looked
- * at.  Released, the plan completes, and the mark has to go.
+ * On the frozen railway (OB-111). Whatever the plan concludes is shown in a dialog, closed at the end without being
+ * read; what it says is `testReturnHomeSaysWhy`'s business.
  *
- * Nothing is asked of the event thread while the monitor is held - a repaint that wanted it would wait
- * for this test, and this test would wait for the repaint.  The button is read directly, which is safe
- * for a reference read of an icon.
- *
- * On the frozen railway (OB-111).  Whatever the plan concludes is shown in a dialog, which is closed at
- * the end without being read - what it says is `testReturnHomeSaysWhy`'s business.
- *
- * MUTATION: delete `this.showReturnHomeWorking(true)` from `requestReturnToHome` and the first claim
- * fails; delete both `showReturnHomeWorking(false)` calls and the second does.
+ * MUTATION: delete `this.showReturnHomeWorking(true)` from `requestReturnToHome` and the first claim fails; delete both
+ * `showReturnHomeWorking(false)` calls and the second does.
  *
  * @author Adam
  */
@@ -57,9 +52,8 @@ public class testReturnHomeShowsItIsWorking
 
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
-        // AND THE STARTUP LOAD OF HIS CONFIGURATION, which this test is about - as openTheWindow waits for it in the
-        // import-door claims.  It asked hasAutoLayout the moment the window was up, and passed only because the
-        // autonomy panel's list built an empty Layout as it was made; nothing does now, and it skipped.
+        // And the startup load of his configuration, which this test is about, waited for as openTheWindow does in the
+        // import-door claims.
         final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
 
         ui.whenTilesSettled(() -> settled.countDown());
@@ -95,11 +89,7 @@ public class testReturnHomeShowsItIsWorking
         }
     }
 
-    /**
-     * The mark is on the button while the plan is held up, and gone once the plan has an answer.
-     *
-     * @throws Exception from the event thread or reflection
-     */
+    /** The mark is on the button while the plan is held up, and gone once the plan has an answer. */
     @Test
     public void testTheButtonTurnsWhileThePlanIsWorkedOut() throws Exception
     {

@@ -12,21 +12,12 @@ import java.util.prefs.Preferences;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * A throwaway copy of the fixture layout, with the window pointed at it.
+ * A throwaway copy of the fixture layout, with the window pointed at it (OB-111).
  *
- * OB-111. A full battery left `cs2_sample_layout` - Adam's real railway - showing as modified in
- * `git status` after every run. The content was unchanged, differing only in line endings, so
- * battery.sh's fingerprint correctly stayed quiet; what it cost is that on 2026-08-25 the churn masked
- * a change he had made himself, and telling the two apart meant reading the JSON semantically.
- *
- * **The cause is not a test that names his folder - none of them do.** Three classes construct the real
- * window, and the window opens whatever the saved layout preference names. On his machine that is his
- * railway. The fixture separation of b87c4f05 moved the suite onto `test/test_layout` and could not reach
- * this, because the path is not written in the suite at all: it is in his preferences.
- *
- * So the preference is what this changes, and it changes it to a COPY rather than to `test/test_layout`
- * itself - the window writes as well as reads, and the fixture is tracked, so pointing it at the real
- * fixture would move the same problem one folder over and put it in the repository.
+ * A full battery left `cs2_sample_layout`, Adam's real railway, modified in `git status` after every run, because three
+ * classes construct the real window and the window opens whatever the saved layout preference names.  So the
+ * preference is what this changes, to a COPY rather than to `test/test_layout`: the window writes as well as reads,
+ * and the fixture is tracked.
  *
  * Usage is two lines, in @BeforeClass and @AfterClass:
  *
@@ -61,12 +52,8 @@ public final class LayoutSandbox
     }
 
     /**
-     * The same, over a named folder, for a test that needs a particular railway.
-     *
-     * The operator's own layout is the case this exists for: a test that wants to reason about HIS
-     * stations has to read them, and reading them in place is how that folder gets written to. It is
-     * COPIED here, exactly as the fixture is, so the original is only ever read - and the copy is what
-     * the preference points at, so nothing downstream can reach the original even by accident.
+     * The same, over a named folder, for a test that needs a particular railway, such as the operator's own: it is
+     * COPIED, as the fixture is, so the original is only ever read.
      *
      * @param fixture the folder to copy; a missing one gives an empty sandbox, as with the fixture
      * @return the sandbox, to be closed when the class is done with it
@@ -81,55 +68,36 @@ public final class LayoutSandbox
 
         Preferences prefs = TrainControlUI.getPrefs();
 
-        // ANYTHING A KILLED JVM LEFT BEHIND IS PUT BACK FIRST.
-        //
-        // `close()` restores the preference and its javadoc says why.  It runs only if the JVM lives,
-        // and test JVMs do get killed - two were on 2026-09-11, one parked on a modal dialog and one on
-        // an untimed feedback wait, and both had to be stopped by hand.  The preference was left naming
-        // a sandbox, so the next run built its configuration from a single-switch fixture and two
-        // battery classes failed with no defect behind them.  Worse, the key is the same one the
-        // APPLICATION reads, so Adam's own window would have opened that folder too.
+        // ANYTHING A KILLED JVM LEFT BEHIND IS PUT BACK FIRST: `close()` runs only if the JVM lives, and a killed one
+        // left the preference naming a sandbox, which the APPLICATION reads too, so Adam's own window would open that
+        // folder.
         repairALeakedPreference(prefs);
 
         String was = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
-        // WRITTEN BEFORE the preference is changed, so a kill between the two lines leaves a marker
-        // that says the truth rather than one that does not exist.
+        // WRITTEN BEFORE the preference is changed, so a kill between the two lines leaves a true marker.
         rememberForRepair(was);
 
         prefs.put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, to.toFile().getAbsolutePath());
 
-        // And for an ordinary exit that skips close() - an exception in a @BeforeClass, a System.exit
-        // from a window - the hook is enough.  It cannot help against a forced kill, which is what the
-        // marker above is for.
+        // For an ordinary exit that skips close() the hook is enough; the marker above covers a forced kill.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> putBack(prefs, was)));
 
-        // AND NOBODY IS WATCHING, which the window has no other way to know.
-        //
-        // Adam, 2026-09-05: "in the tests you're running, at startup there is a prompt about
-        // initializing a new track diagram.  I have been clicking on those windows."  A modal dialog
-        // in an automated run does not fail it - it stops it, until somebody notices.
-        //
-        // Set here rather than in each test class because this is the one thing every test that
-        // stands a window up already calls, and a flag that has to be remembered per class is a flag
-        // that will be forgotten by the next class written.
+        // AND NOBODY IS WATCHING, which the window has no other way to know.  Adam: "in the tests you're running, at
+        // startup there is a prompt about initializing a new track diagram.  I have been clicking on those windows."  A
+        // modal dialog in an automated run stops it.  Set here because every test that stands a window up calls this.
         TrainControlUI.setUnattended(true);
 
         return new LayoutSandbox(to, was);
     }
 
     /**
-     * Puts the preference back.
-     *
-     * Back to what it WAS, including back to unset - because a test that leaves a path behind has
-     * changed which layout the application opens the next time the operator starts it, which is worse
-     * than the churn this class exists to remove.
+     * Puts the preference back to what it WAS, including unset: a test that leaves a path behind changes which layout
+     * the application opens next time.
      */
     public void close()
     {
-        // Put back first, so that an exception below cannot leave the application believing nobody is
-        // there - which would silently answer a real operator's dialogs on the next launch of a
-        // session that shares this JVM.
+        // Put back first, so an exception below cannot leave the application believing nobody is there.
         TrainControlUI.setUnattended(false);
 
         putBack(prefs, was);
@@ -138,12 +106,9 @@ public final class LayoutSandbox
     }
 
     /**
-     * Puts the preference back to what it was, including back to unset.
+     * Puts the preference back to what it was, including back to unset: one place for `close`, the shutdown hook and
+     * the repair after a killed JVM.
      *
-     * One place, because three things do it now: `close`, the shutdown hook, and the repair that runs
-     * when a previous JVM was killed before either could.
-     *
-     * @param prefs the preference node
      * @param was the value to restore, empty or null for "there was none"
      */
     private static void putBack(Preferences prefs, String was)
@@ -159,10 +124,8 @@ public final class LayoutSandbox
     }
 
     /**
-     * Where the previous value is written down, so a killed JVM can be cleaned up after.
-     *
-     * In the temp directory rather than the repository: it is machine state, it is about a preference
-     * that is machine state, and a file in the tree would be committed by somebody eventually.
+     * Where the previous value is written down, so a killed JVM can be cleaned up after: in the temp directory, since
+     * it is machine state and a file in the tree would be committed by somebody.
      */
     private static java.io.File repairMarker()
     {
@@ -170,11 +133,8 @@ public final class LayoutSandbox
     }
 
     /**
-     * Writes down what the preference was, for a JVM that does not get to run `close`.
-     *
-     * A marker that already exists is NOT overwritten: the first one is the operator's real value, and
-     * a second sandbox opening inside a killed one's mess would otherwise record the sandbox path as
-     * the thing to restore.
+     * Writes down what the preference was, for a JVM that does not get to run `close`.  A marker that already exists is
+     * NOT overwritten: the first holds the operator's real value.
      *
      * @param was the value before this sandbox took the preference
      */
@@ -209,13 +169,8 @@ public final class LayoutSandbox
     }
 
     /**
-     * Puts the preference back if a previous JVM was killed before it could.
-     *
-     * The marker is only there when a sandbox took the preference and never gave it back, so its
-     * presence IS the diagnosis.  Read and acted on before this sandbox records its own value, or the
-     * repair would record the leaked sandbox path as the operator's.
-     *
-     * @param prefs the preference node
+     * Puts the preference back if a previous JVM was killed before it could: the marker's presence IS the diagnosis.
+     * Acted on before this sandbox records its own value, or the repair would record the leaked path as the operator's.
      */
     private static void repairALeakedPreference(Preferences prefs)
     {
@@ -246,17 +201,11 @@ public final class LayoutSandbox
     }
 
     /**
-     * Parses through this parser and WIRES what came back, which is the pair `syncLayouts` does.
+     * Parses through this parser and WIRES what came back, which is the pair `syncLayouts` does.  A one-word change at
+     * each call site: `parser.parseLayout(new LinkedList<>())` becomes `LayoutSandbox.wired(model, parser)`.
      *
-     * Written to be a one-word change at each call site - `parser.parseLayout(new LinkedList<>())`
-     * becomes `LayoutSandbox.wired(model, parser)` - so each class keeps its own folder logic and the
-     * only thing that changes is that the pages come back attached to something.
-     *
-     * Parsing alone leaves every switch and signal with a null accessory. `TileGraph` reports
-     * `errorTileHasNoAddress` for each and refuses to trace through it, so this railway reduced to 18
-     * edges and built to 5, with 51 of 59 points isolated. See `wiredPages` for both columns.
-     *
-     * `wireComponents` is the application's own loop, made reachable rather than copied here.
+     * Parsing alone leaves every switch and signal with a null accessory, so `TileGraph` refuses to trace through it
+     * (see `wiredPages`).  `wireComponents` is the application's own loop, made reachable rather than copied here.
      *
      * @param model the control station whose accessory, feedback and route databases to wire against
      * @param parser the parser, already pointed at a layout folder
@@ -281,16 +230,9 @@ public final class LayoutSandbox
     /**
      * The pages the MODEL parsed, wired to their accessories - not a second parse of the same files.
      *
-     * **Measured 2026-09-08, and this is the difference between a railway and a skeleton.** Every
-     * sandbox test built its pages by constructing a fresh `CS2File` and calling
-     * `parseLayout(new LinkedList<MarklinAccessory>())`. That looks harmless - the same files, read the
-     * same way - and it is not, because parsing is not what attaches a tile to its accessory.
-     * `MarklinControlStation.syncLayouts` does that, in a loop AFTER the parse: it creates an accessory
-     * from each tile's own address when the model has none, and calls `setAccessory` on the component.
-     * A second parser bypasses that loop, so every switch and signal comes back with a null accessory.
-     *
-     * `TileGraph` then reports `errorTileHasNoAddress` for each of them and refuses to trace through
-     * them, which breaks the chains and cuts the railway to pieces:
+     * Parsing does not attach a tile to its accessory; `MarklinControlStation.syncLayouts` does that in a loop AFTER
+     * the parse.  A second `CS2File` parser bypasses it, so every switch and signal has a null accessory, `TileGraph`
+     * reports `errorTileHasNoAddress` and refuses to trace through, and the railway arrives in pieces:
      *
      * | | re-parsed | the model's own |
      * |---|---|---|
@@ -299,11 +241,7 @@ public final class LayoutSandbox
      * | built points / edges | 59 / 5 | 96 / 149 |
      * | isolated points | 51 | 3 |
      *
-     * A railway with about ninety connections arrived as FIVE EDGES. Tests standing on that were
-     * asserting against a graph where nothing is connected to anything - and passing, because an
-     * assertion about a square that has no edges is usually an assertion about null.
-     *
-     * Nothing was missing from the fixture folder; the recipe was wrong.
+     * Tests standing on that asserted against a graph where nothing is connected to anything, and passed.
      *
      * @param model the control station, already built with this sandbox open
      * @return its pages, in its own order
@@ -326,7 +264,7 @@ public final class LayoutSandbox
     }
 
     /**
-     * @return where the copy lives, for a test that wants to look at what was written
+     * Where the copy lives, for a test that wants to look at what was written.
      */
     public File getFolder()
     {
@@ -334,11 +272,9 @@ public final class LayoutSandbox
     }
 
     /**
-     * Turns simulation on in this copy's autonomy configurations, for a test that runs trains (FR-136).
-     *
-     * `simulate` is a setting in the operator's own file, and a snapshot refreshed from his railway carries whatever his
-     * last session left there - on 2026-10-19, off, because he runs the real thing.  A test that needs it says so here, on
-     * its copy; the checked-in fixture is never written.  A file that already has it is left byte for byte.
+     * Turns simulation on in this copy's autonomy configurations, for a test that runs trains (FR-136).  `simulate` is
+     * a setting in the operator's own file, so a refreshed snapshot carries whatever his last session left; the
+     * checked-in fixture is never written, and a file that already has it is left byte for byte.
      *
      * @return this sandbox, so the call can sit on the line that opens it
      * @throws IOException if a configuration cannot be read or written
@@ -365,11 +301,9 @@ public final class LayoutSandbox
 
     /**
      * Takes every train off this copy's autonomy configurations, every home with them, and empties the timetable
-     * (FR-136).
-     *
-     * Where his trains stand, which are homed where, and the timetable of his last run are working state, not the
-     * railway (`test/layouts/live-snapshot/README.md`, "Not invariants"), so a refresh moves them all.  A test that needs
-     * a train standing calls this and then `standing` for each one it names.
+     * (FR-136).  Where his trains stand, which are homed where, and the last run's timetable are working state, not the
+     * railway (`test/layouts/live-snapshot/README.md`, "Not invariants"); a test that needs a train standing calls this
+     * and then `standing` for each one it names.
      *
      * @return this sandbox
      * @throws IOException if a configuration cannot be read or written

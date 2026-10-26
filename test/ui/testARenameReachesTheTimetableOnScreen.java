@@ -16,32 +16,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * Renaming a locomotive redraws the timetable it is named in.
+ * Renaming a locomotive redraws the timetable it is named in (MT-149; Adam, filed critical: "On Rename, loc vanishes
+ * from the station / autonomy setup, and the timetable is not updated").
  *
- * MT-149. Adam, filed critical: "On Rename, loc vanishes from the station / autonomy setup, and the
- * timetable is not updated."
+ * The data was never the problem: a probe renamed a locomotive with a timetable entry naming it and the entry followed
+ * the rename, in place.  What did not change was the number `repaintTimetable` keys its redraw on: `MarklinLocomotive`
+ * hashes by IDENTITY, deliberately (a rename leaves a locomotive inside the consists, exclusion sets and run lists that
+ * hold it), and `TimetablePath.hashCode` is built from that hash.  So a rename changed the name in every row and no
+ * hash at all, and the table went on naming a locomotive that no longer exists.  The guard is keyed on the TEXT of the
+ * rows now, and the rename repair asks for the repaint at all.
  *
- * **The data was never the problem, and measuring said so.** A probe renamed a locomotive with a
- * timetable entry naming it: the entry followed the rename, the placement survived, and the object was
- * the same one - a locomotive is renamed in place. What did not change was the number
- * `repaintTimetable` keys its redraw on:
- *
- *     timetable hash before: -1733089858   name: PR before
- *     timetable hash after:  -1733089858   name: PR after
- *
- * `MarklinLocomotive` hashes by IDENTITY, deliberately - it is what lets a rename leave a locomotive
- * inside the consists, exclusion sets and run lists that hold it, and `renameLoc`'s own comment says
- * so. `TimetablePath.hashCode` is built from that hash. So a rename changes the name in every row and
- * changes no hash at all, `repaintTimetable` returned at its first line, and the table went on naming
- * a locomotive that no longer exists until something else happened to the timetable.
- *
- * The guard is keyed on the TEXT of the rows now, which is the only thing that can answer "does this
- * need redrawing". And the rename repair asks for the repaint at all, which it never did.
- *
- * **What this does not cover.** Adam also reported the locomotive vanishing from the station and the
- * panels reading "?????". The probe shows the model right on both counts after a rename - the
- * placement is where it was and `getLocomotiveLocation` finds it - so those are a different fault on a
- * different surface, and guessing at them is what this test refuses to do.
+ * Not covered: the locomotive vanishing from the station and the panels reading "?????".  The probe shows the model
+ * right on both counts after a rename, so those are a different fault on a different surface.
  *
  * MUTATION this catches: keying the guard on `timeTable.hashCode()` again.
  *
@@ -134,8 +120,7 @@ public class testARenameReachesTheTimetableOnScreen
 
             assertTrue(model.renameLoc(BEFORE, AFTER), "the rename itself failed");
 
-            // The DATA, which was never the problem and is asserted so that a future failure here says
-            // which half broke.
+            // The DATA, which was never the problem, asserted so that a future failure here says which half broke.
             MarklinLocomotive renamed = model.getLocByName(AFTER);
 
             assertNotNull(renamed, "the locomotive is not in the database under its new name");
@@ -159,17 +144,10 @@ public class testARenameReachesTheTimetableOnScreen
 
             assertTrue(after.contains(AFTER), "the new key does not name the new locomotive: " + after);
 
-            // AND THE GUARD ITSELF, not only the function it consults.
-            //
-            // Everything above drives `timetableSignature`.  The guard is one line in
-            // `repaintTimetable` - `if (showing.equals(lastTimetableState)) return;` - and the
-            // mutation this test names lives THERE, at a site nothing above reached.  That is the
-            // shape this repository has paid for more than any other: the rule is lifted out, tested,
-            // and the call site left uncovered.
-            //
-            // What is driven is the method, and what is read is the state it keeps: a guard keyed on
-            // anything a rename cannot move leaves `lastTimetableState` unchanged, which IS the
-            // redraw being discarded.
+            // AND THE GUARD ITSELF, not only the function it consults: the guard is one line in `repaintTimetable` (`if
+            // (showing.equals(lastTimetableState)) return;`), where the mutation lives and nothing above reached.  A
+            // guard keyed on anything a rename cannot move leaves `lastTimetableState` unchanged, which IS the redraw
+            // being discarded.
             ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
             java.lang.reflect.Method repaint =
@@ -214,9 +192,7 @@ public class testARenameReachesTheTimetableOnScreen
         }
     }
 
-    /**
-     * Lets what the window POSTED actually run - `repaintTimetable` does its work in an invokeLater.
-     */
+    /** Lets what the window POSTED actually run: `repaintTimetable` does its work in an invokeLater. */
     private static void settle() throws Exception
     {
         for (int pass = 0; pass < 5; pass++)

@@ -20,11 +20,9 @@ import org.traincontrol.automationui.TilePorts.Side;
 /**
  * The port map: which sides of each tile type connect, in each switch position, at each orientation.
  *
- * This table is the seed for the whole autonomy tile graph, and it was verified by eye against the icon
- * art rather than derived from anything the code can check.  So these tests do not re-derive it - they
- * pin the readings that were confirmed, and they fail loudly if a tile type is ever added without being
- * classified, which is the failure that would otherwise be silent: an unmapped type traces as impassable
- * track and simply removes part of the layout from autonomy.
+ * The table is the seed for the whole autonomy tile graph and was verified by eye against the icon art, so these tests
+ * do not re-derive it: they pin the readings that were confirmed, and fail loudly if a tile type is added without being
+ * classified (an unmapped type traces as impassable track and silently removes part of the layout from autonomy).
  *
  * No hardware, no UI, no LocDB - TilePorts is pure data.
  *
@@ -33,8 +31,8 @@ import org.traincontrol.automationui.TilePorts.Side;
 public class testAutonomyDiagramPorts
 {
     /**
-     * Every componentType must be accounted for.  A new tile type that nobody classifies would return no
-     * routes and be treated as impassable, quietly cutting the layout in half at that tile.
+     * Every componentType must be accounted for: an unclassified new tile type is treated as impassable and quietly
+     * cuts the layout.
      */
     @Test
     public void testEveryComponentTypeIsClassified()
@@ -58,8 +56,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * The rotation convention, pinned by two readings that were confirmed against the art.  getImage
-     * rotates by (4 - orientation) * 90 clockwise, so orientation 1 applies three quarter turns.
+     * The rotation convention, pinned by two readings confirmed against the art: getImage rotates by (4 - orientation)
+     * * 90 clockwise.
      */
     @Test
     public void testRotationFollowsTheImageConvention()
@@ -76,15 +74,10 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * The rotation direction, pinned against the art rather than against reasoning about it.
-     *
-     * getImage rotates by (4 - orientation) * 90 degrees, and Java2D's positive angle is clockwise on
-     * screen because y points down - so orientation 1 is three quarter turns clockwise, which looks like
-     * one turn anticlockwise.  Getting that backwards would still produce a self-consistent port map, and
-     * every edge in the layout would be wrong.
-     *
-     * These values were measured by applying the same transform to the icons and reading which sides the
-     * track touches (`docs/plans/portmap-verification.py` did the extraction; it is in git history at e5f77c9c^).
+     * The rotation direction, pinned against the art: Java2D's positive angle is clockwise on screen, so orientation 1
+     * is three quarter turns clockwise.  Getting it backwards would still give a self-consistent port map with every
+     * edge wrong.  The values were measured by applying the same transform to the icons
+     * (`docs/plans/portmap-verification.py`, in git history at e5f77c9c^).
      */
     @Test
     public void testRotationDirectionMatchesTheRenderedArt()
@@ -112,9 +105,7 @@ public class testAutonomyDiagramPorts
         assertEquals(occupiedSides(componentType.SWITCH_LEFT, 3), "NEW");
     }
 
-    /**
-     * A double curve is two independent curves in one tile, not a crossing.
-     */
+    /** A double curve is two independent curves in one tile, not a crossing. */
     @Test
     public void testDoubleCurveIsTwoIndependentCurves()
     {
@@ -128,10 +119,7 @@ public class testAutonomyDiagramPorts
         }
     }
 
-    /**
-     * The orientation domain is the type's rotational symmetry, not always four.  Asking beyond it must
-     * fold back rather than invent a rotation the diagram can never hold.
-     */
+    /** The orientation domain is the type's rotational symmetry, not always four: asking beyond it folds back. */
     @Test
     public void testOrientationDomainMatchesRotationalSymmetry()
     {
@@ -155,10 +143,7 @@ public class testAutonomyDiagramPorts
         }
     }
 
-    /**
-     * Throwing a switch REPLACES its routes rather than adding to them.  This is the reading that removed
-     * the whole common-leg/branch/toe apparatus from the port map, so it is worth pinning per type.
-     */
+    /** Throwing a switch REPLACES its routes rather than adding to them. */
     @Test
     public void testSwitchStatesReplaceRatherThanAdd()
     {
@@ -186,9 +171,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * Every turnout route touches S at orientation 0 - S is the toe.  Nothing in the code depends on the
-     * word "toe", but the direction default (base to forks) and the defective-switch restriction are both
-     * expressed in terms of it, so if this reading were wrong both would be backwards.
+     * Every turnout route touches S at orientation 0 (the toe): the direction default and the defective-switch
+     * restriction are expressed in terms of it.
      */
     @Test
     public void testEveryTurnoutRouteTouchesTheToe()
@@ -205,8 +189,7 @@ public class testAutonomyDiagramPorts
             {
                 List<Route> routes = TilePorts.ports(type, 0, state);
 
-                // Floor: without it, TilePorts.ports returning empty for every state would leave both
-                // loops below running zero times and this test would pass having checked nothing.
+                // Floor: an empty TilePorts.ports would leave both loops below running zero times.
                 assertFalse(routes.isEmpty(),
                     type + " state " + state + " should still offer routes");
 
@@ -220,9 +203,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * A defective switch has no address and cannot be thrown, so a facing move cannot choose a branch.
-     * Trailing moves merge safely whatever the blades are doing.  Note this is the exact opposite of a
-     * working switch's default, and both are correct - do not harmonize them.
+     * A defective switch has no address and cannot be thrown, so a facing move cannot choose a branch; trailing moves
+     * merge safely.  The exact opposite of a working switch's default, and both are correct: do not harmonize them.
      */
     @Test
     public void testDefectiveSwitchesAreTrailingOnly()
@@ -253,10 +235,7 @@ public class testAutonomyDiagramPorts
         }
     }
 
-    /**
-     * The restriction has to survive rotation - a defective switch drawn sideways is still trailing only,
-     * toward wherever its toe has rotated to.
-     */
+    /** The restriction has to survive rotation: a defective switch drawn sideways is still trailing only. */
     @Test
     public void testTrailingOnlyRestrictionRotates()
     {
@@ -266,10 +245,7 @@ public class testAutonomyDiagramPorts
 
             List<Route> routes = TilePorts.ports(componentType.CUSTOM_PERM_LEFT, o, 0);
 
-            // Floor: TilePorts.ports returning empty for a rotated orientation would leave the loop
-            // below running zero times, and the rotation of the trailing-only restriction would be
-            // asserted nowhere - this is the one case among the C8 loop-only findings not covered by
-            // any sibling test.
+            // Floor: an empty port list for a rotated orientation would leave the loop below running zero times.
             assertFalse(routes.isEmpty(),
                 "orientation " + o + " should still offer routes");
 
@@ -284,8 +260,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * Straight and thrown always differentiate, so every address a tile has is specified in every state.
-     * Leaving one unmentioned would let a previously thrown branch stay selected.
+     * Straight and thrown always differentiate, so every address a tile has is specified in every state; one left
+     * unmentioned would stay thrown.
      */
     @Test
     public void testEveryStateCommandsEveryAddressItHas()
@@ -318,9 +294,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * Crossings and overpasses look identical here on purpose: same two routes, never joining.  What
-     * separates them is not the port map but lock derivation, where an overpass is the sole tile whose
-     * two routes do not conflict.
+     * Crossings and overpasses look identical here on purpose; lock derivation separates them (an overpass's two routes
+     * do not conflict).
      */
     @Test
     public void testCrossingAndOverpassOfferTwoDisjointRoutes()
@@ -344,9 +319,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * Portal tiles connect on one visible side; the continuation is authored, never inferred.  An
-     * unnamed or unpaired portal simply does not connect, which is the safe default when autonomy is
-     * added to a diagram someone drew years ago.
+     * Portal tiles connect on one visible side; the continuation is authored, never inferred, so an unpaired portal
+     * does not connect.
      */
     @Test
     public void testPortalTilesHaveOneVisibleSide()
@@ -359,8 +333,7 @@ public class testAutonomyDiagramPorts
         assertEquals(singleStub(componentType.TUNNEL, 0), Side.S);
         assertEquals(singleStub(componentType.LINK, 0), Side.W);
 
-        // and they rotate - orientation 1 is three quarter turns clockwise, i.e. one counter-clockwise,
-        // so S goes to E and W goes to S
+        // and they rotate: orientation 1 is one counter-clockwise turn, so S goes to E and W goes to S
         assertEquals(singleStub(componentType.TUNNEL, 1), Side.E);
         assertEquals(singleStub(componentType.LINK, 1), Side.S);
 
@@ -374,9 +347,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * Scissors are a drawing convention - two tiles depicting one double slip - so a diagram carrying one
-     * is refused rather than having the tile ignored.  Ignoring it would leave a hole that traces quietly
-     * route around, which is worse than saying no.
+     * Scissors are a drawing convention (two tiles depicting one double slip), so a diagram carrying one is refused
+     * rather than ignored, which would leave a hole.
      */
     @Test
     public void testScissorsAreDisqualifiedAndTurntablesTerminate()
@@ -392,9 +364,7 @@ public class testAutonomyDiagramPorts
         assertFalse(TilePorts.isRoutable(componentType.TURNTABLE));
     }
 
-    /**
-     * Decoration carries no track.  A lamp sitting in the middle of a run must break it, not bridge it.
-     */
+    /** Decoration carries no track: a lamp in the middle of a run must break it, not bridge it. */
     @Test
     public void testDecorationCarriesNoTrack()
     {
@@ -405,9 +375,7 @@ public class testAutonomyDiagramPorts
         }
     }
 
-    /**
-     * Signals and uncouplers carry an address but do not branch: topologically they are plain straights.
-     */
+    /** Signals and uncouplers carry an address but do not branch: topologically plain straights. */
     @Test
     public void testSignalAndUncouplerAreStraights()
     {
@@ -420,11 +388,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * A train cannot pass a red signal, so crossing a signal tile commands it green - the same shape as a
-     * switch command, which is what lets the reducer gather both without a special case.  Setting other
-     * signals red for safety stays with conditional routes.
-     *
-     * An uncoupler is not a condition of passing: firing it is something the user asks for.
+     * A train cannot pass a red signal, so crossing a signal tile commands it green, the same shape as a switch
+     * command.  Setting other signals red stays with conditional routes.  An uncoupler is not a condition of passing.
      */
     @Test
     public void testCrossingASignalCommandsItGreen()
@@ -439,16 +404,10 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * A route button sits ON the line rather than beside it, and the track runs beneath it.
-     *
-     * Its own art carries no track - it is a pair of arrows - so this cannot be read off the icon.  It
-     * comes from how layouts use them: the sample layout threads 43 through its running lines and its
-     * hand-built graph connects straight across every one.  Treating them as decoration severed every
-     * run that contained one.
-     *
-     * Orientation says nothing here - the same drehung appears in horizontal and vertical runs - so it
-     * conducts both ways like a crossing, continuing whatever line it sits in without joining two lines
-     * that merely meet at it.
+     * A route button sits ON the line and the track runs beneath it.  Its art carries no track, so this comes from how
+     * layouts use them: the sample layout's hand-built graph connects straight across every one, and treating them as
+     * decoration severed every run containing one.  Orientation says nothing, so it conducts both ways like a crossing
+     * without joining two lines that merely meet at it.
      */
     @Test
     public void testARouteButtonDeclaresItselfTransparentRatherThanClaimingTrack()
@@ -456,9 +415,8 @@ public class testAutonomyDiagramPorts
         assertTrue(TilePorts.isTransparent(componentType.ROUTE),
             "a route button carries no track of its own");
 
-        // it claims no sides here, because which sides it conducts is not a property of the tile: the
-        // same button appears in horizontal and vertical runs at the same orientation, and beside the
-        // rails carrying nothing at all.  TileGraph settles it from the neighbors.
+        // it claims no sides here: which sides it conducts is not a property of the tile, so TileGraph settles it from
+        // the neighbors
         assertTrue(TilePorts.ports(componentType.ROUTE, 0, 0).isEmpty(),
             "a transparent tile must not claim sides the art does not have");
 
@@ -471,8 +429,8 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * Feedback tiles are plain track that also carries an s88.  Every one becomes a Point, so their
-     * topology has to match their non-feedback equivalents exactly.
+     * Feedback tiles are plain track that also carries an s88; every one becomes a Point, so their topology matches
+     * their non-feedback equivalents.
      */
     @Test
     public void testFeedbackTilesMatchTheirPlainEquivalents()
@@ -485,9 +443,7 @@ public class testAutonomyDiagramPorts
 
     // helpers
 
-    /**
-     * The routes of a tile as a set of side-pair strings in NESW order, e.g. {"NS", "EW"}.
-     */
+    /** The routes of a tile as a set of side-pair strings in NESW order, e.g. {"NS", "EW"}. */
     private Set<String> sidesAt(componentType type, int orientation, int state)
     {
         Set<String> out = new HashSet<>();
@@ -512,18 +468,13 @@ public class testAutonomyDiagramPorts
         return out;
     }
 
-    /**
-     * Side pairs are unordered, so name them in enum order to compare them.
-     */
+    /** Side pairs are unordered, so name them in enum order to compare them. */
     private String canonical(Side a, Side b)
     {
         return a.ordinal() <= b.ordinal() ? a.toString() + b.toString() : b.toString() + a.toString();
     }
 
-    /**
-     * Every side the tile touches across all of its states, in NESW order - the reading the icon
-     * extraction produces, so it can be compared against measured art.
-     */
+    /** Every side the tile touches across all of its states, in NESW order, as the icon extraction reads them. */
     private String occupiedSides(componentType type, int orientation)
     {
         Set<Side> seen = new HashSet<>();
@@ -548,30 +499,13 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * The single open side of a stub tile.
-     */
-
-    /**
-     * The whole port table, every tile type at once.
+     * The whole port table, every tile type at once: `portmap-verification.py` (git history, e5f77c9c^) brought into
+     * the suite, where it is executed rather than remembered.  It held the only complete statement of the port map, but
+     * its javadoc told the reader to keep the Python copy in step BY HAND, and that copy had already gone stale.
      *
-     * This is `portmap-verification.py` (git history, e5f77c9c^) brought into the suite. That script held
-     * the only complete statement of the port map anywhere - all twenty-eight tile types, their routes
-     * and their branches - and drew a picture of it for a person to check against the artwork. The
-     * trouble was how it stayed true: `TilePorts`'s javadoc instructed the reader to keep the Python
-     * copy in step BY HAND. A verification that has to be hand-synchronized with the thing it verifies
-     * is not a verification, it is a second opinion with the same author - and that copy had already
-     * gone stale, still marking the LINK side "UNCONFIRMED" long after `d4d5b7ba` confirmed it.
-     *
-     * So the table is here, in the language it describes, where it is executed rather than remembered.
-     *
-     * **The union across every state, not state 0.** A three-way has two addresses and therefore more
-     * states than a simple switch, and numbering them is `TilePorts`'s business; what a reader wants
-     * to know is which pieces of track this tile joins in any position at all. The per-state and
-     * per-orientation behavior is pinned by the tests above, which is the right division: those say
-     * how the tile TURNS, this says what it IS.
-     *
-     * A stub - a tile with one open side, like an end, a tunnel mouth or a link - is a route whose two
-     * sides are the same, so it appears here doubled: "NN".
+     * **The union across every state, not state 0:** what a reader wants is which pieces of track the tile joins in any
+     * position at all.  The per-state and per-orientation behavior is pinned by the tests above (how the tile TURNS;
+     * this says what it IS).  A stub is a route whose two sides are the same, so it appears doubled: "NN".
      */
     @Test
     public void testTheWholePortTableIsWhatTheMapSaysItIs()
@@ -648,29 +582,22 @@ public class testAutonomyDiagramPorts
     }
 
     /**
-     * A DIRECTION THE HARDWARE REFUSES IS NOT OFFERED AS AN ANSWER (Adam, 2026-09-22).
+     * A DIRECTION THE HARDWARE REFUSES IS NOT OFFERED AS AN ANSWER (Adam: "Green arrows in the direction that can't be
+     * chosen shouldn't be offered.").  An authored direction ANDs with the tile's own restriction, so on a permanent
+     * turnout (every route directed at the toe) "toward the fork" and "both ways" restrict nothing: no train could take
+     * that road either way, and the editor drew a green arrow for it (OB-057, OB-090).
      *
-     * *"Green arrows in the direction that can't be chosen shouldn't be offered."*  An authored
-     * direction ANDs with the tile's own restriction, so on a permanent turnout - every route directed
-     * at the toe - "toward the fork" and "both ways" restrict nothing at all: no train could take that
-     * road either way.  The editor drew a green arrow for it, which is a control offering what the
-     * guard will not honor (OB-057, OB-090).
+     * `TileGraph.directionIsPossible` is the question the MENU asks; whether a train MOVES is `isPassable`
+     * (`core.testTheDiagramDrawsWhatTrainsMayDo.testAShutRouteDrawsNoArrow` holds that one).  They disagree about
+     * `NONE`, which is always offerable and never passable.
      *
-     * `TileGraph.directionIsPossible` is the question the MENU asks.  `directionAllows` is not the
-     * other half of it, though an earlier draft said so: they disagree about `NONE`, which is always
-     * offerable and never passable.  The question about whether a train MOVES is `isPassable`, and
-     * `core.testTheDiagramDrawsWhatTrainsMayDo.testAShutRouteDrawsNoArrow` is what holds that one.
+     * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED:** `into(toward, from)` builds `Route(from, toward, toward)`, so
+     * the toe is always `getB()` and rotation preserves the roles; deriving the toe and comparing it with `getA()`
+     * could not have noticed `deriveToe` breaking.
      *
-     * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED.**  An earlier draft derived the toe
-     * and then compared it with `getA()` in a ternary whose true branch is dead - `into(toward, from)`
-     * builds `Route(from, toward, toward)`, so the toe is always `getB()` and rotation preserves the
-     * roles.  It could not have noticed `deriveToe` breaking, because it never used the answer.  The
-     * shape is a claim of its own here, and the directions are named from it.
-     *
-     * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways
-     * claims fail at every orientation of every type.  (Dropping its `NONE` case catches nothing, and
-     * an earlier draft of this paragraph said it would: `NONE` then falls through to the `TOWARD_B`
-     * arm, which is true for every one of these routes and for plain track.)
+     * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways claims fail at every
+     * orientation of every type.  (Dropping its `NONE` case catches nothing: `NONE` falls through to the `TOWARD_B`
+     * arm, true for every one of these routes and for plain track.)
      */
     @Test
     public void testOnlyThePossibleDirectionsAreOffered()
@@ -721,9 +648,8 @@ public class testAutonomyDiagramPorts
             }
         }
 
-        // THE LOOPS RAN.  Four types at four orientations: two roads each, except the
-        // three-way, which trails in from three.  An empty port map would otherwise take every
-        // assertion above with it and still read green.
+        // THE LOOPS RAN: four types at four orientations, two roads each, except the three-way, which trails in from
+        // three.  An empty port map would otherwise take every assertion above with it and still read green.
         assertEquals(asked, 4 * (2 + 2 + 2 + 3),
             "the permanent turnouts offered " + asked + " roads rather than the two per orientation"
             + " the port map declares for a left, a right and a Y, and three for a three-way - so"

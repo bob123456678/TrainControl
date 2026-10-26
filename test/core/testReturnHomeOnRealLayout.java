@@ -391,8 +391,8 @@ public class testReturnHomeOnRealLayout
     /**
      * A train standing on a square that turns trains can still be brought home (MT-463).
      *
-     * Adam, 2026-09-21, on MT-463: *"Could not run this.  make an automated test for this with
-     * appropriate placements."*  The rule is `behaviour.md` section 6 and his ruling of 2026-09-15: a
+     * Adam, on MT-463: *"Could not run this.  make an automated test for this with
+     * appropriate placements."*  The rule is `behaviour/return-home.md` section 6 and his ruling: a
      * plan may rest a train that cannot reverse on a terminus or reversing point only when its next move
      * takes it home, *"a train the railway already had standing on one moves as before"*.  The defect was
      * that second clause: the code asked the SQUARE whether it turns trains, and a square cannot say who
@@ -420,7 +420,7 @@ public class testReturnHomeOnRealLayout
      * produce a plan, and then unable to reverse, which must still produce one.  A train whose own
      * control fails is passed over and named.
      *
-     * MUTATION, MEASURED rather than reasoned (2026-09-21): drop `&& this.movedAlong.containsKey(l)` from
+     * MUTATION, MEASURED rather than reasoned: drop `&& this.movedAlong.containsKey(l)` from
      * `turnedByThePlan` in `HomeStaging` - the pre-RTX-B1 reading - and this goes RED on his railway,
      * together with both claims in `testHomeStaging`.  So the arrangement really does arise there: a
      * train staged on one of his turning squares cannot be planned home at all once the square rather

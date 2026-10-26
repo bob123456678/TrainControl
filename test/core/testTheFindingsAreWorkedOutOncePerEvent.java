@@ -24,20 +24,15 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
- * The setup check is worked out once per event, and the configuration build works out its names once (speed, Adam,
- * 2026-10-04: *"Do 1 and 2"*).
+ * The setup check is worked out once per event, and the configuration build works out its names once (Adam: "Do 1 and
+ * 2").  Measured on his railway before this: one click on a switch in the autonomy editor ran the setup check twenty
+ * times over five events, and a track editor Save twenty-four times over seven, each asking again of a setup nobody had
+ * touched; every check builds the whole configuration, and the build sorted every Point again for each copy it named.
  *
- * Measured on his railway before this: one click on a switch in the autonomy editor ran the setup check twenty times
- * over five events, and a track editor Save twenty-four times over seven - the findings list, then whether there are
- * errors, then the strip, the viewer and the Run buttons, each asking again of a setup nobody had touched.  Every check
- * builds the whole configuration to inspect it, and the build sorted every Point on the railway again for each copy it
- * named.  Together that was two thirds of the click and of the Save; on an N100-class processor the click took 1.1 s.
- *
- * **What may be kept, and for how long.**  The findings are kept for the rest of the event that asked, and only while
- * everything the check reads is as it was: a new event always checks afresh, and a change made inside the event - to
- * the setup, a train's length, a label on the diagram, a train on the railway - is answered for.  Each of those has a
- * claim here, because the check reads each of them from somewhere other than the setup, and a key missing one would
- * hand back findings about a railway that has just changed.
+ * The findings are kept for the rest of the event that asked, and only while everything the check reads is as it was:
+ * a new event always checks afresh, and a change inside the event (the setup, a train's length, a label on the
+ * diagram, a train on the railway) is answered for.  Each has a claim here, because the check reads each from
+ * somewhere other than the setup, and a key missing one would hand back findings about a railway that has changed.
  *
  * On the frozen copy of his railway, whose findings move with each change asked of here (see each precondition).
  *
@@ -55,8 +50,7 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // The sandbox is opened inside Scenario.open, before the model is built (OB-111): the snapshot is a checked-in
-        // copy, and the copy is what is written.
+        // The sandbox is opened inside Scenario.open, before the model is built (OB-111).
         scenario = support.Scenario.open("live-snapshot");
 
         scenario.getModel().stop();
@@ -140,15 +134,11 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A build, and each map by name, works out the names of the railway's squares once - not once more for every copy
-     * of a split square it names.
-     *
-     * Counted through the one input the name list reads once per working-out: the names of squares on pages out of
-     * autonomy, handed to the builder as a map whose entries are walked each time.
+     * A build, and each map by name, works out the names of the railway's squares once, not once more for every copy of
+     * a split square it names.  Counted through the one input the name list reads once per working-out: the names of
+     * squares on pages out of autonomy, handed to the builder as a map whose entries are walked each time.
      *
      * MUTATION: have nodeName work the names out again for itself, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testABuildWorksOutItsNamesOnce() throws Exception
@@ -200,8 +190,6 @@ public class testTheFindingsAreWorkedOutOncePerEvent
      * Two checks in one event are one check: the second hands back the first's findings, in a list of its own.
      *
      * MUTATION: work the findings out every time, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testOneEventChecksOnce() throws Exception
@@ -232,8 +220,6 @@ public class testTheFindingsAreWorkedOutOncePerEvent
      * A new event checks afresh: nothing kept outlives the event that asked.
      *
      * MUTATION: keep the findings across events, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testEachEventChecksAfresh() throws Exception
@@ -251,13 +237,10 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
     /**
      * A change to the setup inside the event is checked: a caption drawn on a square that has a label of its own, by
-     * the setup's own write, which re-derives nothing - and the caption is said to be covered.
-     *
-     * The setup alone: a train taken off it would change where the trains stand as well, which is read apart from it.
+     * the setup's own write, which re-derives nothing, is said to be covered.  The setup alone, since a train taken off
+     * it would change where the trains stand as well.
      *
      * MUTATION: leave the setup out of what the check is said to read, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testASetupChangeInTheEventIsChecked() throws Exception
@@ -318,8 +301,6 @@ public class testTheFindingsAreWorkedOutOncePerEvent
      * A train's length set inside the event is checked: the warning that it has none goes.
      *
      * MUTATION: leave the lengths out of what the check is said to read, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testALengthChangeInTheEventIsChecked() throws Exception
@@ -360,8 +341,6 @@ public class testTheFindingsAreWorkedOutOncePerEvent
      * covered, and said so.
      *
      * MUTATION: leave the diagram's squares out of what the check is said to read, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testALabelChangeInTheEventIsChecked() throws Exception
@@ -416,8 +395,6 @@ public class testTheFindingsAreWorkedOutOncePerEvent
      * another is warned about where it now stands.
      *
      * MUTATION: leave the railway's trains out of what the check is said to read, and this fails.
-     *
-     * @throws Exception from the event thread or the build
      */
     @Test
     public void testATrainMovedInTheEventIsChecked() throws Exception

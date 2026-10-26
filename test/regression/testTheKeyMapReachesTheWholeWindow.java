@@ -15,32 +15,23 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * The locomotive keys work from anywhere in the window, not only from whatever holds the focus.
  *
- * Adam, 2026-09-11: **"it should take the keystrokes - any part of the app should respect the key
- * mapping (locomotive selector) and all related keyboard shortcuts."**
+ * Adam: "it should take the keystrokes - any part of the app should respect the key mapping (locomotive selector) and
+ * all related keyboard shortcuts."
  *
- * **Why focus could not be the answer.** The map is a `KeyListener`, and a `KeyListener` hears only
- * the component that holds the keyboard. Four rounds of `OB-170` answered that by putting the focus
- * back on the tabbed pane, which is right when nothing in particular has it - and cannot be right when
- * the operator is USING what has it. Clicking a row in the route table or a button in the autonomy
- * editor left the railway deaf to the letters, and the fix for that cannot be to take the keyboard off
- * what somebody is working in.
+ * The map is a `KeyListener`, which hears only the component that holds the keyboard; putting the focus back on the
+ * tabbed pane (OB-170) cannot work when the operator is USING what has it, such as a route table row.
+ * `letTheWholeWindowDriveTrains` registers a key event POST processor instead: the focus manager runs it after the
+ * focused component has been offered the key, and only for keys that came back unconsumed, so a component that wants a
+ * key keeps it.
  *
- * **What replaced it, and what that buys.** `letTheWholeWindowDriveTrains` registers a key event POST
- * processor: the focus manager runs it after the focused component has been offered the key, and only
- * for keys that came back unconsumed. So the precedence rule is the toolkit's - a component that wants
- * a key keeps it, and the map gets what nothing claimed - rather than a list, kept in this window, of
- * which keys each widget needs.
- *
- * The three claims below are that rule's three halves: it reaches a component that is not the
- * keyboard, it does NOT fire twice when the focused component is one the map already listens to, and
- * it leaves a text component's letters alone.
+ * The three claims are that rule's halves: it reaches a component that is not the keyboard, it does NOT fire twice when
+ * the focused component is one the map already listens to, and it leaves a text component's letters alone.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
  *
- * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()` and the first test
- * fails, and so does the third - on its control, which is what that control is for; drop the
- * `JTextComponent` guard and the third fails on its own claim. The second test is not mutation-backed
- * and says so in its own words.
+ * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()` and the first test fails, and so does the
+ * third on its control; drop the `JTextComponent` guard and the third fails on its own claim.  The second test is not
+ * mutation-backed and says so.
  *
  * @author Adam
  */
@@ -100,10 +91,9 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * A pre-release's window title leaves out what TrainControl is for (Adam, 2026-10-03: *"when it's a pre release
-     * version, don't show "for marklin central station 2 & 3" in the window title, as it doesn't fit anyway"*) - the build
-     * it carries takes the room.  A release keeps it.  Asked of the window `display()` has shown, which is where the title
-     * is set.
+     * A pre-release's window title leaves out what TrainControl is for (Adam: "when it's a pre release version, don't
+     * show "for marklin central station 2 & 3" in the window title, as it doesn't fit anyway"); a release keeps it.
+     * Asked of the window `display()` has shown.
      *
      * MUTATION: build the pre-release title with `app.uititle` again, and this fails.
      */
@@ -134,11 +124,8 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * A letter pressed on something that is not the keyboard still picks a locomotive.
-     *
-     * The component is found rather than named - anything in the window that is not a place to type
-     * and is not the tabbed pane the map already listens to. What it IS does not matter; that it is
-     * not the keyboard is the whole claim.
+     * A letter pressed on something that is not the keyboard still picks a locomotive.  The component is found rather
+     * than named: anything that is not a place to type and not the tabbed pane the map already listens to.
      */
     @Test
     public void testALetterSomewhereElseInTheWindowStillPicksALocomotive() throws Exception
@@ -155,10 +142,8 @@ public class testTheKeyMapReachesTheWholeWindow
             "nothing in this window can be found that is neither the keyboard nor a place to type, so "
             + "the state Adam described cannot be set up - the fixture is wrong, not the window");
 
-        // AND IT REALLY HOLDS THE KEYBOARD.  Without this the key is delivered to whatever has the
-        // focus - which after start-up is the tabbed pane, the one component the map already listens
-        // to - and the test passes with the whole feature switched off, measuring the listener it was
-        // written to be independent of.  Found by mutation, 2026-09-11.
+        // AND IT REALLY HOLDS THE KEYBOARD: otherwise the key goes to the tabbed pane, which the map already listens
+        // to, and the test passes with the feature switched off.
         pressForReal(elsewhere, letter);
 
         assertNotSame(currentButton(), before,
@@ -172,32 +157,19 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * A key pressed on the keyboard itself is acted on once, not twice.
+     * A key pressed on the keyboard itself is acted on once, not twice.  The map is attached to the tabbed pane as a
+     * listener AND reachable through the post-processor; it is the same `KeyEvent` both times, which is how the second
+     * visit is dropped.
      *
-     * The map is attached to the tabbed pane as a listener AND reachable through the post-processor,
-     * so a key pressed there passes it twice. It is the same `KeyEvent` object both times, which is
-     * how the second visit is recognized and dropped.
+     * **A key that COUNTS, not a letter:** selecting the same locomotive twice lands in the same place, whereas "next
+     * keyboard page" moves by one each time it runs.  On the keyboard tab deliberately: the same key means "next layout
+     * page" while the LAYOUT tab is showing.
      *
-     * **A key that COUNTS, not a letter.** The first version pressed a letter and asserted the button
-     * it names is active - and selecting the same locomotive twice lands in the same place, so it
-     * could not tell one hop from two. "Next keyboard page" moves by one each time it runs, so a
-     * double shows up in the number.
-     *
-     * **What this holds, honestly.** Removing the `theKeyTheMapAlreadySaw` guard leaves it GREEN:
-     * measured on Windows, 2026-09-11. On the path a real keystroke takes, an event the focused
-     * component's own listener has already handled does not come back to the post-processor, so the
-     * double this describes does not arise here and the guard is insurance rather than something this
-     * test proves. It is kept because "does a post-processor see an event the focus owner's listener
-     * consumed" is a platform question, not a language one, and the cost of being wrong about it is
-     * every shortcut in this window firing twice - two pages, two dialogs, two emergency stops.
-     *
-     * So this is a regression test rather than a proof: it goes red the day that double appears, from
-     * a platform, a toolkit version, or a change to how the map is attached. A claim no mutation can
-     * make red today is worth keeping only when it says what it cannot prove, which is why this
-     * paragraph is here.
-     *
-     * On the keyboard tab deliberately: the same key means "next layout page" while the LAYOUT tab is
-     * showing, which is a different branch and not this claim.
+     * **What this holds, honestly:** removing the `theKeyTheMapAlreadySaw` guard leaves it GREEN (measured on Windows),
+     * because an event the focused component's own listener has handled does not come back to the post-processor.  The
+     * guard is kept because "does a post-processor see an event the focus owner consumed" is a platform question, and
+     * being wrong means every shortcut firing twice.  So this is a regression test rather than a proof: it goes red the
+     * day that double appears.
      */
     @Test
     public void testAKeyOnTheKeyboardItselfIsNotActedOnTwice() throws Exception
@@ -221,19 +193,16 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * A letter typed into a text component is typing, not a shortcut.
-     *
-     * A text component claims a letter on KEY_TYPED, which is after the post-processor runs, so this
-     * is the one case the "was it consumed" test cannot settle and the only one that needs naming.
-     * Taking a letter out of a half-typed line would be a worse fault than the one being fixed.
+     * A letter typed into a text component is typing, not a shortcut.  A text component claims a letter on KEY_TYPED,
+     * after the post-processor runs, so this is the one case the "was it consumed" test cannot settle.
      */
     @Test
     public void testALetterTypedIntoATextBoxIsNotAShortcut() throws Exception
     {
         int wasOn = tabs().getSelectedIndex();
 
-        // THE TAB GOES BACK EVEN ON A FAILURE (OB-267): a failure left a different tab showing for whatever ran next in
-        // this JVM, where the same keystroke means something else
+        // THE TAB GOES BACK EVEN ON A FAILURE (OB-267): a different tab left showing changes what the same keystroke
+        // means for the next test.
         try
         {
         javax.swing.text.JTextComponent typing = findSomewhereToType();
@@ -253,9 +222,8 @@ public class testTheKeyMapReachesTheWholeWindow
             + "locomotive. Text components consume a letter at KEY_TYPED, which is after this runs, "
             + "so they have to be stepped around by name");
 
-        // THE CONTROL, and this test is worth nothing without it: "the letter did nothing" is also
-        // what a window with no routing at all looks like.  The same letter, from somewhere that is
-        // not a text box, has to work.
+        // THE CONTROL: "the letter did nothing" is also what a window with no routing looks like, so the same letter
+        // from somewhere that is not a text box has to work.
         java.awt.Component elsewhere = somethingThatIsNotTheKeyboard();
 
         assertNotNull(elsewhere, "nothing to use as a control, so the claim above proves nothing");
@@ -280,14 +248,9 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * A text box that can really hold the keyboard, looked for on every tab in turn.
-     *
-     * The two places anybody types in this window - the log and the JSON pane - are not on the tab
-     * that is showing at start-up, and a component on a tab nobody is looking at is not showing and
-     * cannot take the focus. Looking only at the tab that happens to be up made this a SKIP, and a
-     * skipped claim is not a kept one.
-     *
-     * @return the text box, with its tab selected, or null when no tab has one
+     * A text box that can really hold the keyboard, looked for on every tab in turn: the log and the JSON pane are not
+     * on the tab showing at start-up and cannot take the focus there, and a skipped claim is not a kept one.  Null when
+     * no tab has one.
      */
     private static javax.swing.text.JTextComponent findSomewhereToType() throws Exception
     {
@@ -322,20 +285,10 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * Presses a key the way the operating system does, through the queue.
-     *
-     * **Both halves of the journey, which `press` deliberately does not have.** The focus manager's
-     * own `dispatchEvent` reaches the post-processor and never offers the event to the component's
-     * KeyListeners; a posted event goes the whole way - to the focus owner first, and to the
-     * post-processor afterwards. Only that order can show a key being acted on twice, and the first
-     * version of this test used the short path and so passed with the guard removed (found by
-     * mutation, 2026-09-11).
-     *
-     * The focus has to be real for this, not merely the window's most recent: a posted key event is
-     * delivered to whatever the focus manager says holds the keyboard now.
-     *
-     * @param on the component that should receive it
-     * @param keyCode the key
+     * Presses a key the way the operating system does, through the queue: to the focus owner first, the post-processor
+     * afterwards.  The focus manager's own `dispatchEvent` reaches only the post-processor, so only this order can show
+     * a key acted on twice.  The focus has to be real, since a posted key event goes to whatever the focus manager says
+     * holds the keyboard now.
      */
     private static void pressForReal(java.awt.Component on, int keyCode) throws Exception
     {
@@ -362,12 +315,8 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * Puts the keyboard on one component, and says so plainly when it will not go.
-     *
-     * The whole of these tests rests on this: the key has to be delivered somewhere that is NOT the
-     * component the map already listens to, or what is being measured is that listener.
-     *
-     * @param on what should hold the keyboard
+     * Puts the keyboard on one component, and says so plainly when it will not go: the key must reach somewhere the map
+     * does not already listen.
      */
     private static void focusOn(java.awt.Component on) throws Exception
     {
@@ -375,9 +324,8 @@ public class testTheKeyMapReachesTheWholeWindow
 
         settle();
 
-        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS.  Asserted, this
-        // failed at random on a loaded battery machine and said nothing about the key map; skipped, the
-        // class says it could not be asked.
+        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS: asserted, it failed at random on a
+        // loaded battery machine; skipped, the class says it could not be asked.
         if (ui.getMostRecentFocusOwner() != on)
         {
             throw new org.testng.SkipException("this desktop would not give the keyboard to "
@@ -387,20 +335,10 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * The floor: at least one of this class's claims was actually asked.
-     *
-     * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
-     * is not no failures" in its quietest form: each skip message is honest about its own case, and the
-     * class as a whole still reads as saying the rule holds.
-     *
-     * Asked of the RESULTS rather than of a counter.  The counter version was incremented at ONE of the
-     * eight skip gates in the keyboard class, so it failed that whole class whenever that one gesture
-     * was unavailable - even when six other claims had run and passed.  A guard that goes red about
-     * something it never tested is worse than no guard.
-     *
-     * Filtered to this class, because a run of several classes shares one context.
-     *
-     * @param context TestNG's own record of what ran
+     * The floor: at least one of this class's claims was actually asked.  A class where every claim skips reports green
+     * while asking nothing.  Asked of the RESULTS rather than of a counter, which sat at one of eight skip gates in the
+     * keyboard class and failed that whole class whenever that gesture was unavailable.  Filtered to this class, as a
+     * run of several classes shares one context.
      */
     @org.testng.annotations.AfterClass(alwaysRun = true)
     public static void testSomethingWasActuallyAsked(org.testng.ITestContext context)
@@ -421,9 +359,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
 
 
-    /**
-     * Something in this window that is neither the keyboard nor a place to type.
-     */
+    /** Something in this window that is neither the keyboard nor a place to type. */
     private static java.awt.Component somethingThatIsNotTheKeyboard() throws Exception
     {
         java.awt.Component keyboard = (java.awt.Component) field("KeyboardTab");
@@ -437,14 +373,9 @@ public class testTheKeyMapReachesTheWholeWindow
         {
             if (child == keyboard) continue;
 
-            // NO KEY LISTENER OF ITS OWN, which is the whole point and was missing: the map is
-            // attached as a listener to several components, not just the tabbed pane, and a key
-            // dispatched at one of those is handled by that listener whether or not anything routes
-            // it. The first version of this test passed with the routing switched off for exactly
-            // that reason (found by mutation, 2026-09-11). A component with no key listener can only
-            // be served by the routing, so it is the only honest fixture.
-            //
-            // It must also be SHOWING and focusable, or it cannot hold the keyboard to be asked.
+            // NO KEY LISTENER OF ITS OWN: the map is attached as a listener to several components, and a key dispatched
+            // at one of those is handled whether or not anything routes it, so only a component with none can be served
+            // by the routing alone.  It must also be SHOWING and focusable to hold the keyboard.
             if (child.isFocusable() && child.isEnabled() && child.isShowing()
                 && child.getKeyListeners().length == 0
                 && !(child instanceof javax.swing.text.JTextComponent)
@@ -464,16 +395,12 @@ public class testTheKeyMapReachesTheWholeWindow
         return null;
     }
 
-    /**
-     * A place in this window somebody could be typing in.
-     */
+    /** A place in this window somebody could be typing in. */
     private static javax.swing.text.JTextComponent somewhereToType(java.awt.Container in)
     {
         for (java.awt.Component child : in.getComponents())
         {
-            // SHOWING AND FOCUSABLE, because this one has to actually take the keyboard: a text box
-            // on a tab nobody is looking at cannot, and the fixture would fail on it rather than
-            // measure anything.
+            // SHOWING AND FOCUSABLE, because this one has to actually take the keyboard.
             if (child instanceof javax.swing.text.JTextComponent && child.isEnabled()
                 && child.isShowing() && child.isFocusable())
             {
@@ -502,9 +429,7 @@ public class testTheKeyMapReachesTheWholeWindow
         return (java.util.Map<Integer, javax.swing.JButton>) field("buttonMapping");
     }
 
-    /**
-     * A mapped letter whose button is not the one already active, so "it changed" is answerable.
-     */
+    /** A mapped letter whose button is not the one already active, so "it changed" is answerable. */
     private static int aLetterOtherThan(javax.swing.JButton taken) throws Exception
     {
         for (int key = java.awt.event.KeyEvent.VK_A; key <= java.awt.event.KeyEvent.VK_Z; key++)

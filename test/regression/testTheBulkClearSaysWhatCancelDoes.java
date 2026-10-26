@@ -1,6 +1,7 @@
 package regression;
 
 import javax.swing.SwingUtilities;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -11,7 +12,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -20,36 +21,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.
  *
- * **Renamed on 2026-09-14 from `testTheBulkClearWarnsThatCancelWillNotUndoIt`.**  Since OB-223 Cancel in
- * the autonomy editor restores the setup as it opened, and the locomotives a clear took off come back -
- * `regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it - so the
- * warning says Cancel puts them back and Save keeps the change.  What follows is the class as it was written,
- * when Cancel could not.
+ * Since OB-223 Cancel in the autonomy editor restores the setup as it opened, so the locomotives a clear took off come
+ * back (`regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it): the warning
+ * says Cancel puts them back and Save keeps the change.
  *
- * Adam, on MT-311 (2026-09-08): **"It works, but bug: clearning locomotives in the autonomy editor
- * cannot be undone by a cancel.  Make this clear in the popup."**  And his ruling of 2026-09-09:
- * **"Warning if using the bulk tool."**  So the answer is the warning, not a real undo - the smaller
- * of the two, and the one he asked for.
- *
- * **What changed underneath, and why the entry that passed said the opposite.**  MT-311's own
- * expectation reads *"neither writes to disk - Cancel puts everything back"*, which was true when it
- * was written.  OB-183 changed where a placement comes from - Adam, 2026-09-08: *"Where a train IS is
- * a fact, and where the file thinks it is is a record"* - so placements are carried across a rebuild
- * rather than regenerated from the setup, and Cancel then restored the FILE while the railway was what the
- * placements were read from.  Two halves of one sentence stopped agreeing, and nothing on screen said
- * so.
- *
- * **Asserted by asking the editor, not by reading its source.**  The panel is stood up over the frozen
- * railway with trains standing on it, and the warning is the string the confirmation will show and the
- * tooltip shows in short - one builder choosing both, so the two cannot say different things.
- *
- * **Two claims that are not about English.**  The warning must name every locomotive it is about to
- * lift - a count is not something anybody can check - and it must name Cancel, which since OB-223 is the
- * button that undoes it, asked as `I18n.t("ui.cancel")`, the same key the editor's own Cancel button
- * carries.  Both hold in whichever of the eight languages the run happens to be in.  And on the track
- * diagram's own menu, where there is no Cancel, it must not name one.
- *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
+ * Asserted by asking the editor, not by reading its source: the panel is stood up over the frozen railway
+ * (never `cs2_sample_layout`, OB-111) with trains standing on it, and the warning is the string the confirmation will
+ * show and the tooltip shows in short - one builder choosing both, so the two cannot say different things.  Two claims
+ * are not about English: the warning must name every locomotive it is about to lift (a count cannot be checked), and it
+ * must name Cancel, asked as `I18n.t("ui.cancel")` like the editor's own button, so it holds in all eight languages.
+ * On the track diagram's own menu, where there is no Cancel, it must not name one.
  *
  * MUTATION: take `{1}` out of the message and the naming claim fails; take the Cancel sentence out and
  * the second does; point the tooltip back at `I18n.t` and the third does.
@@ -106,13 +87,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         warning = said[0];
     }
 
-    /**
-     * The autonomy editor on a page, built as the main window builds it.
-     *
-     * @param page the page
-     * @return the editor
-     * @throws Exception from the event thread
-     */
+    /** The autonomy editor on a page, built as the main window builds it. */
     private static LayoutEditor buildTheEditor(final LayoutDiagram page) throws Exception
     {
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -154,12 +129,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         }
     }
 
-    /**
-     * The warning names every locomotive the clear is about to lift.
-     *
-     * A bulk gesture is one answer about all of them, and a count is a number nobody can check against
-     * the railway in front of them.  The same argument `placementChanged` is given its list for.
-     */
+    /** The warning names every locomotive the clear is about to lift: a count is a number nobody can check. */
     @Test
     public void testTheWarningNamesTheLocomotivesItWillClear()
     {
@@ -195,11 +165,8 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * And it names Cancel, which since OB-223 is the button that DOES undo it.
-     *
-     * Adam's sentence exactly - *"cannot be undone by a cancel.  Make this clear in the popup"* - and
-     * asked in a way that is true in all eight languages: `ui.cancel` is the key the editor's own
-     * Cancel button carries, so whatever that button says, this warning says it too.
+     * And it names Cancel, which since OB-223 is the button that does undo it, asked by the key the editor's Cancel
+     * carries.
      */
     @Test
     public void testTheWarningNamesCancel()
@@ -213,13 +180,9 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The tooltip on the menu item says the same thing in short - the count and what Cancel does - through the builder that
-     * picks the confirmation's sentence (FR-112: it was the whole sentence, every locomotive named, and Adam asked for the
-     * menus' tooltips to be concise).
-     *
-     * A warning that appears only after the item has been clicked is a warning half the time.  Asked
-     * of the built menu rather than of the source, so a tooltip set from a different string would be
-     * caught rather than described.
+     * The tooltip on the menu item says the same thing in short - the count and what Cancel does - through the builder
+     * that picks the confirmation's sentence (FR-112).  Asked of the built menu, so a tooltip set from a different
+     * string would be caught.
      */
     @Test
     public void testTheMenuItemCarriesTheSameWarning() throws Exception
@@ -250,26 +213,16 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The two LENGTH clears carry their sentence on the menu too, and it is the editor's one.
-     *
-     * **Nothing ran either sentence.**  The track-length and maximum pairs were built by copying the
-     * `page == null` choice into four places, and the commit said
-     * `testCancelUndoesAutonomyEdits.testCancelPutsTheLengthsBack` ran it - which it does not: that test
-     * calls `session.clearEveryTileLength()` and never goes near a sentence.  So a swapped pair of keys in
-     * one of the four would have shown a clear promising a Cancel on the surface that has none, and nothing
-     * would have said so.
-     *
-     * Asked of the built menu, like the locomotive claim above it, and of the same editor surface - where
-     * Cancel is real, so the sentence naming it is the true one here.
-     *
-     * @throws Exception from the event thread
+     * The two length clears carry their sentence on the menu too, and it is the editor's one.  The track-length and
+     * maximum pairs were built by copying the `page == null` choice into four places, so a swapped pair of keys would
+     * show a clear promising a Cancel on the surface that has none.  Asked of the built menu, on the editor surface,
+     * where Cancel is real.
      */
     @Test
     public void testTheLengthClearsCarryTheEditorsSentence() throws Exception
     {
-        // ALL THREE CLEARS HAVE SOMETHING TO CLEAR.  A clear with nothing to do carries its "nothing to
-        // clear" notice instead of the warning, and a test that counted those would be counting the wrong
-        // sentence - which is what the first draft of this did.
+        // All three clears have something to clear: a clear with nothing to do carries its "nothing to clear" notice
+        // instead of the warning, and counting those would count the wrong sentence.
         TileKey measured = null;
         TileKey limited = null;
 
@@ -287,10 +240,8 @@ public class testTheBulkClearSaysWhatCancelDoes
         assertFalse(session.tilesWithAMaxTrainLength().isEmpty(),
             "precondition: no station took a maximum, so that clear has nothing to warn about");
 
-        // THE SET THE MENU ITEM READS.  `tilesWithALocomotive` walks every page; the clear is
-        // gated on `placementsAutonomyWillWrite`, and the comment beside the item says the two disagree -
-        // so asserting the wrong one could have left the item disabled with its notice showing while this
-        // test believed it was reading a warning.
+        // The set the menu item reads: the clear is gated on `placementsAutonomyWillWrite`, not on
+        // `tilesWithALocomotive`, which walks every page.
         assertFalse(session.placementsAutonomyWillWrite().isEmpty(),
             "precondition: autonomy would write no placements, so that clear has nothing to warn about");
 
@@ -308,10 +259,8 @@ public class testTheBulkClearSaysWhatCancelDoes
             if (tip != null && tip.contains(I18n.t("ui.cancel"))) namingCancel++;
         }
 
-        // THREE CLEARS, THREE SENTENCES THAT NAME CANCEL.  The locomotives, the track lengths and the
-        // station maxima: on this surface all three are undone by Cancel, so all three say so.  A pair of
-        // keys swapped in any of the four places that choose between the two sentences takes one of these
-        // away, which is the mistake the copied ternary made possible and nothing was watching for.
+        // Three clears, three sentences that name Cancel (locomotives, track lengths, station maxima): a pair of keys
+        // swapped in any of the four places that choose between the two sentences takes one away.
         assertTrue(namingCancel >= 3,
             "only " + namingCancel + " of this editor's bulk clears say what Cancel does, and there are"
             + " three - the locomotives, the track lengths and the station maxima.  One of them is showing"
@@ -319,13 +268,87 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The track diagram's own right-click menu does not promise a Cancel it does not have.
+     * The tooltips count as the dialogs do: one measured square or one station is "1 square", not "1 squares", and two
+     * take the plural, in every language (`I18n.countForm`).  Asked of the built menu, on the editor surface.
      *
-     * The same Bulk Tools item is on the diagram's tile menu - this panel's menus served with no page - and
-     * there the clear is saved the moment it is made: the diagram's panel saves the setup on every change, and
-     * its menu is not offered at all while an editor is open (`TrainControlUI.buildAutonomyTileMenu`), so no
-     * editor's Cancel can reach it.  A warning saying Cancel puts the locomotives back is false on that door.
-     * Asked of the real diagram menu, through `buildAutonomyTileMenu`.
+     * MUTATION: build the track-length and station-maximum tooltips with `I18n.f(onThisSurface(key), count)`, as the
+     * locomotive tooltip is, and the "1 squares" check fails.
+     */
+    @Test
+    public void testTheTooltipsCountOneSquareAsOneSquare() throws Exception
+    {
+        session.clearEveryTileLength();
+        session.clearEveryMaxTrainLength();
+
+        java.util.List<TileKey> squares = new java.util.ArrayList<>(session.getGraph().getTiles().keySet());
+
+        session.setTileLength(squares.get(0), 5);
+
+        TileKey station = null;
+
+        for (TileKey square : squares)
+        {
+            if (station == null && session.assignMaxTrainLength(square, 40)) station = square;
+        }
+
+        assertNotNull(station, "precondition: no station took a maximum, so there is no station tooltip to read");
+
+        session.rebuild();
+
+        assertEquals(session.tilesWithALength().size(), 1, "precondition: not exactly one measured square");
+        assertEquals(session.tilesWithAMaxTrainLength().size(), 1, "precondition: not exactly one limited station");
+
+        String oneLength = tipOf("autolayout.ui.menuClearAllTrackLengths", 1);
+        String oneStation = tipOf("autolayout.ui.menuClearAllMaxTrainLengths", 1);
+
+        assertFalse(oneLength.contains("1 squares"), "one measured square is called '1 squares': " + oneLength);
+        assertFalse(oneStation.contains("1 stations"), "one limited station is called '1 stations': " + oneStation);
+
+        assertTrue(oneLength.contains(I18n.f("autosetup.ui.tipClearAllTrackLengthsOne", 1)),
+            "the track-length tooltip for one square is not the singular sentence: " + oneLength);
+
+        assertTrue(oneStation.contains(I18n.f("autosetup.ui.tipClearAllMaxTrainLengthsOne", 1)),
+            "the station-maximum tooltip for one station is not the singular sentence: " + oneStation);
+
+        session.setTileLength(squares.get(1), 5);
+        session.rebuild();
+
+        String twoLengths = tipOf("autolayout.ui.menuClearAllTrackLengths", 2);
+
+        assertTrue(twoLengths.contains(I18n.f("autosetup.ui.tipClearAllTrackLengths" + I18n.countForm(2), 2)),
+            "the track-length tooltip for two squares is not the sentence for two: " + twoLengths);
+
+        session.clearEveryTileLength();
+        session.clearEveryMaxTrainLength();
+    }
+
+    /** The tooltip of the Bulk Tools item whose label is `key` counting `count`, as the built menu carries it. */
+    private static String tipOf(String key, int count) throws Exception
+    {
+        final String label = I18n.f(key, count);
+        final String[] tip = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu bulk = editor.getAutonomyPanel().buildBulkMenuForTest();
+
+            for (int at = 0; at < bulk.getItemCount(); at++)
+            {
+                javax.swing.JMenuItem item = bulk.getItem(at);
+
+                if (item != null && label.equals(item.getText())) tip[0] = item.getToolTipText();
+            }
+        });
+
+        assertNotNull(tip[0], "no Bulk Tools item reads '" + label + "' with a tooltip");
+
+        return tip[0];
+    }
+
+    /**
+     * The track diagram's own right-click menu does not promise a Cancel it does not have: the same Bulk Tools item is
+     * there, but the clear is saved the moment it is made and the menu is not offered while an editor is open
+     * (`TrainControlUI.buildAutonomyTileMenu`), so no editor's Cancel can reach it.
      */
     @Test
     public void testTheDiagramsOwnMenuDoesNotPromiseACancel() throws Exception
@@ -341,8 +364,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         final String[] said = new String[1];
         final java.lang.reflect.Field panel = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
         panel.setAccessible(true);
-        // WITH NO EDITOR OPEN, as a person meets the diagram's menu: it is not offered while one is, and the main window
-        // counts the editor this class built.  Built again straight after, for the claims that use it.
+        // With no editor open, as a person meets the diagram's menu; built again straight after for the later claims.
         final LayoutEditor closing = editor;
         SwingUtilities.invokeAndWait(() -> closing.dispose());
         SwingUtilities.invokeAndWait(() ->
@@ -351,7 +373,7 @@ public class testTheBulkClearSaysWhatCancelDoes
             try
             {
                 Object built = panel.get(ui);
-                if (built != null) said[0] = ((org.traincontrol.gui.AutonomyEditorPanel) built).clearLocomotivesWarning();
+                if (built != null) said[0] = ((org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel) built).clearLocomotivesWarning();
             }
             catch (IllegalAccessException failed)
             {
@@ -385,12 +407,7 @@ public class testTheBulkClearSaysWhatCancelDoes
             + " squares the clear would empty, so the menu has changed shape. Tooltips: " + tips);
     }
 
-    /**
-     * Every tooltip on a menu and its submenus.
-     *
-     * @param menu the menu
-     * @param into where to put them
-     */
+    /** Every tooltip on a menu and its submenus. */
     private static void collect(javax.swing.JMenu menu, java.util.List<String> into)
     {
         if (menu == null) return;

@@ -17,8 +17,6 @@ import javax.swing.SwingUtilities;
  * them - the button, the click count, the modifiers, the popup trigger and the point on screen - in the order AWT sends
  * them: a click is a press, a release and a click; a drag is a press, drags reported to the pressed component, the
  * pointer entering the square it is over, and a release, again to the pressed component, with no click after it.
- *
- * Gathered from the hand-built `new MouseEvent(...)` of several test classes (FR-136 Phase 6).
  */
 public final class Mouse
 {
@@ -28,8 +26,6 @@ public final class Mouse
 
     /**
      * The pointer arrives over the component, at its middle.
-     *
-     * @param on the component
      */
     public static void enter(Component on)
     {
@@ -38,8 +34,6 @@ public final class Mouse
 
     /**
      * The pointer leaves the component.
-     *
-     * @param on the component
      */
     public static void exit(Component on)
     {
@@ -48,8 +42,6 @@ public final class Mouse
 
     /**
      * One left click at the middle: the pointer enters, then press, release and click.
-     *
-     * @param on the component
      */
     public static void click(Component on)
     {
@@ -60,7 +52,6 @@ public final class Mouse
      * A click with any button, any count and any modifiers: the pointer enters, then press, release and click.  A count
      * of 2 is the second click of a double click, sent after a first.
      *
-     * @param on the component
      * @param button `MouseEvent.BUTTON1`, `BUTTON2` or `BUTTON3`
      * @param count how many clicks this is: 1, or 2 for a double click
      * @param modifiers extended modifiers held, such as `InputEvent.SHIFT_DOWN_MASK`, or 0
@@ -81,9 +72,6 @@ public final class Mouse
 
     /**
      * Presses a button over the component and holds it.
-     *
-     * @param on the component
-     * @param button which button
      */
     public static void press(Component on, int button)
     {
@@ -92,9 +80,6 @@ public final class Mouse
 
     /**
      * Lets a button go.  AWT sends a release to the component the press was on, wherever the pointer is.
-     *
-     * @param pressed the component the press was on
-     * @param button which button
      */
     public static void release(Component pressed, int button)
     {
@@ -127,13 +112,27 @@ public final class Mouse
     /**
      * A right click (press, release with the popup trigger, click) and the pop-up menu it opened.
      *
-     * @param on the component
      * @param millis how long to wait for the menu
      * @return the menu on screen, or null when none opened in time
      */
     public static JPopupMenu rightClick(Component on, long millis)
     {
-        click(on, MouseEvent.BUTTON3, 1, 0);
+        enter(on);
+
+        return rightClickAt(on, middle(on), millis);
+    }
+
+    /**
+     * A right click at one point of the component, such as a table's cell, and the pop-up menu it opened.
+     *
+     * @param millis how long to wait for the menu
+     * @return the menu on screen, or null when none opened in time
+     */
+    public static JPopupMenu rightClickAt(Component on, Point at, long millis)
+    {
+        post(on, MouseEvent.MOUSE_PRESSED, at, InputEvent.BUTTON3_DOWN_MASK, 1, MouseEvent.BUTTON3, false);
+        post(on, MouseEvent.MOUSE_RELEASED, at, 0, 1, MouseEvent.BUTTON3, true);
+        post(on, MouseEvent.MOUSE_CLICKED, at, 0, 1, MouseEvent.BUTTON3, false);
 
         Components.waitFor(() -> Components.popupShowing() != null, millis);
 
@@ -143,8 +142,6 @@ public final class Mouse
     /**
      * Chooses an item of an open menu, as a click on it does: the menu closes, then the item acts.  Posted, so a dialog
      * the item opens can be answered.
-     *
-     * @param item the item
      */
     public static void choose(final JMenuItem item)
     {

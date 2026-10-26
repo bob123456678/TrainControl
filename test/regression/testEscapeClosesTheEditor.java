@@ -9,49 +9,31 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * FR-065: Escape closes the editor - after it has let go of whatever the editor was holding.
+ * FR-065: Escape closes the editor, after it has let go of whatever the editor was holding.
  *
- * Adam, 2026-09-08: *"escape closes autonomy/track editor - same as closing via button, with warning
- * shown as needed."*
+ * Adam: *"escape closes autonomy/track editor - same as closing via button, with warning shown as needed."*
  *
- * **AND THE ORDER IS THE WHOLE DESIGN, because two open findings ask for the same key.**  The
- * independent review of 2026-09-09 files B5 - *"Escape does not put an armed editor tool down"* -
- * against the same keystroke: `AutonomyEditorPanel.installEscape` binds it `WHEN_IN_FOCUSED_WINDOW`,
- * which `LayoutEditor`'s own comment records as dead in this window (the focus owner is the frame, a
- * non-JComponent, so key bindings are never consulted), and the frame's `formKeyPressed` had its
- * Escape branch BELOW `if (isAutonomyMode()) return;` - so in autonomy mode nothing handled Escape at
- * all.
+ * The order is the whole design.  Escape in autonomy mode was handled nowhere: `AutonomyEditorPanel.installEscape`
+ * binds it `WHEN_IN_FOCUSED_WINDOW`, which is dead in this window (the focus owner is the frame, a non-JComponent), and
+ * the frame's `formKeyPressed` had its Escape branch BELOW `if (isAutonomyMode()) return;`.  Made to close outright,
+ * Escape would take a half-finished gesture with it, through `mayLeave`: a user who armed "Test a path" by mistake and
+ * pressed Escape to think again would be asked whether to throw their edits away.  Pressing Escape twice costs nothing
+ * and there is no way back from a window that closed, so Escape lets go first and closes only when there is nothing
+ * left to let go of.
  *
- * Made to close outright, Escape would take a half-finished gesture with it, and take it through
- * `mayLeave` - so a user who armed "Test a path" by mistake, pressed Escape to think again, and had
- * touched anything would be asked whether to throw their edits away.  That is the opposite of what a
- * get-me-out key is for, and it is the more expensive of the two mistakes: pressing Escape twice costs
- * nothing, and there is no way back from a window that closed.
+ * Behaviorally, at the key: every test dispatches a real `KEY_PRESSED` to the frame (not posted to the queue, which
+ * routes by the OS's idea of the focus owner; see `testTheWindowTakesTheKeyboard`) and asks what happened to the
+ * window.  A fresh editor per test, because the point of half of them is that the window is gone afterwards.  On the
+ * frozen railway, never `cs2_sample_layout` (OB-111).
  *
- * So: **Escape lets go first, and closes only when there is nothing left to let go of.**  That is what
- * every editor does, it satisfies FR-065 as asked - one press closes an editor nobody is holding
- * anything in, which is the state it is in almost all the time - and it is B5's remedy in the same
- * branch, on the one path that actually runs.
- *
- * **BEHAVIORALLY, at the key.**  Every test here dispatches a real `KEY_PRESSED` to the frame and
- * then asks what happened to the window.  Dispatched at the frame rather than posted to the queue,
- * which `testTheWindowTakesTheKeyboard` explains: the queue routes by the OS's idea of the focus
- * owner, and in a test JVM that is usually a terminal.  The frame is the focus owner in this window by
- * construction - `setFocusable(true)`, and every control `setFocusable(false)`.
- *
- * A FRESH EDITOR PER TEST, because the point of half of them is that the window is gone afterwards.
- *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
- *
- * MUTATION: put the Escape branch back below `if (isAutonomyMode()) return;` and the two autonomy
- * tests go red; make it call `confirmExit()` unconditionally and the two "let go" tests go red with
- * the window disposed.
+ * MUTATION: put the Escape branch back below `if (isAutonomyMode()) return;` and the two autonomy tests go red; make it
+ * call `confirmExit()` unconditionally and the two "let go" tests go red with the window disposed.
  *
  * @author Adam
  */
@@ -116,11 +98,8 @@ public class testEscapeClosesTheEditor
     // ---------------------------------------------------------------- closing
 
     /**
-     * Escape closes the track diagram editor when nothing is being held.
-     *
-     * The state the editor is in almost all the time, and the one FR-065 is about.  `mayLeave` lets a
-     * clean editor go without asking - `canUndo()` is false on one nobody has edited - so this is the
-     * "no warning needed" half of *"with warning shown as needed"*.
+     * Escape closes the track diagram editor when nothing is being held: `mayLeave` lets a clean editor go without
+     * asking, the "no warning needed" half of *"with warning shown as needed"*.
      */
     @Test
     public void testEscapeClosesTheTrackEditor() throws Exception
@@ -143,11 +122,8 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * And the autonomy editor, which is the same window with the autonomy column showing.
-     *
-     * This is the half that had NO Escape handling at all: the frame's branch sat below
-     * `if (isAutonomyMode()) return;`, and the panel's own binding is `WHEN_IN_FOCUSED_WINDOW`, which
-     * this window's own comment records as never firing.
+     * And the autonomy editor, the same window with the autonomy column showing: this half had NO Escape handling at
+     * all.
      */
     @Test
     public void testEscapeClosesTheAutonomyEditor() throws Exception
@@ -176,15 +152,9 @@ public class testEscapeClosesTheEditor
     // ---------------------------------------------------------------- letting go first
 
     /**
-     * An armed tool is put down, and the window stays open (B5).
-     *
-     * Adam armed "Test a path" or "Why is it not moving", changed his mind, and pressed Escape.  The
-     * button stayed pressed and the tool stayed armed, so the next click on the diagram was swallowed
-     * by the gesture - which the panel's own javadoc names as the hazard, because a click that falls
-     * through to `cycle()` CHANGES a square.
-     *
-     * Closing the window instead would be a worse answer than either: it would throw the gesture away
-     * along with everything else, through the unsaved-work prompt.
+     * An armed tool is put down, and the window stays open: the button stayed pressed and the tool armed, so the next
+     * click on the diagram was swallowed by the gesture (a click that falls through to `cycle()` CHANGES a square).
+     * Closing instead would throw the gesture away through the unsaved-work prompt.
      */
     @Test
     public void testEscapePutsAnArmedToolDownRatherThanClosing() throws Exception
@@ -217,11 +187,8 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * And in the track editor, the picking mode goes rather than the window.
-     *
-     * The same rule on the other surface.  `setSelectMode` is what the picking button turns on, and a
-     * drag with it on picks squares - so Escape while it is on means "stop picking", not "close the
-     * editor I am in the middle of using".
+     * And in the track editor, the picking mode goes rather than the window: `setSelectMode` is what the picking button
+     * turns on.
      */
     @Test
     public void testEscapeDropsThePickingModeRatherThanClosing() throws Exception
@@ -249,10 +216,7 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * A second Escape then closes it.
-     *
-     * THE CONTROL for the two above, and the reason "let go first" is not a way of never closing.
-     * Without this, an Escape that did nothing at all would pass both of them.
+     * A second Escape then closes it: the control for the two above, since an Escape that did nothing would pass both.
      */
     @Test
     public void testASecondEscapeClosesIt() throws Exception
@@ -281,12 +245,7 @@ public class testEscapeClosesTheEditor
 
     // ---------------------------------------------------------------- the fixture
 
-    /**
-     * A fresh editor on the frozen railway's first page.
-     *
-     * @param autonomy whether to put it in autonomy mode
-     * @return the window, rendered and laid out
-     */
+    /** A fresh editor on the frozen railway's first page, in autonomy mode or not. */
     private static LayoutEditor opened(final boolean autonomy) throws Exception
     {
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -306,13 +265,8 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * Arms the "Test a path" tool the way a user does - by pressing its button.
-     *
-     * Through the button rather than the field, so the action listener that actually arms the tool is
-     * what runs.  Reached by reflection because the palette is the panel's own business; what is being
-     * tested is what happens when it has been used.
-     *
-     * @param editor the editor, in autonomy mode
+     * Arms the "Test a path" tool the way a user does, through its button so the action listener that arms the tool
+     * runs; reached by reflection.
      */
     private static void arm(final LayoutEditor editor) throws Exception
     {
@@ -332,14 +286,8 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * Presses Escape on the window.
-     *
-     * Dispatched at the FRAME, not posted to the queue: the queue routes by the operating system's
-     * idea of the focus owner, which in a test JVM is usually something else entirely.  The frame is
-     * the focus owner in this window by construction - it is `setFocusable(true)` and every control in
-     * it is `setFocusable(false)`, which is what `formKeyPressed` exists to take advantage of.
-     *
-     * @param editor the window
+     * Presses Escape on the window, dispatched at the FRAME: it is the focus owner by construction
+     * (`setFocusable(true)`, every control `setFocusable(false)`).
      */
     private static void escape(final LayoutEditor editor) throws Exception
     {
@@ -351,9 +299,7 @@ public class testEscapeClosesTheEditor
         settle();
     }
 
-    /**
-     * @param editor a window that may already have closed itself
-     */
+    /** Disposes a window that may already have closed itself. */
     private static void dispose(final LayoutEditor editor) throws Exception
     {
         SwingUtilities.invokeAndWait(() -> editor.dispose());

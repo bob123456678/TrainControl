@@ -2,15 +2,9 @@ package support;
 
 /**
  * The control station address the tests point at a local server, reached past the front of the class.
- *
- * MarklinControlStation.TEST_CS2_ADDRESS used to be public, which made the address of the control
- * station something any code in the application could redirect - and everything the application says
- * to a station goes through it.  "Only the tests set it" was a convention rather than a rule.
- *
- * It is private now, and this is the one place that opens it.  Reflection makes the reaching-in
- * explicit and keeps it in a single file rather than at sixteen call sites, and the field is named
- * through a constant on the class itself so that renaming it breaks the build rather than breaking
- * these tests at run time.
+ * `MarklinControlStation.TEST_CS2_ADDRESS` is private, so no application code can redirect what the application says to
+ * a station; this is the one place that opens it, by reflection through a constant on the class so that renaming it
+ * breaks the build rather than these tests at run time.
  */
 public final class TestStationAddress
 {
@@ -18,9 +12,6 @@ public final class TestStationAddress
     {
     }
 
-    /**
-     * @return the address the tests have set, or null when none
-     */
     public static String get()
     {
         try
@@ -33,9 +24,6 @@ public final class TestStationAddress
         }
     }
 
-    /**
-     * @param address host:port to redirect to, or null to go back to the real network
-     */
     public static void set(String address)
     {
         try
@@ -60,11 +48,6 @@ public final class TestStationAddress
     /**
      * Runs an init with the address at NOWHERE, unless a test has set one of its own, and puts it back.  Only the init's
      * sync goes there: a later sync reads the application's own address, as before.
-     *
-     * @param <T> what the work returns
-     * @param work the init
-     * @return what it returned
-     * @throws Exception what it threw
      */
     public static <T> T withNoStation(java.util.concurrent.Callable<T> work) throws Exception
     {

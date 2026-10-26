@@ -17,23 +17,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A route sitting on its trigger sensor says nothing about it, however long it sits.
+ * A route sitting on its trigger sensor says nothing about it, however long it sits (MT-037; Adam: "Leave an automatic
+ * route enabled and watch the log for ten minutes. It must say NOTHING about its trigger sensor"; "Add a test for this.
+ * Many simultaneous auto routes, trigger them synthetically, short duration.").  So this shrinks the advisory quota to
+ * a fraction of a second, puts several waits on it at once, and lets them sit for many times the quota.
  *
- * MT-037, Adam: "Leave an automatic route enabled and watch the log for ten minutes. It must say
- * NOTHING about its trigger sensor... it does so on a locomotive called 'Dummy Loc' - if that name ever
- * appears in the log, the advisory has leaked out of the dispatch path into the shared wait." And:
- * "Add a test for this. Many simultaneous auto routes, trigger them synthetically, short duration."
- *
- * Ten minutes of watching is not a test, so this does what he asked instead: shrink the advisory quota
- * to a fraction of a second, put several waits on it at once, and let them sit for many times the
- * quota.
- *
- * **The trap is that the wait is SHARED.** Route triggers borrow `Locomotive`'s feedback utilities -
- * `MarklinRoute` literally builds a locomotive called "Dummy Loc" to get at them - so an advisory added
- * for the benefit of a dispatched train fires for every route monitor on the layout as well, once each,
- * for as long as the railway is switched on. The split that prevents it is that the two-argument
- * `waitForOccupiedFeedback` passes no advisory and the three-argument one does, and only the dispatch
- * loop calls the three-argument door.
+ * The trap is that the wait is SHARED: route triggers borrow `Locomotive`'s feedback utilities (`MarklinRoute` builds a
+ * locomotive called "Dummy Loc" to get at them), so an advisory added for a dispatched train fires for every route
+ * monitor on the layout as well.  The split that prevents it is that the two-argument `waitForOccupiedFeedback` passes
+ * no advisory and the three-argument one does, and only the dispatch loop calls the three-argument door.
  *
  * @author Adam
  */
@@ -45,10 +37,10 @@ public class testTriggerWaitsSayNothing
 
     private static final List<String> logged = new CopyOnWriteArrayList<>();
 
-    /** Short enough that many multiples of it still make a fast test */
+    /** Short enough that many multiples of it still make a fast test. */
     private static final long QUOTA_MS = 120;
 
-    /** More than one, because the leak this guards against fires once PER ROUTE */
+    /** More than one, because the leak this guards against fires once PER ROUTE. */
     private static final int ROUTES = 5;
 
     @BeforeClass
@@ -90,9 +82,7 @@ public class testTriggerWaitsSayNothing
         if (model != null) model.stop();
     }
 
-    /**
-     * Five waits, all sitting on sensors that never fire, for many times the advisory quota.
-     */
+    /** Five waits, all sitting on sensors that never fire, for many times the advisory quota. */
     @Test
     public void testWaitingOnATriggerSensorIsSilent() throws Exception
     {
@@ -101,7 +91,7 @@ public class testTriggerWaitsSayNothing
 
         for (int i = 0; i < ROUTES; i++)
         {
-            // Addresses of their own, well clear of anything the sample layout uses
+            // Addresses of their own, well clear of anything the sample layout uses.
             sensors[i] = Integer.toString(920 + i);
 
             model.setFeedbackState(sensors[i], false);
@@ -113,14 +103,10 @@ public class testTriggerWaitsSayNothing
         {
             final String sensor = sensors[i];
 
-            // The door a route's trigger monitor comes in by: two arguments, no advisory.
-            //
-            // A REAL locomotive rather than one called "Dummy Loc": the advisory names whichever
-            // locomotive is waiting, so looking for the word "dummy" would have looked for the one
-            // string this test cannot produce - which is exactly the mistake the first version of it
-            // made, and it passed while the shared door was advising. What matters is that this door
-            // says nothing about ANY locomotive; a route monitor is simply the case where the
-            // locomotive is a fiction.
+            // The door a route's trigger monitor comes in by: two arguments, no advisory.  A REAL locomotive rather
+            // than one called "Dummy Loc": the advisory names whichever locomotive is waiting, so looking for "dummy"
+            // looked for the one string this test cannot produce.  What matters is that this door says nothing about
+            // ANY locomotive.
             final Locomotive dummy = model.getLocByName(model.getLocList().get(0));
 
             monitors[i] = new Thread(() -> dummy.waitForOccupiedFeedback(sensor, 0));
@@ -129,13 +115,13 @@ public class testTriggerWaitsSayNothing
             monitors[i].start();
         }
 
-        // Long enough that an advisory quota would have come round several times over
+        // Long enough that an advisory quota would have come round several times over.
         Thread.sleep(QUOTA_MS * 8);
 
         StringBuilder said = new StringBuilder();
 
-        // The advisory's own words - "{0} has not reached {1} after {2} minutes" - and the
-        // sensors these waits sit on, so a differently worded notice about them is caught too.
+        // The advisory's own words and the sensors these waits sit on, so a differently worded notice about them is
+        // caught too.
         for (String line : logged)
         {
             boolean aboutTheWait = line.contains("has not reached");
@@ -167,15 +153,10 @@ public class testTriggerWaitsSayNothing
     }
 
     /**
-     * And the advisory door has exactly one caller.
-     *
-     * The behavior above can only be kept by keeping the split, and the split is easy to undo by
-     * accident: the natural way to "improve" a wait is to add the advisory to the shared one, which is
-     * the door every route monitor on the layout comes in by. Only the dispatch loop - which knows a
-     * train was actually sent somewhere - may say anything.
-     *
-     * `Locomotive` itself is not counted: it declares both doors and delegates from one to the other,
-     * so its own file is full of calls that are the implementation rather than users of it.
+     * And the advisory door has exactly one caller.  The split is easy to undo by accident: the natural way to
+     * "improve" a wait is to add the advisory to the shared one, which every route monitor comes in by.  Only the
+     * dispatch loop, which knows a train was actually sent somewhere, may say anything.  `Locomotive` itself is not
+     * counted: it declares both doors and delegates from one to the other.
      */
     @Test
     public void testOnlyTheDispatchPathAsksForAnAdvisory() throws Exception
@@ -198,11 +179,8 @@ public class testTriggerWaitsSayNothing
     }
 
     /**
-     * Which files call the advising wait.
-     *
-     * Reads whole files rather than lines: both of Layout's calls put their arguments on the following
-     * line, so a line-by-line scan sees the name and none of the arguments and concludes there are no
-     * callers at all - which is a green test for a rule it never checked.
+     * Which files call the advising wait; reads whole files, because both of Layout's calls put their arguments on the
+     * following line.
      */
     private void walk(File where, java.util.Set<String> into) throws Exception
     {
@@ -220,8 +198,7 @@ public class testTriggerWaitsSayNothing
 
             if (!child.getName().endsWith(".java")) continue;
 
-            // Locomotive declares both doors and delegates from one to the other, so its own file is
-            // full of calls that are the implementation rather than users of it.
+            // Locomotive declares both doors and delegates from one to the other, so its calls are the implementation.
             if (child.getName().equals("Locomotive.java")) continue;
 
             String source = new String(Files.readAllBytes(child.toPath()), StandardCharsets.UTF_8);
@@ -240,9 +217,7 @@ public class testTriggerWaitsSayNothing
         }
     }
 
-    /**
-     * How many arguments the call whose opening bracket is at {@code open} was given.
-     */
+    /** How many arguments the call whose opening bracket is at {@code open} was given. */
     private int arity(String source, int open)
     {
         int depth = 0;

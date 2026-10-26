@@ -23,55 +23,19 @@ import org.traincontrol.util.I18n;
 /**
  * Every language fits in the window it was translated for.
  *
- * Adam, 2026-08-30: "run the app in each language and take screenshots. Check for text that spills
- * over or displaces components due to lengths, and shorten as needed."
+ * `testMessageBundles` checks that strings are CORRECT; nothing else checks their LENGTH, and German and Polish
+ * routinely run half again as long as the English. A Swing component narrower than the text it holds draws it clipped
+ * with an ellipsis, so this makes one comparison per component, on a window laid out at the size the form declares.
  *
- * **Nothing in this project has ever checked a string's LENGTH.** `testMessageBundles` checks that
- * every key is present in all eight bundles, that the escapes are well formed, that the placeholders
- * match and that no straight apostrophe eats a `{0}` - all of which are about a string being CORRECT.
- * Whether it fits is a different question, and German and Polish routinely run half again as long as
- * the English. The routing dropdown has already had to be capped at 230px for exactly that reason.
+ * ONE sandbox around the whole class, and this test fingerprints `cs2_sample_layout` itself and fails if a single byte
+ * moved: a sandbox opened per window let work scheduled by a disposed window write to Adam's real railway after the
+ * preference was put back.
  *
- * **What "does not fit" means here.** A Swing component narrower than its preferred width draws its
- * text clipped, with an ellipsis - so the operator reads "Konfiguration wird gel..." and the sentence
- * explaining a control is gone. One comparison per component, on a window laid out at the size the
- * form declares.
- *
- * **This test damaged the operator's railway once, and the guard below is why it may run again.**
- * The first version opened and closed a sandbox around each of the eight windows; something a
- * disposed window had already scheduled then wrote after the sandbox had put the layout preference
- * back, and the autonomy configuration of `cs2_sample_layout` - which is Adam's real railway and is
- * not recoverable - was rebuilt against the fixture diagram, losing facings, placements, priorities
- * and an exclusion list. So: ONE sandbox around the whole class, and this test fingerprints that
- * folder itself and fails if a single byte of it moved. The battery has the same guard; a test that
- * can do this should not wait for the harness to notice.
- *
- * **What this cannot see.** A window built here has no model behind it, so panels that fill from a
- * railway are empty. Static text - menus, buttons, the labels beside controls - is what this covers,
- * and it is where length bites.
- *
- * **And what it could not see until 2026-09-11, which is the more interesting half.** Adam asked how
- * thorough it is - *"I would be surprised if everything fits across the board, unless you have made lots
- * of string edits"* - and the measurement says he was right. With all 1937 German strings 39 characters
- * longer, the old rule found FOUR components. It compared what a component ASKED for against what it was
- * GIVEN, and `TrainControlUI` sets an explicit preferred size on 100 of its labels and buttons, so for
- * those the ask is a constant that no translation can move. `requiredWidth` measures the characters now,
- * and finds five - one more, which is honest about how much of the gap that closed.
- *
- * **The reach, measured the same day.** 246 text-bearing components are inspected - the 1408 this used to
- * report was the same components counted once per tab selection - and the locale changes 67 to 73 of them,
- * 69 in German. The rest carry text the generated form hard-codes, so a German run leaves them in English
- * and they can say nothing about translation length. Seventy labels is what a clean run is a statement
- * about, and `LOCALISED_FLOOR` keeps it from quietly becoming none.
- *
- * **A container that overflows is still not measured.** A panel laid out wider than the window, or a
- * component positioned past its parent's edge, is a different check - and scroll panes legitimately hold
- * content wider than their viewport, so it needs a rule about where to stop looking. Said here rather
- * than left for the next person to assume it is covered.
- *
- * **The tab titles are IMAGES**, not text (Adam, 2026-08-30), which is why they read the same in every
- * language and why nothing here measures them. They cannot spill; a picture is the width it is. The
- * tab-strip check below is about the strip running past the pane, which is a different question.
+ * Cannot see: panels that fill from a railway (the window has no model), and a container that overflows (a panel wider
+ * than the window, or a component past its parent's edge; scroll panes legitimately hold wider content). The tab titles
+ * are IMAGES, so they read the same in every language and nothing here measures them. Of the text-bearing components
+ * inspected, only the ones the locale changes say anything about translation length; `LOCALISED_FLOOR` keeps that count
+ * from quietly becoming none.
  *
  * @author Adam
  */
@@ -86,26 +50,20 @@ public class testEveryLanguageFits
     private static final File LIVE = new File("cs2_sample_layout");
 
     /**
-     * How much wider than its space a component may ask to be before it counts as clipped.
-     *
-     * Not zero. A handful of components ask for a pixel or two more than they are given as a matter
-     * of course - a border rounding, a font hint - and none of those loses a character.
+     * How much wider than its space a component may ask to be before it counts as clipped: a border rounding or font
+     * hint costs a pixel or two without losing a character.
      */
     private static final int SLACK = 3;
 
     /**
-     * How many text-bearing components a non-English run is expected to change.
-     *
-     * Set from the measurement rather than chosen, and a FLOOR: the point is to catch the locale failing
-     * to reach the window, which would make every clean run above a statement about English.
+     * How many text-bearing components a non-English run is expected to change: a FLOOR, to catch the locale failing to
+     * reach the window, which would make every clean run a statement about English.
      */
     private static final int LOCALISED_FLOOR = 30;
 
     /**
-     * How wide a menu may be before it is a problem.
-     *
-     * Half the window's width, which is where a menu stops being a menu and starts being a page.  The window's
-     * own: its minimum size, which the form declares as the size an operator gets on first run.
+     * How wide a menu may be before it is a problem: half the window's width, where a menu stops being a menu and
+     * starts being a page. The window is its minimum size, the size an operator gets on first run.
      */
     private static int menuCeiling(javax.swing.JMenuBar bar)
     {
@@ -117,22 +75,12 @@ public class testEveryLanguageFits
     }
 
     /**
-     * The rule can fail, which nothing here used to show (Adam, 2026-09-11).
+     * The rule can fail: a test whose check cannot be seen to fail tests nothing, and the eight-language walk cannot
+     * carry its own control (a real string could only be made too long by editing a bundle). So the RULE is controlled
+     * here, on a component this method owns: a short string in 80 pixels fits, the same label with a long one does not.
      *
-     * He asked how thorough this test is: *"I would be surprised if everything fits across the board,
-     * unless you have made lots of string edits."*  He was right to be.  The test below reported zero
-     * clipped components in all eight languages, and the reason was the rule and not the translations:
-     * every one of the 1937 German strings was made 39 characters longer and it found FOUR of the 246
-     * components it inspects.
-     *
-     * **A test whose check cannot be seen to fail is a test of nothing**, and the eight-language walk
-     * cannot carry its own control - the only way to make a real string too long is to edit a bundle,
-     * which is not something a test may do.  So the RULE is controlled here instead, on a component this
-     * method owns: a short string in 80 pixels fits, the same label with a long one does not.
-     *
-     * MUTATION: comparing `getPreferredSize().width` against `getWidth()` again - the rule as it stood
-     * until today - fails the second assertion, because `setPreferredSize` is what the fixture uses to
-     * fix the width and that is exactly the case the old rule could not see.
+     * MUTATION: comparing `getPreferredSize().width` against `getWidth()` again fails the second assertion, because
+     * `setPreferredSize` is how the fixture fixes the width and that is the case the old rule could not see.
      */
     @Test
     public void testTheClippingRuleCanActuallyFail()
@@ -177,13 +125,11 @@ public class testEveryLanguageFits
         Map<String, List<String>> clipped = new LinkedHashMap<>();
         Map<String, Integer> inspected = new LinkedHashMap<>();
 
-        // WHAT EACH LANGUAGE PUTS ON THE WINDOW, so the reach of this test is a number rather than a hope.
+        // What each language puts on the window, so the reach of this test is a number rather than a hope.
         Map<String, Map<String, String>> localised = new LinkedHashMap<>();
 
-        // ONE sandbox for the whole class, opened before any window and closed after the last.
-        //
-        // Not one per language: a window schedules work that outlives dispose(), and with the
-        // preference already put back that work wrote to the operator's own layout.
+        // ONE sandbox for the whole class, opened before any window and closed after the last: a window schedules work
+        // that outlives dispose().
         support.LayoutSandbox sandbox = null;
 
         try
@@ -205,12 +151,9 @@ public class testEveryLanguageFits
             Locale.setDefault(was);
             I18n.setLocale(was);
 
-            // LET WHAT THE WINDOWS POSTED RUN FIRST.
-            //
-            // The failure this check exists for is work scheduled by a disposed window landing after
-            // the preference has been put back - which by construction happens some milliseconds after
-            // the last dispose.  Fingerprinting before draining the queue samples the folder at the one
-            // moment that cannot have seen it.
+            // Let what the windows posted run first: work scheduled by a disposed window lands some milliseconds after
+            // the last dispose, and fingerprinting before draining the queue samples the folder at the one moment that
+            // cannot have seen it.
             try
             {
                 for (int pass = 0; pass < 5; pass++)
@@ -225,9 +168,7 @@ public class testEveryLanguageFits
 
             if (sandbox != null) sandbox.close();
 
-            // AND IN THE FINALLY, because the run most likely to have written is the one that threw.
-            // This stood after the try, so a window constructor that failed took the
-            // railway check with it.
+            // And in the finally, because the run most likely to have written is the one that threw.
             assertEquals(fingerprint(LIVE), railwayBefore,
                 "this test wrote to " + LIVE + ", which is the operator's real railway and is not "
                 + "recoverable.  Whatever it found is beside the point until that is understood");
@@ -259,14 +200,9 @@ public class testEveryLanguageFits
                 .append(System.lineSeparator());
         }
 
-        // HOW MANY OF THEM THE LOCALE ACTUALLY MOVES, which is the reach of this test (Adam,
-        // 2026-09-11: *"how thorough is the test?  I would be surprised if everything fits across the
-        // board."*).
-        //
-        // The walk visits every component with text, and most of this form's text is baked into the
-        // generated layout rather than passed through `I18n` - so a German run leaves much of it in
-        // English, and those components cannot tell anybody anything about translation length. The
-        // number below is how many labels and buttons this test is really about.
+        // How many components the locale actually moves, the reach of this test: most of this form's text is baked into
+        // the generated layout rather than passed through `I18n`, so a German run leaves it in English and it says
+        // nothing about translation length.
         Map<String, String> english = localised.get("en");
 
         Map<String, Integer> moved = new LinkedHashMap<>();
@@ -302,11 +238,8 @@ public class testEveryLanguageFits
         java.nio.file.Files.write(new File(OUT, "clipped.txt").toPath(),
             report.toString().getBytes("UTF-8"));
 
-        // WHAT WAS LOOKED AT, before what was found.
-        //
-        // The first version of this test inspected nothing and reported nothing wrong: a window that
-        // is not displayable lays nothing out, so every component had a width of zero and every one
-        // was skipped.  Both guards below fail on that version.
+        // What was looked at, before what was found: a window that is not displayable lays nothing out, so every
+        // component has a width of zero and every one is skipped. Both guards below fail on that.
         for (Map.Entry<String, Integer> e : inspected.entrySet())
         {
             assertTrue(e.getValue() >= 40,
@@ -314,12 +247,9 @@ public class testEveryLanguageFits
                 + ", which is not a window - the layout did not happen and nothing was asked");
         }
 
-        // THE TWO PICTURES HAVE TO EXIST FIRST.
-        //
-        // `sameBytes` answers false when either file is missing, and `shoot` swallows a write failure
-        // by design - so an unwritable OUT, or a JVM with no PNG writer, satisfied the control below
-        // by there being nothing to compare.  That control is the one thing here that proves eight
-        // measurements are of eight languages rather than eight of one.
+        // The two pictures have to exist first: `sameBytes` answers false when either file is missing and `shoot`
+        // swallows a write failure by design, so an unwritable OUT would satisfy the control below by there being
+        // nothing to compare.
         assertTrue(new File(OUT, "window-en.png").isFile() && new File(OUT, "window-de.png").isFile(),
             "the screenshots this control compares were never written, so it would pass having "
             + "compared nothing.  Looked in " + OUT);
@@ -328,12 +258,9 @@ public class testEveryLanguageFits
             "the English and German windows are byte-identical, so the locale is not reaching the "
             + "text and all eight measurements are of the same language");
 
-        // AND A FLOOR UNDER THE REACH, which the screenshot control above cannot give.
-        //
-        // Two pictures differing proves the locale reached SOMETHING - one word would do it. This says
-        // how many of the components the walk measures are actually in the language being measured, and
-        // it is the number that says what a clean run is worth. Measured 2026-09-11; a floor rather than
-        // the figure, because translating one more label should not fail a test.
+        // And a floor under the reach, which the screenshot control cannot give: two differing pictures prove the
+        // locale reached SOMETHING, this says how many of the measured components are in the language being measured. A
+        // floor, because translating one more label should not fail a test.
         for (Map.Entry<String, Integer> e : moved.entrySet())
         {
             assertTrue(e.getValue() >= LOCALISED_FLOOR,
@@ -349,11 +276,8 @@ public class testEveryLanguageFits
     }
 
     /**
-     * Builds the window in one language, writes its picture, and returns everything that does not fit.
-     *
-     * @param language the two-letter code
-     * @param inspected counts the components looked at, so the caller can insist there were some
-     * @return one line per clipped component
+     * Builds the window in one language, writes its picture, and returns everything that does not fit; `inspected`
+     * counts the components looked at so the caller can insist there were some.
      */
     private List<String> measure(String language, int[] inspected,
         Map<String, Map<String, String>> localised) throws Exception
@@ -371,14 +295,13 @@ public class testEveryLanguageFits
             {
                 ui[0] = new TrainControlUI();
 
-                // PACKED, which is what makes the window displayable.  Without it nothing is laid out
-                // and nothing paints: every component reports a width of zero and eight identical
-                // blank pictures come out.
+                // PACKED, which makes the window displayable; without it nothing is laid out and eight identical blank
+                // pictures come out.
                 ui[0].pack();
 
-                // Then the size the form declares, which is the window an operator gets on first run
-                // - pack() gives it whatever the longest string in THIS language needs, which is the
-                // question rather than the answer.  The window's own minimum size is that size.
+                // Then the size the form declares, the window an operator gets on first run (its minimum size); pack()
+                // would give whatever the longest string in THIS language needs, which is the question rather than the
+                // answer.
                 ui[0].setSize(ui[0].getMinimumSize());
                 ui[0].validate();
             });
@@ -394,8 +317,7 @@ public class testEveryLanguageFits
                 shoot((JComponent) ui[0].getContentPane(),
                     new File(OUT, "window-" + language + ".png"));
 
-                // EVERY TAB, not just the one showing: a tabbed pane sizes its children to the
-                // content area, but only the selected one has been through a layout with real text.
+                // EVERY TAB, not just the one showing: only the selected one has been through a layout with real text.
                 for (JTabbedPane tabs : tabbedPanes(ui[0].getContentPane()))
                 {
                     int wasAt = tabs.getSelectedIndex();
@@ -415,8 +337,8 @@ public class testEveryLanguageFits
 
                 inspected[0] += walk(ui[0].getContentPane(), found, already);
 
-                // THE MENU BAR, which is not in the content pane and holds the longest single-line
-                // strings this application has.
+                // THE MENU BAR, which is not in the content pane and holds the longest single-line strings this
+                // application has.
                 if (ui[0].getJMenuBar() != null)
                 {
                     inspected[0] += walk(ui[0].getJMenuBar(), found, already);
@@ -426,34 +348,12 @@ public class testEveryLanguageFits
 
                 titles(ui[0].getContentPane(), found);
 
-                // THREE CONTAINER-LEVEL CHECKS WERE TRIED HERE AND ALL THREE CAME OUT (2026-09-11).
-                //
-                // The reasoning was sound and is still true: the per-component rule can only catch a
-                // component whose width is FIXED, because where the layout is free to grow it grants the
-                // wider preferred size - the text then fits inside the component and the overflow lands
-                // somewhere else. With every German string 39 characters longer, the component rule finds
-                // five of the 246 it inspects. So the gap is real and it is large.
-                //
-                // What was measured, and why each rule went:
-                //
-                //   a panel wider than its parent ......... 11 findings in ENGLISH, 4px to 17px over,
-                //                                          identical in French, Spanish and Italian
-                //   the content pane wider than 1110px .... never fired, even with the planted strings
-                //   a component past the content pane's
-                //     right edge .......................... 12 findings in ENGLISH, 13px over, the same
-                //                                          in all eight languages - the function-key
-                //                                          labels on the locomotive panel
-                //
-                // Two of the three fire on English, which settles it: they measure this form's own
-                // geometry at its declared size and not the length of anybody's translation, and a
-                // language check that reports twelve findings every run is one nobody reads. The third
-                // measures nothing at all.
-                //
-                // Written down with the figures rather than left out silently, so the next person does
-                // not spend the afternoon arriving here. Whether those twelve are a real overflow in the
-                // shipped window is a separate question from this test's, and it is Adam's to look at.
-                //
-                // WHAT THE REACH ACTUALLY IS gets counted instead, below.
+                // No container-level checks: the per-component rule only catches a component whose width is FIXED,
+                // since a free layout grants the wider preferred size and the overflow lands elsewhere. Three container
+                // rules were tried and all came out: a panel wider than its parent (11 findings in English), the
+                // content pane wider than 1110px (never fired), and a component past the content pane's right edge (12
+                // findings in English, the function-key labels). They measure this form's own geometry, not translation
+                // length, and a check that reports findings every run is one nobody reads.
                 localised.put(language, textByPath(ui[0]));
             });
 
@@ -470,13 +370,7 @@ public class testEveryLanguageFits
         }
     }
 
-    /**
-     * Every component that is narrower than the text it holds.
-     *
-     * @param parent where to look
-     * @param found where to record
-     * @return how many components with text were measured
-     */
+    /** Every component that is narrower than the text it holds; `already` makes each component count once. */
     private int walk(Container parent, List<String> found, java.util.Set<Component> already)
     {
         int seen = 0;
@@ -487,10 +381,8 @@ public class testEveryLanguageFits
 
             if (text != null && !text.trim().isEmpty() && child.getWidth() > 0)
             {
-                // ONE LINE PER COMPONENT, not one per tab selection.  The caller walks the tree again
-                // for every tab so that each tab gets a layout with real text in it, which means a
-                // component outside the tabs is visited seven times; the planted-string run reported
-                // the same three labels seven times each and called it 25 findings.
+                // ONE LINE PER COMPONENT, not one per tab selection: the caller walks the tree again for every tab, so
+                // a component outside the tabs is visited once per tab.
                 if (already.add(child))
                 {
                     seen++;
@@ -512,31 +404,15 @@ public class testEveryLanguageFits
     }
 
     /**
-     * How wide this component's TEXT actually is, rather than how wide the component asked to be.
+     * How wide this component's TEXT actually is, rather than how wide the component asked to be. Comparing
+     * `getPreferredSize().width` against `getWidth()` cannot see two cases: a component whose preferred size was SET
+     * (`TrainControlUI` does so on 100 labels and buttons, so no translation can move the ask), and a free layout that
+     * grants the preferred width so the overflow lands on the panel or window.
      *
-     * **This is the whole of what was wrong with this test** (measured 2026-09-11). It used to compare
-     * `getPreferredSize().width` against `getWidth()` - "was this component given less room than it
-     * asked for" - which is not the same question as "does the text fit". They come apart two ways:
+     * HTML text is left to the old rule: a markup label wraps in a view hierarchy, so the width of its characters is
+     * not its required width, and Swing's own preferred size is the best number available.
      *
-     * - A component whose preferred size was SET loses the connection between its ask and its text.
-     *   `TrainControlUI` calls `setPreferredSize(new Dimension(...))` 150 times and 100 of those are on
-     *   labels or buttons, so for them the ask is a constant and no translation can move it.
-     * - Where the layout is free to grow, it grants the preferred width and what overflows is the panel
-     *   or the window - so again the component got what it asked for.
-     *
-     * The test was run with all 1937 German strings 39 characters longer: the old rule found FOUR of the
-     * 246 components it inspects and this one finds five - the extra is a "Strom AUS" button with 200px of
-     * room and 325px of text. That is the sensitivity, measured rather than assumed, and it is why zero
-     * findings in German and Polish was never evidence that the strings fit.
-     *
-     * **HTML text is left to the old rule.** A label whose text is markup wraps and is laid out by a
-     * view hierarchy, so the width of its characters is not its required width, and `stringWidth` over
-     * the tags would be nonsense. Swing computes that preferred size properly, so for those the ask is
-     * the best number available.
-     *
-     * @param c the component
-     * @param text what it draws
-     * @return the width the text needs, including insets, icon and gap
+     * Returns the width the text needs, including insets, icon and gap.
      */
     private static int requiredWidth(Component c, String text)
     {
@@ -581,12 +457,8 @@ public class testEveryLanguageFits
     }
 
     /**
-     * Whether this component's text is wider than the room it has.
-     *
-     * The rule, in one place, so the control below can ask the same question the walk asks.
-     *
-     * @param c the component, already sized
-     * @return true when the text does not fit
+     * Whether this component's text is wider than the room it has; the rule in one place, so the control can ask what
+     * the walk asks.
      */
     private static boolean clips(Component c)
     {
@@ -598,13 +470,8 @@ public class testEveryLanguageFits
     }
 
     /**
-     * Every text-bearing component's text, keyed by where it sits in the tree.
-     *
-     * The tree is the same shape in every language - it is the same form - so the index path is a stable
-     * name for "this label" across eight separate windows, which is what makes the two runs comparable.
-     *
-     * @param window the window to read
-     * @return the path of every component with text, mapped to that text
+     * Every text-bearing component's text, keyed by its index path in the tree: the same form in every language, so the
+     * path names "this label" across eight windows.
      */
     private static Map<String, String> textByPath(java.awt.Window window)
     {
@@ -640,9 +507,7 @@ public class testEveryLanguageFits
         }
     }
 
-    /**
-     * Tab titles, which are drawn by the pane rather than by a component of their own.
-     */
+    /** Tab titles, which are drawn by the pane rather than by a component of their own. */
     private void titles(Container parent, List<String> found)
     {
         for (Component child : parent.getComponents())
@@ -688,12 +553,8 @@ public class testEveryLanguageFits
     }
 
     /**
-     * Menu items, which never get a width until their menu is opened, so they are measured against
-     * what the popup will be - the widest item in that menu, which is how Swing sizes it.
-     *
-     * @param bar the menu bar
-     * @param found where to record
-     * @return how many items were looked at
+     * Menu items, which get no width until their menu is opened, so they are measured against what the popup will be:
+     * the widest item in that menu.
      */
     private int menus(javax.swing.JMenuBar bar, List<String> found)
     {
@@ -755,11 +616,8 @@ public class testEveryLanguageFits
     }
 
     /**
-     * Paints a component into a file, which is what "take screenshots" asks for and is repeatable in
-     * a way a screen grab is not.
-     *
-     * THE CONTENT PANE, printed - not the Window, painted. A JFrame that has never been shown paints
-     * an empty rectangle; JComponent.printAll works offscreen and draws the lightweight hierarchy.
+     * Paints a component into a file. The CONTENT PANE is printed, not the Window painted: a JFrame never shown paints
+     * an empty rectangle, while JComponent.printAll works offscreen.
      */
     private static void shoot(JComponent pane, File file)
     {
@@ -797,12 +655,8 @@ public class testEveryLanguageFits
     }
 
     /**
-     * Every file under a folder and its size and modification time, as one string.
-     *
-     * Cheap, and enough: this is asking "did anything here move", not "what changed".
-     *
-     * @param folder the folder, which need not exist
-     * @return a fingerprint that changes when the folder does
+     * Every file under a folder with its size and modification time, as one string: enough to ask "did anything here
+     * move".
      */
     private static String fingerprint(File folder) throws Exception
     {

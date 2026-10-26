@@ -23,31 +23,24 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
 
 /**
- * A reversal command reaches the tracks at every kind of square that should turn a train, and at no
- * other kind.
+ * A reversal command reaches the tracks at every kind of square that should turn a train, and at no other kind.
  *
- * Adam, 2026-09-08: *"in your tests for arrival, make sure you check for an emitted reversal command to
- * the tracks."*  And on 2026-09-10, asking what the suite actually covered: *"Do we have tests
- * validating that reversal commands are being issued when intended at terminuses/reversing
- * stations/points, and not otherwise?"*
+ * Adam: "in your tests for arrival, make sure you check for an emitted reversal command to the tracks."  And asking
+ * what the suite covered: "Do we have tests validating that reversal commands are being issued when intended at
+ * terminuses/reversing stations/points, and not otherwise?"
  *
- * It half did.  `testTheReversalReachesTheTracks` watched the wire, but on ONE square kind - a
- * reversing point - and made a COMPARATIVE claim: the turned journey sends more direction commands than
- * the kept one.  `testAReversalCommandIsEmitted` covers four cases and reads `goingForward()`, which is
- * the application's belief and not the cable.  A terminus had no emission test at all, in this class or
- * any other: nine classes build `setTerminus(true)` fixtures and not one of them asserts a direction
- * command or a direction after arrival.
+ * `testTheReversalReachesTheTracks` watched the wire on ONE square kind and made a COMPARATIVE claim, and
+ * `testAReversalCommandIsEmitted` reads `goingForward()`, the application's belief and not the cable; a terminus had no
+ * emission test at all.
  *
- * **What makes an absolute claim possible is the window.**  Dispatch sets a locomotive's direction as it
- * departs, so every journey puts direction commands on the wire - counting from zero over a whole
- * journey cannot tell an arrival that turned the train from one that did not, and reading it that way
- * is how the older test first got its own evidence wrong.  `Layout.CB_PRE_ARRIVAL` fires exactly once,
- * on the last leg, after the pre-arrival speed reduction and before the destination's sensor.  A mark
- * taken there and a count taken after the run is the arrival and nothing else.
+ * What makes an absolute claim possible is the window: dispatch sets a locomotive's direction as it departs, so
+ * counting from zero over a whole journey cannot tell an arrival that turned the train from one that did not.
+ * `Layout.CB_PRE_ARRIVAL` fires exactly once, on the last leg, after the pre-arrival speed reduction and before the
+ * destination's sensor; a mark taken there and a count taken after the run is the arrival and nothing else.
  *
- * **The rule these pin** is one statement in `Layout.executePath`:
- * `if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))`.  So there are
- * exactly three arrivals worth asking about, and all three are here, with the negative:
+ * The rule these pin is one statement in `Layout.executePath`:
+ * `if (arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals))`.  So three arrivals are worth
+ * asking about, with the negative:
  *
  * | the square | what should reach the tracks |
  * |---|---|
@@ -57,14 +50,12 @@ import org.traincontrol.marklin.MarklinFeedback;
  * | a plain station | none |
  * | a may-reverse square PASSED THROUGH on the way | none at the arrival |
  *
- * **A compulsory turn is a terminus by the time the railway sees it**, so the first row covers it:
- * `AutonomyBuilder` emits a `mustReverse` square with `terminus:true`, which
- * `core.testAutonomyDiagramReversal` and `core.testACompulsoryTurnIsChosenLikeAnyOtherStation` both
- * assert.  Between them and the first row, "every train that arrives at a compulsory turn is reversed"
- * is pinned end to end without this class needing to run the builder.
+ * A compulsory turn is a terminus by the time the railway sees it (`AutonomyBuilder` emits a `mustReverse` square with
+ * `terminus:true`, which `core.testAutonomyDiagramReversal` and `core.testACompulsoryTurnIsChosenLikeAnyOtherStation`
+ * assert), so the first row covers it.
  *
- * The train is this class's own and is deleted in teardown; `init()` opens Adam's real locomotive
- * database, so one left behind is one on his railway.
+ * The train is this class's own and is deleted in teardown; `init()` opens Adam's real locomotive database, so one left
+ * behind is one on his railway.
  *
  * @author Adam
  */
@@ -81,10 +72,8 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     private static final int ADDRESS = 65;
 
     /**
-     * Where this class's feedback addresses start.
-     *
-     * Clear of `testTheReversalReachesTheTracks`, which takes 8440 and 8444, so a stray fixture left by
-     * a crash is identifiable and the two classes cannot describe each other's sensors.
+     * Where this class's feedback addresses start, clear of `testTheReversalReachesTheTracks` (8440 and 8444) so a
+     * stray fixture left by a crash is identifiable.
      */
     private static final int FIRST_SENSOR = 8460;
 
@@ -95,9 +84,8 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
         // railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        // DEBUG, and it is not optional: `setSimulate` refuses outside it, and the not-connected branch
-        // of `exec` only logs the message it would have sent while debugging - which is the whole of
-        // how this class can see the wire.
+        // DEBUG, and it is not optional: `setSimulate` refuses outside it, and the not-connected branch of `exec` only
+        // logs the message it would have sent while debugging, which is how this class sees the wire.
         model = support.TestStation.simulatedInDebug();
         model.stop();
 
@@ -105,9 +93,9 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
             "the class could not create its own train, so every claim below would be about whatever"
             + " the database happened to contain");
 
-        // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
-        // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
-        // may-turn destination here has one, is the case these claims are about
+        // A TRAIN THAT CAN REVERSE, the one the operator is asked about: a new locomotive is not, and one that cannot
+        // is not turned where its destination has a copy it can stand on facing on (MT-368), which the may-turn
+        // destination here has.
         model.getLocByName(DRIVER).setReversible(true);
 
         wire = support.WireRecorder.open();
@@ -133,13 +121,8 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * The recorder hears the railway at all.
-     *
-     * Asserted first and on its own, because every count below is a number of lines matching a needle:
-     * a recorder attached to a model that is not in debug hears nothing, and all five claims would
-     * then be zero for a reason that has nothing to do with any arrival.
-     *
-     * @throws Exception on a failure to run the journey
+     * The recorder hears the railway at all: asserted first, because a recorder attached to a model not in debug hears
+     * nothing and all five claims would then be zero for a reason unrelated to any arrival.
      */
     @Test
     public void testTheRecorderHearsTheRailway() throws Exception
@@ -162,15 +145,11 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * A plain station turns nobody round.
+     * A plain station turns nobody round: the negative half of Adam's question, which the older test could not make (it
+     * compared two journeys rather than looking at one arrival).
      *
-     * The negative half of Adam's question, and the one the older test could not make: it compared two
-     * journeys rather than looking at one arrival.
-     *
-     * MUTATION: dropping the `arrived.isTerminus() ||` guard in `Layout.executePath` does not move
-     * this (a plain station is neither); replacing the whole condition with `true` does.
-     *
-     * @throws Exception on a failure to run the journey
+     * MUTATION: dropping the `arrived.isTerminus() ||` guard in `Layout.executePath` does not move this (a plain
+     * station is neither); replacing the whole condition with `true` does.
      */
     @Test
     public void testAPlainArrivalPutsNoDirectionCommandOnTheWire() throws Exception
@@ -185,14 +164,10 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * A terminus turns every train that arrives, and nobody is asked.
-     *
-     * This is the case that had no emission test anywhere in the suite.
+     * A terminus turns every train that arrives, and nobody is asked: the case with no emission test anywhere.
      *
      * MUTATION, and this is the one it exists for: removing `arrived.isTerminus() ||` from
      * `Layout.executePath`'s arrival condition fails this and leaves every other claim here green.
-     *
-     * @throws Exception on a failure to run the journey
      */
     @Test
     public void testATerminusArrivalAlwaysPutsOneOnTheWire() throws Exception
@@ -210,11 +185,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
             + ". Adam's rule is that a terminus always reverses at the end, and nobody is asked");
     }
 
-    /**
-     * A reversing point the policy answers YES for turns the train.
-     *
-     * @throws Exception on a failure to run the journey
-     */
+    /** A reversing point the policy answers YES for turns the train. */
     @Test
     public void testAReversingPointAnsweredYesPutsOneOnTheWire() throws Exception
     {
@@ -229,15 +200,11 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * And answered NO, it does not.
-     *
-     * The absolute form of what `testTheReversalReachesTheTracks` asserts comparatively - that test
-     * says the turned journey sends MORE, this one says this arrival sends NONE.
+     * And answered NO, it does not: the absolute form of `testTheReversalReachesTheTracks`, which says the turned
+     * journey sends MORE where this says this arrival sends NONE.
      *
      * MUTATION: making `shouldReverseAt` ignore the policy and answer `at.isReversing()` fails this and
      * leaves the answered-yes claim green, which is the pair that says the answer is what decides.
-     *
-     * @throws Exception on a failure to run the journey
      */
     @Test
     public void testAReversingPointAnsweredNoPutsNoneOnTheWire() throws Exception
@@ -253,13 +220,9 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * A may-reverse square PASSED THROUGH leaves the arrival beyond it alone.
-     *
-     * The mid-path half of *"don't reverse if passing onwards"*. The turn, if there is one, belongs to
-     * the square in the middle; what this asserts is that nothing extra reaches the tracks when the
-     * train comes to rest at a plain station beyond it.
-     *
-     * @throws Exception on a failure to run the journey
+     * A may-reverse square PASSED THROUGH leaves the arrival beyond it alone: the mid-path half of "don't reverse if
+     * passing onwards".  The turn belongs to the square in the middle; nothing extra reaches the tracks when the train
+     * comes to rest at a plain station beyond it.
      */
     @Test
     public void testPassingThroughAMayReverseSquareLeavesTheArrivalAlone() throws Exception
@@ -276,9 +239,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
             + " it put a direction command on the wire at that arrival: " + wire.since(atTheArrival));
     }
 
-    /**
-     * What the destination of a fixture is.
-     */
+    /** What the destination of a fixture is. */
     private enum Kind
     {
         /** A destination that is neither a terminus nor a reversing point. */
@@ -294,9 +255,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
         REVERSING_MIDDLE
     }
 
-    /**
-     * One built fixture and the journey across it.
-     */
+    /** One built fixture and the journey across it. */
     private static final class Ride
     {
         private Layout layout;
@@ -309,13 +268,8 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * A straight run of two legs, with the destination made whatever kind is asked for.
-     *
-     * @param tag distinguishes this fixture's squares from the others
-     * @param offset how far along the x axis and the sensor range this one sits
-     * @param kind what the destination is
-     * @return the fixture, with the driver standing at START
-     * @throws Exception on a failure to build it
+     * A straight run of two legs, with the destination made whatever kind is asked for; `tag` distinguishes this
+     * fixture's squares and `offset` how far along the x axis and the sensor range it sits.
      */
     private static Ride ride(String tag, int offset, Kind kind) throws Exception
     {
@@ -337,8 +291,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
         ride.layout.createPoint(tag + "_MIDDLE", true, b.getName());
         ride.layout.createPoint(tag + "_END", true, c.getName());
 
-        // COORDINATES, because `sideTowards` answers from them and the turn rule asks it. A hand-built
-        // graph has none, and without them the rule cannot tell which side a leg uses.
+        // COORDINATES, because `sideTowards` answers from them and the turn rule asks it; a hand-built graph has none.
         place(ride.layout, tag + "_START", offset, 0);
         place(ride.layout, tag + "_MIDDLE", offset + 1, 0);
         place(ride.layout, tag + "_END", offset + 2, 0);
@@ -387,13 +340,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
         layout.getPoint(name).setY(y);
     }
 
-    /**
-     * The answer, for one square, as the prompt's policy expresses it.
-     *
-     * @param turn what to answer
-     * @param asked the one square it is answered about
-     * @return the policy
-     */
+    /** The answer, for one square, as the prompt's policy expresses it. */
     private static Layout.ReversalPolicy answering(final boolean turn, final Point asked)
     {
         return new Layout.ReversalPolicy()
@@ -413,17 +360,10 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * Runs the journey and returns the mark taken at its pre-arrival.
-     *
-     * **The mark is what makes every claim in this class absolute.** `CB_PRE_ARRIVAL` fires once, on
-     * the last leg, after the speed reduction and before the destination's sensor - so counting from
-     * it excludes the direction command dispatch sends at departure, which every journey has.
-     *
-     * @param ride the fixture
-     * @param answered the reversal policy, or null for the default
-     * @param which names the journey in a failure message
-     * @return the position in the log at the pre-arrival
-     * @throws Exception on a failure to run it
+     * Runs the journey and returns the position in the log at its pre-arrival.  The mark is what makes every claim here
+     * absolute: `CB_PRE_ARRIVAL` fires once, on the last leg, so counting from it excludes the direction command
+     * dispatch sends at departure.  `answered` is the reversal policy, or null for the default; `which` names the
+     * journey in a failure.
      */
     private static int run(Ride ride, Layout.ReversalPolicy answered, String which) throws Exception
     {
@@ -431,9 +371,8 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
 
         assertNotNull(driver, "this class's train is gone from the database");
 
-        // THE SAME STARTING DIRECTION EVERY TIME. The fixtures share one locomotive, so without this
-        // each journey inherits whatever the last one left - and a departure that happens to need no
-        // correction looks exactly like an arrival that sent nothing.
+        // THE SAME STARTING DIRECTION EVERY TIME: the fixtures share one locomotive, and a departure that happens to
+        // need no correction would look exactly like an arrival that sent nothing.
         driver.setDirection(Locomotive.locDirection.DIR_FORWARD);
 
         final int[] atTheArrival = { -1 };

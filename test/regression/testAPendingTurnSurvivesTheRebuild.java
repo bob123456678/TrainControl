@@ -20,32 +20,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A destination turn nobody has managed to write down yet survives a setup rebuild.
  *
- * **It is the `new-field-needs-the-copy-constructor` shape.**  `Layout.reversedOnArrival`
- * holds the reversals the railway performed at a destination and has not yet drained into the setup.
- * It lives on the `Layout` object, and `rebuildRunningLayoutFromSetup` replaces that object wholesale.
- * Placements were taught to survive that (OB-183), and `arrivedFrom` was added to the carry with them
- * - `reversedOnArrival` was not, so every pending turn died on any setup gesture at all: a home set
- * from the diagram's right-click menu, a direction, a caption.
+ * `Layout.reversedOnArrival` holds the reversals the railway performed at a destination and has not yet drained into
+ * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale and the carry (OB-183) left this out, so
+ * every pending turn died on any setup gesture.  What matters is the RETRY: a turn destroyed mid-drain never
+ * self-heals, and the next dispatch is offered paths for the wrong heading (OB-189).
  *
- * **Why that matters is the RETRY, not the happy path.**  Some trouble went into making a turn
- * that could not be written survive - *"NOT WRITTEN, SO NOT FORGOTTEN"* - because a turn destroyed
- * mid-drain never self-heals: there is nothing left to try again with.  A rebuild between the turn and
- * a successful write destroyed exactly those retries, and the next dispatch is then offered paths for
- * the wrong heading, which is the symptom of OB-189 arriving through a third door.
- * `Layout.restoreReversalsOnArrival`'s own javadoc named the hole rather than closing it: *"not a cure
- * for a configuration RELOAD between the turn and the write - that swaps this object entirely and the
- * pending records go with it.  That one needs the record to outlive the layout."*
- *
- * **THE REBUILD IS RUN, NOT MODELED.**  Its siblings assert about `putTheTrainsBack` over a
- * hand-built `Layout`, and one of them reproduces the rebuild by calling `parseAuto` directly.  Both
- * are right about the rule and neither can see this defect, because the defect is that the CALL SITE
- * does not carry something - `extracted-rule-moves-the-bug-to-the-call`.  So this opens a real window
- * on the frozen railway and calls `rebuildRunningLayoutFromSetup` itself.
- *
- * **AND IT CANNOT PASS VACUOUSLY.**  The rebuild is guarded by three conditions, any of which makes it
- * a no-op - no active configuration, autonomy busy, no viewer panel - and a no-op rebuild replaces no
- * Layout, so nothing would have had to survive anything.  The `assertNotSame` below is what says the
- * rebuild really happened; without it this class would go green the day the guard changed.
+ * The rebuild is RUN, not modeled: the defect is that the call site does not carry something, which a hand-built
+ * `Layout` cannot show.  It cannot pass vacuously: the rebuild is a no-op with no active configuration, with autonomy
+ * busy or with no viewer panel, so the `assertNotSame` below says the rebuild really happened.
  *
  * MUTATION: take the `takeThePendingTurns()` / `putThePendingTurnsBack(...)` pair out of
  * `RunningLayoutSync.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
@@ -60,12 +42,9 @@ public class testAPendingTurnSurvivesTheRebuild
     private static AutonomySession session;
 
     /**
-     * A record the drain can never write, which is the state this defect is about.
-     *
-     * `AutonomySession.faceTheWayItCameIn` answers null for a Point that is not there, so this is put
-     * back at every idle refresh and never consumed - which is precisely the retry
-     * the map is kept for, and precisely what a rebuild used to destroy.  A record that COULD be written would
-     * make the test a race between the rebuild and the next refresh.
+     * A record the drain can never write: `AutonomySession.faceTheWayItCameIn` answers null for a Point that is not
+     * there, so it is retried at every idle refresh and never consumed.  One that COULD be written would make the test
+     * a race between the rebuild and the next refresh.
      */
     private static final String PENDING_LOC = "D3C5 nobody";
 
@@ -79,9 +58,8 @@ public class testAPendingTurnSurvivesTheRebuild
             throw new SkipException("the rebuild is a method on the window");
         }
 
-        // THE FROZEN COPY, never the operator's own railway.  `Scenario.folderFor` is the only naming
-        // of a fixture folder that cannot spell its way out to `cs2_sample_layout`, and the sandbox is
-        // opened BEFORE `init`, which reads the layout preference (OB-111).
+        // The frozen copy, never the operator's own railway.  `Scenario.folderFor` cannot spell its way out to
+        // `cs2_sample_layout`, and the sandbox is opened BEFORE `init`, which reads the layout preference (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -91,8 +69,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         assertNotNull(ui, "there is no window, so the rebuild this class is about cannot be reached");
 
-        // The window has to have finished starting: `init` posts `display()` to the event thread and
-        // returns without waiting for it.
+        // `init` posts `display()` to the event thread without waiting for it.
         pump();
         pump();
 
@@ -104,9 +81,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         assertNotNull(model.getAutoLayout(), "the snapshot did not build to a layout");
 
-        // THE CONFIGURATION THE REBUILD LOADS, which its first guard reads.  Set here where it is
-        // missing rather than left to chance: a null makes the whole method a no-op, and a test whose
-        // subject silently does nothing is the failure mode this repository keeps finding.
+        // The configuration the rebuild loads: a null makes the whole method a no-op.
         if (ui.getActiveDiagramConfiguration() == null)
         {
             String active = session.getStore().getActiveConfiguration();
@@ -135,11 +110,7 @@ public class testAPendingTurnSurvivesTheRebuild
         }
     }
 
-    /**
-     * The turn the railway owes the setup is still owed after the setup is rebuilt.
-     *
-     * @throws Exception on an event-thread failure
-     */
+    /** The turn the railway owes the setup is still owed after the setup is rebuilt. */
     @Test
     public void testATurnNobodyHasWrittenYetSurvivesTheRebuild() throws Exception
     {
@@ -147,8 +118,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         assertNotNull(before, "there is no running layout to record a turn on");
 
-        // Whatever the snapshot's own start-up may owe, put back at the end so this class leaves the
-        // railway as it found it.
+        // Put back at the end so this class leaves the railway as it found it.
         Map<String, String> owed = before.takeReversalsOnArrival();
 
         try
@@ -156,9 +126,8 @@ public class testAPendingTurnSurvivesTheRebuild
             before.restoreReversalsOnArrival(
                 Collections.singletonMap(PENDING_LOC, PENDING_POINT));
 
-            // THE PRECONDITION, MEASURED: the drain declines this one and puts it back.  If it could
-            // be written, the assertion at the end would be a race between the rebuild and whichever
-            // refresh got there first, and a green result would mean nothing.
+            // The precondition, measured: the drain declines this one and puts it back; if it could be written the
+            // final assertion would be a race.
             ui.reconcileFacingWhenIdle();
 
             pump();
@@ -218,12 +187,8 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * The window's rebuild really is the method this class calls, and it really does replace a layout.
-     *
-     * Separate from the test above so that a fixture that cannot rebuild fails HERE, saying so, rather
-     * than being read as the carry being broken.  `a-red-test-is-not-proof-of-your-hypothesis`.
-     *
-     * @throws Exception on an event-thread failure
+     * The window's rebuild is the method this class calls and does replace a layout: a fixture that cannot rebuild
+     * fails HERE.
      */
     @Test
     public void testTheRebuildReplacesTheRunningLayout() throws Exception
@@ -246,14 +211,11 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A setup edit that leaves every caption as it was keeps the track diagram on screen, and one that renames a station
-     * builds it again (MT-670; Adam, 2026-10-04: *"every click I make in the autonomy editor makes the viewer diagram
-     * flicker.  Necessary?"*).  Every edit rebuilt the whole grid - every square of the page taken down and drawn again -
-     * for the one thing a grid cannot be told once built: which squares carry a caption, and the name each gives.
+     * A setup edit that leaves every caption as it was keeps the track diagram on screen, and one that renames a
+     * station builds it again (MT-670).  Adam: *"every click I make in the autonomy editor makes the viewer diagram
+     * flicker.  Necessary?"*
      *
      * MUTATION: rebuild the grid at every setup change again, or never, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testAnEditThatLeavesTheCaptionsKeepsTheDiagram() throws Exception
@@ -348,16 +310,13 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * While anything runs - the spinner's gate - the track diagram draws none of the directions trains may or may not take,
-     * and they come back as the spinner stops: through a run, a Graceful Stop's coast-down and a hand send (Adam,
-     * 2026-10-04: *"when trains are running in autonomy, we hide the allowances/restrictions on the track diagram."*; and on
-     * MT-686: *"Works until graceful stop is requested, at which point they get shown prematurely.  Should be the same gate
-     * as the spinner."*).
+     * While anything runs (the spinner's gate) the track diagram draws none of the directions trains may or may not
+     * take, and they come back as the spinner stops: through a run, a Graceful Stop's coast-down and a hand send.
+     * Adam: *"when trains are running in autonomy, we hide the allowances/restrictions on the track diagram."* and, on
+     * MT-686: *"Should be the same gate as the spinner."*
      *
-     * MUTATION: draw the arrows whatever runs, gate them on the run alone, or leave the spinner's refresh not asking after
-     * them, and this fails.
-     *
-     * @throws Exception on an event-thread failure
+     * MUTATION: draw the arrows whatever runs, gate them on the run alone, or leave the spinner's refresh not asking
+     * after them, and this fails.
      */
     @Test
     public void testTheArrowsAreHiddenWhileAutonomyRuns() throws Exception
@@ -498,13 +457,10 @@ public class testAPendingTurnSurvivesTheRebuild
         settle();
     }
 
-    /**
-     * How many red or green pixels the track diagram's marks paint, over every square it marks: each square's mark
-     * painted on black, as the registry last set it.
-     */
+    /** How many red or green pixels the track diagram's marks paint over every square it marks, each on black. */
     private static int arrowPixels() throws Exception
     {
-        java.lang.reflect.Field last = org.traincontrol.gui.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
+        java.lang.reflect.Field last = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
 
         last.setAccessible(true);
 
@@ -551,13 +507,10 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A setup edit that keeps the track diagram on screen forgets the other pages the page cache keeps, as the rebuild it
-     * skips did: a page drawn before the edit came back from the page list as it was drawn - a page put back
-     * into autonomy with none of its captions, a station added with none, a renamed one with its old name.
+     * A setup edit that keeps the track diagram on screen forgets the other pages the page cache keeps, as the rebuild
+     * it skips did: a page put back into autonomy would otherwise come back with none of its captions.
      *
      * MUTATION: keep the other cached pages through an edit that keeps the diagram, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testAnEditThatKeepsTheDiagramForgetsTheOtherPages() throws Exception
@@ -634,12 +587,10 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A grid the window has replaced is let go: the map that found a panel's grid held every grid the window
-     * ever built - each grid holds its panel - about half a megabyte for every rebuild of 1 - Main.
+     * A grid the window has replaced is let go: the map that found a panel's grid once held every grid ever built,
+     * about half a megabyte per rebuild of 1 - Main.
      *
      * MUTATION: keep the window's grids in a map again, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testAReplacedGridIsLetGo() throws Exception
@@ -691,8 +642,8 @@ public class testAPendingTurnSurvivesTheRebuild
         assertNotSame(org.traincontrol.gui.LayoutGrid.of(shownDiagram()), old.get(), "precondition: the rename did not"
             + " replace the grid");
 
-        // Up to 10 s: under a laned battery's load one second was not always enough for the collector (battery 114).
-        // A grid that is still held never clears, so the wait cannot pass a leak.
+        // Up to 10 s for the collector under a laned battery's load; a grid still held never clears, so the wait cannot
+        // pass a leak.
         for (int i = 0; i < 100 && old.get() != null; i++)
         {
             System.gc();
@@ -704,19 +655,16 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A page the page cache brings back is wired - every tile and caption of it registered - after the same page was drawn
-     * at the other size while it was put away (RSA39, outside its round): the registrations are kept by square, the same at
-     * both sizes, and the panel came back with no switch, sensor, train's line, arrow or caption on it told anything.
+     * A page the page cache brings back is wired, every tile and caption of it registered, after the same page was
+     * drawn at the other size while it was put away: the registrations are kept by square, the same at both sizes.
      *
      * MUTATION: put a cached page back without asking whether it is still wired, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testACachedPageComesBackWired() throws Exception
     {
-        // AN EMPTY PAGE CACHE FIRST: a page already kept at the other size would come back from it below, and take nothing
-        // (RSA40's note)
+        // An empty page cache first: a page already kept at the other size would come back from it below and take
+        // nothing
         javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLayout());
 
         settle();
@@ -777,13 +725,10 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does: through
-     * the editor's door the railway was left as it was and nothing else followed, so a page left out came back from the
-     * page list with the captions it had before.
+     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does: through the
+     * editor's door the railway was left as it was and nothing else followed.
      *
      * MUTATION: leave the diagram untold where the build refuses, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testARefusedRebuildStillTellsTheDiagram() throws Exception
@@ -824,9 +769,9 @@ public class testAPendingTurnSurvivesTheRebuild
 
             session.setPageExcluded(String.valueOf(leftOut), true);
 
-            // THE BUILD REFUSES, and for the page left out: a link pointing at it is the blocking problem the load door
-            // refuses on.  Without this a page left out that stops nothing takes the unchanged-railway branch below just
-            // the same, and the claim passes having met no refusal
+            // The build refuses, for the page left out: a link pointing at it is the blocking problem the load door
+            // refuses on.  Without this a harmless page left out takes the unchanged-railway branch and the claim meets
+            // no refusal
             assertTrue(refusedForALinkToAPageLeftOut(), "precondition: leaving page " + leftOut + " out does not leave the"
                 + " setup unable to build, so there is no refused build for this claim to be about (RSA39-C3)");
 
@@ -863,14 +808,11 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A build keeps both of its captions of a station captioned on two squares - a long platform labeled at both ends -
-     * and a later build's caption still takes an earlier build's place.  The station map keeps captions by
-     * station, and registering one let go of every other of the same window not on screen, its own build's included: the
-     * first of the two was never written, and its page was never served from the page cache again.
+     * A build keeps both of its captions of a station captioned on two squares (a long platform labeled at both ends),
+     * and a later build's caption still takes an earlier build's place.  Registering one used to let go of every other
+     * of the same window not on screen, its own build's included.
      *
      * MUTATION: let a build evict its own caption again, or no caption evict another, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testABuildKeepsBothCaptionsOfAStation() throws Exception
@@ -917,21 +859,15 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).
-     *
-     * Adam, 2026-10-12: *"It is OK to show on another page what is going on on another."*  The main window builds every
-     * page into one panel and puts the detached ones away in its page cache, and the station map is keyed by the STATION's
-     * square, so a caption on another page than the station's is registered under the same key as the station's own.  A
-     * later page's build let go of every other label of the window not on screen - a cached page's, which is detached and
-     * alive - and coming back to that page found its caption never written again.  A label is let go of only by a
-     * successor on the SAME page, and the grid stamps each caption with its page.
+     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).  Adam: *"It is OK to
+     * show on another page what is going on on another."*  The station map is keyed by the STATION's square, so a
+     * caption on another page is registered under the station's own key; a label is let go of only by a successor on
+     * the SAME page, and the grid stamps each caption with its page.
      *
      * Two detached labels of one station on two pages under one owner, as two cached pages' are; then the window writes
      * its captions, as it does on every publish of the running diagram.
      *
      * MUTATION: let a later page's label evict another page's, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testAStationCaptionedOnTwoPagesKeepsACaptionOnEach() throws Exception
@@ -940,8 +876,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
         final javax.swing.JPanel owner = new javax.swing.JPanel();
 
-        final org.traincontrol.gui.StationCaption onPageA = new org.traincontrol.gui.StationCaption();
-        final org.traincontrol.gui.StationCaption onPageB = new org.traincontrol.gui.StationCaption();
+        final org.traincontrol.gui.widgets.StationCaption onPageA = new org.traincontrol.gui.widgets.StationCaption();
+        final org.traincontrol.gui.widgets.StationCaption onPageB = new org.traincontrol.gui.widgets.StationCaption();
 
         onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
         onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
@@ -989,12 +925,10 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * The grid stamps every caption it registers with the page it drew it on (OB-341), which is what lets a later page's
-     * build tell its own page's earlier label from another page's.
+     * The grid stamps every caption it registers with the page it drew it on (OB-341), which lets a later page's build
+     * tell its own page's earlier label from another page's.
      *
      * MUTATION: leave the stamp off the grid's labels, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testTheGridStampsItsCaptionsWithTheirPage() throws Exception
@@ -1009,17 +943,11 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A pop-up diagram follows a caption that is taken off, and stops writing the station into it (OB-341).
-     *
-     * `autonomySetupChanged` brought the main window's diagram into step with the setup and left the pop-ups alone - they
-     * were refreshed by the track editor and the address switch only - and a pop-up's caption labels are registered under
-     * its own owner, so the main window's rebuild never let go of them: the pop-up went on showing the caption, and
-     * `updateStationLabels` went on writing the station's live text into it, until the page was changed or the window
-     * opened again.  "Stop Showing" is the remedy the setup check's duplicate-caption error asks for.
+     * A pop-up diagram follows a caption that is taken off, and stops writing the station into it (OB-341):
+     * `autonomySetupChanged` brought only the main window's diagram into step, and a pop-up's caption labels are
+     * registered under its own owner.  "Stop Showing" is the remedy the setup check's duplicate-caption error asks for.
      *
      * MUTATION: leave the pop-ups out of `autonomySetupChanged`, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testAPopUpFollowsACaptionThatIsTakenOff() throws Exception
@@ -1090,19 +1018,13 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
-     * bounds remembered for it are not overwritten (OB-341).
+     * bounds remembered for it are not overwritten (OB-341).  A caption-only redraw leaves the window's size and place
+     * alone and saves nothing; an explicit page change still sizes the window.
      *
-     * A caption change redraws the pop-ups it affects, and the redraw once packed the window to its natural size and
-     * saved that over the operator's - on every caption gesture in the autonomy editor on that page.  A caption-only redraw
-     * leaves the window's size and place alone and saves nothing; an explicit page change still sizes the window as it did.
-     *
-     * Modeled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
-     * caption of its page taken off as the editor takes it off, and the window told.  Remember Window Location is switched
-     * on, put back after, and the bounds kept for this window are read from the preferences.
+     * Modeled on the validator's probe: the Medium pop-up made 160 pixels narrower and 120 shorter and moved, one
+     * caption taken off as the editor takes it off.  Remember Window Location is switched on and put back after.
      *
      * MUTATION: let the caption redraw pack and save as `refreshDiagram` does, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testAPopUpKeepsItsSizeAndPlaceWhenACaptionChanges() throws Exception
@@ -1143,9 +1065,9 @@ public class testAPendingTurnSurvivesTheRebuild
         // REMEMBER WINDOW LOCATION ON, the operator's own choice put back below, with whatever was kept for the window
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
-        final String rememberWas = prefs.get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+        final String rememberWas = prefs.get(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
 
-        prefs.putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
+        prefs.putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
 
         org.traincontrol.gui.LayoutPopupUI popup = null;
         String kept = null;
@@ -1255,8 +1177,8 @@ public class testAPendingTurnSurvivesTheRebuild
                 for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
             }
 
-            if (rememberWas == null) prefs.remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
-            else prefs.put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
+            if (rememberWas == null) prefs.remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else prefs.put(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
 
             pump();
         }
@@ -1313,11 +1235,7 @@ public class testAPendingTurnSurvivesTheRebuild
         return null;
     }
 
-    /**
-     * Whether the setup's graph blocks the build because a link points at a page left out of autonomy.
-     *
-     * @return true when the blocking problem the load door refuses on is that one
-     */
+    /** Whether the setup's graph blocks the build because a link points at a page left out of autonomy. */
     private static boolean refusedForALinkToAPageLeftOut()
     {
         for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph().getProblems())
@@ -1332,12 +1250,7 @@ public class testAPendingTurnSurvivesTheRebuild
         return false;
     }
 
-    /**
-     * A station on the page shown that the window draws a caption for.
-     *
-     * @return its square
-     * @throws Exception on an event-thread failure
-     */
+    /** A station on the page shown that the window draws a caption for. */
     private static org.traincontrol.automationui.TileGraph.TileKey aCaptionedStationOnTheShownPage() throws Exception
     {
         settle();
@@ -1360,13 +1273,11 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A station renamed while the setup cannot build keeps the train standing at it on its caption (Adam,
-     * 2026-10-05: *"Yes, do it."*): the railway, left as it was, still carries the names it was built with, and the
-     * caption, asked by the new name, found no Point there and went blank until the setup built.
+     * A station renamed while the setup cannot build keeps the train standing at it on its caption: the railway, left
+     * as it was, still carries the names it was built with, and the caption, asked by the new name, found no Point
+     * there.
      *
      * MUTATION: find the railway's Points by the setup's names alone, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testARenameTheBuildRefusesKeepsTheTrainOnItsCaption() throws Exception
@@ -1409,8 +1320,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
         final org.traincontrol.automationui.TileGraph.TileKey at = station;
 
-        // INACTIVE CAPTIONS HIDDEN, so the half of this that hides a station autonomy cannot choose is asked too - the
-        // setting is the operator's, copied into the run, and on it hides nothing; put back below
+        // Inactive captions hidden, so the half that hides a station autonomy cannot choose is asked too; the setting
+        // is the operator's, put back below
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
         final String inactiveWere = prefs.get(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, null);
@@ -1547,10 +1458,8 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * Sets a direction on a piece of plain track on the page shown, as an arrow click does, runs this, and puts it back.
-     *
-     * @param then what to run with it set
-     * @throws Exception from it
+     * Sets a direction on a piece of plain track on the page shown, as an arrow click does, runs `then`, and puts it
+     * back.
      */
     private static void setADirectionAndPutItBack(WithADirection then) throws Exception
     {
@@ -1613,12 +1522,7 @@ public class testAPendingTurnSurvivesTheRebuild
         return field.get(ui);
     }
 
-    /**
-     * Lets a setup change finish on the window: the posted refresh, the grid renderer's job behind it, and the grid it
-     * posts in turn.
-     *
-     * @throws Exception on an event-thread failure
-     */
+    /** Lets a setup change finish on the window: the posted refresh, the grid renderer's job, and the grid it posts. */
     private static void settle() throws Exception
     {
         java.util.concurrent.ExecutorService renderer =
@@ -1636,24 +1540,17 @@ public class testAPendingTurnSurvivesTheRebuild
         }
     }
 
-    /**
-     * Lets the event thread finish what it has been given.
-     *
-     * @throws Exception on an event-thread failure
-     */
+    /** Lets the event thread finish what it has been given. */
     private static void pump() throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
     /**
-     * A turn the railway owes at a station renamed since is carried to the station's new name: the turns owed
-     * are carried across a rebuild by the name of the Point the train turned at, and after a rename no Point had it -
-     * the turn was never written and never forgotten, and the train stayed on the copy facing the way it came in.
+     * A turn the railway owes at a station renamed since is carried to the station's new name: the turns owed are
+     * carried across a rebuild by the name of the Point the train turned at, and after a rename no Point had it.
      *
      * MUTATION: carry the turns owed by the names recorded alone, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testATurnOwedAtARenamedStationFollowsTheRename() throws Exception
@@ -1755,14 +1652,11 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * The session sees the running railway from the moment the window makes it: the direction refusal asks
-     * where the railway's trains stand, and the session was told only when a station's Facing menu was built or the
-     * setup editor entered autonomy - so after start-up, or any reset, a direction set from a plain track square's menu
-     * was judged against the setup alone, which is where the run began.
+     * The session sees the running railway from the moment the window makes it: the direction refusal asks where the
+     * railway's trains stand, so after start-up or any reset a direction set from a plain track square's menu would
+     * otherwise be judged against the setup alone.
      *
      * MUTATION: tell the session only from the menus, and this fails.
-     *
-     * @throws Exception on an event-thread failure
      */
     @Test
     public void testTheSessionSeesTheRailwayFromTheStart() throws Exception

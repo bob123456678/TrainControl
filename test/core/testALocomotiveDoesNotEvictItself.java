@@ -13,27 +13,16 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * Renaming a locomotive does not take it off the railway.
  *
- * MT-149, filed critical. Adam: "place loc on station.  Rename it.  It is now gone from the station,
- * and in status ??? on the layout.  Rename it back, and it doesn't come back.  It should survive the
- * rename everywhere."
+ * MT-149, filed critical. Adam: "place loc on station.  Rename it.  It is now gone from the station, and in status ???
+ * on the layout.  Rename it back, and it doesn't come back.  It should survive the rename everywhere."
  *
- * **`sanitizeMultiUnits` evicts the locomotive it is asked about.** It walks every Point and clears any
- * that holds a locomotive not `isSimultaneousMultiUnitCompatible` with the one passed in - and that
- * method ends `return !this.hasEquivalentAddress(l)`, so a locomotive compared with ITSELF has an
- * equivalent address and is declared incompatible. Asked about a locomotive that is standing
- * somewhere, the sweep therefore takes it off the square it is standing on.
- *
- * Both rename doors call it straight after `renameLoc`, which is why a rename loses the placement -
- * and why renaming back does not bring it back: nothing restores a placement, so the second rename
- * finds nothing to evict and the train is simply gone. The "?????" on the panel is the same fact seen
- * from the other end: `getLocomotiveLocation` now returns null.
- *
- * **It bites on rename and not on placement**, which is why it has been there unnoticed:
- * `moveLocomotive` calls the same sweep BEFORE putting the locomotive down, so there is nothing of its
- * own to evict.
- *
- * A locomotive cannot conflict with itself, so the sweep skips it.
- *
+ * `sanitizeMultiUnits` evicts the locomotive it is asked about: it walks every Point and clears any that holds a
+ * locomotive not `isSimultaneousMultiUnitCompatible` with the one passed in, and that method ends `return
+ * !this.hasEquivalentAddress(l)`, so a locomotive compared with ITSELF is declared incompatible.  Both rename doors
+ * call it straight after `renameLoc`, so a rename loses the placement, and renaming back does not restore it (the
+ * "?????" on the panel is `getLocomotiveLocation` returning null).  It does not bite on placement because
+ * `moveLocomotive` calls the same sweep BEFORE putting the locomotive down.  A locomotive cannot conflict with itself,
+ * so the sweep skips it.
  * MUTATION this catches: dropping the self test evicts the train and both assertions fail.
  *
  * @author Adam
@@ -52,8 +41,7 @@ public class testALocomotiveDoesNotEvictItself
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model: init reads the layout preference and would otherwise open Adam's own
-        // railway (OB-111).
+        // Before the model: init reads the layout preference and would otherwise open Adam's own railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -74,9 +62,7 @@ public class testALocomotiveDoesNotEvictItself
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The sweep leaves the locomotive it was asked about where it is.
-     */
+    /** The sweep leaves the locomotive it was asked about where it is. */
     @Test
     public void testTheSweepDoesNotTakeTheTrainItIsAskedAbout() throws Exception
     {
@@ -96,10 +82,8 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * ...and a rename, which is the gesture that reaches it.
-     *
-     * The sweep is called by the WINDOW rather than by renameLoc, so this does what the window does,
-     * in the order it does it - the rename, then the sweep - without needing one.
+     * ...and a rename, which is the gesture that reaches it.  The sweep is called by the WINDOW rather than by
+     * renameLoc, so this does what the window does, in the order it does it.
      */
     @Test
     public void testARenameLeavesTheTrainOnItsStation() throws Exception
@@ -137,18 +121,14 @@ public class testALocomotiveDoesNotEvictItself
     /**
      * Renaming a MEMBER of a multi-unit whose head stands on a station leaves the multi-unit on its station.
      *
-     * The self-skip above covers a train renamed where it stands.  A member is not where it stands - its head is - and the
-     * sweep the window runs after a rename asks the head whether it is compatible with the renamed member.  A head is
-     * never compatible with its own member (`isLinkedTo`), so the head was cleared from its station: the same loss as
-     * MT-149, on the one rename the self-skip does not reach.  A rename changes no placement and no membership, so it
-     * cannot make a conflict that was not there.
-     *
-     * Done as the window does it: the rename, then the sweep.  On a stopped railway - every edit door refuses while autonomy
-     * runs, its coast-down and Return Home's planning included (`isAutonomyRunning`).
+     * The self-skip above covers a train renamed where it stands.  A member is not where it stands - its head is - and
+     * the sweep the window runs after a rename asks the head whether it is compatible with the renamed member.  A head
+     * is never compatible with its own member (`isLinkedTo`), so the head was cleared from its station: the same loss
+     * as MT-149, on the one rename the self-skip does not reach.  Done as the window does it: the rename, then the
+     * sweep, on a stopped railway (every edit door refuses while autonomy runs, its coast-down and Return Home's
+     * planning included: `isAutonomyRunning`).
      *
      * MUTATION: sweep for a locomotive that stands nowhere, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testRenamingAMemberLeavesItsMultiUnitOnItsStation() throws Exception
@@ -208,12 +188,10 @@ public class testALocomotiveDoesNotEvictItself
      * A saved layout in which a multi-unit's head and one of its members both stand is loaded with only one of them
      * standing: the member is part of the head's train, and one train cannot stand in two places.
      *
-     * The loader's half of that fix.  The edit doors now sweep only for a train that stands on the graph; the loader
-     * asks the sweep before each train is put down, so it must keep asking regardless - or both would load standing.
+     * The loader's half of the fix: the edit doors sweep only for a train that stands on the graph, but the loader asks
+     * the sweep before each train is put down, so it must keep asking regardless, or both would load standing.
      *
      * MUTATION: have the loader ask the edit doors' sweep, which skips a train not yet down, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testALoadedLayoutDoesNotStandAHeadAndItsMemberBoth() throws Exception
@@ -268,16 +246,14 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * A member of a standing multi-unit given, in Change Name or Address, the address of another train that stands takes
-     * that other train off the graph - as putting the multi-unit down again would.
+     * A member of a standing multi-unit given, in Change Name or Address, the address of another train that stands
+     * takes that other train off the graph - as putting the multi-unit down again would.
      *
-     * The member stands nowhere, but it is driven: every command to its head reaches its decoder, and now the other
-     * train's too.  The first fix swept only for an edited train standing on the graph, so this edit took nothing off,
-     * and autonomy would run the other train as a train of its own while the multi-unit's commands moved it.
+     * The member stands nowhere, but it is driven: every command to its head reaches its decoder, and so does the other
+     * train's.  Without the sweep autonomy would run the other train as a train of its own while the multi-unit's
+     * commands moved it.
      *
      * MUTATION: sweep only for the edited train where it stands, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testReAddressingAMemberOntoAStandingTrainTakesThatTrainOff() throws Exception
@@ -336,16 +312,14 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * The same for a Central Station multi-unit: a member given, in Change Name or Address, the address of another train
-     * that stands takes that train off the graph.
+     * The same for a Central Station multi-unit: a member given, in Change Name or Address, the address of another
+     * train that stands takes that train off the graph.
      *
      * A Central Station multi-unit commands its members through the Central Station's own list, not TrainControl's
-     * links, so the sweep finds it as a head by that list.  The claim beside this one links in TrainControl and cannot see
-     * that half.
+     * links, so the sweep finds it as a head by that list; the claim beside this one links in TrainControl and cannot
+     * see that half.
      *
      * MUTATION: find heads by TrainControl's links alone, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testReAddressingAMemberOfACentralStationMultiUnitTakesTheStandingTrainOff() throws Exception
@@ -418,9 +392,7 @@ public class testALocomotiveDoesNotEvictItself
     private static final int MEMBER_ADDRESS = 75;
     private static final int OTHER_ADDRESS = 76;
 
-    /**
-     * One station with one train standing on it.
-     */
+    /** One station with one train standing on it. */
     private static Layout layoutWithOnePlacedTrain() throws Exception
     {
         Layout layout = new Layout(model);

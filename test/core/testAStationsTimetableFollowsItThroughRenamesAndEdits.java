@@ -14,12 +14,9 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * A station's timetable, and the roads its trains stand on, follow it through a rename, a moved square, a
- * ticked-out page, a canceled edit and an undo.
- *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * A station's timetable, and the roads its trains stand on, follow it through a rename, a moved square, a ticked-out
+ * page, a canceled edit and an undo.  `AutonomySessionFixture` builds the session and layout folder every claim starts
+ * from.
  *
  * @author Adam
  */
@@ -27,19 +24,11 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 {
 
     /**
-     * A station renamed keeps its timetable: every leg through it is carried to the new name, so the next load
-     * reads it and the next capture keeps it.
-     *
-     * A captured timetable names Points, and a station's Points are named after it.  Renamed, every leg through it named
-     * a Point the next build no longer had: the load dropped the entry, with one line in the log, and the next capture
-     * wrote the shorter timetable over the configuration.  Beta is somewhere trains may turn round, so two of its copies
-     * run to Alpha - the one facing west, and the one that came in from the west and turned - and only the heading says
-     * which a leg meant.
+     * A station renamed keeps its timetable: every leg through it is carried to the new name.  Beta is somewhere trains
+     * may turn round, so two of its copies run to Alpha, and only the heading says which a leg meant.
      *
      * MUTATION: carry nothing across a rebuild, or carry a leg to a copy other than the one its heading names, and this
      * fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenamedStationKeepsItsTimetable() throws Exception
@@ -84,13 +73,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square round 18 split by its ways out keeps a timetable leg that set out from it under its old, whole name:
-     * carried to the copy that leg leaves by - read as the next start of TrainControl reads it, by a session
-     * that has built nothing yet, as the first start after the upgrade does.
+     * A square split by its ways out keeps a timetable leg written under its old, whole name, read as the first start
+     * after the upgrade reads it: by a session that has built nothing yet.
      *
      * MUTATION: carry nothing a build of this session did not name, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testASquareSplitByItsWaysOutKeepsItsTimetable() throws Exception
@@ -99,7 +85,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         oneWayAwayFromTheMiddle();
 
-        // A LEG AS A BUILD BEFORE ROUND 18 WROTE IT: the square's own name, whole - and saved
+        // A leg as the old build wrote it: the square's own name, whole, and saved
         session.setGlobal("timetable", aTimetableOf(new String[] {"main 3,1", "main 5,1"}));
 
         // THE NEXT START
@@ -113,15 +99,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed keeps every configuration's timetable, not only the one in use: the next start of
-     * TrainControl, with another configuration made the one in use, still reads its legs through the renamed station.
-     *
-     * The carry reached the configuration in use; another configuration's legs kept the old names, and a session that
-     * had not seen them could not trace them back to the square - its next load dropped them, its next fold erased them.
+     * A station renamed keeps every configuration's timetable, not only the one in use: another configuration's legs
+     * kept the old names and its next load dropped them.
      *
      * MUTATION: carry the configuration in use alone, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenamedStationKeepsEveryConfigurationsTimetable() throws Exception
@@ -160,12 +141,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed carries the road a standing train came in on: the road is stored as Point names, and
-     * one naming a Point no longer built is dropped whole, so the tail fell back to stopping at the first fork.
+     * A station renamed carries the road a standing train came in on: the road is stored as Point names, and one naming
+     * a Point no longer built is dropped whole.
      *
      * MUTATION: carry the timetable and not the roads, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenamedStationKeepsATrainsRoad() throws Exception
@@ -200,13 +179,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed keeps a timetable leg only another configuration's build names: a copy that
-     * configuration alone has - Beta marked, in it alone, as somewhere trains may turn round - is remembered by the square
-     * its name begins with when the session is opened, so a rename made with another configuration in use carries it.
+     * A station renamed keeps a timetable leg only another configuration's build names: a copy that configuration alone
+     * has is remembered by the square its name begins with when the session is opened.
      *
      * MUTATION: remember no name this session has not built, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenamedStationKeepsALegOnlyAnotherConfigurationBuilds() throws Exception
@@ -266,15 +242,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed to the name another station has keeps the timetable legs out of that other station:
-     * the name moves to the renamed square, and a leg that named the other square is carried to what it is called now.
-     *
-     * The carry left alone a name the rebuild still gives, and the rebuild gives it to the renamed square: the leg then
-     * named a copy of the renamed station, no edge ran where it said, and the load dropped it.
+     * A station renamed to the name another station has keeps the legs out of that other station: the name moves to the
+     * renamed square, and a leg that named the other square is carried to what it is called now.
      *
      * MUTATION: leave alone a name the build still gives, whatever square it is on now, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenameToAnotherStationsNameCarriesItsLegs() throws Exception
@@ -317,12 +288,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page renamed keeps the timetable legs and the roads through its squares with no name of their own:
-     * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
+     * A page renamed keeps the timetable legs and the roads through its squares with no name of their own, which are
+     * named after their page.
      *
      * MUTATION: rename the page in the setup's keys alone, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAPageRenamedKeepsTheLegsThroughItsUnnamedSquares() throws Exception
@@ -379,13 +348,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page renamed while an edit waits keeps the setup's renamed timetable: the fold behind the reset, what
-     * the railway owns, wrote the railway's timetable - in the Point names the rename had just replaced - over it, so
-     * after the link was paired again most entries named Points that no longer exist.
+     * A page renamed while an edit waits keeps the setup's renamed timetable: the fold behind the reset wrote the
+     * railway's timetable, in the Point names the rename had just replaced, over it.
      *
      * MUTATION: fold the timetable while the pages are stale, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenameWhileAnEditWaitsKeepsTheRenamedTimetable() throws Exception
@@ -423,19 +389,12 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * An edit session's Cancel keeps the timetable the railway changed alone across a station's rename, naming the station
-     * as the restored setup names it (OB-343): a station is renamed in the editor, the
-     * railway is rebuilt with the new name, and the Auto tab changes the timetable - legs naming the new name - which a fold
-     * takes into the setup.  Cancel puts back the setup that has the old name, and the legs naming the new one were
-     * dropped by the next load, the capture after it writing the shorter timetable over the configuration (a lost timetable).
-     *
-     * The carry traces a name the build lacks through the names its builds have seen, and Cancel put that memory back to
-     * what it was when the editor opened - which has not the new name - before the legs were carried.  The names the edit's
-     * builds gave are kept in it, those the opening memory has not.
+     * An edit session's Cancel keeps the timetable the railway changed alone across a station's rename, naming the
+     * station as the restored setup names it (OB-343).  The carry traces a name the build lacks through the names its
+     * builds have seen, and Cancel put that memory back before the legs were carried; the names the edit's builds gave
+     * are kept in it now.
      *
      * MUTATION: forget the names the builds of the edit gave when the memory is put back, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testACancelKeepsTheTimetableTheRailwayChangedAloneAcrossAStationRename() throws Exception
@@ -490,13 +449,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * The same through Cancel's own fold, with no gesture in between (OB-343): the rebuild Cancel forces folds the railway's
-     * timetable - legs naming the renamed station's new name - into the restored setup, and the load after it carries the
-     * names against the memory.
+     * The same through Cancel's own fold, with no gesture in between (OB-343): the rebuild Cancel forces folds the
+     * railway's timetable into the restored setup, and the load after it carries the names against the memory.
      *
      * MUTATION: forget the names the builds of the edit gave when the memory is put back, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testCancelsOwnFoldKeepsTheTimetableAcrossAStationRename() throws Exception
@@ -544,16 +500,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A name an edit gives to two stations in turn does not carry a timetable leg to the wrong one (OB-343): a station is
-     * renamed, the railway captures a leg through it, the station is renamed again and another takes the first name; Cancel
-     * puts the old names back.  The leg named a station by a name the memory then knew as another's.
-     *
-     * The legs the folds took are carried through each build of the edit as the setup's own are, so that they name the latest
-     * build's Points when Cancel comes - and each of those names is one square's.
+     * A name an edit gives to two stations in turn does not carry a timetable leg to the wrong one (OB-343): each name
+     * the carried legs hold is one square's when Cancel comes.
      *
      * MUTATION: carry the taken legs only at Cancel, against the memory as the whole edit left it, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testACancelMapsATakenLegThroughANameTheEditGaveTwoStations() throws Exception
@@ -603,13 +553,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * The names an edit's builds gave are forgotten when the edit session ends (OB-343): they were kept for Cancel's carry of
-     * the legs the railway's folds took, and the next edit session's opening memory must not hold them, to beat a legitimate
-     * reassignment of the name.
+     * The names an edit's builds gave are forgotten when the edit session ends (OB-343), so the next edit's opening
+     * memory cannot beat a legitimate reassignment of the name.
      *
      * MUTATION: keep the names after the edit session, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testTheNamesAnEditGaveAreForgottenWhenItEnds() throws Exception
@@ -638,13 +585,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * Squares moved while an edit waits keep the setup's moved timetable: the fold behind
-     * the editor's Save, what the railway owns, wrote the railway's timetable - in the Point names the move had just
-     * replaced - over it.
+     * Squares moved while an edit waits keep the setup's moved timetable: the fold behind the editor's Save wrote the
+     * railway's timetable, in the Point names the move had just replaced, over it.
      *
      * MUTATION: fold the timetable after squares moved, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testASquareMovedWhileAnEditWaitsKeepsTheMovedTimetable() throws Exception
@@ -686,13 +630,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page deleted is not folded back: the fold behind the reset worked its keys out from the session's
-     * pages, the deleted one among them, and wrote its trains and its stations' settings straight back under its name -
-     * with an edit waiting or not.
+     * A page deleted is not folded back: the fold behind the reset worked its keys out from the session's pages, the
+     * deleted one among them, with an edit waiting or not.
      *
      * MUTATION: forget the page without marking the pages stale, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testADeletedPageIsNotFoldedBack() throws Exception
@@ -733,12 +674,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square with no name of its own moved on its page takes its stored names with it: it is named after
-     * where it is, so a move renamed its Points, and the timetable went on naming where it had been.
+     * A square with no name of its own moved on its page takes its stored names with it: it is named after where it is.
      *
      * MUTATION: move the setup's keys alone, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAnUnnamedSquareMovedTakesItsLegsWithIt() throws Exception
@@ -769,10 +707,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
             + " still names the square it was moved off (RSA5-B2)");
     }
 
-    /**
-     * A built configuration of this session with the timetable given: what a load of it reads, as the running layout
-     * writes it.
-     */
+    /** A built configuration of this session with the timetable given, as the running layout writes it. */
     private static org.json.JSONObject runningWith(AutonomySession of, org.json.JSONObject... entries)
     {
         org.json.JSONObject running = new org.json.JSONObject(of.buildConfiguration());
@@ -787,13 +722,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station renamed to the name another has keeps another configuration's legs out of that other station too:
-     * every other configuration is carried across a rename, and a name the build now gives another square is
-     * traced from the square it named there as well.
+     * A station renamed to the name another has keeps another configuration's legs out of that other station too.
      *
      * MUTATION: leave alone a name the build still gives in another configuration, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testARenameToAnotherStationsNameCarriesAnotherConfigurationsLegs() throws Exception
@@ -847,17 +778,11 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page ticked out and back in from the Autonomy menu keeps its timetable entries, once each: the menu's
-     * tick sets the page, saves, and reloads with a fold of the railway still running - which the page ticked out still
-     * has, and the page ticked in does not.
-     *
-     * The keep asked the setup which pages were out, so the fold going out kept the page's entries beside the running
-     * ones - each written twice - and the fold coming back, with no page out, stored the running timetable without
-     * them.  It asks the running layout which pages it was built without.
+     * A page ticked out and back in from the Autonomy menu keeps its timetable entries, once each: the menu's tick
+     * saves and reloads with a fold of the railway still running.  The fold asks the running layout which pages it was
+     * built without, not the setup.
      *
      * MUTATION: ask the setup which pages are out, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAPageTickedFromTheMenuKeepsItsEntries() throws Exception
@@ -892,12 +817,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page ticked out after a run keeps where the run left the trains on it: the fold reads each running
-     * Point by the square it says it is a copy of, not by its name through the naming the tick has already changed.
+     * A page ticked out after a run keeps where the run left the trains on it: the fold reads each running Point by the
+     * square it is a copy of, not by its name.
      *
      * MUTATION: fold the running layout by its Points' names alone, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAPageTickedOutKeepsWhereTheRunLeftItsTrains() throws Exception
@@ -936,14 +859,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square moved in the track editor is not folded over at its Save by the railway built before the move:
-     * that railway names and places what it knows by the squares as they were, so the Save's fold wrote the
-     * old names back over the ones the move carried - and, where a move reordered two stations of one name, each train
-     * onto the other's.  Opening the editor folded already, and nothing runs while it is open.
+     * A square moved in the track editor is not folded over at its Save by the railway built before the move, which
+     * would write the old names back over the ones the move carried.
      *
      * MUTATION: let the fold run after a move, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAMoveIsNotFoldedOverByTheRailwayBuiltBeforeIt() throws Exception
@@ -976,13 +895,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A station name two pages share keeps its timetable entries through a page ticked out and back in: the
-     * plain name and its suffix are settled over the squares of every page, those out of autonomy too, so neither moves
-     * while one page is out - and the carry has nothing to send across.
+     * A station name two pages share keeps its timetable entries through a page ticked out and back in: the names are
+     * settled over the squares of every page, so neither moves while one page is out.
      *
      * MUTATION: settle the names over the pages in play alone, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAStationNameTwoPagesShareKeepsItsEntriesThroughATick() throws Exception
@@ -1057,13 +973,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page ticked out keeps its timetable entries across a restart of TrainControl: the session after the
-     * restart has built none of the page's Points, so it finds the squares its entries name by the names of the squares
-     * on that page - the page's own squares, which the graph leaves out with the page.
+     * A page ticked out keeps its timetable entries across a restart: the session after it has built none of the
+     * page's Points, so it finds the squares its entries name by the names of the page's own squares.
      *
      * MUTATION: look for a page out's squares in the graph, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAPageOutKeepsItsEntriesAcrossARestart() throws Exception
@@ -1096,11 +1009,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * An entry set aside comes back after the entry it followed, though that entry's station was renamed while it was
-     * aside: what it followed is a stored name like any other, and is carried with it.
+     * aside.
      *
      * MUTATION: carry the entries and not what each aside one followed, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAnEntryAsideComesBackAfterWhatItFollowedThroughARename() throws Exception
@@ -1134,14 +1045,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A square deleted in the track editor, and the edit canceled, keeps its train and its settings: Cancel
-     * puts the setup back as the editor opened it, and the reset's fold after it judged "a square whose tile is gone"
-     * against the page the editor had emptied - so it erased what Cancel had just put back.  No fold follows a square
-     * removed until the setup is opened again, as none follows a move: opening the editor folded already.
+     * A square deleted in the track editor, and the edit canceled, keeps its train and its settings: no fold follows a
+     * square removed until the setup is opened again, as none follows a move.
      *
      * MUTATION: let the fold run after a square is removed, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testACancelledDeleteKeepsTheSquaresSetup() throws Exception
@@ -1186,13 +1093,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * An entry deleted from the railway's timetable, its page then ticked out before any fold, stays deleted when the page
-     * comes back: the Auto tab's delete reaches the railway alone, and the tick's findings check set aside the
-     * stored copy the next fold was about to drop.
+     * An entry deleted from the railway's timetable, its page then ticked out before any fold, stays deleted when the
+     * page comes back.
      *
      * MUTATION: let a build for inspection keep what it settled, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAnEntryDeletedOnTheAutoTabStaysDeletedThroughATick() throws Exception
@@ -1219,13 +1123,10 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A configuration written by a build that kept a page's timetable entries in a list of their own (rounds 23 and 24)
-     * has them back in its timetable when it is read, each after the entry it followed, and the list gone (Adam,
-     * 2026-09-30: "Just keep the entries") - so an entry set aside is not lost with the list.
+     * A configuration written by a build that kept a page's timetable entries in a list of their own has them back in
+     * its timetable when read, each after the entry it followed, and the list gone (Adam: "Just keep the entries").
      *
      * MUTATION: read a configuration as it is, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testEntriesSetAsideByAnEarlierBuildAreBackInTheTimetable() throws Exception
@@ -1261,19 +1162,16 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * An undo puts each standing train's road back on its own train: the undo point held every stored leg by
-     * position, and the page's points put back first are a new map, whose keys can iterate in another order - two roads
-     * whose squares share a bucket were written into each other.  The legs are held by where each is: its entry and leg,
-     * or its square and step.
+     * An undo puts each standing train's road back on its own train: the legs are held by where each is (its entry and
+     * leg, or its square and step), not by position, since two roads whose squares share a bucket were written into
+     * each other.
      *
      * MUTATION: put the legs back by position, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAnUndoPutsEachRoadBackOnItsOwnTrain() throws Exception
     {
-        // "second124" puts its 5,1 in the bucket of main's 5,1, after it - as RSA9 measured
+        // "second124" puts its 5,1 in the bucket of main's 5,1, after it
         LayoutDiagram main = new LayoutDiagram("main", 7, 3, null, null);
         LayoutDiagram second = new LayoutDiagram("second124", 7, 3, null, null);
 

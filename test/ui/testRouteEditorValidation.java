@@ -12,39 +12,16 @@ import org.traincontrol.base.ThreeWaySwitch;
 import support.SourceOf;
 
 /**
- * A row that looks right and means nothing.
- *
- * Adam turned an accessory row into a locomotive command and got a command for a locomotive called
- * "3".  Nothing refused it: the address had simply stayed behind in the column that had become the
- * name column, the row built, the route saved, and it did nothing whatever when it ran.  A route
- * that quietly does nothing is the worst thing this editor can produce, because there is no error
- * anywhere to lead anybody back to it.
- *
- * Two things had to change and both are tested here.  Changing the kind clears the row, because the
- * two kinds' columns hold different sorts of thing and only both happen to accept text; and Save
- * checks each row against the layout, because "there is no locomotive called 3" is a question only
- * the layout can answer.
+ * A row that looks right and means nothing: an accessory row turned into a locomotive command used to build, save and
+ * do nothing when run.  Changing the kind clears the row, and Save checks each row against the layout; both are tested
+ * here.
  */
 public class testRouteEditorValidation
 {
     /**
-     * A manual route saves with the sensor field left blank (OB-178).
-     *
-     * Adam: *"if a route's auto-fire checkbox is unchecked, and the s88 field is blank, the save will
-     * still fail asking the user to input an integer.  just treat this as 0."*
-     *
-     * **Blank is the answer a manual route gives.** The field only means anything with auto-fire on,
-     * which has its own rule; without it the route is fired by hand and has no sensor. Refusing the
-     * empty field made a perfectly good route unsaveable, and the message asked for an integer as
-     * though something wrong had been typed.
-     *
-     * **And the two halves parsed it separately**, which is the other half of the defect: relaxing the
-     * check without the save would have turned a refusal into an exception. One reader now.
-     *
-     * **What is NOT asserted, and why.** The field is digits-only, so letters cannot be typed into it
-     * and `enteredS88`'s -1 branch is unreachable from the UI. It is kept as a defense rather than
-     * removed - the field could gain another door - but a test for it would be a check that cannot
-     * fail, so this says so instead of pretending.
+     * A manual route saves with the sensor field left blank (OB-178); Adam: "just treat this as 0."  The save and the
+     * check share one reader.  The field is digits-only, so `enteredS88`'s -1 branch is unreachable from the UI and
+     * not asserted.
      *
      * MUTATION: make `enteredS88` return -1 for an empty field and the first assertion fails; drop
      * the auto-fire rule and the second does.
@@ -64,8 +41,8 @@ public class testRouteEditorValidation
         final java.util.List<String> zero = new java.util.ArrayList<>();
         final java.util.List<String> letters = new java.util.ArrayList<>();
 
-        // THE FIELD IS DIGITS-ONLY and drops anything else typed into it, spaces and letters among it, so the editor would
-        // be handed an empty field in their place.  The filter is taken off so that what is set is what the editor reads.
+        // The field is digits-only and drops anything else typed, so the filter is taken off: what is set is what the
+        // editor reads.
         final javax.swing.JTextField s88 = (javax.swing.JTextField) privateField(editor, "s88Field");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -77,16 +54,14 @@ public class testRouteEditorValidation
 
             blank.addAll(editor.problemsForTest());
 
-            // THE OTHER HALF, which must keep refusing: a route that fires ITSELF has nothing to fire
-            // it without a sensor, and would sit in the list marked automatic doing nothing.
+            // THE OTHER HALF, which must keep refusing: a route that fires ITSELF has nothing to fire it without a
+            // sensor.
             editor.setAutoFireForTest(true);
 
             automatic.addAll(editor.problemsForTest());
 
-            // A SPACE, not letters.  The field is digits-only (`digitsOnlyField`), so "east" cannot
-            // be typed into it at all - asserting that it is refused would be testing a state the UI
-            // cannot reach, which is a check that can never fail.  A field holding only whitespace
-            // must read as none, like an empty one.
+            // A SPACE, not letters: the field is digits-only, so "east" cannot be typed.  Whitespace alone must read as
+            // none.
             editor.setAutoFireForTest(false);
             editor.setS88TextForTest("   ");
 
@@ -136,12 +111,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Changing the kind does not leave the old target behind.
-     *
-     * The one Adam found.  Tested through the table model, which is the thing that was wrong - the
-     * row it built is what got saved.
-     */
+    /** Changing the kind does not leave the old target behind, tested through the table model whose row got saved. */
     @Test
     public void testChangingTheKindClearsTheRow() throws Exception
     {
@@ -169,30 +139,11 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The route editor asks about a LOGICAL address.
-     *
-     * It checked the number the operator types - counting from one - against `MAX_MM2_ADDRESS`, which
-     * is RAW and counts from zero. Exactly one address per protocol was refused here and accepted by
-     * the diagram editor, which converts before it asks. The fix shipped with no test:
-     * `grep -rn "isValidLogicalAddress" test/` found nothing, and putting the defect back verbatim left
-     * this class, `testRouteEditorRoundTripCases` and `core.testAccessory` all green.
-     *
-     * **Why this is a shape check and not a behavioral one, which is worth knowing about this whole
-     * class.** Its editors are built as `new RouteEditorFrame(null, null)` - no parent window, so no
-     * model - and `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before
-     * it reaches any per-row rule. So NO row-level complaint is reachable from this fixture: not the
-     * address, not "no such locomotive", not "no such route". The behavioral version of this test was
-     * written first and passed on an editor that never looked at the address at all; a control that
-     * asked whether address 99999 is complained about is what caught it. Measured, 2026-09-11.
-     *
-     * The rule itself is asserted behaviorally, at both ends of both protocols, by
-     * `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`. What is left for here is that
-     * this door asks that rule rather than the raw one - which is the half that was wrong, and the
-     * half a shape check can see.
+     * The route editor asks about a LOGICAL address, not `MAX_MM2_ADDRESS` (raw, counted from zero).  A shape check:
+     * the editors here have no parent window, so `problemsWith` returns before any per-row rule.  The rule itself is
+     * asserted by `core.testAccessory.testTheTopLogicalAddressOfEachProtocolIsValid`.
      *
      * MUTATION: put `Accessory.isValidAddress(address, speaks)` back in `addressProblem` and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheAddressCheckAsksTheLogicalRule() throws Exception
@@ -210,9 +161,7 @@ public class testRouteEditorValidation
             + "is how these two editors came to disagree in the first place");
     }
 
-    /**
-     * A three-way row starts with the pause its two motors need.
-     */
+    /** A three-way row starts with the pause its two motors need. */
     @Test
     public void testAThreeWayRowStartsWithItsPause() throws Exception
     {
@@ -234,9 +183,7 @@ public class testRouteEditorValidation
         close(frame);
     }
 
-    /**
-     * A three-way row is saved as the two commands it stands for, in order.
-     */
+    /** A three-way row is saved as the two commands it stands for, in order. */
     @Test
     public void testAThreeWayIsSavedAsBothOfItsCommands() throws Exception
     {
@@ -275,14 +222,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The two messages that refuse a name say what is refused: a comma, and only a comma.  Brackets have been
-     * allowed since Adam's ruling of 2026-09-04 (*"bracketed loc names should just be allowed"*) and `isNameUsable`
-     * refuses only the comma, but both messages went on saying a name "cannot contain a comma or a bracket" - telling an
-     * operator renaming "SBB 460 (2)" a rule the program does not have.  Read from the English bundle.
+     * The two messages that refuse a name say what is refused: a comma, and only a comma, since brackets are allowed
+     * (Adam: "bracketed loc names should just be allowed").  Read from the English bundle.
      *
      * MUTATION: put "or a bracket" back in either and this fails.
-     *
-     * @throws Exception from reading the bundle
      */
     @Test
     public void testTheNameRulesSayOnlyWhatIsRefused() throws Exception
@@ -313,13 +256,9 @@ public class testRouteEditorValidation
 
     /**
      * With Automatically Fire off, the conditions say above themselves, in red, that they are only checked when it is
-     * on; ticking it takes the warning away, and a route with no conditions has none (Adam, 2026-10-18: "a message that
-     * states these conditions are only evaluated when Automatically Fire is set to on" - and no triangle, which did not
-     * render).
+     * on; ticking it takes the warning away, and a route with no conditions has none.
      *
      * MUTATION: show the reading alone whatever the tick, or leave the warning up once it is ticked, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testConditionsSayTheyAreUncheckedWithoutAutomaticFire() throws Exception
@@ -409,24 +348,8 @@ public class testRouteEditorValidation
         }
     }
     /**
-     * Deleting an unrelated condition does not turn a leading "or" into "and".
-     *
-     * **A silent change to when a route fires**, in the route editor that is a headline 3.0.0 feature,
-     * over a path no test covered.
-     *
-     * `(A or B) and C` loads as `[A(1), or(1), B(1), and(0), C(0)]` - `ConditionOutline.write` bumps a
-     * cross-operator left child a level, and `toExpression`'s own comment says such a condition *"opens
-     * as an outline whose first row is one level in"*.
-     *
-     * Delete `C`, which has nothing to do with the group, and the table is left with
-     * `[A(1), or(1), B(1)]`. `tidy()` then forced row 0 flat - `at == 0 ? 0` - giving
-     * `[A(0), or(1), B(1)]`, which reads back as **`A and B`**: the `or` is alone in a one-item
-     * sub-run with nothing to join, so the level-0 word defaults to AND.
-     *
-     * **And nothing objected.** `problems()` does not flag it - one joiner alone at its depth is not a
-     * disagreement - so no row went red, and `everythingWrong`'s only condition-shape gate is
-     * `hasProblems()`. Save wrote the changed meaning, which is the hazard the comment two lines above
-     * that gate names: *"the route would then fire at times nobody asked for."*
+     * Deleting an unrelated condition does not turn a leading "or" into "and": `tidy()` once forced row 0 flat, so
+     * `(A or B) and C` minus `C` read as `A and B` with nothing in red, and Save wrote the changed meaning.
      *
      * MUTATION: restoring `at == 0 ? 0` fails the second assertion.
      */
@@ -472,21 +395,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting the FIRST condition of a group takes the group's own word, not the outer one.
-     *
-     * **Found by a validation of the fix beside this one.**  `removeAt` was given a depth comparison
-     * for a deleted WORD on 2026-09-21 and its other half - a deleted CONDITION - kept preferring
-     * `rows.get(line - 1)` unconditionally.  For the first row of a group that is the OUTER word, one
-     * level shallower.
-     *
-     * So deleting the `2` of `1 or (2 and 3)` removed the `or`: the outline became `[1(0), and(1),
-     * 3(1)]`, which reads `1 and 3` - a different condition from the one anybody typed - and the
-     * surviving word went red as JOINS_NOTHING, so Save refused the route with no way out but Discard.
-     * One keystroke changed when the route fires AND made it unsavable.
-     *
-     * The word that belongs to a row is the adjacent joiner at the SAME depth.  A word at another depth
-     * is left alone, and `tidy()` sweeps one that ends up with nothing on one side, which is what it is
-     * for.
+     * Deleting the FIRST condition of a group takes the group's own word, not the outer one: deleting the `2` of
+     * `1 or (2 and 3)` once removed the `or`, changing when the route fires and leaving the word red.  The word that
+     * belongs to a row is the adjacent joiner at the SAME depth.
      *
      * MUTATION: put `if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);` back
      * without the depth test and the second claim goes red, reading `And(x,x)`.
@@ -513,8 +424,8 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
 
-            // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the whole
-            // claim below is about depth.
+            // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the claim below is about
+            // depth.
             assertEquals(reads(frame), "Or(x,Group(And(x,x)))",
                 "the fixture is not an OR in front of a bracketed group, so nothing below is about one: "
                 + reads(frame));
@@ -522,9 +433,8 @@ public class testRouteEditorValidation
             // THE FIRST CONDITION OF THE GROUP, which is row 2.
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(2));
 
-            // AND THE EXACT SHAPE AFTER IT, for the same reason.  `assertFalse(startsWith
-            // ("And("))` ruled out ONE wrong answer: it passed just as happily for an outline swept down
-            // to a single condition - one keystroke silently deleting two - or emptied altogether.
+            // AND THE EXACT SHAPE AFTER IT: a startsWith check passes for an outline swept down to one condition, or
+            // emptied.
             assertEquals(reads(frame), "Or(x,Group(x))",
                 "deleting the first condition of the group did not leave `1 or (3)`.  The word that"
                 + " belongs to a row is the joiner at its own depth; taking the OUTER one turns this"
@@ -536,12 +446,8 @@ public class testRouteEditorValidation
                 + " and holds " + frame.conditionRowsForTest().size() + ": "
                 + frame.conditionRowsForTest());
 
-            // AND THE CONDITIONS ARE STILL SAVEABLE, which is the half of the defect the shape does
-            // not show: the word left behind by the old branch joined nothing, `whatIsWrong` flagged
-            // it, and Save refused the route with no way out but Discard.
-            //
-            // The CONDITION complaint only, not the whole gate: this fixture is conditions and nothing
-            // else, so `everythingWrong` rightly also wants a name and a command.
+            // AND STILL SAVEABLE: the word the old branch left joined nothing and Save refused.  The CONDITION
+            // complaint only, since this fixture has no name or command.
             assertFalse(frame.problemsForTest().contains(I18n.t("route.ui.frameLogicDisagrees")),
                 "the outline left by deleting one condition disagrees with itself, so Save refuses the"
                 + " route and the only way out is Discard: " + frame.problemsForTest());
@@ -553,23 +459,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).
-     *
-     * Adam's note on MT-469, 2026-09-21: *"in the layout view, we can review [remove] operators (like and)
-     * without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any
-     * linked entries should also be deleted."*
-     *
-     * **The orphan is not only untidy - it changes when the route fires.**  Taking the word out left the
-     * two conditions with nothing between them.  `tidy()` sweeps a word with nothing on one side and two
-     * words in a row, and a RUN WITH NO WORD AT ALL is legal to it; `ConditionOutline.toExpression` then
-     * folds such a run with AND.  So deleting an `or` turned it into an `and`, `whatIsWrong` returned
-     * empty for the shape, no row went red, and Save wrote a route that fires at times nobody asked for
-     * - the hazard `everythingWrong`'s own comment names.
-     *
-     * **Two shapes, because the term after a word is not always one line.**  `1 or 2`, where it is, and
-     * `1 or (2 and 3)`, where it is a whole group one level in - `ConditionOutline.write` puts a group's
-     * rows a level deeper.  Removing only the group's first line would leave `and 3` behind, tidy() would
-     * sweep the now-leading word, and the same wordless run would arrive by another road.
+     * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).  An orphan changes when the
+     * route fires: `tidy()` allows a run with no word and `toExpression` folds it with AND.  Two shapes, `1 or 2` and
+     * `1 or (2 and 3)`, since the term after a word may be a whole group.
      *
      * MUTATION: put back the bare `rows.remove(line)` for a joiner and the first pair of claims goes red
      * with `And(x,x)`; keep the single-line removal but drop the group loop and the second does.
@@ -640,26 +532,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-068: a nested group that is NOT the first term can be built here, by indenting.
-     *
-     * Adam, 2026-09-09: **"it should be representable already in the UI, right?"**  The question came
-     * out of MT-320, which was about the editor MISREADING `3 or ((1 or 2) and 4)` when a route
-     * already had it.  This is the other half: can somebody who has no such route make one?
-     *
-     * **Yes, and this is the gesture.**  Seven lines are typed flat - which is what the plus does,
-     * every new condition arriving at the depth of the one above - and then indented, twice for the
-     * innermost pair.  Nothing else is used: no file, no capture, no loading.
-     *
-     * The condition built is `3 or (4 and (1 or 2))`, which is Adam's condition with the AND's two
-     * sides the other way round.  That is not a dodge and it is not an accident either, so it is
-     * written down: **a line may be at most one level deeper than the line above it**
-     * (`ConditionTable.indent`), and the outline `ConditionOutline.of` writes for a group in the
-     * AND's LEFT position steps from depth 0 straight to depth 2 - the OR at 0, the AND at 1, the
-     * bracket at 2, with no depth-1 line in front of the bracket to indent from.  Written with the
-     * group on the RIGHT, every step is one, and AND means the same thing either way round.
-     *
-     * So the shape is available; the particular ORDER the loader writes it in is not typeable, and a
-     * route that arrives carrying it opens and reads correctly, which is what MT-320 settled.
+     * FR-068 (MT-320): a nested group that is NOT the first term can be built by indenting.  Seven lines are typed flat,
+     * as the plus does, then indented into `3 or (4 and (1 or 2))`: the group goes on the right because a line may be at
+     * most one level deeper than the line above it (`ConditionTable.indent`).
      *
      * MUTATION: dropping `ConditionTable.indent`'s one-level rule does not fail this (it only ever
      * admits more); forcing every indent to be refused does, at the first assertion.
@@ -673,8 +548,7 @@ public class testRouteEditorValidation
 
         try
         {
-            // FLAT, which is the only shape the plus can produce: a new condition takes the depth of
-            // the line above it, and the first line is always at the outermost level.
+            // FLAT, the only shape the plus can produce: a new condition takes the depth of the line above it.
             java.util.List<org.traincontrol.base.ConditionOutline.Row> typed =
                 new java.util.ArrayList<>();
 
@@ -691,9 +565,8 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
 
-            // PRECONDITION: typed flat, it is one level that disagrees with itself - an OR and an AND
-            // side by side - which is exactly the state the editor draws in red and refuses to save.
-            // Indenting is the way out of it, and that is what this test is about.
+            // PRECONDITION: typed flat, it is one level that disagrees with itself, the state the editor draws in red
+            // and refuses to save.
             assertFalse(org.traincontrol.base.ConditionOutline.problems(
                 frame.conditionRowsForTest()).isEmpty(),
                 "seven lines typed flat with both words on them should be flagged as a level that "
@@ -723,11 +596,8 @@ public class testRouteEditorValidation
                 + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest())
                 + " in " + depths(frame));
 
-            // AND THE RULE THAT DECIDES WHICH ORDER IS TYPEABLE, measured rather than claimed in
-            // prose above.  Line 2 sits immediately after the outer OR, which is at depth 0, so it
-            // can never be deeper than 1 - and depth 2 is exactly where `ConditionOutline.of` puts
-            // the bracket when the group is the AND's LEFT child.  That is the whole reason the
-            // group is built on the right here.
+            // THE RULE THAT DECIDES WHICH ORDER IS TYPEABLE: line 2 follows the outer OR at depth 0 so it can never be
+            // deeper than 1, and `ConditionOutline.of` puts a left-child group's bracket at depth 2.
             final String before = depths(frame);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionForTest(2, 1));
@@ -749,23 +619,10 @@ public class testRouteEditorValidation
         }
     }
 
+    /** The depths of the outline, for a failure message. */
     /**
-     * The depths of the outline, for a failure message.
-     *
-     * A condition outline that has gone wrong has gone wrong in its INDENTATION, and the meaning
-     * alone does not say where.
-     */
-    /**
-     * A condition that starts with a group can be built by indenting (2026-09-14).
-     *
-     * Adam: *"the first condition for some reason cannot be indented for proper grouping."*  The rule is that a
-     * line may be at most one level deeper than the line above it, and the first line has no line above it -
-     * so it was refused outright, and `(2 or 3) and (1 or 4)` could not be typed.  The first line now counts as
-     * having an unindented line above it.
-     *
-     * The gesture, from four conditions typed flat: the first condition in, then the OR after it, then the second
-     * condition; then the second pair the same way.  The word goes in before the condition after it, because
-     * indenting a line brings everything already indented under it along.
+     * A condition that starts with a group can be built by indenting (Adam: "the first condition for some reason cannot
+     * be indented for proper grouping.").  The first line now counts as having an unindented line above it.
      */
     @Test
     public void testAConditionThatStartsWithAGroupCanBeBuilt() throws Exception
@@ -805,12 +662,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A joining word indented on its own is shown in red, not read silently as nothing (2026-09-14).
-     *
-     * The other half of Adam's report: an OR indented past the conditions either side of it was read as nothing,
-     * and "2 or 3" became "2 and 3" with nothing in red.  The indent is allowed - building a group one row at a
-     * time passes through exactly that state - but the word joins nothing at its depth, so it is flagged and Save
-     * refuses it until the conditions beside it are indented too.
+     * A joining word indented on its own is shown in red, not read as nothing; Save refuses it until its neighbors are
+     * indented too.
      */
     @Test
     public void testAWordIndentedAloneIsFlagged() throws Exception
@@ -843,10 +696,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * "Reads as" says the joining words in bold and the settings in the color of what they do (2026-09-14).
-     *
-     * Adam: *"In the 'reads as', can we also bold the operators, make on/straight/green green and off/turn/red
-     * red?"*  Colored by the WORD, because the same true/false means "on" for a sensor and "turn" for a switch.
+     * "Reads as" says the joining words in bold and the settings in the color of what they do, colored by the WORD
+     * because the same true/false means "on" for a sensor and "turn" for a switch.
      */
     @Test
     public void testReadsAsBoldsTheWordsAndColoursTheSettings() throws Exception
@@ -889,16 +740,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Choosing the kind a condition line already is leaves it alone (2026-09-14).
-     *
-     * Adam: *"I start with Switch 1.  Then I set address to 40, which makes it a Signal.  Then, if I click on
-     * Kind -> Signal and exit out, it snaps back to Switch 1."*  A drop-down commits what it holds when it
-     * closes, chosen or not, and the condition table reset a line to its kind's starting address on every
-     * commit of the Kind cell - so any line, a sensor as much as a signal, went back to address 1.  At a
-     * signal's address it then showed as a Switch, because address 1 is not a signal.
-     *
-     * Without a layout every accessory reads as a switch, so the claim uses a switch and a sensor; the reset
-     * it pins did not look at the kind at all.
+     * Choosing the kind a condition line already is leaves it alone: the table reset a line to its kind's starting
+     * address on every commit of the Kind cell.  A switch and a sensor are used since without a layout every accessory
+     * reads as a switch.
      */
     @Test
     public void testChoosingTheKindALineAlreadyIsKeepsIt() throws Exception
@@ -940,12 +784,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Switch and Signal are one command, so moving a line between them keeps its address (2026-09-14).
-     *
-     * A condition is stored as an accessory command whichever of the two it is called, so resetting the
-     * address when the other word is chosen threw away the only thing the line said.
-     */
+    /** Switch and Signal are one command, so moving a line between them keeps its address. */
     @Test
     public void testSwitchingBetweenSwitchAndSignalKeepsTheAddress() throws Exception
     {
@@ -977,12 +816,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A red word carries a warning triangle, and its tooltip says which of the two things is wrong (2026-09-14).
-     *
-     * Adam: *"For the red operators, can we add a warning triangle icon with a tooltip explaining what's wrong
-     * next to it?"*  Two different reasons turn a word red and they are fixed differently, so the tooltip
-     * names the one that applies.  The cell is read as the table PAINTS it, and the renderer is one label
-     * reused down the column, so a line that is not flagged must carry neither.
+     * A red word carries a warning triangle whose tooltip says which of the two things is wrong.  The cell is read as
+     * the table PAINTS it, and the renderer reuses one label down the column, so an unflagged line must carry neither.
      */
     @Test
     public void testARedWordCarriesAWarningThatSaysWhy() throws Exception
@@ -998,9 +833,9 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(mixed));
 
-            // Each cell is read the moment it is painted: the renderer hands back ONE label for every cell, so
-            // holding two references and reading them afterwards reads the last cell painted twice.  The
-            // flagged line is painted first on purpose, so the second read is the one a stale warning shows in.
+            // Each cell is read the moment it is painted: the renderer hands back ONE label, so reading two references
+            // afterwards reads the last cell twice.  The flagged line is painted first so the second read is where a
+            // stale warning shows.
             final Painted[] cell = new Painted[2];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -1056,9 +891,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by selecting the first three conditions and
-     * pressing indent once; 4 then moves up past the whole group to "4 and (1 or 2 or 3)" and back, every line keeping
-     * its level; and outdenting the selection undoes the indent.
+     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by clicking the first condition,
+     * Shift-clicking the third and pressing the indent mark once; 4's up arrow then moves it past the whole group to
+     * "4 and (1 or 2 or 3)" and its down arrow back, every line keeping its level; and outdenting the selection undoes
+     * the indent.  Every step is a mouse press on the condition table.
      *
      * MUTATION: drop `ConditionTable.changeSelection`'s override, and the press collapses the selection to one line,
      * so only sensor 1 moves in.
@@ -1079,7 +915,13 @@ public class testRouteEditorValidation
             assertFalse(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "precondition: 'or' and 'and' side by side at one level should be flagged");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, 1));
+            final javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+                t -> "ConditionTable".equals(t.getClass().getSimpleName()));
+
+            assertNotNull(table, "the route editor has no condition table");
+
+            selectLines(table, 0, 4);
+            clickCell(table, 0, INDENT_MARK, 0);
 
             assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4",
                 "the three selected conditions and the words between them go one level in, the 'and' stays");
@@ -1087,16 +929,17 @@ public class testRouteEditorValidation
             assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "(1 or 2 or 3) and 4 is flagged: " + levels(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(6, -1));
+            clickCell(table, 6, UP_ARROW, 0);
 
             assertEquals(levels(frame), " 0:4 0AND 1:1 1OR 1:2 1OR 1:3",
                 "4 moved up past the whole group, with the 'and' between them and every level kept");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.moveConditionForTest(0, 1));
+            clickCell(table, 0, DOWN_ARROW, 0);
 
             assertEquals(levels(frame), " 1:1 1OR 1:2 1OR 1:3 0AND 0:4", "and moved back down past it");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionsForTest(0, 4, -1));
+            selectLines(table, 0, 4);
+            clickCell(table, 0, OUTDENT_MARK, 0);
 
             assertEquals(levels(frame), " 0:1 0OR 0:2 0OR 0:3 0AND 0:4", "outdenting the selection undoes it");
         }
@@ -1104,6 +947,1114 @@ public class testRouteEditorValidation
         {
             close(frame);
         }
+    }
+
+    /**
+     * OB-379, Adam's steps: "(a and b and c) or (d and e and f)", the plus adds g at the end, and g's up arrow pressed
+     * four times gives "(a and b and c and g) or (d and e and f)" with g still selected; its down arrow takes it back.
+     * Adam: "The problem is that g is swapped with c unless the user indents (which is illogical)".
+     *
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and the fourth press gives "(a and b and g) or (c and d
+     * and e and f)".
+     */
+    @Test
+    public void testAConditionAddedAtTheEndMovesUpIntoTheGroupAbove() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26")));
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            clickCell(table, frame.conditionRowsForTest().size(), UP_ARROW, 0);
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26 1AND 1:1",
+                "precondition: the plus adds g (sensor 1) at the end of the second group");
+
+            int g = frame.conditionRowsForTest().size() - 1;
+
+            for (int press = 1; press <= 4; press++)
+            {
+                clickCell(table, g, UP_ARROW, 0);
+
+                g = selectedLine(table);
+            }
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 1AND 1:23 1AND 1:1 0OR 1:24 1AND 1:25 1AND 1:26",
+                "four presses of g's up arrow should give (a and b and c and g) or (d and e and f)");
+
+            assertEquals(g, 6, "g is no longer the selected line after the move");
+
+            clickCell(table, g, DOWN_ARROW, 0);
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 1AND 1:23 0OR 1:1 1AND 1:24 1AND 1:25 1AND 1:26",
+                "g's down arrow takes it back to the front of the second group");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147: a right-click on a condition offers Insert Condition Above and Below and the line's own actions, each
+     * enabled exactly where its mark does something; Insert puts a new condition at the line's level, joined by its
+     * level's word, and selects it; a right-click on a mark opens the menu without working the mark; and a right-click
+     * below the lines offers Add Condition.  Adam: "so we can also insert by right clicking."
+     *
+     * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and Insert Condition
+     * Below on 22 gives "21 or 22 and 1", flagged.
+     */
+    @Test
+    public void testARightClickInsertsAConditionAndOffersTheLinesActions() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1OR 1:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            // Under the plus, where the table is empty: the window opens tall enough for a few more lines
+            java.awt.Rectangle plus = support.Components.onTheEventThread(
+                () -> table.getCellRect(table.getRowCount() - 1, 0, true));
+
+            javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(table,
+                new java.awt.Point(plus.x + 40, plus.y + plus.height + 6), 5000);
+
+            assertNotNull(menu, "a right-click below the lines opened no menu");
+            assertEquals(offered(menu), "+route.ui.menuAddCondition", "the menu below the lines");
+
+            support.Mouse.choose(item(menu, "route.ui.menuAddCondition"));
+
+            assertEquals(levels(frame), " 1:21 1OR 1:22 0AND 0:23 0AND 0:1", "Add Condition adds one at the end");
+            assertEquals(selectedLine(table), 6, "and selects it");
+
+            menu = rightClickCell(table, 2, NOTHING_TO_EDIT);
+
+            assertNotNull(menu, "a right-click on condition 22 opened no menu");
+
+            assertEquals(offered(menu), "+route.ui.menuInsertConditionAbove +route.ui.menuInsertConditionBelow"
+                + " +route.ui.menuMoveUp -route.ui.menuMoveDown +route.ui.menuIndent +route.ui.menuOutdent"
+                + " +ui.delete", "the menu on 22 in (21 or 22) and 23 and 1, enabled (+) or not (-)");
+
+            assertEquals(selectedLine(table), 2, "the line right-clicked is the one selected");
+
+            support.Mouse.choose(item(menu, "route.ui.menuInsertConditionBelow"));
+
+            assertEquals(levels(frame), " 1:21 1OR 1:22 1OR 1:1 0AND 0:23 0AND 0:1",
+                "Insert Condition Below puts sensor 1 under 22, in its group and joined by its 'or'");
+            assertEquals(selectedLine(table), 4, "and the new condition is selected");
+
+            menu = rightClickCell(table, 4, UP_ARROW);
+
+            assertNotNull(menu, "a right-click on the up arrow opened no menu");
+            assertEquals(levels(frame), " 1:21 1OR 1:22 1OR 1:1 0AND 0:23 0AND 0:1",
+                "a right-click on a mark worked the mark");
+
+            support.Mouse.choose(item(menu, "route.ui.menuInsertConditionAbove"));
+
+            assertEquals(levels(frame), " 1:21 1OR 1:22 1OR 1:1 1OR 1:1 0AND 0:23 0AND 0:1",
+                "Insert Condition Above puts one above, in the same group");
+            assertEquals(selectedLine(table), 4, "and selects it");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * Add Condition and the plus join the new condition with the word of the last condition's level, as Insert
+     * Condition Below does: "21 or 22" plus Add gives "21 or 22 or 1", not a level that disagrees with itself.
+     *
+     * MUTATION: in `ConditionTable.addRow`, join with `Joiner.AND` always, and Add gives "21 or 22 and 1", flagged.
+     */
+    @Test
+    public void testAddConditionJoinsWithTheLevelsWord() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            java.awt.Rectangle plus = support.Components.onTheEventThread(
+                () -> table.getCellRect(table.getRowCount() - 1, 0, true));
+
+            javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(table,
+                new java.awt.Point(plus.x + 40, plus.y + plus.height + 6), 5000);
+
+            assertNotNull(menu, "a right-click below the lines opened no menu");
+
+            support.Mouse.choose(item(menu, "route.ui.menuAddCondition"));
+
+            assertEquals(levels(frame), " 0:21 0OR 0:22 0OR 0:1", "Add Condition after \"21 or 22\" joins with its"
+                + " level's 'or'");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:21 0AND 1:22 1OR 1:23")));
+
+            clickCell(table, frame.conditionRowsForTest().size(), UP_ARROW, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 1:22 1OR 1:23 1OR 1:1", "the plus after \"21 and (22 or 23)\""
+                + " joins with the group's 'or'");
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the plus made is flagged: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()));
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * A capture into the conditions joins with the word of the last condition's level, as Add Condition does: "21 or
+     * 22" and a captured accessory gives "21 or 22 or" it, an outline Save takes, not a level that disagrees with
+     * itself.
+     *
+     * MUTATION: in `appendCommand`, join a captured condition with `Joiner.AND` always, and the outline is flagged.
+     */
+    @Test
+    public void testACaptureIntoTheConditionsJoinsWithTheLevelsWord() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22"));
+                frame.setCapturingIntoConditions(true);
+                frame.appendCommand(RouteCommand.RouteCommandAccessory(23, Accessory.accessoryDecoderType.MM2, true)
+                    .toLine(null).trim());
+            });
+
+            assertTrue(levels(frame).startsWith(" 0:21 0OR 0:22 0OR 0:"), "a capture after \"21 or 22\" does not join"
+                + " with its level's 'or': " + levels(frame));
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the capture made is flagged: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147, what an edit changed: after a move, an indent, an outdent or the plus, the condition that changed is
+     * selected and "Reads as" shows it in bold, where it now sits in the sentence.
+     *
+     * MUTATION: in `describe`, drop the bold round a chosen condition, and no condition is bold.
+     */
+    @Test
+    public void testTheReadingShowsTheConditionAnEditChanged() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(flat(21, "AND", 22, "AND",
+                23)));
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            clickCell(table, 4, UP_ARROW, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:23 0AND 0:22", "precondition: 23 moved up");
+            assertEquals(selectedLine(table), 2, "23 is selected after its move");
+            assertEquals(bold(frame), "[S88 #23]", "after the move, Reads as: " + frame.readsAsForTest());
+
+            clickCell(table, 2, INDENT_MARK, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 1:23 0AND 0:22", "precondition: 23 indented");
+            assertEquals(bold(frame), "[S88 #23]", "after the indent, Reads as: " + frame.readsAsForTest());
+
+            clickCell(table, 2, OUTDENT_MARK, 0);
+
+            assertEquals(bold(frame), "[S88 #23]", "after the outdent, Reads as: " + frame.readsAsForTest());
+
+            clickCell(table, frame.conditionRowsForTest().size(), UP_ARROW, 0);
+
+            assertEquals(selectedLine(table), 6, "the condition the plus added is selected");
+            assertEquals(bold(frame), "[S88 #1]", "after the plus, Reads as: " + frame.readsAsForTest());
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147, the menu's items after an insert: a condition inserted, moved to the front of the next group and outdented
+     * sits between the "or" and the group's "and", which now joins nothing and is red.  Deleting it takes that "and",
+     * not the "or": "(21 and 22) or (24 and 25)" is left as it was, not merged into "21 and 22 and 24 and 25" with
+     * nothing red to say so.
+     *
+     * MUTATION: in `ConditionTable.removeAt`, always take the word before a condition when it is at the condition's own
+     * depth, and the "or" between the groups goes.
+     */
+    @Test
+    public void testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            rightClickAndChoose(table, 2, "route.ui.menuInsertConditionBelow");
+            rightClickAndChoose(table, 4, "route.ui.menuMoveDown");
+            rightClickAndChoose(table, 4, "route.ui.menuOutdent");
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 0:1 1AND 1:24 1AND 1:25",
+                "precondition: the inserted condition, moved down and outdented, stands before the second group");
+
+            rightClickAndChoose(table, 4, "ui.delete");
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 1:24 1AND 1:25",
+                "deleting it should leave (21 and 22) or (24 and 25); Reads as: " + plainReading(frame));
+
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the delete left is flagged: "
+                + org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()));
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147: Insert Condition Above and Below, chosen from a right-click, put one new condition directly next to the
+     * line clicked, at its depth, in its group and joined by its level's word, and change nothing else; the new line is
+     * selected and bold in "Reads as", which reads as expected.  Covers flat "and" and "or" lists, "(a and b and
+     * c) or (d and e and f)" at a, c, d and f, a nested group's first and last lines, two levels in, and one condition.
+     *
+     * MUTATION: in `ConditionOutline.wordOfTheLevel`, drop the walk back to the group's first line, and Insert Below on
+     * the last line of "(22 or 23 or 24)" joins with "and".
+     */
+    @Test
+    public void testInsertConditionPutsOneNextToTheLineClicked() throws Exception
+    {
+        needsADisplay();
+
+        final String flatAnd = " 0:21 0AND 0:22 0AND 0:23";
+        final String flatOr = " 0:21 0OR 0:22 0OR 0:23";
+        final String twoGroups = " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26";
+
+        // start, line, Above or Below, the outline after, the selected line after, how Reads as reads after
+        final Object[][] cases = {
+            {flatAnd, 0, "Above", " 0:1 0AND 0:21 0AND 0:22 0AND 0:23", 0, "#1 and #21 and #22 and #23"},
+            {flatAnd, 2, "Above", " 0:21 0AND 0:1 0AND 0:22 0AND 0:23", 2, "#21 and #1 and #22 and #23"},
+            {flatAnd, 4, "Below", " 0:21 0AND 0:22 0AND 0:23 0AND 0:1", 6, "#21 and #22 and #23 and #1"},
+            {flatOr, 0, "Above", " 0:1 0OR 0:21 0OR 0:22 0OR 0:23", 0, "#1 or #21 or #22 or #23"},
+            {flatOr, 2, "Below", " 0:21 0OR 0:22 0OR 0:1 0OR 0:23", 4, "#21 or #22 or #1 or #23"},
+            {twoGroups, 0, "Above", " 1:1 1AND 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26", 0,
+                "(#1 and #21 and #22 and #23) or (#24 and #25 and #26)"},
+            {twoGroups, 0, "Below", " 1:21 1AND 1:1 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26", 2,
+                "(#21 and #1 and #22 and #23) or (#24 and #25 and #26)"},
+            {twoGroups, 4, "Above", " 1:21 1AND 1:22 1AND 1:1 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26", 4,
+                "(#21 and #22 and #1 and #23) or (#24 and #25 and #26)"},
+            {twoGroups, 4, "Below", " 1:21 1AND 1:22 1AND 1:23 1AND 1:1 0OR 1:24 1AND 1:25 1AND 1:26", 6,
+                "(#21 and #22 and #23 and #1) or (#24 and #25 and #26)"},
+            {twoGroups, 6, "Above", " 1:21 1AND 1:22 1AND 1:23 0OR 1:1 1AND 1:24 1AND 1:25 1AND 1:26", 6,
+                "(#21 and #22 and #23) or (#1 and #24 and #25 and #26)"},
+            {twoGroups, 6, "Below", " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:1 1AND 1:25 1AND 1:26", 8,
+                "(#21 and #22 and #23) or (#24 and #1 and #25 and #26)"},
+            {twoGroups, 10, "Above", " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:1 1AND 1:26", 10,
+                "(#21 and #22 and #23) or (#24 and #25 and #1 and #26)"},
+            {twoGroups, 10, "Below", " 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26 1AND 1:1", 12,
+                "(#21 and #22 and #23) or (#24 and #25 and #26 and #1)"},
+            {" 0:21 0AND 1:22 1OR 1:23 1OR 1:24 0AND 0:25", 2, "Above",
+                " 0:21 0AND 1:1 1OR 1:22 1OR 1:23 1OR 1:24 0AND 0:25", 2, "#21 and (#1 or #22 or #23 or #24) and #25"},
+            {" 0:21 0AND 1:22 1OR 1:23 1OR 1:24 0AND 0:25", 6, "Below",
+                " 0:21 0AND 1:22 1OR 1:23 1OR 1:24 1OR 1:1 0AND 0:25", 8, "#21 and (#22 or #23 or #24 or #1) and #25"},
+            {" 1:21 1OR 2:22 2AND 2:23 0AND 0:24", 2, "Above", " 1:21 1OR 2:1 2AND 2:22 2AND 2:23 0AND 0:24", 2,
+                "(#21 or (#1 and #22 and #23)) and #24"},
+            {" 1:21 1OR 2:22 2AND 2:23 0AND 0:24", 4, "Below", " 1:21 1OR 2:22 2AND 2:23 2AND 2:1 0AND 0:24", 6,
+                "(#21 or (#22 and #23 and #1)) and #24"},
+            {" 0:21", 0, "Above", " 0:1 0AND 0:21", 0, "#1 and #21"},
+            {" 0:21", 0, "Below", " 0:21 0AND 0:1", 2, "#21 and #1"},
+        };
+
+        insertsAsTheCasesSay(cases);
+    }
+
+    /**
+     * Each case's Insert Condition, chosen from a right-click: {start, line, Above or Below, the outline after, the
+     * selected line after, how Reads as reads after}.
+     */
+    private static void insertsAsTheCasesSay(final Object[][] cases) throws Exception
+    {
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            for (Object[] c : cases)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                    frame.setConditionRowsForTest(fromLevels((String) c[0])));
+
+                String did = "Insert Condition " + c[2] + " on line " + c[1] + " of" + c[0];
+
+                rightClickAndChoose(table, (Integer) c[1], "route.ui.menuInsertCondition" + c[2]);
+
+                assertEquals(levels(frame), c[3], did);
+                assertEquals(selectedLine(table), c[4], did + ": the new condition is not the selected line");
+                assertEquals(bold(frame), "[S88 #1]", did + ": Reads as " + frame.readsAsForTest());
+                assertEquals(readsLike(frame), c[5], did + ": Reads as " + plainReading(frame));
+                assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                    did + " left a red word: " + levels(frame));
+            }
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-150: Insert Condition on a joining word puts one new condition at the word's own level, joined by that same
+     * word, and selects it: on the "or" of "(21 and 22) or (24 and 25)" it gives "(21 and 22) or new or (24 and 25)",
+     * on the first group's "and" "(21 and new and 22)".  Above (just before the word's right-hand side) and Below (just
+     * after its left-hand side) give the same outline, as the new line sits between two copies of the word either way.
+     *
+     * MUTATION: in `offerConditionMenu`, enable the two inserts on a condition line only, and they are grayed here.
+     */
+    @Test
+    public void testInsertOnAWordLineJoinsByThatWord() throws Exception
+    {
+        needsADisplay();
+
+        final String twoGroups = " 1:21 1AND 1:22 0OR 1:24 1AND 1:25";
+        final String orGroup = " 0:21 0AND 1:22 1OR 1:23";
+
+        final Object[][] cases = {
+            {twoGroups, 3, "Above", " 1:21 1AND 1:22 0OR 0:1 0OR 1:24 1AND 1:25", 4,
+                "(#21 and #22) or #1 or (#24 and #25)"},
+            {twoGroups, 3, "Below", " 1:21 1AND 1:22 0OR 0:1 0OR 1:24 1AND 1:25", 4,
+                "(#21 and #22) or #1 or (#24 and #25)"},
+            {twoGroups, 1, "Above", " 1:21 1AND 1:1 1AND 1:22 0OR 1:24 1AND 1:25", 2,
+                "(#21 and #1 and #22) or (#24 and #25)"},
+            {twoGroups, 1, "Below", " 1:21 1AND 1:1 1AND 1:22 0OR 1:24 1AND 1:25", 2,
+                "(#21 and #1 and #22) or (#24 and #25)"},
+            {twoGroups, 5, "Above", " 1:21 1AND 1:22 0OR 1:24 1AND 1:1 1AND 1:25", 6,
+                "(#21 and #22) or (#24 and #1 and #25)"},
+            {orGroup, 3, "Below", " 0:21 0AND 1:22 1OR 1:1 1OR 1:23", 4, "#21 and (#22 or #1 or #23)"},
+            {orGroup, 1, "Above", " 0:21 0AND 0:1 0AND 1:22 1OR 1:23", 2, "#21 and #1 and (#22 or #23)"},
+        };
+
+        insertsAsTheCasesSay(cases);
+    }
+
+    /**
+     * FR-151: after Insert Condition Above or Below, Add Condition, the plus, or an arrow, the keyboard is on the new or
+     * moved line's address cell, so a digit starts editing that cell as it does after one click on it; the action
+     * itself opens no editor.  The keyboard is put elsewhere in the window before each, as a user's may be.
+     *
+     * MUTATION: in `ConditionTable.pick`, select the row alone with `setRowSelectionInterval`, and a digit edits
+     * nothing.
+     */
+    @Test
+    public void testANewOrMovedConditionIsReadyToTypeInto() throws Exception
+    {
+        needsADisplay();
+
+        final String three = " 0:21 0AND 0:22 0AND 0:23";
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(three));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+            final javax.swing.JTextField elsewhere = support.Components.find(frame, javax.swing.JTextField.class,
+                f -> f.isEditable() && f.isShowing());
+
+            assertNotNull(elsewhere, "the route editor has no field to put the keyboard in");
+
+            clickCell(table, 2, ADDRESS, 0);
+
+            assertEquals(digitEdits(frame, table), "line 2 column 5",
+                "precondition: one click on line 2's address and a digit do not edit it, so the fixture's keyboard"
+                + " does not reach the table");
+
+            // What is done, and the line that then holds the condition it made or moved
+            final Object[][] cases = {
+                {"Insert Condition Above on line 2", 2},
+                {"Insert Condition Below on line 2", 4},
+                {"Add Condition below the lines", 6},
+                {"the plus", 6},
+                {"the up arrow on line 4", 2},
+                {"the down arrow on line 0", 2},
+                {"Move Down on line 2", 4},
+            };
+
+            for (Object[] c : cases)
+            {
+                String did = (String) c[0];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    frame.setConditionRowsForTest(fromLevels(three));
+                    elsewhere.requestFocusInWindow();
+                });
+
+                support.Components.settle();
+
+                assertSame(support.Keys.focusOwnerOf(frame), elsewhere, "precondition: the keyboard is in a field");
+
+                if (did.startsWith("Insert")) rightClickAndChoose(table, 2, "route.ui.menuInsertCondition"
+                    + did.split(" ")[2]);
+                else if (did.startsWith("Add")) rightClickAndChoose(table, 5, "route.ui.menuAddCondition");
+                else if (did.equals("the plus")) clickCell(table, 5, UP_ARROW, 0);
+                else if (did.startsWith("the up arrow")) clickCell(table, 4, UP_ARROW, 0);
+                else if (did.startsWith("the down arrow")) clickCell(table, 0, DOWN_ARROW, 0);
+                else rightClickAndChoose(table, 2, "route.ui.menuMoveDown");
+
+                int line = (Integer) c[1];
+
+                assertEquals(selectedLine(table), line, did + " did not select the line: " + levels(frame));
+                assertFalse(support.Components.onTheEventThread(() -> table.isEditing()),
+                    did + " opened an editor by itself");
+                assertEquals(digitEdits(frame, table), "line " + line + " column " + ADDRESS,
+                    "after " + did + " a digit does not edit the line's address: " + levels(frame));
+            }
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-151: a digit typed on a line's address replaces what the cell held, as a spreadsheet does, so 7 on a new
+     * condition makes it sensor 7; a double-click opens the cell to change part of it, and what is typed is added.
+     *
+     * MUTATION: in `ConditionTable.editCellAt`, drop the `selectAll`, and the new condition becomes sensor 17.
+     */
+    @Test
+    public void testTypingOnAnAddressReplacesIt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            rightClickAndChoose(table, 2, "route.ui.menuInsertConditionBelow");
+
+            asIfFocused(frame, owner -> typeADigit(owner, '7'));
+            commit(table);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:7 0AND 0:23",
+                "7 typed on the new condition did not make it sensor 7");
+            assertEquals(bold(frame), "[S88 #7]", "Reads as " + frame.readsAsForTest());
+
+            clickCell(table, 0, ADDRESS, 0, 2);
+
+            final java.awt.Component field = support.Components.onTheEventThread(() -> table.getEditorComponent());
+
+            assertNotNull(field, "a double-click on line 0's address did not open it");
+
+            typeADigit(field, '7');
+            commit(table);
+
+            assertEquals(levels(frame), " 0:217 0AND 0:22 0AND 0:7 0AND 0:23",
+                "7 typed after a double-click on sensor 21 did not add to it");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /** A digit as the keyboard types it: pressed, typed and released, each dispatched to one component. */
+    private static void typeADigit(final java.awt.Component on, final char digit)
+    {
+        support.Components.onTheEventThread(() ->
+        {
+            long now = System.currentTimeMillis();
+
+            on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_PRESSED, now, 0,
+                java.awt.event.KeyEvent.VK_0 + digit - '0', digit));
+            on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_TYPED, now, 0,
+                java.awt.event.KeyEvent.VK_UNDEFINED, digit));
+            on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_RELEASED, now + 1, 0,
+                java.awt.event.KeyEvent.VK_0 + digit - '0', digit));
+
+            return null;
+        });
+
+        support.Components.settle();
+    }
+
+    /** Ends the table's edit as Enter does, keeping what was typed. */
+    private static void commit(final javax.swing.JTable table)
+    {
+        support.Components.onTheEventThread(() -> table.isEditing() && table.getCellEditor().stopCellEditing());
+    }
+
+    /**
+     * Presses 7 where the window sends the keyboard and says which cell it began editing; the edit is then canceled.
+     */
+    private static String digitEdits(final org.traincontrol.gui.RouteEditorFrame frame, final javax.swing.JTable table)
+    {
+        asIfFocused(frame, owner -> support.Keys.press(owner, java.awt.event.KeyEvent.VK_7));
+
+        return support.Components.onTheEventThread(() ->
+        {
+            String out = table.isEditing()
+                ? "line " + table.getEditingRow() + " column " + table.getEditingColumn() : "nothing";
+
+            if (table.isEditing()) table.getCellEditor().cancelCellEditing();
+
+            return out;
+        });
+    }
+
+    /**
+     * Keys pressed where the window sends the keyboard, as a focused window takes them.  The focus owner is answered
+     * from the window, as a test window is usually not the one the operating system has focused.
+     */
+    private static void asIfFocused(final org.traincontrol.gui.RouteEditorFrame frame,
+        final java.util.function.Consumer<java.awt.Component> keys)
+    {
+        final java.awt.Component owner = support.Keys.focusOwnerOf(frame);
+        java.awt.KeyboardFocusManager real = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
+        java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(new java.awt.DefaultKeyboardFocusManager()
+        {
+            @Override
+            public java.awt.Component getFocusOwner()
+            {
+                return owner;
+            }
+        });
+
+        try
+        {
+            keys.accept(owner);
+        }
+        finally
+        {
+            java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(real);
+        }
+    }
+
+    /**
+     * FR-152: a taller window gives its extra height to the conditions, and the commands keep the height they have at
+     * the packed size, where the two sections are as tall as each other as before.
+     *
+     * MUTATION: in `build`, lay the middle panel out with a plain `new GridLayout(2, 1, 0, 8)`, and the commands take
+     * half of the extra height.
+     */
+    @Test
+    public void testATallerWindowGivesTheConditionsTheRoom() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            support.Components.settle();
+
+            final javax.swing.JTable conditions = conditionTable(frame);
+            final javax.swing.JTable commands = support.Components.find(frame, javax.swing.JTable.class,
+                t -> "CommandTable".equals(t.getClass().getSimpleName()));
+
+            assertNotNull(commands, "the route editor has no command table");
+
+            final int[] packed = support.Components.onTheEventThread(() -> new int[]{frame.getHeight(),
+                commands.getParent().getHeight(), conditions.getParent().getHeight(),
+                section(commands).getHeight(), section(conditions).getHeight()});
+
+            assertEquals(packed[3], packed[4], "at the packed size the two sections are not as tall as each other");
+
+            // As tall as the screen allows, as maximizing does: Windows keeps a window within the screen's height.
+            final int room = support.Components.onTheEventThread(() ->
+                frame.getGraphicsConfiguration().getBounds().height - frame.getHeight());
+
+            assertTrue(room >= 150, "precondition: the screen has no room for a taller window: " + room);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setSize(frame.getWidth(), frame.getHeight() + room);
+                frame.validate();
+            });
+
+            support.Components.settle();
+
+            final int[] tall = support.Components.onTheEventThread(() -> new int[]{frame.getHeight(),
+                commands.getParent().getHeight(), conditions.getParent().getHeight()});
+
+            int grown = tall[0] - packed[0];
+
+            assertTrue(grown >= 150, "precondition: the window did not grow: " + grown);
+            assertTrue(tall[2] - packed[2] >= grown * 9 / 10, "the window grew by " + grown
+                + " pixels and the conditions by only " + (tall[2] - packed[2]));
+            assertTrue(tall[1] - packed[1] <= grown / 20, "the window grew by " + grown + " pixels and the commands by "
+                + (tall[1] - packed[1]));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /** The titled section a table sits in: the panel round its scroll pane. */
+    private static java.awt.Container section(javax.swing.JTable table)
+    {
+        return javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, table).getParent();
+    }
+
+    /**
+     * FR-153: the lines an edit changed are drawn pale, fading back to the table's white within about a second.  Move
+     * Down on the first of "21 and 22 and 23" lights the two conditions that traded places, never the 23 it left.
+     *
+     * MUTATION: in `ConditionTable.shift`, drop the `showChanges` call, and the moved line is white at once.
+     */
+    @Test
+    public void testAnEditShowsWhichLinesItChanged() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            rightClickAndChoose(table, 0, "route.ui.menuMoveDown");
+
+            assertEquals(levels(frame), " 0:22 0AND 0:21 0AND 0:23", "precondition: Move Down on 21 swaps it with 22");
+
+            // A selected line wears the selection's color, so the selection is cleared to see the line's own.
+            javax.swing.SwingUtilities.invokeAndWait(table::clearSelection);
+
+            assertNotEquals(background(table, 2), java.awt.Color.WHITE,
+                "just after Move Down the moved line is drawn as every other line is");
+
+            long until = System.currentTimeMillis() + 1500;
+
+            // The fade's own time is what is tested, so the claim waits it out, looking at the untouched line meanwhile
+            while (System.currentTimeMillis() < until)
+            {
+                assertEquals(background(table, 4), java.awt.Color.WHITE, "the line Move Down left alone is lit");
+
+                Thread.sleep(100);
+            }
+
+            assertEquals(background(table, 2), java.awt.Color.WHITE,
+                "1.5 seconds after Move Down the moved line has not faded back to white");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /** A line's background as the table paints its Kind cell. */
+    private static java.awt.Color background(final javax.swing.JTable table, final int line)
+    {
+        return support.Components.onTheEventThread(() ->
+            table.prepareRenderer(table.getCellRenderer(line, 4), line, 4).getBackground());
+    }
+
+    /**
+     * FR-150: a right-click on a joining word offers both inserts (testInsertOnAWordLineJoinsByThatWord says where they
+     * go); FR-147: a right-click inside a selection of several lines keeps it, so the menu's Indent acts on them all,
+     * and Insert Below then puts one under the line clicked and selects it alone; a right-click outside the selection
+     * picks the line clicked.
+     *
+     * MUTATION: in `offerConditionMenu`, select the line clicked whether or not it is already selected, and the
+     * selection of three is lost.
+     */
+    @Test
+    public void testInsertFromAWordLineOrASelection() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            for (int word : new int[]{1, 3})
+            {
+                javax.swing.JPopupMenu menu = rightClickCell(table, word, NOTHING_TO_EDIT);
+
+                assertNotNull(menu, "a right-click on the word on line " + word + " opened no menu");
+                assertTrue(item(menu, "route.ui.menuInsertConditionAbove").isEnabled()
+                    && item(menu, "route.ui.menuInsertConditionBelow").isEnabled(),
+                    "a word line does not offer both inserts: " + offered(menu));
+
+                support.Mouse.closeMenus();
+            }
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24")));
+
+            selectLines(table, 2, 4);
+
+            javax.swing.JPopupMenu menu = rightClickCell(table, 4, NOTHING_TO_EDIT);
+
+            assertNotNull(menu, "a right-click inside the selection opened no menu");
+            assertEquals(java.util.Arrays.toString(support.Components.onTheEventThread(() -> table.getSelectedRows())),
+                "[2, 3, 4]", "a right-click inside a selection of several lines changed it");
+
+            support.Mouse.choose(item(menu, "route.ui.menuInsertConditionBelow"));
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:1 0AND 0:24",
+                "Insert Condition Below from inside the selection puts one under the line clicked");
+            assertEquals(java.util.Arrays.toString(support.Components.onTheEventThread(() -> table.getSelectedRows())),
+                "[6]", "the new condition alone is selected");
+
+            selectLines(table, 2, 4);
+
+            rightClickAndChoose(table, 0, "route.ui.menuInsertConditionAbove");
+
+            assertEquals(levels(frame), " 0:1 0AND 0:21 0AND 0:22 0AND 0:23 0AND 0:1 0AND 0:24",
+                "Insert Condition Above on a line outside the selection puts one above that line");
+            assertEquals(selectedLine(table), 0, "and selects it");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * FR-147: a condition inserted into a saved route is filled in by double-clicking its address, and the insert is
+     * unsaved work, so Cancel asks before closing and the route keeps the conditions it was saved with.
+     *
+     * MUTATION: in `stateSignature`, leave out the condition rows, and Cancel closes without asking.
+     */
+    @Test
+    public void testAnInsertedConditionIsTypedIntoAndCancelKeepsTheSavedRoute() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.marklin.MarklinRoute route = new org.traincontrol.marklin.MarklinRoute(null, "Saved",
+            4243, new java.util.ArrayList<>(java.util.Collections.singletonList(
+                RouteCommand.RouteCommandAccessory(80, Accessory.accessoryDecoderType.MM2, true))), 0,
+            org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, true,
+            org.traincontrol.base.ConditionOutline.toExpression(fromLevels(" 1:21 1AND 1:22 0OR 0:23")));
+
+        final org.traincontrol.gui.RouteEditorFrame[] opened = new org.traincontrol.gui.RouteEditorFrame[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            opened[0] = new org.traincontrol.gui.RouteEditorFrame(null, route.getName(), route);
+            opened[0].pack();
+            opened[0].setVisible(true);
+        });
+
+        final org.traincontrol.gui.RouteEditorFrame frame = opened[0];
+
+        try
+        {
+            final javax.swing.JTable table = conditionTable(frame);
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 0:23", "precondition: the saved route's conditions");
+            assertFalse(frame.hasUnsavedWork(), "precondition: the route opens with nothing unsaved");
+
+            rightClickAndChoose(table, 0, "route.ui.menuInsertConditionBelow");
+
+            clickCell(table, 2, 5, 0, 2);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                if (table.getEditorComponent() instanceof javax.swing.JTextField)
+                {
+                    ((javax.swing.JTextField) table.getEditorComponent()).setText("7");
+                    table.getCellEditor().stopCellEditing();
+                }
+            });
+
+            assertEquals(levels(frame), " 1:21 1AND 1:7 1AND 1:22 0OR 0:23",
+                "a double-click on the new condition's address and typing 7 did not make it sensor 7");
+            assertEquals(bold(frame), "[S88 #7]", "Reads as " + frame.readsAsForTest());
+
+            final javax.swing.JButton cancel = support.Components.find(frame, javax.swing.JButton.class,
+                b -> I18n.t("route.ui.frameCancel").equals(b.getText()));
+
+            assertNotNull(cancel, "the route editor has no Cancel button");
+
+            try (support.Answering answering = support.Answering.start(asked -> support.Answering.pressAt(0)))
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> cancel.doClick(0));
+
+                assertTrue(answering.awaitAsked(1, 10000), "Cancel after an insert closed without asking");
+
+                support.Components.settle();
+            }
+
+            assertFalse(support.Components.onTheEventThread(() -> frame.isDisplayable()),
+                "answering Yes to Cancel's question left the window open");
+            assertEquals(levelsOf(org.traincontrol.base.ConditionOutline.of(route.getConditions())),
+                " 1:21 1AND 1:22 0OR 0:23", "Cancel changed the saved route's conditions");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * "Reads as" cut to its brackets, sensors and joining words: "(#21 and #1) or #23".  The words are matched in the
+     * current language and written in English.
+     */
+    private static String readsLike(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        String and = I18n.t("route.ui.joinAnd");
+        String or = I18n.t("route.ui.joinOr");
+        String reading = plainReading(frame);
+
+        reading = reading.substring(reading.indexOf("S88 #") < 0 ? reading.length()
+            : Math.max(0, reading.lastIndexOf(':', reading.indexOf("S88 #")) + 1));
+
+        java.util.regex.Matcher part = java.util.regex.Pattern.compile("\\(|\\)|#\\d+|(?<![\\w#])("
+            + java.util.regex.Pattern.quote(and) + "|" + java.util.regex.Pattern.quote(or) + ")(?!\\w)")
+            .matcher(reading);
+
+        StringBuilder out = new StringBuilder();
+
+        while (part.find())
+        {
+            String token = part.group().equals(and) ? "and" : part.group().equals(or) ? "or" : part.group();
+
+            boolean tight = token.equals(")") || out.length() == 0 || out.charAt(out.length() - 1) == '(';
+
+            out.append(tight ? "" : " ").append(token);
+        }
+
+        return out.toString();
+    }
+
+    /** A right-click on a line where no press edits anything, and the menu item chosen; it must be enabled. */
+    private static void rightClickAndChoose(javax.swing.JTable table, int line, String key)
+    {
+        javax.swing.JPopupMenu menu = rightClickCell(table, line, NOTHING_TO_EDIT);
+
+        assertNotNull(menu, "a right-click on line " + line + " opened no menu");
+
+        javax.swing.JMenuItem chosen = item(menu, key);
+
+        assertTrue(chosen.isEnabled(), key + " is grayed on line " + line + ": " + offered(menu));
+
+        support.Mouse.choose(chosen);
+    }
+
+    /** "Reads as" without its markup. */
+    private static String plainReading(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        return support.Components.onTheEventThread(() -> frame.readsAsForTest()).replaceAll("<[^>]*>", "")
+            .replaceAll("\\s+", " ").trim();
+    }
+
+    private static javax.swing.JTable conditionTable(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+            t -> "ConditionTable".equals(t.getClass().getSimpleName()));
+
+        assertNotNull(table, "the route editor has no condition table");
+
+        return table;
+    }
+
+    private static int selectedLine(final javax.swing.JTable table)
+    {
+        return support.Components.onTheEventThread(() -> table.getSelectedRow());
+    }
+
+    /** A right-click in the middle of one cell, and the menu it opened. */
+    private static javax.swing.JPopupMenu rightClickCell(final javax.swing.JTable table, int line, int column)
+    {
+        java.awt.Rectangle cell = support.Components.onTheEventThread(() -> table.getCellRect(line, column, true));
+
+        return support.Mouse.rightClickAt(table, new java.awt.Point(cell.x + cell.width / 2,
+            cell.y + cell.height / 2), 5000);
+    }
+
+    /** The menu's items as their message keys, each marked + when enabled and - when not. */
+    private static String offered(final javax.swing.JPopupMenu menu)
+    {
+        String[] keys = {"route.ui.menuInsertConditionAbove", "route.ui.menuInsertConditionBelow",
+            "route.ui.menuAddCondition", "route.ui.menuMoveUp", "route.ui.menuMoveDown", "route.ui.menuIndent",
+            "route.ui.menuOutdent", "ui.delete"};
+
+        StringBuilder out = new StringBuilder();
+
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (!(part instanceof javax.swing.JMenuItem)) continue;
+
+            javax.swing.JMenuItem item = (javax.swing.JMenuItem) part;
+            String named = item.getText();
+
+            for (String key : keys)
+            {
+                if (I18n.t(key).equals(item.getText())) named = key;
+            }
+
+            out.append(out.length() == 0 ? "" : " ").append(item.isEnabled() ? "+" : "-").append(named);
+        }
+
+        return out.toString();
+    }
+
+    private static javax.swing.JMenuItem item(javax.swing.JPopupMenu menu, String key)
+    {
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof javax.swing.JMenuItem && I18n.t(key).equals(((javax.swing.JMenuItem) part).getText()))
+            {
+                return (javax.swing.JMenuItem) part;
+            }
+        }
+
+        throw new AssertionError("the menu has no " + key + ": " + offered(menu));
+    }
+
+    /** The bold parts of "Reads as" other than the joining words, each cut to its sensor: "[S88 #23]". */
+    private static String bold(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        java.util.regex.Matcher bold = java.util.regex.Pattern.compile("<b>(.*?)</b>").matcher(
+            support.Components.onTheEventThread(() -> frame.readsAsForTest()));
+
+        while (bold.find())
+        {
+            String text = bold.group(1).replaceAll("<[^>]*>", "").trim();
+
+            if (text.equals(I18n.t("route.ui.joinAnd")) || text.equals(I18n.t("route.ui.joinOr"))) continue;
+
+            java.util.regex.Matcher sensor = java.util.regex.Pattern.compile("S88 #\\d+").matcher(text);
+
+            out.add(sensor.find() ? sensor.group() : text);
+        }
+
+        return out.toString();
+    }
+
+    /** An outline written as `levels` prints one: " 1:21 1AND 0:4", each condition on a sensor that is on. */
+    private static java.util.List<org.traincontrol.base.ConditionOutline.Row> fromLevels(String levels)
+    {
+        java.util.List<org.traincontrol.base.ConditionOutline.Row> out = new java.util.ArrayList<>();
+
+        for (String part : levels.trim().split(" "))
+        {
+            int depth = part.charAt(0) - '0';
+
+            out.add(part.charAt(1) == ':'
+                ? org.traincontrol.base.ConditionOutline.Row.condition(depth, feedback(Integer.parseInt(part.substring(2))))
+                : org.traincontrol.base.ConditionOutline.Row.joining(depth,
+                    org.traincontrol.base.ConditionOutline.Joiner.valueOf(part.substring(1))));
+        }
+
+        return out;
     }
 
     /**
@@ -1165,12 +2116,186 @@ public class testRouteEditorValidation
         }
     }
 
+    /**
+     * OB-367: a command's setting dropdown, opened by a click on its cell, offers the words in the user's language and
+     * still holds the stored words.
+     *
+     * MUTATION: in `chooseSetting`, drop the `setRenderer` call, and the dropdown offers "straight" and "turn".
+     */
+    @Test
+    public void testTheSettingDropdownSpeaksTheUsersLanguage() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            final java.util.List<String> offered = new java.util.ArrayList<>();
+            final java.util.List<Object> held = new java.util.ArrayList<>();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(java.util.Locale.GERMAN);
+
+                if (frame.commandRowCountForTest() == 0) frame.addCommandRowForTest();
+
+                frame.setCommandKindForTest(0, CommandRow.Kind.ACCESSORY);
+                frame.setCommandTargetForTest(0, "12");
+                frame.setCommandSettingForTest(0, "turn");
+
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+                t -> "CommandTable".equals(t.getClass().getSimpleName()));
+
+            assertNotNull(table, "the route editor has no command table");
+
+            clickCell(table, 0, 6, 0);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                if (!(table.getEditorComponent() instanceof javax.swing.JComboBox)) return;
+
+                javax.swing.JComboBox<?> box = (javax.swing.JComboBox<?>) table.getEditorComponent();
+                javax.swing.JList<Object> list = new javax.swing.JList<>();
+
+                @SuppressWarnings("unchecked")
+                javax.swing.ListCellRenderer<Object> renderer = (javax.swing.ListCellRenderer<Object>) box.getRenderer();
+
+                for (int i = 0; i < box.getItemCount(); i++)
+                {
+                    held.add(box.getItemAt(i));
+
+                    offered.add(((javax.swing.JLabel) renderer.getListCellRendererComponent(list, box.getItemAt(i), i,
+                        false, false)).getText());
+                }
+
+                table.getCellEditor().cancelCellEditing();
+            });
+
+            assertEquals(held, java.util.Arrays.asList("straight", "turn"), "a click on the setting cell opened no"
+                + " dropdown of the stored words");
+            assertEquals(offered, java.util.Arrays.asList("gerade", "abzweigend"), "the dropdown in German");
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-367: a direction condition reads in the user's language in "Reads as".
+     *
+     * MUTATION: in `shortly`, give the direction its stored word instead of `settingLabel`'s, and Reads as says
+     * "backward".
+     */
+    @Test
+    public void testADirectionReadsInTheUsersLanguage() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            final String[] readsAs = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(java.util.Locale.GERMAN);
+
+                java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(5, true)));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                    org.traincontrol.base.ConditionOutline.Joiner.AND));
+                rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                    org.traincontrol.base.RouteCommand.RouteCommandLocomotiveDirection("Example train",
+                        org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD)));
+
+                frame.setConditionRowsForTest(rows);
+
+                readsAs[0] = frame.readsAsForTest();
+            });
+
+            assertTrue(readsAs[0].contains("Example train r\u00fcckw\u00e4rts"), "Reads as, in German: " + readsAs[0]);
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            close(frame);
+        }
+    }
+
+    /** The condition table's columns a press acts on, and one no condition on a sensor can edit (the protocol). */
+    private static final int UP_ARROW = 0;
+    private static final int DOWN_ARROW = 1;
+    private static final int INDENT_MARK = 2;
+    private static final int OUTDENT_MARK = 3;
+    private static final int NOTHING_TO_EDIT = 7;
+
+    /** The column a condition's sensor or switch number is typed into. */
+    private static final int ADDRESS = 5;
+
+    /** Clicks the first line and Shift-clicks the last, where a press neither edits nor moves anything. */
+    private static void selectLines(javax.swing.JTable table, int first, int last) throws Exception
+    {
+        clickCell(table, first, NOTHING_TO_EDIT, 0);
+        clickCell(table, last, NOTHING_TO_EDIT, java.awt.event.InputEvent.SHIFT_DOWN_MASK);
+    }
+
+    /**
+     * A left press, release and click in the middle of one cell, as the mouse sends them, so the table's own selection
+     * handler and the marks' listener both see it.
+     */
+    private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers)
+        throws Exception
+    {
+        clickCell(table, line, column, modifiers, 1);
+    }
+
+    /** The same, as a click of `count` presses: 2 is a double-click. */
+    private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers,
+        final int count) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Rectangle cell = table.getCellRect(line, column, true);
+
+            int x = cell.x + cell.width / 2;
+            int y = cell.y + cell.height / 2;
+            long now = System.currentTimeMillis();
+
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
+                modifiers | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, count, false,
+                java.awt.event.MouseEvent.BUTTON1));
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_RELEASED, now + 1,
+                modifiers, x, y, count, false, java.awt.event.MouseEvent.BUTTON1));
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED, now + 1,
+                modifiers, x, y, count, false, java.awt.event.MouseEvent.BUTTON1));
+        });
+    }
+
     /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
     private static String levels(org.traincontrol.gui.RouteEditorFrame frame)
     {
+        return levelsOf(frame.conditionRowsForTest());
+    }
+
+    private static String levelsOf(java.util.List<org.traincontrol.base.ConditionOutline.Row> rows)
+    {
         StringBuilder out = new StringBuilder();
 
-        for (org.traincontrol.base.ConditionOutline.Row row : frame.conditionRowsForTest())
+        for (org.traincontrol.base.ConditionOutline.Row row : rows)
         {
             out.append(" ").append(row.getDepth()).append(row.isJoiner() ? String.valueOf(row.getJoiner())
                 : ":" + CommandRow.of(row.getCommand()).getTarget());
@@ -1222,11 +2347,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The SHAPE of the expression the outline currently means - "And(Or(x,x),x)".
-     *
-     * The class name of the top node alone is not enough: `(A or B) and C` is a NodeAnd whichever way
-     * the group inside it reads, which is what made the first version of this helper unable to tell
-     * the defect from the fix.
+     * The SHAPE of the expression the outline means - "And(Or(x,x),x)"; the top node's class alone cannot tell `(A or
+     * B) and C` from its defect.
      */
     private static String reads(org.traincontrol.gui.RouteEditorFrame frame)
     {
@@ -1268,11 +2390,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * The two train-at-a-sensor kinds say they are autonomy's, and the reading says which way round each one is (FR-141).
-     *
-     * Adam: *also, this is referring to autonomy, correct?  Prefix with "Autonomy: " if so.*  It is: `Route.evaluate`
-     * asks autonomy's record of where the train is, not the sensor.  The labels are read from the English bundle, so the
-     * claim is about the words Adam reads rather than about a key.
+     * The two train-at-a-sensor kinds say they are autonomy's, and the reading says which way round each is (FR-141);
+     * Adam: Prefix with "Autonomy: " if so.  The labels are read from the English bundle.
      *
      * MUTATION: read a not-at command as AUTO_LOCOMOTIVE in `CommandRow.of` and the reading says "at" for both lines.
      */
@@ -1338,11 +2457,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Choosing Not At on an At line, or the other way, keeps its train and its sensor (FR-141).
-     *
-     * One condition asked either way round, so choosing the other kind turns the question round and changes nothing
-     * else - the way Switch and Signal keep their address.  Without a layout there is no first locomotive to start a
-     * new line on, so a reset would leave the line unbuildable and the choice would not take at all.
+     * Choosing Not At on an At line, or the other way, keeps its train and its sensor (FR-141): one condition asked
+     * either way round, as Switch and Signal keep their address.
      *
      * MUTATION: drop the at-or-not-at arm in the condition table's `setValueAt` and the kind does not change.
      */
@@ -1383,10 +2499,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A train-at-a-sensor line's setting says it is the sensor's address (FR-141).
-     *
-     * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  The cell paints the number
-     * as a sensor address and its tooltip says what it is, on both kinds; a sensor line's own setting is left as it was.
+     * A train-at-a-sensor line's setting says it is the sensor's address (FR-141): the cell paints it as one with a
+     * tooltip, on both kinds; a sensor line's own setting is left as it was.
      *
      * MUTATION: have `ConditionTable.shownAs` hand back the value as it is and the first assertion fails.
      */

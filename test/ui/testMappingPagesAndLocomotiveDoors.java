@@ -165,8 +165,6 @@ public class testMappingPagesAndLocomotiveDoors
 
     /**
      * Page P holds one on A and two on S; page Q holds three on A and nothing on S; page P is showing, with A chosen.
-     *
-     * @throws Exception from the window
      */
     @BeforeMethod
     public void lay() throws Exception
@@ -201,8 +199,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Next shows the next page, whose A drives that page's train; Prev turns back, and A drives the first page's again.
      *
      * MUTATION: `locMappingNumber - 1` in `NextLocMappingActionPerformed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testNextAndPrevTurnThePage() throws Exception
@@ -246,8 +242,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Full stop and comma turn a page forward and back; with Alt, they go to the last page and the first.
      *
      * MUTATION: `switchLocMapping(1)` in the Alt+PERIOD arm of `LocControlPanelKeyPressed`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testThePageKeysTurnThePage() throws Exception
@@ -281,12 +275,11 @@ public class testMappingPagesAndLocomotiveDoors
     // Copy, paste and reset
 
     /**
-     * Copy Mappings on one page, then Paste Mappings on another, answered Yes: the second page holds what the first does.
+     * Copy Mappings on one page, then Paste Mappings on another, answered Yes: the second page holds what the first
+     * does.
      *
      * MUTATION: copy the page onto itself in `pasteCopiedPage` (`locMappingNumber - 1` for `pageToCopy - 1`), and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testPasteMappingsAnsweredYesCopiesThePage() throws Exception
@@ -320,8 +313,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Paste Mappings answered No changes nothing.
      *
      * MUTATION: paste whatever the answer in `pasteCopiedPage`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testPasteMappingsAnsweredNoChangesNothing() throws Exception
@@ -352,10 +343,8 @@ public class testMappingPagesAndLocomotiveDoors
     /**
      * Reset Mappings answered Yes empties the page showing and no other; answered No it empties nothing.
      *
-     * MUTATION: clear whatever the answer in `clearCurrentPage`, and the No half fails; take `doClearCurrentPage()` out,
-     * and the Yes half fails.
-     *
-     * @throws Exception from the window
+     * MUTATION: clear whatever the answer in `clearCurrentPage`, and the No half fails; take `doClearCurrentPage()`
+     * out, and the Yes half fails.
      */
     @Test
     public void testResetMappingsEmptiesOnlyThisPageAndOnlyOnYes() throws Exception
@@ -390,8 +379,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Control+N edits the shown train's notes: the year typed is the year kept.  Cancel keeps the old one.
      *
      * MUTATION: save the end year's text as the start year in `changeLocNotes`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testControlNEditsTheNotes() throws Exception
@@ -426,8 +413,6 @@ public class testMappingPagesAndLocomotiveDoors
      * "Map to Page" puts them, and the train searched from, on the page chosen.
      *
      * MUTATION: drop `matches.add(searchLoc)` in `findSimilarLocs`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testFindSimilarMapsTheMatchesToAPage() throws Exception
@@ -465,8 +450,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Find Similar on a train with no railway and no years says so, and goes no further.
      *
      * MUTATION: take the insufficient-data return out of `findSimilarLocs`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testFindSimilarWithNoNotesSaysWhy() throws Exception
@@ -493,8 +476,6 @@ public class testMappingPagesAndLocomotiveDoors
      * new address, and the key still holds it.
      *
      * MUTATION: drop `this.ui.getModel().renameLoc(...)` from `LocomotiveActions.changeLocAddress`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testControlRChangesTheNameAndAddress() throws Exception
@@ -532,8 +513,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Control+Delete asks before it deletes: No keeps the train, Yes takes it out of the database and off its key.
      *
      * MUTATION: delete on No in `deleteLoc` (`NO_OPTION` for `YES_OPTION`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testControlDeleteAsksAndYesDeletes() throws Exception
@@ -571,8 +550,6 @@ public class testMappingPagesAndLocomotiveDoors
      * reaches the railway.
      *
      * MUTATION: `locFunctionsOff` for `applyPreferredFunctions` in the Alt+P arm, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheFunctionPresetKeys() throws Exception
@@ -610,8 +587,6 @@ public class testMappingPagesAndLocomotiveDoors
      * Alt+U saves the shown train's speed and Alt+V runs it at that speed again.
      *
      * MUTATION: take `applyPreferredSpeed` out of the Alt+V arm, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheSpeedPresetKeys() throws Exception
@@ -730,11 +705,7 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(waitFor(() -> ui.getButtonLocomotive(button) == loc), "precondition: the key does not hold " + loc);
     }
 
-    /**
-     * Opens the page menu with a right-click on the page label and finds an item in it.
-     *
-     * @return the item
-     */
+    /** Opens the page menu with a right-click on the page label and finds an item in it. */
     private static AbstractButton pageMenuItem(String item) throws Exception
     {
         // The page label, or the tab of the page showing where the preference shows page tabs instead: both carry the page
@@ -766,9 +737,8 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Does something that asks one question, answers it with a button, and lets the answer's work finish.
-     *
-     * @return what was asked
+     * Does something that asks one question, answers it with a button, and lets the answer's work finish; returns what
+     * was asked.
      */
     private static List<String> answering(String button, Runnable ask)
     {
@@ -912,14 +882,9 @@ public class testMappingPagesAndLocomotiveDoors
         return Components.waitFor(condition, WAIT);
     }
 
-    // A stand-in for the Mouse helper another worker owns
-
     /**
-     * A right-click as Windows delivers it: the press, then the release that is the pop-up trigger.
-     *
-     * @param at where on the component, or null for its middle
-     *
-     * @return the menu it opened
+     * A right-click as Windows delivers it: the press, then the release that is the pop-up trigger; at `at`, or the
+     * middle when null.
      */
     private static JPopupMenu rightClick(final Component on, final java.awt.Point at)
     {

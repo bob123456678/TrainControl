@@ -13,12 +13,8 @@ import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.RouteCommand;
 
 /**
- * Conditions as an indented list, where the joining words are indented too.
- *
- * The words being indentable is the whole of what makes this work, and it took a wrong turn to find.
- * A first version kept the word beside its condition and decided grouping by "a run of the same word
- * is a group" - which reads left to right and is defensible, and which nobody could see on screen. A
- * word that can be indented says which level it joins at, and then the shape IS the meaning:
+ * Conditions as an indented list, where the joining words are indented too.  A word that can be indented says which
+ * level it joins at, so the shape IS the meaning:
  *
  *   Sensor 1
  *   and
@@ -26,30 +22,19 @@ import org.traincontrol.base.RouteCommand;
  *       or
  *       Sensor 3
  *
- * is 1 and (2 or 3), because the "or" sits at the level of the two conditions it joins and the "and"
- * sits at the level of sensor 1 and the group.
- *
- * From that follows the one rule: every word at a level must be the same word. "and" and "or" side by
- * side at one level is a sentence with two meanings, and the answer is not to pick one quietly but to
- * say so - which is what problems() reports and the editor draws in red.
+ * is 1 and (2 or 3), because the "or" sits at the level of the two conditions it joins.  From that follows the one
+ * rule: every word at a level must be the same word.  "and" and "or" side by side at one level is a sentence with two
+ * meanings, so problems() reports it and the editor draws it in red rather than picking one quietly.
  */
 public class testConditionOutline
 {
     /**
-     * A group closes the bracket it opened, even when there is nothing in it (C16).
+     * A group closes the bracket it opened, even when there is nothing in it (C16).  `toTextRepresentationHelper`
+     * wrote the ")" from INSIDE the loop over the children, so an empty group never closed.  It takes hand-written
+     * JSON to reach, which is an argument about how it is reached, not whether it is wrong.
      *
-     * toTextRepresentationHelper appends "(" for a group and then appends ")" from INSIDE the loop over
-     * its children, on the last iteration. A group with no children never iterates, so the closing
-     * bracket is never written and the rendered condition is malformed from that point on - every
-     * bracket after it is read against the wrong opener.
-     *
-     * The finding graded this low because no code path in the application builds an empty group: every
-     * construction site passes at least one expression, so it takes hand-written JSON to reach. That is
-     * an argument about how it is reached, not about whether it is wrong, and the correction is to stop
-     * making the closing bracket a property of the last child.
-     *
-     * The one-child and two-child cases are here as the CONTROL - moving the append out of the loop
-     * must not start emitting a bracket per child.
+     * The one-child and two-child cases are the CONTROL: moving the append out of the loop must not emit a bracket
+     * per child.
      */
     @Test
     public void testAnEmptyGroupStillClosesItsBracket()
@@ -63,7 +48,7 @@ public class testConditionOutline
             + " bracket it never closes, and everything rendered after it is read against the wrong"
             + " opener (C16)");
 
-        // THE CONTROL.  Taking the append out of the loop must not give a bracket per child.
+        // THE CONTROL: taking the append out of the loop must not give a bracket per child.
         List<NodeExpression> two = new ArrayList<>();
 
         two.add(new NodeRouteCommand(RouteCommand.RouteCommandFeedback(1, true)));
@@ -78,13 +63,7 @@ public class testConditionOutline
             "a group renders one closing bracket, not one per child: " + filled);
     }
 
-    /**
-     * How many times a character appears.
-     *
-     * @param text the rendered condition
-     * @param c the character
-     * @return the count
-     */
+    /** How many times a character appears. */
     private static int count(String text, char c)
     {
         int n = 0;
@@ -96,9 +75,7 @@ public class testConditionOutline
 
         return n;
     }
-    /**
-     * An indented word joins the indented things, and the outer word joins what is left.
-     */
+    /** An indented word joins the indented things, and the outer word joins what is left. */
     @Test
     public void testAnIndentedWordJoinsTheIndentedThings()
     {
@@ -117,9 +94,7 @@ public class testConditionOutline
             "and the indented pair is one thing, not two");
     }
 
-    /**
-     * The same conditions with the words at one level mean the other thing.
-     */
+    /** The same conditions with the words at one level mean the other thing. */
     @Test
     public void testTheOuterWordIsTheTopOfTheTree()
     {
@@ -134,10 +109,8 @@ public class testConditionOutline
     }
 
     /**
-     * Two different words at one level is refused, and the line that disagrees is named.
-     *
-     * The case the red is for. Left to itself it is a sentence with two meanings, and choosing one
-     * quietly is how a route ends up firing at a time nobody asked for.
+     * Two different words at one level is refused, and the line that disagrees is named: choosing one quietly is how a
+     * route ends up firing at a time nobody asked for.
      */
     @Test
     public void testMixedWordsAtOneLevelAreFlagged()
@@ -159,16 +132,9 @@ public class testConditionOutline
     }
 
     /**
-     * A joining word deeper than a condition beside it is flagged, rather than read as nothing (2026-09-14).
-     *
-     * Adam's route: *"the first or is read as an and here"*.  Its outline was `2 off`, then the OR one level
-     * in, then `3 on`, then AND, then `(1 on or 1 on)`.  The reader takes anything deeper than its level as a
-     * group - and a group holding a word and no condition is nothing, so the OR vanished and the level's only
-     * remaining word, AND, joined all three.  No two words disagreed side by side, so nothing was flagged, and
-     * the reading said "2 off and 3 on and (...)".
-     *
-     * A word sits at the level of what it joins, so one deeper than the condition on either side of it joins
-     * nothing at its own depth.  That is a line in red, not a silent change to when a route fires.
+     * A joining word deeper than a condition beside it is flagged, rather than read as nothing.  The reader takes
+     * anything deeper than its level as a group, and a group holding a word and no condition is nothing, so an OR
+     * vanished and the level's AND joined all three ("the first or is read as an and here").
      */
     @Test
     public void testAWordDeeperThanAConditionBesideItIsFlagged()
@@ -189,8 +155,8 @@ public class testConditionOutline
     }
 
     /**
-     * Each flagged line says which of the two things is wrong with it, because they are put right differently
-     * (Adam, 2026-09-14: "a warning triangle icon with a tooltip explaining what's wrong").
+     * Each flagged line says which of the two things is wrong with it, because they are put right differently (Adam:
+     * "a warning triangle icon with a tooltip explaining what's wrong").
      */
     @Test
     public void testEachFlagSaysWhy()
@@ -216,9 +182,7 @@ public class testConditionOutline
             "the reasons and the red lines disagree about which lines are wrong");
     }
 
-    /**
-     * The control: a word SHALLOWER than both its neighbors is how two groups are joined, and is not flagged.
-     */
+    /** The control: a word SHALLOWER than both its neighbors is how two groups are joined, and is not flagged. */
     @Test
     public void testAWordJoiningTwoGroupsIsNotFlagged()
     {
@@ -234,9 +198,7 @@ public class testConditionOutline
             + " how an outline joins two groups");
     }
 
-    /**
-     * Indenting the part that was meant to group settles it.
-     */
+    /** Indenting the part that was meant to group settles it. */
     @Test
     public void testIndentingResolvesTheDisagreement()
     {
@@ -250,9 +212,7 @@ public class testConditionOutline
             + "which is the whole rule");
     }
 
-    /**
-     * A level's words may repeat as often as they like, so long as they agree.
-     */
+    /** A level's words may repeat as often as they like, so long as they agree. */
     @Test
     public void testOneWordManyTimesIsFine()
     {
@@ -264,9 +224,7 @@ public class testConditionOutline
             condition(0, 3))).isEmpty(), "three conditions, all required");
     }
 
-    /**
-     * And the same word at different levels is not a disagreement.
-     */
+    /** And the same word at different levels is not a disagreement. */
     @Test
     public void testLevelsAreJudgedSeparately()
     {
@@ -280,9 +238,7 @@ public class testConditionOutline
             + "would make the feature useless");
     }
 
-    /**
-     * Nothing in the list is a route with no conditions.
-     */
+    /** Nothing in the list is a route with no conditions. */
     @Test
     public void testNothingIsNoCondition()
     {
@@ -293,10 +249,8 @@ public class testConditionOutline
     }
 
     /**
-     * An existing condition opens as an outline that means the same thing.
-     *
-     * The half that matters for a railway that already exists: opening a route and saving it
-     * unchanged must not move when it fires.
+     * An existing condition opens as an outline that means the same thing: opening and saving a route must not move
+     * when it fires.
      */
     @Test
     public void testAnExistingConditionSurvivesBeingShownAsAnOutline()
@@ -318,16 +272,9 @@ public class testConditionOutline
     }
 
     /**
-     * A condition built as a TREE, rather than from an outline, keeps its shape.
-     *
-     * Everything above starts from an outline, so a nesting the outline could not express could not be
-     * reached by these tests at all - and that is exactly what the older editor's Insert AND and
-     * Insert OR buttons produced, and what a hand-written condition in a route file can hold.
-     *
-     * "A and (B or C)" was written out as one flat level reading "A and B or C": two different joining
-     * words at the same depth, which this class's own rule refuses.  So the route opened with its
-     * condition flagged red and could not be saved until the user restructured something they never
-     * wrote - and the reading, which the Test button evaluates, said "(A and B) or C" instead.
+     * A condition built as a TREE, rather than from an outline, keeps its shape.  The older editor's Insert AND and
+     * Insert OR buttons produce nestings an outline could not express: "A and (B or C)" was written as one flat level
+     * reading "A and B or C", so the route opened flagged red and its reading said "(A and B) or C".
      */
     @Test
     public void testATreeThatMixesWordsComesBackNested()
@@ -345,9 +292,7 @@ public class testConditionOutline
             "the condition means something else than it did, which is when it fires on the railway");
     }
 
-    /**
-     * And the same with the mixed pair on the LEFT.
-     */
+    /** And the same with the mixed pair on the LEFT. */
     @Test
     public void testATreeWithTheGroupFirstComesBackNested()
     {
@@ -362,12 +307,7 @@ public class testConditionOutline
             "(A and B) or C came back meaning something else");
     }
 
-    /**
-     * A flat chain of ANDs round-trips without growing an indent.
-     *
-     * An outline that indented itself a little more every time it was opened would walk off the side
-     * of the window after a few visits, and nothing else would ever say so.
-     */
+    /** A flat chain of ANDs round-trips without growing an indent. */
     @Test
     public void testTheOrdinaryCaseDoesNotDrift()
     {
@@ -390,14 +330,9 @@ public class testConditionOutline
     }
 
     /**
-     * Nesting goes as deep as anybody wants, and comes back out the same.
-     *
-     * Adam asked whether three levels were possible, having found that the editor seemed to stop at
-     * two. The model never had a limit - the interface did, by hiding the indent mark once a line was
-     * as deep as the line above allowed, which reads as the feature ending rather than as that line
-     * being at its limit.
-     *
-     * Four levels here rather than three, because a limit at three would pass a test for three.
+     * Nesting goes as deep as anybody wants, and comes back out the same.  The model never had a limit; the interface
+     * hid the indent mark once a line was as deep as the line above allowed.  Four levels, because a limit at three
+     * would pass a test for three.
      */
     @Test
     public void testNestingGoesAsDeepAsItIsAsked()
@@ -435,13 +370,8 @@ public class testConditionOutline
     }
 
     /**
-     * Moving a condition past its neighbor leaves the joining word where it was.
-     *
-     * Adam's: three lines reading "A and B", with B moved up, came back as "A B" - the AND gone and
-     * the route now firing on a condition nobody changed.  Moving the LINE put B beside the word
-     * instead of past it, and a word with nothing on one side is not a sentence, so the tidy that
-     * runs after every move swept the word away.  The arrow said nothing about when the route fires;
-     * it changed it anyway, and quietly.
+     * Moving a condition past its neighbor leaves the joining word where it was: moving the LINE put B beside the word
+     * instead of past it, and the tidy after every move swept the word away ("A and B" with B up came back "A B").
      */
     @Test
     public void testMovingAConditionKeepsTheWordThatJoinsIt()
@@ -463,11 +393,8 @@ public class testConditionOutline
     }
 
     /**
-     * The nesting is the logic, so moving a condition must not deform it.
-     *
-     * "1 and (2 or 3)" with 2 moved up is "2 and (1 or 3)" - the same sentence about different
-     * sensors.  Lifting the line itself would have pulled a condition out of the group it was
-     * nested in, which is a change to the logic rather than to the order.
+     * The nesting is the logic, so moving a condition must not deform it: "1 and (2 or 3)" with 3 moved up is
+     * "1 and (3 or 2)", not a condition pulled out of its group.
      */
     @Test
     public void testMovingAConditionDoesNotDeformTheNesting()
@@ -479,9 +406,9 @@ public class testConditionOutline
             joining(1, ConditionOutline.Joiner.OR),
             condition(1, 3));
 
-        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 2, -1);
+        List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 4, -1);
 
-        assertEquals(describe(ConditionOutline.toExpression(moved)), "and(2,(or(1,3)))",
+        assertEquals(describe(ConditionOutline.toExpression(moved)), "and(1,(or(3,2)))",
             "the shape is untouched; only which condition sits where in it changed");
     }
 
@@ -532,9 +459,7 @@ public class testConditionOutline
             describe(ConditionOutline.toExpression(rows)), "moving it back down undoes the move");
     }
 
-    /**
-     * A joining word is not moved by hand, and neither is a condition with nowhere to go.
-     */
+    /** A joining word is not moved by hand, and neither is a condition with nowhere to go. */
     @Test
     public void testThereIsNothingToMoveAtTheEnds()
     {
@@ -552,17 +477,278 @@ public class testConditionOutline
     }
 
     /**
-     * A condition whose FIRST line is indented keeps everything after the group.
+     * OB-379: "(1 and 2 and 3) or (7 and 4 and 5 and 6)" with 7 moved up is "(1 and 2 and 3 and 7) or (4 and 5 and 6)":
+     * at its group's edge a condition joins the group past the shallower word, at that group's near end and by its
+     * word, and moving it down goes back.  Adam: "The problem is that g is swapped with c".
      *
-     * "(A or B) and C" is an ordinary thing to write in the old editor - it has a button that wraps
-     * the selection in brackets - and it comes back out of ConditionOutline.of as an outline whose
-     * first row is one level in, because the group is the first thing in the sentence.
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and 7 trades places with 3.
+     */
+    @Test
+    public void testAConditionMovedPastItsGroupsEdgeJoinsTheNextGroup()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 3),
+            joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 7), joining(1, ConditionOutline.Joiner.AND), condition(1, 4),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 5), joining(1, ConditionOutline.Joiner.AND),
+            condition(1, 6));
+
+        List<ConditionOutline.Row> up = ConditionOutline.moved(rows, 6, -1);
+
+        assertEquals(levels(up), " 1:1 1AND 1:2 1AND 1:3 1AND 1:7 0OR 1:4 1AND 1:5 1AND 1:6",
+            "7 crosses into the first group at its own level, joined by that group's 'and'");
+        assertEquals(ConditionOutline.landing(rows, 6, -1), 6, "and the editor keeps it selected on its new line");
+        assertTrue(ConditionOutline.problems(up).isEmpty(), "nothing is flagged: " + levels(up));
+        assertEquals(levels(ConditionOutline.moved(up, 6, 1)), levels(rows), "moving it down goes back");
+        assertEquals(ConditionOutline.landing(up, 6, 1), 6, "landing on its old line");
+
+        // Nested deeper, and a group left with one condition: "1 or (2 and (3 or 4) and (5 or 6))", 5 moved up.
+        List<ConditionOutline.Row> deep = outline(
+            condition(0, 1), joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 2), joining(1, ConditionOutline.Joiner.AND),
+            condition(2, 3), joining(2, ConditionOutline.Joiner.OR), condition(2, 4),
+            joining(1, ConditionOutline.Joiner.AND),
+            condition(2, 5), joining(2, ConditionOutline.Joiner.OR), condition(2, 6));
+
+        List<ConditionOutline.Row> joined = ConditionOutline.moved(deep, 8, -1);
+
+        assertEquals(levels(joined), " 0:1 0OR 1:2 1AND 2:3 2OR 2:4 2OR 2:5 1AND 2:6",
+            "5 joins (3 or 4) by its 'or', and 6 is left on its own at its level");
+        assertTrue(ConditionOutline.problems(joined).isEmpty(), "nothing is flagged: " + levels(joined));
+        assertEquals(ConditionOutline.landing(deep, 8, -1), 8, "5 lands on its new line");
+        assertEquals(levels(ConditionOutline.moved(joined, 8, 1)), levels(deep),
+            "moving 5 down rejoins 6, by the 'or' it brings, since 6 alone has no word");
+    }
+
+    /**
+     * OB-379: with no group at a condition's level across its group's edge, there is no arrow that way: outdenting is
+     * how a condition leaves a group.  "1 and (2 or 3)": 2 does not trade places with 1.
      *
-     * Reading it started at the depth of the FIRST row and stopped at the first row shallower than
-     * that, which is the "and" - so the whole of "and C" was dropped.  Nothing said so: the reading
-     * under the table showed the truncated version, no level disagreed with itself so nothing was
-     * flagged, and pressing Save wrote the shorter condition back.  Opening such a route and saving
-     * it unchanged made it fire on half its conditions.
+     * MUTATION: in `plan`, fall through to the trade where `intoTheNextGroup` finds no group, and 2 trades with 1.
+     */
+    @Test
+    public void testNoArrowWhereThereIsNoGroupAcrossTheEdge()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 2),
+            joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 4));
+
+        assertFalse(ConditionOutline.canMove(rows, 2, -1), "2 offered a way up out of its group: " + levels(rows));
+        assertFalse(ConditionOutline.canMove(rows, 4, 1), "3 offered a way down out of its group: " + levels(rows));
+        assertEquals(levels(ConditionOutline.moved(rows, 2, -1)), levels(rows), "and a move asked for changes nothing");
+        assertEquals(ConditionOutline.landing(rows, 2, -1), 2, "and lands where it was");
+
+        assertTrue(ConditionOutline.canMove(rows, 0, 1), "the control: 1 still moves past the whole group (FR-144)");
+        assertTrue(ConditionOutline.canMove(rows, 4, -1), "and 3 still trades with 2 inside it");
+    }
+
+    /**
+     * OB-379, over generated outlines: from any outline that reads, every move offered leaves one that reads (no word
+     * joining nothing, side by side with another or at an end), keeps every condition, lands on the one moved, and
+     * leaves every OTHER condition among the same companions at its level.  A trade across a group's edge moves a
+     * second condition into another group, which the last check catches.
+     *
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and condition 4 of the first outline trades with 3.
+     */
+    @Test
+    public void testEveryMoveFromAReadableOutlineStillReads()
+    {
+        java.util.Random random = new java.util.Random(379);
+        List<List<ConditionOutline.Row>> outlines = new ArrayList<>();
+
+        // Adam's: "(a and b and c) or (d and e and f)" with g added at the end
+        outlines.add(outline(
+            condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 3), joining(0, ConditionOutline.Joiner.OR),
+            condition(1, 4), joining(1, ConditionOutline.Joiner.AND), condition(1, 5),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 6), joining(1, ConditionOutline.Joiner.AND),
+            condition(1, 7)));
+
+        // Typed a row at a time, and as `of` writes a route's condition (which steps two levels at a time)
+        for (int tries = 0; tries < 200000 && outlines.size() < 600; tries++)
+        {
+            List<ConditionOutline.Row> candidate = tries % 3 == 0
+                ? ConditionOutline.of(tree(random, 1 + random.nextInt(6), new int[]{1}))
+                : typed(random, 2 + random.nextInt(6));
+
+            if (reads(candidate)) outlines.add(candidate);
+        }
+
+        assertTrue(outlines.size() >= 600, "only " + outlines.size() + " readable outlines were generated");
+
+        int moves = 0;
+        int edges = 0;
+
+        for (List<ConditionOutline.Row> rows : outlines)
+        {
+            for (int line = 0; line < rows.size(); line++)
+            {
+                for (int by = -1; by <= 1; by += 2)
+                {
+                    String where = levels(rows) + ", line " + line + (by < 0 ? " up" : " down");
+                    List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
+
+                    if (!ConditionOutline.canMove(rows, line, by))
+                    {
+                        assertEquals(levels(after), levels(rows), "a move not offered changed " + where);
+                        continue;
+                    }
+
+                    moves++;
+
+                    int edge = line + by;
+
+                    if (rows.get(edge).isJoiner() && rows.get(edge).getDepth() < rows.get(line).getDepth()) edges++;
+
+                    where += " gives" + levels(after);
+
+                    assertTrue(reads(after), "the outline no longer reads: " + where);
+
+                    assertEquals(sorted(addresses(after)), sorted(addresses(rows)), "a condition came or went: " + where);
+
+                    int moved = rows.get(line).getCommand().getAddress();
+
+                    assertEquals(after.get(ConditionOutline.landing(rows, line, by)).getCommand().getAddress(), moved,
+                        "the line it lands on is not the condition moved: " + where);
+
+                    for (int other : addresses(rows))
+                    {
+                        if (other == moved) continue;
+
+                        assertEquals(companions(after, other, moved), companions(rows, other, moved),
+                            "condition " + other + " changed company at its level: " + where);
+                    }
+                }
+            }
+        }
+
+        assertTrue(edges > 100, "only " + edges + " of " + moves + " moves crossed a group's edge");
+    }
+
+    /** A row at a time: alternating conditions and words, each at most one level deeper than the line above. */
+    private static List<ConditionOutline.Row> typed(java.util.Random random, int conditions)
+    {
+        List<ConditionOutline.Row> out = new ArrayList<>();
+        int depth = random.nextInt(2);
+
+        for (int n = 1; n <= conditions; n++)
+        {
+            if (n > 1)
+            {
+                depth = random.nextInt(depth + 2);
+                out.add(joining(Math.min(depth, 3), random.nextBoolean()
+                    ? ConditionOutline.Joiner.AND : ConditionOutline.Joiner.OR));
+                depth = Math.min(3, random.nextInt(depth + 2));
+            }
+
+            out.add(condition(depth, n));
+        }
+
+        return out;
+    }
+
+    /** A random condition with this many sensors, numbered on from `next`. */
+    private static NodeExpression tree(java.util.Random random, int sensors, int[] next)
+    {
+        if (sensors == 1) return sensor(next[0]++);
+
+        int left = 1 + random.nextInt(sensors - 1);
+        NodeExpression a = tree(random, left, next);
+        NodeExpression b = tree(random, sensors - left, next);
+        NodeExpression joined = random.nextBoolean() ? new NodeAnd(a, b) : new NodeOr(a, b);
+
+        return random.nextInt(4) == 0 ? new NodeGroup(java.util.Arrays.asList(joined)) : joined;
+    }
+
+    /** Whether an outline reads: nothing flagged, and words only ever between two conditions. */
+    private static boolean reads(List<ConditionOutline.Row> rows)
+    {
+        if (rows.isEmpty() || !ConditionOutline.whatIsWrong(rows).isEmpty()) return false;
+
+        for (int line = 0; line < rows.size(); line++)
+        {
+            boolean between = line > 0 && line < rows.size() - 1;
+
+            if (rows.get(line).isJoiner() != (line % 2 == 1) || (rows.get(line).isJoiner() && !between)) return false;
+        }
+
+        return rows.size() % 2 == 1;
+    }
+
+    private static List<Integer> addresses(List<ConditionOutline.Row> rows)
+    {
+        List<Integer> out = new ArrayList<>();
+
+        for (ConditionOutline.Row row : rows)
+        {
+            if (!row.isJoiner()) out.add(row.getCommand().getAddress());
+        }
+
+        return out;
+    }
+
+    private static List<Integer> sorted(List<Integer> list)
+    {
+        List<Integer> out = new ArrayList<>(list);
+
+        java.util.Collections.sort(out);
+
+        return out;
+    }
+
+    /** The other conditions at a condition's own level in its group, leaving out one. */
+    private static java.util.Set<Integer> companions(List<ConditionOutline.Row> rows, int address, int without)
+    {
+        int line = 0;
+
+        while (rows.get(line).isJoiner() || rows.get(line).getCommand().getAddress() != address) line++;
+
+        int depth = rows.get(line).getDepth();
+        int first = line;
+        int last = line;
+
+        while (first > 0 && rows.get(first - 1).getDepth() >= depth) first--;
+        while (last + 1 < rows.size() && rows.get(last + 1).getDepth() >= depth) last++;
+
+        java.util.Set<Integer> out = new java.util.TreeSet<>();
+
+        for (int at = first; at <= last; at++)
+        {
+            ConditionOutline.Row row = rows.get(at);
+
+            if (!row.isJoiner() && row.getDepth() == depth && row.getCommand().getAddress() != without)
+            {
+                out.add(row.getCommand().getAddress());
+            }
+        }
+
+        return out;
+    }
+
+    /** Each line as depth and sensor, or depth and word: " 1:1 1AND 0:4". */
+    private static String levels(List<ConditionOutline.Row> rows)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (ConditionOutline.Row row : rows)
+        {
+            out.append(" ").append(row.getDepth())
+                .append(row.isJoiner() ? String.valueOf(row.getJoiner()) : ":" + row.getCommand().getAddress());
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * A condition whose FIRST line is indented keeps everything after the group.  "(A or B) and C" (the old editor's
+     * bracket button) arrives as an outline whose first row is one level in; reading stopped at the first row shallower
+     * than that, so "and C" was dropped and saving wrote the shorter condition back.
      */
     @Test
     public void testAConditionThatStartsWithAGroupKeepsTheRest()
@@ -580,10 +766,8 @@ public class testConditionOutline
     }
 
     /**
-     * And it survives the round trip out of an expression and back.
-     *
-     * The half that matters for a railway that already exists: this is the shape the old editor's
-     * "Group highlighted" button produces, and the shape NodeExpression.normalize makes on its own.
+     * And it survives the round trip out of an expression and back (the old editor's "Group highlighted", and
+     * NodeExpression.normalize).
      */
     @Test
     public void testALeadingGroupSurvivesBeingShownAsAnOutline()
@@ -603,35 +787,18 @@ public class testConditionOutline
     }
 
     /**
-     * A bracket anywhere but at the start survives being shown as an outline.
-     *
-     * `3 or ((1 or 2) and 4)`. Every level of it is written at the right depth - 0 for the OR, 1 for
-     * the AND, 2 for the bracketed OR inside it - but the depth-1 rows come out **after** the depth-2
-     * ones, because the AND's left child is the bracket:
+     * A bracket anywhere but at the start survives being shown as an outline.  For `3 or ((1 or 2) and 4)` the depth-1
+     * rows come out AFTER the depth-2 ones, so the reader met a jump from 0 to 2 with no depth-1 row to anchor on,
+     * consumed `1 or 2` as a sibling of `3`, and the AND became an OR silently:
      *
      *     cond(0,3) join(0,OR) cond(2,1) join(2,OR) cond(2,2) join(1,AND) cond(1,4)
      *
-     * so the reader met a jump from 0 to 2 with no depth-1 row before it to anchor on. It recursed at
-     * the row's own depth, consumed `1 or 2` as a sibling of `3`, and then read the depth-1 remainder
-     * as a second sibling - a level of one item, whose AND had nowhere to go. **The AND became an
-     * OR**, silently: no level disagreed with itself, so nothing was flagged, the reading under the
-     * table showed the wrong sentence, the Test button evaluated it, and Save wrote it back. The route
-     * then fired on a condition nobody wrote.
+     * The shape needs no bracket: `Or(And(Or(1,2), 4), 3)` has no `NodeGroup` and read as `or(or(or(1,2),4),3)`.  The
+     * family is a cross-operator child that is itself the left child of a cross-operator parent; one alternation is
+     * safe.  Routes written in 2.x's text editor can hold it; the new editor cannot build it.
      *
-     * **The population is routes written in 2.x's text editor with a bracket in a non-leading
-     * position**, opened in this editor. The new editor cannot build the shape, `fromTextRepresentation`
-     * has no caller left in `src/`, and Adam's own `routes.json` has no `NodeGroup` at all - so this is
-     * "could happen" rather than "does happen", which is why the finding graded it B.
-     *
-     * MUTATION: reading a deeper run at `row.getDepth()` instead of at `depth + 1` fails this. The two
-     * are the same number wherever the run begins exactly one level deeper, which is why this needed a
-     * shape whose depths step by two.
-     *
-     * **That shape does not need a bracket**. `Or(And(Or(1,2), 4), 3)` has no `NodeGroup`
-     * anywhere and comes back as `or(or(or(1,2),4),3)` under the old reader - the same lost AND. The
-     * family is a cross-operator child that is itself the left child of a cross-operator parent: two
-     * alternations in a row down the left spine, each bumped by `writeChild`, both written before the
-     * outer joiner. One alternation is safe.
+     * MUTATION: reading a deeper run at `row.getDepth()` instead of at `depth + 1` fails this.  The two are the same
+     * number wherever the run begins exactly one level deeper, which is why this needed depths that step by two.
      */
     @Test
     public void testABracketAfterTheStartSurvivesBeingShownAsAnOutline()
@@ -655,21 +822,9 @@ public class testConditionOutline
     }
 
     /**
-     * The same defect with no bracket anywhere in the tree.
-     *
-     * `(1 or 2) and 4, or 3` - as a tree, `Or(And(Or(1,2), 4), 3)`. No `NodeGroup`, and it fails the
-     * same way: `or(or(or(1,2),4),3)` under the old reader, with the AND gone.
-     *
-     * **This is the case that says what the family really is.** The first version of this fix was
-     * written up as being about *a bracket in a non-leading position*, and a bracket is only one way
-     * to arrive: the step is two whenever a cross-operator child is itself the left child of a
-     * cross-operator parent, because `writeChild` bumps each of them and the left spine is written
-     * before the outer joiner. One alternation is safe - `Or(And(a,b), c)` steps 1,1,1,0,0 and always
-     * read correctly. Two in a row is not.
-     *
-     * It also matters for who is at risk. Screened on the author's own `routes.json` for **this**
-     * shape rather than for `NodeGroup`, all 39 conditions come back clean - but the two earlier
-     * screens asked the wrong question and happened to reach the same answer.
+     * The same defect with no bracket anywhere in the tree: `(1 or 2) and 4, or 3` as `Or(And(Or(1,2), 4), 3)` has no
+     * `NodeGroup`, and fails the same way with the AND gone.  The step is two whenever a cross-operator child is itself
+     * the left child of a cross-operator parent, because `writeChild` bumps each of them; `Or(And(a,b), c)` is safe.
      *
      * MUTATION: reading a deeper run at `row.getDepth()` fails this exactly as it fails the case above.
      */
@@ -693,15 +848,8 @@ public class testConditionOutline
     }
 
     /**
-     * The shape of an expression, for comparing two of them.
-     */
-    /**
-     * describe(), with a bracket round a single thing ignored.
-     *
-     * Reading an outline back builds a group where the outline indents, so a nested pair comes back
-     * as "and(1,(or(2,3)))" where it went in as "and(1,or(2,3))".  That bracket is not a difference in
-     * what the condition MEANS - it is a bracket round one expression - and a test about meaning
-     * should not fail on it.
+     * describe(), with a bracket round a single thing ignored: reading an outline back builds a group where it indents,
+     * which is not a difference in meaning.
      */
     private static String meaning(NodeExpression node)
     {
@@ -789,28 +937,15 @@ public class testConditionOutline
     }
 
     /**
-     * Every condition in the operator's own routes survives the outline, parsed as 3.0.0 parses it.
+     * Every condition in the operator's own routes survives the outline, parsed as 3.0.0 parses it.  A screen of the
+     * `routes.json` structure answers about a tree that no longer exists, because `NodeExpression.fromJSON` runs
+     * `normalize`, which wraps a `NodeGroup` around any cross-operator left child.  So this parses every condition in
+     * the frozen copy of his layout through `fromJSON` (the call `MarklinRoute.fromJSON` makes), then `of()` and
+     * `toExpression()`, and compares meanings.  `test/operator_layout` is a snapshot; `cs2_sample_layout` is live and
+     * moves under a test's feet.
      *
-     * **Adam's question, 2026-09-03:** *"are you comparing if the old routes from my 2.8.1 files match
-     * those parsed in 3.0.0?"* The earlier screens were not. They walked the structure of
-     * `routes.json`, and that structure is **not** what the editor is handed:
-     * `NodeExpression.fromJSON` runs `normalize`, which inserts a `NodeGroup` around any cross-operator
-     * left child. A file with no brackets in it can therefore produce a bracketed tree, and a screen of
-     * the file is answering about a tree that no longer exists.
-     *
-     * So this parses instead of reading. Every condition in the frozen copy of his layout goes through
-     * `fromJSON` - the same call `MarklinRoute.fromJSON` makes - and then through `of()` and
-     * `toExpression()`, and the meanings are compared. That is the whole of what the editor does to a
-     * stored route between opening it and saving it.
-     *
-     * **The frozen copy, not the live folder.** `test/operator_layout` is a snapshot of his railway
-     * taken for exactly this kind of question; `cs2_sample_layout` is the live one and moves under a
-     * test's feet. If his routes ever grow the shape, this fails on the snapshot the day it is
-     * refreshed, which is soon enough.
-     *
-     * MUTATION: reading a deeper run at `row.getDepth()` leaves this green today - his routes have no
-     * two-alternation condition - which is the honest result and is why the two constructed cases
-     * above exist. This test is the reachability half, not the mechanism half.
+     * MUTATION: reading a deeper run at `row.getDepth()` leaves this green today, because his routes have no
+     * two-alternation condition.  This is the reachability half, not the mechanism half.
      */
     @Test
     public void testEveryConditionInTheOperatorsRoutesSurvivesTheOutline() throws Exception
@@ -825,7 +960,7 @@ public class testConditionOutline
         String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        // The file is an object with a "routes" array in it, which is the shape MarklinRoute writes.
+        // The file is an object with a "routes" array, the shape MarklinRoute writes.
         org.json.JSONArray routes = new org.json.JSONObject(text).getJSONArray("routes");
 
         int withConditions = 0;
@@ -866,21 +1001,11 @@ public class testConditionOutline
             + "sentence (IPR-B2)");
     }
     /**
-     * Two bracketed groups at one indent are not a disagreement.
-     *
-     * `A and (B or C) and (D and E)` is an outline somebody can build with ordinary gestures - indent
-     * B, set OR, add C, outdent the joiner, indent D, add E - and it is one `toExpression` reads
-     * correctly. `problems` flagged it anyway, so the editor showed a line in red and **refused the
-     * save**, and the only ways out were Discard or restructuring a condition that was not wrong.
-     *
-     * The cause: `settled` was keyed on DEPTH ALONE across the whole list, so the OR inside the first
-     * group and the AND inside the second were read as one level disagreeing with itself. `read` does
-     * not work that way - it consumes each indented run in its own recursive call, so two runs at one
-     * depth are unambiguous to it. **The check was stricter than the code it protects.**
-     *
-     * That is the shape Adam has ruled on before - an over-strict check that blocks a legitimate
-     * gesture is worse than no check - and the rule the class states is unchanged: a word may still
-     * not disagree with another word in the SAME run.
+     * Two bracketed groups at one indent are not a disagreement: `A and (B or C) and (D and E)` is buildable with
+     * ordinary gestures and `toExpression` reads it correctly, but `settled` was keyed on DEPTH ALONE across the whole
+     * list, so the editor showed a line in red and refused the save.  `read` consumes each indented run in its own
+     * call, so the check was stricter than the code it protects.  A word may still not disagree with another word in
+     * the SAME run.
      *
      * MUTATION: going back to a single map keyed on depth flags row 7 and fails the first assertion.
      */

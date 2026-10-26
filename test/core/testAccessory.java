@@ -603,7 +603,7 @@ public class testAccessory
      *
      * The fix was to state the conversion once, here, rather than as a subtraction at each call site.
      * `ui.testRouteEditorValidation.testTheTopAddressOfEachProtocolIsAccepted` is the same claim at the
-     * door that used to get it wrong - the rule and the door that asks it, which is the split
+     * door that disagreed - the rule and the door that asks it, which is the split
      * `testLocomotiveAddressRules` argues for.
      *
      * MUTATION: drop the `- 1` from `isValidLogicalAddress` and the two top addresses are refused.

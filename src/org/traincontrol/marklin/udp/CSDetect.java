@@ -38,17 +38,9 @@ public class CSDetect
     public static final int PING_RETRY = 2;
 
     /**
-     * How many times the web check is tried on a host that has already answered a ping (MT-060).
-     *
-     * Adam, 2026-08-27: "it works 9 out of 10 times.  sometimes I see this without a positive
-     * detection: 192.168.50.25 is reachable .......... and then it just goes on.  if I try again, it
-     * gets redetected."
-     *
-     * The ping was retried and the web request was not, so a single timeout threw away a station that
-     * had just answered. Three attempts turn a one-in-ten failure into a one-in-a-thousand one.
-     *
-     * Only reachable hosts ever get here, so this does not lengthen the scan: the two hundred and
-     * fifty addresses with nothing on them fail at the ping and are never asked twice.
+     * How many times the web check is tried on a host that has already answered a ping (MT-060): a single timeout must
+     * not throw away a station that just answered, and three attempts turn a one-in-ten failure into one in a thousand.
+     * Only reachable hosts get here, so the scan is no longer.
      */
     public static final int WEB_RETRY = 3;
     
@@ -148,15 +140,8 @@ public class CSDetect
                     {
                         // Check for default gateway by sending a ping
                         //
-                        // RETRIED, like every other ping in this class.  This was the one
-                        // that was not, and it is upstream of all of them: one dropped reply makes
-                        // `getLocalSubnet()` return empty and `hasLocalSubnets()` false, and the
-                        // operator is told auto-detect is not possible at all - a worse answer than
-                        // the one MT-060 was raised about, from the same cause.  The javadoc at the
-                        // head of this class is about exactly that: *"a single timeout threw away a
-                        // station that had just answered.  Three attempts turn a one-in-ten failure
-                        // into a one-in-a-thousand one."*  It costs at most one extra round trip per
-                        // interface, once, before a scan that sends 254.
+                        // Retried, like every other ping in this class (MT-060): one dropped reply makes
+                        // `getLocalSubnet()` return empty and tells the operator auto-detect is not possible at all.
                         if (isReachable(inetAddress.getHostAddress().substring(0, inetAddress.getHostAddress().lastIndexOf('.')) + ".1", PING_RETRY))
                         {
                             String ip = inetAddress.getHostAddress();
@@ -201,11 +186,8 @@ public class CSDetect
     }
     
     /**
-     * Whether there is a Central Station web server on this host, retried (MT-060).
-     *
-     * The retry lives in the name every caller already uses, rather than in a new one beside it. A
-     * second method would have to be remembered at each call site, and a rule that has to be
-     * remembered is a rule that gets left out - which is how the last several defects here arrived.
+     * Whether there is a Central Station web server on this host, retried (MT-060).  The retry lives in the name every
+     * caller already uses, so no call site has to remember a second method.
      *
      * @param host the host, which may carry a port for a test
      * @param path the path that identifies a Central Station
@@ -217,11 +199,8 @@ public class CSDetect
     }
 
     /**
-     * The same, with the number of attempts named - the way in for a test (MT-060).
-     *
-     * A fake server that times out once and then answers is the whole behavior under test, and it
-     * cannot be built against a real Central Station. `host` may therefore carry a port, which costs
-     * nothing: the scan passes a bare address and the URL reads the same either way.
+     * The same, with the number of attempts named - the way in for a test (MT-060).  `host` may carry a port so a fake
+     * server can time out once and then answer; the scan passes a bare address and the URL reads the same either way.
      *
      * @param host the host, which may carry a port
      * @param path the path that identifies a Central Station

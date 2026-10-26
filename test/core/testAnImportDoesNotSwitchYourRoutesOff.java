@@ -18,19 +18,15 @@ import org.traincontrol.marklin.MarklinRoute;
 /**
  * Importing a 2.7.4c graph does not switch your routes off (MT-297).
  *
- * Adam, 2026-09-12: *"write a test case for this, should be trivial to see if the treads are live."*
+ * Adam: *"write a test case for this, should be trivial to see if the treads are live."*  Twice, because the entry
+ * says twice: *"Run the setup, and look again - the disabling used to happen on load rather than on import, so it has
+ * to be checked after autonomy has actually parsed the configuration."*
  *
- * **Twice, because the entry says twice.** *"Run the setup, and look again - the disabling used to
- * happen on load rather than on import, so it has to be checked after autonomy has actually parsed the
- * configuration."* An import that looks harmless and a `parseAuto` that switches everything off a minute
- * later is the defect, so asking only after the import would miss exactly the case this is about.
- *
- * **The mechanism it is guarding against is real and it is asserted here.** `parseAuto` ends in
- * `applyAutonomyRouteActivations`, which walks the LIVE Central Station route database: every route whose
- * id is not in `activateRouteIDs` is disabled. Adam's own legacy file says `activateRoutes: true` with an
- * EMPTY list, so an import that carried those two keys would switch off every route he has - on import,
- * and again on every diagram edit. The last test below turns that mechanism on by hand and checks it
- * fires, so the two claims above cannot pass because nothing was ever capable of disabling anything.
+ * The mechanism it guards against is real: `parseAuto` ends in `applyAutonomyRouteActivations`, which walks the LIVE
+ * Central Station route database and disables every route whose id is not in `activateRouteIDs`.  Adam's own legacy
+ * file says `activateRoutes: true` with an EMPTY list, so an import that carried those two keys would switch off every
+ * route he has, on import and on every diagram edit.  The last test turns that mechanism on by hand and checks it
+ * fires, so the two claims above cannot pass because nothing was capable of disabling anything.
  *
  * MUTATION: let `importLegacy` carry `activateRoutes`/`activateRouteIDs` and the second claim fails.
  *
@@ -72,9 +68,8 @@ public class testAnImportDoesNotSwitchYourRoutesOff
 
         model = support.TestStation.simulated();
 
-        // A ROUTE OF OUR OWN, enabled and watching a sensor.  The fixture's own routes are asserted
-        // over too, but a class whose subject exists only if somebody else's file happens to contain
-        // one is a class that quietly stops testing anything.
+        // A route of our own, enabled and watching a sensor: a class whose subject exists only if somebody else's file
+        // happens to contain one quietly stops testing anything.
         List<RouteCommand> commands = new ArrayList<>();
 
         commands.add(RouteCommand.RouteCommandAccessory(PROBE_TURNOUT,
@@ -110,9 +105,8 @@ public class testAnImportDoesNotSwitchYourRoutesOff
 
         afterParse = enabledStates();
 
-        // AND THE MECHANISM, TURNED ON BY HAND, so the two claims above are not about a railway where
-        // nothing could ever have been switched off.  This is what carrying the two excluded keys
-        // would have produced.
+        // And the mechanism, turned on by hand, so the two claims above are not about a railway where nothing could
+        // ever have been switched off; this is what carrying the two excluded keys would have produced.
         if (model.getAutoLayout() != null)
         {
             model.getAutoLayout().setActivateRouteIDs(new ArrayList<Integer>());
@@ -153,11 +147,7 @@ public class testAnImportDoesNotSwitchYourRoutesOff
         }
     }
 
-    /**
-     * The claim: the import itself switches nothing off.
-     *
-     * @throws Exception from the railway
-     */
+    /** The claim: the import itself switches nothing off. */
     @Test
     public void testTheImportLeavesEveryRouteAsItFoundIt() throws Exception
     {
@@ -166,12 +156,7 @@ public class testAnImportDoesNotSwitchYourRoutesOff
             + ". Nothing about importing a graph should touch a route");
     }
 
-    /**
-     * And the claim the entry really turns on: running the setup afterwards switches nothing off
-     * either.
-     *
-     * @throws Exception from the railway
-     */
+    /** And the claim the entry really turns on: running the setup afterwards switches nothing off either. */
     @Test
     public void testRunningTheImportedSetupLeavesThemOnToo() throws Exception
     {
@@ -184,13 +169,8 @@ public class testAnImportDoesNotSwitchYourRoutesOff
     }
 
     /**
-     * The control: the thing that would have done it really can do it.
-     *
-     * Without this, both claims above are satisfied by a railway on which no route could be switched
-     * off by anything - which is how a guard against a mechanism outlives the mechanism and reports
-     * clean for ever.
-     *
-     * @throws Exception from the railway
+     * The control: the thing that would have done it really can do it; without it both claims above are satisfied by a
+     * railway on which nothing could switch a route off.
      */
     @Test(dependsOnMethods = "testRunningTheImportedSetupLeavesThemOnToo")
     public void testTheMechanismThatWouldHaveDoneItIsLive() throws Exception

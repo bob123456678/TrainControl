@@ -34,9 +34,9 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A paused train stays paused, and is kept out of what Adam said it is kept out of (FR-117; Adam, 2026-10-09: "in
- * autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls
- * tab", and asked what a paused train is kept out of, "Autonomy and Return Home").
+ * A paused train stays paused, and is kept out of what Adam said it is kept out of (FR-117; Adam: "in autonomy configs,
+ * track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab", and asked
+ * what a paused train is kept out of, "Autonomy and Return Home").
  *
  * On a ring of four stations of this class's own, with two locomotives of its own: the railway's file says which trains
  * are paused and a file read back says it again; Return Home leaves a paused train where it stands and moves it out of
@@ -159,7 +159,6 @@ public class testAPausedTrainStaysPaused
         assertEquals(names(written.optJSONArray(PAUSED)), Collections.singletonList(ALPHA), "with " + ALPHA + " paused,"
             + " the railway's file lists as paused " + written.opt(PAUSED) + ", so the configuration forgets the pause");
 
-        // READ BACK, with each train told the opposite first
         alpha.setAutonomyPaused(false);
         bravo.setAutonomyPaused(true);
 
@@ -179,9 +178,9 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * A configuration that lists paused trains names them in the log as it loads - an import's load among them - and one
-     * that lists nobody says nothing about pauses (Adam, 2026-10-09: "Make sure the log shows what locomotive are paused
-     * when the autonomy import happens").
+     * A configuration that lists paused trains names them in the log as it loads, an import's load among them, and one
+     * that lists nobody says nothing about pauses (Adam: "Make sure the log shows what locomotive are paused when the
+     * autonomy import happens").
      *
      * MUTATION: drop the line, or write it for a configuration that pauses nobody, and this fails.
      */
@@ -378,7 +377,6 @@ public class testAPausedTrainStaysPaused
 
         assertNotNull(configuration, "precondition: his railway has no active configuration");
 
-        // THE DOOR
         session.setActive(train, false);
 
         assertTrue(train.isAutonomyPaused(), "the setup's door did not pause the train");
@@ -398,7 +396,6 @@ public class testAPausedTrainStaysPaused
 
         assertTrue(train.isAutonomyPaused(), "the railway built from the setup has the paused train running");
 
-        // SAVED
         AutonomySession again = new AutonomySession(sandbox.getFolder());
 
         again.open(pages);
@@ -406,7 +403,6 @@ public class testAPausedTrainStaysPaused
         assertTrue(again.getPausedLocomotives().contains(SETUP_TRAIN), "the pause was not saved: the setup read back"
             + " from its folder lists " + again.getPausedLocomotives());
 
-        // SET GOING AGAIN
         session.setActive(train, true);
 
         assertFalse(train.isAutonomyPaused(), "the setup's door did not set the train going again");
@@ -442,12 +438,10 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * A fold brings the record of how the railway was built up to date with what it takes (OB-343): the record is what the
-     * railway and the setup last agreed on, and the settings a fold writes into the setup are the railway's and the setup's
-     * both.  Left behind, a pause the fold took, then undone on the railway, read to the next fold as the railway unchanged
-     * from how it was built - the same as the stale record - and the setup's older answer stood.
-     *
-     * The settings fold, the whole fold, and a setting the railway stopped writing, which the record loses too.
+     * A fold brings the record of how the railway was built up to date with what it takes (OB-343): left behind, a
+     * pause the fold took and then undone on the railway read to the next fold as the railway unchanged from how it was
+     * built, and the setup's older answer stood.  The settings fold, the whole fold, and a setting the railway stopped
+     * writing.
      *
      * MUTATION: leave the record as it was after a fold, and this fails.
      *
@@ -529,11 +523,8 @@ public class testAPausedTrainStaysPaused
 
     /**
      * An edit session's Cancel puts the setup back and keeps what the railway changed alone while it was open (OB-343):
-     * the settings a fold took from the railway are the railway's, not the edit's, to undo.
-     *
-     * The setup is snapshotted and an edit session begun; a pause made on the railway is folded in; an edit of the setup's
-     * own is made; and the snapshot is put back.  The pause stays and the edit goes.  Outside an edit session, putting a
-     * snapshot back is exactly that.
+     * the settings a fold took from the railway are the railway's, not the edit's, to undo.  The pause stays and the
+     * edit goes; outside an edit session, putting a snapshot back is exactly that.
      *
      * MUTATION: leave what the fold took out of the restore, or keep the edit, and this fails.
      *
@@ -586,7 +577,6 @@ public class testAPausedTrainStaysPaused
 
             assertTrue(session.getPausedLocomotives().contains(ALPHA), "precondition: the edit was not made");
 
-            // CANCEL
             session.restoreSetup(opened);
 
             assertTrue(session.getPausedLocomotives().contains(SETUP_TRAIN), "Cancel took back a pause the railway made alone"
@@ -654,10 +644,9 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * A fold takes the paused trains BY TRAIN and never replaces the setup's list (OB-343): the trains the railway gained or
-     * lost against the record are applied to the setup's own, so what the setup lists that the railway and the record do not
-     * have stays - a name no train answers to, or a train the setup paused and the railway has not been told of - and a
-     * record with no list at all is every train gained.
+     * A fold takes the paused trains BY TRAIN and never replaces the setup's list (OB-343): the trains the railway
+     * gained or lost against the record are applied to the setup's own, so what the setup lists that the railway and
+     * the record do not have stays, and a record with no list at all is every train gained.
      *
      * MUTATION: put the railway's whole list in the setup in a fold, and this fails.
      *
@@ -703,12 +692,9 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * An edit session's Cancel keeps a card's un-pause (OB-343): the fold's note of a train the railway LOST against the record
-     * is taken off the list Cancel puts back, and a setting the railway stopped writing - Simulate turned off - is taken out
-     * of it.
-     *
-     * The railway is built with a train paused and Simulate on, the snapshot taken and an edit session begun; the train is set
-     * going and the fold taken; Simulate is turned off and the fold taken again; and the snapshot, which has both, is put back.
+     * An edit session's Cancel keeps a card's un-pause (OB-343): the fold's note of a train the railway LOST against
+     * the record is taken off the list Cancel puts back, and so is a setting the railway stopped writing (Simulate
+     * turned off).
      *
      * MUTATION: leave a loss out of what Cancel puts back, or a setting the railway stopped writing, and this fails.
      *
@@ -758,7 +744,6 @@ public class testAPausedTrainStaysPaused
 
             assertFalse(f.asBuilt.has("simulate"), "the record still has Simulate, which the railway has stopped writing");
 
-            // CANCEL
             f.session.restoreSetup(opened);
 
             assertFalse(f.session.getPausedLocomotives().contains(SETUP_TRAIN), "Cancel paused again a train a card set going"
@@ -782,11 +767,11 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * A fold with no record of how the railway was built takes every setting of the railway's (OB-343): the paused list is the
-     * railway's own - there is nothing to tell what it gained - and an edit session's Cancel keeps all of it.
+     * A fold with no record of how the railway was built takes every setting of the railway's (OB-343): there is
+     * nothing to tell what it gained, and an edit session's Cancel keeps all of it.
      *
-     * MUTATION: take only the settings that differ from an empty record, or leave the pauses out of what Cancel keeps, and
-     * this fails.
+     * MUTATION: take only the settings that differ from an empty record, or leave the pauses out of what Cancel keeps,
+     * and this fails.
      *
      * @throws Exception from the railway
      */

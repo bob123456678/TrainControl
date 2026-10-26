@@ -29,10 +29,8 @@ import support.Components;
 /**
  * Layouts > Modify Layout edits the layout's folder: a page duplicated, renamed, added, combined or deleted is a file
  * written, renamed or removed, the page list and the index say the same, and the autonomy setup follows the page.  A
- * refusal changes nothing in the folder.
- *
- * Each claim has a window of its own over a fresh sandboxed copy of the five-page test layout, picks a page in the
- * page list, clicks the menu item, and answers the real dialogs.
+ * refusal changes nothing in the folder.  Each claim has a window of its own over a fresh sandboxed copy of the
+ * five-page test layout, picks a page in the page list, clicks the menu item, and answers the real dialogs.
  *
  * MUTATIONS, each seen red: the duplicate written blank (the duplicate claim); the rename made a duplicate (the rename
  * claim); the blank page given the current page's squares (the blank claim); the delete's file removal skipped (the
@@ -93,8 +91,6 @@ public class testThePageMenuEditsTheLayoutFolder
     /**
      * Duplicate Current Page writes a copy of the page under a new name: the same squares, its own file, in the index
      * and the page list, and shown.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDuplicateCurrentPageWritesACopyOfThePage() throws Exception
@@ -131,8 +127,6 @@ public class testThePageMenuEditsTheLayoutFolder
     /**
      * Rename Current Page, answered with a new name, moves the page's file, the index entry and the autonomy setup's
      * page name over to it, and keeps nothing under the old one.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testRenameCurrentPageMovesItsFileAndItsSetup() throws Exception
@@ -173,8 +167,6 @@ public class testThePageMenuEditsTheLayoutFolder
 
     /**
      * Add Blank Page, answered with a name, writes a page of that name with nothing on it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAddBlankPageWritesAnEmptyPage() throws Exception
@@ -202,8 +194,6 @@ public class testThePageMenuEditsTheLayoutFolder
 
     /**
      * Delete Current Page, answered Yes, removes the page's file, its index entry and its name in the setup.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDeleteCurrentPageAnsweredYesRemovesThePage() throws Exception
@@ -236,8 +226,6 @@ public class testThePageMenuEditsTheLayoutFolder
 
     /**
      * Delete Current Page answered No leaves the folder as it was, byte for byte.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testDeleteAnsweredNoLeavesTheFolderAsItWas() throws Exception
@@ -262,8 +250,6 @@ public class testThePageMenuEditsTheLayoutFolder
 
     /**
      * Renaming a page to another page's name is refused, naming the page in the way, and the folder is left as it was.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testRenameToATakenNameIsRefusedAndChangesNothing() throws Exception
@@ -292,8 +278,6 @@ public class testThePageMenuEditsTheLayoutFolder
     /**
      * Combine Linked Pages, from a page with links, answered with a name, writes one page holding this page and every
      * page it links to, and keeps it out of autonomy, since its squares are drawings of squares on the other pages.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCombineLinkedPagesWritesOnePageOutOfAutonomy() throws Exception
@@ -328,8 +312,6 @@ public class testThePageMenuEditsTheLayoutFolder
 
     /**
      * Combine Linked Pages on a page with no links says there is nothing to combine, and changes nothing.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testCombineWithNoLinksSaysSoAndChangesNothing() throws Exception

@@ -19,13 +19,12 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * MT-074 and MT-075, which Adam could not run by hand and asked to have tested instead.
  *
- * Both are Tier 2 - data safety - and both are about what is left on DISK afterwards, which is the
- * half a person at the screen cannot see. That is why they were awkward by hand and why they are
- * worth automating: "it loaded and looked right" is not the claim either test is making.
+ * Both are Tier 2 - data safety - and both are about what is left on DISK afterwards, which the person at the screen
+ * cannot see: "it loaded and looked right" is not the claim.
  *
- * MT-074 adds a requirement Adam wrote when he deferred it: "validate that the source files are
- * unchanged afterwards". So the round trip is checked byte-for-byte against copies taken before it,
- * not by reading the setup back through the same code that wrote it.
+ * MT-074 adds a requirement Adam wrote when he deferred it: "validate that the source files are unchanged afterwards",
+ * so the round trip is checked byte-for-byte against copies taken before it, not by reading the setup back through the
+ * same code that wrote it.
  *
  * @author Adam
  */
@@ -34,8 +33,8 @@ public class testDataSafetyRoundTrips
     private File folder;
 
     /**
-     * Something no save writes, so its presence in the .bak proves the backup is the state this build
-     * FOUND rather than one it produced.
+     * Something no save writes, so its presence in the .bak proves the backup is the state this build FOUND rather than
+     * one it produced.
      */
     private static final String MARKER = "tc-test-marker-do-not-write";
 
@@ -56,10 +55,9 @@ public class testDataSafetyRoundTrips
     /**
      * Export the setup, re-import it, and get the same setup - with the files untouched.
      *
-     * The named regression is that the block field was not written, so a bundle exported before
-     * 18 August came back without the sensor each Point was about. Anything keyed by square survives an
-     * export only if the export writes it, and the way that fails is silent: the file is valid JSON, it
-     * imports without complaint, and what is missing is only visible later.
+     * The named regression is that the block field was not written, so a bundle exported before 18 August came back
+     * without the sensor each Point was about.  Anything keyed by square survives an export only if the export writes
+     * it, and the way that fails is silent: the file is valid JSON and imports without complaint.
      */
     @Test
     public void testTheExportedBundleComesBackWholeAndChangesNothing() throws IOException
@@ -129,9 +127,9 @@ public class testDataSafetyRoundTrips
     /**
      * Saving a page leaves a backup beside it, once, and never a corrupt page.
      *
-     * "Once" is the part worth pinning. The backup is the state before this BUILD touched the page -
-     * a migration that strips something a user wanted is recoverable by hand from it - and a backup
-     * rewritten on every save is a copy of the last save, which is no use for that at all.
+     * "Once" is the part worth pinning: the backup is the state before this BUILD touched the page (a migration that
+     * strips something a user wanted is recoverable by hand from it), and a backup rewritten on every save is a copy of
+     * the last save.
      */
     @Test
     public void testSavingAPageLeavesOneBackupAndAWholeFile() throws Exception
@@ -155,10 +153,9 @@ public class testDataSafetyRoundTrips
             "no .bak was written beside the page, so a migration that strips something is not "
             + "recoverable");
 
-        // What the backup must hold: the marker that was in the file BEFORE the first save, and which
-        // no save writes. Compared by content rather than by byte array - an earlier version of this
-        // test compared the array against a copy taken after the first save, and passed against a
-        // mutant that rewrote the backup every time, because both saves happened to leave it the same.
+        // What the backup must hold: the marker that was in the file BEFORE the first save, which no save writes.
+        // Compared by content rather than against a copy taken after the first save, which a mutant that rewrote the
+        // backup every time would also satisfy.
         String backedUp = new String(Files.readAllBytes(backup), StandardCharsets.UTF_8);
 
         assertTrue(backedUp.contains(MARKER),

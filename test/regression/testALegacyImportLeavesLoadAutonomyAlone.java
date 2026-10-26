@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Importing a legacy autonomy.json leaves Startup -> Load Autonomy as the operator set it (Adam, 2026-09-24).
+ * Importing a legacy autonomy.json leaves Startup -> Load Autonomy as the operator set it.
  *
  * The box was unticked after every import, on his ruling *"Set the setting to unchecked when importing a legacy json
  * file, each time"* - made while the box still loaded the old graph at start, which a layout that had only an import

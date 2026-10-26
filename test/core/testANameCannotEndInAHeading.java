@@ -16,25 +16,20 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * A square cannot be given a name that ends the way the builder names one direction of a square.
  *
- * Adam, 2026-09-14: *"refuse and close, but make sure the words are uncommon."*
+ * Adam: *"refuse and close, but make sure the words are uncommon."*  Messages name squares by stripping the builder's
+ * heading from a copy's name ("BottomMainB (eastbound, reverse)" is shown as "BottomMainB"), so a square somebody NAMED
+ * "Main (eastbound)" read as "Main", the same as the real Main's copies, and two different places became one in every
+ * refusal and every Return Home reason.
  *
- * **Why it is refused.**  Messages name squares by stripping the builder's heading from a copy's name -
- * "BottomMainB (eastbound, reverse)" is shown as "BottomMainB" - so a square somebody NAMED "Main (eastbound)"
- * read as "Main", the same as the real Main's copies, and two different places became one in every refusal
- * and every Return Home reason.
- *
- * **Why the words are uncommon.**  Only the builder's form is refused: a lowercase heading in brackets at the
- * very end, after a space - with anything after a comma inside the bracket, of which ", reverse" is the
- * builder's own.  Each control below is a name a real railway might use and
- * that must still be allowed.
+ * Only the builder's form is refused: a lowercase heading in brackets at the very end, after a space, with anything
+ * after a comma inside the bracket (", reverse" is the builder's own).  Each control below is a name a real railway
+ * might use and that must still be allowed.
  *
  * @author Adam
  */
 public class testANameCannotEndInAHeading
 {
-    /**
-     * The builder's forms are refused.
-     */
+    /** The builder's forms are refused. */
     @Test
     public void testTheBuildersFormsAreRefused()
     {
@@ -52,9 +47,7 @@ public class testANameCannotEndInAHeading
         }
     }
 
-    /**
-     * Names a railway might really use are not refused.
-     */
+    /** Names a railway might really use are not refused. */
     @Test
     public void testOrdinaryNamesWithTheseWordsAreAllowed()
     {
@@ -71,11 +64,7 @@ public class testANameCannotEndInAHeading
         }
     }
 
-    /**
-     * The session door refuses it and stores nothing, saying which name.
-     *
-     * @throws Exception from the temporary folder
-     */
+    /** The session door refuses it and stores nothing, saying which name. */
     @Test
     public void testTheSessionRefusesAndStoresNothing() throws Exception
     {

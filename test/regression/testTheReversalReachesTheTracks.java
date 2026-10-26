@@ -29,19 +29,15 @@ import org.traincontrol.util.Conversion;
 /**
  * The reversal reaches the TRACKS, not just the model's idea of the direction.
  *
- * Adam, 2026-09-08: *"in your tests for arrival, make sure you check for an emitted reversal command to
- * the tracks."*
+ * Adam: *"in your tests for arrival, make sure you check for an emitted reversal command to the tracks."*
  *
- * `testAReversalCommandIsEmitted` reads `goingForward()`, which is the application's own belief. That
- * is the right question for "was the decision taken" and the wrong one for "did anything happen": a
- * `_setDirection` with no `exec` behind it would satisfy every assertion in that class while the
- * railway sat still. This watches the message instead.
- *
- * **How.** `MarklinLocomotive.setDirection` ends in `network.exec(new CS2Message(CMD_LOCO_DIRECTION,
- * ...))`. With no Central Station connected, `MarklinControlStation.exec` takes the not-connected
- * branch and logs the message it would have sent - `DEBUG_LOG_NETWORK` is on by default - through
- * `java.util.logging`. So a handler on that logger sees exactly what would have gone down the wire, in
- * order, and nothing in production changes to allow it.
+ * `testAReversalCommandIsEmitted` reads `goingForward()`, the application's own belief: the right question for "was the
+ * decision taken" and the wrong one for "did anything happen", since a `_setDirection` with no `exec` behind it would
+ * satisfy every assertion in that class while the railway sat still.  This watches the message instead:
+ * `MarklinLocomotive.setDirection` ends in `network.exec(new CS2Message(CMD_LOCO_DIRECTION, ...))`, and with no Central
+ * Station connected `MarklinControlStation.exec` logs the message it would have sent (`DEBUG_LOG_NETWORK` is on by
+ * default) through `java.util.logging`, so a handler on that logger sees what would have gone down the wire, in order,
+ * with nothing changed in production.
  *
  * @author Adam
  */
@@ -63,8 +59,7 @@ public class testTheReversalReachesTheTracks
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model: init reads the layout preference and would otherwise open Adam's own
-        // railway (OB-111).
+        // Before the model: init reads the layout preference and would otherwise open Adam's own railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         // Debug, because setSimulate refuses outside it and the not-connected branch of `exec` only
@@ -118,9 +113,7 @@ public class testTheReversalReachesTheTracks
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The answer, for one square, as the prompt's policy expresses it.
-     */
+    /** The answer, for one square, as the prompt's policy expresses it. */
     private static Layout.ReversalPolicy answering(final boolean turn, final Point asked)
     {
         return new Layout.ReversalPolicy()
@@ -140,13 +133,9 @@ public class testTheReversalReachesTheTracks
     }
 
     /**
-     * A straight run of two legs, the destination being one trains may turn at.
-     *
-     * @param tag distinguishes this fixture from the others
-     * @param from the first sensor address
-     * @param x where the chain starts, so the geometry can answer which side an edge uses
-     * @return the layout, with the driver at START
-     * @throws Exception on a failure to build it
+     * A straight run of two legs, the destination being one trains may turn at; `tag` distinguishes the fixture, `from`
+     * is the first sensor address and `x` where the chain starts (the geometry answers which side an edge uses); the
+     * driver is at START.
      */
     private static Layout railway(String tag, int from, int x) throws Exception
     {
@@ -197,9 +186,7 @@ public class testTheReversalReachesTheTracks
         layout.getPoint(name).setY(y);
     }
 
-    /**
-     * Runs one leg and insists it arrived.
-     */
+    /** Runs one leg and insists it arrived. */
     private static void run(Layout layout, List<Edge> path, Locomotive driver,
         Layout.ReversalPolicy answered, String which) throws Exception
     {
@@ -247,15 +234,13 @@ public class testTheReversalReachesTheTracks
     /**
      * Answering no puts a direction command on the wire; answering yes puts none.
      *
-     * This is the assertion Adam asked for. `goingForward()` is the application's belief about the
-     * train, and a belief with no message behind it is exactly the failure that would look like a
-     * working reversal from inside the process and like a dead one from the platform.
+     * This is the assertion Adam asked for: `goingForward()` is the application's belief about the train, and a belief
+     * with no message behind it would look like a working reversal from inside the process and like a dead one from the
+     * platform.
      *
      * MUTATION: replace `switchDirection()` in the arrival block with `_setDirection` and the model's
      * direction still flips - every assertion in `testAReversalCommandIsEmitted` passes - while this
      * fails, because nothing was sent.
-     *
-     * @throws Exception on a failure to run the journeys
      */
     @Test
     public void testTheAnsweredTurnPutsACommandOnTheWire() throws Exception
@@ -271,10 +256,9 @@ public class testTheReversalReachesTheTracks
 
         keeping.runLocomotives();
 
-        // THE SAME STARTING DIRECTION FOR BOTH, and set BEFORE the recorder is cleared so the command
-        // it emits is not counted.  The two journeys share one locomotive, so without this the
-        // departure of the second corrects a direction the first left behind - and the counts came
-        // out equal for two different reasons, which read as the answered turn sending nothing.
+        // THE SAME STARTING DIRECTION FOR BOTH, set BEFORE the recorder is cleared so its command is not counted: the
+        // two journeys share one locomotive, and otherwise the second's departure corrects a direction the first left
+        // behind.
         driver.setDirection(Locomotive.locDirection.DIR_FORWARD);
 
         HEARD.clear();
@@ -306,10 +290,8 @@ public class testTheReversalReachesTheTracks
             "the control station logged nothing at all during a journey, so this test is watching the"
             + " wrong logger and would pass however little reached the tracks");
 
-        // COMPARED, NOT COUNTED FROM ZERO.  Dispatch sets the direction at departure, so both
-        // journeys put direction commands on the wire; what distinguishes them is the extra one at
-        // the destination.  Asserting "none when keeping" fails on a working railway, which is how
-        // this test first read its own evidence wrong.
+        // COMPARED, NOT COUNTED FROM ZERO: dispatch sets the direction at departure, so both journeys put commands on
+        // the wire and what distinguishes them is the extra one at the destination.
         assertTrue(afterTurning > afterKeeping,
             "the two journeys put the SAME number of direction commands on the wire - " + afterTurning
             + " either way - so the answered turn sent nothing extra to the tracks. The operator said"

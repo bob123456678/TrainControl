@@ -27,73 +27,51 @@ import java.util.jar.Manifest;
  * The application's half of a one-click update (FR-125): which jar is running, whether a download is whole, and
  * starting `JarUpdater` so that it can replace the jar once TrainControl has closed.
  *
- * Adam, 2026-10-12: *"after downloading the new jar, it should take a backup, then start the update script and close
- * TrainControl.  If no jar in current folder, it shouldn't be offered as a menu option."*
- *
  * **"The current folder" is the jar's own folder, not the working directory.**  A shortcut can start TrainControl
- * anywhere, and the jar to replace is the one it was loaded from - `TrainControlUI.class`'s code source.  Run from an
- * IDE or `build/classes` that is a folder, and there is nothing to replace.
+ * anywhere, and the jar to replace is the one `TrainControlUI.class` was loaded from.  Run from an IDE or
+ * `build/classes` that is a folder, and there is nothing to replace.
  */
 public final class SelfUpdate
 {
-    /**
-     * Where the updater's copies of the jar are made, beside the jar, by name, so a later start can tidy them.
-     */
+    /** Where the updater's copies of the jar are made, beside the jar, by name, so a later start can tidy them. */
     public static final String UPDATER_COPY_PREFIX = "TrainControl-updater-";
 
-    /**
-     * How long the exit waits for the updater to say it is running before it gives up and stays open.
-     */
+    /** How long the exit waits for the updater to say it is running before it gives up and stays open. */
     public static final long UPDATER_WAIT_MS = 15000;
 
-    /**
-     * TrainControl's own command-line arguments, as `main` was given them.
-     */
+    /** TrainControl's own command-line arguments, as `main` was given them. */
     private static volatile List<String> arguments = Collections.emptyList();
 
     /**
      * The exit lock, its channel and its file, held from just before the updater starts until this JVM ends.  Never
-     * closed on the way out: the operating system lets go as the process ends, and that is the signal the updater waits
+     * closed on the way out: the operating system lets go as the process ends, which is the signal the updater waits
      * for.
      */
     private static FileChannel exitChannel;
     private static FileLock exitLock;
     private static File exitLockFile;
 
-    /**
-     * The updater, once started.
-     */
+    /** The updater, once started. */
     public interface Updater
     {
-        /**
-         * @return whether it is still running
-         */
+        /** Whether it is still running. */
         boolean isAlive();
 
         /**
-         * Ends it, when it never said it was running: left alone it could take the lock later and swap the jar under
-         * a TrainControl that stayed open.
+         * Ends it, when it never said it was running: left alone it could take the lock later and swap the jar under an
+         * open TrainControl.
          */
         void stop();
     }
 
-    /**
-     * Starts the updater and does not wait for it.
-     */
+    /** Starts the updater and does not wait for it. */
     public interface ProcessStarter
     {
-        /**
-         * @param command the program and its arguments
-         * @param folder its working directory
-         * @return the started program
-         * @throws IOException when it could not be started
-         */
+        /** Starts the program; IOException when it could not be started. */
         Updater start(List<String> command, File folder) throws IOException;
     }
 
-    /**
-     * The update the exit is to start: the jar to replace, the download to replace it with, and its version.
-     */
+    /** The update the exit is to start: the jar to replace, the download to replace it with, and its version. */
     public static final class Pending
     {
         public final File jar;
@@ -109,11 +87,9 @@ public final class SelfUpdate
     }
 
     /**
-     * One Download & Update at a time, from its question to the exit (FR-125).
-     *
-     * `begin` refuses a second while one is under way, so two are never stacked; `exitWith` arms the update, runs the
-     * exit, and disarms it in a `finally` - so an exit that throws cannot leave an update armed for a later, ordinary
-     * exit to start.  The exit takes it with `take`, once, after everything has agreed to close.
+     * One Download & Update at a time, from its question to the exit (FR-125).  `begin` refuses a second; `exitWith`
+     * arms the update, runs the exit, and disarms it in a `finally`, so an exit that throws cannot leave an update
+     * armed for a later, ordinary exit.  The exit takes it with `take`, once, after everything has agreed to close.
      */
     public static final class HandOver
     {
@@ -121,36 +97,26 @@ public final class SelfUpdate
 
         private Pending armed;
 
-        /**
-         * @return false when an update is already under way, which refuses this one
-         */
+        /** Returns false when an update is already under way, which refuses this one. */
         public boolean begin()
         {
             return this.underWay.compareAndSet(false, true);
         }
 
-        /**
-         * Ends an update that will not reach the exit.
-         */
+        /** Ends an update that will not reach the exit. */
         public synchronized void end()
         {
             this.armed = null;
             this.underWay.set(false);
         }
 
-        /**
-         * @return whether an update is under way
-         */
+        /** Whether an update is under way. */
         public boolean isUnderWay()
         {
             return this.underWay.get();
         }
 
-        /**
-         * The exit's half: the update to start, taken so that it is started once.
-         *
-         * @return the update, or null when none is armed
-         */
+        /** The exit's half: the update to start, taken so that it is started once; null when none is armed. */
         public synchronized Pending take()
         {
             Pending taken = this.armed;
@@ -161,11 +127,8 @@ public final class SelfUpdate
         }
 
         /**
-         * Arms the update, runs the exit, and disarms it whatever the exit did.
-         *
-         * @param pending the update
-         * @param exit the application's exit, which takes the update when nothing refuses it
-         * @return true when the exit came back without taking it: it was canceled
+         * Arms the update, runs the exit, and disarms it whatever the exit did; true when the exit came back without
+         * taking it (canceled).
          */
         public boolean exitWith(Pending pending, Runnable exit)
         {
@@ -201,15 +164,11 @@ public final class SelfUpdate
     }
 
     /**
-     * Tells an update that is waiting to hear from this version that it has started (FR-125).
+     * Tells an update that is waiting to hear from this version that it has started (FR-125).  Called once the main
+     * window is on screen, and when the user leaves by canceling the IP address or giving up the first sync: a version
+     * that asks a question runs.  Not earlier, or a version that fails in its own start-up would be kept.
      *
-     * Called once the main window is on screen, and on the two ways the user leaves before then - canceling the IP
-     * address, giving up the first sync - because a version that asks a question runs.  Not as `main`'s first act any
-     * more (FR-125, 2026-10-13): a version that fails in its own start-up after that had "started" and was kept, while the
-     * Readme promised an update that cannot start is undone.
-     *
-     * Only when `JarUpdater.STARTED_ENVIRONMENT` names a file, which the updater sets for the version it starts and for
-     * nothing else.  Never throws: nothing may stop TrainControl starting.
+     * Only when `JarUpdater.STARTED_ENVIRONMENT` names a file.  Never throws: nothing may stop TrainControl starting.
      */
     public static void reportStarted()
     {
@@ -223,31 +182,20 @@ public final class SelfUpdate
         }
     }
 
-    /**
-     * `reportStarted` with the marker's path given, which is how a claim calls it without an environment of its own.
-     *
-     * @param marker the marker's path, or null or blank for none
-     */
+    /** `reportStarted` with the marker's path given (null or blank for none), which is how a claim calls it. */
     public static void reportStarted(String marker)
     {
         if (marker != null && !marker.trim().isEmpty()) JarUpdater.writeMarker(new File(marker.trim()));
     }
 
-    /**
-     * Remembers TrainControl's command-line arguments (an IP address, debug, simulate), so an update starts the new
-     * version with the same ones.
-     *
-     * @param args as `main` was given them
-     */
+    /** Remembers TrainControl's command-line arguments, so an update starts the new version with the same ones. */
     public static void rememberArguments(String[] args)
     {
         arguments = args == null ? Collections.<String>emptyList()
             : Collections.unmodifiableList(new ArrayList<>(Arrays.asList(args)));
     }
 
-    /**
-     * @return TrainControl's command-line arguments
-     */
+    /** TrainControl's command-line arguments. */
     public static List<String> getArguments()
     {
         return arguments;
@@ -255,17 +203,14 @@ public final class SelfUpdate
 
     /**
      * TEST HOOK, with no effect unless a test sets it: the jar `runningJar` reports in place of the one the program was
-     * loaded from (FR-136 Phase 6; Adam, 2026-10-19: "OK on download update test hooks").  A test runs from a folder of
-     * classes, where there is no jar, so Download & Update could not be reached from one.  Null, as it always is outside
-     * a test, asks the code source as before.
+     * loaded from, because a test runs from a folder of classes with no jar (FR-136 Phase 6; Adam: "OK on download
+     * update test hooks").
      */
     private static volatile File runningJarForTests;
 
     /**
-     * For tests: makes `runningJar` report this jar, a throwaway one in the test's own folder, so that Download & Update
-     * is offered and replaces that rather than anything real.  Reset it with null in a finally.
-     *
-     * @param jar the jar to pretend the program runs from, or null for the real answer
+     * For tests: makes `runningJar` report this throwaway jar, or the real answer for null.  Reset it with null in a
+     * finally.
      */
     public static void runningJarForTests(File jar)
     {
@@ -273,10 +218,8 @@ public final class SelfUpdate
     }
 
     /**
-     * The jar this class was loaded from, if it is one an update can replace.
-     *
-     * @param anchor a class of the application, whose code source is the jar
-     * @return the jar, or null when running from a folder of classes or from a jar whose folder cannot be written
+     * The jar this class was loaded from, or null when running from a folder of classes or from a jar whose folder
+     * cannot be written.
      */
     public static File runningJar(Class<?> anchor)
     {
@@ -297,14 +240,9 @@ public final class SelfUpdate
     }
 
     /**
-     * Whether a code source is a jar an update can replace.
-     *
-     * Only a regular `.jar` file counts, and only where its folder can be written: the new jar is downloaded beside it
-     * and renamed into its place, and the old one is kept beside it too.  A jar under Program Files, or on a share
-     * the user can only read, is a jar this cannot update, and the question then offers Download alone.
-     *
-     * @param location the code source's location
-     * @return the jar, or null
+     * Whether a code source is a jar an update can replace: a regular `.jar` file whose folder can be written, since
+     * the new jar is downloaded beside it and the old one is kept beside it.  Under Program Files or on a read-only
+     * share the question offers Download alone.
      */
     public static File jarAt(URL location)
     {
@@ -332,15 +270,9 @@ public final class SelfUpdate
     }
 
     /**
-     * Where a downloaded version goes: `TrainControl_v<version>.jar`, beside the running jar when there is one, and in
-     * the working directory (as it always was) when there is not.
-     *
-     * Never the running jar itself, which a jar renamed by hand to the new version's name would otherwise be: a
-     * download over it is a file that cannot be written, and an update from it renames the only copy away.
-     *
-     * @param jar the running jar, or null
-     * @param version the new version
-     * @return the file to download to
+     * Where a downloaded version goes: `TrainControl_v<version>.jar`, beside the running jar when there is one, else in
+     * the working directory.  Never the running jar itself (a jar renamed by hand to the new version's name): a
+     * download over it cannot be written, and an update from it renames the only copy away.
      */
     public static File downloadTarget(File jar, String version)
     {
@@ -355,16 +287,10 @@ public final class SelfUpdate
     }
 
     /**
-     * Whether a download is a whole TrainControl jar, before anything is replaced with it.
-     *
-     * The size and checksum come from the release, where it gives them.  The jar check catches what they cannot:
-     * a download cut short has lost the zip's directory, which is written last, and an error page saved in its place
-     * is not a zip at all.  Either way it would not start, and the old version would have been renamed away for it.
-     *
-     * @param file the download
-     * @param expectedSize the release's size in bytes, or zero or less when unknown
-     * @param digest the release's digest, `sha256:<hex>`, or null when unknown
-     * @return null when it is whole, or what is wrong with it, to show
+     * Whether a download is a whole TrainControl jar, before anything is replaced with it: null when it is, else what
+     * is wrong, to show.  The release's size and digest (`sha256:<hex>`) are checked where it gives them; the jar check
+     * catches what they cannot, a download cut short (the zip's directory is written last) or an error page saved in
+     * its place.
      */
     public static String whyNotAWholeJar(File file, long expectedSize, String digest)
     {
@@ -405,9 +331,7 @@ public final class SelfUpdate
         return null;
     }
 
-    /**
-     * A file's SHA-256, in lower-case hex.
-     */
+    /** A file's SHA-256, in lower-case hex. */
     private static String sha256Of(File file) throws IOException
     {
         MessageDigest digest;
@@ -439,10 +363,8 @@ public final class SelfUpdate
     }
 
     /**
-     * The Java this JVM runs on: `javaw.exe` on Windows, so that the updater and the restarted TrainControl open no
-     * console window, and `java` elsewhere.
-     *
-     * @return its path
+     * The Java this JVM runs on: `javaw.exe` on Windows, so the updater and the restart open no console window, else
+     * `java`.
      */
     public static String javaExecutable()
     {
@@ -459,25 +381,16 @@ public final class SelfUpdate
     }
 
     /**
-     * The Java options this JVM was started with, such as a forced language (`-Duser.language=de`) or a memory size,
-     * so the restarted version has them too.
-     *
-     * Less a debugger or agent attached to this run, which belongs to whoever attached it: a debugger waiting on a
-     * port would hold the restarted TrainControl until somebody connected to it.
-     *
-     * @return the options
+     * The Java options this JVM was started with (a forced language, a memory size), so the restarted version has them
+     * too, less a debugger or agent attached to this run: a debugger waiting on a port would hold the restarted
+     * TrainControl.
      */
     public static List<String> javaOptions()
     {
         return javaOptions(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments());
     }
 
-    /**
-     * `javaOptions` of a given list, which is how a claim asks it.
-     *
-     * @param given the options a JVM was started with
-     * @return those to carry into a restart
-     */
+    /** `javaOptions` of a given list, which is how a claim asks it. */
     public static List<String> javaOptions(List<String> given)
     {
         List<String> out = new ArrayList<>();
@@ -498,30 +411,19 @@ public final class SelfUpdate
 
     /**
      * Takes the exit lock and starts `JarUpdater`, from a copy of the jar beside it, to swap in the new one once this
-     * JVM has ended; and waits until the updater says it is running.
+     * JVM has ended; and waits until the updater says it is running.  Called from the exit itself, once everything is
+     * saved and nothing can refuse the exit, so a canceled exit never leaves an updater waiting.
      *
-     * Called from the exit itself, once everything has been saved and nothing can refuse the exit any more - so a
-     * canceled exit never leaves an updater waiting.  The lock is held from here until the process ends, and the
-     * updater waits until it can take it.
+     * **The exit goes on only once the updater has said it is running** (`JarUpdater.RUNNING_NAME`, its first act):
+     * `ProcessBuilder.start` returning proves nothing, since a Java that cannot run the copy ends at once.  An updater
+     * that ends without saying so, or says nothing within `waitMs`, is ended, the lock is let go and the copy removed,
+     * and this throws: TrainControl stays open.
      *
-     * **The exit goes on only once the updater has said it is running** (`JarUpdater.RUNNING_NAME`, its first act).
-     * `ProcessBuilder.start` returning proves nothing: a Java that cannot run the copy ends at once, and TrainControl
-     * would have closed for an update that never happens.  An updater that ends without saying so, or says nothing
-     * within `waitMs`, is ended, the lock is let go and the copy removed, and this throws - TrainControl stays open.
+     * The copy goes beside the jar rather than in the temporary folder: on Windows, Java 8 passes a command line in the
+     * system's code page, and a user folder named outside it cannot be passed.  A second call while the lock is held is
+     * refused, or it would let go of the first one's lock and that updater would swap the jar under a running
+     * TrainControl.
      *
-     * The copy goes beside the jar, which is writable by definition, rather than in the temporary folder: on Windows,
-     * Java 8 passes a command line in the system's code page, and a user folder named outside it cannot be passed.
-     *
-     * A second call while the lock is held is refused rather than stacked: it would otherwise let go of the first
-     * one's lock, and that updater would swap the jar under a running TrainControl.
-     *
-     * @param jar the running jar
-     * @param newJar the checked download, beside it
-     * @param oldVersion the running version
-     * @param newVersion the version being installed
-     * @param windowText what the updater's small window says, translated
-     * @param starter what starts the updater
-     * @param waitMs how long to wait for the updater to say it is running
      * @throws IOException when the updater could not be started, or did not say it was running
      */
     public static synchronized void startUpdater(File jar, File newJar, String oldVersion, String newVersion,
@@ -581,9 +483,7 @@ public final class SelfUpdate
         }
     }
 
-    /**
-     * Whether the updater wrote its running marker before it ended or the wait ran out.
-     */
+    /** Whether the updater wrote its running marker before it ended or the wait ran out. */
     private static boolean heardFrom(File running, Updater updater, long waitMs)
     {
         long until = System.currentTimeMillis() + waitMs;
@@ -610,13 +510,8 @@ public final class SelfUpdate
     }
 
     /**
-     * The real starter: the updater's output goes nowhere, because nothing will be left to read it.  Without the
-     * started-marker variable, which belongs to the start that set it.
-     *
-     * @param command the program and its arguments
-     * @param folder its working directory
-     * @return the started updater
-     * @throws IOException when it could not be started
+     * The real starter: the updater's output goes nowhere, and the started-marker variable, which belongs to the start
+     * that set it, is removed.
      */
     public static Updater startDetached(List<String> command, File folder) throws IOException
     {
@@ -638,19 +533,13 @@ public final class SelfUpdate
         };
     }
 
-    /**
-     * Whether this JVM holds the exit lock.
-     *
-     * @return true from when the updater was started until the JVM ends
-     */
+    /** Whether this JVM holds the exit lock: true from when the updater was started until the JVM ends. */
     public static synchronized boolean isHoldingTheExitLock()
     {
         return exitLock != null && exitLock.isValid();
     }
 
-    /**
-     * Lets go of the exit lock, for a test that took it through `startUpdater` and is not about to end its JVM.
-     */
+    /** Lets go of the exit lock, for a test that took it through `startUpdater` and is not about to end its JVM. */
     public static synchronized void releaseTheExitLockForTests()
     {
         letGoOfTheExitLock();
@@ -658,10 +547,8 @@ public final class SelfUpdate
 
     /**
      * Reads and removes the note a rolled-back update left beside the jar, for this start to show once (FR-125).
-     *
-     * @param folder the jar's folder
-     * @return {the version that could not start, the old version, and null when the old jar is back under its own name
-     * or else the file it is running from}, or null when there is no note
+     * Answers {the version that could not start, the old version, and null when the old jar is back under its own name
+     * or else the file it is running from}, or null when there is no note.
      */
     public static String[] takeRollbackNote(File folder)
     {
@@ -694,10 +581,8 @@ public final class SelfUpdate
     }
 
     /**
-     * Removes the copies earlier updates left beside the jar.  The updater runs from its copy, so it cannot remove that
-     * itself; one that is still in use simply stays until the next time.
-     *
-     * @param folder the jar's folder
+     * Removes the copies earlier updates left beside the jar; one still in use stays until the next time, since the
+     * updater cannot remove its own copy.
      */
     public static void tidyOldCopies(File folder)
     {

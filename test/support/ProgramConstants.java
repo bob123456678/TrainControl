@@ -5,13 +5,10 @@ import java.awt.Color;
 /**
  * The static constants of the program, asked for by name, whatever their visibility.
  *
- * A test that restates a number or a color of the program holds its own copy of a rule: change the
- * program and the test goes red looking like a regression, or stays green for the wrong reason.  This reads
- * the program's own constant instead.  A constant that has been renamed or moved fails here, loudly and
- * naming the class and the field, rather than being swallowed.
- *
- * Reflection reads the field, not the number the compiler copied into the callers, so it is the declaration
- * that is asked.
+ * A test that restates a number or a color of the program holds its own copy of a rule: change the program and the test
+ * goes red looking like a regression, or stays green for the wrong reason.  This reads the program's own constant
+ * instead, through reflection on the declaration (not the number the compiler copied into the callers), so a constant
+ * renamed or moved fails here, loudly, naming the class and the field.
  */
 public final class ProgramConstants
 {
@@ -20,9 +17,7 @@ public final class ProgramConstants
     }
 
     /**
-     * @param owner the class that declares the static field
-     * @param name the field's name
-     * @return its value
+     * The static field's value, whatever its visibility.
      */
     public static Object get(Class<?> owner, String name)
     {
@@ -41,9 +36,7 @@ public final class ProgramConstants
     }
 
     /**
-     * @param owner the class that declares the static field
-     * @param name the field's name
-     * @return its value as a whole number
+     * Its value as a whole number.
      */
     public static int integer(Class<?> owner, String name)
     {
@@ -51,9 +44,7 @@ public final class ProgramConstants
     }
 
     /**
-     * @param owner the class that declares the static field
-     * @param name the field's name
-     * @return its value as a decimal number
+     * Its value as a decimal number.
      */
     public static double real(Class<?> owner, String name)
     {
@@ -61,9 +52,7 @@ public final class ProgramConstants
     }
 
     /**
-     * @param owner the class that declares the static field
-     * @param name the field's name
-     * @return its value as a color
+     * Its value as a color.
      */
     public static Color colour(Class<?> owner, String name)
     {

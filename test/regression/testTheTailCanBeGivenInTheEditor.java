@@ -16,8 +16,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -25,19 +25,16 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The farthest sensor a standing train's tail has crossed can be given in the autonomy editor - from the right-click
- * menu, or by clicking the sensor on the diagram.
+ * The farthest sensor a standing train's tail has crossed can be given in the autonomy editor, from the right-click
+ * menu or by clicking the sensor on the diagram: "pick from a list and select the farthest sensor the tail of the
+ * train recently crossed".
  *
- * Adam, 2026-09-14: *"the prompt should ask the user to pick from a list and select the farthest sensor the tail of
- * the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to click to select as
- * well."*
+ * Fixture: the frozen `live-snapshot` with every square measured at one unit, so every road back is measured and a
+ * long train's tail reaches past junctions, and one standing train made long enough that the question is put.  Each
+ * claim puts the setup back as it found it (OB-111).
  *
- * **The fixture.**  The frozen `live-snapshot` with every square measured at one unit, so every road back is measured
- * and a long train's tail reaches past junctions, and one of its standing trains made long enough that the question
- * is put.  Each claim puts the setup back as it found it (OB-111: never `cs2_sample_layout`).
- *
- * **Asked through the real doors.**  The menu is the one `AutonomyEditorPanel.buildFacingMenu` serves both surfaces,
- * its items are clicked, and the diagram click is `tileClicked` - what the grid calls.
+ * Asked through the real doors: the menu is the one `AutonomyEditorPanel.buildFacingMenu` serves both surfaces, its
+ * items are clicked, and the diagram click is `tileClicked`.
  *
  * @author Adam
  */
@@ -105,9 +102,7 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
-    /**
-     * The menu lists every sensor the tail can have crossed, Not Known, and a way to pick on the diagram.
-     */
+    /** The menu lists every sensor the tail can have crossed, Not Known, and a way to pick on the diagram. */
     @Test
     public void testTheMenuListsTheSensorsTheTailCanHaveCrossed() throws Exception
     {
@@ -140,10 +135,7 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
-    /**
-     * Choosing a sensor from the menu records the road from it - in the setup, and on the running railway after the
-     * rebuild the choice asks for.
-     */
+    /** Choosing a sensor from the menu records the road from it, in the setup and on the running railway. */
     @Test
     public void testChoosingASensorFromTheMenuRecordsItsRoad() throws Exception
     {
@@ -169,9 +161,7 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
-    /**
-     * Picking on the diagram: the sensors are outlined, and a click on one records its road.
-     */
+    /** Picking on the diagram: the sensors are outlined, and a click on one records its road. */
     @Test
     public void testClickingTheSensorOnTheDiagramRecordsItsRoad() throws Exception
     {
@@ -223,9 +213,7 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
-    /**
-     * A click anywhere else says so and stays armed; Escape lets go.
-     */
+    /** A click anywhere else says so and stays armed; Escape lets go. */
     @Test
     public void testAClickElsewhereKeepsThePickArmed() throws Exception
     {
@@ -264,9 +252,8 @@ public class testTheTailCanBeGivenInTheEditor
     /**
      * Pasting a long train asks for the farthest sensor its tail crossed, and keeps the answer (the paste door).
      *
-     * The real Control+V gesture over the square (`TrainControlUI.locomotiveGestureOnDiagram`), with the questions
-     * answered through their test doors.  The answer is the farthest sensor offered, so the road recorded is one no
-     * other answer - and no answer at all - would give.
+     * The real Control+V gesture, the questions answered through their test doors.  The answer is the farthest sensor
+     * offered, so the road recorded is one no other answer would give.
      */
     @Test
     public void testPastingALongTrainAsksAndKeepsTheAnswer() throws Exception
@@ -297,8 +284,8 @@ public class testTheTailCanBeGivenInTheEditor
 
             settle();
 
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
-            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(farthest.getFarthest().getName());
 
             final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
@@ -349,18 +336,15 @@ public class testTheTailCanBeGivenInTheEditor
         finally
         {
             TailCrossedPrompt.answerForTests(null);
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
-            org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
             f.close();
         }
     }
 
     /**
-     * A paste that puts no question keeps the road the train has.
-     *
-     * The doors wrote "no road" whenever nothing was chosen, and nothing is chosen where nothing is asked - so pasting a
-     * train back where it stands, or pressing OK in its locomotive dialog, erased the road autonomy drove it in on, and
-     * the tracks behind it opened again.
+     * A paste that puts no question keeps the road the train has: the doors wrote "no road" whenever nothing was
+     * chosen, so pasting a train back where it stands, or OK in its locomotive dialog, erased the road it drove in on.
      */
     @Test
     public void testAPasteThatAsksNothingKeepsTheRoad() throws Exception
@@ -391,9 +375,7 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
-    /**
-     * Closing the question without an answer keeps the road the train has.
-     */
+    /** Closing the question without an answer keeps the road the train has. */
     @Test
     public void testDismissingTheQuestionKeepsTheRoad() throws Exception
     {
@@ -421,11 +403,8 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * A paste right after a run keeps the road the run left, though the setup has not caught up.
-     *
-     * A run writes its arrival on the running railway only; the setup hears of it at the next capture.  The doors
-     * decided keep-or-replace by reading the SETUP, which here says nothing about the side or the road - so a paste
-     * of the train back where it stands, with nothing asked, wrote "no road" over the one it drove in on.
+     * A paste right after a run keeps the road the run left, though the setup has not caught up: a run writes its
+     * arrival on the running railway only, and the doors decided keep-or-replace by reading the SETUP.
      */
     @Test
     public void testAPasteAfterARunKeepsTheRoadTheRunLeft() throws Exception
@@ -468,24 +447,16 @@ public class testTheTailCanBeGivenInTheEditor
     /**
      * The arrival-side menu is not offered for a square no train is standing on.
      *
-     * **The offer and the write disagreed about which store they were reading.**  The item appears when
-     * the SETUP says a locomotive is at the square (`session.getLocomotiveNameAt`), and it writes to a
-     * Point on the running layout chosen by `pointOnTheLayout` - which prefers an occupied copy but
-     * falls back to ANY copy.  So with a train assigned in the setup and not placed on the running
-     * railway, the side went onto an empty Point: nothing reads it there, and nothing
-     * saves it either, so the two stores quietly stopped agreeing.
-     *
-     * The rule now matches the method's own javadoc - *"a tail belongs to a train, and a square with
-     * none has nothing to say"*.
-     *
-     * @throws Exception from the event thread
+     * The item appears when the SETUP says a locomotive is at the square, but it writes to a Point on the running
+     * layout chosen by `pointOnTheLayout`, which falls back to ANY copy: with a train assigned in the setup and not
+     * placed, the side went onto an empty Point that nothing reads or saves.  The rule matches the method's javadoc:
+     * "a tail belongs to a train, and a square with none has nothing to say".
      */
     @Test
     public void testTheArrivalSideIsNotOfferedForAnEmptySquare() throws Exception
     {
-        // ANY STANDING TRAIN WILL DO.  This claim is about a square with nobody on it; the
-        // junction the other claims here need has nothing to do with it, and riding their fixture made this
-        // skip - which reads as green - on any snapshot without one.
+        // ANY STANDING TRAIN WILL DO: this claim is about a square with nobody on it, and riding the junction fixture
+        // would skip (which reads as green) on a snapshot without one.
         Fixture f = Fixture.openOnAnyStandingTrain();
 
         try
@@ -498,8 +469,8 @@ public class testTheTailCanBeGivenInTheEditor
                 "precondition: the arrival-side menu is not offered even with a train standing there,"
                 + " so this test cannot tell the two cases apart");
 
-            // THE RUNNING RAILWAY LETS GO OF THE TRAIN, and the setup keeps it - which is the state an
-            // operator is in between assigning a locomotive and placing one.
+            // THE RUNNING RAILWAY LETS GO OF THE TRAIN and the setup keeps it: between assigning a locomotive and
+            // placing one.
             Layout running = model.getAutoLayout();
 
             for (String name : session.getStationIndex().pointNamesAt(f.tile))
@@ -549,14 +520,8 @@ public class testTheTailCanBeGivenInTheEditor
         }
 
         /**
-         * The same fixture for a claim that needs only a square with a train standing on it.
-         *
-         * `open()` searches for a train whose tail can have crossed a sensor past a junction, which is what the
-         * tail-crossing claims are about - and a snapshot without one fails.  The
-         * arrival-side gate has nothing to do with junctions, so it asked for far more than it needed.
-         *
-         * @return the fixture
-         * @throws Exception from the event thread
+         * The same fixture for a claim that needs only a square with a train standing on it; `open()` also needs a
+         * junction.
          */
         static Fixture openOnAnyStandingTrain() throws Exception
         {
@@ -635,11 +600,7 @@ public class testTheTailCanBeGivenInTheEditor
             return new Fixture(asFound, built[0], at, train, lengthWas);
         }
 
-        /**
-         * Takes the train off and pastes it back on its square through Control+V, the tail question answered.
-         *
-         * @param answer the farthest sensor's point name, or `TailCrossedPrompt.DISMISSED` for Cancel
-         */
+        /** Takes the train off and pastes it back on its square through Control+V, the tail question answered. */
         void paste(String answer) throws Exception
         {
             closeTheEditorForTheDiagram();
@@ -656,8 +617,8 @@ public class testTheTailCanBeGivenInTheEditor
 
             settle();
 
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
-            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(answer);
 
             try
@@ -693,16 +654,12 @@ public class testTheTailCanBeGivenInTheEditor
             finally
             {
                 TailCrossedPrompt.answerForTests(null);
-                org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
-                org.traincontrol.gui.FacingPrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
             }
         }
 
-        /**
-         * Pastes the train back onto the square it stands on - no change of occupant - the tail question answered.
-         *
-         * @param answer the farthest sensor's point name, or `TailCrossedPrompt.DISMISSED` for Cancel
-         */
+        /** Pastes the train back onto the square it stands on, the tail question answered. */
         void pasteInPlace(String answer) throws Exception
         {
             closeTheEditorForTheDiagram();
@@ -715,8 +672,8 @@ public class testTheTailCanBeGivenInTheEditor
             final org.traincontrol.automationui.TilePorts.Side heading =
                 session.facingOf(train.getName(), model.getAutoLayout());
 
-            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
-            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(answer);
 
             try
@@ -752,16 +709,12 @@ public class testTheTailCanBeGivenInTheEditor
             finally
             {
                 TailCrossedPrompt.answerForTests(null);
-                org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
-                org.traincontrol.gui.FacingPrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(null);
             }
         }
 
-        /**
-         * Records the farthest sensor's road by pasting the train back in place and answering with it.
-         *
-         * @return the choice recorded
-         */
+        /** Records the farthest sensor's road by pasting the train back in place and answering with it. */
         TailCrossedPrompt.Choice recordARoadByPasting() throws Exception
         {
             TailCrossedPrompt.Choice farthest = choices().get(choices().size() - 1);
@@ -837,13 +790,7 @@ public class testTheTailCanBeGivenInTheEditor
                 chosen.getLabel() + " was " + how + ", and the running railway follows a different road");
         }
 
-        /**
-         * Closes the editor before the diagram's paste door, which refuses while an editor is open - a placement made there
-         * would be put back by the editor's Cancel - as the main window counts every editor window of its own.
-         * A person pastes on the diagram with no editor open.  `close` disposes it again, which does nothing.
-         *
-         * @throws Exception from the event thread
-         */
+        /** Closes the editor before the diagram's paste door, which refuses while an editor is open. */
         void closeTheEditorForTheDiagram() throws Exception
         {
             SwingUtilities.invokeAndWait(() -> editor.dispose());

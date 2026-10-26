@@ -41,12 +41,8 @@ public abstract class Feedback
     {
         long since = time - this.lastEvent;
 
-        // A backward step of the wall clock is not a reason to ignore a sensor.  These times come from
-        // System.currentTimeMillis, which is not monotonic, so an NTP correction made `since` negative
-        // - and since IGNORE_SUB_INTERVAL is 0, and this gate therefore has no other effect at all,
-        // that was the only circumstance in which it ever rejected anything.  Every s88 transition in
-        // the stepped-over window was dropped, leaving the model holding the wrong occupancy and a
-        // driving thread waiting for an arrival it had already been told about.
+        // A backward step of the wall clock (System.currentTimeMillis is not monotonic) is not a reason to ignore a
+        // sensor: it made `since` negative and dropped s88 transitions, leaving the model with the wrong occupancy.
         if (since >= 0 && since < IGNORE_SUB_INTERVAL)
         {
             return false;

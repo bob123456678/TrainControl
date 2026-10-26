@@ -87,10 +87,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
         this.name = r.getName();
         this.type = Type.ROUTE;
         
-        // A COPY, NOT THE LIVE LIST.  This is built by Backup Data on its own thread while
-        // the event thread may be editing that route - `deleteLoc` takes commands out of it through
-        // `Iterator.remove()` - and the serializer then walks what it was handed.  The route's own walks take
-        // a copy for the same reason.
+        // A COPY, NOT THE LIVE LIST: Backup Data builds this on its own thread while the event thread may edit the
+        // route (`deleteLoc` removes commands through `Iterator.remove()`).
         this.route = new java.util.ArrayList<>(r.getRoute());
         this.address = r.getId();
         this.s88 = r.getS88();
@@ -159,8 +157,8 @@ public class MarklinSimpleComponent implements java.io.Serializable
         // this.totalRuntime = l.getTotalRuntime(); // deprecated
         this.historicalOperatingTimeNew = l.getHistoricalOperatingTime();
         this.localImageURL = l.getLocalImageURL();
-        // THE FLAG, not the answer the icons give (OB-245): stored as the flag and loaded back as one, the answer made a
-        // locomotive customized by an icon alone customized for ever once the icon was deleted
+        // The FLAG, not the answer the icons give (OB-245): the answer made a locomotive customized by an icon alone
+        // customized for ever once the icon was deleted
         this.customFunctions = l.hasCustomFunctionsFlag();
         this.localFunctionImageURLs = l.getLocalFunctionImageURLs();
         this.notes = l.getNotes();

@@ -7,26 +7,19 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A pre-release build says which build it is.
  *
- * Adam, 2026-09-05: "add a flag after RAW_VERSION that says IS_PRE_RELEASE True/False.  If true, put
- * the build ID in the log at startup and main UI title."
- *
- * **The problem it solves is one this project has already paid for.** Every release candidate calls
- * itself 3.0.0, so a tester reporting a result against one has no way to say which - and an MT-273
- * result carried a provenance line naming a commit three days older than the code actually run. That
- * report nearly closed as evidence the fix had been tested too early; it took reading timestamps out
- * of the compiled classes to establish that the build really did carry the fix.
+ * Adam: "add a flag after RAW_VERSION that says IS_PRE_RELEASE True/False.  If true, put the build ID in the log at
+ * startup and main UI title."  Every release candidate calls itself 3.0.0, so a tester reporting a result against one
+ * cannot say which, and an MT-273 result carried a provenance line naming a commit three days older than the code
+ * actually run.
  *
  * @author Adam
  */
 public class testTheBuildSaysWhatItIs
 {
     /**
-     * The build id describes the artifact being run, not what a build script recorded about it.
-     *
-     * Taken from the code source this class was loaded from, so it is the jar's timestamp or - in an
-     * IDE run, where the directory's own timestamp is when it was created rather than when anything
-     * was compiled - the class file's. That distinction is the whole point: the misleading MT-273
-     * stamp was a commit id, which describes an input rather than the thing that ran.
+     * The build id describes the artifact being run, not what a build script recorded about it: taken from the code
+     * source this class was loaded from (the jar's timestamp or, in an IDE run, the class file's).  The misleading
+     * MT-273 stamp was a commit id, which describes an input rather than the thing that ran.
      */
     @Test
     public void testTheBuildIdIsReadFromWhatIsRunning()
@@ -45,10 +38,8 @@ public class testTheBuildSaysWhatItIs
     }
 
     /**
-     * The displayed version carries the build while this is a pre-release, and is bare once it is not.
-     *
-     * Both halves, because the flag has to actually gate something: a version that always carries a
-     * build stamp would ship one to every user of 3.0.0.
+     * The displayed version carries the build while this is a pre-release, and is bare once it is not: the flag has to
+     * actually gate something.
      */
     @Test
     public void testTheDisplayedVersionFollowsTheFlag()

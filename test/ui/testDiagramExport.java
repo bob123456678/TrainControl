@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.DiagramExport;
+import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
@@ -54,11 +54,11 @@ public class testDiagramExport
             throw new SkipException("drawing tiles needs a display");
         }
 
-        // BEFORE THE MODEL, not just before the window (OB-111, corrected 2026-08-28).
+        // BEFORE THE MODEL, not just before the window (OB-111).
         //
         // MarklinControlStation.init reads the layout preference too - it is what loads the pages -
         // so opening the sandbox after it left the model on the operator's real railway while the
-        // window looked at the copy. The comment that used to stand here named only the window.
+        // window looked at the copy.
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulatedInDebug();
@@ -278,12 +278,13 @@ public class testDiagramExport
             // itself unexercised.
             SwingUtilities.invokeAndWait(() -> list.setSelectedItem(onScreen));
 
-            // The exact private call the active-page menu item makes.
-            java.lang.reflect.Method activeLayoutPage =
-                TrainControlUI.class.getDeclaredMethod("activeLayoutPage");
+            // The exact private call the active-page menu item makes, on the window's Layouts menu (LayoutMenus).
+            Object menus = layoutMenus();
+
+            java.lang.reflect.Method activeLayoutPage = menus.getClass().getDeclaredMethod("activeLayoutPage");
             activeLayoutPage.setAccessible(true);
 
-            Object reportedActive = activeLayoutPage.invoke(ui);
+            Object reportedActive = activeLayoutPage.invoke(menus);
 
             assertEquals(reportedActive, onScreen,
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
@@ -352,7 +353,7 @@ public class testDiagramExport
      * for the reason `TrainControlUI` gives beside the other retired keys - and a stored `false` there
      * is exactly what would come back to haunt somebody who had once turned the numbers off.
      *
-     * So the test writes it, and writes the value that used to hide the numbers.  That is the half of
+     * So the test writes it, and writes the value that hid the numbers.  That is the half of
      * this fix that a test of the grid alone would be silent about.
      */
     private static final String RETIRED_COORDINATES_PREF = "ShowCoordinates";
@@ -410,12 +411,12 @@ public class testDiagramExport
 
         boolean retiredWas = TrainControlUI.getPrefs().getBoolean(RETIRED_COORDINATES_PREF, false);
 
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
             SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0));
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(page, 30, ui, 0));
 
             TrainControlUI.getPrefs().putBoolean(RETIRED_COORDINATES_PREF, false);
 
@@ -435,7 +436,7 @@ public class testDiagramExport
 
                 if (on)
                 {
-                    assertTrue(border instanceof org.traincontrol.gui.AxisRuler,
+                    assertTrue(border instanceof org.traincontrol.gui.widgets.AxisRuler,
                         "the grid is on and the editor's diagram carries " + border + ", so the "
                         + "numbers are drawn nowhere.  Adam: \"coordinates should always be on with "
                         + "the grid\" - and the only other setting in play here is the retired "
@@ -444,7 +445,7 @@ public class testDiagramExport
                 }
                 else
                 {
-                    assertFalse(border instanceof org.traincontrol.gui.AxisRuler,
+                    assertFalse(border instanceof org.traincontrol.gui.widgets.AxisRuler,
                         "the grid is off and the editor's diagram still carries a ruler, so the "
                         + "numbers outlived the thing they number");
                 }
@@ -458,7 +459,7 @@ public class testDiagramExport
                     new org.traincontrol.gui.LayoutGrid(page, 30, forViewer, null, true, ui));
 
                 assertFalse(inViewer[0].getContainer().getBorder()
-                        instanceof org.traincontrol.gui.AxisRuler,
+                        instanceof org.traincontrol.gui.widgets.AxisRuler,
                     "the running diagram carries the coordinate ruler with the grid " + on + " - "
                     + "Adam: \"they are visible in the track diagram viewer when they shouldn't be\"");
             }
@@ -478,7 +479,7 @@ public class testDiagramExport
                 new org.traincontrol.gui.LayoutGrid(page, 30, fresh, editor[0], true, ui));
 
             assertTrue(outOfTheBox[0].getContainer().getBorder()
-                    instanceof org.traincontrol.gui.AxisRuler,
+                    instanceof org.traincontrol.gui.widgets.AxisRuler,
                 "with nothing stored for either setting the editor's diagram carries no ruler, so the "
                 + "numbers are off out of the box - and the grid, whose default is on, is what they "
                 + "are supposed to follow");
@@ -493,7 +494,7 @@ public class testDiagramExport
 
             if (editor[0] != null)
             {
-                final org.traincontrol.gui.LayoutEditor open = editor[0];
+                final org.traincontrol.gui.layouteditor.LayoutEditor open = editor[0];
 
                 SwingUtilities.invokeAndWait(() -> open.dispose());
             }
@@ -681,5 +682,128 @@ public class testDiagramExport
             alive + " of twelve grids are still reachable after being replaced. Each one holds a page "
             + "of tiles, their icons and their listeners, so this is a page of diagram retained per "
             + "editor opened - the shape of leak nobody notices until the day they do (FR-012)");
+    }
+
+    /**
+     * The Layout menu's picture export asks for Small, Medium or Large, in that order, with no pixel counts (OB-374).
+     *
+     * Opened through the menu item's own action, and the question read off the screen as the user sees it.
+     *
+     * MUTATION: build the dialog's choices from the two sizes the export used to offer (with their pixel counts), or
+     * leave Medium out of `layoutSizes`.
+     */
+    @Test
+    public void testTheScreenshotMenuOffersSmallMediumAndLarge() throws Exception
+    {
+        java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("exportDiagramItem");
+        itemField.setAccessible(true);
+
+        final javax.swing.JMenuItem item = (javax.swing.JMenuItem) itemField.get(ui);
+
+        assertNotNull(item, "the Layout menu has no picture export item");
+
+        final List<String> offered = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        String question = org.traincontrol.util.I18n.t("layout.ui.promptDiagramSizeChoice");
+
+        try (support.Answering answering = support.Answering.start(message ->
+            {
+                if (!question.equals(message)) return null;
+
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (!(w instanceof javax.swing.JDialog) || !w.isShowing()) continue;
+
+                    for (java.awt.Component c : ((javax.swing.JDialog) w).getContentPane().getComponents())
+                    {
+                        if (!(c instanceof javax.swing.JOptionPane)) continue;
+
+                        Object[] values = ((javax.swing.JOptionPane) c).getSelectionValues();
+
+                        if (values != null) for (Object value : values) offered.add(String.valueOf(value));
+                    }
+                }
+
+                return offered.isEmpty() ? null : support.Answering.type(offered.get(0));
+            }))
+        {
+            SwingUtilities.invokeLater(() -> item.getActionListeners()[0].actionPerformed(
+                new java.awt.event.ActionEvent(item, java.awt.event.ActionEvent.ACTION_PERFORMED, "")));
+
+            assertTrue(answering.awaitAsked(1, 15000), "choosing the export asked nothing: " + answering.asked());
+            assertTrue(answering.asked().get(0).equals(question), "the export's first question was "
+                + answering.asked().get(0) + ", not the size");
+
+            // The save dialog that follows is canceled by the answerer; wait for it to go.
+            assertTrue(support.Settle.until(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof javax.swing.JDialog && w.isShowing()) return false;
+                }
+
+                return true;
+            }, 15000), "a dialog is still open after the size was answered");
+        }
+
+        assertEquals(offered, java.util.Arrays.asList(org.traincontrol.util.I18n.t("layout.ui.small"),
+            org.traincontrol.util.I18n.t("layout.ui.medium"), org.traincontrol.util.I18n.t("layout.ui.large")),
+            "the export should offer the pop-out window's Small, Medium and Large, in that order");
+
+        for (String size : offered)
+        {
+            assertFalse(size.matches(".*\\d.*"), "\"" + size + "\" spells out a pixel count; users know what they use");
+        }
+    }
+
+    /**
+     * Medium draws at the pop-out window's Medium tile size, between Small's and Large's, and the picture follows.
+     *
+     * MUTATION: answer the pop-out's Large size for Medium in `diagramTileSizeFor`.
+     */
+    @Test
+    public void testMediumExportsBetweenSmallAndLarge() throws Exception
+    {
+        java.lang.reflect.Method sizeFor;
+
+        Object menus = layoutMenus();
+
+        try
+        {
+            sizeFor = menus.getClass().getDeclaredMethod("diagramTileSizeFor", Object.class);
+        }
+        catch (NoSuchMethodException none)
+        {
+            fail("the export has no way to turn a picked size into a tile size");
+
+            return;
+        }
+
+        sizeFor.setAccessible(true);
+
+        int[] tile = new int[3];
+        int[] wide = new int[3];
+        String[] keys = {"layout.ui.small", "layout.ui.medium", "layout.ui.large"};
+
+        for (int i = 0; i < 3; i++)
+        {
+            tile[i] = (Integer) sizeFor.invoke(menus, org.traincontrol.util.I18n.t(keys[i]));
+            wide[i] = render(tile[i]).getWidth();
+        }
+
+        assertEquals(tile[1], TrainControlUI.MEDIUM_TILE_SIZE, "Medium is not the pop-out window's Medium size");
+        assertTrue(tile[0] < tile[1] && tile[1] < tile[2], "Medium is not between Small and Large: " + java.util.Arrays.toString(tile));
+        assertTrue(wide[0] < wide[1] && wide[1] < wide[2],
+            "the pictures do not grow with the size: " + java.util.Arrays.toString(wide));
+    }
+
+    /** The window's Layouts menu, which holds the export's private steps. */
+    private static Object layoutMenus() throws Exception
+    {
+        java.lang.reflect.Field menus = TrainControlUI.class.getDeclaredField("layoutMenus");
+
+        menus.setAccessible(true);
+
+        return menus.get(ui);
     }
 }

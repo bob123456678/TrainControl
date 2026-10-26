@@ -12,21 +12,17 @@ import org.testng.annotations.Test;
 /**
  * OB-124: every window in the application wears the TrainControl icon.
  *
- * Adam, 2026-08-27: "the popup window for cropping images doesn't have the traincontrol icon in the
- * title bar.  add it back, and check for other popups with the same issue."
+ * Adam: "the popup window for cropping images doesn't have the traincontrol icon in the title bar.  add it back, and
+ * check for other popups with the same issue."
  *
- * There were four without one. The icon was being set in seven places, each spelling out the same
- * three-part line - resource, toolkit, setIconImage - and a rule written seven times is a rule the
- * eighth window does not get. That is what happened: `LocIconCropDialog`, `BusyDialog` and two dialogs
- * built inline had never had it, and nothing said so, because a dialog LOOKS as though it should
- * inherit its owner's icon and does not reliably do so.
+ * The icon was set in seven places, each spelling out the same three-part line - resource, toolkit, setIconImage - and
+ * a rule written seven times is a rule the eighth window does not get.  `LocIconCropDialog`, `BusyDialog` and two
+ * dialogs built inline had never had it, because a dialog LOOKS as though it should inherit its owner's icon and does
+ * not reliably do so.
  *
- * **Fixing the four was the easy half.** This is the half that matters: a window added next month is
- * required to ask, and fails here if it does not. The alternative is finding out the way Adam did.
- *
- * Read from the source rather than by opening windows, because opening every window in the
- * application needs a railway, a display and a great deal of patience - and what can silently go wrong
- * is a new class that never calls this, which is visible in the text.
+ * A window added next month is required to ask, and fails here if it does not.  Read from the source rather than by
+ * opening windows, which needs a railway, a display and a great deal of patience; what can silently go wrong is a new
+ * class that never calls this, which is visible in the text.
  *
  * @author Adam
  */
@@ -36,13 +32,9 @@ public class testEveryWindowWearsTheIcon
     /**
      * The application's look and feel, before this class stands anything up.
      *
-     * Adam, 2026-09-11: *"I still see tests popping up with the small font in the menu bar."*
-     *
-     * Every window the APPLICATION owns asks for this in its own constructor, so a test that builds one
-     * gets it for free. This class builds a bare Swing window instead - a `JFrame`, a `JDialog`, a
-     * `JOptionPane` - and those are nobody's to fix but this one's. Without it the window is drawn in
-     * Metal: different font, different insets, and not the window the operator sees.
-     *
+     * Adam: *"I still see tests popping up with the small font in the menu bar."*  Every window the APPLICATION owns
+     * asks for this in its own constructor, but this class builds a bare Swing window (a `JFrame`, a `JDialog`, a
+     * `JOptionPane`), which would be drawn in Metal: different font and insets, not the window the operator sees.
      * `regression.testEveryWindowWearsTheApplicationsLook` holds this in place for every such class.
      */
     @BeforeClass
@@ -68,9 +60,7 @@ public class testEveryWindowWearsTheIcon
          + "and this one has no title bar of its own to put one in"},
     };
 
-    /**
-     * MUTATION: taking the call out of any one window fails this and names the file.
-     */
+    /** MUTATION: taking the call out of any one window fails this and names the file. */
     @Test
     public void testEveryWindowAsksForTheIcon() throws Exception
     {
@@ -88,21 +78,16 @@ public class testEveryWindowWearsTheIcon
 
             if (excused(source.getName())) continue;
 
-            // The FORM's own code counts as covered.
-            //
-            // A window laid out in the GUI builder carries its icon as a property of the form, and the
-            // initComponents block that sets it is GENERATED - regenerated whenever anybody opens the
-            // form in the designer. Editing that block to call the helper is how this test was first
-            // satisfied, and it was wrong: the designer would put it back, and for the helper's own
-            // file nothing would ever notice.
+            // The FORM's own code counts as covered: the initComponents block of a GUI-builder window is GENERATED and
+            // regenerated whenever the form is opened in the designer, so editing it to call the helper would be put
+            // back.
             if (generatedCode(body).contains("setIconImage")) continue;
 
             if (!withoutGeneratedCode(body).contains("applyWindowIcon")) naked.add(source.getName());
         }
 
-        // A scan run from the wrong directory, or against a `WINDOWS` list nothing matches any more,
-        // finds zero windows and would pass here having examined nothing. Ten window classes exist
-        // today (2026-08-28); five is a floor well under that, not a pin on the count.
+        // A scan run from the wrong directory, or against a `WINDOWS` list nothing matches, finds zero windows and
+        // would pass having examined nothing; five is a floor, not a pin on the count.
         assertTrue(windows >= 5,
             "only " + windows + " window classes were found under src/ - the patterns this looks for "
             + "have gone stale, or this ran from the wrong working directory, and it is now checking "
@@ -118,8 +103,7 @@ public class testEveryWindowWearsTheIcon
     /**
      * And the incantation is written in ONE place.
      *
-     * The four that were missing it were missing it because the rule was copied rather than called:
-     * seven windows each loaded the resource and built the image for themselves, so adding a window
+     * The windows missing the icon were missing it because the rule was copied rather than called, so adding a window
      * meant remembering a line nobody had written down as a rule.
      *
      * MUTATION: spelling the resource out again in any window fails this.
@@ -135,9 +119,8 @@ public class testEveryWindowWearsTheIcon
         {
             String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
 
-            // Hand-written code only.  A window laid out in the designer carries the icon as a form
-            // property, and the block that sets it is regenerated from the .form - so naming the
-            // resource there is the designer's doing rather than a copy somebody made.
+            // Hand-written code only: a designer window carries the icon as a form property, and the block that sets it
+            // is regenerated from the .form.
             String written = withoutGeneratedCode(body);
 
             if (!written.contains("locicon.png")) continue;
@@ -150,9 +133,8 @@ public class testEveryWindowWearsTheIcon
             spelling.add(source.getName());
         }
 
-        // A positive control: the resource name has to turn up SOMEWHERE (the helper's own file, at
-        // least) for an empty `spelling` list to mean anything. A scan finding zero mentions at all
-        // proves the pattern has gone stale, not that the rule is being followed.
+        // A positive control: the resource name has to turn up SOMEWHERE (the helper's own file, at least), or a scan
+        // finding zero mentions proves the pattern has gone stale.
         assertTrue(namesIt >= 1,
             "no file under src/ mentions locicon.png at all - the resource was renamed, or this ran "
             + "from the wrong directory, and this test can no longer tell a violation from nothing to "
@@ -167,10 +149,8 @@ public class testEveryWindowWearsTheIcon
     /**
      * A dialog built inline is a window too, and is asked about ONE AT A TIME.
      *
-     * The first version asked per FILE, which is not the same question: one `applyWindowIcon` anywhere
-     * in TrainControlUI.java excused every window built in it. Two of the four windows OB-124 was
-     * about are inline dialogs in files that already call the helper elsewhere - so the check that
-     * found them would not have found the next one.
+     * Asked per FILE, one `applyWindowIcon` anywhere in TrainControlUI.java would excuse every window built in it, and
+     * two of the windows OB-124 was about are inline dialogs in files that already call the helper elsewhere.
      *
      * MUTATION: adding a `new JDialog(...)` with no icon call after it fails this.
      */
@@ -215,9 +195,7 @@ public class testEveryWindowWearsTheIcon
     /** How far after a dialog is constructed its icon call may sit. */
     private static final int REACH = 900;
 
-    /**
-     * Everything between GEN-BEGIN and GEN-END, which belongs to the GUI builder and not to us.
-     */
+    /** Everything between GEN-BEGIN and GEN-END, which belongs to the GUI builder and not to us. */
     private String generatedCode(String body)
     {
         StringBuilder out = new StringBuilder();
@@ -234,9 +212,7 @@ public class testEveryWindowWearsTheIcon
         return out.toString();
     }
 
-    /**
-     * The file with its generated blocks removed, so a check reads what a person actually wrote.
-     */
+    /** The file with its generated blocks removed, so a check reads what a person actually wrote. */
     private String withoutGeneratedCode(String body)
     {
         StringBuilder out = new StringBuilder();

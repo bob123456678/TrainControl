@@ -29,17 +29,16 @@ import org.traincontrol.util.SelfUpdate;
 /**
  * One-click updates swap the jar safely, or not at all (FR-125).
  *
- * Adam, 2026-10-12: *"after downloading the new jar, it should take a backup, then start the update script and close
+ * Adam: *"after downloading the new jar, it should take a backup, then start the update script and close
  * TrainControl."*  The updater is `JarUpdater`, run by the same Java once TrainControl has closed: it renames the old
  * jar aside, moves the new one to its name, starts it, and puts the old one back when it does not start.  The
  * application's half is `SelfUpdate`: whether a download is whole, starting the updater from a copy of the jar and
  * hearing that it runs, and one update at a time.
  *
- * **Nothing here starts TrainControl or the updater, ends this JVM or touches a real jar.**  Every jar is built in a
- * temporary folder; the updater's renames and its launcher are handed in, so a launch is a recorded command and a failed
- * rename is one the test throws.  The lock TrainControl holds until it exits is held by this test instead, in this JVM -
- * except in `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM of its own (`support.HoldsALock`, nothing
- * of TrainControl's) to hold it across a process boundary.
+ * Nothing here starts TrainControl or the updater, ends this JVM or touches a real jar: every jar is built in a
+ * temporary folder, the updater's renames and launcher are handed in, and the lock TrainControl holds until it exits
+ * is held by this test instead (except `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM of its own,
+ * `support.HoldsALock`, to hold it across a process boundary).
  *
  * MUTATIONS, each seen red: `backupName` not looking for a free name (the swap claim); `swap` not moving the backup
  * back when the second rename fails (the rollback claim); `waitForTheStart` reading an ended process as started, or
@@ -56,9 +55,7 @@ import org.traincontrol.util.SelfUpdate;
  */
 public class testTheUpdaterSwapsTheJar
 {
-    /**
-     * What the new version does when the updater starts it.
-     */
+    /** What the new version does when the updater starts it. */
     private enum NewVersion
     {
         SAYS_STARTED_AND_RUNS, SAYS_STARTED_AND_ENDS, ENDS_SILENTLY, RUNS_SILENTLY
@@ -102,9 +99,7 @@ public class testTheUpdaterSwapsTheJar
      * The old jar is kept under a versioned name, never over a file already there, and the new one takes the old one's
      * exact name so a shortcut to it keeps working.
      *
-     * Adam, 2026-10-12: "take a backup" means the old jar kept, renamed, so the update can be undone by hand.
-     *
-     * @throws Exception from the files
+     * Adam: "take a backup" means the old jar kept, renamed, so the update can be undone by hand.
      */
     @Test
     public void testTheSwapKeepsTheOldJarAndTakesItsName() throws Exception
@@ -136,8 +131,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * When the new jar cannot be moved into place, the old one goes back where it was and nothing is lost, and the
      * old version is the one started.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testAFailedMovePutsTheOldJarBack() throws Exception
@@ -182,8 +175,6 @@ public class testTheUpdaterSwapsTheJar
      * The new version has started when it says so - by writing the marker it is told of outside its command line -
      * and that holds when it then ends at once, as it does when its IP question is canceled: an exit code of 1 is
      * not a failed start.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheMarkerMeansStarted() throws Exception
@@ -224,8 +215,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * A new version that ends before saying it has started is taken back out, whatever its exit code: the old jar
      * returns to its name and is started, without a marker, and a note is left for it to say so once.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testAnExitBeforeTheMarkerRollsBack() throws Exception
@@ -253,11 +242,9 @@ public class testTheUpdaterSwapsTheJar
     }
 
     /**
-     * When putting the old jar back stops half way - the new one cannot be moved off its name, as a just-ended JVM or
-     * a virus scanner holding it would cause - the old version is started from its kept copy, and its note says which
-     * file that is rather than that it was put back (FR-125, 2026-10-13).
-     *
-     * @throws Exception from the files
+     * When putting the old jar back stops half way (the new one cannot be moved off its name, as a just-ended JVM or a
+     * virus scanner holding it would cause), the old version is started from its kept copy and its note says which file
+     * that is (FR-125).
      */
     @Test
     public void testAHalfDoneUndoDoesNotSayPutBack() throws Exception
@@ -300,10 +287,8 @@ public class testTheUpdaterSwapsTheJar
 
     /**
      * A new version older than the started marker (3.0.0, as in MT-737) is kept once it runs, even when the user closes
-     * it at once: it cannot say it started, so its exit is no sign of a failed start (Adam, 2026-10-13: "after the newly
-     * updated app opens, is used by the user, and is closed, the old version is put back").
-     *
-     * @throws Exception from the files
+     * it at once: it cannot say it started, so its exit is no sign of a failed start.  Adam: "after the newly updated
+     * app opens, is used by the user, and is closed, the old version is put back".
      */
     @Test
     public void testAVersionOlderThanTheMarkerIsKeptWhenClosed() throws Exception
@@ -332,8 +317,6 @@ public class testTheUpdaterSwapsTheJar
 
     /**
      * A new version still running that has said nothing by the cap is kept, and the log says so; nothing is put back.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testNoWordByTheCapKeepsTheNewJar() throws Exception
@@ -355,8 +338,6 @@ public class testTheUpdaterSwapsTheJar
      * The updater waits while TrainControl holds its lock, changes nothing meanwhile, and swaps and starts the new
      * version once the lock is let go - with the same Java, options, arguments and working directory - and leaves no
      * lock file behind.
-     *
-     * @throws Exception from the files or the thread
      */
     @Test
     public void testTheUpdaterWaitsForTheLock() throws Exception
@@ -416,8 +397,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * When TrainControl never lets go, the updater gives up after its timeout with nothing changed and nothing
      * started, and says why in the log.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheUpdaterGivesUpWithNothingChanged() throws Exception
@@ -451,8 +430,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * Across a real process boundary: a lock held by another JVM reads as held, and as free once that JVM has ended
      * without letting go - which is how TrainControl's exit releases it.
-     *
-     * @throws Exception from the files or the process
      */
     @Test
     public void testALockHeldByAnotherProcessIsSeen() throws Exception
@@ -495,9 +472,7 @@ public class testTheUpdaterSwapsTheJar
         }
     }
 
-    /**
-     * The request survives the command line it travels on, spaces and all.
-     */
+    /** The request survives the command line it travels on, spaces and all. */
     @Test
     public void testTheRequestSurvivesTheCommandLine()
     {
@@ -521,8 +496,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * A download cut short, or a web page saved in the jar's place, is refused before anything is replaced; a whole
      * jar passes, and so does its size and checksum from the release.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheJarCheckRefusesACutDownloadOrAPage() throws Exception
@@ -565,8 +538,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * The updater runs from a copy of the jar beside it, never the jar it replaces (a running jar is locked on Windows),
      * with the Java this JVM runs on, once it has said it is running - and the exit lock is held from then on.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheUpdaterRunsFromACopyWithTheSameJava() throws Exception
@@ -627,8 +598,6 @@ public class testTheUpdaterSwapsTheJar
     /**
      * An updater that does not say it is running keeps TrainControl open: the exit is refused, the lock let go and
      * removed, the copy deleted - whether it ended at once or sat silent past the wait, which also ends it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testAnUpdaterThatDoesNotStartKeepsTrainControlOpen() throws Exception
@@ -689,8 +658,6 @@ public class testTheUpdaterSwapsTheJar
      * One update at a time, and an exit that does not happen leaves none armed: a second Download & Update is refused
      * while one is under way; an exit that throws or is canceled disarms the update; and a second `startUpdater`
      * while the lock is held is refused rather than letting go of the first one's lock.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testOneUpdateAtATime() throws Exception
@@ -758,9 +725,7 @@ public class testTheUpdaterSwapsTheJar
         assertFalse(JarUpdater.waitForLock(new File(folder, JarUpdater.LOCK_NAME), 0, 10));
     }
 
-    /**
-     * The download goes beside the jar, and never over the jar itself.
-     */
+    /** The download goes beside the jar, and never over the jar itself. */
     @Test
     public void testTheDownloadGoesBesideTheJar()
     {
@@ -819,9 +784,7 @@ public class testTheUpdaterSwapsTheJar
         };
     }
 
-    /**
-     * An updater that writes its running marker, as `JarUpdater.main` does first of all, and keeps running.
-     */
+    /** An updater that writes its running marker, as `JarUpdater.main` does first of all, and keeps running. */
     private static SelfUpdate.Updater sayingItRuns(List<String> command)
     {
         JarUpdater.writeMarker(JarUpdater.Request.parse(command.subList(4, command.size()).toArray(new String[0]))

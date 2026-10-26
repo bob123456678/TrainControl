@@ -18,8 +18,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.ArrivalSidePrompt;
-import org.traincontrol.gui.FacingPrompt;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.FacingPrompt;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -28,21 +28,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A cut train is pasted facing the way it would arrive if it drove there, and stands on that copy (Adam, OB-270).
  *
- * *"Trains should not inadvertently change direction when pasted, so a loc going west from bottomsecondary should
- * always face east when pasted on bottommaina."*  And, asked whether a cut train keeps the compass heading it was cut
- * with (MT-368) or takes the one it would have after driving there: *"it should be east.  no train should
- * inadvertently change direction when pasted."*
+ * "Trains should not inadvertently change direction when pasted, so a loc going west from bottomsecondary should always
+ * face east when pasted on bottommaina."  And, asked whether a cut train keeps the heading it was cut with (MT-368) or
+ * takes the one it would have after driving there: "it should be east.  no train should inadvertently change direction
+ * when pasted."
  *
- * **Two defects, one gesture.**  The paste kept the heading the train was CUT with - west - because a train off the
- * railway had nowhere for the walk to start; and it put the train on whichever copy of the square came first
- * (`getAutonomyPointForTile`, "any copy will do") while recording a heading, so the record and the copy could
- * disagree.  Now the walk starts from the square the train was cut from, and the train is put on the copy that faces
- * the heading recorded - both chosen over copies a train may stand on.
+ * Two defects, one gesture: the paste kept the heading the train was CUT with, because a train off the railway had
+ * nowhere for the walk to start; and it put the train on whichever copy came first (`getAutonomyPointForTile`, "any
+ * copy will do") while recording a heading, so the record and the copy could disagree.  Now the walk starts from the
+ * square the train was cut from, and the train is put on the copy that faces the recorded heading.
  *
- * **On the frozen railway with BottomMainA's east bar lifted**, which is how it stood at `2958fcf3`: Adam's follow-up
- * edit of the same day barred arrivals from the east there again, leaving it one placeable copy, and a square with one
- * copy has one answer however the paste reasons.  The claim needs two copies facing opposite ways, and this is the
- * square his report was about.
+ * On the frozen railway with BottomMainA's east bar lifted: the claim needs two copies facing opposite ways, and a
+ * square with one placeable copy has one answer however the paste reasons.
  *
  * Driven through the window's own key door: a real Control+X over BottomSecondary, then Control+V over BottomMainA.
  *
@@ -149,8 +146,6 @@ public class testACutTrainArrivesTheWayItWouldDrive
      *
      * MUTATION: dropping the walk from the cut square - the paste keeping the heading it was cut with - lands it
      * facing west; dropping the copy choice leaves it on whichever copy came first while the record says east.
-     *
-     * @throws Exception from the window
      */
     @Test(dependsOnMethods = "testBottomMainAHoldsBothHeadings")
     public void testACutTrainGoingWestLandsFacingEast() throws Exception
@@ -247,16 +242,11 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
     /**
      * The Place Locomotive dialog puts the train on the copy facing the way it records - not on whichever copy the menu
-     * was opened on.
-     *
-     * OB-270 is a rule about putting a train down - the copy IS the direction - and was fixed at the paste.  The dialog
-     * is the same act by another door: it moved the train onto the copy it was opened on, then recorded the train's old
-     * heading wherever any copy held it.  On a square with two copies facing opposite ways the setup then said west while
-     * the train stood on the east copy, until the next load changed its direction.
+     * was opened on.  OB-270 is a rule about putting a train down - the copy IS the direction - fixed at the paste; the
+     * dialog is the same act by another door, and on a square with two copies facing opposite ways the setup said west
+     * while the train stood on the east copy.
      *
      * MUTATION: have `GraphLocAssign.commitAndRecord` commit onto the copy it was opened on again and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheDialogPutsTheTrainOnTheCopyItRecords() throws Exception

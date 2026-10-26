@@ -19,6 +19,8 @@ import java.util.zip.ZipFile;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
@@ -38,16 +40,11 @@ final class LayoutFileActions
     }
 
     /**
-     * Writes the page index and re-aims every arrow on the layout at the page it was aimed at.
-     *
-     * **A LINK TILE HOLDS A POSITION IN THE NAME-SORTED PAGE LIST**, so every operation that changes the set of page names
-     * changes what the arrows mean (Add, Rename, Duplicate, Delete and Combine); nothing re-aimed them, and adding one page repointed
-     * FOUR OF SEVEN arrows on the sample layout.  **Delete and Combine go through here**; Add, Duplicate and Rename go through
-     * `LayoutPageEdit`, which re-aims the arrows before it writes the page and then writes the index itself
-     * (`LayoutDiagram.writeLayoutIndex`).  The order the arrows were written against is worked out here rather than by the caller,
-     * and taken from the PAGES this session holds, not from the index file, because an index naming two pages the same aliases them
-     * onto one entry.  A page that has gone leaves its arrows pointing at nothing rather than at whatever slid into
-     * its place: see `LayoutDiagramComponent.setLinkedPageIndex`.
+     * Writes the page index and re-aims every arrow on the layout at the page it was aimed at.  A link tile holds a
+     * position in the name-sorted page list, so any change to the set of page names changes what the arrows mean.
+     * Delete and Combine go through here; Add, Duplicate and Rename go through `LayoutPageEdit`.  The order is taken
+     * from the pages this session holds, not the index file, because an index naming two pages the same aliases them.
+     * A page that has gone leaves its arrows pointing at nothing (`LayoutDiagramComponent.setLinkedPageIndex`).
      *
      * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
      * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
@@ -57,8 +54,7 @@ final class LayoutFileActions
     void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
         java.util.Collection<String> keepAbsent) throws java.io.IOException
     {
-        // The rule itself is in LayoutDiagram, because LayoutPageEdit writes this index too - see that
-        // method.  What is here is collecting the pages, saving the ones that moved, and the logging.
+        // The rule is in LayoutDiagram, because LayoutPageEdit writes this index too.
         for (LayoutDiagram changed : LayoutDiagram.writeIndexAndKeepLinksAimed(
             this.ui.localLayoutPath(), layoutList, renamed, this.ui.pageIdFloor(), keepAbsent,
             this.everyLoadedPage()))
@@ -213,9 +209,8 @@ final class LayoutFileActions
      */
     void initializeLocalLayoutMenuItemActionPerformed()
     {
-        // NOT WHILE AUTONOMY RUNS, before its folder window, as every other Layout menu door that changes the
-        // diagram is not (MT-141): a folder chosen switched the layout, synced with the Central Station and reset the
-        // autonomy session under the moving trains
+        // Not while autonomy runs, before its folder window (MT-141): a folder chosen would switch the layout and reset
+        // the session under moving trains.
         if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
         javax.swing.SwingUtilities.invokeLater(() -> 
@@ -247,25 +242,26 @@ final class LayoutFileActions
     }
 
     /**
-     * Builds one page showing this page and every page it links to: a link is a hole in the diagram that comes out somewhere else, and
-     * following one means losing sight of where you were, so this lays the pages the current one reaches out one under another.
+     * Builds one page showing this page and every page it links to, stacked one under another with a blank row between,
+     * in the order the links appear reading left to right and top to bottom.  One level, deliberately: following links
+     * recursively produces every page, in an order nobody chose.  The result is excluded from autonomy as it is
+     * written, not optionally: left included, every square would mint a second Point for a sensor and a parallel set of
+     * edges.
      *
-     * ONE LEVEL, deliberately: following links recursively on a layout whose pages all reach each other produces every page, in an order
-     * nobody chose.  The result is EXCLUDED FROM AUTONOMY as it is written, and this is not optional: every square on it is a redrawing
-     * of a square that exists elsewhere, so left included it would mint a second Point for every sensor and a parallel set of edges (the
-     * "Combined page problem" of the diagram-autonomy plan).  Pages are stacked with a blank row between them, in the order the links
-     * appear when the page is read left to right and top to bottom, so two runs over the same diagram produce the same page.
+     * @param editor the layout editor that asked, or null for the Layouts menu, as in `duplicateOrRenameCurrentLayout`
      */
-    void combineLinkedPages()
+    void combineLinkedPages(final LayoutEditor editor)
     {
-        // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
-        if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
+        final java.awt.Component over = editor == null ? this.ui : editor;
 
-        if (this.ui.refuseWhileEditorOpen()) return;
+        // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
+        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
+
+        if (editor == null && this.ui.refuseWhileEditorOpen()) return;
 
         if (!this.ui.isLocalLayout())
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.t("layout.ui.errorCannotManipulateRemoteLayouts"));
             return;
         }
@@ -276,11 +272,11 @@ final class LayoutFileActions
 
         if (pages.size() < 2)
         {
-            JOptionPane.showMessageDialog(this.ui, I18n.t("layout.ui.infoNothingLinkedFromHere"));
+            JOptionPane.showMessageDialog(over, I18n.t("layout.ui.infoNothingLinkedFromHere"));
             return;
         }
 
-        String name = JOptionPane.showInputDialog(this.ui,
+        String name = JOptionPane.showInputDialog(over,
             I18n.t("layout.ui.promptCombinedPageName"),
             I18n.f("layout.ui.combinedPageName", from));
 
@@ -288,14 +284,14 @@ final class LayoutFileActions
 
         final String combined = name.trim();
 
-        // AND NO OTHER PAGE'S FILE: this name is typed freely, so a character a file name cannot hold comes to the
-        // same file as the page whose name has an underscore there
+        // And no other page's file: a character a file name cannot hold comes to the same file as a page with an
+        // underscore there.
         String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(),
             combined, null);
 
         if (usesThatFile != null)
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
 
             return;
@@ -303,15 +299,13 @@ final class LayoutFileActions
 
         if (this.ui.getModel().getLayoutList().contains(combined))
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", combined));
             return;
         }
 
-        // The ceiling, asked before anything is made: the check must not live in `fillCombinedPage`, which runs after the page
-        // has been written, entered in the index, excluded and the layouts refreshed, so refusing would leave an unfilled copy of the page combined
-        // from.  The size is the same arithmetic `fillCombinedPage` does: the widest source page, and every source page's height plus a blank
-        // row between them.
+        // The ceiling, asked before anything is made, and not in `fillCombinedPage`, which runs after the page is
+        // written and indexed.  The same arithmetic: the widest source page, and every height plus a blank row between.
         int wouldBeWide = 0;
         int wouldBeHigh = 0;
 
@@ -327,30 +321,40 @@ final class LayoutFileActions
 
         if (wouldBeHigh > LayoutEditor.MAX_SIZE || wouldBeWide > LayoutEditor.MAX_SIZE)
         {
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(over,
                 I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
             return;
         }
 
-        // On a worker, because it parses every page of the layout twice over.  AND A REFRESH UNDER WAY FROM HERE:
-        // the worker writes the page, the index and the setup before it hands over to `layoutEditingComplete`, and a run
-        // started meanwhile ran the railway from before and was forgotten by the reset at the end
+        final Runnable work = () -> combineOnAWorker(from, combined, pages, editor);
+
+        if (editor == null) work.run();
+        else editor.stepOutFor(work);
+    }
+
+    /** Combine Linked Pages once nothing can refuse it; `editor` is told which page to show however this ends. */
+    private void combineOnAWorker(final String from, final String combined, final List<String> pages,
+        final LayoutEditor editor)
+    {
+        // On a worker, because it parses every page twice.  And a refresh under way from here: a run started before
+        // `layoutEditingComplete` would run the railway from before and be forgotten by the reset.
         this.ui.refreshesUnderWay.incrementAndGet();
 
         new Thread(() ->
         {
+            boolean arriving = false;
+
             try
             {
-                // Asked BEFORE the new page is written (FR-018), as the delete path does: a Cancel offered at the index write would come after a page
-                // file had appeared on disk, leaving a page nothing references.  Nothing is being removed here, so every absence is a surprise.
+                // Asked before the new page is written (FR-018), as the delete path does: a Cancel at the index write
+                // would leave a page nothing references.
                 java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
                     this.ui.getModel().getLayoutList(), null, null);
 
                 if (keepAbsent == null) return;
 
-                // Made the way every other page is made, by saving an existing one under a new name: a LayoutDiagram built by hand cannot save itself,
-                // since it writes by resolving its new filename against the path it was constructed with, and only a page read from disk carries the
-                // path of a FILE.  So the page is created by the call the Duplicate Page menu item uses, and then filled in.
+                // Made as every other page is, by saving an existing one under a new name (the Duplicate Page call): a
+                // hand-built LayoutDiagram cannot save itself.
                 this.ui.getModel().getLayout(from).saveChanges(combined, true);
 
                 List<String> layoutList = this.ui.getModel().getLayoutList();
@@ -359,11 +363,10 @@ final class LayoutFileActions
 
                 writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
 
-                // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk: included for even one build, every sensor on it
-                // becomes a second Point for a sensor that already has one.  The session ALREADY BUILT, and only a setup that is already there: the
-                // lazy getter builds a session (opening every page and running the caption migration) and saveQuietly then writes setup.json
-                // unconditionally, so combining two pages on a layout that never had autonomy created one out of a drawing gesture.  Nothing is lost
-                // by declining: excludeRepeatedSensorPages shuts a combined page automatically the first time a setup IS created.
+                // Excluded before the pages are re-read, so no build sees it as a page to walk.  Only a setup that
+                // already exists: the lazy getter builds a session and saveQuietly writes setup.json, so combining on a
+                // layout without autonomy would create one.  excludeRepeatedSensorPages shuts a combined page when a
+                // setup is first created.
                 org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
 
                 if (session != null)
@@ -387,18 +390,24 @@ final class LayoutFileActions
                 {
                     this.ui.layoutList().setSelectedItem(combined);
                     this.ui.repaintLayout();
+
+                    if (editor != null) editor.arriveOn(String.valueOf(this.ui.layoutList().getSelectedItem()));
                 }));
+
+                arriving = true;
             }
             catch (Exception ex)
             {
                 this.ui.getModel().log(ex);
 
                 javax.swing.SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(this.ui,
+                    JOptionPane.showMessageDialog(editor == null ? this.ui : editor,
                         I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())));
             }
             finally
             {
+                if (editor != null && !arriving) editor.arriveOn(null);
+
                 // Posted after the hand-over above, so `layoutEditingComplete` has counted its own before this one goes
                 javax.swing.SwingUtilities.invokeLater(() -> this.ui.refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
             }
@@ -411,23 +420,28 @@ final class LayoutFileActions
      * @param rename - true if renaming
      * @param duplicate - true if duplicating
      * @param blank - true to clear
+     * @param from the layout editor that asked (FR-109), or null for the Layouts menu: the one editor not refused as
+     *        open; the questions hang off it, it steps aside once nothing can refuse, and it is told which page to
+     *        show however this ends
      */
-    void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
+    void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank,
+        final LayoutEditor from)
     {
-        // Not while an editor holds the diagram: both of these finish by calling layoutEditingComplete, which re-enables the Edit button and
-        // rebuilds the autonomy session from pages it has just replaced, so under an open editor it fails (a second
-        // editor opens on the same diagram, and closing either unsets the other's edit flag).  Refused at the entry rather than guarded at
-        // the end, because by the end the page has already been written.
-        if (this.ui.refuseWhileEditorOpen()) return;
+        final java.awt.Component over = from == null ? this.ui : from;
 
-        // And not while trains are running (MT-141): an editor being closed does not mean the railway is standing still, and renaming a page
-        // still rebuilds the session underneath whatever is moving.
-        if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
+        // Not while an editor holds the diagram: both finish by calling layoutEditingComplete, which rebuilds the
+        // autonomy session from pages just replaced, so under an open editor a second editor opens on the same diagram.
+        // Refused at the entry, as by the end the page is written.
+        if (from == null && this.ui.refuseWhileEditorOpen()) return;
+
+        // And not while trains are running (MT-141): renaming a page rebuilds the session underneath whatever is
+        // moving.
+        if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
 
         if (!this.ui.isLocalLayout())
         {
             JOptionPane.showMessageDialog(
-                this.ui,
+                over,
                 I18n.t("layout.ui.errorCannotManipulateRemoteLayouts")
             );
             return;
@@ -436,7 +450,7 @@ final class LayoutFileActions
         if (this.ui.getModel().getLayoutList().contains(newLayoutName))
         {
             JOptionPane.showMessageDialog(
-                this.ui,
+                over,
                 I18n.f(
                     "layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst",
                     newLayoutName
@@ -452,25 +466,25 @@ final class LayoutFileActions
 
         if (usesThatFile != null)
         {
-            JOptionPane.showMessageDialog(this.ui, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
+            JOptionPane.showMessageDialog(over, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
 
             return;
         }
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        final Runnable work = () ->
         {
+            boolean arriving = false;
+
             try
             {
-                // The sequence itself lives in LayoutPageEdit, and this hands it the session it has ALREADY BUILT rather than letting it reach
-                // for the lazy getter.  Everything above this line is about whether to ask at all (an open editor, running trains, a remote layout, a
-                // name already taken) and stays here because it puts dialogs on screen; everything below it was the ORDER in which a rename has to
-                // happen, where every rename defect has lived, and which could not be reached by a test while it was in here (Adam: "trigger a rename
-                // via the same function that the UI calls... This is the only way to catch bugs across these complex types of features.").
+                // The sequence lives in LayoutPageEdit, handed the session already built; what is above is about
+                // whether to ask at all and puts dialogs on screen.  The ORDER of a rename is where every rename defect
+                // lived, and a test could not reach it in here ("trigger a rename via the same function that the UI
+                // calls...").
                 String currentLayout = this.ui.layoutList().getSelectedItem().toString();
 
-                // What the last run did, folded in while the naming still agrees with the store: after the rename below the store is rekeyed
-                // and the pages this session holds are not, which is why the capture that follows is refused.  Doing it here means the run's
-                // placements are IN the configuration by the time renamePage rekeys it.
+                // What the last run did, folded in while the naming still agrees with the store: after the rename the
+                // store is rekeyed and this session's pages are not.
                 this.ui.captureRunningLayout();
 
                 // A rename makes the old name absent by construction, so it is told about that and
@@ -491,19 +505,31 @@ final class LayoutFileActions
 
                 this.ui.layoutEditingComplete(() ->
                 {
+                    // Posted, so it lands after the two below
+                    if (from != null) from.arriveOn(newLayoutName);
+
                     this.ui.layoutList().setSelectedItem(newLayoutName);
                     this.ui.repaintLayout();
                 });
+
+                arriving = true;
             }
             catch (Exception ex)
             {
                 JOptionPane.showMessageDialog(
-                    this.ui,
+                    over,
                     I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
                 );
                 this.ui.getModel().log(ex);
             }
-        });    
+            finally
+            {
+                if (from != null && !arriving) from.arriveOn(null);
+            }
+        };
+
+        if (from == null) javax.swing.SwingUtilities.invokeLater(work);
+        else from.stepOutFor(work);
     }
 
     /**
@@ -595,9 +621,8 @@ final class LayoutFileActions
     }
 
     /**
-     * The page itself, then every page its links lead to, without repeats.  A link carries the INDEX of the page it jumps to (the number
-     * goToLayoutPage takes), so the answer is read off the tiles rather than out of the autonomy setup, and works whether or not autonomy
-     * has ever been set up on this layout.
+     * The page itself, then every page its links lead to, without repeats.  Read off the tiles (a link carries the
+     * INDEX of its page), so it works whether or not autonomy has been set up on this layout.
      *
      * @param from the page to start at
      * @return that page first, then the pages it reaches
@@ -637,15 +662,11 @@ final class LayoutFileActions
     }
 
     /**
-     * Fills the new page in: each source page's squares, stacked with a blank row between.  The page already exists (made as a copy of the
-     * one being combined), so this empties it, grows it to fit, and writes the squares in square by square rather than by reference,
-     * because a LayoutDiagramComponent carries its own coordinates.
-     *
-     * **A LINK ON A COMBINED PAGE DOES KEEP ITS DESTINATION, AND THE SEQUENCE IS WHY** (TWV): the copy is written from the source
-     * page BEFORE the arrows are re-aimed, so the file on disk is briefly stale; `refreshLayouts` then re-reads every page, including the
-     * corrected sources; and this method clears the copy and refills it from those sources through `LayoutDiagramComponent`'s copy
-     * constructor, which carries `rawAddress` across, so the squares written here are the corrected ones and the save at the end commits
-     * them.  The stale intermediate write makes this look broken to anybody who reads only the first step.
+     * Fills the new page in: each source page's squares, stacked with a blank row between, written square by square
+     * because a LayoutDiagramComponent carries its own coordinates.  The copy is written from the source page before
+     * the arrows are re-aimed, so the file on disk is briefly stale; `refreshLayouts` re-reads the corrected sources
+     * and this refills the copy from them through the copy constructor, which carries `rawAddress`, so a link keeps its
+     * destination.
      *
      * @param name the page just created
      * @param pages the source pages, the one being combined first
@@ -669,10 +690,8 @@ final class LayoutFileActions
             height += page.getSy() + 1;
         }
 
-        // The ceiling every other growing gesture asks: this goes straight to LayoutDiagram.addRowsAndColumns, which has no ceiling
-        // and it can grow a page MOST (combining the three pages that 1 - Main links to comes
-        // out 24 x 51 against a ceiling of 60).  Refused BEFORE the page is emptied: `made.clear()` below throws away the page this was
-        // copied from, and a page above the ceiling can never be grown again (Increase Size is grayed on it).
+        // The ceiling every other growing gesture asks: addRowsAndColumns has none and can grow a page most (24 x 51
+        // against 60).  Refused before the page is emptied, since a page above the ceiling can never be grown again.
         if (height > LayoutEditor.MAX_SIZE || width > LayoutEditor.MAX_SIZE)
         {
             throw new Exception(I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
@@ -706,10 +725,9 @@ final class LayoutFileActions
                     copy.setX(x);
                     copy.setY(y + top);
 
-                    // Nothing autonomy has written comes across: this page is a picture, excluded from autonomy for good, so a station label copied onto
-                    // it names a station that is nowhere on this page, and a "Point:" label (the OLD way of storing a caption) would be picked up by the
-                    // migration and written into the setup for squares on an excluded page.  The user's own text stays: a yard name or a note is part of
-                    // the drawing.
+                    // Nothing autonomy has written comes across: this page is excluded from autonomy for good, so a
+                    // station label would name a station not on it, and a "Point:" label would be migrated into the
+                    // setup.  The user's own text stays.
                     if (copy.getLabel() != null && copy.getLabel().startsWith(
                         org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX))
                     {

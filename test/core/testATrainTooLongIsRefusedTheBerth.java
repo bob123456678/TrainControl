@@ -457,7 +457,7 @@ public class testATrainTooLongIsRefusedTheBerth
         berth.setTerminus(true);
 
         // AND A PARKING BERTH - Can Be Chosen In Full Autonomy off - as TunnelLongPark, Adam's own case, is.
-        // Since FR-087 (Adam, on MT-431, 2026-09-15) a station autonomy MAY choose takes a train the measured
+        // Since FR-087 (Adam, on MT-431) a station autonomy MAY choose takes a train the measured
         // route in holds, so at one this 50-unit approach admits the long train by his ruling.  The room rule
         // this class is about binds at a berth; `admittedWithUnmeasuredApproach` still judges a station.
         berth.setAutoDestination(false);

@@ -110,8 +110,8 @@ public class testATrainCoversTheTrackBehindIt
         layout.createEdge(east.getName(), middle.getName());
         layout.createEdge(east.getName(), buffer.getName());
 
-        int sidesInTheMiddle = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(layout, middle).size();
-        int sidesAtTheBuffer = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(layout, buffer).size();
+        int sidesInTheMiddle = org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(layout, middle).size();
+        int sidesAtTheBuffer = org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(layout, buffer).size();
 
         assertTrue(sidesInTheMiddle > 1,
             "the through point offers " + sidesInTheMiddle + " arrival sides, so there is nothing to"
@@ -122,24 +122,24 @@ public class testATrainCoversTheTrackBehindIt
             + " cannot be exercised");
 
         // NOT MARKED: never asked, whatever the geometry offers.
-        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, false, null),
+        assertFalse(org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(layout, middle, false, null),
             "a square the operator has not marked as one trains may turn at is never asked about - the"
             + " side is assumed from the facing. Answering true here makes the paste door abandon"
             + " placements onto ordinary track");
 
         // MARKED, and there is a choice: asked.
-        assertTrue(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, middle, true, null),
+        assertTrue(org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(layout, middle, true, null),
             "a marked square with several arrival sides is exactly the case the question exists for,"
             + " and wouldAsk says it would not be asked - so a dismissal there is read as \"nothing to"
             + " record\" and the paste goes ahead against the operator (VAL9-B4)");
 
         // MARKED, but nothing to choose between: not asked, and a null from the prompt means only
         // that there was nothing to record.
-        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, buffer, true, null),
+        assertFalse(org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(layout, buffer, true, null),
             "a marked square with one way in or none has no question to put, and saying otherwise"
             + " refuses every paste onto it - silently and permanently, which is IND9-B5 restored");
 
-        assertFalse(org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(layout, null, true, null),
+        assertFalse(org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(layout, null, true, null),
             "a null point must not be reported as askable");
     }
 
@@ -372,10 +372,8 @@ public class testATrainCoversTheTrackBehindIt
 
         // AND IT IS THE SAME RULE THE WALK READS BACK (OB-182).
         //
-        // This used to pin `sideTowards` here, which names where the neighboring POINT lies. A
-        // reduced run turns corners, so on a curve that is not the side the track comes in by - and
-        // the operator doors were offering the other answer. Correcting the doors alone made the walk
-        // match nothing and block no track at all, so the two now share `entrySideOf`.
+        // The walk and the operator doors share `entrySideOf`, not `sideTowards`, which names where the neighboring
+        // POINT lies: a reduced run turns corners, so on a curve that is not the side the track comes in by.
         assertTrue(SourceOf.allCode().replaceAll("\\s+", " ").contains("String cameInBy = owner.entrySideOf(candidate, here);"),
             "the tail walk works out the arrival side its own way again, so it can disagree with what"
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
@@ -467,7 +465,7 @@ public class testATrainCoversTheTrackBehindIt
         // Marked may-reverse, which would normally ASK - and must not here, because there is nothing
         // to ask about.  Passing null for the parent proves it: a dialog would have to be shown on
         // something, and this returns without one.
-        assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, buffer, "E", true,
+        assertEquals(org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(layout, buffer, "E", true,
             null, null), "W",
             "a terminus with one way in did not force the arrival side, so the operator is being asked"
             + " a question with a single possible answer");
@@ -507,16 +505,16 @@ public class testATrainCoversTheTrackBehindIt
 
         // Two ways in, so the answer is not forced - and not asked either, because this square is not
         // one trains turn at.  Facing east means it came from the west.
-        assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, "E", false,
+        assertEquals(org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(layout, middle, "E", false,
             null, null), "W",
             "a train facing east on an ordinary station was not assumed to have come from the west,"
             + " so its tail is being put in front of it");
 
-        assertEquals(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, "W", false,
+        assertEquals(org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(layout, middle, "W", false,
             null, null), "E", "and the other way about");
 
         // Nobody has said which way it faces, so nothing can be assumed and nothing is recorded.
-        assertNull(org.traincontrol.gui.ArrivalSidePrompt.forPlacement(layout, middle, null, false,
+        assertNull(org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(layout, middle, null, false,
             null, null),
             "a facing nobody has set was turned into an arrival side anyway, which blocks track on"
             + " no evidence at all");
@@ -555,7 +553,7 @@ public class testATrainCoversTheTrackBehindIt
         layout.createEdge(west.getName(), middle.getName());
         layout.createEdge(middle.getName(), north.getName());
 
-        List<String> sides = org.traincontrol.gui.ArrivalSidePrompt.sidesOf(layout, middle);
+        List<String> sides = org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(layout, middle);
 
         assertTrue(sides.contains("W"), "the westward neighbour is not offered: " + sides);
 
@@ -572,7 +570,7 @@ public class testATrainCoversTheTrackBehindIt
      * A tail blocks the rail in BOTH directions, because a tail is not directional.
      *
      * The graph encodes facing as one-way edges, so one piece of rail is often two `Edge` objects.
-     * A train lying across it fouls it whichever way traffic runs - `behaviour.md` 5c says so - but
+     * A train lying across it fouls it whichever way traffic runs - `behaviour/tail.md` 5c says so - but
      * the covered set is keyed by Edge, and Edge identity is directional.  So covering A -> B and
      * then routing somebody over B -> A is the case every fixture in this file misses: they are all
      * one-way chains, which is exactly why this went unnoticed.
@@ -1026,7 +1024,7 @@ public class testATrainCoversTheTrackBehindIt
      * Both directions matter and only one was reported: a square that has just become covered needs the
      * mark put on, and one that has stopped being covered needs it taken off.
      *
-     * **And BOTH MARKS go through this one comparison** (Adam, 2026-09-09: *"That plus the line, drawn
+     * **And BOTH MARKS go through this one comparison** (Adam: *"That plus the line, drawn
      * and refreshed carefully, should do the trick."*).  Since the gray wash came back beside the
      * orange line, a square changes what it draws when its road changes AND when it starts or stops
      * being blocked - and the two do not move together: starting autonomy changes every blocked square
@@ -1067,7 +1065,7 @@ public class testATrainCoversTheTrackBehindIt
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
-        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
+        // AND THE GRAY IS DIFFED IN THE SAME PASS, in both directions, BY ROAD (OB-208).
         //
         // It was a plain symmetric difference while the wash was over the whole square.  Since OB-208 the
         // gray is per road, like the line - a double curve on a covered edge fades only the arc the edge

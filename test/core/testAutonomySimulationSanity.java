@@ -64,7 +64,7 @@ public class testAutonomySimulationSanity
     private static final long POLL_MS = 500;
 
     // Minimum activity a genuine one-minute run must produce.
-    // FIVE, not twenty (2026-08-29).
+    // FIVE, not twenty.
     //
     // This is a time-boxed simulation, so the count measures how loaded the machine is as much as
     // whether the railway did anything: it passes alone and came back 18 inside a full battery. The
@@ -125,8 +125,8 @@ public class testAutonomySimulationSanity
      * **This test used to assert that they cancel**, and that was right for a record whose
      * membership was a parity - because the window applied each entry by FLIPPING the facing the setup
      * had stored, and two flips undo each other. The flip has since been taken away: the setup's stored
-     * facing is stale at exactly the moment the drain reads it (behaviour.md 6a), so the window now
-     * writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
+     * facing is stale at exactly the moment the drain reads it (behaviour/editing-while-running.md 6a), so the window
+     * now writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
      *
      * Once the write is absolute the parity has nothing left to protect. The hazard it was for - *"a
      * shuttle that turned at both ends came back facing the way it started and had its facing flipped
@@ -417,7 +417,7 @@ public class testAutonomySimulationSanity
     /**
      * A turn the railway makes at the destination is recorded there.
      *
-     * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same as
+     * Adam: **"it should be recorded at the destination.  Otherwise, it�s just the same as
      * always."**
      *
      * A reversal at the arrival is the one direction change nothing was following. Its echo lands

@@ -57,15 +57,12 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
     private static final TileKey LISTED = new TileKey("1 - Main", 18, 7);
 
     /**
-     * Loaded at start, the configuration lets go of a train standing on a station, its home and its name on another's list
-     * - and holds nothing else less: the station keeps its name and its settings, and a train the database does hold is
-     * where it was.  The facing menu and the captions are gone with it, the file no longer names it, and the log says so
-     * once and one dialog does, naming it.  Then an ordinary reload does the same for a home given to another such name,
-     * and says nothing more of the first.
+     * Loaded at start, the configuration lets go of a train standing on a station, its home and its name on another's
+     * list, and holds nothing else less: the station keeps its name and settings, and a train the database does hold is
+     * where it was.  The file no longer names it, and the log says so once and one dialog does.  Then an ordinary
+     * reload does the same for a home given to another such name, and says nothing more of the first.
      *
      * MUTATION: take the call out of `AutonomyViewerPanel.loadPrepared`, or the dialog out of it, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAStartUpLetsGoOfAStandingTrainTheDatabaseDoesNotHold() throws Exception
@@ -254,8 +251,6 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
      * naming each, whose height stays that of a short list.  A train the database holds arrives where the file has it.
      *
      * MUTATION: take the call out of the import door, or show the list without its scrolling, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAnImportedFileLeavesOutWhatTheDatabaseDoesNotHoldAndSaysSo() throws Exception
@@ -381,8 +376,6 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
      * have stood on a station, a home and a name on a station's list.
      *
      * MUTATION: drop the import's own list of trains it did not place, or the call that takes the rest out, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAnOldFileLeavesOutWhatTheDatabaseDoesNotHoldAndSaysSo() throws Exception

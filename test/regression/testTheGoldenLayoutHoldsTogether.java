@@ -27,30 +27,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * Adam's own railway, read and checked, and never written to.
+ * Adam's own railway, read and checked, and never written to.  Every other test runs against `test/test_layout`, a
+ * frozen copy, so the suite otherwise knows only what was true on the day the copy was taken.
  *
- * Every other test in this suite runs against `test/test_layout`, a frozen copy. That is right: a fixture
- * has to hold still or the tests are measuring the fixture. But it means the only thing the suite
- * knows about the layout Adam actually drives is what was true on the day the copy was taken - and he
- * goes on drawing track, naming stations and setting up autonomy, which is exactly where the next
- * defect will be found.
+ * What this asserts is deliberately narrow: things that must be true of ANY layout (internal consistency: the setup
+ * names track the diagram has, the numbering agrees with itself, nothing was written).  It is not a ratchet on his
+ * data, because a test that counted things would go red every time he worked on the railway.
  *
- * Adam: "Using his new golden layout files, expand test coverage and find/fix new bugs."
- *
- * **What this asserts is deliberately narrow: things that must be true of ANY layout.** It is not a
- * ratchet on his data. He is allowed to draw a page with no stations on it, exclude whatever he likes
- * and leave a configuration half finished, and none of that is a defect - so a test that counted
- * things would go red every time he worked on the railway, which is the fastest way to make a suite
- * worth ignoring. What it checks is internal consistency: that the setup names track the diagram has,
- * that the numbering agrees with itself, and that nothing was written.
- *
- * **The `@AfterClass` check is the important one and it is about this suite, not about the railway.**
- * Two test classes start the real window, which loads whatever the saved UI state names - his layout.
- * On 25 August the battery was leaving it modified on every run, and it went unnoticed for two days
- * because nothing was watching. Something is now - and it runs LAST, after every `@Test` below, rather
- * than as the first of them: a fingerprint taken as the first `@Test` compares against itself before any
- * of its four siblings have run, so a write made by the third or fourth was never in scope. Review
- * caught this.
+ * The `@AfterClass` check is about this suite, not the railway: two test classes start the real window, which loads
+ * whatever the saved UI state names, and the battery once left it modified on every run unnoticed.  It runs LAST,
+ * after every `@Test`, because a fingerprint taken as the first `@Test` could not see a write made by a later one.
  *
  * Failed, not skipped, when the folder is not there: `cs2_sample_layout` is tracked, so the battery always has it
  * (FR-136).
@@ -72,20 +58,10 @@ public class testTheGoldenLayoutHoldsTogether
     private static Map<String, String> before;
 
     /**
-     * A COPY of the golden layout, which is what everything below actually reads.
-     *
-     * This class read `cs2_sample_layout` in place - Adam's real railway, the one folder in this
-     * repository that is not recoverable - and built a model with no sandbox at all.  The fingerprint
-     * check below was the whole of its protection, and a fingerprint is an alarm rather than a guard:
-     * it tells you afterwards that something was written.
-     *
-     * `init` reads the layout preference too, which is why the sandbox has to be open BEFORE it and
-     * not merely before the window (OB-111).  With the preference pointed at the copy, nothing
-     * downstream can reach the original even by mistake.
-     *
-     * The test is unchanged in what it asks: the copy is byte-for-byte his railway, so "does the
-     * golden layout hold together" is answered by exactly the same data.  What changes is that being
-     * wrong about a write is no longer expensive.
+     * A COPY of the golden layout, which is what everything below actually reads: the real folder is the one in this
+     * repository that is not recoverable, and a fingerprint is an alarm rather than a guard.  `init` reads the layout
+     * preference too, so the sandbox must be open BEFORE it and not merely before the window (OB-111).  The copy is
+     * byte-for-byte his railway, so the questions are answered by the same data.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -104,7 +80,7 @@ public class testTheGoldenLayoutHoldsTogether
 
         assertFalse(before.isEmpty(), "the golden layout folder is empty, so nothing below is a check");
 
-        // COPIED FIRST, AND BEFORE THE MODEL (OB-111).  See the sandbox field.
+        // COPIED FIRST, AND BEFORE THE MODEL (OB-111): see the sandbox field.
         sandbox = support.LayoutSandbox.open(GOLDEN);
 
         working = sandbox.getFolder();
@@ -132,57 +108,28 @@ public class testTheGoldenLayoutHoldsTogether
     {
         if (model != null) model.stop();
 
-        // alwaysRun on this method already; the sandbox goes back whatever happened above, because a
-        // preference left pointing at a temporary folder changes which layout the application opens
-        // the next time Adam starts it.
+        // alwaysRun: the sandbox goes back whatever happened above, because a preference left pointing at a temporary
+        // folder changes which layout the application opens next time.
         if (sandbox != null) sandbox.close();
     }
 
     /**
-     * Reading Adam's railway does not write to it.
+     * Reading Adam's railway does not write to it.  A `@Test` that fingerprinted first compared against itself before
+     * its siblings ran; declared `@AfterClass` it runs once, after every `@Test`, so `after` sees whatever any of them
+     * did.
      *
-     * The assertion this class exists for, and its SUBJECT is what nothing caught for two days: two
-     * test classes start the real window, which opens whatever the saved UI state names, and a save on
-     * that path rewrote his configuration file on every battery.
+     * The scope: the suite runs one JVM per class, so a write by ANOTHER class happened before `before` was taken and
+     * this cannot see it.  That protection lives in `docs/tools/battery.sh`, which fingerprints the folder around the
+     * whole run (and `ant test` does not use it).  Every file by content, not timestamp: a file rewritten with
+     * identical bytes is not a problem.
      *
-     * **`@AfterClass`, not `@Test` - and that is itself the fix.** This used to be the
-     * FIRST `@Test` in the class, comparing `after` against `before` while the four tests below it had
-     * not run yet - so a write made by any of THEM, in this same JVM, was never in scope; the class
-     * could tell you it had not written to the golden layout before it was done reading it. Declared
-     * here instead, it runs once, after every `@Test` in the class has finished, so `after` sees
-     * whatever any of them did.
-     *
-     * **Read the scope before relying on it further.** Both captures are still in this class's own
-     * JVM, and the suite runs one JVM per class - so a write by ANOTHER class already happened before
-     * `before` was taken, and this cannot see it. What it catches now is every write this class's own
-     * reading could cause, which is the property the class exists for and no longer only a slice of it.
-     *
-     * The protection against another class writing to that folder lives in `docs/tools/battery.sh`, which
-     * fingerprints it around the whole run and says so explicitly - and which `ant test` does not
-     * use.
-     *
-     * That particular cause is fixed - the file was being written in a different ORDER each run,
-     * because a set of locomotives was iterated in identity-hash order - but the class of problem is
-     * not: any test that can reach the live layout is one bug away from writing to it, and his setup
-     * is the thing he cannot get back.
-     *
-     * Every file, by content, not by timestamp: a file rewritten with identical bytes is not a
-     * problem, and flagging it would make this test noise.
-     *
-     * MUTATION this catches: have any `@Test` above - `testEverySquareTheSetupNamesIsOnTheDiagram` is
-     * as good as any - call `store.save()` once. As a `@Test` running first this passed regardless,
-     * because `after` was taken before that write happened; run last, it sees the rewritten file and
-     * fails.
+     * MUTATION this catches: have any `@Test` above call `store.save()` once.
      */
     @AfterClass(alwaysRun = true)
     public void testNothingWroteToTheGoldenLayout() throws Exception
     {
-        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE.
-        //
-        // `alwaysRun` arrived on 2026-09-03 so that a teardown holding a sandbox cannot be skipped by
-        // a set-up that threw - which is right, and means this now runs after the `SkipException` the
-        // set-up throws when there is no golden layout to read.  `before` is null there, and the
-        // comparison below would report an NPE where the class had simply been skipped.
+        // NOTHING TO COMPARE AGAINST IS NOT A FAILURE: `alwaysRun` means this runs after the `SkipException` the set-up
+        // throws when there is no golden layout, and `before` is null there.
         if (before == null) return;
 
         Map<String, String> after = fingerprint(GOLDEN);
@@ -208,24 +155,13 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * What the reversal-length guard can actually judge on the real railway.
+     * What the reversal-length guard can actually judge on the real railway.  `reversalsWithoutLength` is armed by
+     * `measuresAnyTrack()`: ONE measured square anywhere turns the notice on for every square trains turn round at.
+     * His railway had six measured squares, all on one test page, against 71 points, so the notice was armed with
+     * nothing to say about almost every reversal (FR-136 1b).
      *
-     * **"Could happen" against "does happen", asked of the operator's own data** - which is the check
-     * this folder asks for whenever a feature is added, and this feature never got it.
-     *
-     * `reversalsWithoutLength` is armed by `measuresAnyTrack()`: ONE measured square anywhere turns
-     * the notice on for every square trains turn round at. When the finding was written his railway
-     * had six measured squares, all six on one test page, against 71 points - so the notice was armed
-     * and had nothing to say about almost every reversal it covered.  On his data the arming is consistent
-     * either way, so a made-up store with no measured square is what proves the rule (FR-136 1b).
-     *
-     * **This measures rather than demands.** How much of his railway he has measured is his business
-     * and changes as he works; a floor here would fail on a Tuesday for no defect. What it refuses is
-     * the state the finding names: armed, and unable to answer anything. If one square is measured,
-     * the arming is honest; if none is, the notice must be off.
-     *
-     * The count is put in the message either way, so a reader of a passing run can see the reach
-     * without going to look - which is the thing nobody had.
+     * This measures rather than demands: how much he has measured changes as he works.  What it refuses is armed and
+     * unable to answer anything.  The count is put in the message either way.
      */
     @Test
     public void testWhatTheReversalGuardCanJudgeHere()
@@ -259,9 +195,8 @@ public class testTheGoldenLayoutHoldsTogether
             if (store.getTileLength(tile) > 0) measured++;
         }
 
-        // Named squares are not the whole story - a length belongs to any square, and the plain track
-        // between two sensors is exactly what somebody measures - so the store is asked directly for
-        // the arming question rather than inferred from the count above.
+        // A length belongs to any square, and the plain track between two sensors is what somebody measures, so the
+        // store is asked directly rather than inferred from the count above.
         final boolean armed = store.measuresAnyTrack();
 
         if (!armed)
@@ -282,15 +217,9 @@ public class testTheGoldenLayoutHoldsTogether
             + " squares with a length, and " + measured + " of those named carry one");
     }
     /**
-     * Every square the setup names is a square the diagram still draws.
-     *
-     * The one direction of difference that is always a defect - a setting for track that does not
-     * exist means either the diagram failed to read something real, or the setup is keyed to a page
-     * that has moved underneath it. The other direction is nothing: track with no settings on it is
-     * just track nobody has set up.
-     *
-     * Squares on pages the setup was told to leave out of autonomy are still checked, because they are
-     * still drawn - excluding a page hides it from autonomy, not from the diagram.
+     * Every square the setup names is a square the diagram still draws.  The one direction of difference that is always
+     * a defect: a setting for track that does not exist means the diagram failed to read something real, or the setup
+     * is keyed to a page that has moved.  Squares on excluded pages are still checked, because they are still drawn.
      */
     @Test
     public void testEverySquareTheSetupNamesIsOnTheDiagram()
@@ -319,8 +248,7 @@ public class testTheGoldenLayoutHoldsTogether
             }
         }
 
-        // A FLOOR, so an empty walk is not a pass.  See the sibling tests: each collects
-        // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
+        // A FLOOR, so an empty walk is not a pass: an empty loop satisfies "the collection of wrong things is empty".
         assertFalse(store.getNamedTiles().isEmpty(),
             "the setup names no squares at all, so this walked nothing");
 
@@ -330,15 +258,10 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * The setup's record of the page numbering agrees with the index on disk.
-     *
-     * The setup is keyed by page ID in the file and by page NAME in memory, and `"pages"` is the
-     * translation between them. When that record disagrees with `gleisbild.cs2`, every key resolves to
-     * the wrong page - which is the MT-135 loss, and it is silent.
-     *
-     * A page the record knows and the index does not is normal and is not checked here: that is a page
-     * deleted or not yet loaded, and FR-018 is the mechanism for it. What is checked is the pairs they
-     * both have, which must say the same thing.
+     * The setup's record of the page numbering agrees with the index on disk.  The setup is keyed by page ID in the
+     * file and by page NAME in memory, and `"pages"` translates; when it disagrees with `gleisbild.cs2` every key
+     * resolves to the wrong page, silently (MT-135).  A page the record knows and the index does not is normal
+     * (FR-018); the pairs they both have must say the same thing.
      */
     @Test
     public void testTheSetupAndTheIndexAgreeAboutTheNumbering()
@@ -348,10 +271,8 @@ public class testTheGoldenLayoutHoldsTogether
         assertFalse(index.isEmpty(),
             "the layout index could not be read, so this test is comparing against nothing");
 
-        // Asked of the store's own detection rather than recomputed here. `pageIdConflicts` is
-        // populated at load: it holds every id whose recorded NAME is not the name that id carries
-        // now, which is precisely "the numbering moved under the setup". Recomputing it would be a
-        // second opinion about the same question, and this file has been bitten by second opinions.
+        // Asked of the store's own detection (`pageIdConflicts`, populated at load) rather than recomputed, which would
+        // be a second opinion about the same question.
         Map<String, String> conflicts = store.getPageIdConflicts();
 
         assertTrue(conflicts.isEmpty(),
@@ -361,13 +282,7 @@ public class testTheGoldenLayoutHoldsTogether
             + conflicts);
     }
 
-    /**
-     * No two pages claim one id.
-     *
-     * Silent everywhere: the index would write a duplicate straight back out, the setup's
-     * inversion would let the second page win, and half of one page's settings would resolve to the
-     * other. Asked of the real file because that is where a duplicate would have come from.
-     */
+    /** No two pages claim one id; silent everywhere else, so asked of the real file. */
     @Test
     public void testNoTwoPagesShareAnId()
     {
@@ -385,11 +300,6 @@ public class testTheGoldenLayoutHoldsTogether
         }
 
         // A FLOOR, so an empty walk is not a pass.
-        //
-        // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
-        // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
-        // a file, so "nothing to walk" is a reading failure rather than a clean railway.  The fourth
-        // test in this class already had its floor; these three did not.
         assertFalse(LayoutDiagram.readLayoutIndexIds(GOLDEN.getAbsolutePath()).isEmpty(),
             "the layout index names no pages, so this walked nothing");
 
@@ -397,12 +307,9 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * Every square a configuration says something about is a square the diagram draws.
-     *
-     * The configurations key by page NAME on disk and are never translated, which is the opposite
-     * keying from the shared setup in the same folder - so they survive a rename only because the
-     * application rekeys them in memory first. That dependency is stated nowhere in the file format,
-     * and this is the check that would notice it failing on the real railway.
+     * Every square a configuration says something about is a square the diagram draws.  Configurations key by page NAME
+     * on disk and are never translated, so they survive a rename only because the application rekeys them in memory
+     * first; nothing in the file format states that dependency.
      */
     @Test
     public void testEverySquareAConfigurationNamesIsOnTheDiagram()
@@ -460,11 +367,6 @@ public class testTheGoldenLayoutHoldsTogether
         }
 
         // A FLOOR, so an empty walk is not a pass.
-        //
-        // Each of these tests collects what is wrong and asserts the collection is empty.  A loop that
-        // iterates NOTHING satisfies that perfectly - and every one of the things they walk comes out of
-        // a file, so "nothing to walk" is a reading failure rather than a clean railway.  The fourth
-        // test in this class already had its floor; these three did not.
         assertFalse(store.getConfigurationNames().isEmpty(),
             "the setup holds no configurations at all, so this walked nothing and would pass on a "
             + "file it could not read");
@@ -476,12 +378,9 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * Every page in the layout index is a page that actually loaded.
-     *
-     * `CS2File` skips a page whose file will not parse or is not there and carries on, which is the
-     * right behavior and is why FR-018 exists - but it is also how a page can quietly stop being part
-     * of the railway. On a layout that lives in OneDrive this is a real state, so it is worth saying
-     * out loud when it happens rather than only when something else goes wrong because of it.
+     * Every page in the layout index is a page that actually loaded.  `CS2File` skips a page whose file will not parse
+     * or is not there (FR-018), which is how a page can quietly stop being part of the railway, a real state on
+     * OneDrive.
      */
     @Test
     public void testEveryPageInTheIndexLoaded()
@@ -497,8 +396,7 @@ public class testTheGoldenLayoutHoldsTogether
             if (!loaded.contains(named)) absent.add(named);
         }
 
-        // A FLOOR, so an empty walk is not a pass.  See the sibling tests: each collects
-        // what is wrong and asserts the collection is empty, which an empty loop satisfies perfectly.
+        // A FLOOR, so an empty walk is not a pass.
         assertFalse(pages.isEmpty(), "no page loaded at all, so this walked nothing");
 
         assertTrue(absent.isEmpty(),
@@ -507,11 +405,7 @@ public class testTheGoldenLayoutHoldsTogether
             + absent);
     }
 
-    /**
-     * The page ids the setup was written under, from the index as it stands.
-     *
-     * @return page name to page id, in the string form the store wants
-     */
+    /** The page ids the setup was written under, from the index as it stands, as page name to id. */
     private static Map<String, String> pageIds()
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -526,16 +420,8 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * Every file under a folder, by content.
-     *
-     * By CONTENT rather than by timestamp, because a file rewritten with identical bytes has not lost
-     * anything and flagging it would make this test noise. The hash is SHA-256 because collisions here
-     * would be a silent pass, and this is the one assertion in the class that guards something
-     * irreplaceable.
-     *
-     * @param folder where to look
-     * @return relative path to hash
-     * @throws Exception if a file cannot be read
+     * Every file under a folder, by content rather than timestamp.  SHA-256, because a collision here would be a silent
+     * pass on the one assertion that guards something irreplaceable.
      */
     private static Map<String, String> fingerprint(File folder) throws Exception
     {
@@ -546,17 +432,7 @@ public class testTheGoldenLayoutHoldsTogether
         return out;
     }
 
-    /**
-     * The same bytes without carriage returns.
-     *
-     * Git checks these files out with CRLF and the application writes them with LF, so a file
-     * rewritten with identical content still differs byte for byte. Reporting that would make this
-     * test fail on every run, and a test that always fails is one somebody switches off - which is the
-     * failure this check exists to prevent, arriving from the other side.
-     *
-     * @param raw the file
-     * @return the same, with every 0x0D removed
-     */
+    /** The same bytes without carriage returns: git checks these files out with CRLF and the application writes LF. */
     private static byte[] withoutCarriageReturns(byte[] raw)
     {
         byte[] out = new byte[raw.length];

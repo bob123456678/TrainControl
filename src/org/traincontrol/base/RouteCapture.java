@@ -6,15 +6,10 @@ import java.util.Map;
 /**
  * What a captured route looks like once the same accessory has been thrown twice.
  *
- * Capture is the route editor's most useful trick: the user ticks a box, throws the switches and
- * signals in the order they want them, and watches the route write itself instead of looking up
- * addresses.  Somebody doing that changes their mind - a turnout goes the wrong way, is thrown back,
- * and both throws are now in the route.  This keeps the LAST value for each thing and drops the rest.
- *
- * Lifted out of the old text route editor when that was deleted.  It was written there, it belongs
- * to routes rather than to a window, and two test classes and the edge editor were all reaching into
- * a JFrame for a static.  The new editor did not have it at all, which is why capture there recorded
- * every throw.
+ * Capture is the route editor's trick of writing the route as the user throws the switches and signals.  Somebody who
+ * changes their mind throws a turnout back and has both throws in the route; this keeps the LAST value for each thing
+ * and drops the rest.  It lives here rather than in a window so tests and the edge editor need not reach into a JFrame
+ * for a static.
  */
 public final class RouteCapture
 {
@@ -23,22 +18,11 @@ public final class RouteCapture
     }
 
     /**
-     * The part of a line that says WHAT it sets, as opposed to what it sets it to.
-     *
-     * Always an exact prefix of the line, so that the rebuild below can put the line back together as
-     * key + "," + value.
-     *
-     * An accessory line is "name,setting", so its first field identifies it.  A locomotive line is
-     * "prefix,name,value" - and keying on the first field alone made every locomotive in the route
-     * share the key "locspeed", so filtering kept the last one and silently dropped the rest from the
-     * middle of the text area.  A function line identifies a function as well: a route may set several
-     * on the same locomotive and each is its own setting.
-     *
-     * Deliberately not "everything but the last field": every locomotive line can carry an optional
-     * trailing delay, so the last field is not reliably the value.
-     *
-     * @param line
-     * @return
+     * The part of a line that says WHAT it sets, as an exact prefix of the line so the rebuild can put it back together
+     * as key + "," + value.  An accessory line is "name,setting", so its first field identifies it.  A locomotive line
+     * is "prefix,name,value": keying on the first field alone would give every locomotive the key "locspeed" and drop
+     * all but the last.  A function line identifies a function too, as a route may set several on one locomotive.
+     * Deliberately not "everything but the last field": every locomotive line can carry an optional trailing delay.
      */
     private static String dedupKeyOf(String line)
     {
@@ -67,12 +51,10 @@ public final class RouteCapture
 
             String value = line.length() > key.length() ? line.substring(key.length() + 1) : "";
 
-            // Rewriting an accessory moves it to the end, so the lines that survive are in the
-            // order they were last written.  Keeping the latest value at the earliest position
-            // answered the same question two different ways, and it inverted captured three-way
-            // pairs: reaching "right" means clicking through "left", and the four lines that
-            // captured collapsed to turn-before-straight - the one order a three-way must never
-            // be given.
+            // Rewriting an accessory moves it to the end, so the surviving lines are in the order they were last
+            // written; keeping the latest value at the earliest position inverted captured three-way pairs (reaching
+            // "right" clicks through "left"), collapsing them to turn-before-straight, the one order a three-way must
+            // never be given.
             map.remove(key);
             map.put(key, value);
         }
@@ -93,11 +75,7 @@ public final class RouteCapture
         return filteredCommands.toString().trim();
     }
 
-    /**
-     * How many leading comma-separated fields identify what the given line sets.
-     * @param line
-     * @return
-     */
+    /** How many leading comma-separated fields identify what the given line sets. */
     private static int identifyingFieldsOf(String line)
     {
         int comma = line.indexOf(',');

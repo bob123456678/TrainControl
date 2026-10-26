@@ -18,30 +18,28 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train reversed on the throttle turns round in autonomy, from the throttle's call to the setup's facing (MT-488).
  *
- * Adam, 2026-09-24, running TrainControl in simulation: *"reversing it on the throttle has no effect on autonomy.  when no
+ * Adam, running TrainControl in simulation: *"reversing it on the throttle has no effect on autonomy.  when no
  * autonomy or manual path is running, have the throttle change its autonomy direction."*  The window follows a turn
- * from the direction MESSAGE (`followDirectionChanges`), which a Central Station sends back for every command - and a
- * simulation sends back nothing unless it echoes packets, which it did not.  So the railway was right and the
- * simulation was mute; Adam, asked: *"You don't need to add that workaround - we can just require the test to echo
- * packets."*
+ * from the direction MESSAGE (`followDirectionChanges`), which a Central Station sends back for every command, and a
+ * simulation sends back nothing unless it echoes packets.  Adam: *"You don't need to add that workaround - we can just
+ * require the test to echo packets."*
  *
- * What was never claimed is the whole path: `core.testATrainIsPutOnlyWhereItCanStart` calls `flipFacing` itself.  This
- * reverses the train as the throttle does, with packets echoed as a station would, and asks the setup.
+ * `core.testATrainIsPutOnlyWhereItCanStart` calls `flipFacing` itself; this reverses the train as the throttle does,
+ * with packets echoed as a station would, and asks the setup.  On the frozen `live-snapshot`, at BottomMainA, with this
+ * class's own train standing there facing east.
  *
- * On the frozen `live-snapshot`, at BottomMainA, with this class's own train standing there facing east.
+ * A reversal made while a route runs with autonomy idle is not written then (no setup edit during a run) and is
+ * followed once the route has finished, through the same `followTheTurn`; two reversals during the route leave the
+ * facing as it was (Adam: *"it should reverse, but be careful to avoid duplication in code mechanisms on how this is
+ * done"*).
  *
- * A reversal made while a route runs with autonomy idle is not written then (no setup edit during a run), and is followed
- * once the route has finished, through the same `followTheTurn`; two reversals during the route leave the facing as it was,
- * which is what the last direction says (Adam, on finding C8: *"it should reverse, but be careful to avoid duplication in
- * code mechanisms on how this is done"*).
+ * A followed turn turns the train's icon on the diagram too, to the facing the caption's arrow shows (MT-759; Adam:
+ * "make sure the icon matches the label").  While autonomy or Return Home runs, a direction command from the throttle
+ * or the Central Station changes neither, then or after.
  *
- * A followed turn turns the train's icon on the diagram too, to the facing the caption's arrow shows (MT-759; Adam: "make
- * sure the icon matches the label").  While autonomy or Return Home runs, a direction command from the throttle or the
- * Central Station changes neither, then or after.
- *
- * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the `routeFinished`
- * call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.  Take the
- * `refreshUI` out of `AutonomySession.moveOntoFacingCopy`, and the icon is left facing east in three.
+ * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the
+ * `routeFinished` call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.
+ * Take the `refreshUI` out of `AutonomySession.moveOntoFacingCopy`, and the icon is left facing east in three.
  *
  * @author Adam
  */
@@ -133,8 +131,6 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
     /**
      * Reversed as the throttle reverses it, and the setup follows.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheThrottleTurnsTheTrainRoundInAutonomy() throws Exception
@@ -171,8 +167,6 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     /**
      * Reversed while a route runs, the train is not turned in the setup then, and is once the route has finished.  The route
      * is marked running as `execRoute` marks it, and ended as its `finally` ends it.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAReversalDuringARouteIsFollowedWhenItEnds() throws Exception
@@ -214,8 +208,6 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     /**
      * Two reversals while the route runs leave the setup as it was: it ends facing the way the last direction says, not
      * turned twice and not once.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTwoReversalsDuringARouteLeaveTheFacingAsTheLastOneSays() throws Exception
@@ -256,8 +248,6 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     /**
      * A route's own locomotive direction command is followed, with the route running on for a second after it: the whole
      * path, from `MarklinRoute` to the setup.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARoutesOwnDirectionCommandIsFollowedWhenItEnds() throws Exception
@@ -313,8 +303,6 @@ public class testAThrottleReversalIsFollowedFromItsEcho
      * "while autonomy is running, make sure manual/central station direction commands don't alter the config, since at
      * that point it would be the user correcting an invalid facing").  A hand send runs the railway as autonomy does
      * (`Layout.isRunning`), so this is its guard too.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testADirectionCommandWhileAutonomyRunsChangesNothing() throws Exception
@@ -329,8 +317,6 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
     /**
      * And while Return Home stages the trains, the same.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testADirectionCommandWhileReturnHomeRunsChangesNothing() throws Exception

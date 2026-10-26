@@ -11,17 +11,13 @@ import org.traincontrol.util.I18n;
 /**
  * The three marks at the end of a command row do exactly what they say.
  *
- * MT-029, Adam: "Delete removes exactly one row; the arrows move a row and leave it moved; duplicate
- * makes one copy." He could not sit and count rows for every combination, and asked for it
- * programmatically: "seems to work in the UI, but this should have a programmatic test."
+ * MT-029, Adam: "Delete removes exactly one row; the arrows move a row and leave it moved; duplicate makes one copy."
+ * He asked for it programmatically: "seems to work in the UI, but this should have a programmatic test."  Exactly one
+ * is the whole point: a route is a sequence of commands sent to real hardware, and a doubled command is a second throw
+ * of the same accessory.
  *
- * **Exactly one** is the whole point of the entry. A delete that takes two rows, or a duplicate that
- * makes two copies, is not a cosmetic fault in a route editor - a route is a sequence of commands sent
- * to real hardware, and a doubled command is a second throw of the same accessory.
- *
- * The marks are values the table PAINTS rather than buttons in a cell, so there is nothing to click;
- * this drives the same private methods the cell editor calls, which keeps it from becoming a second
- * implementation of move and delete that could agree with itself while the real one is wrong.
+ * The marks are values the table PAINTS rather than buttons in a cell, so this drives the same private methods the cell
+ * editor calls, which keeps it from becoming a second implementation of move and delete.
  *
  * @author Adam
  */
@@ -116,13 +112,11 @@ public class testCommandTableMarks
     }
 
     /**
-     * An emergency stop stands alone: the editor will not save a route that has one among other commands, and says how to
-     * split it - Adam, 2026-09-25: *"if a route has emergency stop, it cannot have any other types of commands.  Reject
-     * it from being created or imported as such."*
+     * An emergency stop stands alone: the editor will not save a route that has one among other commands, and says how
+     * to split it - Adam: "if a route has emergency stop, it cannot have any other types of commands.  Reject it from
+     * being created or imported as such."
      *
      * MUTATION: drop the rule from the editor's Save, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEmergencyStopStandsAlone() throws Exception

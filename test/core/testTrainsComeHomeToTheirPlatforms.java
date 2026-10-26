@@ -22,49 +22,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Five trains go out from ordinary platforms, come back, and face the way they set off.
  *
- * Adam asked first for an arrangement on the parking berths, and then, having watched what that made
- * the planner do, for this one instead: **"we should have trains on regular stations that need to go
- * home, not parked trains that need to go park somewhere else."**
+ * Adam: "we should have trains on regular stations that need to go home, not parked trains that need to go park
+ * somewhere else."  These stand on plain through platforms (no parking flag, no compulsory reversal), each is homed
+ * where it starts, the railway runs itself for a while, and then everybody is sent home.
  *
- * The berth version asked a question nobody wanted answered.  On his railway a train in ParkingTrack6
- * homed at TunnelLeftPark has to climb from one page to the other, run past BottomMainA, reverse, and
- * only then park - three hops of shunting, and a hard planning problem that says nothing about whether
- * Return Home works.  Measured while deciding to move: from ParkingTrack6 the right-click menu offers
- * twenty-five clear paths to thirteen destinations and TunnelLeftPark is not one of them.  So the
- * failure there was pathing rather than anything switched off, and it was the wrong thing to be
- * testing.
+ * Facing is the Point, not the square: a square entered from two directions is one Point per arrival side, and which
+ * copy a train stands on IS its facing, so "the same direction" is asserted as the same Point.
  *
- * These five stand on plain through platforms - no parking flag, no compulsory reversal, nothing out of
- * service - which is where trains on this railway actually are.  Each is homed where it starts, the
- * railway runs itself for a while, and then everybody is sent home.
+ * It is registered in build.xml and was written red until Return Home staged this arrangement: a test for something
+ * that does not work belongs in the battery being red, not in an exclusion table being quiet.
  *
- * **Facing is the Point, not the square.** A square that trains can enter from two directions is
- * emitted as one Point per arrival side, and which copy a train stands on IS which way it is facing -
- * the model has no separate direction. So "facing the same direction as when they started" is asserted
- * as the same Point, and on a split platform that is strictly stronger than being home.
- *
- * **It is registered in build.xml, and it was written RED until Return Home staged this.**  Adam, on
- * being told the outcome was NO_PLAN_FOUND: "ok, so that test should then be red."  It has been green
- * since Return Home learned to stage the arrangement.
- * A test for something that does not work belongs in the battery being red rather
- * than in an exclusion table being quiet.
- *
- * **IT RUNS AGAINST A FROZEN COPY, not against his railway (Adam, 2026-09-01: "let's get the current
- * diagram frozen in the test").**
- *
- * `test/operator_layout` is his diagram as it stood when this was written, checked in.  It used to read
- * `cs2_sample_layout` directly - the live folder - which made the test say something different every
- * time he moved a train or changed a flag, and made a failure impossible to attribute: the code, the
- * fixture and the railway all moved between runs.  A test whose fixture changes underneath it is not
- * measuring the code.
- *
- * It is also the last reason this suite had to open that folder at all, which is worth more than the
- * determinism: `cs2_sample_layout` is his real railway and is not recoverable.
- *
- * To refresh it when the railway changes in a way this test should follow, copy the folder over and say
- * so in the commit - the point is that it moves when somebody decides it should, not on its own.
- * `LayoutSandbox.open(folder)` still copies whatever it is given somewhere temporary and points the
- * layout preference at the copy, so even the frozen fixture is only ever read.
+ * It runs against a frozen copy (`test/operator_layout`, Adam: "let's get the current diagram frozen in the test"), not
+ * the live `cs2_sample_layout`, which is his real railway and would make the test say something different on every run.
+ * To refresh it, copy the folder over and say so in the commit.  `LayoutSandbox.open(folder)` copies whatever it is
+ * given.
  *
  * @author Adam
  */
@@ -76,7 +47,7 @@ public class testTrainsComeHomeToTheirPlatforms
 
     private static Layout layout;
 
-    /** Addresses of its own, high enough not to collide with anything on the real database. */
+    /** Addresses of its own, high enough not to collide with the real database. */
     private static final int FIRST_ADDRESS = 2101;
 
     /** How long autonomy is allowed to rearrange the railway before everyone is sent home. */
@@ -88,19 +59,8 @@ public class testTrainsComeHomeToTheirPlatforms
     private static final Map<String, String> STARTED_AT = new LinkedHashMap<>();
 
     /**
-     * Ordinary through platforms, which is where trains actually stand (Adam, 2026-09-01).
-     *
-     * "We should have trains on regular stations that need to go home, not parked trains that need to
-     * go park somewhere else."
-     *
-     * The arrangement used to put three of the five in parking berths.  That made every journey home a
-     * berth-to-berth shunt - on his railway ParkingTrack6 to TunnelLeftPark is up from one page to
-     * another, past BottomMainA, reverse, and only then park - which is a hard and unrepresentative
-     * question to ask of a planner, and not the one this test is for.
-     *
-     * These five are plain platforms: no `parking`, no `mustReverse`, nothing switched off.  A train
-     * standing on one is somewhere autonomy will move on its own, and its way home is an ordinary
-     * journey rather than a shunt.
+     * Ordinary through platforms, where trains actually stand: no `parking`, no `mustReverse`, nothing switched off, so
+     * the journey home is ordinary and not a berth-to-berth shunt.
      */
     private static final String[] PLATFORMS =
     {
@@ -172,9 +132,7 @@ public class testTrainsComeHomeToTheirPlatforms
         return "PB test loc " + i;
     }
 
-    /**
-     * The arrangement Adam asked for, and everyone back on the square they left, facing as they left.
-     */
+    /** The arrangement Adam asked for, and everyone back on the square they left, facing as they left. */
     @Test
     public void testEveryoneComesBackFacingTheWayTheySetOff() throws Exception
     {
@@ -182,8 +140,8 @@ public class testTrainsComeHomeToTheirPlatforms
 
         assertEquals(STARTED_AT.size(), 5, "not every train was placed, so this proves nothing");
 
-        // A FLOOR ON THE FIXTURE: these have to be ordinary platforms, or the test is quietly back
-        // to asking the berth question.
+        // A FLOOR ON THE FIXTURE: these have to be ordinary platforms, or the test quietly goes back to the berth
+        // question.
         int plain = 0;
 
         List<String> notPlain = new ArrayList<>();
@@ -203,10 +161,8 @@ public class testTrainsComeHomeToTheirPlatforms
             + " - one of these is not an ordinary platform on this setup - a terminus or something switched "
             + "off among them turns this back into the parking-berth question it was moved away from");
 
-        // NO HAND-START.  A berth is not an automatic destination and a train sitting in one will not
-        // be moved by autonomy, so the old arrangement had to be set going by hand.  A train on a
-        // platform is somewhere autonomy picks up on its own, and starting it by hand would be the test
-        // arranging the run rather than watching it.
+        // NO HAND-START: a train on a platform is somewhere autonomy picks up on its own, and starting it by hand would
+        // be the test arranging the run rather than watching it.
 
         // Autonomy runs the railway for a while.
         layout.runLocomotives();
@@ -233,19 +189,10 @@ public class testTrainsComeHomeToTheirPlatforms
 
             if (!plan.isPossible()) System.out.println(reachability());
 
-            // NO BRANCH HERE, and the attempt at one is worth recording.
-            //
-            // The battery caught this failing on an arrangement its premise does not cover, and the
-            // first answer was to ask `canReachAnyDestination` about each train and assert that no
-            // plan exists when one of them was trapped.  Three things were wrong with that, and a
-            // validator found all three: the predicate is the FULL-AUTONOMY one - it requires
-            // `isAutoDestination`, which Return Home explicitly ignores, and twenty of his stations
-            // carry it false - the assertion did not follow, because a trapped train and an impossible
-            // plan are independent facts, and the early return skipped the facing check this whole
-            // class exists for.
-            //
-            // The shape of the mistake is the one worth keeping: a test that absorbs its own failures
-            // reads as green while proving nothing, which is worse than the red it was hiding.
+            // NO BRANCH HERE: an earlier attempt asked `canReachAnyDestination` per train and asserted no plan when one
+            // was trapped.  That predicate is the full-autonomy one (it requires `isAutoDestination`, which Return Home
+            // ignores), a trapped train and an impossible plan are independent facts, and the early return skipped the
+            // facing check.  A test that absorbs its own failures reads as green while proving nothing.
             assertTrue(plan.isPossible(),
                 "no way home from " + arrangement + " (outcome " + plan.getOutcome()
                 + ", blocked " + plan.getBlocked() + ").  Five trains that set off from ordinary "
@@ -254,10 +201,8 @@ public class testTrainsComeHomeToTheirPlatforms
                 + "not decided here: the per-train reachability printed above is what says, and it "
                 + "gives each train's home and whether any route reaches it");
 
-            // KEPT, so that a train which does not arrive can be told apart from one the plan never
-            // undertook to move.  Those are different faults - a plan that is short, and a move that
-            // did not stick - and without the plan in front of you the assertion below cannot say
-            // which it was looking at.
+            // KEPT, to tell a train that does not arrive from one the plan never undertook to move: a short plan and a
+            // move that did not stick.
             for (HomeStaging.Move move : plan.getMoves())
             {
                 planned.add(move.getLocomotive().getName() + " -> " + move.getEnd().getName());
@@ -283,14 +228,9 @@ public class testTrainsComeHomeToTheirPlatforms
 
             String where = now == null ? "nowhere" : now.getName();
 
-            // THE SAME ARRIVAL, which is what "the way it started" means here.
-            //
-            // A square that can be entered from two directions is emitted as one Point per arrival
-            // side, so the copy IS the facing, and coming back on the other one is coming back the
-            // wrong way round.  A square trains may TURN at emits two copies for the same arrival
-            // though - "LowerFront (eastbound)" and "LowerFront (eastbound, reverse)" - and those two
-            // differ in what the train does next, not in which way it came in.  Demanding the exact
-            // copy failed a train standing on its own platform, having arrived exactly as it set off.
+            // THE SAME ARRIVAL is what "the way it started" means.  A square trains may TURN at emits two copies for
+            // one arrival ("LowerFront (eastbound)" and "(eastbound, reverse)") that differ in what the train does
+            // next, not in how it came in; demanding the exact copy failed a train standing on its own platform.
             if (!arrival(e.getValue()).equals(arrival(where)))
             {
                 wrong.add(e.getKey() + " set off from " + e.getValue() + " and is at " + where);
@@ -308,15 +248,8 @@ public class testTrainsComeHomeToTheirPlatforms
     }
 
     /**
-     * A copy's name with the turning twin folded onto the plain one.
-     *
-     * "LowerFront (eastbound, reverse)" and "LowerFront (eastbound)" are one arrival and two things a
-     * train may do next; only the arrival is the facing.  Fold them and a train that came home the way
-     * it left reads as home, while "TopMainR1 (northbound)" and "TopMainR1 (southbound)" stay the two
-     * different answers they are.
-     *
-     * @param point a Point's name, or anything without a bracket, which is returned unchanged
-     * @return the name of the arrival it belongs to
+     * A copy's name with the turning twin folded onto the plain one: "LowerFront (eastbound, reverse)" is the arrival
+     * "LowerFront (eastbound)".
      */
     private static String arrival(String point)
     {
@@ -328,23 +261,16 @@ public class testTrainsComeHomeToTheirPlatforms
     }
 
     /**
-     * Which train cannot be pathed home, and which half of the question it fails.
-     *
-     * NO_PLAN_FOUND with an empty blocked list is the planner declining to claim anything - honest, and
-     * it tells nobody what is missing.  These are the two questions that decide it: is there ANY route
-     * from where the train stands to its home, and is there one that turns it round on the way, which a
-     * train that cannot reverse needs before it may back into a terminus.
-     *
-     * A train that passes the first and fails the second is not a broken graph.  It is a berth with no
-     * reversing point on its approach.
+     * Which train cannot be pathed home, and which half of the question it fails: is there ANY route from where it
+     * stands to its home, and is there one that turns it round, which a train that cannot reverse needs before backing
+     * into a terminus.
      */
     private static String reachability()
     {
         StringBuilder out = new StringBuilder("\nREACHABILITY, per train:\n");
 
-        // THE HOMES THE LAYOUT ACTUALLY HOLDS, which is not the same as the ones the test asked for.
-        // A home can be dropped after it is set - one home per platform, and the square is the unit -
-        // and a locomotive with no home is a free agent the planner may move anywhere and leave there.
+        // THE HOMES THE LAYOUT ACTUALLY HOLDS, not the ones the test asked for: a home can be dropped after it is set,
+        // and a locomotive with no home is a free agent the planner may leave anywhere.
         out.append("  homes the layout holds - the map the planner reads:\n");
 
         for (Map.Entry<Locomotive, Point> e : layout.getHomeStations().entrySet())
@@ -386,8 +312,8 @@ public class testTrainsComeHomeToTheirPlatforms
             boolean anyRoute = false;
             boolean turningRoute = false;
 
-            // Asked over EVERY copy of the home square: which copy carries the home is the builder's
-            // choice, and a train may be able to reach one and not another.
+            // Asked over EVERY copy of the home square: the builder chooses which copy carries the home, and a train
+            // may reach one and not another.
             for (Point candidate : layout.getPoints())
             {
                 if (target == null || !candidate.isSamePlaceAs(target)) continue;
@@ -396,10 +322,9 @@ public class testTrainsComeHomeToTheirPlatforms
                 if (routeExists(at, candidate, true)) turningRoute = true;
             }
 
-            // AND THE QUESTION THE PLANNER ACTUALLY ASKS: is a path home clear RIGHT NOW, with
-            // everybody standing where they are?  getPossiblePaths is occupancy-aware and command-
-            // aware, so this is the difference between "the railway connects these two squares" and
-            // "this train can set off for home on its next move".
+            // AND THE QUESTION THE PLANNER ACTUALLY ASKS: is a path home clear RIGHT NOW, with everybody standing where
+            // they are?  getPossiblePaths is occupancy- and command-aware, unlike "the railway connects these two
+            // squares".
             int offered = 0;
             int clear = 0;
 
@@ -420,12 +345,9 @@ public class testTrainsComeHomeToTheirPlatforms
                 + "pathsHomeNow=%d clearNow=%d%n",
                 anyRoute, turningRoute, loc != null && loc.isReversible(), offered, clear));
 
-            // IS THERE A TWO-MOVE PLAN?  Adam: "you may need to take the bottommainb/c trains around
-            // to bottommaina before reversing via BottomMainPost."  A train with no path home from
-            // where it stands is not stuck if it can reach somewhere that HAS one - which is a plan of
-            // two moves, and exactly what the search is supposed to find.  If this reports staging
-            // squares and the planner still answers NO_PLAN_FOUND, the routes are there and the search
-            // is not finding them.
+            // IS THERE A TWO-MOVE PLAN?  Adam: "you may need to take the bottommainb/c trains around to bottommaina
+            // before reversing via BottomMainPost."  A train with no path home is not stuck if it can reach somewhere
+            // that HAS one.
             if (clear == 0)
             {
                 List<String> staging = new ArrayList<>();
@@ -436,8 +358,8 @@ public class testTrainsComeHomeToTheirPlatforms
 
                     Point midway = first.get(first.size() - 1).getEnd();
 
-                    // Would a second leg from there reach home?  Asked on the graph, since the train
-                    // is not standing there yet and getPossiblePaths only answers about where it is.
+                    // Would a second leg from there reach home?  Asked on the graph, as the train is not standing there
+                    // yet.
                     for (Point candidate : layout.getPoints())
                     {
                         if (target == null || !candidate.isSamePlaceAs(target)) continue;
@@ -456,13 +378,9 @@ public class testTrainsComeHomeToTheirPlatforms
                     staging.isEmpty() ? "" : "  e.g. " + staging.subList(0, Math.min(4, staging.size()))));
             }
 
-            // AND WHETHER THE PLANNER MAY END A MOVE THERE AT ALL.
-            //
-            // A route existing is not the same question.  The search only ever moves a locomotive to a
-            // square in its station list, which is every Point that is a DESTINATION and ACTIVE - so a
-            // home sitting on a copy that is neither can be perfectly reachable and still be somewhere
-            // no move can finish.  That is invisible to the two questions above, and it is exactly the
-            // shape that answers NO_PLAN_FOUND with nobody blocked.
+            // AND WHETHER THE PLANNER MAY END A MOVE THERE AT ALL: the search only moves a locomotive to a square in
+            // its station list (every DESTINATION and ACTIVE Point), so a home on a copy that is neither is reachable
+            // yet nowhere a move can finish, which answers NO_PLAN_FOUND with nobody blocked.
             for (Point candidate : layout.getPoints())
             {
                 if (target == null || !candidate.isSamePlaceAs(target)) continue;
@@ -479,15 +397,9 @@ public class testTrainsComeHomeToTheirPlatforms
     }
 
     /**
-     * Whether a route exists between two Points, optionally insisting it turns the train round.
-     *
-     * The same shape as HomeStaging.connected, written here because that one is private and this is a
-     * diagnostic: blind to occupancy, and keyed on (point, turned) because a square reached with a
-     * reversal behind it and the same square reached without one are two different states.
-     *
-     * A train standing on a reversing point or a terminus was turned by its own arrival, so the search
-     * starts turned there; and a terminus is never expanded THROUGH, because a train may arrive at one
-     * but not drive on past it.
+     * Whether a route exists between two Points, optionally insisting it turns the train round.  The same shape as
+     * HomeStaging.connected (private), blind to occupancy and keyed on (point, turned); a train on a reversing point or
+     * terminus was turned by its own arrival, and a terminus is never expanded THROUGH.
      */
     private static boolean routeExists(Point from, Point to, boolean mustTurn)
     {
@@ -538,15 +450,9 @@ public class testTrainsComeHomeToTheirPlatforms
 
     private static void place() throws Exception
     {
-        // HIS OWN TRAINS COME OFF FIRST.
-        //
-        // The copy is his railway, so it arrives with his locomotives standing on it and their homes
-        // recorded - EN57-947, EN57-203 and the rest. Return Home has to get EVERYBODY home, so
-        // leaving them there means planning for eight trains when this test is about five, and that
-        // is what NO_PLAN_FOUND was: a fixture that asked a far harder question than the one written
-        // at the top of this class.
-        //
-        // Purged rather than merely lifted, so they leave the run list too.
+        // HIS OWN TRAINS COME OFF FIRST: the copy arrives with his locomotives and their homes, and Return Home has to
+        // get EVERYBODY home, so leaving them would plan for eight trains when this test is about five.  Purged, not
+        // lifted, so they leave the run list too.
         int lifted = 0;
 
         for (Point p : new ArrayList<>(layout.getPoints()))
@@ -560,22 +466,9 @@ public class testTrainsComeHomeToTheirPlatforms
 
         System.out.println("LIFTED " + lifted + " of his own trains off the copy");
 
-        // AND THEIR HOMES, which lifting the trains does not touch.
-        //
-        // This is the defect that made the whole class lie for a day.  His configuration records homes
-        // for his own locomotives - EN57-203 at Tunnel, 75 407 DB at LowerFront, and two more - and
-        // those entries survive the purge above, because a home is an assignment rather than a train.
-        //
-        // A square can be the home of only ONE locomotive: `claimHome` refuses a claim on a square
-        // another home already holds, and refuses it SILENTLY, which is right for the application and
-        // merciless here.  So placing a test train on Tunnel or on LowerFront claimed nothing, and two
-        // of the five went into the run with no home at all.
-        //
-        // A locomotive with no home is a free agent - the planner may move it anywhere and is under no
-        // obligation to bring it back - so the plan really did leave one parked in a siding, and
-        // `misplaced` was right not to count it.  Every "the planner abandoned a train" reading of this
-        // test came from here, and so did its flakiness: which of his homes a test train landed on
-        // depended on where the twenty-second run had left everybody.
+        // AND THEIR HOMES, which lifting the trains does not touch: a home is an assignment rather than a train.  A
+        // square can be the home of only ONE locomotive and `claimHome` refuses a second claim SILENTLY, so a test
+        // train placed on one of his homes got no home, and the planner was free to leave it parked in a siding.
         layout.clearHomeLocomotives();
 
         System.out.println("CLEARED his home assignments too - "
@@ -586,15 +479,8 @@ public class testTrainsComeHomeToTheirPlatforms
             PLATFORMS[0], PLATFORMS[1], PLATFORMS[2], PLATFORMS[3], PLATFORMS[4]
         };
 
-        // NO FACING IS ASKED FOR, since the arrangement moved onto ordinary platforms.
-        //
-        // It used to name "east" for BottomMainA, because Adam had said which way that train stood.
-        // Carried over to a different set of platforms it became a demand the railway cannot meet -
-        // Tunnel has no eastbound copy that is a station at all, and the placement door said so.
-        //
-        // Nothing is lost by leaving it open.  What this test asserts is that every train comes back to
-        // the SAME Point it left, and which copy that is gets recorded at placement time; the copy the
-        // train happens to be given is the copy it has to return to either way.
+        // NO FACING IS ASKED FOR: naming one was a demand the railway cannot meet on these platforms, and the test
+        // asserts every train returns to the SAME Point it left, whichever copy placement gave it.
         String[] facing = new String[] {null, null, null, null, null};
 
         for (int i = 0; i < where.length; i++)
@@ -605,9 +491,8 @@ public class testTrainsComeHomeToTheirPlatforms
 
             assertNotNull(loc, "could not create " + name(i));
 
-            // A MIXTURE, deliberately: the first three cannot reverse and the last two can, so the
-            // planner has to bring home both kinds over the same railway.  Which platform gets which
-            // does not matter and is not asserted - what matters is that neither kind is left out.
+            // A MIXTURE, deliberately: the first three cannot reverse and the last two can, so the planner brings home
+            // both kinds.
             loc.setReversible(i >= 3);
 
             loc.setPreferredSpeed(35);
@@ -627,20 +512,13 @@ public class testTrainsComeHomeToTheirPlatforms
     }
 
     /**
-     * The Point for a station, choosing the copy that faces a given way where the square has copies.
-     *
-     * A square trains can enter from two directions is emitted as one Point per arrival side, and the
-     * builder puts the direction in the name - "BottomMainC (westbound)". Where a square has only one
-     * copy the direction is not modeled and the name is bare.
+     * The Point for a station, choosing the copy that faces a given way where the square has copies (the name carries
+     * "(westbound)").
      */
     private static Point pointFor(String station, String facing)
     {
-        // Only the copies a train may actually be SENT to.
-        //
-        // A square trains can enter from two directions is emitted as one Point per arrival side, and
-        // not every copy is a destination - "BottomMainA (westbound) is not a station" is what the
-        // model says about the other kind. Placing is refused there, so the choice has to be made
-        // among the copies that are stations.
+        // Only the copies a train may actually be SENT to: not every copy is a destination, and placing is refused on
+        // the others.
         List<Point> stations = new ArrayList<>();
         List<String> all = new ArrayList<>();
 
@@ -659,9 +537,8 @@ public class testTrainsComeHomeToTheirPlatforms
 
         if (facing == null)
         {
-            // THE SAME PREFERENCE THE FLOOR APPLIES.  Asking for "an ordinary platform" and then
-            // standing the train on whichever copy came first put a locomotive on
-            // "LowerFront (eastbound, reverse)" - a terminus - in a test written to keep termini out.
+            // THE SAME PREFERENCE THE FLOOR APPLIES: the first copy found put a locomotive on the terminus "LowerFront
+            // (eastbound, reverse)".
             Point ordinary = ordinaryCopy(station);
 
             return ordinary != null ? ordinary : stations.get(0);
@@ -672,8 +549,7 @@ public class testTrainsComeHomeToTheirPlatforms
             if (p.getName().toLowerCase().contains(facing)) return p;
         }
 
-        // FAILED, not skipped.  A skip here would hide the one thing this arrangement was chosen to
-        // exercise, and read as green while asking nothing.
+        // FAILED, not skipped: a skip would hide the one thing this arrangement exercises and read as green.
         fail(station + " has no copy facing " + facing + " that a train can be placed on. Copies "
             + "found: " + all);
 
@@ -681,21 +557,9 @@ public class testTrainsComeHomeToTheirPlatforms
     }
 
     /**
-     * The copy of a square a train may be sent to and does not have to reverse at.
-     *
-     * ORDINARY IS PREFERRED, not merely accepted.  One square can emit several destination copies -
-     * LowerFront emits "(eastbound)" and "(eastbound, reverse)" both - and taking the first one found
-     * hands back whichever the builder happened to emit first.  When that was the reversing copy, the
-     * floor refused a platform that is perfectly ordinary and the placement stood a train on a
-     * terminus, in a test whose whole point is that these are ordinary platforms.
-     *
-     * THE SQUARE, not anything whose name begins with it: a split platform is emitted as
-     * "Name (facing)", so a copy is the exact name or the name and a bracket. `startsWith` alone
-     * matched TunnelCenterPark for "Tunnel", which is a parking terminus.
-     *
-     * @param station the square's authored name
-     * @return its ordinary copy; the first copy trains may be sent to if every copy reverses; null if
-     *         no copy of that name accepts a train at all
+     * The copy of a square a train may be sent to and does not have to reverse at, ORDINARY PREFERRED over the first
+     * found.  The square is the exact name or the name and a bracket: `startsWith` alone matched TunnelCenterPark for
+     * "Tunnel".  Returns the first copy trains may be sent to if every copy reverses, null if none accepts a train.
      */
     private static Point ordinaryCopy(String station)
     {
@@ -717,9 +581,7 @@ public class testTrainsComeHomeToTheirPlatforms
     }
 
 
-    /**
-     * Waits for every driving thread to finish, so the arrangement being asserted is a settled one.
-     */
+    /** Waits for every driving thread to finish, so the arrangement being asserted is a settled one. */
     private static void awaitStopped() throws Exception
     {
         long until = System.currentTimeMillis() + SETTLE_TIMEOUT_MS;
@@ -735,9 +597,7 @@ public class testTrainsComeHomeToTheirPlatforms
             + "asked to stop, so nothing below could be trusted");
     }
 
-    /**
-     * Where everybody is, for a failure message somebody can act on.
-     */
+    /** Where everybody is, for a failure message somebody can act on. */
     private static String describe()
     {
         StringBuilder out = new StringBuilder();

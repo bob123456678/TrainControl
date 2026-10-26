@@ -10,25 +10,16 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 
 /**
- * Moving a tile on the diagram takes its whole setup with it.
+ * Moving a tile on the diagram takes its whole setup with it. Everything the setup holds is keyed by SQUARE, so a tile
+ * that moves would leave the lot behind on coordinates that now hold no track, and the next reconcile would find a
+ * station on a square with no sensor and drop it for good.
  *
- * Adam nudged an S88 tile and lost the station on it - the designation, the name, the facing, the
- * arrival restrictions, the length, all of it.  Everything the setup holds is keyed by SQUARE, so a
- * tile that moves leaves the lot behind on coordinates that now hold no track; the next reconcile
- * then finds a station on a square with no sensor and drops it for good.
- *
- * The caption alone used to follow, which was worse than nothing following: the NAME moved and the
- * station under it did not, so the diagram looked right and the setup was in pieces.
- *
- * These tests are on the store rather than on the editor, because that is where a key is a key.  The
- * awkward case is the group drag, where every source square lands on another source square - the
- * reason the whole set moves in one call rather than one tile at a time.
+ * These tests are on the store rather than on the editor, where a key is a key. The awkward case is the group drag,
+ * where every source square lands on another source square, which is why the whole set moves in one call.
  */
 public class testAutonomyTileMove
 {
-    /**
-     * A station, with everything hung off it, arrives at the new square intact.
-     */
+    /** A station, with everything hung off it, arrives at the new square intact. */
     @Test
     public void testEverythingAboutASquareTravelsWithIt()
     {
@@ -56,11 +47,9 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A caption on a square that did NOT move still names the station that did.
-     *
-     * The difference between a square that moves and a square that is merely named by something else.
-     * Move the second sort and the caption ends up on track nobody labeled; leave the reference
-     * pointing at the old square and it names a station that is not there any more.
+     * A caption on a square that did NOT move still names the station that did: move the second sort and the caption
+     * ends up on track nobody labeled; leave the reference at the old square and it names a station that is not there
+     * any more.
      */
     @Test
     public void testAReferenceToAMovedSquareIsRepointed()
@@ -81,11 +70,8 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A group dragged one square right does not eat itself.
-     *
-     * Every source square lands on another source square, so moving them one at a time reads a store
-     * that the previous move has already written.  Dragging LEFT happened to work, which is what made
-     * the same bug in the captions look intermittent rather than wrong.
+     * A group dragged one square right does not eat itself: every source square lands on another source square, so
+     * moving them one at a time reads a store the previous move has already written. (Dragging LEFT happened to work.)
      */
     @Test
     public void testAGroupThatOverlapsItselfArrivesWhole()
@@ -120,10 +106,8 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A tile moved onto a square that is standing still replaces what was there.
-     *
-     * Which is what the diagram does: the track is overwritten, so the setup describing it has to go
-     * too, or the new tile inherits a station it never was.
+     * A tile moved onto a square that is standing still replaces what was there: the diagram overwrites the track, so
+     * the setup describing it goes too, or the new tile inherits a station it never was.
      */
     @Test
     public void testArrivingOnASettledSquareReplacesIt()
@@ -143,9 +127,7 @@ public class testAutonomyTileMove
             + "it never was");
     }
 
-    /**
-     * Barred arrivals travel too, being one of the things that made the loss expensive.
-     */
+    /** Barred arrivals travel too, being one of the things that made the loss expensive. */
     @Test
     public void testArrivalRestrictionsTravel()
     {
@@ -170,12 +152,8 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A page can be put back as it was, which is what the editor's undo rests on.
-     *
-     * The snapshot used to cover the CAPTIONS of a page and nothing else - enough while a caption was
-     * the only thing the editor moved, and not enough the moment a tile started carrying its whole
-     * setup with it.  Undo then put the track back and left the station wherever the move had taken
-     * it, which is a worse state than either: the diagram says one thing and the setup another.
+     * A page can be put back as it was, which is what the editor's undo rests on: the snapshot must cover everything a
+     * tile carries with it, or undo puts the track back and leaves the station wherever the move took it.
      */
     @Test
     public void testAPageGoesBackAsItWas()
@@ -209,23 +187,14 @@ public class testAutonomyTileMove
     }
 
     /**
-     * Undoing an edit on one page puts back the far end of a pairing it broke.
+     * Undoing an edit on one page puts back the far end of a pairing it broke (B5). A portal's two halves are stored
+     * symmetrically and are normally on DIFFERENT pages, as are protecting signals and blocked points; `move` and
+     * `forget` reach both halves, so the snapshot must record entries that MENTION the page being restored, not only
+     * the key's square. Otherwise undo brings the track back while the other page still points at the square it just
+     * emptied, `reconcile` cannot see it (both squares exist), and unpairing from that side is a no-op.
      *
-     * B5. A portal\u2019s two halves are stored symmetrically and are normally on DIFFERENT pages;
-     * protecting signals and blocked points cross pages the same way. `move` and `forget` have always
-     * reached both halves - the base class says so in as many words - but the snapshot filtered on the
-     * key\u2019s square alone, so an edit that broke the far page\u2019s half had no record of it to
-     * put back.
-     *
-     * What that costs: delete one end of a page link, press undo, and the track comes back while the
-     * other page still points at the square the undo just emptied. `reconcile` cannot see it - both
-     * squares exist - so it survives every save, the far page\u2019s menu shows the link as unpaired,
-     * and unpairing from that side is a no-op.
-     *
-     * The sibling test above - testRestoringOnePageDoesNotTouchAnother - is the boundary this must not
-     * cross, and it does not: point NAMES have no square on the value side, so nothing about them is
-     * captured by the other page\u2019s snapshot. What is captured is exactly the entries that MENTION
-     * the page being restored.
+     * The sibling test above, testRestoringOnePageDoesNotTouchAnother, is the boundary: point NAMES have no square on
+     * the value side, so nothing about them is captured by the other page's snapshot.
      *
      * MUTATION: filtering the snapshot on the key alone again fails this.
      */
@@ -243,8 +212,8 @@ public class testAutonomyTileMove
 
         Map<String, Object> before = store.snapshotPage("1 - Main");
 
-        // The edit, made from THIS page: unpairing one end removes the far page's half too, which is
-        // the whole point - a pairing is symmetric, so any edit to one end is an edit to both.
+        // The edit, made from THIS page: unpairing one end removes the far page's half too, since a pairing is
+        // symmetric.
         store.unpairPortal(here);
 
         assertNull(store.getPortalPartner(far),
@@ -261,9 +230,7 @@ public class testAutonomyTileMove
             + "cannot see, because both squares exist, so it survives every save from then on");
     }
 
-    /**
-     * And putting one page back leaves the others alone.
-     */
+    /** And putting one page back leaves the others alone. */
     @Test
     public void testRestoringOnePageDoesNotTouchAnother()
     {
@@ -289,12 +256,9 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A station guarded by two signals keeps both when it moves, and both are repointed when THEY move.
-     *
-     * The pairing is square to square at both ends, so a move has to be applied to the keys and to the
-     * values - and now to every entry of a list of values rather than to one.  A signal left pointing
-     * at coordinates that hold no track is dropped by the next reconcile, which is the same silent
-     * loss that moving a station used to cause.
+     * A station guarded by two signals keeps both when it moves, and both are repointed when THEY move: the pairing is
+     * square to square at both ends, so a move applies to the keys and to every entry of a list of values. A signal
+     * left pointing at coordinates that hold no track is dropped by the next reconcile.
      */
     @Test
     public void testEverySignalGuardingAStationTravelsWithIt()
@@ -329,9 +293,7 @@ public class testAutonomyTileMove
             + "square the signal left");
     }
 
-    /**
-     * A page put back brings back every signal on it, not the first one.
-     */
+    /** A page put back brings back every signal on it, not the first one. */
     @Test
     public void testRestoringAPageBringsBackEverySignal()
     {
@@ -356,11 +318,8 @@ public class testAutonomyTileMove
     }
 
     /**
-     * The one-signal calls still mean what they always did.
-     *
-     * Everything outside this feature - promoting a square, demoting it, the tests written when a
-     * station had one signal - goes through the singular pair, and it has to keep replacing rather
-     * than appending.
+     * The one-signal calls still mean what they always did: everything outside this feature goes through the singular
+     * pair, and it has to keep replacing rather than appending.
      */
     @Test
     public void testTheSingularCallStillReplacesAndClears()
@@ -386,9 +345,7 @@ public class testAutonomyTileMove
         assertNull(store.getProtectingSignal(station));
     }
 
-    /**
-     * One signal cannot be paired to the same station twice.
-     */
+    /** One signal cannot be paired to the same station twice. */
     @Test
     public void testASignalIsNotPairedTwice()
     {
@@ -404,12 +361,9 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A facing travels with the tile it is about.
-     *
-     * A direction is keyed by the square AND the route across it - "page:x,y#state,index" - and the
-     * mover matched whole keys, so it never matched one of these.  Every facing stayed on the square
-     * the track had walked away from and was dropped by the next reconcile, which is exactly the loss
-     * moving the setup was written to prevent.
+     * A facing travels with the tile it is about. A direction is keyed by the square AND the route across it
+     * ("page:x,y#state,index"), and the mover matched whole keys, so every facing stayed on the square the track had
+     * walked away from and was dropped by the next reconcile.
      */
     @Test
     public void testAFacingTravelsWithTheTile()
@@ -435,12 +389,9 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A tile dragged onto a square takes that square's setup away, as the diagram takes its track.
-     *
-     * The mover only overwrote a landing square when the source had something to overwrite it with.
-     * So plain track dragged over a station left the station - its name, its signals, its length -
-     * attached to a square that now holds plain track, and reconcile never tidied it up because the
-     * square still had a tile on it.  Worse than a loss: nothing anywhere looks wrong.
+     * A tile dragged onto a square takes that square's setup away, as the diagram takes its track: plain track dragged
+     * over a station must not leave its name, signals and length attached to a square that reconcile never tidies
+     * because it still has a tile on it.
      */
     @Test
     public void testASquareLandedOnLetsGoOfWhatItKnew()
@@ -455,7 +406,7 @@ public class testAutonomyTileMove
         store.setTileLength(station, 42);
         store.setProtectingSignal(station, new TileKey("1 - Main", 11, 5));
 
-        // the plain square carries nothing at all, which is the case that used to leave the station
+        // The plain square carries nothing at all, the case that left the station behind.
         store.moveTiles(moving(plain, station));
 
         assertFalse(store.isStation(station),
@@ -468,10 +419,8 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A square that is landed on AND moving away keeps what it is taking with it.
-     *
-     * The case a group drag is made of: every source square lands on another source square.  Letting
-     * go of a landing square must not throw away a setup that is on its way somewhere.
+     * A square that is landed on AND moving away keeps what it is taking with it: letting go of a landing square must
+     * not throw away a setup on its way somewhere (the case a group drag is made of).
      */
     @Test
     public void testASquareThatIsBothLandedOnAndMovingIsNotForgotten()
@@ -509,28 +458,15 @@ public class testAutonomyTileMove
     }
 
     /**
-     * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too.
+     * A snapshot is a COPY, so an edit that changes something in place cannot change the snapshot too. `snapshotPage`
+     * copies each map entry by entry and shares the VALUES, which is right for strings and numbers; two collections
+     * hold something mutable: `stationSignals` maps a station to a LIST that `forgetTiles` empties in place with
+     * `removeAll`, and `configurations` maps a name to a JSONObject that `setPointProperty` writes into directly. Undo
+     * would then restore what it captured, by then the edit, and the failure is quiet: the diagram goes back and the
+     * setup silently does not.
      *
-     * `snapshotPage` copies each map, entry by entry, and shares the
-     * VALUES. For eight of the ten collections that is exactly right - the values are strings and
-     * numbers, which cannot change underneath anybody. Two of them hold something mutable:
-     *
-     *  - `stationSignals` maps a station to a LIST of signals, and `forgetTiles` calls `removeAll` on
-     *    that list in place, so deleting the signal's square empties the snapshot's list as well.
-     *  - `configurations` maps a name to a JSONObject holding the points, and `setPointProperty` does
-     *    `points.getJSONObject(id).put(key, value)` - straight into the object the snapshot is holding.
-     *
-     * Undo then restores what it captured, which by then is the edit. The facings, placements, homes
-     * and maximum lengths are all point properties, so this is most of what a station carries - and the
-     * snapshot's own comment says why they are in it at all: "A snapshot without them restores half a
-     * station."
-     *
-     * The failure is quiet in the worst way. Undo appears to work, the diagram goes back, and the
-     * setup that was supposed to come back with it silently does not.
-     *
-     * Restore copies too, for the same reason in the other direction: an undo that hands the store the
-     * snapshot's own lists leaves the two sharing again, and the next edit corrupts a snapshot that is
-     * still being held for a second undo.
+     * Restore copies too, in the other direction: an undo that hands the store the snapshot's own lists leaves the two
+     * sharing again, and the next edit corrupts a snapshot still held for a second undo.
      */
     @Test
     public void testASnapshotDoesNotShareWhatTheStoreCanStillChange()
@@ -558,9 +494,7 @@ public class testAutonomyTileMove
             + "and forgetTiles emptied it in place, so what undo restored was the deletion (UR-5)");
     }
 
-    /**
-     * The same for the half of a station's setup that lives in the configuration.
-     */
+    /** The same for the half of a station's setup that lives in the configuration. */
     @Test
     public void testASnapshotDoesNotSharePointProperties() throws Exception
     {

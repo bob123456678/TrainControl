@@ -9,14 +9,13 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.AutonomyOverlayToggle;
 import org.traincontrol.util.I18n;
 
 /**
- * The words say what is there, in all eight languages (Adam, 2026-10-02: "Fix defualt and the start says nothing, plus the
- * other wording issues"): a count agrees with its number, and no message names a button, a key or a step that is not
- * where it is read.
+ * The words say what is there, in all eight languages: a count agrees with its number, and no message names a button, a
+ * key or a step that is not where it is read.
  *
  * @author Adam
  */
@@ -110,15 +109,11 @@ public class testTheWordingSaysWhatIsThere
     }
 
     /**
-     * The Text Labels choice that names the train at each station says Standing Locs, not Parked Locs (MT-657's note).
-     *
-     * Adam, 2026-10-03: *"rename parked Locs to Standing Locs"*.  The caption names whichever train stands at a station
-     * - parked there, or waiting between two runs - and "parked" said only the first.  Every language says standing;
-     * Italian's "in sosta" already did.
+     * The Text Labels choice that names the train at each station says Standing Locs, not Parked Locs (MT-657): the
+     * caption names whichever train stands at a station, parked or waiting between two runs.  Every language says
+     * standing; Italian's "in sosta" already did.
      *
      * MUTATION: put Parked Locs back in English, or the old word in any language, and this fails.
-     *
-     * @throws IOException reading a bundle
      */
     @Test
     public void testTheTrainCaptionSaysStanding() throws IOException
@@ -141,12 +136,10 @@ public class testTheWordingSaysWhatIsThere
 
     /**
      * No message names what is not there: One-Way Run's button, the Edit button the left-out page's label is clicked
-     * instead of, a step of pairing a link that is now an item of its own, a key in the longest train's tooltip where the
-     * diagram's menu shows it, and "defualt".
+     * instead of, a step of pairing a link that is now an item of its own, a key in the longest train's tooltip where
+     * the diagram's menu shows it, and "defualt".
      *
      * MUTATION: put any of them back in any language, and this fails.
-     *
-     * @throws IOException reading a bundle
      */
     @Test
     public void testNoMessageNamesWhatIsNotThere() throws IOException

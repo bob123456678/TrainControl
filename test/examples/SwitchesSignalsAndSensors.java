@@ -26,9 +26,8 @@ public class SwitchesSignalsAndSensors
     public static final String ROUTE = "Example route";
 
     /**
-     * @param station the Central Station to command
-     * @return a line of text for each thing read back
-     * @throws Exception when a command fails
+     * Sets switches and signals, reads sensors and runs a route on the station, and returns a line of text for each
+     * thing read back.
      */
     public static List<String> run(MarklinControlStation station) throws Exception
     {

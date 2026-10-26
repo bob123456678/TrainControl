@@ -32,23 +32,23 @@ import support.Components;
 /**
  * Help > Download Update asks what to do with the new version, fetches it, and says where it put it (FR-125).
  *
- * Adam, 2026-10-12: *"when user clicks on the new version, they see a download, download & update, or cancel button"*,
- * and *"If no jar in current folder, it shouldn't be offered as a menu option."*  A test runs from a folder of classes,
- * so the question offers Download and Cancel.
+ * Adam: "when user clicks on the new version, they see a download, download & update, or cancel button", and "If no jar
+ * in current folder, it shouldn't be offered as a menu option."  A test runs from a folder of classes, so the question
+ * offers Download and Cancel.
  *
  * **Nothing is fetched from the internet.**  The window's update check is turned off before the window is built, and
- * the new version is set where that check would set it, pointing at a server on this computer.  The download goes
- * where the program puts it with no jar to replace, the working directory, under a version no release will have,
- * and is deleted after each claim.  The folder the program then shows is refused by the claim's own security manager,
- * so no file manager opens on the desktop; the folder it asked for is kept.
+ * the new version is set where that check would set it, pointing at a server on this computer.  The download goes where
+ * the program puts it with no jar to replace, the working directory, under a version no release will have, and is
+ * deleted after each claim.  The folder the program then shows is refused by the claim's own security manager, so no
+ * file manager opens on the desktop.
  *
- * Download & Update needs TrainControl running from a jar it can replace, so it is tested in
- * ui.testDownloadAndUpdateFromAJar, which sets `SelfUpdate.runningJarForTests`.
+ * Download & Update needs a jar it can replace, so it is tested in ui.testDownloadAndUpdateFromAJar
+ * (`SelfUpdate.runningJarForTests`).
  *
- * MUTATIONS, each seen red: the download written somewhere other than the target the notice names (the download
- * claim); the error notice dropped from the download's catch (the failure claim); Cancel taken as Download (the
- * cancel claim and the MT-774 claim); the download's `finally` leaving the item grayed (the MT-774 claim, and every
- * claim after it, which starts from an enabled item).
+ * MUTATIONS, each seen red: the download written somewhere other than the target the notice names (the download claim);
+ * the error notice dropped from the download's catch (the failure claim); Cancel taken as Download (the cancel claim
+ * and the MT-774 claim); the download's `finally` leaving the item grayed (the MT-774 claim, and every claim after it,
+ * which starts from an enabled item).
  */
 public class testDownloadUpdateFetchesTheNewVersion
 {
@@ -83,9 +83,15 @@ public class testDownloadUpdateFetchesTheNewVersion
         {
             requests.incrementAndGet();
 
-            if (status != 200)
+            // As GitHub answers a release download (OB-380): 406 unless the request accepts a binary file, so Java's
+            // default Accept header is refused
+            String accept = String.valueOf(exchange.getRequestHeaders().getFirst("Accept"));
+
+            int answer = status == 200 && !accept.contains("application/octet-stream") ? 406 : status;
+
+            if (answer != 200)
             {
-                exchange.sendResponseHeaders(status, -1);
+                exchange.sendResponseHeaders(answer, -1);
                 exchange.close();
 
                 return;
@@ -159,10 +165,54 @@ public class testDownloadUpdateFetchesTheNewVersion
     }
 
     /**
-     * Download fetches the new version to the place the notice names, and asks for that folder to be shown.  The menu
-     * item is back to itself afterwards.
+     * The notice naming where the download went is no wider than about 640 px: the path, one long word, wraps where it
+     * must (it made the notice over 1,200 px wide).
      *
-     * @throws Exception from the window or the server
+     * MUTATION: show the notice as plain text again, and this fails.
+     */
+    @Test
+    public void testTheDownloadedNoticeFitsTheScreen() throws Exception
+    {
+        final AbstractButton item = item();
+
+        final String download = I18n.t("ui.update.download");
+
+        support.PopupShape notice;
+
+        NoFileManager guard = new NoFileManager();
+
+        System.setSecurityManager(guard);
+
+        try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
+            ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+        {
+            SwingUtilities.invokeLater(item::doClick);
+
+            assertTrue(answering.awaitAsked(2, 30000), "the download never said it had finished: " + answering.asked());
+
+            notice = answering.shapes().get(1);
+
+            assertTrue(Components.waitFor(() -> !guard.asked.isEmpty(), 10000), "the download did not show its folder");
+        }
+        finally
+        {
+            System.setSecurityManager(null);
+        }
+
+        assertEquals(notice.sentence, I18n.f("ui.infoDownloadedUpdateReplaceExistingJar", target().getAbsolutePath()),
+            "precondition: this is not the notice of where the download is");
+
+        assertTrue(notice.width <= support.PopupShape.MAX_WIDTH, "the notice is " + notice.width + " px wide: " + notice);
+
+        assertTrue(Components.waitFor(() -> item.isEnabled(), 10000), "Download Update is not itself again");
+    }
+
+    /**
+     * Download fetches the new version to the place the notice names, and asks for that folder to be shown; the menu
+     * item is back to itself afterwards.  The server refuses a download that does not accept a binary file, as GitHub
+     * does (OB-380).
+     *
+     * MUTATION: drop the Accept header from `Util.downloadFile`, and the download fails with 406.
      */
     @Test
     public void testDownloadPutsTheNewVersionWhereTheNoticeSays() throws Exception
@@ -215,11 +265,7 @@ public class testDownloadUpdateFetchesTheNewVersion
             10000), "Download Update is not itself again after the download: \"" + item.getText() + "\"");
     }
 
-    /**
-     * A download the server refuses says so, and leaves no file behind, whole or partial.
-     *
-     * @throws Exception from the window or the server
-     */
+    /** A download the server refuses says so, and leaves no file behind, whole or partial. */
     @Test
     public void testAFailedDownloadSaysSoAndLeavesNothing() throws Exception
     {
@@ -254,11 +300,7 @@ public class testDownloadUpdateFetchesTheNewVersion
             10000), "Download Update is not itself again after a failed download: \"" + item.getText() + "\"");
     }
 
-    /**
-     * Without a jar to replace, the question offers no Download & Update; Cancel fetches nothing.
-     *
-     * @throws Exception from the window
-     */
+    /** Without a jar to replace, the question offers no Download & Update; Cancel fetches nothing. */
     @Test
     public void testCancelFetchesNothingAndThereIsNoUpdateWithoutAJar() throws Exception
     {
@@ -304,8 +346,6 @@ public class testDownloadUpdateFetchesTheNewVersion
      * MT-774, as the user does it: Cancel on the question downloads nothing and changes nothing (no request, no file,
      * no folder shown, the menu item as it was); opened again, Download still downloads, says where, shows the folder,
      * and leaves the menu item usable.
-     *
-     * @throws Exception from the window or the server
      */
     @Test
     public void testCancelChangesNothingAndTheNextDownloadStillWorks() throws Exception

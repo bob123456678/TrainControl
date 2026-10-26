@@ -7,40 +7,27 @@ import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import support.SourceOf;
 
 /**
- * What must NOT survive the editor switching page, now that the window does.
+ * What must NOT survive the editor switching page, now that the window does (OB-005: switching between the autonomy
+ * view and the track diagram editor closed the window and opened a new one, which showed as a flash).
  *
- * OB-005, 2026-08-22: switching between the autonomy view and the track diagram editor closed the
- * window and opened a new one, which showed as a flash. The window stays open now and re-points
- * itself at the new page instead.
+ * That turns a whole class of per-window state into per-PAGE state, and every field was correct before.  The undo
+ * history is the one with teeth: each entry is a snapshot of a page's components with nothing naming the page, so a
+ * leftover entry would be written straight over the new page by a single Ctrl+Z.
  *
- * That turns a whole class of per-window state into per-PAGE state overnight, and the thing about
- * this particular change is that every one of those fields was correct before it. A window that
- * edits one page for its whole life does not need its undo history to say which page it is about.
- *
- * The undo history is the one with teeth. Each entry is a snapshot of a page's components with
- * nothing in it naming the page, so an entry left over from the previous page would be written
- * straight over the new one by a single Ctrl+Z - the user's own undo key silently replacing one
- * page's track with another's.
- *
- * This test does not drive the window. It pins the CONTRACT the switch has to keep, by reading the
- * fields directly: after a switch, nothing that names a square or holds a page's components may still
- * be holding the page that was left. A test that opened a real editor would need a display, a model
- * and a layout folder, and would still be checking these same fields at the end.
+ * This test does not drive the window; it pins the CONTRACT by reading the fields directly: after a switch, nothing
+ * that names a square or holds a page's components may still be holding the page that was left.
  *
  * @author Adam
  */
 public class testEditorSwitchClearsPageState
 {
     /**
-     * The fields arriveAt has to clear, and the reason each one is on the list.
-     *
-     * Kept as data rather than as four assertions so that the FAILURE names the field and says why it
-     * matters, which is the only useful thing a test like this can say to somebody who has just added
-     * a fifth piece of per-page state and not cleared it.
+     * The fields arriveAt has to clear, and the reason each one is on the list.  Kept as data so that the FAILURE names
+     * the field and says why it matters to somebody who has just added per-page state and not cleared it.
      */
     private static final String[][] MUST_BE_CLEARED = {
         {"previousLayoutComponents",
@@ -56,12 +43,9 @@ public class testEditorSwitchClearsPageState
     };
 
     /**
-     * Every piece of per-page state is cleared where the switch says it is.
-     *
-     * Read out of the source rather than by running the editor: what is being pinned is that arriveAt
-     * clears these, and a compiled method cannot be asked what it clears. The alternative - opening a
-     * real editor, switching it, and reading the fields - needs a display and a layout on disk, and
-     * would be pinning the same line of code from further away.
+     * Every piece of per-page state is cleared where the switch says it is.  Read out of the source rather than by
+     * running the editor, because a compiled method cannot be asked what it clears and a real editor needs a display
+     * and a layout on disk.
      */
     @Test
     public void testTheSwitchClearsEverythingThatNamesASquare() throws Exception
@@ -76,37 +60,25 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * And the undo point for the SETUP is re-taken rather than carried or consumed.
-     *
-     * Both of the wrong answers here are silent. Carried over from when the window opened, Cancel on
-     * the new page undoes the setup past work the user was asked about and chose to save on the way
-     * here. Consumed by the track editor's own teardown, Cancel on the new page has nothing to put
-     * back at all.
+     * And the undo point for the SETUP is re-taken rather than carried or consumed.  Both wrong answers are silent:
+     * carried over from when the window opened, Cancel on the new page undoes work the user chose to save on the way
+     * here; consumed by the track editor's teardown, Cancel has nothing to put back.
      */
     @Test
     public void testTheSetupUndoPointIsRetaken() throws Exception
     {
         String source = arriveAtSource();
 
-        // Through takeTheUndoPoint, which takes BOTH halves - the in-memory snapshot Cancel restores
-        // and the on-disk note a restart restores.
-        //
-        // This used to look for the assignment itself.  The two halves were separate statements and
-        // drifted immediately: the disk half was taken in the constructor only, so a switch moved
-        // this one and left that one describing the window's opening - which would have reverted work
-        // the user was asked about and chose to save on the way here, the very fault this test's
-        // javadoc names as the first of its wrong answers.  They are one call now, so asking for the
-        // call asks for both.
+        // Through takeTheUndoPoint, which takes BOTH halves: the in-memory snapshot Cancel restores and the on-disk
+        // note a restart restores.  They were separate statements and drifted, so asking for the call asks for both.
         assertTrue(source.contains("takeTheUndoPoint("),
             "arriveAt does not re-take the setup undo point, so Cancel after a switch is undoing "
             + "against the wrong starting point");
     }
 
     /**
-     * The fields named above are really the fields that exist.
-     *
-     * A rename would otherwise leave the test above passing against a string nothing produces any
-     * more - the failure mode of testing source text, closed here rather than accepted.
+     * The fields named above are really the fields that exist: a rename would otherwise leave the test passing against
+     * a string nothing produces.
      */
     @Test
     public void testTheNamedFieldsExist() throws NoSuchFieldException
@@ -128,9 +100,7 @@ public class testEditorSwitchClearsPageState
             + "and the switch is back to closing and reopening");
     }
 
-    /**
-     * The switch does not dispose the window - which is the whole of OB-005.
-     */
+    /** The switch does not dispose the window, which is the whole of OB-005. */
     @Test
     public void testTheSwitchDoesNotCloseTheWindow() throws Exception
     {
@@ -142,15 +112,9 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * Leaving autonomy mode puts the track palette back.
-     *
-     * OB-017, and the same shape as everything else in this class. Autonomy mode EMPTIES the palette
-     * panel and gives it a different layout; leaving used only to remove the autonomy column, which
-     * was enough for as long as coming back meant a new window - a new window runs the constructor,
-     * and the constructor built the palette.
-     *
-     * Since the editor stopped closing in order to switch, that teardown is reached for the first
-     * time, and it put back nothing: an empty palette under a heading still reading "Autonomy Tools".
+     * Leaving autonomy mode puts the track palette back (OB-017).  Autonomy mode EMPTIES the palette panel and gives it
+     * a different layout, and leaving only removed the autonomy column, enough while coming back meant a new window;
+     * since the editor stopped closing, the teardown left an empty palette under a heading reading "Autonomy Tools".
      */
     @Test
     public void testLeavingAutonomyModeRebuildsThePalette() throws Exception
@@ -163,22 +127,11 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * The viewer's LAYOUT does not depend on the shared edit flag.
-     *
-     * This replaces a test that asserted the wrong thing, and the story is worth keeping.
-     *
-     * OB-016: the viewer was being drawn in edit mode while the editor was open. I fixed it by posting
-     * arriveAt so it would land behind the repaint the teardown queues, wrote a comment saying so, and
-     * wrote a test here pinning the two invokeLater calls.
-     *
-     * This cannot work: repaintLayout submits to a single-thread
-     * ExecutorService and only calls invokeLater from inside THAT, so its EDT task is not queued when
-     * ours is. An extra invokeLater cannot order against a task that does not exist yet. The test
-     * passed, the comment read well, and neither was true.
-     *
-     * So what is pinned now is the thing that actually fixes it: LayoutGrid decides how to lay a grid
-     * out by asking whether THAT grid is in an editor, not by reading a flag that belongs to a diagram
-     * two windows share. That holds whoever wins the race.
+     * The viewer's LAYOUT does not depend on the shared edit flag (OB-016: the viewer was drawn in edit mode while the
+     * editor was open).  An earlier version posted arriveAt with two invokeLater calls to land behind the teardown's
+     * repaint, which cannot work: repaintLayout submits to a single-thread ExecutorService and only calls invokeLater
+     * from inside THAT.  What is pinned is the real fix: LayoutGrid decides how to lay a grid out by asking whether
+     * THAT grid is in an editor, not by reading a flag that belongs to a diagram two windows share.
      */
     @Test
     public void testTheViewerLayoutIsNotDecidedByTheSharedFlag() throws Exception
@@ -190,18 +143,11 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * Everything autonomy mode MOUNTS, it also unmounts.
-     *
-     * Three things swap themselves into the window when autonomy mode starts: the palette becomes the
-     * setup column, the Addresses box becomes the visibility box, and the diagram's scroll pane becomes
-     * a stack with the findings list under it. Each of those is a GroupLayout.replace or a container
-     * swap, and each has to be undone.
-     *
-     * They were found one at a time - the palette as OB-017, the findings list - and the
-     * pattern is the point: this list is what makes the fourth one fail here rather than on the
-     * railway. Every field the mount block assigns must be cleared in the teardown, or coming BACK
-     * skips the mount (the field is still set) and the previous session's controls stay on screen
-     * looking current.
+     * Everything autonomy mode MOUNTS, it also unmounts.  Three things swap themselves into the window (the palette
+     * becomes the setup column, the Addresses box the visibility box, the diagram's scroll pane a stack with the
+     * findings list under it), each by a GroupLayout.replace or a container swap that has to be undone.  Every field
+     * the mount block assigns must be cleared in the teardown, or coming BACK skips the mount and the previous
+     * session's controls stay on screen looking current.
      */
     private static final String[] MUST_BE_UNMOUNTED = {
         "autonomyPanel", "autonomyBanner", "autonomyVisibility", "autonomyFindings",
@@ -227,10 +173,8 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * And the fields named above are the fields the mount block actually assigns.
-     *
-     * A fifth one added to setAutonomyMode and not to the list above would leave the test passing
-     * while the bug it is written for walks straight past it.
+     * And the fields named above are the fields the mount block actually assigns: a fifth one added to setAutonomyMode
+     * and not to the list would walk past.
      */
     @Test
     public void testTheMountedFieldsAreTheOnesListed() throws Exception
@@ -260,20 +204,15 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * One method's body, out of the program's source, with its comments taken out.
-     *
-     * A test that reads source has to read the CODE: a comment explaining that the switch "used to dispose()" contains
-     * the word it was looking for.
+     * One method's body, out of the program's source, with its comments taken out: a comment saying the switch "used to
+     * dispose()" contains the word being looked for.
      */
     private String methodSource(String signature) throws Exception
     {
         return SourceOf.withoutComments(SourceOf.body(signature));
     }
 
-    /**
-     * Not used, but named so the imports above are not mistaken for accidents: the undo history is a
-     * Deque of Lists of components, and that is what makes an entry page-agnostic.
-     */
+    /** Not used, but named so the imports above are not mistaken for accidents. */
     @SuppressWarnings("unused")
     private Deque<List<LayoutDiagramComponent>> shape;
 

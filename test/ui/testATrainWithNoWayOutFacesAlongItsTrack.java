@@ -16,10 +16,10 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TilePorts.Side;
-import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.DiagramMonitorDriver;
-import org.traincontrol.gui.LayoutEditor;
-import org.traincontrol.gui.StationCaption;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -29,30 +29,21 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).
  *
- * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
- * east, even though the only allowed directions are n/s."*
- *
  * The icon of a standing train turns to the facing of the copy it stands on, or to a single copy's only way out
- * (`DiagramMonitorDriver.facingsOf`).  A square no track leads out of is emitted whole with neither, so the icon was
- * given no facing and drawn as its picture is drawn - east - on track that runs north and south.  The caption beside it
- * fell back to the setup's facing and showed south.
- *
- * At TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
+ * (`DiagramMonitorDriver.facingsOf`).  A square no track leads out of is emitted with neither, so the icon was drawn
+ * as its picture is - east - on track that runs north and south, and the caption fell back to the setup's facing.
+ * Run at TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
  * diagram monitor.
  *
- * And on the validator's findings, Adam, 2026-10-14: *"The icon can guess in that case, but it must be
- * N/S or a N/S track, or E/W on E/W, or angled on a curved track."*  The facing for such a square is asked of the setup
- * whenever the captions are, so a facing a door writes reaches the icon without a rebuild; and a recorded facing the track
- * does not run is shown by none of the icon, the caption and the Is Facing menu.
+ * The icon may guess, but it must lie along the track.  The facing for such a square is asked of the setup whenever
+ * the captions are, so a facing a door writes reaches the icon without a rebuild; a recorded facing the track does not
+ * run is shown by none of the icon, the caption and the Is Facing menu.  A train can also be put there (OB-350): the
+ * diagram's Place and Control+V stand it where the editor's Place does, recording the same facing.
  *
- * And a train can be put there (OB-350), Adam: *"the track viewer doesn't allow autonomy locomotive placements
- * on stations that have no way in (option greyed out), but the autonomy editor does.  they should be consistent, and
- * allowed."*  The track diagram's Place and Control+V stand the train where the editor's Place does, recording the same
- * facing.
- *
- * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails; return
- * null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the facings only at
- * a bind and the third does; let the caption read the record as it stands, or the menu add it, and the fourth does.
+ * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails;
+ * return null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the
+ * facings only at a bind and the third does; let the caption read the record as it stands, or the menu add it, and the
+ * fourth does.
  *
  * @author Adam
  */
@@ -135,11 +126,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
     }
 
-    /**
-     * With the setup's facing south, as Adam's is, the locomotive faces south.
-     *
-     * @throws Exception from the window
-     */
+    /** With the setup's facing south, as Adam's is, the locomotive faces south. */
     @Test
     public void testItFacesTheWayTheSetupRecords() throws Exception
     {
@@ -150,11 +137,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             + " even though the only allowed directions are n/s\"");
     }
 
-    /**
-     * With nothing recorded, it still faces a way its track runs.
-     *
-     * @throws Exception from the window
-     */
+    /** With nothing recorded, it still faces a way its track runs. */
     @Test
     public void testWithNothingRecordedItFacesAlongTheTrack() throws Exception
     {
@@ -166,9 +149,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * A facing written after the diagram was bound reaches the icon at the refresh every door ends with, with no rebuild.
-     *
-     * @throws Exception from the window
+     * A facing written after the diagram was bound reaches the icon at the refresh every door ends with, with no
+     * rebuild.
      */
     @Test
     public void testAFacingWrittenLaterReachesTheIcon() throws Exception
@@ -183,7 +165,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             assertEquals(look(Side.S).getFacing(), Side.S, "precondition: the icon does not face the facing recorded");
 
-            // AS A DOOR LEAVES IT: the record written, then the refresh every door ends with - and no rebuild
+            // As a door leaves it: the record written, then the refresh every door ends with - and no rebuild
             session.setFacing(PLATFORM, null);
 
             SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
@@ -198,10 +180,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * A recorded facing the track does not run is shown by none of the three: the icon lies along the track, the caption
-     * has no east arrow, and the Is Facing menu is grayed.
-     *
-     * @throws Exception from the window
+     * A recorded facing the track does not run is shown by none of the three: the icon lies along the track, the
+     * caption has no east arrow, and the Is Facing menu is grayed.
      */
     @Test
     public void testAFacingTheTrackDoesNotRunIsShownNowhere() throws Exception
@@ -279,15 +259,12 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * On a square that does have ways out, where the railway does not hold the setup's train, a recorded facing the track
-     * does not run is ticked in the Is Facing menu no more than the caption shows it, and once the railway is
-     * built from that setup - which cannot stand the train, so the diagram draws it on no Point - its icon lies along the
-     * track.
+     * Where the railway does not hold the setup's train, a recorded facing the track does not run is ticked in the Is
+     * Facing menu no more than the caption shows it, and once the railway is built from that setup (which cannot stand
+     * the train) its icon lies along the track.
      *
-     * MUTATION: let the menu read the record as it stands again (OB-177's tick) and this fails; draw a train on no Point
-     * facing its record as it stands, and this fails at the icon.
-     *
-     * @throws Exception from the window
+     * MUTATION: let the menu read the record as it stands again (OB-177's tick) and this fails; draw a train on no
+     * Point facing its record as it stands, and this fails at the icon.
      */
     @Test
     public void testOffTheTrackTheMenuAndTheCaptionAgreeWhereThereIsAWayOut() throws Exception
@@ -303,7 +280,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             assertFalse(session.getRoutes(tunnel).values().iterator().next().touches(Side.E), "precondition: Tunnel's"
                 + " track runs east");
 
-            // NO TRAIN THERE ON THE RAILWAY, and this class's in the setup, recorded facing east
+            // No train there on the railway, and this class's in the setup, recorded facing east
             Layout running = model.getAutoLayout();
 
             for (String name : session.getStationIndex().pointNamesAt(tunnel))
@@ -316,7 +293,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             session.placeLocomotive(tunnel, OUR_TRAIN);
             session.setFacing(tunnel, Side.E);
 
-            // THE RAILWAY BUILT FROM THAT SETUP, which cannot stand the train: no copy of Tunnel faces east
+            // The railway built from that setup, which cannot stand the train: no copy of Tunnel faces east
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
             settle();
@@ -404,9 +381,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
     }
 
-    /**
-     * The same on every square of the snapshot that offers one facing, for every way its track does not run.
-     */
+    /** The same on every square of the snapshot that offers one facing, for every way its track does not run. */
     @Test
     public void testEverySquareWithOneWayOutGuessesIt()
     {
@@ -453,13 +428,11 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * On a square with one way out, a train the railway cannot stand - its recorded facing off the track - faces that way
-     * out, which the Is Facing menu ticks.
+     * On a square with one way out, a train the railway cannot stand - its recorded facing off the track - faces that
+     * way out, which the Is Facing menu ticks.
      *
-     * MUTATION: guess the track's first way before the facing the square offers, and this fails at TunnelRightPark, whose
-     * one way out is south on track that runs from the north.
-     *
-     * @throws Exception from the window
+     * MUTATION: guess the track's first way before the facing the square offers, and this fails at TunnelRightPark,
+     * whose one way out is south on track that runs from the north.
      */
     @Test
     public void testOffTheTrackWithOneWayOutItFacesThatWay() throws Exception
@@ -567,15 +540,10 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * On TunnelLeftPark with no way out, the track diagram's Place is offered and stands the train where the editor's
-     * Place does, with the same facing recorded (OB-350).
-     *
-     * Adam, OB-350: *"the track viewer doesn't allow autonomy locomotive placements on stations that have no way in
-     * (option greyed out), but the autonomy editor does.  they should be consistent, and allowed."*
+     * On TunnelLeftPark with no way out, the diagram's Place is offered and stands the train where the editor's Place
+     * does, with the same facing recorded (OB-350).
      *
      * MUTATION: gray the diagram's Place where no copy can leave again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsPlaceStandsItWhereTheEditorsDoes() throws Exception
@@ -608,8 +576,6 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
      * And Control+V there stands it where the editor's Place does, with the same facing recorded (OB-350).
      *
      * MUTATION: refuse the paste where no copy can leave again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testThePasteStandsItWhereTheEditorsPlaceDoes() throws Exception
@@ -664,12 +630,10 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * And the track diagram's Place there is saved: read back from disk, the setup stands the train on TunnelLeftPark,
-     * where no copy gives a facing (OB-373).  Unsaved, the train is gone at the next configuration load.
+     * And the diagram's Place there is saved: read back from disk, the setup stands the train on TunnelLeftPark, where
+     * no copy gives a facing (OB-373).
      *
      * MUTATION: save only where a copy gives a facing (put `facing != null &&` back in `placeFacing`), and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramsPlaceThereIsSaved() throws Exception
@@ -680,7 +644,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         {
             closeItOff();
 
-            // ON DISK WITHOUT IT, so that only the click's own save can put it there: the paste's claim saves it there
+            // On disk without it, so only the click's own save can put it there
             session.save();
 
             assertNotEquals(placedOnDisk(), OUR_TRAIN, "precondition: the setup on disk already stands the train on"
@@ -707,12 +671,9 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * And a save that fails there is logged with debug mode off, as the paste and the locomotive dialog log theirs
-     * (OB-373).  A setup file made read-only is the failure.  Read from the station's logger, which every log line
-     * passes: this class's window is not the station's view.
+     * (OB-373).  A read-only setup file is the failure; read from the station's logger, which every log line passes.
      *
      * MUTATION: log the failure in `placeFacing` only in debug mode again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAFailedSaveOfTheDiagramsPlaceIsLogged() throws Exception
@@ -751,7 +712,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             model.debug(false);
 
-            // A FILE THAT CANNOT BE WRITTEN
+            // A file that cannot be written
             assertTrue(setup.setReadOnly(), "precondition: the setup file would not be made read-only");
 
             log.addHandler(tap);
@@ -795,11 +756,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * Closes TunnelLeftPark off, then puts this class's train there by the editor's Place and builds the railway from the
-     * setup, as closing the editor does.
-     *
-     * @return the Point the train stands on, and the facing recorded
-     * @throws Exception from the window
+     * Closes TunnelLeftPark off, puts this class's train there by the editor's Place and builds the railway from the
+     * setup.
      */
     private static Object[] placedByTheEditor() throws Exception
     {
@@ -862,11 +820,9 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * Makes both arrows of 8,7 red, records TunnelLeftPark facing south, takes this class's train off the railway and the
-     * setup, and builds the railway from the setup - so a door that records no facing is told apart from one that leaves
-     * the record standing.
-     *
-     * @throws Exception from the window
+     * Makes both arrows of 8,7 red, records TunnelLeftPark facing south, takes this class's train off the railway and
+     * the setup, and builds the railway from the setup - so a door that records no facing is told apart from one that
+     * leaves the record standing.
      */
     private static void closeItOff() throws Exception
     {
@@ -877,7 +833,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         liftIt();
 
-        // NOTHING STANDING THERE, in the setup or on the railway: the snapshot has a train on it
+        // Nothing standing there, in the setup or on the railway: the snapshot has a train on it
         SwingUtilities.invokeAndWait(() ->
         {
             for (String name : session.getStationIndex().pointNamesAt(PLATFORM))
@@ -909,10 +865,10 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         assertEquals(session.getFacing(PLATFORM), Side.S, "precondition: the setup does not record TunnelLeftPark facing"
             + " south");
 
-        // EVERY QUESTION A PLACEMENT MAY ASK, answered so nothing waits for a person
+        // Every question a placement may ask, answered so nothing waits for a person
         List<Side> sides = session.unbarredArrivalSides(PLATFORM);
 
-        org.traincontrol.gui.ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? "N" : sides.get(0).name());
+        org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? "N" : sides.get(0).name());
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
     }
 
@@ -976,7 +932,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     /** Makes this class's train the active locomotive, as the window makes one. */
     private static void makeItTheActiveTrain() throws Exception
     {
-        // NOT AGAIN: mapping the active train to its button a second time takes it off
+        // Not again: mapping the active train to its button a second time takes it off
         if (ui.getActiveLoc() == null || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(OUR_TRAIN);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
@@ -997,7 +953,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     /** Takes this class's train off the railway, wherever it stands, and puts the questions' dialogs back. */
     private static void liftIt() throws Exception
     {
-        org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+        org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
 
         SwingUtilities.invokeAndWait(() ->
@@ -1071,12 +1027,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * Makes both arrows of 8,7 red, records the facing given on TunnelLeftPark, stands this class's train there and
-     * returns what the diagram shows on the square - the setup put back afterwards.
-     *
-     * @param recorded the facing to record, or null for none
-     * @return the square's overlay, showing the train
-     * @throws Exception from the window
+     * Makes both arrows of 8,7 red, records the facing given, stands this class's train there and returns the overlay.
      */
     private static TileOverlay standItThereAndLook(Side recorded) throws Exception
     {
@@ -1097,12 +1048,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * Makes both arrows of 8,7 red, records the facing given on TunnelLeftPark, stands this class's train there, and binds
-     * the diagram as a rebuild does.
-     *
-     * @param recorded the facing to record, or null for none
-     * @return the copy the train stands on
-     * @throws Exception from the window
+     * The same as `standItThereAndLook`, then binds the diagram as a rebuild does; returns the copy the train stands
+     * on.
      */
     private static Point standItThere(Side recorded) throws Exception
     {
@@ -1112,7 +1059,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             throw new AssertionError("TunnelLeftPark does not run north to south on this snapshot");
         }
 
-        // BOTH ARROWS AT 8,7 RED
+        // Both arrows at 8,7 red
         for (RouteId road : session.getRoutes(BELOW).keySet()) session.setDirection(BELOW, road, Direction.NONE);
 
         session.setFacing(PLATFORM, recorded);
@@ -1156,12 +1103,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * What the diagram shows on TunnelLeftPark, once it shows the train - facing the way given, where one is - or what it
-     * shows after five seconds.
-     *
-     * @param facing the facing to wait for, or null for any
-     * @return the square's overlay, showing the train
-     * @throws Exception from the window
+     * What the diagram shows on TunnelLeftPark once it shows the train (facing the way given, if any), or after five
+     * seconds.
      */
     private static TileOverlay look(Side facing) throws Exception
     {
@@ -1184,13 +1127,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         return seen;
     }
 
-    /**
-     * Takes the train off and puts the setup back as it was found.
-     *
-     * @param asFound the setup as found
-     * @param copy the copy the train stood on, or null
-     * @throws Exception from the window
-     */
+    /** Takes the train off and puts the setup back as it was found. */
     private static void putBack(org.json.JSONObject asFound, Point copy) throws Exception
     {
         if (copy != null) copy.setLocomotive(null);

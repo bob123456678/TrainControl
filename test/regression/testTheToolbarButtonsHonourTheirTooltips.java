@@ -17,43 +17,26 @@ import org.testng.annotations.Test;
 /**
  * The four arrow buttons do what their own tooltips say a Control or Alt click does.
  *
- * **The tooltips have promised this since 2.7.4 and only the keyboard delivered it**.
- * `ui.main.tooltip.switchDir` says *"(+Control to force reverse)"*, `incrSpeed` says *"(+Control to
- * fine-tune, +Alt for 2x increment)"*, and all four listeners took the `ActionEvent` and never looked
- * at it: a Control click reversed a locomotive that was already reversed, and an Alt click on Increase
- * Speed moved one step like any other click.  The behavior existed on `VK_LEFT` and `VK_UP` and
- * nowhere else, so an operator driving with the mouse could not reach it at all.
- *
- * **Driven at the listeners, with events that carry the modifiers.**  That is the seam the fix changes
- * and the one the button uses - `jButton.doClick()` cannot carry a Control mask, and a synthetic
- * `KeyEvent` would go to the key handler, which was never the half that was wrong.  The keyboard's own
- * arms pass `null` here for the plain case, so `null` is tested too.
- *
- * The window is built but not displayed: nothing here looks at a picture, and `display()` takes the
- * machine's keyboard away from whatever Adam is doing.
+ * `ui.main.tooltip.switchDir` says "(+Control to force reverse)" and `incrSpeed` "(+Control to fine-tune, +Alt for 2x
+ * increment)", but the listeners never looked at the `ActionEvent`; only the keyboard delivered it.  Driven at the
+ * listeners with events that carry the modifiers (`doClick()` cannot carry a mask, and a `KeyEvent` would go to the key
+ * handler, which was never the wrong half); the keyboard's own arms pass `null` for the plain case, so `null` is tested
+ * too.  The window is built but not displayed, since `display()` takes the keyboard away from whatever Adam is doing.
  *
  * @author Adam
  */
 public class testTheToolbarButtonsHonourTheirTooltips
 {
-    /**
-     * How long to wait for a locomotive to answer; every door here hands the work to a thread.
-     */
+    /** How long to wait for a locomotive to answer; every door here hands the work to a thread. */
     private static final int PATIENCE = 4000;
 
     /**
-     * How long to let the thread a door starts actually run, before believing what the locomotive says.
-     *
-     * **A value that is already right proves nothing here.**  Every one of these doors hands its work
-     * to a `new Thread`, so a check taken the instant after the press reads the state the PREVIOUS
-     * press left - and the first draft of this class passed the force-reverse test against the toggle
-     * it was written to catch, because the locomotive was still reversed from the press before.
+     * How long to let the thread a door starts run before believing what the locomotive says: a check taken at once
+     * reads the state the previous press left, which is how a force-reverse test could pass against a toggle.
      */
     private static final int SETTLE = 500;
 
-    /**
-     * A window, a model and a locomotive on the throttle.
-     */
+    /** A window, a model and a locomotive on the throttle. */
     private static final class Started
     {
         support.LayoutSandbox sandbox;
@@ -64,9 +47,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
         MarklinLocomotive loc;
 
-        /**
-         * How many direction commands have been sent since it was last zeroed.
-         */
+        /** How many direction commands have been sent since it was last zeroed. */
         final java.util.concurrent.atomic.AtomicInteger directions =
             new java.util.concurrent.atomic.AtomicInteger();
 
@@ -88,13 +69,8 @@ public class testTheToolbarButtonsHonourTheirTooltips
     }
 
     /**
-     * Control on Switch Direction forces a direction instead of toggling one.
-     *
-     * Twice in each direction: a force that has something to do and a force that has nothing to do.
-     * The second is the half a toggle gets wrong, and the half the tooltip is about - *"force"* means
-     * the locomotive ends up backward whether or not it started forward.
-     *
-     * @throws Exception from the event thread
+     * Control on Switch Direction forces a direction instead of toggling one.  Twice in each direction: a force that
+     * has something to do and one that has nothing to do, which is the half a toggle gets wrong.
      */
     @Test
     public void testControlOnADirectionButtonForcesThatDirection() throws Exception
@@ -111,12 +87,8 @@ public class testTheToolbarButtonsHonourTheirTooltips
                 "Control plus the reverse button left the locomotive going forward; the tooltip on that"
                 + " button says it forces reverse");
 
-            // AND AGAIN, with nothing to do.  A toggle would send it forward here.
-            //
-            // WAITED FOR BY THE COMMAND, not by a clock.  This is the press that tells a force
-            // from a toggle, and the state it should leave - still reversed - is the state the press
-            // BEFORE it left.  A `sleep` that ran out before the door's worker did would have seen the
-            // right answer for the wrong reason, which is how the first draft of this class passed.
+            // And again, with nothing to do: a toggle would send it forward here.  Waited for by the command, not by a
+            // clock, because the state it should leave (still reversed) is the one the press before it left.
             up.directions.set(0);
 
             press(up, "LeftArrowLetterButtonPressed", ActionEvent.CTRL_MASK);
@@ -145,11 +117,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         }
     }
 
-    /**
-     * A plain click on either direction button still toggles, as it always has.
-     *
-     * @throws Exception from the event thread
-     */
+    /** A plain click on either direction button still toggles, as it always has. */
     @Test
     public void testAPlainClickOnADirectionButtonStillToggles() throws Exception
     {
@@ -167,7 +135,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
             assertTrue(awaitDirection(up.loc, true), "a plain click no longer toggles the direction back");
 
-            // AND THE KEYBOARD'S OWN CALL, which hands over no event at all.
+            // And the keyboard's own call, which hands over no event at all.
             press(up, "RightArrowLetterButtonPressed", null);
 
             assertTrue(awaitDirection(up.loc, false),
@@ -180,12 +148,8 @@ public class testTheToolbarButtonsHonourTheirTooltips
     }
 
     /**
-     * Alt doubles the step and Control fine-tunes it, on both speed buttons.
-     *
-     * The numbers are the key handler's: `SPEED_STEP * 2` for Alt and `1` for Control, which is what
-     * the tooltip means by *"2x increment"* and *"fine-tune"*.
-     *
-     * @throws Exception from the event thread
+     * Alt doubles the step and Control fine-tunes it, on both speed buttons: `SPEED_STEP * 2` for Alt and `1` for
+     * Control, as the key handler has it.
      */
     @Test
     public void testTheSpeedButtonsReadAltAndControl() throws Exception
@@ -224,11 +188,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         }
     }
 
-    /**
-     * A plain click, and the keyboard's null event, still move one ordinary step.
-     *
-     * @throws Exception from the event thread
-     */
+    /** A plain click, and the keyboard's null event, still move one ordinary step. */
     @Test
     public void testAPlainClickOnASpeedButtonStillMovesOneStep() throws Exception
     {
@@ -252,14 +212,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         }
     }
 
-    /**
-     * Presses one of the four buttons with the given modifier mask, or with no event at all.
-     *
-     * @param ui the window
-     * @param listener which listener to call
-     * @param modifiers the mask the click carries, or null for the keyboard's own plain call
-     * @throws Exception from the event thread
-     */
+    /** Presses one of the four buttons with the given modifier mask, or null for the keyboard's own plain call. */
     private static void press(Started up, String listener, Integer modifiers) throws Exception
     {
         final Method door = TrainControlUI.class.getDeclaredMethod(listener, ActionEvent.class);
@@ -280,12 +233,8 @@ public class testTheToolbarButtonsHonourTheirTooltips
         {
             try
             {
-                // THE THROTTLE IS SET IN THE SAME RUNNABLE AS THE PRESS.
-                //
-                // Start-up puts the locomotive it remembers back on the throttle, on the event thread,
-                // some time after `setViewListener` returns - so a fixture that set this field once at
-                // the start found one of Adam's own locomotives there by the time it pressed anything,
-                // and every press moved nothing this class was watching.
+                // The throttle is set in the same runnable as the press: start-up puts the locomotive it remembers back
+                // on the throttle on the event thread some time after `setViewListener` returns.
                 active.set(ui, loc);
 
                 door.invoke(ui, event);
@@ -297,13 +246,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         });
     }
 
-    /**
-     * Waits until a direction command has actually been sent.
-     *
-     * @param up the fixture
-     * @return whether one arrived
-     * @throws Exception from the sleep
-     */
+    /** Waits until a direction command has actually been sent. */
     private static boolean awaitACommand(Started up) throws Exception
     {
         for (int waited = 0; waited < PATIENCE; waited += 25)
@@ -316,14 +259,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         return false;
     }
 
-    /**
-     * Waits for the locomotive to reach a speed; every one of these doors works on its own thread.
-     *
-     * @param loc the locomotive
-     * @param speed what it should reach
-     * @return whether it got there
-     * @throws Exception from the sleep
-     */
+    /** Waits for the locomotive to reach a speed; every one of these doors works on its own thread. */
     private static boolean awaitSpeed(MarklinLocomotive loc, int speed) throws Exception
     {
         Thread.sleep(SETTLE);
@@ -338,14 +274,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         return false;
     }
 
-    /**
-     * Waits for the locomotive to face a direction.
-     *
-     * @param loc the locomotive
-     * @param forward which way it should be facing
-     * @return whether it got there
-     * @throws Exception from the sleep
-     */
+    /** Waits for the locomotive to face a direction. */
     private static boolean awaitDirection(MarklinLocomotive loc, boolean forward) throws Exception
     {
         Thread.sleep(SETTLE);
@@ -361,13 +290,8 @@ public class testTheToolbarButtonsHonourTheirTooltips
     }
 
     /**
-     * A short tooltip on the Layouts menu is exactly as wide as its text, and a long one still wraps.
-     *
-     * OB-358: the wrapping decision measured the text in device pixels against the body's CSS width, which Swing
-     * draws wider on a high-dpi screen, so a tooltip just over the line was wrapped and drawn wide with its text on
-     * one line.  The reference is the same sentence shown plain: a tooltip that holds it on one line is that size.
-     *
-     * @throws Exception from the event thread
+     * A short tooltip on the Layouts menu is exactly as wide as its text, and a long one still wraps (OB-358).  The
+     * reference is the same sentence shown plain: a tooltip that holds it on one line is that size.
      */
     @Test
     public void testAShortLayoutTooltipIsAsWideAsItsText() throws Exception
@@ -397,11 +321,11 @@ public class testTheToolbarButtonsHonourTheirTooltips
                 + "px wide for a sentence that is " + tooltipSize(sentence).width + "px on one line, so the"
                 + " box has room to spare at its end: " + create.getToolTipText());
 
-            // THE OTHER SIDE: a long one still wraps, so it is taller than one line.
+            // The other side: a long one still wraps, so it is taller than one line.
             String long1 = "Creates a blank track diagram that you can edit visually, with every track, signal and"
                 + " switch placed where you put it and nothing else.";
 
-            String wrapped = org.traincontrol.gui.AutonomyEditorPanel.wrappedIfLong(long1);
+            String wrapped = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.wrappedIfLong(long1);
 
             assertTrue(tooltipSize(wrapped).height > tooltipSize(long1).height,
                 "a long tooltip did not wrap at all, so it runs off the edge of the display: " + wrapped);
@@ -412,12 +336,7 @@ public class testTheToolbarButtonsHonourTheirTooltips
         }
     }
 
-    /**
-     * The size Swing lays a tooltip with this text out at.
-     *
-     * @param text the tooltip, plain or HTML
-     * @return its preferred size
-     */
+    /** The size Swing lays a tooltip with this text out at. */
     private static java.awt.Dimension tooltipSize(String text)
     {
         javax.swing.JToolTip tip = new javax.swing.JToolTip();
@@ -428,13 +347,8 @@ public class testTheToolbarButtonsHonourTheirTooltips
     }
 
     /**
-     * Sandbox, model, window, and a locomotive on the throttle.
-     *
-     * The locomotive is built rather than borrowed: the model's database is Adam's own, and the speed
-     * and direction of one of his locomotives are not this class's to move about.
-     *
-     * @return the started application
-     * @throws Exception from start-up
+     * Sandbox, model, window, and a locomotive on the throttle.  The locomotive is built rather than borrowed: the
+     * model's database is Adam's own.
      */
     private static Started start() throws Exception
     {

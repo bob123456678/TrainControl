@@ -12,35 +12,18 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * One switch decides whether autonomy chooses a station, and turning round is not it (OB-195).
+ * One switch decides whether autonomy chooses a station, and turning round is not it (OB-195). Adam: *"autonomy should
+ * only allow a turn at a point if the 'allow in autonomy' option is checked, otherwise the train may only pass through
+ * in its current direction."*
  *
- * **Adam's ruling of 2026-09-09**, on being told that the editor's notice claimed autonomy would never
- * choose a compulsory turn while the runtime would choose one quite happily:
+ * The two markings are independent: **Changing Direction - Never / May / Must** says what happens when a train ARRIVES,
+ * **Can Be Chosen in Full Autonomy** says who may send one there. `AutonomySession.stationsAutonomyWillNotChoose` added
+ * a clause of its own, `isMustTurnAround`, claiming to be the runtime's rule; it is not, since a compulsory turn is
+ * built as a TERMINUS (`isReversing()` false), which `Layout.isSendableDestination` accepts. So the editor promised
+ * something the railway did not do.
  *
- * > *"narrow the notice to match the runtime - autonomy should only allow a turn at a point if the
- * > 'allow in autonomy' option is checked, otherwise the train may only pass through in its current
- * > direction."*
- *
- * The option he names is **Can Be Chosen in Full Autonomy**, the one switch on a station's menu that
- * says whether autonomy may pick it.  So the two markings are independent and each says its own thing:
- *
- *   - **Changing Direction - Never / May / Must** says what happens when a train ARRIVES.
- *   - **Can Be Chosen in Full Autonomy** says who may send one there.
- *
- * A compulsory turn with the switch on is a station autonomy chooses, and the train turns round when
- * it gets there.  With the switch off, autonomy leaves it alone - and a train only ever passes through
- * in the direction it came in, because the turning copy is not somewhere it can be sent.
- *
- * **Where it went wrong.**  `AutonomySession.stationsAutonomyWillNotChoose` added a clause of its own,
- * `isMustTurnAround`, and a comment saying it was the runtime's rule.  It is not: a compulsory turn is
- * built as a TERMINUS, whose `isReversing()` is false, so `Layout.isSendableDestination` accepts it.
- * The editor therefore promised something the railway did not do, on the strength of a comment nobody
- * had checked.
- *
- * **It cost nothing on Adam's own railway**, which is why it survived: every compulsory turn he has is
- * also marked manual-only, so the first clause caught them all and the two spellings could not
- * disagree.  This class asserts on `single-switch`, where they can - its three stub ends are
- * compulsory turns and none of them is marked manual-only.
+ * It cost nothing on Adam's own railway, where every compulsory turn is also marked manual-only; this class asserts on
+ * `single-switch`, where its three stub ends are compulsory turns and none is manual-only.
  *
  * @author Adam
  */
@@ -49,8 +32,7 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     private static support.Scenario scenario;
 
     /**
-     * A compulsory turn on the fixture: `MainPlatform` is a buffer stop, so every train that arrives
-     * there turns round.
+     * A compulsory turn on the fixture: `MainPlatform` is a buffer stop, so every train that arrives there turns round.
      */
     private static final int X = 7;
 
@@ -71,10 +53,8 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     }
 
     /**
-     * The fixture really does hold a compulsory turn that is not marked manual-only.
-     *
-     * Asserted first, because a square that is BOTH is the case Adam's railway is made of and the case
-     * in which the defect is invisible.
+     * The fixture really does hold a compulsory turn that is not marked manual-only; asserted first, because a square
+     * that is BOTH is the case in which the defect is invisible.
      */
     @Test
     public void testTheFixtureSeparatesTheTwoMarkings()
@@ -92,14 +72,12 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     }
 
     /**
-     * A compulsory turn autonomy may choose is not reported as one it will not choose.
+     * A compulsory turn autonomy may choose is not reported as one it will not choose: the set once carried every
+     * compulsory turn whatever the switch said, so the editor said autonomy would leave the square alone while sending
+     * trains to it.
      *
-     * The narrowing itself.  Before Adam's ruling this set carried every compulsory turn whatever the
-     * switch said, so the editor told the operator autonomy would leave this square alone while
-     * autonomy was sending trains to it.
-     *
-     * MUTATION: putting `|| isMustTurnAround(tile)` back into
-     * `AutonomySession.stationsAutonomyWillNotChoose` fails this and passes everything else here.
+     * MUTATION: putting `|| isMustTurnAround(tile)` back into `AutonomySession.stationsAutonomyWillNotChoose` fails
+     * this and passes everything else here.
      */
     @Test
     public void testItIsNotReportedAsOneAutonomyLeavesAlone()
@@ -117,12 +95,8 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     }
 
     /**
-     * And the runtime agrees: it really will send a train to that square.
-     *
-     * The other half, and the half that makes the first one a correction rather than a preference. A
-     * notice narrowed to match a runtime that refuses would be wrong in the other direction.
-     *
-     * @throws Exception on a failure to build
+     * And the runtime agrees: it really will send a train to that square. The other half, which makes the first a
+     * correction rather than a preference.
      */
     @Test
     public void testTheRuntimeWouldChooseIt() throws Exception
@@ -147,12 +121,8 @@ public class testACompulsoryTurnIsChosenLikeAnyOtherStation
     }
 
     /**
-     * With the switch off, both agree again - and that is the whole of the rule.
-     *
-     * The control. Without it the narrowing above could have emptied the set for every station, and no
-     * assertion here would say so.
-     *
-     * @throws Exception on a failure to build
+     * With the switch off, both agree again. The control: without it the narrowing above could have emptied the set for
+     * every station and no assertion here would say so.
      */
     @Test
     public void testTheSwitchIsWhatDecides() throws Exception

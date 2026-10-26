@@ -17,18 +17,16 @@ import org.traincontrol.util.I18n;
  * Adam, OB-202: *"while the hourglass is open, the autonomy jmenu isn't visible.  the sudden appearance
  * looks odd.  I added autonomyTopMenu, anchor your menu there, and grey it out if there is no autonomy."*
  *
- * The real menu is built from the configurations on disk and cannot exist until the connect is over, so
- * it used to be APPENDED to the bar from `setViewListener` - part-way through start-up, in front of the
- * operator. What is in the form now is a placeholder holding that slot, and `mountAutonomyMenu` swaps the
- * real menu into it.
+ * The real menu is built from the configurations on disk and cannot exist until the connect is over, so it was APPENDED
+ * to the bar from `setViewListener`, part-way through start-up, in front of the operator.  The form now holds a
+ * placeholder for the slot, and `mountAutonomyMenu` swaps the real menu into it.
  *
- * **So what this measures is that the bar never changes shape**: a menu with the right heading is there
- * before the mount and after it, at the same index, and the count does not move. Asserting only that the
- * placeholder exists would pass a version that appended the real menu beside it - two Autonomy menus,
- * which is a worse bug than the one being fixed.
+ * So what this measures is that the bar never changes shape: a menu with the right heading is there before the mount
+ * and after it, at the same index, and the count does not move.  Asserting only that the placeholder exists would pass
+ * a version that appended the real menu beside it: two Autonomy menus, a worse bug.
  *
- * The window is built WITHOUT a model, which is what makes the "before" state reachable: `setViewListener`
- * is what mounts the real menu, and a test that called it would have nothing left to measure.
+ * The window is built WITHOUT a model, which makes the "before" state reachable: `setViewListener` is what mounts the
+ * real menu.
  *
  * @author Adam
  */
@@ -179,9 +177,7 @@ public class testTheAutonomyMenuHoldsItsSlot
             + " while the window " + (ui.whyAutonomyIsUnavailable() == null ? "has none" : "has one"));
     }
 
-    /**
-     * The menu in the bar whose heading is the autonomy one, or null.
-     */
+    /** The menu in the bar whose heading is the autonomy one, or null. */
     private static javax.swing.JMenu autonomyMenuInTheBar()
     {
         int at = indexOfAutonomy();
@@ -219,9 +215,7 @@ public class testTheAutonomyMenuHoldsItsSlot
         return found;
     }
 
-    /**
-     * What the bar says, for a message somebody can act on.
-     */
+    /** What the bar says, for a message somebody can act on. */
     private static String headings()
     {
         javax.swing.JMenuBar bar = ui.getJMenuBar();

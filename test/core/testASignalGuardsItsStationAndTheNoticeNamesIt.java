@@ -17,12 +17,9 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * A station's signals and entry guards are kept, built and checked, and clicking a notice or a finding shows
- * where it is.
- *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * A station's signals and entry guards are kept, built and checked, and clicking a notice or a finding shows where it
+ * is.  A topic class split from the former `testAutonomyDiagramSession` (FR-136 Phase 3); the session and layout
+ * folder every claim starts from are built by `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -32,9 +29,6 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * A station's protecting signal survives a save, and is not read while the square is not a station - it is kept for
      * when it is one again (`testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`).
-     *
-     * Kept with the captions and the arrival restrictions rather than beside the running state: it is a
-     * fact about the railway, not about today's traffic.
      */
     @Test
     public void testAProtectingSignalIsKeptAndForgottenWithTheStation() throws Exception
@@ -65,11 +59,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A station may be guarded by more than one signal, and every one of them survives the file.
-     *
-     * A platform reachable from two directions needs a signal on each approach, and the setup held one
-     * per station until 3.0.0 - so this is as much about the file as about the pairing: the second
-     * signal has to come back, and the first has to still be first.
+     * A station may be guarded by more than one signal, and every one of them survives the file: the second signal
+     * has to come back, and the first has to still be first.
      */
     @Test
     public void testAStationKeepsEverySignalGuardingIt() throws Exception
@@ -91,16 +82,13 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         assertEquals(reopened.getProtectingSignals(station), Arrays.asList(north, south),
             "the second signal did not survive the file");
 
-        // and the singular call, which everything written before this feature uses, still answers
+        // and the singular call, which older code uses, still answers
         assertEquals(reopened.getProtectingSignal(station), north);
     }
 
     /**
-     * A setup written before 3.0.0 holds one signal as a bare string, and still reads.
-     *
-     * Nothing migrates it.  The string is read as a list of one, and the file gains an array only when
-     * somebody pairs a second signal and saves - so a setup opened by this version and never edited is
-     * still openable by the last one.
+     * A setup written before 3.0.0 holds one signal as a bare string, and still reads: it is read as a list of one, and
+     * the file gains an array only when a second signal is paired and saved.
      */
     @Test
     public void testASetupFromBeforeThisFeatureStillReads() throws Exception
@@ -109,7 +97,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         assertTrue(folder.mkdirs() || folder.isDirectory(), "could not create " + folder);
 
-        // Keyed by page ID rather than by page name, which is how the file has always stored a square
+        // Keyed by page ID, as the file has always stored a square
         Files.write(new File(folder, "setup.json").toPath(),
             ("{\"stations\": [\"1:1,1\"], \"stationSignals\": {\"1:1,1\": \"1:2,1\"}}")
                 .getBytes(StandardCharsets.UTF_8));
@@ -127,13 +115,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * A signal on an excluded page is still reported gone.
      *
-     * **The two sides of a pairing are not symmetric, and one filter treated them as if they were.**
-     * An excluded-page filter was added to `signalsThatAreGone` because a pairing whose STATION is
-     * on a page that is switched off is not in play, and a warning about it is noise. The same filter
-     * was applied to the SIGNAL, and that silenced a warning that was true: `protectingSignalNames`
-     * resolves signals through the graph, which does not carry an excluded page, so a signal on one
-     * really IS dropped from the built configuration - the platform really IS unprotected, and the
-     * check exists to say so.
+     * The two sides of a pairing are not symmetric: a pairing whose station is on a switched-off page is not in play,
+     * but `protectingSignalNames` resolves signals through the graph, which does not carry an excluded page, so a
+     * signal on one really is dropped from the built configuration and the platform really is unprotected.
      *
      * MUTATION this catches: putting the signal-side `continue` back.
      */
@@ -142,14 +126,13 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         LayoutDiagram elsewhere = new LayoutDiagram("second", 6, 4, null, null);
 
-        // A REAL SIGNAL, because the check asks whether the tile resolves to an accessory - a feedback
-        // tile on another page would report gone with both pages in play and prove nothing.
+        // A real signal: the check asks whether the tile resolves to an accessory, so a feedback tile would prove
+        // nothing.
         elsewhere.addComponent(componentType.SIGNAL, 1, 1, 0, 0, 31, 0, accessoryDecoderType.MM2, null);
         elsewhere.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
 
-        // Wired, as parsing a real layout does: without an accessory the signal has no address to
-        // command and reports gone whatever page it is on, which would make the precondition below
-        // pass for the wrong reason.
+        // Wired, as parsing a real layout does: without an accessory the signal reports gone on any page, and the
+        // precondition below would pass for the wrong reason.
         wire(elsewhere, 1, 1, 31);
 
         elsewhere.setPageId("2");
@@ -167,7 +150,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
             "precondition: with both pages in play this pairing resolves, so a warning here would be "
             + "about something else");
 
-        // The page the SIGNAL is on goes out of service.  The station is still in play.
+        // The page the signal is on goes out of service; the station is still in play.
         session.setPageExcluded("second", true);
         session.rebuild();
 
@@ -177,10 +160,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * One signal is still written as a bare string.
-     *
-     * The compatibility half of the change: a station with a single signal - most of them - is written
-     * exactly as it was, so an older TrainControl reading the same layout finds what it expects.
+     * One signal is still written as a bare string, so an older TrainControl reading the layout finds what it expects.
      */
     @Test
     public void testOneSignalIsStillWrittenAsAString() throws Exception
@@ -218,13 +198,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
             "two signals were not written as a list");
     }
 
-    /**
-     * Every signal guarding a station reaches the built configuration.
-     *
-     * The pairing is between squares and the running layout commands accessories by name, so this is
-     * the join that would quietly drop the second signal: a platform that looks guarded on both
-     * approaches in the editor and is guarded on one of them on the railway.
-     */
+    /** Every signal guarding a station reaches the built configuration: the join that would quietly drop the second. */
     @Test
     public void testEverySignalReachesTheBuiltConfiguration() throws Exception
     {
@@ -294,9 +268,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         assertTrue(reopened.getEntrySignals(station).isEmpty(), "a plain point kept an entry guard");
     }
 
-    /**
-     * Every entry-guard signal reaches the built configuration, under its own key (FR-096).
-     */
+    /** Every entry-guard signal reaches the built configuration, under its own key (FR-096). */
     @Test
     public void testEveryEntryGuardSignalReachesTheBuiltConfiguration() throws Exception
     {
@@ -331,14 +303,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A run of track with a station at one end and two signals beside it.
-     */
-    /**
-     * A station's entry guard is never its exit guard, whichever is set first.
-     *
-     * Adam, 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's up to the
-     * user to set it up right."*  One signal on both lists is thrown red on arrival and then set by the platform's
-     * occupancy, so neither guard means what it was paired for.
+     * A station's entry guard is never its exit guard, whichever is set first: one signal on both lists is thrown red
+     * on arrival and then set by the platform's occupancy.
      *
      * MUTATION: let the setters take a signal the other list holds, and this fails.
      */
@@ -365,10 +331,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A file that carries one signal on both lists anyway is warned about.
-     *
-     * Loading a setup does not go through the setters, so a file written before the rule - or by hand - can still hold
-     * it.  The editor says so rather than letting it run.
+     * A file that carries one signal on both lists anyway is warned about (loading does not go through the setters).
      *
      * MUTATION: drop the check, and this fails.
      */
@@ -384,7 +347,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         session.setStation(station, true);
         session.setProtectingSignals(station, Arrays.asList(signal));
 
-        // AS A LOADED FILE HAS IT, past the setter.
+        // As a loaded file has it, past the setter.
         java.lang.reflect.Field field = org.traincontrol.automationui.AutonomyCompanionStore.class.getDeclaredField("entrySignals");
         field.setAccessible(true);
         ((java.util.Map<TileKey, java.util.List<TileKey>>) field.get(session.getStore()))
@@ -410,9 +373,6 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * A guard no way into its station passes is noticed, and one on the approach is not.
      *
-     * Adam: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the autonomy
-     * editor."*  The approach is the track a train runs from the last station it could have stopped at.
-     *
      * MUTATION: call every guard on the way in, and the first half fails; call none, and the second does.
      */
     @Test
@@ -430,12 +390,11 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         assertTrue(noticesAGuardOffTheWayIn(session), "an entry guard on track no train reaching the station runs over"
             + " is not noticed (AUT-C2)");
 
-        // AND THE SIGNAL'S SQUARE, which a click on the notice outlines (Adam, on MT-505: "highlight the affected signals
-        // when the notice is clicked")
+        // and the signal's square, which a click on the notice outlines (MT-505)
         assertEquals(squaresTheGuardNoticeNames(session), Arrays.asList(new TileKey("main", 2, 3)), "the notice does not"
             + " carry the square of the signal it is about, so a click on it can show only the station (MT-505)");
 
-        // A NOTICE, NOT AN ERROR (MT-505): the setup still saves and runs.
+        // A notice, not an error (MT-505): the setup still saves and runs.
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
         {
             if ("autosetup.ui.checkGuardOffTheWayIn".equals(finding.getMessageKey()))
@@ -463,16 +422,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * An exit guard on its station's way in - a home signal - is named for the entry guard.
-     *
-     * The arriving route turns it green, and the arrival's claim of the station can turn it red in front of that train -
-     * or, on the last track in, it stays green over the train standing there.  Adam, 2026-08-23: *"The protecting signal
-     * is at the destination"*, a different signal from one a path crosses; the entry guard is the signal on the way in.
-     * As an entry guard the same signal is right, and gets nothing.
+     * An exit guard on its station's way in - a home signal - is named for the entry guard.  As an entry guard the
+     * same signal is right, and gets nothing.
      *
      * MUTATION: let a route into the station count as the way out, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAnExitGuardOnTheWayInIsNamedForTheEntryGuard() throws Exception
@@ -486,7 +439,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         session.setStation(station, true);
         session.setStation(far, true);
 
-        // ONE WAY, from the far station to this one: the signal is on its way in and on no way out
+        // One way, from the far station to this one: the signal is on its way in and on no way out
         assertTrue(session.setOneWayRun(far, station) > 0, "precondition: the line could not be made one way");
 
         session.rebuild();
@@ -505,16 +458,12 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * An exit guard on its station's way out is not noticed; an entry guard there still is.
      *
-     * An exit signal - the one a train leaving the station passes, which its own route sets green as it goes - lies on
-     * the station's way out, and the notice asked only of the ways in: on Adam's railway it named his exit signals 38, 63
-     * and 64 as signals no arriving train meets, *"Check it is the signal you meant"*.  An exit guard is noticed only where
-     * no way into or out of its station passes it; an entry guard, which turns red behind a train arriving, still where no
-     * way in does.
+     * The notice used to ask only of the ways in and named a real railway's exit signals as ones no arriving train
+     * meets.  An exit guard is noticed only where no way into or out of its station passes it; an entry guard, which
+     * turns red behind an arriving train, still where no way in does.
      *
-     * MUTATION: ask an exit guard of the ways in only, and the first half fails; count a way out for an entry guard too,
-     * and the second does.
-     *
-     * @throws Exception from the session
+     * MUTATION: ask an exit guard of the ways in only, and the first half fails; count a way out for an entry guard
+     * too, and the second does.
      */
     @Test
     public void testAnExitGuardOnTheWayOutIsNotNoticed() throws Exception
@@ -528,7 +477,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         session.setStation(station, true);
         session.setStation(far, true);
 
-        // ONE WAY, from the station to the far one: the signal is on its way out and on no way in
+        // One way, from the station to the far one: the signal is on its way out and on no way in
         assertTrue(session.setOneWayRun(station, far) > 0, "precondition: the line could not be made one way");
 
         session.rebuild();
@@ -548,13 +497,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * Clicking a guard notice outlines the signal as well as the station (MT-505).
      *
-     * Adam, 2026-09-26, on MT-505: *"Works, but also highlight the affected signals when the notice is clicked."*  The
-     * notice named the signal in words and took the reader to the station, which is the one square it says nothing is
-     * wrong with.
-     *
      * MUTATION: outline only the finding's own square, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testClickingAGuardNoticeOutlinesItsSignal() throws Exception
@@ -566,10 +509,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
 
         field.setAccessible(true);
 
@@ -591,8 +534,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-        // OUTLINED, not selected - read by reflection, as the claim came first
-        java.lang.reflect.Method outlined = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isOutlined",
+        // Outlined, not selected - read by reflection, as the claim came first
+        java.lang.reflect.Method outlined = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getMethod("isOutlined",
             TileKey.class);
 
         assertTrue((Boolean) outlined.invoke(panel, signal), "a click on the guard notice did not outline the signal it"
@@ -604,12 +547,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
     /**
      * A click on a guard notice outlines its squares without making them the bulk selection, so a length set
-     * afterwards on another square goes to that square.  The outline was the selection, and the next Segment Length - on
-     * any square - was written to the station and its signal instead.
+     * afterwards on another square goes to that square.
      *
      * MUTATION: outline the notice's squares by selecting them, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAGuardNoticeClickedSelectsNothing() throws Exception
@@ -622,8 +562,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
         clickTheGuardNotice(panel);
 
@@ -646,12 +586,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A clicked notice's outline goes with the next click on the diagram: it is drawn as the bulk selection
-     * is, and left standing it reads as a selection nothing is in.
+     * A clicked notice's outline goes with the next click on the diagram; left standing it reads as a selection
+     * nothing is in.
      *
      * MUTATION: leave the outline after a click on the diagram, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAClickOnTheDiagramTakesANoticesOutlineAway() throws Exception
@@ -663,8 +601,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
         clickTheGuardNotice(panel);
 
@@ -678,13 +616,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A guard notice about a station on another page takes its signal with it to that page: the jump handed on
-     * only the station, and the editor opened there outlined the station alone.  Read by reflection, as the claim came
-     * first.
+     * A guard notice about a station on another page takes its signal with it to that page (the jump handed on only
+     * the station).  Read by reflection, as the claim came first.
      *
      * MUTATION: jump with the station only, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAGuardNoticeOnAnotherPageTakesItsSignalWithIt() throws Exception
@@ -696,12 +631,12 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "far", () -> { });
 
         final List<Object> handed = new ArrayList<>();
 
-        java.lang.reflect.Method jump = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("setOnJumpToNotice",
+        java.lang.reflect.Method jump = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getMethod("setOnJumpToNotice",
             java.util.function.BiConsumer.class);
 
         jump.invoke(panel, (java.util.function.BiConsumer<TileKey, List<TileKey>>) (at, related) ->
@@ -720,14 +655,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * Every finding with a square is shown the strong way when clicked - flashed AND outlined - not only one that names
-     * squares beside its own (OB-352).  Adam: *"autonomy must be fixed: "is at the end of the line", when clicked, does a
-     * regular highlight, whereas "is shown more than ones" gives the yellow highlight plus a strong outline.  make them
-     * consistent, using the latter, which is easier to use."*
+     * Every finding with a square is shown the strong way when clicked - flashed and outlined - not only one that names
+     * squares beside its own (OB-352).
      *
      * MUTATION: outline only a finding that names other squares, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAFindingAtTheEndOfALineIsOutlinedWhenClicked() throws Exception
@@ -738,8 +669,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.rebuild();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
         final List<TileKey> revealed = new ArrayList<>();
 
@@ -757,12 +688,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * A finding about another page that names nothing beside its own square goes there by the same door as one that does,
-     * so the editor opened there outlines it too (OB-352).
+     * A finding about another page that names nothing beside its own square goes there by the same door as one that
+     * does, so the editor opened there outlines it too (OB-352).
      *
      * MUTATION: send it through the plain page jump, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAFindingOnAnotherPageIsOutlinedThere() throws Exception
@@ -773,8 +702,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.rebuild();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "far", () -> { });
 
         final List<Object> outlined = new ArrayList<>();
         final List<Object> plain = new ArrayList<>();
@@ -791,14 +720,11 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * Clicking a notice copies its text to the clipboard as plain text, for sharing (MT-767).
      *
-     * Read back from the system clipboard after a sentinel is put there first, so a copy that never happens fails.  Windows
-     * opens the clipboard to one program at a time, and a clipboard listener (the history, a remote desktop) opens it after
-     * every change, so each use waits for it, and a click whose copy the program dropped on a busy clipboard is made again.
-     * Skipped only when another program holds the clipboard for the whole wait.
+     * Read back after a sentinel is put there first, so a copy that never happens fails.  Windows opens the clipboard
+     * to one program at a time, so each use waits for it and a click whose copy was dropped on a busy clipboard is made
+     * again; skipped only when another program holds the clipboard for the whole wait.
      *
      * MUTATION: take the copy out of the list's selection listener, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testClickingANoticeCopiesItsTextToTheClipboard() throws Exception
@@ -815,10 +741,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
 
         field.setAccessible(true);
 
@@ -842,8 +768,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         String copied = "nothing copied yet";
 
-        // A CLICK THE PROGRAM COULD NOT COPY is made again: it leaves a busy clipboard alone by design, and a copy that
-        // never happens still reads the sentinel every time
+        // A click the program could not copy is made again: it leaves a busy clipboard alone by design.
         for (int click = 0; click < CLIPBOARD_CLICKS && "nothing copied yet".equals(copied); click++)
         {
             onTheClipboard(() -> { clipboard.setContents(sentinel, sentinel); return null; });
@@ -859,8 +784,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
 
-        // AND A HEADING IS NOT A NOTICE: clicking "Warnings" or a page's name leaves the clipboard alone
-        java.lang.reflect.Field severities = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
+        // And a heading is not a notice: clicking "Warnings" or a page's name leaves the clipboard alone
+        java.lang.reflect.Field severities = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
 
         severities.setAccessible(true);
 
@@ -893,12 +818,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     private static final int CLIPBOARD_CLICKS = 5;
 
     /**
-     * One use of the system clipboard, made again while another program has it open (Windows: "cannot open system
-     * clipboard"), and skipped when that lasts the whole wait - the desktop, not the program, decides that.
-     *
-     * @param use the use
-     * @return what it answers
-     * @throws Exception from the use
+     * One use of the system clipboard, made again while another program has it open, and skipped when that lasts the
+     * whole wait - the desktop, not the program, decides that.
      */
     private static <T> T onTheClipboard(java.util.concurrent.Callable<T> use) throws Exception
     {
@@ -924,12 +845,12 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
-    private static void clickTheFinding(org.traincontrol.gui.AutonomyEditorPanel panel, String says, TileKey at)
+    private static void clickTheFinding(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String says, TileKey at)
         throws Exception
     {
         final javax.swing.JList<?> list = (javax.swing.JList<?>) panelPart(panel, "findings");
 
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
 
         field.setAccessible(true);
 
@@ -953,9 +874,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /** Selects the guard notice in the editor's list, as a click on it does. */
-    private static void clickTheGuardNotice(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
+    private static void clickTheGuardNotice(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+        java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("findings");
 
         field.setAccessible(true);
 
@@ -979,11 +900,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     }
 
     /**
-     * The guard line's pages opened as a railway: a station at each end of the two-signal line, and trains free to turn at
-     * both, so it has routes.  The guard notices read the routes the built railway has, and a station whose
-     * only approach is a sensor nothing reaches has none.
-     *
-     * @param pages the pages, the guard line's first
+     * The guard line's pages opened as a railway: a station at each end of the two-signal line, and trains free to turn
+     * at both, so it has routes (a station whose only approach is a sensor nothing reaches has none).
      */
     private void openTheGuardedLine(LayoutDiagram... pages) throws IOException
     {
@@ -1068,9 +986,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         return false;
     }
 
-    /**
-     * The two-signal line, and a second line beside it carrying a signal of its own.
-     */
+    /** The two-signal line, and a second line beside it carrying a signal of its own. */
     private LayoutDiagram pageWithAGuardOffTheLine() throws IOException
     {
         LayoutDiagram page = pageWithTwoSignals();
@@ -1104,9 +1020,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
         page.addComponent(componentType.SIGNAL, 3, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
 
-        // Wired as parsing a real layout does.  Without an accessory a signal has no address to
-        // command, and the pairing is dropped on the way to the built configuration rather than emitted
-        // as something the running layout would fail to find.
+        // Wired as parsing a real layout does; without an accessory the pairing is dropped on the way to the built
+        // configuration.
         wire(page, 2, 1, 21);
         wire(page, 3, 1, 22);
 

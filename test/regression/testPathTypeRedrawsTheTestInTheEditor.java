@@ -9,8 +9,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -18,14 +18,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Switching Path Type redraws the path test in the real autonomy editor (OB-225).
  *
- * Adam, on MT-434, 2026-09-15: *"Does not work.  Changes don't happen when switching, and in manual mode, I still get
- * reasons like 'tunnellongpark will never be chosen in autonomy'."*  The note is written only while Auto is selected,
- * so seeing it on Manual means the test was never run again.
- *
- * **Why the first claim missed it.**  `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute`
- * drove `applyTest` on a panel with no page and no window, and compared the route against an empty substring.  This
- * class asks the editor Adam uses: a `LayoutEditor` in autonomy mode on the frozen snapshot, Test a Path pressed, the
- * two squares clicked through `tileClicked` - what the grid calls - and the radio clicked.
+ * The note "will never be chosen in autonomy" is written only while Auto is selected, so seeing it on Manual means the
+ * test was never run again.  The first claim missed it:
+ * `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute` drove `applyTest` on a panel
+ * with no page and no window and compared the route against an empty substring.  This class asks the editor Adam uses:
+ * a `LayoutEditor` in autonomy mode on the frozen snapshot, Test a Path pressed, the two squares clicked through
+ * `tileClicked` (what the grid calls) and the radio clicked.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).  The station made manual-only is put back.
  *
@@ -83,9 +81,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
     }
 
-    /**
-     * Test a Path to a station autonomy will never choose, then Manual: the note goes, and Auto brings it back.
-     */
+    /** Test a Path to a station autonomy will never choose, then Manual: the note goes, and Auto brings it back. */
     @Test
     public void testSwitchingPathTypeRedrawsTheTestInTheEditor() throws Exception
     {
@@ -180,11 +176,10 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /**
      * Why Not Moving? answers for the tier Path Type names, and switching the radio answers again (OB-225).
      *
-     * Adam, on MT-434, 2026-09-15, asked which tool he had switched Path Type under: *"Why Not Moving?"* - and that it
-     * should follow Path Type.  On Auto the answer files the stations autonomy is told to leave alone under "will never
-     * choose"; on Manual a person may send a train to every one of them, so neither that heading nor autonomy's reason
-     * belongs in the answer.  The square is the one a train stands on in the frozen snapshot, clicked once; only the
-     * radio is clicked after that.
+     * On Auto the answer files the stations autonomy is told to leave alone under "will never choose"; on Manual a
+     * person may send a train to every one of them, so neither that heading nor autonomy's reason belongs in the
+     * answer.  The square is the one a train stands on in the frozen snapshot, clicked once; only the radio is clicked
+     * after that.
      */
     @Test
     public void testWhyNotMovingFollowsPathType() throws Exception
@@ -197,10 +192,9 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
         assertNotNull(standing, "precondition: no train stands on a station square of " + PAGE);
 
-        // NOT THE LENGTH THE REAL DATABASE GIVES IT.  The frozen railway places its trains, and their lengths are read
-        // from the locomotive database on this machine: on 2026-09-24 Adam set EN57-203 to 20 units for OB-294, it fitted
-        // nowhere on either tier, and this failed on "0 against 0" - about his database, not about Path Type.  So the
-        // train asked about has no length while it is asked, and has its own back afterwards.
+        // NOT THE LENGTH THE REAL DATABASE GIVES IT: the frozen railway's train lengths are read from the locomotive
+        // database on this machine, and a long one fits nowhere on either tier ("0 against 0").  So the train asked
+        // about has no length while it is asked, and has its own back afterwards.
         final org.traincontrol.base.Locomotive train = trainOn(standing);
         final Integer lengthWas = train == null ? null : train.getTrainLength();
 

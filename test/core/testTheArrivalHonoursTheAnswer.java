@@ -17,31 +17,12 @@ import org.traincontrol.marklin.MarklinFeedback;
 /**
  * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).
  *
- * *"when asked if it should keep direction, I said yes, but it still got reversed at the 'may change
- * direction' station bottommainb.  ran it twice with the same behavior.  'no' also reverses it, so it is
- * just always getting reversed."*
+ * The arrival once read `arrived.isTerminus() || shouldReverseAt(...)`, and `AutonomyBuilder` emits the turning copy of
+ * a MAY-turn square with `terminus: true`, so the dialog's answer was collected and thrown away. The decision is now
+ * `Layout.turnsOnArrival`, and this class asks it what it DOES, not what its source says.
  *
- * **The defect was an `||`.**  The arrival read
- * `arrived.isTerminus() || shouldReverseAt(arrived, arrived, loc, reversals)`, and `AutonomyBuilder`
- * emits the turning copy of a MAY-turn square with `terminus: true` - so the left operand was true, the
- * right was never evaluated, and the dialog's answer was collected and thrown away.
- *
- * **This is the same flag confusion `OB-205` claims 2 and 3 named**, at a third site. Two were repaired
- * that evening - `ManualReversalPrompt.forJourney` and `Layout.shouldReverseAt` - and this one was not,
- * which is `fix-one-site-sweep-the-siblings` exactly.
- *
- * **And why it passed the tests, which is the part worth keeping.**  The only test of that site was
- * `core.testNonReversibleTrains.testTheRunAsksThatRule`, which reads `Layout.java` as a STRING and
- * asserts the statement verbatim - `||` and all. A guard that requires an expression cannot fail on what
- * that expression does, and this one pinned the bug in place: correcting the line broke the test, so the
- * guard argued for the defect. The comment beside the code said as much, asking that the line not be
- * changed in shape because the guard would not recognize it. Code and guard were each citing the other,
- * and neither was reading the railway.
- *
- * So the decision has a name now - `Layout.turnsOnArrival` - and this class asks it what it DOES.
- *
- * MUTATION: restore the `||` and the first claim fails; drop the `asksAbout` branch and it fails too;
- * make the branch answer `true` and the "keep direction" claim fails.
+ * MUTATION: restore the `||` and the first claim fails; drop the `asksAbout` branch and it fails too; make the branch
+ * answer `true` and the "keep direction" claim fails.
  *
  * @author Adam
  */
@@ -66,23 +47,13 @@ public class testTheArrivalHonoursTheAnswer
             @Override
             public boolean asksAbout(Point at)
             {
-                // Independent of the ANSWER, which is the contract `ReversalPolicy` spells out and
-                // which cost a day when it was broken.
+                // Independent of the ANSWER, which is the contract `ReversalPolicy` spells out.
                 return at == askedAbout;
             }
         };
     }
 
-    /**
-     * Waits for something to become true, or gives up.
-     *
-     * A bounded wait rather than a sleep: the railway's timings are its own and a fixed pause is
-     * either too short on a busy machine or wasted on a quiet one.
-     *
-     * @param until the condition
-     * @param ceilingMs how long to wait before answering false
-     * @return whether it came true
-     */
+    /** A bounded wait rather than a sleep: the railway's timings are its own. */
     private static boolean waitFor(java.util.function.BooleanSupplier until, long ceilingMs)
     {
         long deadline = System.currentTimeMillis() + ceilingMs;
@@ -109,8 +80,8 @@ public class testTheArrivalHonoursTheAnswer
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // BEFORE the model: `init` reads the machine-global layout preference and would otherwise
-        // open Adam's real railway (OB-111).
+        // BEFORE the model: `init` reads the machine-global layout preference and would otherwise open Adam's real
+        // railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -121,8 +92,8 @@ public class testTheArrivalHonoursTheAnswer
         MarklinFeedback b = model.newFeedback(2211, null);
         MarklinFeedback c = model.newFeedback(2212, null);
 
-        // A MAY-TURN SQUARE AS THE BUILDER EMITS ONE: a destination whose turning copy carries the
-        // terminus flag.  That flag is the whole of the confusion, so the fixture has to carry it.
+        // A MAY-TURN SQUARE AS THE BUILDER EMITS ONE: the turning copy carries the terminus flag, which is the whole of
+        // the confusion.
         layout.createPoint("MT368_MAY", true, a.getName());
         layout.createPoint("MT368_TERMINUS", true, b.getName());
         layout.createPoint("MT368_PLAIN", true, c.getName());
@@ -130,17 +101,8 @@ public class testTheArrivalHonoursTheAnswer
         layout.getPoint("MT368_MAY").setTerminus(true);
         layout.getPoint("MT368_TERMINUS").setTerminus(true);
 
-        // A SQUARE AS THE BUILDER REALLY EMITS ONE: both copies, tied by a block.
-        //
-        // The claims above ask the DECISION and the fixture above is enough for that.  What they
-        // cannot see is where the train is left standing afterwards, and that needs the other copy to
-        // exist: `AutonomyBuilder` emits a may-turn square as a plain copy per arrival side PLUS a
-        // turning copy per arrival side, tied together by `block`, and the two face opposite ways.
-        //
-        // Measured on the frozen snapshot before this was written: the path the menu offers to
-        // BottomMainC ends on `BottomMainC (eastbound, reverse)` - the TURNING copy - for both of
-        // Adam's reversible trains, five runs out of five.  So the copy a train arrives on at a
-        // may-turn square is routinely the one that expects it to turn.
+        // A square as the builder really emits one: both copies, tied by a block. A may-turn square is routinely
+        // reached on its TURNING copy, and where the train is left standing needs the other copy to exist.
         layout.createPoint("MT368_ARRIVE", true, model.newFeedback(2213, null).getName());
         layout.createPoint("MT368_TURNCOPY", true, model.newFeedback(2214, null).getName());
         layout.createPoint("MT368_PLAINCOPY", true, model.newFeedback(2215, null).getName());
@@ -154,28 +116,16 @@ public class testTheArrivalHonoursTheAnswer
 
         layout.createEdge("MT368_ARRIVE", "MT368_TURNCOPY");
 
-        // AND THE ARRIVING EDGE KNOWS WHICH SIDE IT COMES IN BY.
-        //
-        // `entrySideOf` prefers the side the BUILD wrote on the edge and falls back to compass
-        // geometry, which a hand-built Point has none of - so without this the arrival records no
-        // side at all, and the claim that the tail is carried over has no tail to be carried.
+        // The arriving edge knows which side it comes in by: a hand-built Point has no compass geometry to fall back
+        // on, and without a side the tail has nothing to carry over.
         layout.getEdge("MT368_ARRIVE", "MT368_TURNCOPY").setEntrySide("W");
 
-        // AND THE PLAIN COPY IS REACHED BY THE SAME APPROACH, which is how the builder emits them:
-        // both copies of one arrival side hang off the same edge, and which of the two a path ends on
-        // is what matters here.
+        // The plain copy is reached by the same approach, as the builder emits them.
         layout.createEdge("MT368_ARRIVE", "MT368_PLAINCOPY");
 
-        // AND A SECOND PLAIN COPY, FOR THE OTHER ARRIVAL SIDE.
-        //
-        // A split square has a plain copy per arrival SIDE - four Points on Adam's biggest squares -
-        // and only one of them is the copy THIS train could have driven onto.  With one plain copy in
-        // the fixture, "the sibling that is not a turning copy" and "the sibling this approach
-        // reaches" are the same Point, and a claim cannot tell the rule from the accident: deleting
-        // the approach test left every claim green.
-        //
-        // This one is the same square - same block, not a turning copy - and is reached from a
-        // DIFFERENT approach.  A train that came in by MT368_ARRIVE must not be stood on it.
+        // A second plain copy, for the other arrival side: with one, "not a turning copy" and "the copy this approach
+        // reaches" are the same Point and a claim cannot tell the rule from the accident. A train that came in by
+        // MT368_ARRIVE must not be stood on it.
         layout.createPoint("MT368_OTHERWAY", true, model.newFeedback(2216, null).getName());
         layout.createPoint("MT368_OTHERAPPROACH", true, model.newFeedback(2217, null).getName());
 
@@ -186,11 +136,7 @@ public class testTheArrivalHonoursTheAnswer
         loc = model.getLocByName(model.getLocList().get(0));
     }
 
-    /**
-     * The class's railway made current again after each claim: a claim that builds a railway of its own retires every
-     * other one (`Layout`'s constructor counts a new version), and the claims after it that send a train on this one
-     * found it retired - the run refused, and "the train never set off".
-     */
+    /** Makes the class's railway current again: a claim that builds a railway of its own retires every other one. */
     @AfterMethod(alwaysRun = true)
     public void theClassRailwayIsCurrentAgain()
     {
@@ -200,16 +146,11 @@ public class testTheArrivalHonoursTheAnswer
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        // The Points belong to a Layout this class made, so there is nothing on the real railway to
-        // put back; the feedbacks are the suite's usual spare addresses.
+        // The Points belong to a Layout this class made; there is nothing on the real railway to put back.
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The claim: "keep direction" at a may-turn square keeps the direction.
-     *
-     * @throws Exception from the railway
-     */
+    /** "Keep direction" at a may-turn square keeps the direction. */
     @Test
     public void testKeepDirectionIsHonouredAtAMayTurnSquare() throws Exception
     {
@@ -230,37 +171,12 @@ public class testTheArrivalHonoursTheAnswer
     /**
      * A train that declines the turn is not left standing on the copy that expected it to turn.
      *
-     * **The consequence the boolean claim above cannot see**.  Answering the question is half
-     * the job; the other half is that the graph agrees with the train afterwards.
+     * The path offered to a may-turn square routinely ends on the TURNING copy (`StationIndex.distinctDestinations`
+     * keeps the first path per square), so a train that declines the turn would face one way while the Point it stands
+     * on says the other, and its next dispatch would read the wrong outgoing edges. The mirror case, a train that DOES
+     * turn, is re-stood by `AutonomySession.faceTheWayItCameIn`.
      *
-     * A may-turn square is two Points per arrival side - the plain copy, facing the way a train that
-     * drove in is pointing, and the turning copy, facing the other way - and the path offered to such
-     * a square routinely ends on the TURNING one: measured on the frozen snapshot,
-     * `BottomMainC (eastbound, reverse)` for both of Adam's reversible trains, five runs out of five,
-     * because `StationIndex.distinctDestinations` keeps the first path per square and the enumeration
-     * that produced it walks the shuffling `getNeighbors`.
-     *
-     * So a train that arrives there and declines the turn faces one way while the Point it is standing
-     * on says the other. Nothing on the railway is wrong yet - the train is where it should be - but
-     * the graph is, and the next dispatch reads that Point's outgoing edges, which are the edges for a
-     * train pointing the other way. It drives off its own route.
-     *
-     * **This became reachable when the answer started being honored.**  Before MT-368 the arrival
-     * turned every train at a may-turn square whatever the operator said, and a turned train agrees
-     * with the turning copy - so the copy was right for the wrong reason. Repairing the decision is
-     * what exposed this, which is `a-fix-can-be-worse-than-the-defect` arriving as a second half
-     * rather than as a worse first one.
-     *
-     * The mirror case already has its repair: a train that DOES turn is re-stood by
-     * `AutonomySession.faceTheWayItCameIn`, which writes the side it came in by and calls
-     * `moveOntoFacingCopy`. This direction had none.
-     *
-     * Driven through `executePath` rather than by asking the rule, because
-     * `extracted-rule-moves-the-bug-to-the-call` is how the last two defects in this method arrived:
-     * a claim about a helper leaves the call site as the only uncovered part, and the call site is
-     * where both of them were.
-     *
-     * @throws Exception from the railway
+     * Driven through `executePath` rather than by asking the rule, so the call site is covered.
      */
     @Test
     public void testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy() throws Exception
@@ -296,12 +212,8 @@ public class testTheArrivalHonoursTheAnswer
 
         layout.runLocomotives();
 
-        // ON ANOTHER THREAD, WITH THE SENSOR FIRED BY HAND, which is how the railway is driven here.
-        //
-        // `executePath` blocks until the train arrives, and arriving means the destination's feedback
-        // goes on - there is no Central Station and no packet simulation in this class. So the run
-        // goes on a daemon thread and this one plays the railway: wait for the train to be under way,
-        // then occupy the destination and clear the square it left.
+        // On another thread, with the sensor fired by hand: `executePath` blocks until the destination's feedback goes
+        // on, and there is no Central Station in this class.
         final Layout running = layout;
         final Locomotive driver = loc;
 
@@ -316,8 +228,8 @@ public class testTheArrivalHonoursTheAnswer
             assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
                 "the train never set off, so no arrival happened and this claim tested nothing");
 
-            // AND ON ITS WAY THE RAILWAY ALREADY KNOWS WHERE IT WILL STAND (OB-314): the copy it will be stood on, not
-            // the turning copy its path ends on - so the label does not show it arriving the other way round
+            // On its way the railway already knows the copy it will stand on (OB-314), not the turning copy its path
+            // ends on.
             org.testng.Assert.assertSame(running.copyItWillStandOn(driver), plain, "on its way, the railway says the train will stand on "
                 + running.copyItWillStandOn(driver) + " - the copy its path ends on - though KEEP DIRECTION puts it on the"
                 + " plain copy (OB-314)");
@@ -347,16 +259,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * It is stood on the copy ITS OWN approach reaches, not merely on one that is not a turning copy.
-     *
-     * **Without this the rule and an accident of the fixture are indistinguishable.**  A split
-     * square has a plain copy per arrival side, and only the one reachable from where the train came
-     * is the copy it could have driven onto.  Picking by "not a turning copy" alone would put an
-     * eastbound train on the westbound copy half the time - the same defect facing the other way -
-     * and with a single plain copy in the fixture, deleting the approach test changed nothing.
-     *
-     * Asserted as part of the same arrival as the claim above rather than by driving a second one:
-     * what is being checked is which of two candidates was chosen, and both were candidates then.
+     * It is stood on the copy ITS OWN approach reaches, not merely one that is not a turning copy; asserted in the same
+     * arrival as the claim above.
      */
     @Test(dependsOnMethods = "testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy")
     public void testItIsStoodOnTheCopyItsOwnApproachReaches()
@@ -379,16 +283,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * And its tail comes with it, so the track behind it is still blocked.
-     *
-     * **Deleting `setArrivedFrom` passed every claim**, and the tail walk then silently stops
-     * blocking the track behind the train - a switch this train is lying across offered to the next
-     * route.
-     *
-     * `Point.setLocomotive` clears `arrivedFrom` on every change of occupant, because "a different
-     * occupant did not come in that way". This is the same train being re-stood on a sibling copy of
-     * one square, whose carriages have not moved - behaviour.md 4 - so the side has to be carried
-     * over by hand, exactly as `AutonomySession.moveOntoFacingCopy` does for the turning case.
+     * And its tail comes with it, so the track behind stays blocked: `Point.setLocomotive` clears `arrivedFrom` on
+     * every change of occupant, so the side is carried over by hand, as `AutonomySession.moveOntoFacingCopy` does.
      */
     @Test(dependsOnMethods = "testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy")
     public void testTheTailComesWithIt()
@@ -408,14 +304,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * And the route it drove comes with it, not only the side.
-     *
-     * A train that was DRIVEN somewhere remembers the route it arrived along, and past a junction its tail
-     * follows that route rather than stopping at the fork (Adam, MT-333/MT-335, 2026-09-13: *"Follow its
-     * last route"*).  `standOnTheCopyItDidNotTurnOn` carried the side over, read before the move - and
-     * read the route AFTER it, when moving the train off the turning copy had already cleared it.  So
-     * every train that declined a turn at a may-turn square lost its route, and its tail stopped at the
-     * first junction again.
+     * And the route it drove comes with it, so its tail follows that route past a junction (*"Follow its last route"*,
+     * MT-335): it is read before the move, which clears it.
      */
     @Test(dependsOnMethods = "testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy")
     public void testTheRouteComesWithIt()
@@ -438,19 +328,11 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that cannot reverse is not turned at a square where turning is optional.
+     * A train that cannot reverse is not turned at a square where turning is optional (MT-368).
      *
-     * Adam, MT-368, 2026-09-13: **"I get the prompt, but I shouldn't because the train is not
-     * reversible and the station is selectable in full autonomy."**
-     *
-     * **The half that decides**, and the reason suppressing the prompt alone would have been worse.
-     * `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers FALSE - "no opinion" rather than "no" -
-     * so `turnsOnArrival` skips the policy branch and reads `arrived.isTerminus()`, which is TRUE at
-     * the turning copy of a may-turn square. A train nobody asked about would be turned every time,
-     * which is MT-368's original defect arriving by a new route.
-     *
-     * A COMPULSORY turn is untouched: `hasAWayThrough` is what tells the two apart, and backing into a
-     * terminus is how a non-reversible train gets there at all (MT-245).
+     * `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers FALSE, "no opinion", so `turnsOnArrival` would fall
+     * through to `arrived.isTerminus()`, TRUE at the turning copy of a may-turn square; suppressing the prompt alone
+     * would turn every such train. A COMPULSORY turn is untouched (MT-245): `hasAWayThrough` tells the two apart.
      */
     @Test
     public void testATrainThatCannotReverseIsNotTurnedWhereItNeedNot()
@@ -464,7 +346,7 @@ public class testTheArrivalHonoursTheAnswer
             loc.setReversible(false);
 
             assertFalse(layout.turnsOnArrival(may, loc,
-                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION),
+                org.traincontrol.gui.autonomy.ManualReversalPrompt.KEEP_DIRECTION),
                 "a locomotive that cannot reverse arrived at a square where turning is OPTIONAL - it"
                 + " has a plain copy of its own - and was turned anyway. Adam, MT-368: \"I get the"
                 + " prompt, but I shouldn't because the train is not reversible.\" KEEP_DIRECTION's"
@@ -476,36 +358,18 @@ public class testTheArrivalHonoursTheAnswer
                 "the same train was turned because a POLICY said to. It cannot run backwards; that is"
                 + " not a preference anybody may overrule at a square it can simply drive through.");
 
-            // AND A PLAN IS NOT AN OPERATOR.
-            //
-            // `ALWAYS_REVERSE` is what `executePath`'s four-argument form hands in, which is autonomy
-            // and the staging planner. A plan that routed this train to a turning copy searched the
-            // next leg from that copy's edges; declining the turn re-stands the train on the plain
-            // copy, the next leg is refused as not starting where the train is, and Return Home is
-            // abandoned half-staged. The rule is about what to do when NOBODY has decided.
+            // A plan is not an operator: `ALWAYS_REVERSE` is what `executePath`'s four-argument form hands in
+            // (autonomy, the staging planner), and declining the turn there would abandon Return Home half-staged.
             assertTrue(layout.turnsOnArrival(may, loc, org.traincontrol.automation.Layout.ALWAYS_REVERSE),
                 "a plan said turn here and the train was not turned, because it cannot reverse. That"
                 + " rule is for the hand-driven doors: ALWAYS_REVERSE is a plan speaking, and it has"
                 + " already routed the next leg from the copy it expects the train to be on.");
 
-            // AND NO POLICY AT ALL IS READ AS THE RAILWAY DECIDING, NOT AS A DOOR ASKING.
+            // No policy at all is read as the railway deciding, not a door asking: the fence reads `reversals != null
+            // && reversals != ALWAYS_REVERSE`, and `shouldReverseAt` reads null the same way. Nothing in `src/` hands
+            // in null today, so this pins the reading, not a live path.
             //
-            // The fence reads `reversals != null && reversals != ALWAYS_REVERSE`, and the null half
-            // was unpinned: every caller under `test/` handing in null used a REVERSIBLE train, so
-            // deleting `reversals != null &&` passed the whole class.
-            //
-            // Null is not a door that decided nothing - it is a caller with no policy object at all,
-            // and `shouldReverseAt` has always read it that way in its own first line
-            // (`reversals == null ||`). This fence is for the HAND-DRIVEN doors, where Adam's ruling
-            // was that a train which cannot reverse is not asked and not turned; a caller that hands
-            // in nothing gets the railway's own answer, exactly as `ALWAYS_REVERSE` does.
-            //
-            // Nothing in `src/` hands in null today: autonomy's `executePath(path, loc, speed, ttp)`
-            // supplies `ALWAYS_REVERSE` and both manual doors supply the prompt. So this pins the
-            // reading rather than a live path, which is the reason to write it down rather than leave
-            // the conjunct looking like an oversight.
-            //
-            // MUTATION, run 2026-09-13: deleting `reversals != null &&` fails this claim.
+            // MUTATION: deleting `reversals != null &&` fails this claim.
             assertTrue(layout.turnsOnArrival(may, loc, null),
                 "with no reversal policy at all, a train that cannot reverse was NOT turned at a"
                 + " may-turn square. Null means no caller has an opinion, and the railway then"
@@ -520,11 +384,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * And it still backs into a compulsory terminus, which is how it gets there at all.
-     *
-     * The other side of the rule above, and the one that would break if it were written as "never
-     * turn a train that cannot reverse". Adam's ruling on MT-245, and
-     * `testATrainThatCannotReverseMayBackIntoATerminus` in its own class.
+     * And it still backs into a compulsory terminus, which is how it gets there at all (MT-245, and
+     * `testATrainThatCannotReverseMayBackIntoATerminus`).
      */
     @Test
     public void testItStillBacksIntoACompulsoryTerminus()
@@ -538,7 +399,7 @@ public class testTheArrivalHonoursTheAnswer
             loc.setReversible(false);
 
             assertTrue(layout.turnsOnArrival(terminus, loc,
-                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION),
+                org.traincontrol.gui.autonomy.ManualReversalPrompt.KEEP_DIRECTION),
                 "a locomotive that cannot reverse arrived at a compulsory terminus and was NOT turned."
                 + " Backing in is how it gets there - the reversal is part of the journey rather than"
                 + " a preference - so the rule that spares it at a may-turn square must not reach"
@@ -550,12 +411,7 @@ public class testTheArrivalHonoursTheAnswer
         }
     }
 
-    /**
-     * And "turn round" at the same square turns it, so the answer is being read rather than ignored
-     * in the other direction.
-     *
-     * @throws Exception from the railway
-     */
+    /** And "turn round" at the same square turns it, so the answer is read in both directions. */
     @Test
     public void testTurnRoundIsHonouredAtTheSameSquare() throws Exception
     {
@@ -567,12 +423,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * The control that keeps the fix honest: a compulsory terminus still turns, whatever is said.
-     *
-     * A door does not ask about one - `asksAbout` is the reversible squares MINUS the compulsory ones
-     * - and the turn there is how the train gets in and how it leaves again (MT-245).
-     *
-     * @throws Exception from the railway
+     * The control: a compulsory terminus still turns whatever is said, since `asksAbout` is the reversible squares
+     * MINUS the compulsory ones (MT-245).
      */
     @Test
     public void testACompulsoryTerminusStillTurns() throws Exception
@@ -587,14 +439,7 @@ public class testTheArrivalHonoursTheAnswer
             + " cannot reverse may back into a terminus\"");
     }
 
-    /**
-     * And an ordinary destination is not turned at all.
-     *
-     * Without this the claims above are satisfied by a rule that turns everything a policy is handed
-     * for, which is the direction this change could most easily go wrong in.
-     *
-     * @throws Exception from the railway
-     */
+    /** And an ordinary destination is not turned at all. */
     @Test
     public void testAnOrdinaryDestinationIsNotTurned() throws Exception
     {
@@ -607,11 +452,7 @@ public class testTheArrivalHonoursTheAnswer
             + " a terminus, it does not reverse, and the door was not asked about it");
     }
 
-    /**
-     * And autonomy, which hands over no policy, still turns where the flag says.
-     *
-     * @throws Exception from the railway
-     */
+    /** And autonomy, which hands over no policy, still turns where the flag says. */
     @Test
     public void testAutonomyStillTurnsAtATerminus() throws Exception
     {
@@ -624,17 +465,12 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train arriving on a railway retired on its way is not turned.  The milestones' check stops a train
-     * whose railway was retired - Unload, a reload - and the arrival after the last of them went on to turn the locomotive
-     * at a terminus, on a railway nothing reads any more, after the pause before the turn in which Unload could come.
-     * The fold at Unload wrote the train as it was; turned afterwards, it faces the other way from that record.
-     *
-     * The railway is retired from the arrival's own callback, after the last check and before the turn.
+     * A train arriving on a railway retired on its way is not turned: the milestones' check stops such a train, but
+     * Unload could land in the pause between the last check and the turn, leaving the train facing the other way from
+     * the folded record. The railway is retired from the arrival's own callback, between the last check and the turn.
      *
      * MUTATION: turn a train at its destination without asking whether its railway is still the current one, and this
      * fails.
-     *
-     * @throws Exception from the railway or reflection
      */
     @Test
     public void testATrainArrivingOnARailwayRetiredOnTheWayIsNotTurned() throws Exception
@@ -672,7 +508,7 @@ public class testTheArrivalHonoursTheAnswer
         layout.setMinDelay(0);
         layout.setMaxDelay(0);
 
-        // RETIRED FROM THE ARRIVAL'S CALLBACK, after the last milestone's check and before the turn
+        // Retired from the arrival's callback, after the last milestone's check and before the turn.
         layout.setCallback("rlv12-retire", (edges, train, underWay) ->
         {
             java.util.List<Point> reached = layout.getReachedMilestones(train);
@@ -739,15 +575,11 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that kept its direction is stood on the plain copy without the square ever reading empty.  The
-     * re-stand after a declined turn took the train off the turning copy and then put it on the plain one, so for a moment
-     * the square held nobody and the train was nowhere - and the platform's exit-guard signal, which follows the square,
-     * was commanded GREEN and then RED again over the standing train.  It is put on the plain copy, with the side and the
-     * road it came in by, before it is taken off the turning one.
+     * A train that kept its direction is stood on the plain copy without the square ever reading empty (the platform's
+     * exit-guard signal follows the square and was commanded GREEN then RED over the standing train): it is put on the
+     * plain copy, with the side and road it came in by, before it is taken off the turning one.
      *
      * MUTATION: take the train off the turning copy before putting it on the plain one, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheReStandNeverShowsTheSquareEmpty() throws Exception
@@ -873,19 +705,12 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train sent by hand to a square it may turn at, and told to keep its direction, is drawn facing the way it will
-     * stand from the moment it stops - not the turning copy's way until its run is done (Adam, 2026-10-07, on MT-701:
-     * *"the locomotive icon direction doesn't always match the arrow (arrow is correct) when arriving at a may reverse
-     * station ... the icon at BottomMainB initially faces west and then flips to the correct east only after arrival"*).
-     *
-     * The path ends on the square's TURNING copy, and the train is stood on the plain copy only once the run's end has
-     * run - a second or two later, with the default delay.  The caption's arrow asks `copyItWillStandOn` (OB-314); the
-     * icon read the copy the train held (OB-317), so it faced the turning copy's way, west, until the re-stand.  The end
-     * is held open here with the route-end callback, which is where that delay sits.
+     * A train sent by hand to a may-turn square and told to keep its direction is drawn facing the way it will stand
+     * from the moment it stops, not the turning copy's way until its run is done (MT-701). The caption's arrow asks
+     * `copyItWillStandOn` (OB-314), and the icon must too (OB-317). The route end is held open with the route-end
+     * callback, where the re-stand delay sits.
      *
      * MUTATION: take the copy it will stand on out of `DiagramMonitor.markTrain`, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheIconFacesTheWayTheTrainWillStand() throws Exception
@@ -1058,22 +883,14 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train told to keep its direction at a square it may turn at is turned all the same where no copy of that square
-     * faces on from the way it came: the end of a line marked "Trains May Change Direction Here", or a may-turn
-     * square one of whose ways in has no way on.
+     * faces on from the way it came: the end of a line marked "Trains May Change Direction Here", or a may-turn square
+     * one of whose ways in has no way on. Such a square is a compulsory turn in all but its flag, and so for a train
+     * that cannot reverse (MT-245): the model and the decoder agree, which keeps the next journey on its path.
      *
-     * Kept, the train stood on the turning copy - the only copy the build makes for that approach, facing back out - with
-     * its decoder still driving it forward: its next journey set the route back the way it came and drove it into the end
-     * of the line, over track nothing held.  The question was taken away from squares marked "must"; a square marked
-     * "may" where nothing faces on is a compulsory turn in all but its flag.  So is it for a train that cannot reverse,
-     * which a dead end turns already (Adam's MT-245 ruling): the model and the decoder agree, which is what keeps
-     * the next journey on its path.
-     *
-     * Two shapes - no other copy at all, and a plain copy the train's approach cannot reach - each sent with the answer
-     * keep, and the second with a train that cannot reverse as well.
+     * Two shapes, each sent with the answer keep: no other copy at all, and a plain copy the train's approach cannot
+     * reach (the second with a train that cannot reverse as well).
      *
      * MUTATION: take the compulsory turn out of `Layout.turnsOnArrival`, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testKeepingTheDirectionWhereNoCopyFacesOnStillTurnsTheTrain() throws Exception
@@ -1138,10 +955,7 @@ public class testTheArrivalHonoursTheAnswer
         }
     }
 
-    /**
-     * Sends a train from one Point to the next with the answer keep, asked about the destination, and asserts it was
-     * turned there.
-     */
+    /** Sends a train with the answer keep, asked about the destination, and asserts it was turned there. */
     private static void assertTurnedKeeping(Layout rail, Locomotive x, String from, String to, MarklinFeedback arrive,
         String shape) throws Exception
     {
@@ -1185,10 +999,8 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * The operator is not asked about a destination where no copy faces on from the train's approach, since the answer
-     * could not be honored there - and still is where one does.
-     *
-     * Asked of `ManualReversalPrompt.destinationAskedAbout`, the part of the question that decides whether to ask, because
-     * asking puts a modal dialog up.
+     * could not be honored there, and still is where one does. Asked of `ManualReversalPrompt.destinationAskedAbout`,
+     * because asking puts up a modal dialog.
      *
      * MUTATION: ask about such a destination again, and this fails.
      */
@@ -1228,12 +1040,12 @@ public class testTheArrivalHonoursTheAnswer
             }
         };
 
-        assertEquals(org.traincontrol.gui.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
+        assertEquals(org.traincontrol.gui.autonomy.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
             java.util.Arrays.asList(rail.getEdge("NAS", "NAT"))), null, "the operator is asked whether to keep the"
             + " direction at a square no copy of which faces on from the train's approach - an answer the arrival cannot"
             + " honour (RSA49-A1)");
 
-        assertEquals(org.traincontrol.gui.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
+        assertEquals(org.traincontrol.gui.autonomy.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
             java.util.Arrays.asList(rail.getEdge("NAQ", "NAT"))), rail.getPoint("NAT"), "the operator is no longer asked"
             + " at a may-turn square whose plain copy the train's approach reaches");
 
@@ -1248,17 +1060,11 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A timetable recorded by hand through a square trains may turn at plays back what was decided there.
-     *
-     * The operator kept the direction, the hand path ended on the square's turning copy, and the train was stood on the
-     * plain copy; the next entry was recorded from there.  Playback ran every entry as autonomy does, turning wherever the
-     * route ends on a turning copy - so it turned the train where the recording had not, and the next entry, which starts
-     * on the plain copy, never started: three minutes later the run stopped saying the track never became free.  The
-     * entry now keeps the answer the arrival was given, and is played back with it.
+     * A timetable recorded by hand through a may-turn square plays back what was decided there: the entry keeps the
+     * answer the arrival was given and is played back with it, so playback does not turn a train the recording did not
+     * (the next entry starts on the plain copy).
      *
      * MUTATION: record no answer, or play every entry back as autonomy again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetableRecordedByHandPlaysBackTheAnswer() throws Exception
@@ -1318,7 +1124,7 @@ public class testTheArrivalHonoursTheAnswer
             assertEquals(plain.getCurrentLocomotive(), x, "precondition: the kept train was not stood on the plain copy");
 
             sendByHand(rail, x, java.util.Arrays.asList(rail.getEdge("TBP", "TBC")),
-                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION, c);
+                org.traincontrol.gui.autonomy.ManualReversalPrompt.KEEP_DIRECTION, c);
 
             assertEquals(onward.getCurrentLocomotive(), x, "precondition: the second send did not arrive");
 
@@ -1396,9 +1202,7 @@ public class testTheArrivalHonoursTheAnswer
         }
     }
 
-    /**
-     * Sends a train by hand along a path with the answer given, and plays its arrival sensor.
-     */
+    /** Sends a train by hand along a path with the answer given, and plays its arrival sensor. */
     private static void sendByHand(Layout rail, Locomotive x, java.util.List<org.traincontrol.automation.Edge> path,
         Layout.ReversalPolicy answer, MarklinFeedback arrive) throws Exception
     {
@@ -1420,14 +1224,10 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that cannot reverse is not offered by hand the turning copy of a may-turn square when no way into that copy
-     * has a copy facing on: it would be turned there and leave backwards, which is what Adam's MT-367 ruling
-     * keeps it from being sent to - the rule asked of the copy's ways in, where it was asked of the square alone, and the
-     * square has a way through for trains from the other side.
+     * A train that cannot reverse is not offered by hand the turning copy of a may-turn square when no way into that
+     * copy has a copy facing on (MT-367): the rule is asked of the copy's ways in, not of the square alone.
      *
      * MUTATION: ask the square alone again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainThatCannotReverseIsNotOfferedATurnItCannotAvoid() throws Exception

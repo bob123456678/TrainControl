@@ -6,32 +6,17 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileAnnotation;
 
 /**
- * A square whose only annotation is "a train is standing here" is not a blank square.
- *
- * OB-007, 2026-08-22: "add a small white * on top of the station icons to show there is a train
- * there". The mark already existed - paintTrainMark draws exactly that, a small white six-armed star
- * with a dark edge under it - and had existed since it was written. It was invisible on precisely the
- * squares OB-007 is about.
- *
- * paint() opens with `if (isBlank()) return;`, and isBlank() lists every field that counts as content:
- * marks, length, selected, badge, ignored, traces, arrivals. It does not list `occupied`. So an
- * annotation carrying nothing but a train was blank, and the star was never painted.
- *
- * The field was added to equals and to hashCode - both name it - and missed here. That is the shape
- * worth remembering: a new field gets added to the methods somebody is thinking about at the time, and
- * the one that decides whether the object is worth drawing at all is not usually one of them.
- *
- * Which squares? The ones with nothing else on them. A station with a badge was never blank, so the
- * star appeared there and the bug looked like it did not exist - it only bit where the train was the
- * ONLY thing to say about a square, which is exactly the case the request was filed about.
+ * A square whose only annotation is "a train is standing here" is not a blank square (OB-007: "add a small white * on
+ * top of the station icons to show there is a train there").  `paint()` opens with `if (isBlank()) return;` and
+ * `isBlank()` lists every field that counts as content except `occupied`, so an annotation carrying nothing but a train
+ * was blank and the star was never painted.  The field was added to equals and hashCode and missed here; it only bit
+ * where the train was the ONLY thing to say about a square.
  *
  * @author Adam
  */
 public class testTrainMarkIsNotBlank
 {
-    /**
-     * The whole bug.
-     */
+    /** The whole bug. */
     @Test
     public void testATrainIsWorthDrawing()
     {
@@ -47,12 +32,8 @@ public class testTrainMarkIsNotBlank
     }
 
     /**
-     * And withTrain is what the editor actually calls, on the annotation it actually returns.
-     *
-     * withTrain returns `this` rather than a copy, which is what lets the editor write
-     * `if (locomotiveAt(tile) != null) annotation.withTrain();` and keep using `annotation`. If it
-     * ever starts returning a copy, that call site silently stops marking anything - the return value
-     * is discarded there.
+     * And withTrain is what the editor actually calls: it returns `this`, so a call site that discards the return value
+     * keeps working.
      */
     @Test
     public void testWithTrainMarksTheAnnotationItWasCalledOn()
@@ -69,12 +50,9 @@ public class testTrainMarkIsNotBlank
     }
 
     /**
-     * A train and a badge together are still not blank, and neither is a train on an ignored square.
-     *
-     * The second one is not academic: `ignored` returns early in paint() before the train mark, which
-     * is deliberate - an ignored square is one autonomy takes no notice of, so there is no train of
-     * its to draw. What must not happen is the annotation being called blank, because then the graying
-     * that says "ignored" would not be drawn either.
+     * A train and a badge together are still not blank, and neither is a train on an ignored square: `ignored` returns
+     * early in paint() before the train mark, deliberately, but the annotation must not be called blank or the graying
+     * is lost.
      */
     @Test
     public void testTheOtherCombinationsAreStillDrawn()
@@ -89,9 +67,7 @@ public class testTrainMarkIsNotBlank
         assertFalse(ignored.withTrain().isBlank(), "an ignored square with a train is still drawn");
     }
 
-    /**
-     * An annotation with nothing on it at all.
-     */
+    /** An annotation with nothing on it at all. */
     private TileAnnotation plain()
     {
         return new TileAnnotation(Collections.<TileAnnotation.Mark>emptyList(), -1, false);

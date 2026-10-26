@@ -116,8 +116,8 @@ public class MarklinAccessory extends Accessory
     @Override
     public void addTile(LayoutLabel l)//, boolean dynamic)
     {   
-        // The labels this one replaces go now.  See LayoutLabel.forgetReplaced: nothing else can drop
-        // them on the main window, so without this every rebuilt page stayed registered for ever.
+        // The labels this one replaces go now; nothing else can drop them on the main window
+        // (LayoutLabel.forgetReplaced).
         LayoutLabel.forgetReplaced(this.tiles, l);
 
         this.tiles.add(l);

@@ -19,19 +19,12 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * A station with one arrival side barred does not offer that side as somewhere to stop.
  *
- * MT-078, answered 2026-08-22: "Not always honored. In manual operation, I was able to send a train
- * from Tunnel to BottomMainA. BottomMainA had barred arrivals from the west."
- *
- * The rule lives in the BUILD, not in the search. A square that trains can reach from two sides is
- * emitted as two Points - that is how the model records which way a train is facing, since it knows
- * only which Point a locomotive stands on - and barring a side makes THAT copy a non-station. Every
- * destination list, manual and automatic alike, filters on `isDestination()`, so a copy that is not a
- * station cannot be the end of a path.
- *
- * This pins the build half, which is the half that decides. It is worth having either way: if the copy
- * is a destination, every list downstream is right to offer it and the defect is here; if it is not,
- * then a train that arrived at the station arrived at the OTHER copy, which is legal - and the two
- * copies share a base name, so a report naming the station cannot tell them apart.
+ * MT-078, Adam: "Not always honored. In manual operation, I was able to send a train from Tunnel to BottomMainA.
+ * BottomMainA had barred arrivals from the west."  The rule lives in the BUILD, not in the search: a square trains can
+ * reach from two sides is emitted as two Points (how the model records which way a train faces), and barring a side
+ * makes THAT copy a non-station.  Every destination list filters on `isDestination()`, so it cannot end a path.  If
+ * the copy is a destination every list downstream is right to offer it and the defect is here; if not, a train that
+ * arrived there arrived at the OTHER copy, which is legal, and the two share a base name.
  *
  * @author Adam
  */
@@ -149,9 +142,8 @@ public class testBarredArrivalIsNotADestination
         page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
 
-        // A signal off to one side, to pair with the platform.  Wired as parsing a real layout does:
-        // without an accessory it has no address to command and the pairing is dropped on the way to
-        // the built configuration.
+        // A signal off to one side, wired as parsing a real layout does: without an accessory it has no address to
+        // command and the pairing is dropped.
         page.addComponent(componentType.SIGNAL, 1, 2, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
 
         page.getComponent(1, 2).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
@@ -166,26 +158,15 @@ public class testBarredArrivalIsNotADestination
     /**
      * A barred copy still carries the protecting signal, because it is still the same platform.
      *
-     * The builder emits the pairing under
-     * `protecting != null && !protecting.isEmpty() && stops`, two lines below a comment that says the
-     * opposite: "The signals thrown to red while this platform is claimed. On every copy, because the
-     * copies are one platform."
+     * The builder emits the pairing under `protecting != null && !protecting.isEmpty() && stops`, two lines below a
+     * comment saying "On every copy, because the copies are one platform."  `stops` is false exactly when the copy's
+     * arrival side is barred, and a person may still drive a train onto it (Adam, MT-078: autonomy will not route into
+     * a barred side, a person may), so nothing protects the occupied platform: `refreshOneSignal` asks every Point
+     * whose protecting signals contain the accessory, and this one is not among them.
      *
-     * `stops` is false exactly when this copy's arrival side is barred, so the copy trains may not be
-     * SENT to is also the copy that does not hold its signal red. That matters because of what a bar
-     * means - Adam, on MT-078: autonomy will not route into a barred side, and a person may. So a train
-     * can be standing on that copy, and when it is, nothing protects the platform: `refreshOneSignal`
-     * decides by asking every Point whose protecting signals contain the accessory, and this one is not
-     * among them. The signal shows green over an occupied platform.
-     *
-     * Two copies of one square are two Points to the model and one piece of track on the railway. A
-     * train standing on either is a train standing at the platform.
-     *
-     * Nothing refuses a protecting signal on a non-station: `setProtectingSignals` stores what it is
-     * given and parseAuto does not check it against `station`. That was worth confirming before
-     * removing the condition, because the `stops` variable exists for a case where the model DOES
-     * refuse - a terminus that is not a destination - and answers a refusal by invalidating the whole
-     * layout.
+     * Nothing refuses a protecting signal on a non-station (`setProtectingSignals` stores what it is given), which was
+     * confirmed before removing the condition, because `stops` exists for a case where the model DOES refuse: a
+     * terminus that is not a destination invalidates the whole layout.
      */
     @Test
     public void testABarredCopyStillHoldsItsProtectingSignal() throws IOException
@@ -248,18 +229,11 @@ public class testBarredArrivalIsNotADestination
     /**
      * One locomotive, one home - enforced where the home is SET, not only where it is loaded.
      *
-     * The running layout has enforced this since July:
-     * `setHomeLocomotive` clears the same locomotive's home from every other Point as it assigns one.
-     * The setup-side editor, which arrived in August, ends at `setPointProperty(tile, "home", picked)`
-     * and nothing sweeps - so two squares could be given the same home from the menu, silently.
-     *
-     * What happens then is decided on the next load, in `rebuildHomeStations`: the second assignment it
-     * meets is dropped with a log line, and which one loses depends on `points.values()` iteration
-     * order. One of the two homes the operator set goes away, and the only notice is in the log.
-     *
-     * That method's comment said "only a hand-edited file reaches here". It was true when it was
-     * written, on 2026-07-28; the home editor arrived on 2026-08-16, and a menu has reached it ever
-     * since. The comment is corrected too, because a reader trusting it will not look for this.
+     * The running layout's `setHomeLocomotive` clears the same locomotive's home from every other Point; the setup-side
+     * editor ends at `setPointProperty(tile, "home", picked)` and nothing sweeps, so two squares could be given the
+     * same home from the menu, silently.  On the next load `rebuildHomeStations` drops the second it meets (which
+     * depends on `points.values()` order) with only a log line.  Its comment said "only a hand-edited file reaches
+     * here", which stopped being true when the home editor arrived, and is corrected too.
      */
     @Test
     public void testALocomotiveHasOneHomeAcrossTheWholeSetup() throws Exception
@@ -319,16 +293,13 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Clearing every home at once clears them all, and asks the station index once.
+     * Clearing every home at once clears them all, and asks the station index once.  The editor cleared them by calling
+     * the single-square setter in a loop, each re-deriving the station index (a full builder construction on the event
+     * thread): sixty-two rebuilds for the gesture that exists because sixty-two right-clicks are too many.
      *
-     * The editor cleared them by calling the single-square setter in a loop, and every one of those
-     * re-derives the station index - a full builder construction, on the event thread.  The feature
-     * exists because clearing sixty-two homes by right-click is too many gestures; doing it cost
-     * sixty-two rebuilds instead.
-     *
-     * **What this pins is the behavior, not the count**, because the rebuild is not observable from
-     * outside: every home goes, the count comes back, and the index is still right afterwards - which
-     * is the thing a bulk path is most likely to get wrong by skipping the re-derive altogether.
+     * What this pins is the behavior, not the count, since the rebuild is not observable from outside: every home goes,
+     * the count comes back, and the index is still right afterwards, which a bulk path skipping the re-derive gets
+     * wrong.
      *
      * MUTATION this catches: dropping the `deriveStationIndex()` at the end of `clearEveryHome`, which
      * leaves `getStationIndex` naming squares whose home has gone; and clearing only the first square.
@@ -378,16 +349,10 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Every placement goes at once, and the station index is asked once.
-     *
-     * The twin of `testEveryHomeGoesAtOnce`, and it had the same cost for a worse reason: clearing one
-     * placement writes TWO properties - the placement and the facing that described the train standing
-     * there - so the editor's loop cost two full builder constructions per square, for the gesture that
-     * exists precisely because doing it one at a time is too many.
-     *
-     * What is pinned is the behavior, because the rebuild is not observable from outside: every
-     * placement goes, the count comes back, the FACING goes with it, and the session still works
-     * afterwards - which is what a bulk path that skipped the re-derive would get wrong.
+     * Every placement goes at once, and the station index is asked once.  The twin of `testEveryHomeGoesAtOnce`:
+     * clearing one placement writes TWO properties (the placement and the facing), so the editor's loop cost two full
+     * builder constructions per square.  Pinned as behavior: every placement goes, the count comes back, the FACING
+     * goes with it, and the session still works afterwards.
      *
      * MUTATION this catches: dropping the `deriveStationIndex()` at the end of `clearEveryPlacement`,
      * or clearing the placement and leaving the facing behind.
@@ -448,18 +413,10 @@ public class testBarredArrivalIsNotADestination
     /**
      * Barring every way in is INFORMATION, because a person can still drive a train there.
      *
-     * MT-078. Adam's finding was that a manual dispatch reached a station whose arrivals were barred
-     * from that side, and his ruling settles what the rule is: barred arrivals are advisory. Autonomy
-     * will not route into a barred side; a person looking at the railway may. "We should let the user
-     * know a train can't come in in any way (warning). If manual only, it's info."
-     *
-     * So the two severities belong to two different conditions, and both already existed - one of them
-     * with the wrong one. A station with every side barred is reachable BY HAND, so blocking the whole
-     * setup from starting over it was wrong: that is information. The case where nothing can arrive by
-     * any means is a square no track reaches, which is POINT_ISOLATED, and that is a warning already.
-     *
-     * The contrived layout is built and the setting changed programmatically, which is what the entry
-     * asked for.
+     * MT-078: barred arrivals are advisory.  Autonomy will not route into a barred side; a person may.  Adam: "We
+     * should let the user know a train can't come in in any way (warning). If manual only, it's info."  A station with
+     * every side barred is reachable BY HAND, so blocking the setup from starting over it was wrong; the case where
+     * nothing can arrive by any means is a square no track reaches, POINT_ISOLATED, a warning already.
      */
     @Test
     public void testAStationWithEveryArrivalBarredIsOnlyInformation() throws IOException
@@ -493,18 +450,10 @@ public class testBarredArrivalIsNotADestination
     /**
      * Autonomy can be set up FROM AN IMPORT, with no setup here to begin with.
      *
-     * FR-007: "it should be possible to initially load autonomy from an import, not just forcing the
-     * creation of a new one."
-     *
-     * The import machinery was already there and already handled a store that had never been written
-     * to - what was missing was the way in. The Autonomy menu offered "add a configuration" and nothing
-     * else while `names.isEmpty()`, with Import sitting in the branch that only runs once a
-     * configuration exists. So the first thing the menu asked of somebody who already HAD a setup -
-     * from another machine, from somebody running the same layout, or from their own backup - was to
-     * build a new one from scratch and find the import afterwards.
-     *
-     * This is the model half: a session on a folder that has never held a setup takes a bundle and
-     * comes out with a working configuration. The menu half is one item, in AutonomyMenu.
+     * FR-007: "it should be possible to initially load autonomy from an import, not just forcing the creation of a new
+     * one."  The Autonomy menu offered only "add a configuration" while `names.isEmpty()`, with Import in the branch
+     * that runs once a configuration exists.  This is the model half: a session on a folder that has never held a setup
+     * takes a bundle and comes out with a working configuration; the menu half is one item in AutonomyMenu.
      */
     @Test
     public void testASetupCanBeCreatedByImportingOne() throws Exception
@@ -582,20 +531,13 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * A terminus with one side barred still loads.
+     * A terminus with one side barred still loads (MT-079): "Mark a terminus 'trains may turn round here', bar one of
+     * its sides, reload. It loads - no 'configuration is invalid and must be reloaded'."
      *
-     * MT-079, from the 18 August plan: "Mark a terminus 'trains may turn round here', bar one of its
-     * sides, reload. It loads - no 'configuration is invalid and must be reloaded'."
-     *
-     * Nobody had automated it, and this is the one case the comment on
-     * testABarredCopyStillHoldsItsProtectingSignal singles out as dangerous: "the `stops` variable
-     * exists for a case where the model DOES refuse - a terminus that is not a destination - and
-     * answers a refusal by invalidating the whole layout."
-     *
-     * Barring a side is exactly what makes a copy stop being a destination. So the two settings that
-     * are individually fine are, together, the shape that invalidates everything - and the failure is
-     * not a warning about one square, it is the whole configuration refusing to load, days after
-     * somebody set it.
+     * This is the case `testABarredCopyStillHoldsItsProtectingSignal` singles out as dangerous: the `stops` variable
+     * exists for a terminus that is not a destination, which invalidates the whole layout, and barring a side is
+     * exactly what makes a copy stop being a destination.  The failure is the whole configuration refusing to load,
+     * days after somebody set it.
      */
     @Test
     public void testATerminusWithABarredSideStillLoads() throws IOException

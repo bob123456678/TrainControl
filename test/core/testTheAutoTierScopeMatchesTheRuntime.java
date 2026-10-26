@@ -103,14 +103,8 @@ public class testTheAutoTierScopeMatchesTheRuntime
         // has a turning copy the railway refuses and a plain copy it accepts; the diagram has one
         // answer for the square, and the honest one is "can autonomy choose ANY copy of this".
         //
-        // THE REASON THIS COMMENT USED TO GIVE WAS WRONG (corrected 2026-09-08).  It said the first
-        // version "passed anyway, because no square on this layout is split", citing a test called
-        // `testEverySquareOnThisLayoutBuildsToOneCopy` that did not exist.  When that census was
-        // finally written - `core.testEverySquareBuildsToTheCopiesTheSetupImplies` - it reported 30 of
-        // this railway's 58 squares split, and 13 of its 33 stations, including four emitted as four
-        // Points each.  So the squares WERE split, and the first version passed for some other reason
-        // or by luck.  The per-square reading below is right on its own terms: the diagram has one
-        // answer per square, and the honest question is whether autonomy may choose ANY copy of it.
+        // Squares do split on this railway: `core.testEverySquareBuildsToTheCopiesTheSetupImplies` counts 30 of its 58
+        // squares and 13 of its 33 stations, including four emitted as four Points each.
         java.util.Map<TileKey, Boolean> railwayWillChoose = new java.util.LinkedHashMap<>();
 
         for (Point point : built.getPoints())
@@ -123,11 +117,10 @@ public class testTheAutoTierScopeMatchesTheRuntime
 
             // The railway's own rule, quoted rather than paraphrased: `Layout.isSendableDestination` refuses a
             // destination that is reversing or is not an auto destination.
-            // ALL THREE CLAUSES A SQUARE CAN ANSWER, and `isActive` was missing until 2026-09-10.
+            // ALL THREE CLAUSES A SQUARE CAN ANSWER.
             // This paraphrase is what the guard compares the diagram against, so a clause
-            // absent from BOTH sides is a divergence the guard written to catch it cannot see - and
-            // that is exactly what happened: a station switched out of service was reported as one
-            // autonomy will choose, and this class was green throughout.
+            // absent from BOTH sides is a divergence the guard written to catch it cannot see: a station
+            // switched out of service would be reported as one autonomy will choose, and this class green throughout.
             boolean thisCopy = point.isActive() && !point.isReversing() && point.isAutoDestination();
 
             railwayWillChoose.put(square,

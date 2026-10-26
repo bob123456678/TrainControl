@@ -42,30 +42,18 @@ public abstract class Locomotive
     public static final int FEEDBACK_DURATION_THRESHOLD = 201;
 
     /**
-     * How long a DISPATCHED train may be on its way to a sensor before the user is told it has not
-     * arrived.
+     * How long a dispatched train may be on its way to a sensor before the user is told it has not arrived: five
+     * minutes, since a long block can legitimately take a while and crying wolf is worse than silence.  Nothing acts on
+     * it and it does not end the wait: there is no safe automatic answer to "the train has not reached its sensor", and
+     * the Central Station re-reports the s88 bus on its next poll.  The usual causes are a locomotive that never
+     * started and one that took a different route.
      *
-     * Five minutes.  A train may legitimately take a long while over a long block, and crying wolf is
-     * worse than saying nothing at all.
-     *
-     * This does NOT end the wait, and nothing acts on it.  There is no safe automatic answer to "the
-     * train has not reached its sensor" - driving on blind is dangerous and stopping mid-block on a
-     * guess is a decision nobody asked for - and the state is not lost anyway, because the Central
-     * Station polls the s88 bus and re-reports, so a dropped message heals on the next poll while the
-     * train is still standing on the sensor.  What was missing was not a timeout: it was any word at
-     * all to the operator, who otherwise sees a train that has simply stopped being mentioned.
-     *
-     * The usual causes are the two Adam named: a locomotive that never started, and one that took a
-     * different route from the one it was given.
-     *
-     * Only the dispatch path in Layout asks for it - see the three-argument wait below.  It is NOT a
-     * property of waiting for a sensor in general: a route's trigger monitor waits on its sensor for
-     * as long as the layout runs, which is exactly what it is for.
+     * Only the dispatch path in Layout asks for it, via the three-argument wait; a route's trigger monitor waits on its
+     * sensor for as long as the layout runs.
      */
     public static volatile long FEEDBACK_ADVISORY_MS = 300000;
 
-    // How often a waiting thread wakes to check the clock.  Only the advisory needs this - the wait
-    // itself is still released by the feedback change - so it is coarse on purpose.
+    // How often a waiting thread wakes to check the clock; only the advisory needs it, so it is coarse.
     private static final long FEEDBACK_ADVISORY_POLL = 5000;
     
     // Speed from 0 to 100 (percent)
@@ -418,10 +406,8 @@ public abstract class Locomotive
                 // Power on - reset the timer
                 if (powerOn)
                 {
-                    // Only a real transition starts the clock.  The Central Station broadcasts GO to
-                    // every locomotive on every press, whether or not anything changed, so pressing Go
-                    // while a train was already running reset lastStartTime - and since runtime is
-                    // credited only at the next stop, everything since the real start was discarded.
+                    // Only a real transition starts the clock: the Central Station broadcasts GO on every press, and
+                    // restarting a running locomotive's clock discarded the time since its real start.
                     if (!wasOn)
                     {
                         this.lastStartTime = System.currentTimeMillis();
@@ -457,16 +443,8 @@ public abstract class Locomotive
             if (speed >= 0 && speed <= 100)
             {
                 // Update total runtime stat
-                // AND ONLY WHEN THE TRACK IS LIVE (C19).  The branch below already asks this before it
-                // adds any time; this one did not, so commanding a speed with the power off wrote a
-                // "ran today" record for a locomotive that had not moved and could not.  One of a pair
-                // asking the question and the other not is what made it visible.
-                //
-                // The sibling case IS handled, sixty lines up: notifyOfPowerStateChange closes the
-                // interval and zeroes the stamp when power goes off, and re-stamps when it returns.
-                // An earlier version of this comment claimed otherwise and deferred the question - a
-                // comment asserting the comfortable version of what the code does, which is the thing
-                // this file warns about by name elsewhere.
+                // Only when the track is live, as the branch below also asks: with power off a speed command wrote a
+                // "ran today" record for a locomotive that had not moved.
                 if (speed > 0 && this.speed == 0 && powerState)
                 {
                     this.lastStartTime = System.currentTimeMillis();
@@ -626,11 +604,8 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
-                    // next wait() throw at once, so an interrupted thread span at full CPU until the
-                    // condition it was waiting for happened to come true - and these are the waits a
-                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
-                    // where it can be seen without being stepped on.
+                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
+                    // at full CPU.  The flag goes back on the way out.
                     interrupted = true;
                 }
             }   
@@ -691,11 +666,8 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
-                    // next wait() throw at once, so an interrupted thread span at full CPU until the
-                    // condition it was waiting for happened to come true - and these are the waits a
-                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
-                    // where it can be seen without being stepped on.
+                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
+                    // at full CPU.  The flag goes back on the way out.
                     interrupted = true;
                 }
             }
@@ -726,11 +698,8 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
-                    // next wait() throw at once, so an interrupted thread span at full CPU until the
-                    // condition it was waiting for happened to come true - and these are the waits a
-                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
-                    // where it can be seen without being stepped on.
+                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
+                    // at full CPU.  The flag goes back on the way out.
                     interrupted = true;
                 }
             }
@@ -751,20 +720,14 @@ public abstract class Locomotive
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration)
     {       
-        // No advisory.  This is the door everything except the dispatch path comes in by, and most of
-        // those are SUPPOSED to wait indefinitely - a route's trigger monitor sits on its sensor for
-        // as long as the layout runs, on a locomotive called "Dummy Loc" that exists only to borrow
-        // these utilities.  Saying "Dummy Loc has not arrived" every five minutes, once per route, is
-        // worse than saying nothing.
+        // No advisory: everything except the dispatch path comes in here, and most of those wait indefinitely (a
+        // route's trigger monitor, on a "Dummy Loc"), where "has not arrived" every five minutes would be noise.
         return waitForOccupiedFeedback(name, minDuration, 0);
     }
 
     /**
-     * The same, and says so if the train takes an unreasonable time to get there.
-     *
-     * Split out rather than added to the two-argument wait, because "this train was dispatched and is
-     * on its way" is a fact the CALLER has and this method does not.  Only Layout's dispatch loop
-     * passes an advisory; every other caller keeps the plain endless wait it wants.
+     * The same, and says so if the train takes an unreasonable time to get there.  Only Layout's dispatch loop passes
+     * an advisory: "dispatched and on its way" is a fact only the caller has.
      *
      * @param name the feedback to wait for
      * @param minDuration how long the feedback must stay occupied to count
@@ -777,10 +740,9 @@ public abstract class Locomotive
     }
 
     /**
-     * The same, given up without the sensor once `abandon` says so.  It is asked whenever the wait wakes, and
-     * every wait is woken when a railway is retired (`wakeEveryWait`): a journey passes "my railway has gone", so a
-     * train the reload's Yes stopped short of its sensor leaves no thread behind to stop it later, whoever drives it
-     * then.  A route's trigger passes nothing and waits for as long as the layout runs.
+     * The same, given up without the sensor once `abandon` says so.  It is asked whenever the wait wakes, and every
+     * wait is woken when a railway is retired (`wakeEveryWait`): a journey passes "my railway has gone", so a train
+     * stopped short of its sensor leaves no thread behind to stop it later.  A route's trigger passes nothing.
      *
      * @param name the feedback to wait for
      * @param minDuration how long the feedback must stay occupied to count
@@ -819,26 +781,16 @@ public abstract class Locomotive
     }
 
     /**
-     * @param originMs when the WAIT began, which is not when this call began
-     * @param alreadyAdvised whether the advisory has been given for this wait
-     * @param abandon when to give the wait up without the sensor, or null never to
-     *
-     * A sensor that makes for a moment and lets go restarts the wait - the tile bounced, or a bogie
-     * bridged it, and a train that has not really arrived must not be treated as though it had.  The
-     * restart used to carry a REMAINDER of the quota rather than the origin, so the clock began again
-     * with it: a train dispatched at 0:00 whose sensor flickered at 4:30 was announced as stuck "after
-     * 0 minutes" when it had been missing for five and a half.
-     *
-     * The origin travels instead.  The elapsed time in the message is then the time since the train was
-     * sent, which is the only number that answers the question somebody is asking when they read it.
+     * A sensor that flickers restarts the wait but not the clock: `originMs`, when the WAIT began, travels with it, so
+     * the elapsed time reported is the time since the train was sent.  `alreadyAdvised` is whether the advisory was
+     * given.
      */
     private Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
         long originMs, boolean alreadyAdvised, java.util.function.BooleanSupplier abandon)
     {
         boolean interrupted = false;
 
-        // Only so that the thread can look at the clock - see waitedTooLongFor.  The condition below
-        // is unchanged and the wait is still ended by the feedback itself.
+        // Only so that the thread can look at the clock; the wait is still ended by the feedback itself.
         long began = originMs;
         boolean advised = alreadyAdvised;
 
@@ -855,13 +807,8 @@ public abstract class Locomotive
 
                 try
                 {
-                    // Untimed unless somebody is waiting to be told - a wait that wakes for nothing is
-                    // a wait that wakes for nothing, however cheap.  Once it HAS been said there is
-                    // nothing left to wake up for, so the wait goes back to being untimed.
-                    //
-                    // Never coarser than the advisory itself: a caller asking to be told after half a
-                    // second and then being told five seconds later would be a promise not kept, and
-                    // it is what made the first test written for this pass without exercising it.
+                    // Untimed unless somebody is waiting to be told, and untimed again once it has been said.  Never
+                    // coarser than the advisory itself, or a half-second advisory would arrive five seconds late.
                     if (advised)
                     {
                         monitor.wait();
@@ -873,11 +820,8 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
-                    // next wait() throw at once, so an interrupted thread span at full CPU until the
-                    // condition it was waiting for happened to come true - and these are the waits a
-                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
-                    // where it can be seen without being stepped on.
+                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
+                    // at full CPU.  The flag goes back on the way out.
                     interrupted = true;
                 }
             }  
@@ -899,38 +843,23 @@ public abstract class Locomotive
             // Feedback should still be occupied.  Otherwise, start over
             if (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
             {
-                // Whatever is left of the advisory goes with it: a sensor that flickered is not a
-                // fresh journey, and restarting the clock would hide a train that never really arrived.
-                //
-                // Nothing left once it has been SAID, which is the case the arithmetic alone gets
-                // wrong: past the threshold the remainder is negative, and flooring it at 1ms made a
-                // flicker announce the same train again a millisecond later, as "0 minutes".  The
-                // javadoc says once per wait and this is what makes that true.
+                // Whatever is left of the advisory goes with it: a flicker is not a fresh journey.  Once SAID, nothing
+                // is left (a negative remainder floored at 1 ms announced the same train again as "0 minutes").
                 return this.waitForOccupiedFeedback(name, minDuration, adviseAfterMs, began, advised, abandon);
             }
         }
 
-        // Put back LAST, after the debounce below rather than before it.
-        //
-        // delay() is Thread.sleep, which throws the moment the flag is set, catches, sets it again and
-        // returns - so with the flag restored first, an interrupted wait skipped its confirmation
-        // entirely and re-tested the sensor in the same instant, always true.  A one-millisecond blip
-        // would then have been taken for an arrival and the train stopped where the blip happened.
-        // Latent, because nothing in the application interrupts these threads, and one statement away
-        // from not being.
+        // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
+        // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
         if (interrupted) Thread.currentThread().interrupt();
         
         return this;
     }
     
     /**
-     * Told when this locomotive has been waiting for a sensor for an unusual length of time.
-     *
-     * Does nothing here: the base class drives model railways in the abstract and has nowhere to say
-     * it.  MarklinLocomotive overrides it and puts a line in the log the operator is already reading.
-     *
-     * Called ONCE per wait, from the waiting thread, with the monitor held - so an implementation must
-     * not block or call back into the layout.  A log line is exactly the right weight for it.
+     * Told when this locomotive has been waiting for a sensor for an unusual length of time.  Does nothing here;
+     * MarklinLocomotive logs it.  Called once per wait, from the waiting thread, with the monitor held, so an
+     * implementation must not block or call back into the layout.
      *
      * @param feedbackName the sensor being waited for
      * @param waitedMs how long the wait has gone on
@@ -961,11 +890,8 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed here.  Re-arming the flag inside the loop made the very
-                    // next wait() throw at once, so an interrupted thread span at full CPU until the
-                    // condition it was waiting for happened to come true - and these are the waits a
-                    // locomotive sits in for minutes at a time.  The flag goes back on the way out,
-                    // where it can be seen without being stepped on.
+                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
+                    // at full CPU.  The flag goes back on the way out.
                     interrupted = true;
                 }
             }  
@@ -982,14 +908,8 @@ public abstract class Locomotive
             }
         }
 
-        // Put back LAST, after the debounce below rather than before it.
-        //
-        // delay() is Thread.sleep, which throws the moment the flag is set, catches, sets it again and
-        // returns - so with the flag restored first, an interrupted wait skipped its confirmation
-        // entirely and re-tested the sensor in the same instant, always true.  A one-millisecond blip
-        // would then have been taken for an arrival and the train stopped where the blip happened.
-        // Latent, because nothing in the application interrupts these threads, and one statement away
-        // from not being.
+        // Put back LAST, after the debounce: delay() is Thread.sleep, which throws at once with the flag set, so an
+        // interrupted wait would skip its confirmation and take a one-millisecond blip for an arrival.
         if (interrupted) Thread.currentThread().interrupt();
                 
         return this;
@@ -1078,10 +998,6 @@ public abstract class Locomotive
     /**
      * Turns a function on for a pulse, then off - for as long as the subclass says.
      *
-     * This said "one second", which no caller can obtain: every concrete locomotive in the application
-     * is a MarklinLocomotive, which overrides this with PULSE_FUNCTION_DURATION - 300 ms - so the body
-     * below is unreachable and the number in the javadoc was never the one used.  A number in a javadoc
-     * that nothing can produce is worse than no number.
      * @param f
      * @return 
      */
@@ -1253,15 +1169,9 @@ public abstract class Locomotive
     }
     
     /**
-     * How many functions this locomotive can drive.
-     *
-     * The same as `getNumF` for anything standing on its own.  A consist overrides it, because its
-     * range is the highest of its members rather than the head's - Adam, MT-359: *"Make the allowed
-     * function be the highest possible for the consist"*.
-     *
-     * On the base class so that a caller holding a plain `Locomotive` can ask without knowing whether
-     * it is one.  `TrainControlUI` is exactly that caller: it holds the active locomotive as a
-     * `Locomotive` and decides which function buttons to light from this.
+     * How many functions this locomotive can drive: `getNumF` for anything standing on its own; a consist overrides it
+     * with the highest of its members (MT-359).  On the base class so a caller holding a plain `Locomotive`
+     * (`TrainControlUI`) can ask.
      *
      * @return the highest function number that can be driven, exclusive
      */
@@ -1607,20 +1517,8 @@ public abstract class Locomotive
     }
     
     /**
-     * Everything "Copy Customizations" means, as one value (MT-466).
-     *
-     * **A customization is the function types AND the custom icons, and the copy carried only the
-     * first half.**  Adam, 2026-09-21, having copied from a locomotive whose F0 carried an icon:
-     * *"all icons are cleared (source locomotive only had f0 with an icon), but the one customized
-     * icon on f0 is not loaded on the target loc."*  Both halves of what he saw come from the same
-     * omission: writing the source's function TYPES changes which standard icon every button draws -
-     * so the target's icons all change - while the one thing he actually wanted carried, the local
-     * image on F0, was never read.
-     *
-     * Captured and applied as a value so that the copy and the UNDO cannot come to disagree about
-     * what a customization is: `copyCustomizationsFrom` is `applyCustomizations(capture())`, and the
-     * dialog's Cancel is `applyCustomizations` of what it captured first.  They were three parallel
-     * fields and three assignments before, which is how the icons came to be in neither.
+     * Everything "Copy Customizations" means, as one value (MT-466): the function types AND the custom icons.  Captured
+     * and applied as a value so the copy and the Cancel's undo cannot come to disagree about what a customization is.
      */
     public static final class Customizations
     {
@@ -1659,11 +1557,8 @@ public abstract class Locomotive
     }
 
     /**
-     * What this locomotive's customizations are right now, detached from it.
-     *
-     * COPIES, not the live arrays and map.  `setLocalFunctionImageURLs` stores the map it is given by
-     * reference, so a snapshot holding the live one would follow every later edit - and a Cancel would
-     * then restore the state it was canceling.
+     * What this locomotive's customizations are right now, detached from it: copies, not the live arrays and map, which
+     * a later edit would otherwise change under a Cancel.
      *
      * @return the snapshot
      */
@@ -1687,14 +1582,11 @@ public abstract class Locomotive
 
         this.setFunctionTypes(was.types, was.triggers);
 
-        // A FRESH MAP EACH TIME, for the reason `captureCustomizations` gives: the setter keeps the
-        // reference, so applying one snapshot twice would otherwise hand two locomotives one map.
+        // A fresh map each time: the setter keeps the reference.
         this.setLocalFunctionImageURLs(new java.util.HashMap<>(was.icons));
 
-        // THE FLAG ITSELF, as the snapshot took it (OB-245).  `isCustomFunctions` is derived - any custom icon makes it
-        // true - and the snapshot used to take that answer and write it back only where it differed, so a copy's flag
-        // survived a Cancel on a locomotive customized by an icon alone: the answer read the same, nothing was written,
-        // and once the icon was deleted it read as customized for ever.
+        // The flag itself, as the snapshot took it (OB-245): `isCustomFunctions` is derived from the icons, so writing
+        // it back only where it differed let a copy's flag survive a Cancel.
         this.setCustomFunctions(was.custom);
     }
 
@@ -1712,8 +1604,6 @@ public abstract class Locomotive
 
     public void setLocalFunctionImageURLs(Map<Integer, String> urls)
     {
-        // The instanceof half was always true - the parameter is declared a Map - and instanceof is
-        // already null-safe, so the two clauses together said one thing twice and neither said it.
         if (urls != null)
         {
             this.localFunctionImageURLs = urls;
@@ -2001,12 +1891,10 @@ public abstract class Locomotive
     abstract public Map<Locomotive, Double> getLinkedLocomotives();
     abstract public int setLinkedLocomotives();
 
-    // THE ONE-CALL FORM, which is what a caller holding its list should use.  The pair
-    // below stages on an instance field and reads it back, and two threads rebuild consists - a
-    // Central Station sync off the event thread, and the multi-unit dialog on it - so one caller's
-    // list could be applied to the other caller's consist.  The pair remains for the one caller
-    // that cannot hold its list: restoring saved state, where a member cannot be resolved by name
-    // until every locomotive has been loaded.
+    // The one-call form is what a caller holding its list should use: the pair below stages on an instance field, and
+    // two threads rebuild consists (a Central Station sync, the multi-unit dialog), so one list could land on the
+    // other's consist.  The pair remains for restoring saved state, where a member cannot be resolved by name until
+    // every locomotive has been loaded.
     abstract public int setLinkedLocomotives(Map<String, Double> locList);
     abstract public void preSetLinkedLocomotives(Map<String, Double> locList);
     abstract public boolean canBeLinkedTo(Locomotive other, boolean logError);

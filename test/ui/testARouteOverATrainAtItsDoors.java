@@ -29,20 +29,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * A route that would switch track a train is on, fired at each of its doors on the real window: by its sensor (MT-506),
- * and from the route list and from its tile on the track diagram (MT-507) - Adam, 2026-09-25: automated tests supersede
- * the MTs they answer.
+ * and from the route list and from its tile on the track diagram (MT-507).
  *
- * The train is on switch A with its path locked by a dispatch, as `regression.testARouteDoesNotThrowSwitchesUnderATrain`
- * builds it, and the route is fired from inside that dispatch; commands are echoed back as the Central Station would
- * (`DEBUG_SIMULATE_PACKETS`, put back after), so a switch reads thrown only when its command went out.  The tile is one
- * of the route tiles on his own diagram, given this route for the length of the claim.
+ * The train is on switch A with its path locked by a dispatch, as
+ * `regression.testARouteDoesNotThrowSwitchesUnderATrain` builds it, and the route is fired from inside that dispatch;
+ * commands are echoed back as the Central Station would (`DEBUG_SIMULATE_PACKETS`, put back after), so a switch reads
+ * thrown only when its command went out.  The tile is one of the route tiles on his own diagram, given this route for
+ * the length of the claim.
  *
- * A route carrying an emergency stop is never asked about - Adam, 2026-09-01: *"Emergency stop should never conflict or
- * prompt."* - so the question MT-507 describes is asked of the same route without its stop, and the route with its stop
- * is fired too, to show what each door does with it.  Since 2026-09-25 a stop stands in a route of its own (Adam: *"if a
- * route has emergency stop, it cannot have any other types of commands"*; MT-507, MT-508: *"routes with an emergency stop
- * should still fire"*), so the entry's route is built as it now must be: switches A and B, then a Route command firing a
- * route that is only the stop - which is what a mixed route is split into (`core.testAStopRouteStandsAlone`).
+ * A route carrying an emergency stop is never asked about (Adam: "Emergency stop should never conflict or prompt."), so
+ * the question MT-507 describes is asked of the same route without its stop, and the route with its stop is fired too.
+ * A stop stands in a route of its own (Adam: "if a route has emergency stop, it cannot have any other types of
+ * commands"; "routes with an emergency stop should still fire"), so the entry's route is switches A and B, then a Route
+ * command firing a route that is only the stop, which is what a mixed route is split into
+ * (`core.testAStopRouteStandsAlone`).
  *
  * @author Adam
  */
@@ -140,15 +140,12 @@ public class testARouteOverATrainAtItsDoors
     }
 
     /**
-     * Fired by its sensor while a train holds switch A: nothing is asked, switch A is not thrown, switch B is, the power
-     * goes off, the log names switch A as held back (MT-506), and the stop route's notice is shown, as it was when the
-     * stop stood in the route itself (Adam, 2026-09-25: *"As before, notify the user in a popup when the emergency stop
-     * route fires."*).
+     * Fired by its sensor while a train holds switch A: nothing is asked, switch A is not thrown, switch B is, the
+     * power goes off, the log names switch A as held back (MT-506), and the stop route's notice is shown (Adam: "As
+     * before, notify the user in a popup when the emergency stop route fires.").
      *
      * MUTATION: have the automatic door ask, refuse the whole route, throw the held switch, or fire a chained route
      * without saying it was fired by its sensor, and this fails.
-     *
-     * @throws Exception from the model or the window
      */
     @Test
     public void testFiredByItsSensorItSkipsOnlyTheSwitchUnderTheTrain() throws Exception
@@ -221,9 +218,8 @@ public class testARouteOverATrainAtItsDoors
 
         String held = I18n.f("route.refusedAccessoryOnActivePath", ROUTE, accessoryName(SWITCH_A));
 
-        // COPIED UNDER THE LIST'S OWN LOCK, as `testAFailedDispatchSaysWhichKindItWas.tail` copies: the model's log thread
-        // appends to it, and a view taken outside the lock is spoilt by the next line logged - a
-        // ConcurrentModificationException in the battery of 2026-09-29, the route's stop now logged after it is sent.
+        // COPIED UNDER THE LIST'S OWN LOCK, as `testAFailedDispatchSaysWhichKindItWas.tail` copies: the model's log
+        // thread appends to it, and a view taken outside the lock is spoilt by the next line logged.
         final List<String> since;
 
         synchronized (logged)
@@ -235,13 +231,11 @@ public class testARouteOverATrainAtItsDoors
     }
 
     /**
-     * From the route list and from its tile, the route over the train is asked about with one question - that it would
-     * switch track a train is on, run anyway? - and Cancel runs none of it: no switch thrown, the power still on (MT-507).
-     * The same route with its emergency stop, as the entry describes it, is asked about at neither door and runs guarded.
+     * From the route list and from its tile, the route over the train is asked about with one question (it would switch
+     * track a train is on, run anyway?) and Cancel runs none of it: no switch thrown, the power still on (MT-507).  The
+     * same route with its emergency stop is asked about at neither door and runs guarded.
      *
      * MUTATION: have either door fire on Cancel, or ask a route with a stop, and this fails.
-     *
-     * @throws Exception from the model or the window
      */
     @Test
     public void testCancelAtEitherDoorRunsNothing() throws Exception
@@ -356,14 +350,12 @@ public class testARouteOverATrainAtItsDoors
     }
 
     /**
-     * A stop reached through a chain of routes still cuts the power.  A route that fires a
-     * split route - one that fires its stop route in the stop's place - reaches the stop two routes down, where a chained
-     * route may otherwise go no further.  A route that is only a stop fires nothing further, so it runs at any depth; and
-     * the route at the top counts as cutting the power, so it is never asked about either.
+     * A stop reached through a chain of routes still cuts the power: a route that fires a split route (one that fires
+     * its stop route in the stop's place) reaches the stop two routes down, where a chained route may otherwise go no
+     * further.  A route that is only a stop fires nothing further, so it runs at any depth, and the route at the top
+     * counts as cutting the power, so it is never asked about either.
      *
      * MUTATION: hold a stop-only route to the chain's limit, or count only a stop one route down, and this fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testAStopReachedThroughAChainStillCutsThePower() throws Exception
@@ -435,8 +427,8 @@ public class testARouteOverATrainAtItsDoors
     }
 
     /**
-     * A train dispatched over switch A, and inside that dispatch `probe`.  The power is on before, and put back after;
-     * both switches straight before.
+     * A train dispatched over switch A, and inside that dispatch `probe`: the power on before and put back after, both
+     * switches straight before.
      */
     private static void onARouteOverATrain(WithTheTrainOnA probe) throws Exception
     {
@@ -475,8 +467,7 @@ public class testARouteOverATrainAtItsDoors
         final Exception[] failed = new Exception[1];
         final Error[] broke = new Error[1];
 
-        // ONCE PER DISPATCH: the layout calls back more than once with the dispatch started, and the doors are to be
-        // fired once.
+        // ONCE PER DISPATCH: the layout calls back more than once with the dispatch started.
         final boolean[] ran = new boolean[1];
 
         layout.setCallback("route doors probe", (edges, l, started) ->
@@ -528,8 +519,8 @@ public class testARouteOverATrainAtItsDoors
     }
 
     /**
-     * A, B and - where asked - an emergency stop, as a route must now carry one: a Route command firing a route that is
-     * only the stop, which is made here if it is not in the route list.
+     * A, B and, where asked, an emergency stop as a route must now carry one: a Route command firing a route that is
+     * only the stop, made here if it is not in the route list.
      */
     private static List<RouteCommand> commands(boolean stop)
     {

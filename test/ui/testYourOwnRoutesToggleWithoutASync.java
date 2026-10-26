@@ -16,18 +16,14 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Turning automatic execution on or off for a route the Central Station never carried does not sync with it
- * (MT-467).
+ * Turning automatic execution on or off for a route the Central Station never carried does not sync with it (MT-467).
+ * The guard asked whether the route's id was 1000 or more, the ids the station now hands out, and most of his own
+ * routes are older (ids 1 to 87), so they synced behind the modal spinner. What says whether the station carried a
+ * route is its lock, which only the sync's import sets and which travels with the route in the database.
  *
- * Adam, 2026-09-23, on MT-467: *"there is a spinner for my own routes too, both single and bulk."*  The guard
- * asked whether the route's id was 1000 or more - the ids this application has handed out since 2025-02-01 -
- * and most of his own routes are older than that: ids 1 to 87.  So they synced, behind the modal spinner.
- * What says whether the station carried a route is its lock, which only the sync's import sets and which
- * travels with the route in the database.
- *
- * **How a sync is seen.**  The test holds the one-sync-at-a-time flag, so a sync asked for is turned away
- * with a line in the log and nothing fetched; the lines are counted.  A route the station carried - locked -
- * still syncs, and is the control that shows a sync can be seen at all.
+ * How a sync is seen: the test holds the one-sync-at-a-time flag, so a sync asked for is turned away with a line in the
+ * log and nothing fetched, and the lines are counted. A route the station carried (locked) still syncs, and is the
+ * control that shows a sync can be seen at all.
  *
  * MUTATION: put back `isLocalRouteId` as the toggle's test and both claims fail.
  *

@@ -19,15 +19,9 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * The fixtures every topic class split from the former `testAutonomyDiagramSession` shares (FR-136 Phase 3):
- * a temporary layout folder and a fresh `AutonomySession` over it, built before each claim and deleted after,
- * and the pages and builders that more than one topic builds on.
- *
- * The whole chain, from a decision somebody made to the graph a train could run on.
- *
- * The unit tests below this cover each link separately; this covers the thing that goes wrong when they
- * are joined - an edit that changes the files but not the graph, or a graph that reflects an edit that
- * was never saved.  Both leave a user checking their work against the wrong answer.
+ * The fixtures every topic class split from the former `testAutonomyDiagramSession` shares (FR-136 Phase 3): a
+ * temporary layout folder and a fresh `AutonomySession` over it, built before each claim and deleted after, and the
+ * pages and builders that more than one topic builds on.
  *
  * @author Adam
  */
@@ -53,7 +47,8 @@ abstract class AutonomySessionFixture
     LayoutDiagram[] twoPagesMade;
 
     /**
-     * Two pages of three stations each, in a configuration of this name, and a timetable of one entry on each: its legs.
+     * Two pages of three stations each, in a configuration of this name, and a timetable of one entry on each: its
+     * legs.
      */
     String[][] twoPagesWithATimetable(String configuration) throws Exception
     {
@@ -107,7 +102,7 @@ abstract class AutonomySessionFixture
 
     /**
      * What a load of this session's setup builds, as the running layout then writes it: its configuration, and every
-     * entry of the stored timetable - one the railway cannot build kept as it was written (Adam, 2026-09-30).
+     * entry of the stored timetable, one the railway cannot build kept as it was written.
      */
     static org.json.JSONObject loadedFrom(AutonomySession of)
     {
@@ -166,10 +161,10 @@ abstract class AutonomySessionFixture
     }
 
     /** One of the editor panel's own controls, by its field. */
-    static java.awt.Component panelPart(org.traincontrol.gui.AutonomyEditorPanel panel, String field)
+    static java.awt.Component panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String field)
         throws Exception
     {
-        java.lang.reflect.Field f = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(field);
+        java.lang.reflect.Field f = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(field);
 
         f.setAccessible(true);
 
@@ -215,11 +210,8 @@ abstract class AutonomySessionFixture
     }
 
     /**
-     * A straight run of track with a sensor at each end and one in the middle.
-     *
-     * Three sensors rather than two, because the shape that needs catching is a station with track on
-     * both sides of it whose onward track goes nowhere - which needs somewhere for the onward track to
-     * end.
+     * A straight run of track with a sensor at each end and one in the middle: the shape that needs catching is a
+     * station with track on both sides whose onward track goes nowhere, which needs somewhere for it to end.
      */
     LayoutDiagram deadEndRun() throws IOException
     {
@@ -279,9 +271,7 @@ abstract class AutonomySessionFixture
         file.delete();
     }
 
-    /**
-     * The squares a given check named, so a test can tell which one it fired about.
-     */
+    /** The squares a given check named, so a test can tell which one it fired about. */
     java.util.List<String> subjectsOf(String messageKey)
     {
         java.util.List<String> subjects = new java.util.ArrayList<>();
@@ -304,17 +294,12 @@ abstract class AutonomySessionFixture
         return false;
     }
 
-    /**
-     * A page whose file really exists, so that "this was not written" is a claim that can be checked.
-     */
+    /** A page whose file really exists, so that "this was not written" is a claim that can be checked. */
     File pageFile;
 
     /**
-     * A page whose middle sensor has track on BOTH sides, so a train can arrive at it either way.
-     *
-     * pageOnDisk puts its two sensors at the ends of a line, where there is only one way in - which is
-     * fine for naming and captions and useless for anything about arrival sides, since a square with
-     * one way in has no choice to restrict.
+     * A page whose middle sensor has track on BOTH sides, so a train can arrive at it either way: `pageOnDisk` has only
+     * one way in, which leaves nothing to restrict.
      */
     LayoutDiagram pageWithATwoEndedStation() throws IOException
     {
@@ -381,8 +366,8 @@ abstract class AutonomySessionFixture
     }
 
     /**
-     * `platformBehindASwitch`, and track on past the platform to a second sensor - so the platform has an approach
-     * from each side, one of which can be barred.
+     * `platformBehindASwitch`, and track on past the platform to a second sensor: an approach from each side, one
+     * barred.
      */
     LayoutDiagram platformWithTwoApproaches() throws IOException
     {
@@ -405,12 +390,9 @@ abstract class AutonomySessionFixture
     }
 
     /**
-     * A platform with a switch in its approach, which is Adam's own example of a station whose track is
-     * finer than one number: *"a station of length 4 may have two segments of tracks on either side of a
-     * switch, of length 2."*
-     *
-     * The switch needs an address wired onto it or autonomy will not route over it, and its branch needs
-     * somewhere to go or it is a dead end rather than a fork.
+     * A platform with a switch in its approach, Adam's example of a station whose track is finer than one number: "a
+     * station of length 4 may have two segments of tracks on either side of a switch, of length 2."  The switch needs
+     * an address wired onto it or autonomy will not route over it, and its branch needs somewhere to go to be a fork.
      */
     LayoutDiagram platformBehindASwitch() throws IOException
     {
@@ -446,9 +428,7 @@ abstract class AutonomySessionFixture
         return null;
     }
 
-    /**
-     * A line with a feedback in the MIDDLE, so that square has two ways in and can be split.
-     */
+    /** A line with a feedback in the MIDDLE, so that square has two ways in and can be split. */
     LayoutDiagram throughStationPage() throws IOException
     {
         File pages = new File(layout, "config/gleisbilder");
@@ -476,18 +456,13 @@ abstract class AutonomySessionFixture
     }
 
     /**
-     * Answers the station menu over a square as the operator does - Yes, or No - Trains Can Only Pass Through - through
+     * Answers the station menu over a square as the operator does (Yes, or No - Trains Can Only Pass Through) through
      * the editor's own `setUsage`, on the event thread.
-     *
-     * @param panel the editor
-     * @param square the square
-     * @param station true to make it a station, false for a square trains only pass through
-     * @throws Exception from the event thread or the reflection
      */
-    static void answerTheStationMenu(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square,
+    static void answerTheStationMenu(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square,
         final boolean station) throws Exception
     {
-        final java.lang.reflect.Method usage = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
+        final java.lang.reflect.Method usage = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
             TileKey.class, boolean.class, boolean.class);
 
         usage.setAccessible(true);

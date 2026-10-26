@@ -21,25 +21,10 @@ import support.SourceOf;
 /**
  * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).
  *
- * **Two manual tests, one mechanism, and neither could be run by hand.**  The setup
- * rebuild is coalesced into one per gesture, which posts it an event LATER than the write that asked for it.  A run
- * starting inside that window finds the gate shut and the rebuild is refused - correctly, because
- * rebuilding underneath a moving railway is what `prepareAutonomyReload` exists to refuse.
- *
- * MT-267 is that the refusal says so: the edit looked as though it had been made and had not taken
- * effect, with no message anywhere.  Its own step 2 admits the problem - *"this is deliberately hard to
- * hit and you may not manage it"* - which is a test asking to be automated.
- *
- * MT-326 is the second half of the same promise.  The message says the edit *"will be picked up the next
- * time the setup is loaded"*, and that was not true on its own: the save on the way out folds the RUNNING
- * layout back over the configuration and removes what the layout does not carry, and the layout was built
- * before the edit.  Exiting deleted the edit, silently, on the exact path the message called safe.
- * Adam, on MT-326: *"I don't understand this test - autonomy shouldn't be editable/startable
- * while running."*  He is right, and the entry was badly written: this is a race, not a mode.
- *
- * **The race is not raced here.**  `isAutonomyBusy()` answers true for a staging flow as well as a
- * running layout, so the state the race produces is reachable without one - which is the whole reason
- * this can be a test at all.  What is asserted is the consequence, not the timing.
+ * The setup rebuild is coalesced into one per gesture, so a run starting before it finds the gate shut and the rebuild
+ * is refused, correctly.  The race is not raced here: `isAutonomyBusy()` is also true for a staging flow, so the state
+ * is reachable without one, and what is asserted is the consequence.  The message promises the edit "will be picked up
+ * the next time the setup is loaded", so the exit's save must not fold the running layout over it.
  *
  * @author Adam
  */
@@ -107,13 +92,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
-    /**
-     * A rebuild refused because the railway is busy logs the sentence, and records that it was refused.
-     *
-     * MT-267's step 3, which its own step 2 says he may never reach by hand.
-     *
-     * @throws Exception from the reflection
-     */
+    /** A rebuild refused because the railway is busy logs the sentence, and records that it was refused (MT-267). */
     @Test
     public void testTheRefusedRebuildSaysSo() throws Exception
     {
@@ -144,13 +123,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The courtesy door - a close that carries no edit - records nothing.
-     *
-     * This was recorded for ANY decline, and `autonomyEditorClosed()` reaches the
-     * same rebuild on every close.  A session in which nothing was edited would lose its exit capture
-     * and be told an edit could not be applied.
-     *
-     * @throws Exception from the reflection
+     * The courtesy door, a close that carries no edit, records nothing: `autonomyEditorClosed()` reaches the same
+     * rebuild on every close, and recording any decline lost the exit capture of a session where nothing was edited.
      */
     @Test
     public void testACloseThatCarriesNoEditRecordsNothing() throws Exception
@@ -180,14 +154,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
-    /**
-     * With nothing running, the same call neither complains nor records.
-     *
-     * The control: without it the two claims above would pass on a rebuild that recorded a decline
-     * whatever the railway was doing.
-     *
-     * @throws Exception from the reflection
-     */
+    /** With nothing running, the same call neither complains nor records; the control for the two claims above. */
     @Test
     public void testAnOrdinaryRebuildRecordsNothing() throws Exception
     {
@@ -212,15 +179,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
-    /**
-     * Makes `isAutonomyBusy()` answer as asked, without a running railway.
-     *
-     * `stagingFlowActive` is the other thing that predicate reads, and it is a plain flag - so the state
-     * the race produces is reachable without racing anything.
-     *
-     * @param running what it should answer
-     * @throws Exception from the reflection
-     */
+    /** Makes `isAutonomyBusy()` answer as asked, through `stagingFlowActive`, a plain flag the predicate also reads. */
     private static void busy(boolean running) throws Exception
     {
         Field flag = TrainControlUI.class.getDeclaredField("stagingFlowActive");
@@ -229,12 +188,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         flag.setBoolean(ui, running);
     }
 
-    /**
-     * Whether a decline has been recorded against the exit save.
-     *
-     * @return the flag
-     * @throws Exception from the reflection
-     */
+    /** Whether a decline has been recorded against the exit save. */
     private static boolean declined() throws Exception
     {
         Field flag = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
@@ -244,14 +198,10 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return flag.getBoolean(ui);
     }
 
-    /**
-     * Clears that record, so one claim cannot decide the next.
-     *
-     * @throws Exception from the reflection
-     */
+    /** Clears that record, so one claim cannot decide the next. */
     private static void forget() throws Exception
     {
-        // THROUGH THE ONE DOOR THE FLAG IS SET BY, so the track diagram's notice is cleared with it
+        // Through the one door the flag is set by, so the track diagram's notice is cleared with it
         java.lang.reflect.Method newer = TrainControlUI.class.getDeclaredMethod("setupNewerThanTheRailway", boolean.class);
 
         newer.setAccessible(true);
@@ -269,11 +219,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         });
     }
 
-    /**
-     * Everything the model logs from now on.
-     *
-     * @return the lines, as they arrive
-     */
+    /** Everything the model logs from now on. */
     private static List<String> listen()
     {
         final List<String> heard = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -304,15 +250,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return heard;
     }
 
-    /**
-     * The handlers this class has added, so they come off again.
-     */
+    /** The handlers this class has added, so they come off again. */
     private static final List<java.util.logging.Handler> ears =
         new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    /**
-     * Takes every handler off the model's logger.
-     */
+    /** Takes every handler off the model's logger. */
     private static void quiet()
     {
         java.util.logging.Logger log =
@@ -324,19 +266,14 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * Whether the lines heard include the sentence a message key produces.
-     *
-     * Matched on the key's own text rather than the key, because `logf` formats before it logs.
-     *
-     * @param heard the lines
-     * @param key the message key
-     * @return whether one of them is that sentence
+     * Whether the lines heard include the sentence a message key produces, matched on its text since `logf` formats
+     * first.
      */
     private static boolean said(List<String> heard, String key)
     {
         String sentence = org.traincontrol.util.I18n.t(key);
 
-        // The first clause of it, because the sentence carries no arguments here but may gain some.
+        // The first clause only: the sentence carries no arguments here but may gain some.
         String enough = sentence.length() > 40 ? sentence.substring(0, 40) : sentence;
 
         for (String line : heard)
@@ -347,25 +284,18 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return false;
     }
 
-    /**
-     * Lets the event thread finish what this gesture posted.
-     *
-     * @throws Exception from the event thread
-     */
+    /** Lets the event thread finish what this gesture posted. */
     private static void settle() throws Exception
     {
         for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
     }
 
     /**
-     * A setup edit whose load is declined - a link unpaired, a problem that stops the build - puts nothing back and
-     * records nothing over the railway it did not replace: put back in the edited setup's names, every train
-     * whose copy the edit renamed was taken off that railway and recorded where nothing then kept it, and once the link was
-     * paired again the train was on neither and the square it stands on read free.
+     * A setup edit whose load is declined (a link unpaired) puts nothing back and records nothing over the railway it
+     * did not replace: every train whose copy the edit renamed was once taken off that railway and recorded where
+     * nothing kept it.
      *
      * MUTATION: put the trains back whatever the load did, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testALoadDeclinedForAProblemPutsNothingBack() throws Exception
@@ -392,7 +322,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         try
         {
-            // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: a link left unpaired stops the build
+            // UNPAIR THIS LINK, and rebuild as the diagram's menu does: a link left unpaired stops the build
             SwingUtilities.invokeAndWait(() ->
             {
                 session.unpairPortal(link);
@@ -460,13 +390,10 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A train the rebuild records where it stands - its turning taken away, no copy facing its way - is drawn there:
-     * the diagram learned which trains stand on no Point inside the load, before the record, and drew it
-     * nowhere.
+     * A train the rebuild records where it stands (its turning taken away, no copy facing its way) is drawn there: the
+     * diagram once learned which trains stand on no Point inside the load, before the record.
      *
      * MUTATION: leave the diagram untold after the record, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrainRecordedByTheRebuildIsDrawnWhereItStands() throws Exception
@@ -484,7 +411,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         final String train = model.getLocList().get(0);
 
-        final org.traincontrol.gui.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        final org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         final boolean[] stood = new boolean[1];
 
@@ -546,13 +473,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * An edit made while the setup cannot be built - a link unpaired, its load declined - survives the next fold of the
-     * railway built before it: the railway was not replaced and nothing marked the setup newer, so opening or
-     * closing the editor, Export, New Configuration and the exit wrote that railway's settings back over the edit.
+     * An edit made while the setup cannot be built survives the next fold of the railway built before it: the railway
+     * was not replaced and nothing marked the setup newer, so the editor's opening and closing, Export, New
+     * Configuration and the exit wrote that railway's settings back over the edit.
      *
      * MUTATION: leave the setup unmarked when the load is declined, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditWhileTheLoadIsDeclinedSurvivesTheFold() throws Exception
@@ -578,7 +503,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         try
         {
-            // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: declined, a link left unpaired
+            // UNPAIR THIS LINK and rebuild as the diagram's menu does: declined, a link left unpaired
             SwingUtilities.invokeAndWait(() ->
             {
                 session.unpairPortal(link);
@@ -713,14 +638,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A rebuild from the setup - the one every gesture on the track diagram's menu makes - keeps the railway's settings
-     * and timetable: the Auto tab and a run write them to the railway, and the rebuild from the setup threw
-     * away whatever had not been folded.
+     * A rebuild from the setup, as every gesture on the diagram's menu makes, keeps the railway's settings and
+     * timetable that the Auto tab and a run wrote and had not been folded.
      *
      * MUTATION: rebuild without folding the railway's settings first, or fold them without the timetable, and this
      * fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARebuildKeepsTheRailwaysSettings() throws Exception
@@ -789,13 +711,10 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A setting the railway turned off is off after a rebuild from the setup: Simulate and the sequential
-     * flag are written only while on, so the compare with the railway as it was built found no key, and the setup kept
-     * the setting on.
+     * A setting the railway turned off is off after a rebuild from the setup: Simulate and the sequential flag are
+     * written only while on, so comparing with the railway as built found no key.
      *
      * MUTATION: fold only the keys the railway writes now, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARebuildKeepsASettingTheRailwayTurnedOff() throws Exception
@@ -859,13 +778,10 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * Atomic routes the load turned on itself - a train with no length - are not folded into the setup as though the
-     * operator had chosen them: the next gesture on the diagram's menu wrote them, and the operator's "off" no
-     * longer came back the day the lengths were given (MT-470).
+     * Atomic routes the load turned on itself (a train with no length) are not folded into the setup as though the
+     * operator had chosen them (MT-470).
      *
      * MUTATION: leave the railway's settings as built without the value the load forced, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheLoadsOwnAtomicRoutesAreNotFolded() throws Exception
@@ -931,13 +847,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
-    /**
-     * A timetable entry on the railway alone, as a run's capture adds one.
-     *
-     * @param railway the railway
-     * @return how many entries it then has
-     * @throws Exception from the event thread
-     */
+    /** A timetable entry on the railway alone, as a run's capture adds one; returns how many entries it then has. */
     private static int captureAnEntry(final org.traincontrol.automation.Layout railway) throws Exception
     {
         org.traincontrol.base.Locomotive loc = null;
@@ -967,7 +877,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return railway.getTimetable().size();
     }
 
-    /** @return how many timetable entries the setup holds */
+    /** How many timetable entries the setup holds. */
     private static int entriesInTheSetup()
     {
         String stored = session.getGlobal("timetable");
@@ -975,11 +885,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return stored == null ? 0 : new org.json.JSONArray(stored).length();
     }
 
-    /**
-     * Puts the setup's timetable back as it was.
-     *
-     * @param was the timetable as it was stored, or null for none
-     */
+    /** Puts the setup's timetable back as it was (null for none). */
     private static void putTheTimetableBack(String was)
     {
         org.json.JSONObject globals = session.getStore().getConfiguration(session.getStore().getActiveConfiguration())
@@ -1000,14 +906,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
-    /**
-     * Puts one of the setup's settings back as it was, and the railway with it.
-     *
-     * @param active the configuration
-     * @param key the setting
-     * @param was its value as stored, or null for none
-     * @throws Exception from the window
-     */
+    /** Puts one of the setup's settings back as it was (null for none), and the railway with it. */
     private static void putTheGlobalBack(String active, String key, String was) throws Exception
     {
         SwingUtilities.invokeAndWait(() ->
@@ -1037,13 +936,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The track diagram says when the setup has changes the railway has not taken (Adam, 2026-10-02: "Add the setup
-     * notice, but make it brief"): a link unpaired leaves the setup unable to build, the last railway that built stays
-     * loaded, and only the log said so.  The line goes again once a load takes the change.
+     * The track diagram says when the setup has changes the railway has not taken (Adam: "Add the setup notice, but
+     * make it brief"): a link unpaired leaves the setup unable to build.  The line goes again once a load takes the
+     * change.
      *
      * MUTATION: set the flag without telling the strip, or leave the strip's line hidden, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheDiagramSaysWhenTheSetupIsNotApplied() throws Exception
@@ -1070,7 +967,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         try
         {
-            // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: declined, the last railway kept
+            // UNPAIR THIS LINK and rebuild as the diagram's menu does: declined, the last railway kept
             SwingUtilities.invokeAndWait(() ->
             {
                 session.unpairPortal(link);
@@ -1102,25 +999,19 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The timetable's four doors ask whether anything runs again after their question, which can stay open as long as the
-     * operator likes (OB-260): a run begun behind the question and then a Yes - or a delay
-     * typed - changes nothing, and the refusal is said.
-     *
-     * Delete Entry asked again from round 80; Clear Timetable and Restart Timetable asked only before, and Clear then
-     * emptied the list a run's capture appends to.  Busy is the staging flag, as this class makes it everywhere: the race's
-     * outcome without the race.
+     * The timetable's four doors ask whether anything runs again after their question, which can stay open as long as
+     * the operator likes (OB-260): a run begun behind the question and then a Yes, or a delay typed, changes nothing
+     * and the refusal is said.  Busy is the staging flag, as everywhere in this class.
      *
      * MUTATION: take the second question out of any of the four doors, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheTimetableDoorsAskAgainAfterTheirQuestion() throws Exception
     {
         final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
-        // ITS OWN THREE ENTRIES, a one-edge path each: what the claims before this one leave of the snapshot's timetable
-        // is theirs to decide
+        // ITS OWN THREE ENTRIES, a one-edge path each: what the claims before this one leave of the snapshot's
+        // timetable is theirs to decide
         final List<org.traincontrol.automation.TimetablePath> was = new java.util.ArrayList<>(railway.getTimetable());
 
         assertFalse(railway.getEdges().isEmpty(), "precondition: the railway has no edges to make a timetable from");
@@ -1207,25 +1098,14 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * Opens a door on the event thread, answers its first question Yes once the railway is made busy behind it, and
-     * reads and closes the message that follows.
-     *
-     * @param door the door
-     * @return the message after the Yes, or null when none came
-     * @throws Exception from the wait
+     * returns the message after.
      */
     private static String yesOnceARunBegins(Runnable door) throws Exception
     {
         return yesOnceARunBegins(door, null);
     }
 
-    /**
-     * The same, typing this into a question that asks for something to be typed.
-     *
-     * @param door the door
-     * @param typed what to type, for a question that wants it
-     * @return the message after the answer, or null when none came
-     * @throws Exception from the wait
-     */
+    /** The same, typing this into a question that asks for something to be typed. */
     private static String yesOnceARunBegins(Runnable door, final String typed) throws Exception
     {
         SwingUtilities.invokeLater(door);
@@ -1299,11 +1179,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The option pane in a showing dialog: a question (one with options, or one asking for something to be typed) or a
-     * message.  The caller answers it and then closes its window, in that order, so the door reads the answer.
-     *
-     * @param question whether a question is wanted
-     * @return the pane, or null when no such dialog is showing
+     * The option pane in a showing dialog (a question or a message), or null; the caller answers it and then closes its
+     * window.
      */
     private static javax.swing.JOptionPane aPaneShowing(boolean question)
     {
@@ -1321,12 +1198,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return null;
     }
 
-    /**
-     * The option pane inside a container, at any depth.
-     *
-     * @param container where to look
-     * @return the pane, or null
-     */
+    /** The option pane inside a container, at any depth. */
     private static javax.swing.JOptionPane paneIn(java.awt.Container container)
     {
         for (java.awt.Component c : container.getComponents())
@@ -1344,13 +1216,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return null;
     }
 
-    /**
-     * That the timetable holds exactly these entries, the same objects in the same order.
-     *
-     * @param now the timetable
-     * @param was the entries it held
-     * @param message what it means if not
-     */
+    /** That the timetable holds exactly these entries, the same objects in the same order. */
     private static void assertTheSame(List<?> now, List<?> was, String message)
     {
         assertEquals(now.size(), was.size(), message);
@@ -1358,12 +1224,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         for (int i = 0; i < was.size(); i++) assertSame(now.get(i), was.get(i), message);
     }
 
-    /**
-     * The Auto tab's timetable table.
-     *
-     * @return the table
-     * @throws Exception from the reflection
-     */
+    /** The Auto tab's timetable table. */
     private static javax.swing.JTable timetableTable() throws Exception
     {
         Field table = TrainControlUI.class.getDeclaredField("timetable");
@@ -1373,13 +1234,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return (javax.swing.JTable) table.get(ui);
     }
 
-    /**
-     * How many rows a table shows, read on the event thread.
-     *
-     * @param table the table
-     * @return its rows
-     * @throws Exception from the event thread
-     */
+    /** How many rows a table shows, read on the event thread. */
     private static int rowsOf(javax.swing.JTable table) throws Exception
     {
         final int[] rows = new int[1];
@@ -1389,9 +1244,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return rows[0];
     }
 
-    /**
-     * Asks the window to fill its timetable's table, as a path's start and end do.
-     */
+    /** Asks the window to fill its timetable's table, as a path's start and end do. */
     private static void invokeRepaintTimetable()
     {
         try
@@ -1409,14 +1262,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A refusal from a menu item is owned by the main window, though the menu has closed by the time it is said (the
-     * popups sweep, on Adam's MT-703 note).  Locomotives > Utilities > Sync Full Function State and Locomotives > Add
-     * Locomotive refused, while trains run, over the item itself: its menu gone, the message went to Swing's hidden
-     * frame and opened under an always-on-top main window - modal, so the window looked frozen.
+     * A refusal from a menu item is owned by the main window, though the menu has closed by the time it is said (Adam's
+     * MT-703 note): said over the item, the message went to Swing's hidden frame and opened under an always-on-top main
+     * window, modal, so the window looked frozen.
      *
      * MUTATION: say the refusal over the item again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARefusalFromAClosedMenuIsOwnedByTheMainWindow() throws Exception
@@ -1456,28 +1306,24 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The windows the main window opens - a popped-out diagram, the route editor, Add Locomotive, the locomotive
-     * database, the usage histogram - follow its always-on-top setting whenever it changes (the popups sweep, on Adam's
-     * MT-703 note).  They copied it once, when they were made: a later change of the setting left them as they were, a
-     * popped-out window restored at start-up copied the start-up's forced "on" and stayed on top with the setting off,
-     * and one on top stayed above an open editor and its dialogs while the main window gave way.
+     * The windows the main window opens follow its always-on-top setting whenever it changes (MT-703): they once copied
+     * it when made, so a later change left them as they were and a popped-out window restored at start-up stayed on
+     * top.
      *
      * MUTATION: let the windows copy the setting once again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAWindowTheMainWindowOpensFollowsItsAlwaysOnTop() throws Exception
     {
         final boolean was = ui.isAlwaysOnTop();
 
-        final org.traincontrol.gui.AddLocomotive[] child = new org.traincontrol.gui.AddLocomotive[1];
+        final org.traincontrol.gui.locomotive.AddLocomotive[] child = new org.traincontrol.gui.locomotive.AddLocomotive[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
             ui.setAlwaysOnTop(false);
 
-            child[0] = new org.traincontrol.gui.AddLocomotive(model, ui);
+            child[0] = new org.traincontrol.gui.locomotive.AddLocomotive(model, ui);
 
             child[0].pack();
         });
@@ -1507,13 +1353,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         }
     }
 
-    /**
-     * Opens a door on the event thread, reads the owner of the message it shows, and closes it.
-     *
-     * @param door the door
-     * @return the window owning the message's dialog
-     * @throws Exception from the wait
-     */
+    /** Opens a door on the event thread, reads the owner of the message it shows, and closes it. */
     private static java.awt.Window ownerOfTheMessageAfter(Runnable door) throws Exception
     {
         SwingUtilities.invokeLater(door);
@@ -1549,13 +1389,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * Edit Name/Address/Decoder's error is owned by the window the operator clicked in, read before the locomotive
-     * database refreshes (the popups sweep, on Adam's MT-703 note).  The refresh takes every tile out of the database
-     * window and builds new ones, so an error said over the clicked tile after it was owned by Swing's hidden frame - under
-     * an always-on-top main window.  Read off the source, because only a failure of the database reaches that error.
+     * database refreshes (MT-703): the refresh replaces every tile, so an error said over the clicked tile afterwards
+     * was owned by Swing's hidden frame.  Read off the source, because only a failure of the database reaches that
+     * error.
      *
      * MUTATION: say the error over the clicked tile again, and this fails.
-     *
-     * @throws Exception reading the source
      */
     @Test
     public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception

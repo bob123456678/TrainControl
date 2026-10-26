@@ -14,23 +14,14 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 
 /**
- * A turnout, and the two routes that share its metal.
+ * A turnout, and the two routes that share its metal.  Every hand-built fixture is a straight chain of ordinary points
+ * (`test/README.md`'s survey), so the lock-edge machinery (two routes over one piece of metal are mutually exclusive,
+ * which stops a route being cleared under a train standing on the other arm) was exercised only against the operator's
+ * live railway.  `test/layouts/single-switch` is a checked-in railway of that shape: a west end, an approach, and the
+ * two platforms the switch divides; the approach splits into two Points, trains arriving at it from both sides.
  *
- * **The suite has never had one.**  `test/README.md`'s survey of the fixtures found
- * that every hand-built fixture is a straight chain of two or three ordinary points: no switch, no
- * curve, no split square.  So the whole of the lock-edge machinery - the rule that two routes over one
- * piece of metal are mutually exclusive, which is what stops a route being cleared under a train
- * standing on the other arm - was exercised only against the operator's live railway, whose ground
- * truth moves as he operates it.
- *
- * `test/layouts/single-switch` is a checked-in railway of exactly that shape, and this is what it is
- * for.  Four sensors: a west end, an approach, and the two platforms the switch divides.  The approach
- * splits into two Points - trains arrive at it from both sides - which is the other thing no hand-built
- * fixture in this suite has ever produced.
- *
- * **The lengths are not here.**  Nothing in the fixture folder gives a tile a length, on purpose: Adam
- * asked for topology in the files and lengths in code, so a test that needs measured track measures it
- * itself and no two tests inherit one author's numbers.
+ * The lengths are not here: Adam asked for topology in the files and lengths in code, so a test that needs measured
+ * track measures it itself and no two tests inherit one author's numbers.
  *
  * @author Adam
  */
@@ -62,12 +53,8 @@ public class testTwoRoutesShareOneSwitch
     }
 
     /**
-     * The railway the fixture says it is: four stations, five Points, six edges.
-     *
-     * Pinned exactly rather than loosely, which is the whole argument for a checked-in scenario - a
-     * fixture whose shape can drift is a fixture whose assertions mean less every week.  If any of these
-     * numbers moves, either the fixture was edited or the reduction changed, and both are things a
-     * reader of this file wants to be told about rather than to have absorbed.
+     * The railway the fixture says it is: four stations, five Points, six edges, pinned exactly so a drifting fixture
+     * or reduction is noticed.
      */
     @Test
     public void testTheJunctionBuildsToTheShapeItIsDrawnAs() throws Exception
@@ -100,10 +87,8 @@ public class testTwoRoutesShareOneSwitch
     }
 
     /**
-     * The two routes through the switch lock each other, in both directions of travel.
-     *
-     * This is the fact no fixture in the suite could state before: four edges, one switch, and every
-     * one of them names the two that use the other position of the blades.
+     * The two routes through the switch lock each other, in both directions of travel: every one of the four edges
+     * names the two that use the other blade position.
      */
     @Test
     public void testTheTwoRoutesThroughTheSwitchLockEachOther() throws Exception
@@ -118,10 +103,8 @@ public class testTwoRoutesShareOneSwitch
             "the branch route over the switch should hold both directions of the main route, and holds "
             + locks(built, BRANCH));
 
-        // AND THE TRAILING DIRECTION TOO. A tail lies across a rail whichever way traffic runs on it,
-        // and the reason both directions exist here at all is that the fixture opens the switch's
-        // trailing direction - a switch defaults to base-to-forks, so an unopened one gives a one-way
-        // railway and half of these edges would simply not be there.
+        // AND THE TRAILING DIRECTION TOO: a tail lies across a rail whichever way traffic runs, and the fixture opens
+        // the switch's trailing direction since a switch defaults to base-to-forks, which gives a one-way railway.
         assertEquals(locks(built, MAIN_BACK), asSet(BRANCH, BRANCH_BACK),
             "the main route read the other way should hold the branch route, and holds "
             + locks(built, MAIN_BACK));
@@ -132,11 +115,8 @@ public class testTwoRoutesShareOneSwitch
     }
 
     /**
-     * And the lock does something: claiming one arm makes the other read as occupied.
-     *
-     * The lock LIST is a statement of intent; this is the behavior it exists for, which is what
-     * `isPathClear` asks before letting a train onto a switch somebody else's route is standing on.
-     * `review-by-running-not-reading`: a fixture that can only be read proves nothing about the machine.
+     * And the lock does something: claiming one arm makes the other read as occupied, which `isPathClear` asks before
+     * letting a train onto a switch.
      */
     @Test
     public void testClaimingOneArmHoldsTheOther() throws Exception
@@ -163,12 +143,9 @@ public class testTwoRoutesShareOneSwitch
     }
 
     /**
-     * The switch really is switchable, and its two positions are the two routes.
-     *
-     * Said out loud because the parser turns a `linksweiche` with no usable address into a
-     * CUSTOM_PERM_LEFT - a defective turnout that can only be trailed through - and the difference is
-     * invisible in the file. A fixture that had quietly become one would still produce edges, and this
-     * class would be testing a permanent crossing while claiming to test a turnout.
+     * The switch really is switchable, and its two positions are the two routes: the parser turns a `linksweiche` with
+     * no usable address into a CUSTOM_PERM_LEFT, a defective turnout that can only be trailed through, invisibly in the
+     * file.
      */
     @Test
     public void testTheSwitchIsCommandedByEachRoute() throws Exception
@@ -189,9 +166,6 @@ public class testTwoRoutesShareOneSwitch
             + " lying for: " + edge(built, MAIN).getConfigCommands());
     }
 
-    /**
-     * @return the named edge, with a message naming what is there instead
-     */
     private Edge edge(Layout built, String name)
     {
         for (Edge edge : built.getEdges())
@@ -203,9 +177,6 @@ public class testTwoRoutesShareOneSwitch
             + edgeNames(built));
     }
 
-    /**
-     * @return the names of the edges the given edge holds when it is claimed
-     */
     private Set<String> locks(Layout built, String name)
     {
         Set<String> out = new LinkedHashSet<>();
@@ -215,9 +186,6 @@ public class testTwoRoutesShareOneSwitch
         return out;
     }
 
-    /**
-     * @return the given names as a set
-     */
     private static Set<String> asSet(String... names)
     {
         Set<String> out = new LinkedHashSet<>();
@@ -227,9 +195,6 @@ public class testTwoRoutesShareOneSwitch
         return out;
     }
 
-    /**
-     * @return every built Point's name
-     */
     private Set<String> names(Layout built)
     {
         Set<String> out = new LinkedHashSet<>();
@@ -239,9 +204,6 @@ public class testTwoRoutesShareOneSwitch
         return out;
     }
 
-    /**
-     * @return every built edge's name
-     */
     private Set<String> edgeNames(Layout built)
     {
         Set<String> out = new LinkedHashSet<>();

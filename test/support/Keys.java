@@ -7,15 +7,11 @@ import java.awt.event.KeyEvent;
 /**
  * Presses keys as the keyboard does: a real KEY_PRESSED, then a KEY_RELEASED, dispatched to a component.
  *
- * Dispatched rather than posted.  A posted key goes wherever the operating system says the focus is, and in a test run
- * that is usually the terminal that started it; a dispatched one goes to the component named, and the window's own
- * key map and listeners see it exactly as they see a key pressed there.  To press where the window would send the
- * keyboard, ask {@link #focusOwnerOf} and press on that.
- *
- * Each press returns once the event thread has done the work the key queued; a key that starts a thread of its own
- * (a speed, a stop) still has to be waited for.
- *
- * Gathered from the private `press` of `regression.testTheWindowTakesTheKeyboard` and others (FR-136 Phase 6).
+ * Dispatched rather than posted: a posted key goes wherever the operating system says the focus is, usually the
+ * terminal that started the run, while a dispatched one reaches the component named and the window's own key map and
+ * listeners see it as they see a real key.  To press where the window would send the keyboard, ask
+ * {@link #focusOwnerOf} and press on that.  Each press returns once the event thread has done the work the key
+ * queued; a key that starts a thread of its own still has to be waited for.
  */
 public final class Keys
 {
@@ -23,23 +19,15 @@ public final class Keys
     {
     }
 
-    /**
-     * Presses and releases a key, with no modifier held.
-     *
-     * @param on the component that has the keyboard
-     * @param keyCode the key, a `KeyEvent.VK_*`
-     */
+    /** Presses and releases a key, with no modifier held. */
     public static void press(Component on, int keyCode)
     {
         press(on, keyCode, 0);
     }
 
     /**
-     * Presses and releases a key while modifiers are held.
-     *
-     * @param on the component that has the keyboard
-     * @param keyCode the key, a `KeyEvent.VK_*`
-     * @param modifiers `InputEvent.ALT_DOWN_MASK`, `CTRL_DOWN_MASK`, `SHIFT_DOWN_MASK`, or'd together; 0 for none
+     * Presses and releases a key while modifiers are held (`InputEvent.ALT_DOWN_MASK`, `CTRL_DOWN_MASK`,
+     * `SHIFT_DOWN_MASK`, or'd together).
      */
     public static void press(final Component on, final int keyCode, final int modifiers)
     {
@@ -63,11 +51,8 @@ public final class Keys
     }
 
     /**
-     * Where this window sends the keyboard: the component that has it, or will have it the moment the window is
-     * focused.  A test window is often not the focused window, so the focus owner proper is usually null.
-     *
-     * @param window the window
-     * @return the component, or null when the window has nowhere to send it
+     * Where this window sends the keyboard: the component that has it, or will have it once the window is focused (a
+     * test window often is not); null when there is nowhere to send it.
      */
     public static Component focusOwnerOf(final Window window)
     {

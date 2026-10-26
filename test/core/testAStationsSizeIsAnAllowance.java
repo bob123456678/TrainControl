@@ -25,22 +25,19 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * The station's size is an allowance; the squares a train stands on are track, its own square included (OB-278).
  *
- * Adam, 2026-09-13: **"if the segment length is shorter, more should be blocked.  The station size is an allowance,
- * not a length."**  And on 2026-09-23, when a two-unit train was refused TunnelLongPark: **"the 2 length tile with the
- * s88 consumes 2 units of the train"** - asked whether that holds at every station, *"Everywhere"*, and *"This
- * shouldn't be a major ruling reversal."*
+ * Adam: **"if the segment length is shorter, more should be blocked.  The station size is an allowance, not a
+ * length."**  And, when a two-unit train was refused TunnelLongPark: **"the 2 length tile with the s88 consumes 2 units
+ * of the train"** - asked whether that holds at every station, *"Everywhere"*, and *"This shouldn't be a major ruling
+ * reversal."*
  *
- * **What the first ruling meant, and how it was misread.**  "The station size" is the station's MAXIMUM TRAIN LENGTH -
- * the number typed on the station, which says how much train it may HOLD and is asked by `whyTooLongForThisRoute`.
- * It was read instead as the length MEASURED on the station's own square, and from 2026-09-13 to 2026-09-23 every walk
- * that works out where a standing train's body lies left that square's measurement unspent: the whole train was put on
- * the track BEHIND the square it stands on.  On his measured railway, where each berth's length is written on its
- * sensor square, that put the tail over the switch behind almost every berth - TunnelLongPark (2 on its square, 1
- * behind, maximum 3) took a one-unit train and nothing longer, TunnelCenterPark and TopR1ParkShort took nothing at all.
+ * "The station size" is the station's MAXIMUM TRAIN LENGTH, how much train it may HOLD (`whyTooLongForThisRoute`).  It
+ * had been read as the length MEASURED on the station's own square, and every walk that works out where a standing
+ * train's body lies left that square unspent, putting the whole train on the track BEHIND it: on his measured railway
+ * the tail went over the switch behind almost every berth.
  *
- * **The rule now**: every measured square a train lies over is spent, the square it stands on first.  A train no longer
- * than that square blocks nothing behind it.  Three walks read it and must agree - `Layout.walkStandingTrains` (what
- * the railway blocks), `Layout.whyABerthCannotHoldIt` (whether a berth can take a train) and
+ * The rule now: every measured square a train lies over is spent, the square it stands on first; a train no longer than
+ * that square blocks nothing behind it.  Three walks read it and must agree - `Layout.walkStandingTrains` (what the
+ * railway blocks), `Layout.whyABerthCannotHoldIt` (whether a berth can take a train) and
  * `AutonomySession.walkBackFrom` (the orange line) - and this class asks each of them.
  *
  * On a sandbox copy of the frozen `live-snapshot`, which carries his measurements; where he has not measured the
@@ -58,19 +55,16 @@ public class testAStationsSizeIsAnAllowance
     private static final TileKey SWITCH_BEHIND_PARK = new TileKey("1 - Main", 10, 11);
 
     /**
-     * A second station, chosen because the walk really does take a SECOND hop behind it.
-     *
-     * The park above does not: the run into it ends at BottomMainA, where three roads meet, and the fork rule stops the
-     * tail there however long the train is.  TopMainR1's approach runs back through TopMainR1Pre to exactly one
-     * neighbor.  He has measured the three squares behind it at 1 each and left the station and TopMainR1Pre at
-     * nothing, so those two are measured here.
+     * A second station, chosen because the walk really takes a SECOND hop behind it (the park's run in ends at a
+     * three-road fork that stops the tail).  He left the station and TopMainR1Pre unmeasured, so those two are measured
+     * here.
      */
     private static final TileKey TWO_HOPS = new TileKey("1 - Main", 5, 4);
     private static final TileKey BEHIND_TWO_HOPS = new TileKey("1 - Main", 5, 5);
     private static final TileKey BEYOND_TWO_HOPS = new TileKey("1 - Main", 5, 9);
 
     /**
-     * A berth where BOTH directions of the rail behind it report the same way in - TopMainR0Park.  Unmeasured on his
+     * A berth where BOTH directions of the rail behind it report the same way in - TopMainR0Park; unmeasured on his
      * railway, so measured here.
      */
     private static final TileKey TWO_COPIES = new TileKey("1 - Main", 4, 5);
@@ -87,8 +81,6 @@ public class testAStationsSizeIsAnAllowance
 
     /**
      * Opens the frozen railway with his measurements, adds the few the second-hop and two-copy claims need, and builds.
-     *
-     * @throws Exception when the railway cannot be read
      */
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -128,9 +120,7 @@ public class testAStationsSizeIsAnAllowance
         }
     }
 
-    /**
-     * Takes this class's train away and puts the layout preference back.
-     */
+    /** Takes this class's train away and puts the layout preference back. */
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
@@ -147,9 +137,7 @@ public class testAStationsSizeIsAnAllowance
         }
     }
 
-    /**
-     * Every claim puts the train down where it wants it, so none is left standing for the next.
-     */
+    /** Every claim puts the train down where it wants it, so none is left standing for the next. */
     @AfterMethod(alwaysRun = true)
     public void liftTheTrain()
     {
@@ -161,9 +149,7 @@ public class testAStationsSizeIsAnAllowance
         }
     }
 
-    /**
-     * The fixture is the shape the claims are about: his measurements at TunnelLongPark, and the road behind it.
-     */
+    /** The fixture is the shape the claims are about: his measurements at TunnelLongPark, and the road behind it. */
     @Test
     public void testTheParkIsMeasuredTheWayHeMeasuredIt()
     {
@@ -190,14 +176,12 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The square with the sensor consumes its own length of the train (OB-278).
+     * The square with the sensor consumes its own length of the train (OB-278).  Adam: *"the 2 length tile with the s88
+     * consumes 2 units of the train."*  So a two-unit train at TunnelLongPark lies on that square and nowhere else, and
+     * a three-unit one reaches the square behind and stops short of the switch.
      *
-     * Adam: *"the 2 length tile with the s88 consumes 2 units of the train."*  So a two-unit train at TunnelLongPark
-     * lies on that square and nowhere else, and a three-unit one reaches the square behind and stops short of the
-     * switch.
-     *
-     * MUTATION: leaving the standing square unspent in `Layout.walkOneTail` - the reading of 2026-09-13 - claims
-     * 10,10 for the two-unit train and the switch for the three-unit one.
+     * MUTATION: leaving the standing square unspent in `Layout.walkOneTail` claims 10,10 for the two-unit train and the
+     * switch for the three-unit one.
      */
     @Test(dependsOnMethods = "testTheParkIsMeasuredTheWayHeMeasuredIt")
     public void testTheSquareWithTheSensorConsumesItsLength()
@@ -225,12 +209,9 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The berth rule takes what the berth measures (OB-278).
-     *
-     * Adam, 2026-09-23: *"75 407 DB can't go to TunnelLongPark from BottomMainPost unless it is length 1, whereas up to
-     * length 3 should be allowed (both measured and max on the station)."*  The berth rule refused two and three units
-     * for standing across the road from BottomMainA to BottomMainAPre, because it put the whole train behind the
-     * berth's own square.
+     * The berth rule takes what the berth measures (OB-278).  Adam: *"75 407 DB can't go to TunnelLongPark from
+     * BottomMainPost unless it is length 1, whereas up to length 3 should be allowed (both measured and max on the
+     * station)."*
      *
      * MUTATION: leaving the berth's own span unspent in `Layout.whyABerthCannotHoldIt` refuses two units here.
      */
@@ -257,12 +238,8 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * And the journey he reported is offered: BottomMainPost to TunnelLongPark, at one, two and three units.
-     *
-     * By hand, as he sent it, and from the copy of BottomMainPost a route to TunnelLongPark leaves from.  Four units is
-     * refused, by the size he gave the station.
-     *
-     * @throws Exception from the railway
+     * And the journey he reported is offered: BottomMainPost to TunnelLongPark at one, two and three units, by hand and
+     * from the copy a route leaves from; four units is refused, by the size he gave the station.
      */
     @Test(dependsOnMethods = "testTheParkIsMeasuredTheWayHeMeasuredIt")
     public void testBottomMainPostToTunnelLongParkIsOfferedUpToThree() throws Exception
@@ -323,10 +300,8 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The orange line stops where the train does (OB-278).
-     *
-     * The picture is the third walk, and it has to agree with the other two: a train that fits on its own square is
-     * drawn there and nowhere behind it.
+     * The orange line stops where the train does (OB-278): the picture is the third walk and has to agree with the
+     * other two.
      *
      * MUTATION: leaving the standing square unspent in `AutonomySession.walkBackFrom` draws 10,10 behind a two-unit
      * train at TunnelLongPark.
@@ -357,15 +332,12 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The tail reaches past the first edge behind it when the train is longer than that edge.
-     *
-     * **Two budgets walk a standing train's body**: the PLACES budget, which claims square by square, and the HOP
-     * budget, which decides whether to walk back another edge.  If the hop budget over-spends, the walk stops early,
-     * the tail's last units are claimed by nobody, and another train is cleared over metal this one is lying on - the
-     * permitting side.
-     *
-     * **The arrangement:** TopMainR1 measured 2 here, his three squares of 1 behind it, TopMainR1Pre measured 1 here.
-     * The first edge holds 5; a seven-unit train has 2 left to place, which reaches the edge beyond.
+     * The tail reaches past the first edge behind it when the train is longer than that edge.  Two budgets walk a
+     * standing train's body: the PLACES budget, which claims square by square, and the HOP budget, which decides
+     * whether to walk back another edge; if the hop budget over-spends, the walk stops early and another train is
+     * cleared over metal this one is lying on.  TopMainR1 measured 2 here, his three squares of 1 behind it,
+     * TopMainR1Pre measured 1 here: the first edge holds 5, so a seven-unit train has 2 left that reach the edge
+     * beyond.
      *
      * MUTATION: charging the first edge twice - `remaining -= chargedHere + segment.getLength()` - stops the walk at
      * the first approach.
@@ -404,17 +376,13 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The square the train stands on is claimed wherever it stands, not only at some stations.
+     * The square the train stands on is claimed wherever it stands, not only at some stations.  A piece of rail is two
+     * `Edge` objects, one per direction, and both can report the same way in at the square they meet;
+     * `getNeighborsAndIncoming` sorts the outgoing ones first, so taking the outgoing copy first claimed the track
+     * behind and never the berth.  TopMainR0Park measured 1 here and the square behind it 2; the train is 2, so it lies
+     * on both.
      *
-     * A piece of rail is two `Edge` objects, one per direction, and both can report the same way in at the square they
-     * meet.  `getNeighborsAndIncoming` sorts the outgoing ones first, and an edge's places are the path plus the square
-     * it ARRIVES at - so taking the outgoing copy first claimed the track behind and never the berth.  The train
-     * arrived along the copy that ends here, and the first hop prefers it.
-     *
-     * TopMainR0Park measured 1 here and the square behind it 2; the train is 2, so it lies on both.
-     *
-     * MUTATION, run 2026-09-13: written against the unfixed walk, it claimed the two tiles behind with the berth
-     * itself missing.
+     * MUTATION: written against the unfixed walk, it claimed the two tiles behind with the berth itself missing.
      */
     @Test
     public void testTheSquareUnderTheTrainIsClaimedWhereverItStands()
@@ -442,13 +410,10 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * A berth measured on an approach measured nowhere else takes a train that fits on it, and blocks nothing behind.
-     *
-     * The arrangement - the one `Automation.md` produces first, because it tells him to measure the station.
-     * Until OB-278 the berth's own measurement was not spent, so the approach counted as unmeasured and the walk
-     * claimed nothing at all, not even the square the train is on.
-     *
-     * The approach into TunnelLongPark with every square but the berth's taken to 0 for the length of this claim.
+     * A berth measured on an approach measured nowhere else takes a train that fits on it, and blocks nothing behind:
+     * the arrangement `Automation.md` produces first, because it tells him to measure the station.  Before OB-278 the
+     * approach counted as unmeasured and the walk claimed nothing at all.  The approach into TunnelLongPark has every
+     * square but the berth's taken to 0 for the length of this claim.
      */
     @Test(dependsOnMethods = "testTheParkIsMeasuredTheWayHeMeasuredIt")
     public void testAMeasuredBerthOnAnUnmeasuredApproachHoldsWhatFits()
@@ -492,9 +457,8 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * And the station's size - its maximum train length - is what decides whether a train fits.
-     *
-     * That is the allowance Adam's ruling names.  TunnelLongPark holds 3.
+     * And the station's size, its maximum train length, is what decides whether a train fits: the allowance Adam's
+     * ruling names (TunnelLongPark holds 3).
      */
     @Test(dependsOnMethods = "testTheParkIsMeasuredTheWayHeMeasuredIt")
     public void testTheStationsSizeDecidesWhetherItFits()
@@ -515,16 +479,14 @@ public class testAStationsSizeIsAnAllowance
             "a four-unit train was not refused TunnelLongPark, which holds 3");
     }
 
-    /**
-     * Stands this class's train at the park as a train that drove in would stand, and reads the claims.
-     */
+    /** Stands this class's train at the park as a train that drove in would stand, and reads the claims. */
     private static Map<String, Locomotive> standAtThePark(int units)
     {
         Point park = park();
 
         park.setLocomotive(standing);
 
-        // WHICH WAY IT CAME IN, as a train that really arrived would have recorded - the park is reached by more than
+        // Which way it came in, as a train that really arrived would have recorded: the park is reached by more than
         // one road and the walk stops at the fork without it.
         park.setArrivedFrom(layout.entrySideOf(edgeInto(park), park));
 
@@ -533,13 +495,7 @@ public class testAStationsSizeIsAnAllowance
         return layout.placesCoveredByStandingTrains();
     }
 
-    /**
-     * The one Point on a square whose way in runs over another named square.
-     *
-     * @param square the station square the train stands on
-     * @param via a square the way in runs over
-     * @return the copy reached that way
-     */
+    /** The one Point on a square whose way in runs over another named square. */
     private static Point onlyPointWithApproachThrough(TileKey square, TileKey via)
     {
         Point found = null;

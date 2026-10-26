@@ -12,26 +12,18 @@ import support.SourceOf;
 /**
  * A refresh arrives all at once rather than in installments.
  *
- * Adam, 2026-09-04: "Can we get the diagrams to re-render with less flickering?  Same goes for the
- * main UI when the hourglass expires - it seems that some components appear faster than others.  Best
- * to do a single pass."
+ * Adam: "Can we get the diagrams to re-render with less flickering?  Same goes for the main UI when the hourglass
+ * expires - it seems that some components appear faster than others.  Best to do a single pass."
  *
- * Two separate causes, and neither of them is slowness.
+ * Two causes, neither slowness.  The diagram: `LayoutGrid` emptied the panel at the top of the build and put the
+ * replacement in at the bottom, after every tile, image decode and caption; decoding pumps the event queue, so paints
+ * landed on a panel with nothing in it.  The main window: several refreshes in a row, each posting its own
+ * `invokeLater`, are several events, and Swing lays out and paints between events, so the route list, the locomotive
+ * list and the menus came back in three visible steps.
  *
- * **The diagram.** `LayoutGrid` emptied the panel at the top of the build and put the replacement in
- * at the bottom, eight hundred lines and one whole grid later - every tile, every image decode, every
- * caption in between. Decoding pumps the event queue, so paints land inside that window, and what they
- * paint is a panel with nothing in it. The flicker was not the diagram being redrawn; it was the blank
- * page shown while it was being built.
- *
- * **The main window.** Several refreshes in a row, each posting its own `invokeLater`, is several
- * events - and Swing lays out and paints between events. The route list, the locomotive list and the
- * menus coming back were three visible steps because they were asked for three separate times.
- *
- * These are checked differently on purpose. `singlePass` has a behavior that can be run, so it is
- * run. The `LayoutGrid` ordering has no observable behavior short of catching a paint mid-rebuild -
- * which is a race, and a test that only sometimes reproduces is worse than no test - so it is checked
- * as the ordering it is.
+ * Checked differently on purpose: `singlePass` has a behavior that can be run, so it is run; the `LayoutGrid` ordering
+ * has no observable behavior short of catching a paint mid-rebuild, which is a race, so it is checked as the ordering
+ * it is.
  *
  * @author Adam
  */
@@ -40,10 +32,8 @@ public class testTheRebuildIsOnePass
     /**
      * `singlePass` runs inline when there is already a pass to join.
      *
-     * This is the whole mechanism. `invokeLater` posts unconditionally, so a caller ALREADY on the
-     * event thread cannot collect several refreshes into one pass by wrapping them - the wrapper is
-     * one event and each refresh inside it asks for another. Running inline is what makes the wrapping
-     * do anything at all.
+     * `invokeLater` posts unconditionally, so a caller ALREADY on the event thread cannot collect several refreshes
+     * into one pass by wrapping them: the wrapper is one event and each refresh inside it asks for another.
      *
      * MUTATION: change `singlePass` back to an unconditional `invokeLater` and the inner counter is
      * still zero when the outer call returns.
@@ -98,10 +88,8 @@ public class testTheRebuildIsOnePass
     /**
      * Off the event thread, `singlePass` still marshals rather than running where it was called.
      *
-     * The other half, and the one that matters for safety rather than appearance: `doSync` calls it
-     * from a worker thread, and Swing components must not be touched there. A `singlePass` that simply
-     * ran the body would have moved two menu calls onto a background thread while making the window
-     * look better.
+     * The other half, and the one that matters for safety: `doSync` calls it from a worker thread, and Swing components
+     * must not be touched there.
      */
     @Test
     public void testOffTheEventThreadItStillMarshals() throws Exception
@@ -135,14 +123,11 @@ public class testTheRebuildIsOnePass
     /**
      * The diagram panel is not emptied until its replacement is ready.
      *
-     * `LayoutGrid` builds the whole grid between emptying the panel and adding the new one. Emptying
-     * FIRST means the panel stands with no children for the entire build - and image decoding inside
-     * that build pumps the event queue, so paints land in the middle of it and draw a blank page.
-     *
-     * Checked as ordering rather than by catching a paint: reproducing the blank frame needs a paint
-     * to land inside a window that varies with disk and decode speed, and a test that reproduces only
-     * sometimes reports "fixed" on a bad day. What is actually being asserted - that the panel is
-     * never empty while the new grid is built - is fully determined by where these two lines sit.
+     * `LayoutGrid` builds the whole grid between emptying the panel and adding the new one; emptying FIRST leaves the
+     * panel with no children for the entire build, and image decoding inside it pumps the event queue, so paints draw a
+     * blank page.  Checked as ordering rather than by catching a paint, which varies with disk and decode speed and
+     * would report "fixed" on a bad day: that the panel is never empty while the new grid is built is fully determined
+     * by where these two lines sit.
      *
      * MUTATION: move `parent.removeAll()` back above the build and this fails.
      */
@@ -156,25 +141,14 @@ public class testTheRebuildIsOnePass
         int emptied = code.indexOf("parent.removeAll();");
         int added = code.indexOf("parent.add(container);");
 
-        // COUNTED, not just located.
-        //
-        // These were assignments, so the LAST match won - and a build that empties the panel at the
-        // top AND swaps at the bottom left `emptied` pointing at the bottom copy, with the defect
-        // fully present and this test green.  That is the shape a partial revert or a merge produces,
-        // and it is the shape a regression test exists for.
+        // COUNTED, not just located: with assignments the LAST match won, so a build that empties the panel at the top
+        // AND swaps at the bottom looked clean with the defect fully present.
         int emptiedCount = SourceOf.occurrences("parent.removeAll();");
         int addedCount = SourceOf.occurrences("parent.add(container);");
 
-        // AND THE PANEL'S OTHER NAME.
-        //
-        // This class calls the same panel `parent` inside the constructor and `owner` in the field it
-        // keeps it in, and a scan that lists only one spelling reports clean about the other.  It was
-        // already blind on the day it was written: `owner.removeAll()` was added to `discard()` in
-        // the same commit as this test, and the "exactly one emptying" assertion below did not see
-        // it - so a re-introduced emptying spelled that way would pass too.
-        //
-        // Both are expected, and both are pinned: one at the swap, one in discard for a build that
-        // threw before reaching it.  A third of either is what this now refuses.
+        // AND THE PANEL'S OTHER NAME: the constructor calls the panel `parent` and the field keeps it as `owner`, and a
+        // scan listing only one spelling reports clean about the other.  Both are expected and both pinned: one at the
+        // swap, one in discard for a build that threw before reaching it.  A third of either is refused.
         int ownerEmptiedCount = SourceOf.occurrences("owner.removeAll();");
 
         // How many lines the two statements are apart: the build lies between them

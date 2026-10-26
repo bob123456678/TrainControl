@@ -16,23 +16,17 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * A configuration loaded from a file arrives with its lock edges, and they protect the track.
  *
- * **The gap this closes was that `getLockEdges` appeared nowhere in `test/` at all** (suite review,
- * A101). Lock edges are exercised in `testAutonomyPathValidation` - four tests - but every one of them
- * adds the lock itself, by calling `addLockEdge` on a graph it built. Nothing asked whether
- * `Layout.fromJSON` produces any. Delete the `addLockEdge` call in its loader and the whole suite stays
- * green while every file-loaded configuration comes up with no crossing protection whatsoever: the
- * builder writes `lockedges` into the file, the file is read, and the locks are silently dropped.
+ * `getLockEdges` appeared nowhere in `test/`: `testAutonomyPathValidation` adds the lock itself on a graph it built, so
+ * nothing asked whether `Layout.fromJSON` produces any.  Delete the `addLockEdge` call in its loader and the suite
+ * stays green while every file-loaded configuration comes up with no crossing protection, the builder's `lockedges`
+ * silently dropped: protection absent rather than wrong, shown as two trains meeting on a shared throat.
  *
- * That is the worst shape a defect can have on this railway - protection that is absent rather than
- * wrong - and it would show as two trains meeting on a shared throat, which is the thing lock edges
- * exist to make impossible.
+ * **Both halves, and the second is the one worth having:** that the list is populated is referential integrity; that a
+ * held lock actually refuses a path is the protection, and a loader could pass the first by attaching the edges to the
+ * wrong copy.
  *
- * **Both halves, and the second is the one worth having.** That the list is populated is referential
- * integrity; that a held lock actually refuses a path is the protection. A loader could pass the first
- * by attaching the edges to the wrong copy.
- *
- * MUTATION this catches: removing the `addLockEdge` call from `Layout.fromJSON` fails both assertions;
- * attaching the lock to the wrong edge fails the second.
+ * MUTATION this catches: removing the `addLockEdge` call from `Layout.fromJSON` fails both assertions; attaching the
+ * lock to the wrong edge fails the second.
  *
  * @author Adam
  */
@@ -52,8 +46,7 @@ public class testLockEdgesSurviveTheFile
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // BEFORE the model: init reads the layout preference and would otherwise open Adam's own
-        // railway (OB-111).
+        // BEFORE the model: init reads the layout preference and would otherwise open Adam's own railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -70,9 +63,7 @@ public class testLockEdgesSurviveTheFile
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The locks named in the file are on the graph, and they refuse a path.
-     */
+    /** The locks named in the file are on the graph, and they refuse a path. */
     @Test
     public void testALockEdgeInTheFileReachesTheGraphAndProtectsTheTrack() throws Exception
     {
@@ -95,10 +86,9 @@ public class testLockEdgesSurviveTheFile
         assertTrue(names.contains(layout.getEdge("LE B", "LE Throat").getName()),
             "the lock did not name the edge the file named: " + names);
 
-        // AND IT PROTECTS THE TRACK, which is the half that matters.
-        //
-        // The other route claims the throat; the first route's path must then be refused, and refused
-        // for the LOCK rather than for the edge being occupied - the two edges are different track.
+        // AND IT PROTECTS THE TRACK, the half that matters: the other route claims the throat, so the first route's
+        // path must be refused for the LOCK rather than for the edge being occupied (the two edges are different
+        // track).
         Edge rival = layout.getEdge("LE B", "LE Throat");
 
         rival.setOccupied();
@@ -118,8 +108,8 @@ public class testLockEdgesSurviveTheFile
             rival.setUnoccupied();
         }
 
-        // The control: with the rival let go, the same path is fine.  Without this the assertion above
-        // would pass for a fixture that refuses everything.
+        // The control: with the rival let go, the same path is fine; otherwise the assertion above would pass for a
+        // fixture that refuses everything.
         List<Edge> path = new ArrayList<>();
 
         path.add(approach);
@@ -130,21 +120,17 @@ public class testLockEdgesSurviveTheFile
     }
 
     /**
-     * A places list with a hole in it is not read as a shorter places list.
+     * A places list with a hole in it is not read as a shorter places list.  The entries are read POSITIONALLY: the
+     * last is the square the edge arrives at, where a standing train's measurement is an allowance rather than track
+     * (`walkStandingTrains`, `whyABerthCannotHoldIt`).  The loader used to skip an entry with no `at`, which renumbers
+     * the list: drop the FINAL entry and the tile behind the berth becomes "the berth", and every rule downstream is
+     * out by one tile on the permitting side.
      *
-     * The entries are read POSITIONALLY - the last one is the square the edge arrives at,
-     * and where a train stands there its measurement is an allowance rather than track, in both
-     * `walkStandingTrains` and `whyABerthCannotHoldIt`.  The loader used to skip an entry with no `at`
-     * and carry on, which does not shorten the list so much as renumber it: drop the FINAL entry and
-     * the tile behind the berth becomes "the berth", the allowance comes off the wrong square, and
-     * every rule downstream is out by one tile on the permitting side.
+     * A build never writes one, so this is a hand-edited or truncated file.  The answer is the one a file with no
+     * places gets: fall back to the whole edge, which refuses more rather than less.
      *
-     * A build never writes one, so this is a hand-edited or truncated file. The answer for one is the
-     * answer a file with no places at all already gets - fall back to the whole edge, which every
-     * reader handles and which refuses more rather than less.
-     *
-     * MUTATION, run 2026-09-13: restoring `if (place == null || !place.has("at")) continue;` gives
-     * this edge two places, with the wrong one last.
+     * MUTATION: restoring `if (place == null || !place.has("at")) continue;` gives this edge two places, with the wrong
+     * one last.
      */
     @Test
     public void testAPlacesListWithAHoleIsNotUsedAtAll() throws Exception
@@ -163,8 +149,8 @@ public class testLockEdgesSurviveTheFile
             + " it is a list where the wrong tile is the berth. The whole edge is the honest answer,"
             + " and it is the one an old configuration without places already gets.");
 
-        // THE CONTROL: the same fixture with every entry named keeps its places, or the claim above
-        // would pass on a loader that had stopped reading places at all.
+        // THE CONTROL: the same fixture with every entry named keeps its places, or the claim above would pass on a
+        // loader that stopped reading places.
         Layout sound = load(oneEdgeWithASoundPlacesList());
 
         assertEquals(sound.getEdge("LE A", "LE Throat").getPlaceIds().size(), 3,
@@ -173,26 +159,18 @@ public class testLockEdgesSurviveTheFile
     }
 
     /**
-     * The square two hops share is charged to the train once, not twice.
+     * The square two hops share is charged to the train once, not twice.  A standing train's body is walked back edge
+     * by edge, and the square the walk turns at is the end of the edge just left and a place on the edge behind it;
+     * charged twice, the tail stops one square's length short and the track under the back end of the train is claimed
+     * by nobody, which clears a second train onto it.
      *
-     * A standing train's body is walked back edge by edge, and the square the walk turns
-     * at belongs to both of them: it is the end of the edge just left and a place on the edge behind
-     * it.  Charged twice, the tail stops one square's length short of where it really reaches - and
-     * the track under the back end of the train is then claimed by nobody, which is what clears a
-     * second train onto it.
+     * There is one budget: what the finer walk charges IS what the hop costs, and the edge's own length is kept only
+     * for a file with no places.  The fixture is the smallest thing with the shape: LE Stand is reached from LE Behind
+     * over an edge that names the junction among its places, and the edge out of LE Stand names it too.  A five-unit
+     * train at LE Stand reaches past the junction into the tile behind it.
      *
-     * **It is the same seam three rounds have now found**, from three directions: the places budget
-     * and the hop budget were two arithmetics over one train, agreeing only while every square was
-     * measured, the standing square was ordinary track, and no square belonged to
-     * two hops (this). There is one budget now - what the finer walk charges IS what the hop costs -
-     * and the edge's own length is kept only for a file that carries no places at all.
-     *
-     * **The fixture is the smallest thing with the shape:** LE Stand is reached from LE Behind over an
-     * edge that names the junction among its places, and the edge out of LE Stand names the junction
-     * too. A five-unit train standing at LE Stand reaches past the junction into the tile behind it.
-     *
-     * MUTATION, run 2026-09-13: restoring `remaining -= segment.getLength()` (or dropping the
-     * already-charged test) stops `LE:behind` being claimed.
+     * MUTATION: restoring `remaining -= segment.getLength()` (or dropping the already-charged test) stops `LE:behind`
+     * being claimed.
      */
     @Test
     public void testASquareOnTwoHopsIsChargedOnce() throws Exception
@@ -236,13 +214,8 @@ public class testLockEdgesSurviveTheFile
     }
 
     /**
-     * Three points in a line, with the junction named by the edges either side of it.
-     *
-     * `LE Stand` is where the train is; the walk leaves over `LE Stand -> LE Junction`, whose places
-     * are the junction alone, and continues over `LE Behind -> LE Junction`, whose places are the tile
-     * behind and the junction again.
-     *
-     * @return the graph JSON
+     * Three points in a line, with the junction named by the edges either side of it: the walk leaves over `LE Stand ->
+     * LE Junction` and continues over `LE Behind -> LE Junction`.
      */
     private static String aTailAcrossAJunction()
     {
@@ -258,24 +231,15 @@ public class testLockEdgesSurviveTheFile
     }
 
     /**
-     * A square whose placement the loader dropped hands no tail to whoever reserves it next.
+     * A square whose placement the loader dropped hands no tail to whoever reserves it next.  A file outliving the
+     * fleet is a case Adam ruled on ("drop the train and keep the rest"), and the drop promised that the next save
+     * writes the file back without the phantom, but the side and the road were written onto the square anyway and
+     * reloaded on every start.  `Point.reserve` sets an occupant and nothing else, so the first locked path ending
+     * there gave the reserving train the file's side and road, and `walkStandingTrains` claimed track along a road that
+     * train never drove.
      *
-     * **A file outliving the fleet is a case Adam has already ruled on** - *"drop the train and keep
-     * the rest"* (2026-09-16) - and the drop's own comment promises *"the next save writes the
-     * file back without the phantom"*.  That was true of the placement and false of its tail: the side
-     * and the road were written onto the square anyway, saved again on every write, and reloaded on
-     * every start.
-     *
-     * **What they cost.**  `Point.reserve` sets an occupant and nothing else, so the first locked path
-     * ending there gave the reserving train the file's side and the file's road - and
-     * `walkStandingTrains` then claimed the track behind the square along a road that train has never
-     * driven.  Every other train was refused over it, naming a train standing somewhere else, until
-     * the reservation cleared.
-     *
-     * Three doors, three claims: the load does not apply a side to an empty square, the save does not
-     * write one, and a reservation clears whatever it found.
-     *
-     * @throws Exception from the loader
+     * Three doors, three claims: the load does not apply a side to an empty square, the save does not write one, and a
+     * reservation clears whatever it found.
      */
     @Test
     public void testADroppedPlacementLeavesNoTailBehind() throws Exception
@@ -296,13 +260,9 @@ public class testLockEdgesSurviveTheFile
         assertNull(stand.getArrivedAlong(),
             "and with the road that train came along, which is what the tail walk follows");
 
-        // THE RECORD.  The drop's own comment says the next save writes the file back without the
-        // phantom; it said nothing about the phantom's tail, which was written on every save for ever.
-        //
-        // THE SIDE IS PUT BACK FIRST, which is what makes this a test of the SAVE.  Asserting
-        // straight after the assertion above proved nothing: the field is null by then, so `toJSON`
-        // could not write it whatever `toJSON` does, and reverting the occupant test in `Point.toJSON`
-        // left this passing.  Set on the empty square, the gate is the only thing that can keep it out.
+        // THE RECORD.  THE SIDE IS PUT BACK FIRST, which makes this a test of the SAVE: asserted straight after the
+        // assertion above, the field is null already, so `toJSON` could not write it whatever it does.  Set on the
+        // empty square, the gate is the only thing that can keep it out.
         stand.setArrivedFrom("LE Junction");
 
         assertFalse(layout.toJSON().toString().contains("arrivedFrom"),
@@ -325,14 +285,12 @@ public class testLockEdgesSurviveTheFile
             + "  `setLocomotive` clears both on a change of occupant and this door did not, so the"
             + " reserving train's tail is walked back along a road it has never driven (AUR-C1)");
 
-        // THE SAME INSTANCE BOTH TIMES, which is what makes this a control: the guard in `assign` is a
-        // reference comparison, so a `loc()` that built a new object each call would fail here for a
-        // reason that has nothing to do with the rule (moved above the call it qualifies).
+        // THE SAME INSTANCE BOTH TIMES, which makes this a control: the guard in `assign` is a reference comparison, so
+        // a `loc()` that built a new object each call would fail here for a reason unrelated to the rule.
         assertSame(loc(), loc(), "precondition: loc() no longer returns one instance, so the control that follows"
             + " is not testing the same-occupant case at all");
 
-        // THE CONTROL: the train that is ALREADY there keeps the tail it really has, which is what
-        // reserving a square a running train stands on has to leave alone.
+        // THE CONTROL: the train that is ALREADY there keeps the tail it really has.
         stand.setArrivedFrom("LE Junction");
 
         reserve.invoke(stand, loc());
@@ -343,11 +301,7 @@ public class testLockEdgesSurviveTheFile
 
     // Fixtures
 
-    /**
-     * Two approaches to one throat, each locking the other, as the builder emits a shared tile.
-     *
-     * @return the graph JSON
-     */
+    /** Two approaches to one throat, each locking the other, as the builder emits a shared tile. */
     private static String twoRoutesOverOneThroat()
     {
         return ("{'points': ["
@@ -371,11 +325,7 @@ public class testLockEdgesSurviveTheFile
             + "{'length': 4}");
     }
 
-    /**
-     * One square holding a locomotive the database has never heard of, with a side and a road.
-     *
-     * @return the graph JSON
-     */
+    /** One square holding a locomotive the database has never heard of, with a side and a road. */
     private static String aSquareWhoseTrainHasGone()
     {
         return ("{'points': ["

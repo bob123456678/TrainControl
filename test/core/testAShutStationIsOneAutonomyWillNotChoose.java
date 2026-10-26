@@ -14,30 +14,16 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * A station switched out of service is one autonomy will not choose, and the editor has to say so.
  *
- * `AutonomySession.stationsAutonomyWillNotChoose` is the editor's statement of the runtime's
- * rule, and the runtime is `Layout.isSendableDestination`:
+ * `AutonomySession.stationsAutonomyWillNotChoose` is the editor's statement of the runtime's rule,
+ * `Layout.isSendableDestination` (`isDestination() && isActive() && isAutoDestination() && !isReversing()`).  The
+ * editor asked one of those four: `!isReversing()` genuinely cannot be asked of a square (it is a property of a COPY),
+ * but `isActive` is a square-level property, so a station Adam had shut was reported as one autonomy WILL choose, in
+ * the panel he opens to find out why a train is not moving.  Three readers had it: the Path Type note on the Auto
+ * setting, the magenta leg color, and `AutonomyChecks.checkReversingGoesSomewhere`.
  *
- *     isDestination() && isActive() && isAutoDestination() && !isReversing()
- *
- * The editor asked one of those four. `!isReversing()` genuinely cannot be asked of a square - it is a
- * property of a COPY, and a may-reverse square keeps a plain copy autonomy can choose perfectly well -
- * but **`isActive` is a square-level property**, written by the menu item that switches a square out of
- * service and read one square at a time elsewhere in the same class. So a station Adam had shut was
- * reported to him as one autonomy WILL choose, in the panel he opens to find out why a train is not
- * moving.
- *
- * **Three readers had it**: the Path Type note on the Auto setting, the magenta leg color, and
- * `AutonomyChecks.checkReversingGoesSomewhere` - a reversing point whose only reachable stations are
- * all switched off counted as leading somewhere.
- *
- * **And the guard written to catch exactly this could not.**
- * `core.testTheAutoTierScopeMatchesTheRuntime` exists to hold the two statements together, and its
- * paraphrase of the runtime omitted the same clause - so the two agreed about a rule neither of them
- * had. That paraphrase is corrected with this; what is here is the deterministic case, because whether
- * the operator's own railway happens to have a shut station is not something a guard should depend on.
- *
- * `single-switch` is the fixture for the reason it usually is: the shutting is done in code, so the
- * claim is about one square changing and nothing else.
+ * The guard written to catch this could not: `core.testTheAutoTierScopeMatchesTheRuntime`'s paraphrase of the runtime
+ * omitted the same clause.  This is the deterministic case, since whether the operator's railway has a shut station is
+ * not something a guard should depend on; the shutting is done in code on the `single-switch` fixture.
  *
  * MUTATION: dropping the `isActive` term from `AutonomySession.stationsAutonomyWillNotChoose` fails
  * `testAShutStationIsReported` and leaves the control green.
@@ -48,9 +34,7 @@ public class testAShutStationIsOneAutonomyWillNotChoose
 {
     private static support.Scenario scenario;
 
-    /**
-     * `MainPlatform`, which is a station on this fixture and an auto destination by default.
-     */
+    /** `MainPlatform`, which is a station on this fixture and an auto destination by default. */
     private static final int X = 7;
 
     private static final int Y = 3;
@@ -81,12 +65,8 @@ public class testAShutStationIsOneAutonomyWillNotChoose
     }
 
     /**
-     * The control: in service, the square is not on the list and the runtime would choose it.
-     *
-     * Asserted first and separately. Every claim below is that the square IS on the list, and a set
-     * that contained every station would satisfy them without the rule being asked.
-     *
-     * @throws Exception on a failure to build
+     * The control: in service, the square is not on the list and the runtime would choose it.  Asserted first and
+     * separately: a set that contained every station would satisfy every claim below without the rule being asked.
      */
     @Test
     public void testAStationInServiceIsNotReported() throws Exception
@@ -106,11 +86,7 @@ public class testAShutStationIsOneAutonomyWillNotChoose
             + " agree for a reason that has nothing to do with switching it off");
     }
 
-    /**
-     * Switched out of service, the runtime stops choosing it - which is the half that was never wrong.
-     *
-     * @throws Exception on a failure to build
-     */
+    /** Switched out of service, the runtime stops choosing it: the half that was never wrong. */
     @Test
     public void testTheRuntimeStopsChoosingAShutStation() throws Exception
     {
@@ -136,11 +112,7 @@ public class testAShutStationIsOneAutonomyWillNotChoose
         }
     }
 
-    /**
-     * And the editor says so too, which is the half that was wrong.
-     *
-     * @throws Exception on a failure to build
-     */
+    /** And the editor says so too, which is the half that was wrong. */
     @Test
     public void testAShutStationIsReported() throws Exception
     {
@@ -163,30 +135,21 @@ public class testAShutStationIsOneAutonomyWillNotChoose
         }
     }
 
-    /**
-     * Marks the square as a station autonomy may choose, and in service.
-     */
+    /** Marks the square as a station autonomy may choose, and in service. */
     private void inService()
     {
         scenario.getSession().setAutoDestination(scenario.tile(X, Y), true);
         scenario.getSession().setPointProperty(scenario.tile(X, Y), "active", null);
     }
 
-    /**
-     * Switches the square out of service, the way the right-click menu does.
-     */
+    /** Switches the square out of service, the way the right-click menu does. */
     private void shut()
     {
         scenario.getSession().setAutoDestination(scenario.tile(X, Y), true);
         scenario.getSession().setPointProperty(scenario.tile(X, Y), "active", Boolean.FALSE);
     }
 
-    /**
-     * The running layout, rebuilt from the setup as it stands.
-     *
-     * @return the layout
-     * @throws Exception on a failure to build
-     */
+    /** The running layout, rebuilt from the setup as it stands. */
     private Layout built() throws Exception
     {
         return scenario.build();

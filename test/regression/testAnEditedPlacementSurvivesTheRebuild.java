@@ -14,33 +14,15 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A locomotive placed in the autonomy editor is still there when the editor closes.
+ * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337): *"placing locomotives via
+ * the editor does not seem to work at all - nothing happens. it only works if placing via the track diagram."*
  *
- * Adam, 2026-09-08, MT-337: *"placing locomotives via the editor does not seem to work at all -
- * nothing happens. it only works if placing via the track diagram."*
- *
- * **Two doors write a placement to two different places.** The track diagram places into the RUNNING
- * layout. The autonomy editor calls `AutonomySession.placeLocomotive`, which writes `loc` into the
- * setup. Closing the editor then does three things in this order:
- *
- * 1. `whereTheTrainsAre()` records every placement in the running layout - the ones from BEFORE the edit;
- * 2. the layout is rebuilt from the setup, so it now carries the edit;
- * 3. `putTheTrainsBack()` re-places everything it recorded in step 1, over the top of it.
- *
- * So the editor's placement is undone in memory, and `captureRunningLayout()` - which runs immediately
- * afterwards - writes the undone version back to the file. The diagram's door survives because its
- * placement is in the running layout, which is what step 1 reads.
- *
- * **The comment on the code that does it states the assumption that made it safe**: *"A placement is
- * not an inferred setting: nobody chose it in the editor, and the railway is the only place it lives."*
- * `placeLocomotive` is an editor door, so the second clause is false and the first follows it down.
- * That is the shape this codebase keeps producing - a rule lifted to a new site without the
- * precondition that made it true where it came from.
- *
- * **Why nothing caught it.** `putTheTrainsBack`'s only coverage was a source-shape guard in
- * `testEditorSurfaceRules`, which asserts that `whereTheTrainsAre()` is read before the load and
- * applied after it. That ordering is correct, is the fix for `OB-183`, and is entirely beside the
- * point: reading the order of two statements cannot say what they do to a train.
+ * The track diagram places into the RUNNING layout; the autonomy editor calls `AutonomySession.placeLocomotive`, which
+ * writes `loc` into the setup.  Closing the editor then (1) `whereTheTrainsAre()` records every placement in the
+ * running layout, from BEFORE the edit; (2) rebuilds the layout from the setup, so it carries the edit; (3)
+ * `putTheTrainsBack()` re-places everything recorded in step 1 over the top of it, and `captureRunningLayout()` writes
+ * the undone version back.  Reading the order of those statements, as `testEditorSurfaceRules` does, cannot say what
+ * they do to a train.
  *
  * @author Adam
  */
@@ -63,8 +45,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model: init reads the layout preference and would otherwise open Adam's own
-        // railway (OB-111).
+        // Before the model: init reads the layout preference and would otherwise open Adam's own railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -87,24 +68,20 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A rebuild that already places the train leaves it where the setup put it.
+     * A rebuild that already places the train leaves it where the setup put it (MT-337): the rebuilt layout holds
+     * `MOVED` at `SIDING` because the editor's write reached the setup, and putting it back to `PLATFORM` would undo
+     * the edit.
      *
-     * This is MT-337. The rebuilt layout holds `MOVED` at `SIDING` because the editor's write reached
-     * the setup; the record from before the edit says `PLATFORM`. Putting it back is undoing the edit.
-     *
-     * MUTATION: remove the "already placed" test from `putTheTrainsBack` and this fails, reporting the
-     * train back at PLATFORM.
-     *
-     * @throws Exception on a failure to build the fixture
+     * MUTATION: remove the "already placed" test from `putTheTrainsBack` and this fails, reporting the train back at
+     * PLATFORM.
      */
     @Test
     public void testTheEditorsPlacementIsNotUndone() throws Exception
     {
         Layout built = new Layout(model);
 
-        // A DESTINATION WITH A SENSOR, because only a destination can hold a train, and a destination
-        // must have an s88.  The addresses are past the protocol range so they cannot collide with
-        // the real railway's sixteen (OB-111).
+        // A destination with a sensor, because only a destination can hold a train and it must have an s88.  The
+        // addresses are past the protocol range so they cannot collide with the real railway's sixteen (OB-111).
         MarklinFeedback platformSensor = model.newFeedback(8394, null);
         MarklinFeedback sidingSensor = model.newFeedback(8395, null);
 
@@ -114,17 +91,13 @@ public class testAnEditedPlacementSurvivesTheRebuild
         built.createPoint("PLATFORM", true, platformSensor.getName());
         built.createPoint("SIDING", true, sidingSensor.getName());
 
-        // WHAT THE REBUILD PRODUCED. The setup carries the edit, so the train is at SIDING.
         built.moveLocomotive(MOVED, "SIDING", false);
 
-        // WHAT THE RUNNING LAYOUT HELD BEFORE IT - where the train was when the editor opened.
         Map<String, String[]> standing = new LinkedHashMap<>();
 
         standing.put(MOVED, new String[]{"PLATFORM", null});
 
-        // AND THE DOOR SAYS SO.  `AutonomyEditorPanel.placeLocomotive` names the train it has just
-        // written into the setup, and the rebuild carries that name here - which is what tells this
-        // case apart from the one below, where the same disagreement means the opposite thing.
+        // The door names the train it has just written into the setup, which tells this case apart from the one below.
         TrainControlUI.putTheTrainsBack(built, standing, null,
             java.util.Collections.singleton(MOVED));
 
@@ -145,24 +118,16 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the rebuild placed nowhere is still put back, which is what OB-183 asked for.
-     *
-     * The control on the test above: if the fix were "never put anything back", that test would pass
-     * and this one would fail. A rebuild that carries no placement for a train has no opinion about it,
-     * and the running railway's answer is the only one there is.
+     * A train the rebuild placed nowhere is still put back (OB-183).  The control on the test above: if the fix were
+     * "never put anything back", that test would pass and this one would fail.
      *
      * MUTATION: make `putTheTrainsBack` return immediately and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainTheRebuildDroppedIsStillPutBack() throws Exception
     {
         Layout built = new Layout(model);
 
-        // A DESTINATION WITH A SENSOR, because only a destination can hold a train, and a destination
-        // must have an s88.  The addresses are past the protocol range so they cannot collide with
-        // the real railway's sixteen (OB-111).
         MarklinFeedback platformSensor = model.newFeedback(8394, null);
         MarklinFeedback sidingSensor = model.newFeedback(8395, null);
 
@@ -172,8 +137,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
         built.createPoint("PLATFORM", true, platformSensor.getName());
         built.createPoint("SIDING", true, sidingSensor.getName());
 
-        // The rebuild placed nothing: this is the OB-183 case, where the setup cannot say where the
-        // trains are because they moved after it was written.
+        // The rebuild placed nothing: the setup cannot say where the trains are because they moved after it was
+        // written.
         Map<String, String[]> standing = new LinkedHashMap<>();
 
         standing.put(STAYER, new String[]{"PLATFORM", "north"});
@@ -197,17 +162,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the rebuilt railway refuses to put back leaves no tail on the square, and is said.
-     *
-     * `putTheTrainsBack` asked `moveLocomotive` and did not read its answer, then wrote the arrival side and the
-     * road onto the square whether or not the train was standing on it, so a square was left with a tail and no train.
-     * The case it was found by - a station demoted after a run, with the train still on it - is now put back on its
-     * square, tail and all: the train stands there, and refused it was left where the setup last had it and
-     * the square read free.  What still refuses is the railway running.
+     * A train the rebuilt railway refuses to put back leaves no tail on the square, and is said.  A station demoted
+     * after a run, with the train still on it, is put back on its square, tail and all; what still refuses is the
+     * railway running.
      *
      * MUTATION: refuse a square that is no station in the put-back, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainThatCannotBePutBackLeavesNoTailBehind() throws Exception
@@ -233,14 +192,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         Point passing = built.getPoint("PASSING");
 
-        // A SQUARE THAT IS NO STATION: the train stands there, so it is put back there, with its tail
         assertTrue(passing.getCurrentLocomotive() != null && STAYER.equals(passing.getCurrentLocomotive().getName()),
             STAYER + " was not put back on PASSING, which is no station but where it stands - left off the railway, the"
             + " square read free (RSA17-A1): " + notBack);
 
         assertEquals(passing.getArrivedFrom(), "north", "the arrival side did not go back with the train");
 
-        // AND A PUT-BACK STILL REFUSED - the railway running - leaves no tail, and says which train
         Layout running = new Layout(model);
 
         MarklinFeedback otherSensor = model.newFeedback(8397, null);
@@ -279,42 +236,22 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A placement NOBODY edited is a record, and a run outran it - so the railway wins.
+     * A placement NOBODY edited is a record, and a run outran it - so the railway wins.  The setup holds a stale entry
+     * (captured while the train was at PLATFORM; the run took it to SIDING), so the rebuild has an opinion, the wrong
+     * one.  The door this reaches production through has no editor in it: the diagram viewer's right-click autonomy
+     * menu is an `AutonomyEditorPanel` whose gestures end in `rebuildRunningLayoutFromSetup(true)`, and nothing on that
+     * path captures the running layout (`captureRunningLayout`: *"Stopping autonomy does not capture."*).  A train
+     * modeled at PLATFORM while it stands at SIDING is a block the next dispatch believes is free.  What tells the
+     * cases apart is provenance: the rebuild is told which trains the setup was just given a new placement for, and
+     * this train is not among them.
      *
-     * The case the pair above leaves out. The control beside it models the setup
-     * having **no** entry for the moved train; OB-183 as it happens on the railway leaves a **stale**
-     * entry, because the setup was captured while the train was still at PLATFORM and the run then
-     * took it to SIDING. The rebuild therefore has an opinion - the wrong one - and "where the rebuild
-     * put it wins" hands it the argument.
-     *
-     * **The door this reaches production through has no editor in it.** The track diagram viewer's
-     * right-click autonomy menu is itself an `AutonomyEditorPanel`, and every gesture on it - a home,
-     * a priority, a caption - ends in `setupChanged()` -> `rebuildRunningLayoutSoon()` ->
-     * `rebuildRunningLayoutFromSetup(true)`. Nothing on that path captures the running layout, and
-     * nothing captures when a run ends (`captureRunningLayout`: *"Stopping autonomy does not capture."*).
-     * So the setup is stale about exactly the trains the run moved.
-     *
-     * Occupancy is `currentLoc` and `isPathClear` never consults the s88, so a train modeled at
-     * PLATFORM while it stands at SIDING is a block the next dispatch believes is free.
-     *
-     * **What tells the two cases apart is provenance, and it is now supplied rather than assumed.**
-     * The rebuild is told which trains the setup was just given a new placement for; those are the
-     * edits and they win. This train is not among them, so the running railway's answer is the one
-     * that survives.
-     *
-     * MUTATION: pass MOVED in the edited set and this fails, reporting the train back at PLATFORM -
-     * which is the whole of the defect.
-     *
-     * @throws Exception on a failure to build the fixture
+     * MUTATION: pass MOVED in the edited set and this fails, reporting the train back at PLATFORM.
      */
     @Test
     public void testAStalePlacementDoesNotOverwriteTheRunningRailway() throws Exception
     {
         Layout built = new Layout(model);
 
-        // A DESTINATION WITH A SENSOR, because only a destination can hold a train, and a destination
-        // must have an s88.  The addresses are past the protocol range so they cannot collide with
-        // the real railway's sixteen (OB-111).
         MarklinFeedback platformSensor = model.newFeedback(8394, null);
         MarklinFeedback sidingSensor = model.newFeedback(8395, null);
 
@@ -324,11 +261,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
         built.createPoint("PLATFORM", true, platformSensor.getName());
         built.createPoint("SIDING", true, sidingSensor.getName());
 
-        // WHAT THE REBUILD PRODUCED, from a setup last captured before the run: the train back at the
-        // square it set off from.  Nobody chose this - it is a record that has been overtaken.
+        // From a setup last captured before the run: nobody chose this, it is a record that has been overtaken.
         built.moveLocomotive(MOVED, "PLATFORM", false);
 
-        // WHERE THE RUN ACTUALLY LEFT IT, which lives only in the running layout.
         Map<String, String[]> standing = new LinkedHashMap<>();
 
         standing.put(MOVED, new String[]{"SIDING", "north"});
@@ -358,24 +293,18 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the last run left on a station is put back on it after the station is renamed.
-     *
-     * Where a train stands after a run lives on the running layout alone, and a rebuild from the diagram's setup menu
-     * carries each train across by the name of the Point it stands on.  A station renamed there renamed that Point; the
-     * rebuild found no Point by the name recorded and left the train where the setup last had it - where the run began -
-     * so the railway held it where it was not, and the square it stood on read free.  Carried now by square and copy: the
-     * name recorded is traced to the square it named, and to the copy of that square the build now calls something else.
+     * A train the last run left on a station is put back on it after the station is renamed.  Where a train stands
+     * after a run lives on the running layout alone, and a rebuild from the diagram's setup menu carries each train by
+     * the name of the Point it stands on, so it is carried by square and copy: the name recorded is traced to the
+     * square it named.
      *
      * MUTATION: put the trains back by the names recorded alone, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainOnARenamedStationIsPutBackOnIt() throws Exception
     {
         org.traincontrol.automationui.AutonomySession session = alphaBetaGamma("rsa4-a1", 8411);
 
-        // PLACED AT ALPHA, as the setup has it
         session.placeLocomotive(new org.traincontrol.automationui.TileGraph.TileKey("main", 1, 1), MOVED);
         session.rebuild();
 
@@ -385,7 +314,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             Layout running = model.getAutoLayout();
 
-            // THE RUN LEFT IT AT BETA, facing east - on the running layout alone
             String atBeta = null;
 
             for (Point p : running.getPoints())
@@ -403,7 +331,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
-            // THE RENAME, from the diagram's setup menu, and the rebuild it makes
             session.setPointName(new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1), "Bravo");
 
             model.parseAuto(session.buildConfiguration());
@@ -437,14 +364,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train on a square that has since become two copies is put back on the copy facing its way: the one
-     * copy of a station on a one-way line carries the station's plain name, and made two-way again the square is two
-     * copies, each named for its heading - so the plain name recorded names no Point, and the train was left off the
-     * railway.  A copy is its facing, so the train goes on the copy that faces the way it did.
+     * A train on a square that has since become two copies is put back on the copy facing its way: the one copy of a
+     * station on a one-way line carries the plain name, and made two-way again the square is two copies, each named for
+     * its heading.  A copy is its facing, so the train goes on the copy that faces the way it did.
      *
      * MUTATION: carry a name only to the same copy under the square's new name, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainOnASquareSplitSinceIsPutBackFacingItsWay() throws Exception
@@ -456,7 +380,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         org.traincontrol.automationui.TileGraph.RouteId straight = new org.traincontrol.automationui.TileGraph.RouteId(0, 0);
 
-        // ONE WAY, EASTWARD, either side of Beta: its one copy, called Beta
         session.setDirection(west, straight, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
         session.setDirection(east, straight, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
         session.rebuild();
@@ -483,7 +406,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
-            // BOTH WAYS AGAIN, from the diagram's setup menu, and the rebuild it makes: Beta is two copies
             session.setDirection(west, straight, org.traincontrol.automationui.TileGraph.Direction.BOTH);
             session.setDirection(east, straight, org.traincontrol.automationui.TileGraph.Direction.BOTH);
             session.rebuild();
@@ -509,8 +431,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Alpha, Beta and Gamma, stations at 1,1, 3,1 and 5,1 of one line, on three sensors from the one given: a session of
-     * its own, in a folder of its own.
+     * Alpha, Beta and Gamma, stations at 1,1, 3,1 and 5,1 of one line, on three sensors from the one given: a session
+     * in a folder of its own.
      */
     private static org.traincontrol.automationui.AutonomySession alphaBetaGamma(String folderName, int firstSensor)
         throws Exception
@@ -566,13 +488,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train on a station with no facing - one no track arrives at, with one way out - is put back on it after the
-     * station is renamed: such a square is one copy that records no facing, so only its name, carried to the
-     * square's new name, finds it again.
+     * A train on a station with no facing (no track arrives at it, one way out) is put back on it after the station is
+     * renamed: such a square is one copy that records no facing, so only its name, carried to the square's new name,
+     * finds it.
      *
      * MUTATION: carry a name only to the copy facing the same way, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainOnAStationWithNoFacingIsPutBackAfterARename() throws Exception
@@ -581,7 +501,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         org.traincontrol.automationui.TileGraph.RouteId straight = new org.traincontrol.automationui.TileGraph.RouteId(0, 0);
 
-        // ONE WAY, EASTWARD, away from Alpha: nothing arrives there, and it has one way out
         for (int x : new int[] {2, 4})
         {
             session.setDirection(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1), straight,
@@ -603,7 +522,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
-            // THE RENAME, and the rebuild it makes
             session.setPointName(new org.traincontrol.automationui.TileGraph.TileKey("main", 1, 1), "Alfa");
 
             model.parseAuto(session.buildConfiguration());
@@ -626,17 +544,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A station renamed to the name another station has keeps both trains the last run left on the two: the
-     * name moves to the renamed square, the other square is called something else, and each train goes back on its own
-     * square.
-     *
-     * The carry took a name the rebuild still gives as the same Point, and the rebuild gives it to the other square: the
-     * train recorded there was stood on the renamed station, the train that stood on it was taken off the railway, and
-     * the square the first really stands on read free.  A train is carried by the square it stood on and its facing.
+     * A station renamed to the name another station has keeps both trains the last run left on the two: the name moves
+     * to the renamed square, the other is called something else, and each train goes back on its own square, carried by
+     * the square it stood on and its facing.
      *
      * MUTATION: take a name the rebuild still gives as the same Point, whatever square it is on now, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testARenameToAnotherStationsNameKeepsBothTrains() throws Exception
@@ -652,13 +564,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertNotNull(running.getPoint("Beta (eastbound)"), "precondition: no Beta (eastbound): " + namesOf(running));
             assertNotNull(running.getPoint("Gamma (eastbound)"), "precondition: no Gamma (eastbound): " + namesOf(running));
 
-            // THE RUN'S RESULT: one train on each, facing east - on the running layout alone
             assertTrue(running.moveLocomotive(MOVED, "Beta (eastbound)", false), "precondition: " + MOVED + " not stood");
             assertTrue(running.moveLocomotive(STAYER, "Gamma (eastbound)", false), "precondition: " + STAYER + " not stood");
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
-            // BETA RENAMED GAMMA, and the rebuild it makes: the name goes to main 3,1, main 5,1 becomes Gamma (2)
             session.setPointName(new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1), "Gamma");
 
             model.parseAuto(session.buildConfiguration());
@@ -687,8 +597,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Stations in a row at 1,1, 3,1, 5,1 and on, one per name, on sensors from the one given: a session of its own, in a
-     * folder of its own.
+     * Stations in a row at 1,1, 3,1, 5,1 and on, one per name, on sensors from the one given: a session in a folder of
+     * its own.
      */
     private static org.traincontrol.automationui.AutonomySession aRow(String folderName, int firstSensor,
         String... names) throws Exception
@@ -744,18 +654,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the last run left on a station, whose way a direction then takes, is recorded in the setup where it stands
-     * and kept there through the fold (Adam, 2026-10-01): the railway cannot stand it on a
-     * copy facing another way, so a rebuild left it where the setup last had it - a square it had left - and a fold of
-     * that railway took it off the setup altogether.
-     *
-     * And the rebuild from that setup stands it on no Point rather than on Beta's copy facing east, and the fold keeps it
-     * facing west: the build's last fallback stood it on that copy, and the capture then wrote east over its facing.
+     * A train the last run left on a station, whose way a direction then takes, is recorded in the setup where it
+     * stands and kept there through the fold: the railway cannot stand it on a copy facing another way.  The rebuild
+     * stands it on no Point rather than on Beta's copy facing east, and the fold keeps it facing west.
      *
      * MUTATION: record nothing, and this fails; so does a fold that clears its square, and a build that stands it on a
      * copy facing another way.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainTheRunLeftIsRecordedWhereItStandsWhenItsWayGoes() throws Exception
@@ -773,14 +677,13 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: on Beta, facing west - on the running layout alone, come in from the east
             assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
                 + " not stood on Beta (westbound): " + namesOf(running));
 
             running.getPoint("Beta (westbound)").setArrivedFrom("E");
 
-            // AND A ROAD - nothing arrives at Beta on this row, whose ends turn nothing, so one of its two edges:
-            // what is asked is that the record carries the road the railway has, whatever it is
+            // Nothing arrives at Beta on this row, so one of its two edges: the record must carry the road the railway
+            // has.
             java.util.List<org.traincontrol.automation.Edge> road = new java.util.ArrayList<>();
 
             for (org.traincontrol.automation.Edge edge : running.getEdges())
@@ -797,7 +700,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertTrue(session.getLocomotiveNameAt(beta) == null, "precondition: the setup already has a train on Beta");
 
-            // ONE WAY EAST EITHER SIDE OF BETA: no copy of it faces west - set, not refused
             java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
 
             either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
@@ -811,7 +713,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on"
                 + " Beta is not recorded facing west, as it stands");
 
-            // AND THE SIDE IT CAME IN BY, AND ITS ROAD
             assertEquals(session.getPointProperty(beta, "arrivedFrom"), "E", "the train recorded on Beta is recorded"
                 + " without the side it came in by");
 
@@ -819,7 +720,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
                 + " recorded without the road it came in along: " + session.getPointProperty(beta, "arrivedAlong")
                 + ", came along " + roadNames);
 
-            // THE RAILWAY REBUILT FROM THE SETUP - which has no copy of Beta facing west - AND FOLDED BACK
             model.parseAuto(session.buildConfiguration());
 
             Layout rebuilt = model.getAutoLayout();
@@ -840,12 +740,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the fold turned the"
                 + " train on Beta round in the setup");
 
-            // AND LISTED FOR THE DIAGRAM TO DRAW WHERE IT STANDS
             assertEquals(session.trainsOnNoPoint().get(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train"
                 + " on no Point is not listed, facing west, for the diagram to draw on Beta: " + session.trainsOnNoPoint());
 
-            // AND GRAY WHERE THE CONFIGURATION PAUSES IT - asked of the setup's list, since the railway does
-            // not have the train
+            // Asked of the setup's list, since the railway does not have the train.
             assertFalse(session.pausedTrainsOnNoPoint().contains(beta), "control: the train on no Point is listed as"
                 + " paused before anybody paused it");
 
@@ -870,14 +768,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A carry across a load after squares were moved puts each train back on its own station: while a declined
-     * edit waits the trains are carried by the square the railway says each stands on, and after a move the railway said
-     * the square as it was - so each train went on the station that had taken its old square.  A move moves the squares
-     * the railway's Points say they are copies of, as it moves the setup's.
+     * A carry across a load after squares were moved puts each train back on its own station: while a declined edit
+     * waits the trains are carried by the square the railway says each stands on, so a move moves the squares the
+     * railway's Points say they are copies of, as it moves the setup's.
      *
      * MUTATION: move the setup's squares and not the railway's, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testACarryAfterAMoveKeepsEachTrainOnItsStation() throws Exception
@@ -900,7 +795,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
                 + " on Gamma: " + namesOf(running));
 
-            // TWO COLUMNS INSERTED at the left, as the track editor moves the squares and tells the setup
             java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
                 moves = new java.util.LinkedHashMap<>();
 
@@ -913,7 +807,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
             session.moveTiles(moves);
             session.saveWithoutReconciling();
 
-            // THE SAVE'S LOAD, a declined edit waiting: the trains carried across by where the railway says they stand
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
             org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("main", 2, 8441, 4));
@@ -934,13 +827,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A carry across a load after a page was renamed puts each train back on its own station: the railway said
-     * each train's square under the page's old name, which no square has, so every train on the page was left where the
-     * setup last had it.  A rename moves the squares the railway's Points say they are copies of, as it moves the setup's.
+     * A carry across a load after a page was renamed puts each train back on its own station: a rename moves the
+     * squares the railway's Points say they are copies of, as it moves the setup's.
      *
      * MUTATION: rename the setup's page and not the railway's squares, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testACarryAfterAPageRenameKeepsEachTrainOnItsStation() throws Exception
@@ -963,7 +853,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
                 + " on Gamma: " + namesOf(running));
 
-            // THE PAGE RENAMED, as the track diagram's rename makes it
             session.renamePage("main", "yard");
             session.saveWithoutReconciling();
 
@@ -987,13 +876,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A move canceled puts the railway's squares back with the setup's: a move moves the squares the railway's
-     * Points say they are copies of, and a Cancel that put back the setup alone left the carry reading every train's
-     * square as the move had made it, against the pages as they were - each train on the station that had its square.
+     * A move canceled puts the railway's squares back with the setup's, or the carry reads every train's square as the
+     * move had made it, against the pages as they were.
      *
      * MUTATION: put the setup back and not the railway's squares, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testACancelledMovePutsTheRailwaysSquaresBack() throws Exception
@@ -1016,7 +902,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
                 + " on Gamma: " + namesOf(running));
 
-            // THE EDITOR OPENED, two columns inserted, and Cancel
             org.json.JSONObject asOpened = session.snapshotSetup();
 
             java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
@@ -1035,7 +920,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
 
-            // THE RESET'S LOAD, a declined edit waiting, over the pages as they were
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
             org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("main", 0, 8461, 4));
@@ -1056,14 +940,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Stations moved together in the track editor keep the timetable's legs through them: the carry every
-     * build makes kept a name only on the square the build before gave it, and a move had not moved that memory - so
-     * each leg was carried to the station now on its old square, one entry dropped and another sent on a journey nobody
-     * recorded.  A move moves what the carry remembers with the squares.
+     * Stations moved together in the track editor keep the timetable's legs through them: a move moves what the carry
+     * remembers with the squares, or each leg is carried to the station now on its old square.
      *
      * MUTATION: leave the carry's memory where the squares were, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testAMoveKeepsTheTimetableOnItsStations() throws Exception
@@ -1074,7 +954,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) fixture[1];
         String before = (String) fixture[2];
 
-        // TWO COLUMNS INSERTED, as the track editor moves the squares and tells the setup
         session.moveTiles(shiftRow(page, 2));
 
         assertEquals(legsOf(session), before, "a move of stations together carried the timetable's legs to the stations"
@@ -1082,12 +961,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The same after the track editor's Cancel: Cancel put the setup back and rebuilt over what the move had
-     * made the carry remember, and carried every leg the other way.
+     * The same after the track editor's Cancel, which must put back what the move made the carry remember.
      *
      * MUTATION: put back the setup and not what the carry remembers, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testACancelledMoveKeepsTheTimetableOnItsStations() throws Exception
@@ -1102,20 +978,16 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         session.moveTiles(shiftRow(page, 2));
 
-        // CANCEL: the setup put back as the editor opened it, rebuilt over the page as the editor left it
         assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
 
         assertEquals(legsOf(session), before, "a move cancelled carried the timetable's legs to other stations (RSA8-B2)");
     }
 
     /**
-     * The same after the track editor's Ctrl+Z: the undo put the page's setup back and rebuilt against what the
-     * move had made the carry remember.  The undo point holds what the carry remembers and every stored leg, and the undo
-     * puts both back.
+     * The same after the track editor's Ctrl+Z: the undo point holds what the carry remembers and every stored leg, and
+     * the undo puts both back.
      *
      * MUTATION: put back the page's setup alone at an undo, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testAnUndoneMoveKeepsTheTimetableOnItsStations() throws Exception
@@ -1126,7 +998,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) fixture[1];
         String before = (String) fixture[2];
 
-        // THE UNDO POINT, the move, and Ctrl+Z: the tiles back, then the page's setup
         java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
 
         session.moveTiles(shiftRow(page, 2));
@@ -1138,13 +1009,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A leg to a station with no name of its own names it as before once a move is undone: the move renamed
-     * the names made from its square - "main 5,1" became "main 7,1" - and the undo did not name them back, so the leg
-     * named whatever station then stood on the moved square.
+     * A leg to a station with no name of its own names it as before once a move is undone: the move renamed the names
+     * made from its square ("main 5,1" became "main 7,1"), and the undo must name them back.
      *
      * MUTATION: put back the page's setup alone at an undo, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testAnUndoneMoveNamesAnUnnamedStationAsBefore() throws Exception
@@ -1155,7 +1023,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, 8501, 5, 13);
 
-        // ALPHA AND BETA NAMED, the three after them not
         org.traincontrol.automationui.AutonomySession session = sessionOn(folder, page, "B2 unnamed", "Alpha", "Beta");
 
         for (int x = 5; x <= 9; x += 2)
@@ -1190,12 +1057,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A move undone puts the railway's squares back with the page's setup: Cancel did, and Ctrl+Z - the other
-     * way back - did not, so while a declined edit waited the carry put each train on the station its moved square held.
+     * A move undone puts the railway's squares back with the page's setup, as Cancel does, or while a declined edit
+     * waits the carry puts each train on the station its moved square held.
      *
      * MUTATION: put back the page's setup alone at an undo, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testAnUndoneMovePutsTheRailwaysSquaresBack() throws Exception
@@ -1220,7 +1085,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
                 + " on Gamma: " + namesOf(running));
 
-            // THE UNDO POINT, the move, and Ctrl+Z
             java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
 
             session.moveTiles(shiftRow(page, 2));
@@ -1276,7 +1140,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return new Object[] {session, page, legsOf(session)};
     }
 
-    /** The first built edge from a Point whose name begins so, to one whose name begins so. */
     private static String[] edgeFrom(org.json.JSONObject built, String from, String to)
     {
         for (Object o : built.getJSONArray("edges"))
@@ -1292,7 +1155,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return null;
     }
 
-    /** The configuration in use's timetable, each entry's legs as "start -> end". */
     private static String legsOf(org.traincontrol.automationui.AutonomySession session)
     {
         StringBuilder out = new StringBuilder();
@@ -1313,7 +1175,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return out.toString();
     }
 
-    /** Every tile on row 1 moved so many columns, as the track editor's shift moves them in place; the moves. */
     private static java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
         org.traincontrol.automationui.TileGraph.TileKey> shiftRow(org.traincontrol.base.LayoutDiagram page, int by)
         throws Exception
@@ -1347,14 +1208,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A page ticked out keeps its timetable entries through the railway's load and its fold (Adam, 2026-09-30: "Just
-     * keep the entries, and if a path is run that contains a point on a disabled page, reject it with an error"): the
-     * railway built without the page holds its entries as it read them, unrunnable, and the fold writes them back, so
-     * ticked back in the page's entries run again.
+     * A page ticked out keeps its timetable entries through the railway's load and its fold (*"Just keep the entries,
+     * and if a path is run that contains a point on a disabled page, reject it with an error"*): the railway built
+     * without the page holds its entries as it read them, unrunnable, and the fold writes them back.
      *
      * MUTATION: drop an entry the railway cannot build at the load, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold() throws Exception
@@ -1369,7 +1227,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // OUT, and the railway built without the page
             session.setPageExcluded("second", true);
             session.rebuild();
 
@@ -1386,12 +1243,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertFalse(running.getTimetable().get(1).isRunnable(), "the entry through the page left out reads as"
                 + " runnable");
 
-            // THE FOLD of that railway
             session.captureFromLayout(running.toJSON(running.getLastPointsReached()));
 
             assertEquals(legsOf(session), before, "the fold of the railway built without the page changed the timetable");
 
-            // BACK IN
             session.setPageExcluded("second", false);
             session.rebuild();
 
@@ -1409,12 +1264,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Start Timetable asks each locomotive to stand where its first entry the railway can run starts: an entry through a
-     * page left out has no start on the railway, and asked of it the check refused the whole timetable.
+     * Start Timetable asks each locomotive to stand where its first entry the railway can run starts: an entry through
+     * a page left out has no start on the railway.
      *
      * MUTATION: ask each locomotive's first entry whatever it is, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testStartTimetableAsksOnlyEntriesTheRailwayCanRun() throws Exception
@@ -1445,7 +1298,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertEquals(running.getTimetable().size(), 2, "precondition: the railway did not keep the page's entry");
 
-            // THE FIRST ENTRY'S TRAIN WHERE IT STARTS; the second's train, whose entry cannot run, nowhere
             org.traincontrol.automation.TimetablePath first = running.getTimetable().get(0);
 
             assertTrue(running.moveLocomotive(MOVED, first.getStart().getName(), false), "precondition: " + MOVED
@@ -1516,14 +1368,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The editor's Cancel after two stations' names were swapped keeps the timetable on its stations: Cancel
-     * put back the setup and the snapshot's legs, but put back what the carry of names remembers only where a move had
-     * been made - so its rebuild found each name remembered on the other's square and carried every leg there.  What the
-     * carry remembers is taken when the editor opens, as its snapshot is.
+     * The editor's Cancel after two stations' names were swapped keeps the timetable on its stations: what the carry of
+     * names remembers is taken when the editor opens, as its snapshot is, and put back whether or not a move was made.
      *
      * MUTATION: put back what the carry remembers only after a move, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testACancelAfterTwoNamesSwappedKeepsTheTimetable() throws Exception
@@ -1533,14 +1381,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
         org.traincontrol.automationui.AutonomySession session = (org.traincontrol.automationui.AutonomySession) fixture[0];
         String before = (String) fixture[2];
 
-        // THE EDITOR OPENED: its snapshot, and its note
         org.json.JSONObject asOpened = session.snapshotSetup();
 
         session.beginEditSession();
 
         try
         {
-            // THE NAMES OF BETA AND GAMMA SWAPPED, as three renames make it
             org.traincontrol.automationui.TileGraph.TileKey beta =
                 new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
             org.traincontrol.automationui.TileGraph.TileKey gamma =
@@ -1552,7 +1398,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertFalse(legsOf(session).equals(before), "precondition: the legs did not follow the swapped names");
 
-            // CANCEL
             assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
 
             assertEquals(legsOf(session), before, "a Cancel after two names were swapped carried the timetable's legs to"
@@ -1565,13 +1410,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Start Timetable asks nothing of the entries past the one the run will stop at: the run stops at the
-     * first entry it cannot run, so a train whose only entry comes after it never sets off - and asked where it stands,
-     * the check refused the timetable, or sent the operator to stand a train where the run would never send it from.
+     * Start Timetable asks nothing of the entries past the one the run will stop at: a train whose only entry comes
+     * after it never sets off, so asking where it stands would refuse the timetable.
      *
      * MUTATION: ask every entry the railway can run, past the stop too, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testStartTimetableAsksNothingPastTheEntryTheRunStopsAt() throws Exception
@@ -1593,7 +1435,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // A THIRD ENTRY, after the one through the page that will be left out: another train, on the page in play
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
             String[] z = edgeFrom(built, "Beta (westbound)", "Alpha");
@@ -1618,7 +1459,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertFalse(running.getTimetable().get(1).isRunnable(), "precondition: the second entry can run");
 
-            // THE FIRST ENTRY'S TRAIN WHERE IT STARTS; the third's nowhere - the run stops before it
             assertTrue(running.moveLocomotive(MOVED, running.getTimetable().get(0).getStart().getName(), false),
                 "precondition: " + MOVED + " not stood where its entry starts");
 
@@ -1633,14 +1473,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
         }
     }
 
-    /** One line of stations, one per sensor from the first given, starting that many columns in: its page. */
     private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count)
         throws Exception
     {
         return aRowPage(name, offset, firstSensor, count, 2 * count + 1 + offset);
     }
 
-    /** The same on a page this many columns wide. */
     private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count,
         int width) throws Exception
     {
@@ -1663,7 +1501,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return page;
     }
 
-    /** A session over this page in this folder, a configuration of this name, its stations named in order. */
     private static org.traincontrol.automationui.AutonomySession sessionOn(java.io.File folder,
         org.traincontrol.base.LayoutDiagram page, String configuration, String... names) throws Exception
     {
@@ -1686,7 +1523,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return session;
     }
 
-    /** The next session over the setup in this folder, on this page, as a reset opens it. */
     private static org.traincontrol.automationui.AutonomySession sessionOver(java.io.File folder,
         org.traincontrol.base.LayoutDiagram page) throws Exception
     {
@@ -1697,7 +1533,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return next;
     }
 
-    /** Whether the train stands on a Point of that square whose name begins so. */
     private static boolean stoodOn(Layout layout, String train, String square, String name)
     {
         for (Point p : layout.getPoints())
@@ -1713,12 +1548,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train the last run left on a station that is then marked one trains only pass through stands there still after
-     * the rebuild: the put-back refused a copy that is no station, so the train was left where the setup last
-     * had it - here, on no Point - and the square it stands on read free.  The train IS there.
+     * the rebuild: the put-back must not refuse a copy that is no station.  The train IS there.
      *
      * MUTATION: refuse a copy that is no station in the put-back, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainOnAStationMadePassThroughIsPutBackOnIt() throws Exception
@@ -1735,13 +1567,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT, on the railway alone
             assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
                 + " not stood on Beta (westbound): " + namesOf(running));
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
-            // "NO - TRAINS CAN ONLY PASS THROUGH" on Beta, and the rebuild the diagram's menu makes
             session.setStation(beta, false);
 
             model.parseAuto(session.buildConfiguration());
@@ -1772,12 +1602,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * A train the last run turned round on a station, whose turning is then taken away, is recorded where it stands and
-     * reported, not left where the setup last had it: no copy of the square faces its way any more, so the
-     * put-back could not put it back, and said nothing.
+     * reported, not left where the setup last had it: no copy of the square faces its way any more.
      *
      * MUTATION: put nothing on the list of trains not put back for a copy the rebuild has not got, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainWhoseTurnIsTakenAwayIsRecordedWhereItStands() throws Exception
@@ -1788,7 +1615,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // ONE WAY EAST, AND TRAINS MAY TURN ROUND AT BETA
             java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
 
             either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
@@ -1812,13 +1638,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertNotNull(turned, "precondition: Beta has no turning copy: " + namesOf(running));
 
-            // THE RUN'S RESULT: turned round on Beta, on the railway alone - come in from the west
             assertTrue(running.moveLocomotive(MOVED, turned, false, true), "precondition: " + MOVED + " not stood on "
                 + turned);
 
             running.getPoint(turned).setArrivedFrom("W");
 
-            // AND THE ROAD IT CAME IN ALONG
             java.util.List<org.traincontrol.automation.Edge> road = new java.util.ArrayList<>();
 
             for (org.traincontrol.automation.Edge edge : running.getEdges())
@@ -1834,7 +1658,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
-            // TURNING TAKEN AWAY, and the rebuild
             session.setPointProperty(beta, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, null);
 
             model.parseAuto(session.buildConfiguration());
@@ -1856,11 +1679,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(String.valueOf(session.getFacing(beta)), facing, MOVED + " is not recorded facing the way it"
                 + " stands");
 
-            // AND THE SIDE IT CAME IN BY: without it the track put back stands it with no tail
             assertEquals(session.getPointProperty(beta, "arrivedFrom"), "W", MOVED + " is recorded without the side it"
                 + " came in by");
 
-            // AND ITS ROAD - in today's names: the turning copy it came in to is plain Beta now
             assertTrue(sameRoad(session.getPointProperty(beta, "arrivedAlong"), roadNames), MOVED + " is recorded without"
                 + " the road it came in along: " + session.getPointProperty(beta, "arrivedAlong") + ", came along "
                 + roadNames);
@@ -1889,13 +1710,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A setup record the last run has outrun raises no error: the railway has the train on another square, and
-     * the railway wins - an error about a square no train stands on stopped every send.  And the train the railway has
-     * nowhere, recorded where it cannot stand, is listed for the diagram to draw there.
+     * A setup record the last run has outrun raises no error: the railway has the train on another square, and the
+     * railway wins.  The train the railway has nowhere, recorded where it cannot stand, is listed for the diagram to
+     * draw there.
      *
      * MUTATION: ask the setup alone for the error, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testARecordTheRunOutranRaisesNoError() throws Exception
@@ -1906,7 +1725,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // THE SETUP: the train on Beta, facing west
             session.placeLocomotive(beta, MOVED);
             session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
 
@@ -1916,11 +1734,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: on Gamma, on the railway alone
             assertTrue(running.moveLocomotive(MOVED, "Gamma", false), "precondition: " + MOVED
                 + " not stood on Gamma: " + namesOf(running));
 
-            // ONE WAY EAST EITHER SIDE OF BETA: the record's facing has no copy there now
             java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
 
             either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
@@ -1947,12 +1763,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train of the railway's beside a link that is switched off, where no copy then faces its way, is recorded where it
-     * stands: `setPortalDisabled` writes it, as a direction does - and no claim drove that.
+     * A train of the railway's beside a link that is switched off, where no copy then faces its way, is recorded where
+     * it stands: `setPortalDisabled` writes it, as a direction does.
      *
      * MUTATION: take the record out of `setPortalDisabled`, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testATrainBesideALinkSwitchedOffIsRecordedWhereItStands() throws Exception
@@ -2010,7 +1824,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: come in through the link to Gamma, facing west - on the railway alone
             assertTrue(running.moveLocomotive(MOVED, "Gamma (westbound)", false), "precondition: " + MOVED
                 + " not stood on Gamma (westbound): " + namesOf(running));
 
@@ -2039,8 +1852,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
      * other way: a run turned it and brought it back, and the setup's facing is the one it set off with.
      *
      * MUTATION: ask the setup's facing for a train the railway has on the same square, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testARecordTheRunTurnedRaisesNoError() throws Exception
@@ -2051,7 +1862,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // THE SETUP: the train on Beta, facing east
             session.placeLocomotive(beta, MOVED);
             session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.E);
 
@@ -2061,11 +1871,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: back on Beta, facing west
             assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
                 + " not stood on Beta (westbound): " + namesOf(running));
 
-            // ONE WAY WEST EITHER SIDE OF BETA: the record's facing, east, has no copy there now; the railway's has
             java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
 
             either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
@@ -2089,13 +1897,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * Home All Trains Where They Stand homes each train where the railway has it, not where the setup last had it:
-     * from the track diagram's menu, which folds nothing first, after a run it homed each train where it set
-     * off.
+     * Home All Trains Where They Stand homes each train where the railway has it, not where the setup last had it: from
+     * the track diagram's menu, which folds nothing first.
      *
      * MUTATION: walk the setup's placements alone, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testHomeAllHomesTheTrainsWhereTheyStand() throws Exception
@@ -2107,7 +1912,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // THE SETUP: the train on Beta
             session.placeLocomotive(beta, MOVED);
 
             model.parseAuto(session.buildConfiguration());
@@ -2116,7 +1920,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: on Gamma
             assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED
                 + " not stood on Gamma (eastbound): " + namesOf(running));
 
@@ -2135,12 +1938,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * The no-length notice, on the square a train stands on after a run, names that train: it named the train
-     * the setup recorded there - nobody, or the wrong one.
+     * The no-length notice, on the square a train stands on after a run, names that train and not the one the setup
+     * recorded there.
      *
      * MUTATION: name the setup's train, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testTheNoLengthNoticeNamesTheTrainThatStandsThere() throws Exception
@@ -2152,7 +1953,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            // THE SETUP: the train on Beta; and nobody has measured it
             session.placeLocomotive(beta, MOVED);
             session.setTrainLengthSource(name -> 0);
 
@@ -2162,7 +1962,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: on Gamma
             assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED
                 + " not stood on Gamma (eastbound): " + namesOf(running));
 
@@ -2190,7 +1989,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
     /**
      * Whether a recorded road is the road a train came in along: the same steps between the same squares' Points, by
-     * their names before any heading - a rebuild can give a copy another one.
+     * name before any heading.
      */
     private static boolean sameRoad(Object recorded, String came)
     {
@@ -2212,7 +2011,6 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return true;
     }
 
-    /** A Point's name before its heading. */
     private static String base(String name)
     {
         int heading = name.indexOf(" (");

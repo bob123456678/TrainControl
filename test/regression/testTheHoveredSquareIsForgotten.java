@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -27,29 +27,19 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-198: a square the pointer is no longer over is not a square a shortcut may act on.
  *
- * `LayoutEditor.autonomyHover` is set when the pointer enters a label and there was nothing that
- * cleared it - this window has no mouse-exit hook, and stepping to another page replaces the grid
- * without touching the field. Three shortcuts read it: **Control+H** (set home), **Control+S**
- * (rename) and, since FR-066, **Control+E** (set length).
+ * `LayoutEditor.autonomyHover` is set when the pointer enters a label, and nothing cleared it: the window has no
+ * mouse-exit hook and stepping to another page replaces the grid without touching the field.  Three shortcuts read it:
+ * Control+H (set home), Control+S (rename) and, since FR-066, Control+E (set length).  A label left behind by a page
+ * change is not in the grid, so `LayoutGrid.getCoordinates` answers `-1,-1` for it and the key acted on `(page, -1,
+ * -1)`.
  *
- * A label left behind by a page change is not in the grid it is asked about, so
- * `LayoutGrid.getCoordinates` answers `-1,-1` for it - and the key then acted on `(page, -1, -1)`: a
- * square nobody pointed at, answered with a sentence about a square nobody chose.
+ * Asserted at the one question the three keys now ask: `hoveredSquare()` FORGETS a stale label rather than merely
+ * refusing it, so nothing can read it a second time.  The stale label is a real one, built the way the grid builds them
+ * and simply not in the grid; the live one is taken off the rendered editor by walking its component tree, because the
+ * grid has no accessor.  ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *
- * **Asserted at the one question the three keys now ask.** `hoveredSquare()` is that question, and it
- * FORGETS a stale label rather than merely refusing it, so nothing can read it a second time. Testing
- * the three handlers separately would be testing three copies of a thing there is now one of - and
- * three copies is what the defect was.
- *
- * **The stale label is a real one, built the way the grid builds them and simply not in the grid** -
- * which is exactly the state a page change leaves the field in. The live one is taken off the rendered
- * editor by walking its component tree, because the grid has no accessor and a label the test made
- * itself would not be in it either.
- *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
- *
- * MUTATION: have `hoveredSquare` return the TileKey without asking the coordinates - which is what the
- * three handlers did - and `testAStaleLabelNamesNoSquare` fails.
+ * MUTATION: have `hoveredSquare` return the TileKey without asking the coordinates - which is what the three handlers
+ * did - and `testAStaleLabelNamesNoSquare` fails.
  *
  * @author Adam
  */
@@ -130,13 +120,8 @@ public class testTheHoveredSquareIsForgotten
     }
 
     /**
-     * The editor answers with a square when the pointer really is over one.
-     *
-     * Asserted first and on its own: every claim below is that the answer is null, and a
-     * `hoveredSquare` that answered null for everything would satisfy all of them without refusing
-     * anything.
-     *
-     * @throws Exception from the event thread
+     * The editor answers with a square when the pointer really is over one.  Asserted first and on its own: every claim
+     * below is that the answer is null, which a `hoveredSquare` answering null for everything would satisfy.
      */
     @Test
     public void testALiveLabelNamesItsSquare() throws Exception
@@ -159,12 +144,8 @@ public class testTheHoveredSquareIsForgotten
     }
 
     /**
-     * A label that is not in this grid names no square - and is forgotten.
-     *
-     * The defect itself. A page change leaves the field holding a label from the page before, and this
-     * is that label: real, built the way the grid builds them, and not in the grid.
-     *
-     * @throws Exception from the event thread
+     * A label that is not in this grid names no square - and is forgotten.  A page change leaves the field holding a
+     * label from the page before; this is that label, real and not in the grid.
      */
     @Test
     public void testAStaleLabelNamesNoSquare() throws Exception
@@ -182,8 +163,7 @@ public class testTheHoveredSquareIsForgotten
 
             after[0] = editor.hoveredSquare();
 
-            // AND ASKED AGAIN, because refusing a stale label once and keeping it is a field the next
-            // reader has to remember to distrust - and there have been three readers of this one.
+            // AND ASKED AGAIN: a stale label refused once and kept is a field the next reader has to distrust.
             after[1] = editor.hoveredSquare();
         });
 
@@ -203,11 +183,8 @@ public class testTheHoveredSquareIsForgotten
     }
 
     /**
-     * And with nothing hovered at all, there is no square.
-     *
-     * The state the editor opens in, and the one every shortcut has to survive.
-     *
-     * @throws Exception from the event thread
+     * And with nothing hovered at all, there is no square: the state the editor opens in, which every shortcut
+     * survives.
      */
     @Test
     public void testNothingHoveredNamesNoSquare() throws Exception
@@ -230,16 +207,10 @@ public class testTheHoveredSquareIsForgotten
     }
 
     /**
-     * Hovers the first label on the rendered page that names a square, and returns it.
-     *
-     * Found on every call rather than cached: a label that is in the grid now is not necessarily in
-     * the grid later, because the panel re-renders and a re-rendered grid holds new labels. That is
-     * the very state this class is about, so a cached one is a fixture that goes stale for the reason
-     * the subject exists.
-     *
-     * Must be called on the event thread.
-     *
-     * @return the square the editor now says the pointer is over, or null when no label answers
+     * Hovers the first label on the rendered page that names a square, and returns the square the editor now says the
+     * pointer is over (null when no label answers).  Found on every call rather than cached, since a re-rendered grid
+     * holds new labels and a cached one is a fixture that goes stale for the reason the subject exists.  Must be called
+     * on the event thread.
      */
     private static TileKey hoverSomethingReal()
     {
@@ -257,9 +228,6 @@ public class testTheHoveredSquareIsForgotten
 
     /**
      * A mouse-moved event over a label, which is what the grid's own listener sends.
-     *
-     * @param over the label
-     * @return the event
      */
     private static MouseEvent move(Component over)
     {
@@ -268,14 +236,8 @@ public class testTheHoveredSquareIsForgotten
     }
 
     /**
-     * Every `LayoutLabel` under a container, depth first.
-     *
-     * The grid keeps no public accessor for its labels, and a label this class made itself would not be
-     * in the grid - which is the very state the stale case is about. So the live one is taken off the
-     * rendered window.
-     *
-     * @param root where to start
-     * @return the labels, in the order the window holds them
+     * Every `LayoutLabel` under a container, depth first, in the order the window holds them.  The grid keeps no public
+     * accessor for its labels, and one this class made itself would not be in the grid.
      */
     private static List<LayoutLabel> labelsIn(Container root)
     {

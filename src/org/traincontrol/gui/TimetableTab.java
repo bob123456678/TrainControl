@@ -44,23 +44,23 @@ final class TimetableTab
 
     void repaintTimetable()
     {
-        // The snapshot must not be taken on the EDT: getTimetableSnapshot holds the Layout monitor, and configureAndLockPath holds that same
-        // monitor across its per-command sleeps (half a second to two seconds on an ordinary path, deliberately, because locking a path has to
-        // be atomic).  This method runs at every path start and end, so with two or more trains one locomotive is regularly mid-configuration
-        // when another's callback lands here, and taken inside the invokeLater the whole UI froze for the length of someone else's
-        // switch-throwing.  The callback thread pays that wait instead, where contention for this monitor is already the design (it holds
-        // activeLocomotives, and activeLocomotives -> Layout is the order the completion block establishes); idle callers take it uncontended
-        // and hand the EDT a finished copy.  The UI callers' busy guard does not make the monitor free by the time they run: three hold a modal
-        // dialog open between the check and the snapshot, and a dispatch started meanwhile takes the monitor (`isRunning()` is true from the
-        // moment `Layout.executePath` counts the train's thread, but the guard is asked before that).  Bouncing off the EDT costs one
-        // short-lived thread on a user action and asks nothing of the callers, which still marshal their own work through the invokeLater below.
+        // The snapshot must not be taken on the EDT: getTimetableSnapshot holds the Layout monitor, and
+        // configureAndLockPath holds that same monitor across its per-command sleeps (half a second to two seconds a
+        // path, because locking a path has to be atomic).  This runs at every path start and end, so with two or more
+        // trains one is regularly mid-configuration when another's callback lands here, and taken on the EDT the UI
+        // froze for the length of someone else's switch-throwing.  The callback thread pays that wait instead, where
+        // contention for this monitor is already the design (activeLocomotives -> Layout is the order the completion
+        // block establishes).  The UI callers' busy guard does not make the monitor free: three hold a modal dialog
+        // between the check and the snapshot, and a dispatch started meanwhile takes it.  Bouncing off the EDT costs
+        // one short-lived thread on a user action, and the callers still marshal their own work through the invokeLater
+        // below.
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
             new Thread(() -> this.repaintTimetable()).start();
             return;
         }
 
-        // ASKED, NOT BUILT: every milestone's refresh runs this, and after Unload it built an empty railway
+        // Asked, not built: every milestone's refresh runs this, and after Unload it built an empty railway
         final Layout shown = this.ui.getModel().getAutoLayoutIfLoaded();
 
         final List<TimetablePath> timeTable =
@@ -73,11 +73,10 @@ final class TimetableTab
             // Update the data
             this.ui.timetableCapture().setSelected(shown != null && shown.isTimetableCapture());
             
-            // Do nothing if what the table SHOWS has not changed (MT-149): this compared `timeTable.hashCode()`, and a locomotive hashes by
-            // IDENTITY (deliberately, so renaming one cannot move it out of the consists and run lists that hold it), so a rename changed the name
-            // in every row and no hash at all, and the table went on showing a locomotive that no longer exists under that name (Adam: "the
-            // timetable is not updated").  Keyed on the text of the rows instead, the only thing that can answer "does this need redrawing"; one
-            // string per repaint of a list tens of entries long.
+            // Do nothing if what the table shows has not changed (MT-149): comparing `timeTable.hashCode()` failed,
+            // since a locomotive hashes by identity (so renaming one cannot move it out of the consists and run lists
+            // that hold it) and a rename changed every row and no hash (Adam: "the timetable is not updated").  Keyed
+            // on the text of the rows instead, one string per repaint of a list tens of entries long.
             String showing = this.ui.timetableSignature(timeTable);
 
             if (showing.equals(this.ui.lastTimetableState)) return;
@@ -116,8 +115,7 @@ final class TimetableTab
                 TrainControlUI.YES_NO_OPTS[1]
             );
 
-            // Anything but Yes.  This one wipes the whole captured timetable with no undo, and
-            // Escape - which means no - was reaching it.
+            // Anything but Yes: this wipes the whole captured timetable with no undo, and Escape (no) was reaching it.
             if (dialogResult != JOptionPane.YES_OPTION) return;
 
             // ASKED AGAIN AFTER THE QUESTION, as Delete Entry asks (OB-260): it can stay open as long as the
@@ -182,9 +180,7 @@ final class TimetableTab
                     JOptionPane.PLAIN_MESSAGE,
                     null,
                     TrainControlUI.YES_NO_OPTS,
-                    // Index 0 is Yes - this said "No" and pre-selected the delete. Enter on
-                    // this confirmation deleted the timetable entry with no undo, one keypress rather
-                    // than the two the comment believed it was requiring.
+                    // Index 1 is No, so Enter on this confirmation does not delete the entry, which has no undo.
                     TrainControlUI.YES_NO_OPTS[1] // default selection = "No"
                 );
 

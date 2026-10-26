@@ -22,20 +22,14 @@ import support.SourceOf;
 /**
  * Renaming or deleting a locomotive reaches everything that was holding it.
  *
- * Adam: "we need to make sure that adding/removing/renaming locomotives is propagated across all
- * state", and then which state matters most - "autonomy state, routes, and home locomotives are the
- * most sensitive."
+ * Adam: "we need to make sure that adding/removing/renaming locomotives is propagated across all state", and then
+ * which state matters most - "autonomy state, routes, and home locomotives are the most sensitive."
  *
- * **Why this keeps going wrong.** A locomotive is held two ways. Most things hold the OBJECT, and those
- * survive a rename for nothing - a rename changes the object, so every reference to it is already
- * right - but they have to be swept on a delete. A few things hold the NAME, and those are the reverse:
- * a delete leaves a name that resolves to nothing, and a rename leaves one that used to. Neither kind
- * announces itself, and the sweep is a list. `locDeleted`'s own comment says what that costs: "A sweep
- * over everything that names this locomotive is a list, and a list is a thing one can be missing from."
- *
- * It had been missing three, and this file is what stops a fourth being missed quietly. The source
- * guard at the bottom is the part that lasts: it fails the build when the running layout grows a new
- * collection of locomotives that the deletion sweep says nothing about.
+ * A locomotive is held two ways.  Things that hold the OBJECT survive a rename for free but have to be swept on a
+ * delete; things that hold the NAME are the reverse.  Neither announces itself, and the sweep is a list (`locDeleted`'s
+ * own comment: "A sweep over everything that names this locomotive is a list, and a list is a thing one can be missing
+ * from.").  The source guard at the bottom is the part that lasts: it fails the build when the running layout grows a
+ * new collection of locomotives that the deletion sweep says nothing about.
  *
  * @author Adam
  */
@@ -77,15 +71,10 @@ public class testLocomotiveIdentityPropagates
     /**
      * Every collection in the running layout lets go of a deleted locomotive.
      *
-     * Six of them are keyed by the locomotive itself, plus the timetable, which holds it inside its
-     * entries. Three were being swept and three were not:
-     *
-     *  - `takingPath` is a claim on a slot in the cap on how many trains may run. Left behind it lowers
-     *    that cap for the rest of the session - the railway gets quieter and nothing says why.
-     *  - `locomotivePendingS88` is the sensor a locomotive was said to be heading for, and a route
-     *    condition waits on it. Left behind, whatever is waiting waits for ever.
-     *  - the timetable holds the locomotive itself, so executing it afterwards drives something that is
-     *    not in the database, and every save writes the entry back out.
+     * Six are keyed by the locomotive itself, plus the timetable, which holds it inside its entries:
+     *  - `takingPath` is a claim on a slot in the cap on how many trains may run; left behind it lowers the cap.
+     *  - `locomotivePendingS88` is the sensor a locomotive was heading for; a route condition waits on it for ever.
+     *  - the timetable holds the locomotive itself, so executing it drives something not in the database.
      */
     @Test
     public void testTheRunningLayoutLetsGoOfADeletedLocomotive() throws Exception
@@ -138,9 +127,7 @@ public class testLocomotiveIdentityPropagates
             "a deleted locomotive is still held by: " + collectionsHolding(layout, going));
     }
 
-    /**
-     * And the setup - which is the other half of autonomy state, and the half that outlives a restart.
-     */
+    /** And the setup, the half of autonomy state that outlives a restart. */
     @Test
     public void testTheSetupFollowsARename() throws Exception
     {
@@ -169,9 +156,7 @@ public class testLocomotiveIdentityPropagates
 
     // home locomotives
 
-    /**
-     * A home assignment is held by NAME, so it is the one that breaks on a rename rather than a delete.
-     */
+    /** A home assignment is held by NAME, so it breaks on a rename rather than a delete. */
     @Test
     public void testAHomeFollowsARenameAndGoesOnADelete() throws Exception
     {
@@ -181,12 +166,8 @@ public class testLocomotiveIdentityPropagates
 
         layout.getPoint("PR B").setHomeLoc(going);
 
-        // A rename is nothing this has to be told about any more.
-        //
-        // This assertion used to be that the repair had FOLLOWED the rename, because a Point held the
-        // locomotive's name and Layout.locomotiveRenamed existed to walk every point fixing it. The
-        // Point holds the locomotive now, so the object that gets renamed IS the object the assignment
-        // points at - there is nothing to repair, and that method is gone.
+        // A rename needs no repair any more: a Point holds the locomotive itself, so the renamed object IS the one the
+        // assignment points at.
         String was = going.getName();
 
         try
@@ -216,10 +197,8 @@ public class testLocomotiveIdentityPropagates
 
     /**
      * A route names locomotives in its COMMANDS and in its CONDITIONS, and only one was being repaired.
-     *
-     * The condition is the sharper half. `Route.evaluate` answers false for a locomotive it cannot
-     * find, so a renamed one leaves a condition that can never be true - and the route simply stops
-     * firing, with nothing on screen to say why.
+     * `Route.evaluate` answers false for a locomotive it cannot find, so a renamed one left a condition that could
+     * never be true.
      */
     @Test
     public void testARouteFollowsARenameInBothItsHalves() throws Exception
@@ -240,9 +219,7 @@ public class testLocomotiveIdentityPropagates
             + "locomotive it cannot find, so this route can never fire again and nothing says why");
     }
 
-    /**
-     * And a deleted locomotive is taken out of a route, which nothing did at all.
-     */
+    /** And a deleted locomotive is taken out of a route. */
     @Test
     public void testARouteDropsCommandsForADeletedLocomotive() throws Exception
     {
@@ -266,18 +243,11 @@ public class testLocomotiveIdentityPropagates
     /**
      * A CONDITION naming a deleted locomotive is reported and left alone.
      *
-     * The reviewer was right that nothing covered this: the test above builds its route with null
-     * conditions, so a conditions sweep that did not exist could not be caught missing.
-     *
-     * It was right about the gap and wrong about the remedy, which is worth writing down because the
-     * remedy was mine. `locomotiveDeleted`'s own javadoc used to say a condition should be removed for
-     * the same reason a command is - "a condition that can never be true is a route that can never
-     * run". Conditions are combined with AND, so removing the dead term does not restore the route the
-     * operator wrote: it produces a route that fires on what is LEFT, which is a weaker condition than
-     * they ever agreed to. These routes throw switches and signals ahead of moving trains. A route that
-     * has quietly stopped firing is safe; one that quietly starts firing is not.
-     *
-     * So the condition stays and the operator is told.
+     * Conditions are combined with AND, so removing the dead term makes a route that fires on what is LEFT, a weaker
+     * condition than the operator agreed to, and these routes throw switches and signals ahead of moving trains.  A
+     * route that has quietly stopped firing is safe; one that quietly starts firing is not.  So the condition stays and
+     * the operator is told.  The test above builds its route with null conditions, so it could not catch a missing
+     * conditions sweep.
      */
     @Test
     public void testARouteConditionNamingADeletedLocomotiveIsReportedNotRemoved() throws Exception
@@ -310,9 +280,7 @@ public class testLocomotiveIdentityPropagates
             "the wrong command was removed");
     }
 
-    /**
-     * And a route that never mentioned it reports nothing.
-     */
+    /** And a route that never mentioned it reports nothing. */
     @Test
     public void testARouteWithoutTheLocomotiveReportsNothing() throws Exception
     {
@@ -333,11 +301,8 @@ public class testLocomotiveIdentityPropagates
     /**
      * Every collection of locomotives in the running layout is named in the deletion sweep.
      *
-     * This is the part worth keeping. The three gaps above were each found by reading, and the reason
-     * they were there is that nothing connected "a new field holding locomotives" to "the sweep that
-     * has to let go of them". Source-level, like the store's collections guard, and for the same
-     * reason: the fault is textual and invisible to a test that drives the model, because the model is
-     * the half that works.
+     * Nothing connected "a new field holding locomotives" to "the sweep that has to let go of them".  Source-level,
+     * like the store's collections guard: the fault is textual and invisible to a test that drives the model.
      */
     @Test
     public void testEveryLocomotiveHolderIsNamedInTheSweep() throws Exception
@@ -346,24 +311,22 @@ public class testLocomotiveIdentityPropagates
         // Layout with a locomotive map of its own is still the running layout, and is still swept.
         String text = SourceOf.codeUnder("src/org/traincontrol/automation/");
 
-        // Except Return Home's planner, whose maps are a copy of the layout's, taken when the button is pressed
-        // (`HomeStaging.snapshot`) and dropped with the plan - so the deletion sweep has nothing of its to let go of.
-        // That stays true only while nothing in the package keeps a planner in a field, which is asked here.
+        // Except Return Home's planner, whose maps are a copy of the layout's, dropped with the plan
+        // (`HomeStaging.snapshot`); that holds only while nothing in the package keeps a planner in a field, asked
+        // here.
         assertFalse(keepsTheHomePlanner(text),
             "a field of the automation package now keeps Return Home's planner, so its locomotive maps outlive the"
             + " press and are holders the deletion sweep has to name");
 
         text = text.replace(SourceOf.withoutComments(SourceOf.fileDeclaring("public final class HomeStaging")), "");
 
-        // The CODE of the sweep, not its prose. A guard about what a method DOES must not be
-        // satisfiable by a comment mentioning the field.
+        // The CODE of the sweep, not its prose, so a comment mentioning the field cannot satisfy the guard.
         String sweep = SourceOf.withoutComments(SourceOf.body("synchronized public void locDeleted(Locomotive l)"));
 
         List<String> holders = holdersIn(text);
 
-        // A regex that stops matching - the nested-generics fix above already shows it has happened
-        // once - returns an empty list and this test passes having swept nothing. Eleven holders exist
-        // in Layout.java today; three is a floor well under that, not a pin on the count.
+        // A regex that stops matching returns an empty list and this passes having swept nothing; three is a floor well
+        // under the eleven holders in Layout.java, not a pin on the count.
         assertTrue(holders.size() >= 3,
             "only " + holders.size() + " locomotive-holding fields were found in the automation package - the "
             + "patterns holdersIn() looks for have gone stale, and this is now checking almost nothing");
@@ -374,8 +337,7 @@ public class testLocomotiveIdentityPropagates
         {
             if (sweep.contains(field)) continue;
 
-            // Cleared through a method rather than by name, with the reason. This is the same shape as
-            // the store's collections guard: an exemption is a statement about the code, in a place
+            // Cleared through a method rather than by name: an exemption is a statement about the code, in a place
             // that fails if it stops being true.
             if ("locomotivePendingS88".equals(field) && sweep.contains("updatePendingS88")) continue;
 
@@ -395,10 +357,8 @@ public class testLocomotiveIdentityPropagates
         + "([\\w.]+(?:<[^;=(){}]*>)?(?:\\[\\])*) \\w+\\s*[;=]");
 
     /**
-     * Whether any field of the code keeps Return Home's planner, as itself or inside a collection, map or array of them.
-     *
-     * @param code the code of the automation package, comments blanked
-     * @return true when a field's type names `HomeStaging`
+     * Whether any field of the code keeps Return Home's planner, as itself or inside a collection, map or array of
+     * them.
      */
     private static boolean keepsTheHomePlanner(String code)
     {
@@ -413,10 +373,8 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * The search for a field keeping the planner sees the declarations a layout would write, and not what is not one.
-     *
-     * The search used to match only a field typed directly `HomeStaging`, so `List<HomeStaging>` or `Map<String,
-     * HomeStaging.Plan>` went by it.  Driven here over made-up declarations, so it cannot go quiet unnoticed.
+     * The search for a field keeping the planner sees the declarations a layout would write, and not what is not one:
+     * `List<HomeStaging>` and `Map<String, HomeStaging.Plan>` once went by it.  Driven over made-up declarations.
      *
      * MUTATION: add `private List<HomeStaging> plans = new ArrayList<>();` to `Layout`, and
      * `testEveryLocomotiveHolderIsNamedInTheSweep` fails; narrow `FIELD_DECLARATION` to the plain type and this does.
@@ -446,27 +404,18 @@ public class testLocomotiveIdentityPropagates
     /**
      * Nothing compares a home or a placement against a NAME.
      *
-     * The one hazard of holding objects instead of strings, and the type system does not cover it:
-     * `String.equals` takes an `Object`, so `loc.getName().equals(point.getHomeLoc())` went on
-     * compiling when the home became a `Locomotive` - and simply answered false for ever. Two
-     * production sites did exactly that, and neither failed loudly:
-     *
-     *  - `HomeStaging` decided whether a home was ASSIGNED or merely positional, so every assigned
-     *    home was quietly treated as positional and the strict contract stopped applying.
-     *  - the locomotive status panel decided whether a train was standing at its assigned home.
-     *
-     * A test caught the first. Nothing would have caught the second, which is why this exists: it is
-     * textual, so it sees what the compiler cannot.
+     * `String.equals` takes an `Object`, so `loc.getName().equals(point.getHomeLoc())` kept compiling when the home
+     * became a `Locomotive` and answered false for ever.  Two production sites did that quietly: `HomeStaging` treated
+     * every assigned home as positional, and the locomotive status panel misjudged a train at its assigned home.  The
+     * check is textual because it sees what the compiler cannot.
      */
     @Test
     public void testNoHomeOrPlacementIsComparedWithAName() throws Exception
     {
-        // Every line of the program's code, comments blanked, in every file.
         String[] lines = SourceOf.allCode().split("\n");
 
-        // A scan that reads little, or a `src` gutted, gives an empty `suspect` list that looks identical to
-        // "nothing is wrong". The program has some 178,000 lines today; 100,000 is a floor well under that,
-        // not a pin on the count.
+        // An empty scan looks like "nothing is wrong"; 100,000 lines is a floor well under the program's size, not a
+        // pin.
         assertTrue(lines.length >= 100000,
             "only " + lines.length + " lines of code were found under src/ - this ran from the wrong working "
             + "directory, or the tree has shrunk enough that this scan is not checking much of "
@@ -491,13 +440,9 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * A positive control for {@link #isSuspectLine(String)}.
-     *
-     * The scan above is line-scoped with no floor: a rename of the accessors it looks for, or the
-     * pattern going stale in some other way, degenerates it to zero matches over every file in `src` -
-     * indistinguishable from "nothing is wrong". This proves the detector can still find the shape of
-     * bug it was written for, using the exact lines the two original production defects looked like,
-     * so a change that silences the real scan silences this one too.
+     * A positive control for {@link #isSuspectLine(String)}: the scan above is line-scoped with no floor, so a stale
+     * pattern degenerates it to zero matches, which looks like "nothing is wrong".  This proves the detector still
+     * finds the shape of the two original defects.
      */
     @Test
     public void testTheNameComparisonScanCanStillCatchAKnownBadLine() throws Exception
@@ -514,30 +459,21 @@ public class testLocomotiveIdentityPropagates
             + "HomeLocomotiveMenu defect it was written for - so it would not have caught the original "
             + "bug either");
 
-        // The permitted crossing: taking the name first must NOT be flagged, even though the line
-        // would otherwise match the same comparedWithAName shape as the first control above.
+        // The permitted crossing: taking the name first must NOT be flagged.
         assertFalse(isSuspectLine("if (loc.getName().equals(point.getHomeLoc().getName())) { return ASSIGNED; }"),
             "the scan flags the correct, converted form as suspect, which means a real fix would show "
             + "up as a false positive forever");
     }
 
     /**
-     * One line, judged the way {@code testNoHomeOrPlacementIsComparedWithAName} judges every line in
-     * `src`. Extracted so the same logic can be driven by a known-bad line as a control.
+     * One line, judged as {@code testNoHomeOrPlacementIsComparedWithAName} judges every line in `src`, so a known-bad
+     * line can drive it as a control.
      */
     private boolean isSuspectLine(String line)
     {
-        // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected.
-        //
-        // The first version of this required getName().equals( on the line, which is one of
-        // several shapes the mistake takes - and not the shape of the defect it was written
-        // for.  That one was a Locomotive handed to setSelectedItem on a combo box of names
-        // (gui/HomeLocomotiveMenu.java): it compiles, Swing quietly ignores a selection it
-        // cannot find, and the dialog showed "(none)" for a station that had a home - so
-        // pressing OK cleared the assignment it was displaying.  No equals anywhere in it.
-        //
-        // Found by review, which is the second time this guard has been the thing at fault
-        // rather than the code it watches.
+        // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected: a Locomotive handed to
+        // setSelectedItem on a combo box of names (gui/HomeLocomotiveMenu.java) compiles, Swing ignores it, and the
+        // dialog showed "(none)" for a station that had a home, so OK cleared the assignment.  No equals is involved.
         if (!line.contains("getHomeLoc()") && !line.contains("getCurrentLocomotive()")
             && !line.contains("getBlockLocomotive()")) return false;
 
@@ -547,18 +483,10 @@ public class testLocomotiveIdentityPropagates
             || line.contains("getCurrentLocomotive().equals(")
             || line.contains("getBlockLocomotive().equals(");
 
-        // Or handed to a combo box that holds names.
-        //
-        // NOT contains/indexOf/remove, which were tried and cry wolf: they take an Object, so
-        // they are equally the RIGHT call on a collection of locomotives, and a guard reading
-        // source text one line at a time cannot tell which it is looking at.  The first run
-        // flagged Layout.locomotivesToRun.remove(getCurrentLocomotive()) - a Set<Locomotive>,
-        // where removing by object is exactly correct.  A guard that has to be argued with is
-        // one somebody eventually adds an exemption list to, and then it watches nothing.
-        //
-        // setSelectedItem is different: every combo box in this application that a locomotive
-        // could be offered to is built from NAMES, so a Locomotive reaching one is wrong every
-        // time - and it is the shape of the live defect (gui/HomeLocomotiveMenu.java).
+        // Or handed to a combo box that holds names.  NOT contains/indexOf/remove: they take an Object, so they are as
+        // RIGHT on a collection of locomotives, and a line-at-a-time guard cannot tell; one that has to be argued with
+        // gains an exemption list and then watches nothing.  Every combo box here that a locomotive could be offered
+        // to is built from NAMES, so a Locomotive reaching setSelectedItem is wrong every time.
         boolean handedToNames = line.contains("setSelectedItem(");
 
         // Unless the name is taken first, which is how the boundary is meant to be crossed
@@ -569,25 +497,20 @@ public class testLocomotiveIdentityPropagates
         return (comparedWithAName || handedToNames) && !converted;
     }
 
-    /**
-     * Fields declared as a collection OF locomotives, or keyed by one.
-     */
+    /** Fields declared as a collection OF locomotives, or keyed by one. */
     private List<String> holdersIn(String text)
     {
         List<String> out = new ArrayList<>();
 
-        // Nested generics too.  This used [^>]* for the value type, so `Map<Locomotive,
-        // List<Edge>>` and `Map<Locomotive, List<Point>>` were invisible to it - both happen to be
-        // swept today, and a future one would have slipped past the guard meant to be the part that
-        // lasts.
+        // Nested generics too: `[^>]*` for the value type made `Map<Locomotive, List<Edge>>` invisible.
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
             "private final (?:Map<Locomotive,.*?>|Set<Locomotive>|List<Locomotive>) (\\w+)")
             .matcher(withoutComments(text));
 
         while (m.find()) out.add(m.group(1));
 
-        // The timetable holds locomotives inside its entries rather than being keyed by one, so it does
-        // not match the shape above - and it was one of the three that had been missed.
+        // The timetable holds locomotives inside its entries rather than being keyed by one, so the shape above misses
+        // it.
         if (withoutComments(text).contains("private final List<TimetablePath> timetable"))
         {
             out.add("timetable");
@@ -602,10 +525,8 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * Which of the layout's locomotive collections still mention this one, by reflection.
-     *
-     * The behavioral half of the guard above: that one asks whether the sweep NAMES every holder, and
-     * this asks whether anything is actually left in one afterwards.
+     * Which of the layout's locomotive collections still mention this one, by reflection: the behavioral half of the
+     * guard above, which asks whether the sweep NAMES every holder.
      */
     private List<String> collectionsHolding(Layout layout, Locomotive loc) throws Exception
     {
@@ -617,16 +538,9 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * The fields of an object, and of the helper objects of the automation package it owns, that hold a locomotive.
-     *
-     * Reached through the objects `Layout` keeps in its fields as well as its own collections, so a locomotive map moved
-     * into a helper class the layout owns (FR-136) is still found.
-     *
-     * @param owner the object whose fields are read
-     * @param path how it was reached, empty for the layout itself
-     * @param loc the locomotive
-     * @param holding receives `field` or `helper.field` for each collection holding it
-     * @param seen the objects already read
+     * The fields of an object, and of the helper objects of the automation package it owns, that hold a locomotive, so
+     * a locomotive map moved into a helper class the layout owns (FR-136) is still found.  `holding` receives `field`
+     * or `helper.field` for each.
      */
     private void holdingIn(Object owner, String path, Locomotive loc, List<String> holding, java.util.Set<Object> seen)
         throws Exception
@@ -697,13 +611,9 @@ public class testLocomotiveIdentityPropagates
     /**
      * The window repairs the setup on disk when it has no session to repair in memory.
      *
-     * Testing the rule leaves the CALL as the only uncovered part, and in this codebase that is where
-     * the defect usually is - renamePage was faultless and had no caller for weeks (MT-135), and
-     * HomeLocomotiveMenu lost four of its five callers with its tests still green. OB-062 is
-     * the same shape again: repairLocomotiveOnDisk can be perfect and change nothing.
-     *
-     * So this asks the source whether the null-session path actually calls it, rather than returning
-     * the way it used to.
+     * Testing the rule leaves the CALL as the only uncovered part, and that is where the defect usually is
+     * (`renamePage` had no caller for weeks, MT-135; OB-062 is the same shape): this asks the source whether the
+     * null-session path actually calls `repairLocomotiveOnDisk`.
      */
     @Test
     public void testTheWindowRepairsTheSetupOnDiskWithNoSession() throws Exception
@@ -720,24 +630,14 @@ public class testLocomotiveIdentityPropagates
     /**
      * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does.
      *
-     * The finding: both rename doors call `updateVisiblePoints()` and `repaintTimetable()`, and the
-     * delete door calls neither. It runs `clearCopyTarget`, `repaintLoc`, `repaintMappings`,
-     * `refreshLocSelectorList`, and then `locDeleted`, `repaintAutoLocListFull` and `refreshUI`.
+     * Both rename doors call `updateVisiblePoints()` and `repaintTimetable()`; the delete door called neither.
+     * `refreshUI()` is not the same thing: the station captions are written only by `updateVisiblePoints` (OB-081), so
+     * a deleted locomotive's caption stayed until something unrelated repainted it.  A source rule, because the
+     * caption is drawn by a window and the door calling the method that draws it is the property worth pinning
+     * (MT-149's fix went to the guard inside `repaintTimetable` and never to the doors).
      *
-     * **`refreshUI()` is not the same thing**, which is the whole of why this is a defect rather than
-     * a tidiness point. `OB-081` established that the station captions on the track diagram are
-     * written only by `updateVisiblePoints`, and that `refreshUI` redraws the autonomy overlay and
-     * not the captions. So deleting a locomotive standing at a station left the caption naming a
-     * locomotive the database no longer has, until something unrelated repainted it.
-     *
-     * **A source rule rather than a behavioral one, for the same reason the rename rule above is
-     * one**: the caption is drawn by a window, and what can be asserted without one is that the door
-     * calls the method that draws it. That is exactly what went wrong - `MT-149`'s fix went to the
-     * guard inside `repaintTimetable` and never to the doors that have to call it - so the door
-     * calling it is the property worth pinning.
-     *
-     * MUTATION, stated exactly: removing `updateVisiblePoints()` from the delete door fails the first
-     * assertion, and removing `repaintTimetable()` fails the second.
+     * MUTATION, stated exactly: removing `updateVisiblePoints()` from the delete door fails the first assertion, and
+     * removing `repaintTimetable()` fails the second.
      */
     @Test
     public void testDeletingALocomotiveRewritesTheStationLabelsToo() throws Exception
@@ -748,8 +648,8 @@ public class testLocomotiveIdentityPropagates
             + " block after the first and would report the pair as covered after fixing one of them, which is this"
             + " codebase's most frequent defect and not one a guard against it should commit");
 
-        // The block that follows, bounded by the door's own method so the rule cannot read the rest of the file
-        // and pass whatever the code does - which is how the rename rule above was once green over nothing.
+        // Bounded by the door's own method, so the rule cannot read the rest of the file and pass whatever the code
+        // does.
         String door = withoutComments(SourceOf.declaration("    void deleteLoc(String value, MouseEvent evt)"));
 
         int at = door.indexOf("this.ui.getModel().deleteLoc(");
@@ -771,31 +671,17 @@ public class testLocomotiveIdentityPropagates
     /**
      * Renaming a locomotive rewrites the station labels on the track diagram.
      *
-     * OB-081, Adam: "When autonomy is loaded: Renaming a locomotive does not immediately propagate to
-     * the labels in the track diagram viewer."
-     *
-     * The refresh block after a rename redraws the locomotive buttons, the mappings, the route list,
-     * the selector and the layout's own callbacks - and not the labels beside the stations, which are
-     * written by updateStationLabels and reached through updateVisiblePoints.
-     *
-     * Every other door that changes which locomotive stands where already calls it, each carrying the
-     * same note: "The label still says the locomotive's name until something rewrites it." Renaming
-     * changes exactly that and was the one door that did not.
-     *
-     * Read from source because the alternative is a Swing harness for a repaint. What is pinned is the
-     * CALL, which is what was missing - the method it calls is exercised everywhere else.
+     * Adam: "When autonomy is loaded: Renaming a locomotive does not immediately propagate to the labels in the track
+     * diagram viewer."  The refresh block after a rename redrew the buttons, mappings, route list, selector and
+     * callbacks, not the labels beside the stations, which `updateVisiblePoints` reaches.  Read from source because
+     * the alternative is a Swing harness for a repaint; what is pinned is the CALL.
      */
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
-        // EVERY renameLoc call site, not the first one.
-        //
-        // There are two: the edit dialog, and accepting a name the Central Station proposes. They are
-        // near-copies of one another, so when the first was missing this call the second was too -
-        // and a rule that stops at the first match would have reported the pair as covered after
-        // fixing one of them. That is this codebase's most frequent defect, and a guard against it
-        // should not be able to commit it.
-        // Asked of the whole program: two calls of the model's rename, and the doors that make them are named here.
+        // EVERY renameLoc call site, not the first: there are two (the edit dialog, and accepting a name the Central
+        // Station proposes), near-copies, and a rule that stops at the first match would call the pair covered after
+        // fixing one.  Asked of the whole program, naming the doors that make the two calls.
         int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
         assertEquals(found, 2,
@@ -814,15 +700,9 @@ public class testLocomotiveIdentityPropagates
 
         assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
 
-        // The refresh block that follows it, bounded by the catch that closes the method.
-        //
-        // NOT bounded by the next javadoc, which is what the first version of this did:
-        // withoutComments has already removed every javadoc, so that search never matched, the window
-        // became the whole rest of the file, and the rule passed no matter what the code did.
-        //
-        // A guard that cannot fail is worse than no guard - it reports the thing it watches as
-        // covered. This one was written, run, seen green, and only found by removing the call it is
-        // supposed to protect and watching it stay green.
+        // The refresh block that follows it, bounded by the catch that closes the method; NOT by the next javadoc,
+        // which `withoutComments` has already removed, so the window would become the rest of the file and the rule
+        // would pass whatever the code did.
         List<String> silent = new ArrayList<>();
 
         List<String> quiet = new ArrayList<>();
@@ -831,13 +711,7 @@ public class testLocomotiveIdentityPropagates
         {
             int at = Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc("));
 
-            // The refresh block that follows, bounded by the catch that closes the method.
-            //
-            // NOT bounded by the next javadoc, which is what the first version of this did:
-            // withoutComments has already removed every javadoc, so that search never matched, the
-            // window became the whole rest of the file, and the rule passed no matter what. A guard
-            // that cannot fail is worse than no guard - it reports the thing it watches as covered.
-            // Found by removing the call it protects and watching it stay green.
+            // The refresh block that follows, bounded as above.
             int end = body.indexOf("catch (Exception", at);
 
             assertTrue(end > at && end - at < 6000,
@@ -851,12 +725,8 @@ public class testLocomotiveIdentityPropagates
                 silent.add(body.substring(at, Math.min(at + 160, end)).trim());
             }
 
-            // AND THE TIMETABLE, which names locomotives too.
-            //
-            // MT-149 was that a rename did not reach the timetable on screen, and the fix went to the
-            // GUARD inside repaintTimetable - which was keyed on a hash a rename cannot move.  Neither
-            // rename door was made to CALL it, so the guard was right and nothing asked it.  Exactly
-            // the shape this rule already watches for the station labels, one method along.
+            // AND THE TIMETABLE, which names locomotives too: the fix went to the guard inside repaintTimetable and
+            // neither rename door was made to CALL it.
             if (!block.contains("repaintTimetable"))
             {
                 quiet.add(body.substring(at, Math.min(at + 160, end)).trim());

@@ -11,34 +11,22 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A named railway of a known SHAPE, opened in one call.
+ * A named railway of a known SHAPE, opened in one call (Adam: "a folder in the test folder to house many different
+ * scenarios, each linked to a test case", "hand-authored for topology, lengths in code").
  *
- * Adam, 2026-09-09: **"many versions of a track diagram/layout that we can use in our tests.  Then the
- * ground truth doesn't move underneath us, and things like lengths and train positions can be
- * manipulated at will... a folder in the test folder to house many different scenarios, each linked to
- * a test case"**, and **"hand-authored for topology, lengths in code."**
+ * The gap it closes is named in `test/README.md`: every hand-built fixture was a straight chain of two or three
+ * ordinary points, and the tests with realistic geometry got it from the operator's live railway, whose ground
+ * truth moves as he operates it.  A scenario is real CS2 files, checked in, hand-authored for one shape, and frozen.
  *
- * **The gap this closes is named in `test/README.md`.**  Every hand-built fixture in
- * this suite was a straight chain of two or three ordinary points - no switch, no curve, no split
- * square - so a whole class of defect could not be expressed by any fixture, and the tests that DID
- * have realistic geometry got it by opening the operator's live railway, whose ground truth moves as he
- * operates it.  Three tests broke on 2026-09-09 for exactly that reason.  A scenario is the third
- * option: real CS2 files, checked in, hand-authored for one shape, and frozen.
+ * The TOPOLOGY, the station names and the s88 addresses are authored in the files and a test may rely on them (each
+ * scenario's `README.md` states which).  Lengths, train placements and locomotive properties are deliberately NOT in
+ * the files: a test sets them itself (`session.setTileLength`, `loc.setTrainLength`, `point.setLocomotive`), so no two
+ * tests inherit one author's choice.
  *
- * **What is an invariant and what is not.**  The TOPOLOGY, the station names and the s88 addresses are
- * authored in the files and a test may rely on them - each scenario's `README.md` states which.
- * Lengths, train placements and locomotive properties are deliberately NOT in the files: they are the
- * half Adam wants to vary freely, so a test sets them itself (`session.setTileLength`,
- * `loc.setTrainLength`, `point.setLocomotive`) and no two tests can disagree about them by inheriting
- * one author's choice.
+ * Built ON `LayoutSandbox`, not beside it, so its safety rules (the copy, the preference put back, `setUnattended`)
+ * are reached rather than repeated.  The one rule added: a scenario can only name a folder under `test/layouts`.
  *
- * **Built ON `LayoutSandbox`, not beside it.**  Every safety rule that class carries - the copy, the
- * preference put back afterwards, `setUnattended` - is its own and is reached through it rather than
- * repeated here.  The one rule added is that a scenario can only ever name a folder under
- * `test/layouts`: `open` refuses a path separator, so no caller can spell its way out to
- * `cs2_sample_layout`.
- *
- * Usage is three lines, in `@BeforeClass` and `@AfterClass`:
+ * Usage, in `@BeforeClass` and `@AfterClass`:
  *
  *     scenario = support.Scenario.open("single-switch");
  *     Layout built = scenario.build();
@@ -49,19 +37,12 @@ import org.traincontrol.marklin.MarklinControlStation;
  */
 public final class Scenario
 {
-    /**
-     * Where the scenarios live, relative to the project root - the working directory every test runs
-     * from.
-     */
+    /** Where the scenarios live, relative to the project root. */
     public static final String ROOT = "test/layouts";
 
     /**
-     * What a scenario may be called: the shape it is, in lower case, hyphenated.
-     *
-     * Deliberately narrow.  This is the whole of the protection against a caller reaching out of the
-     * library - `..`, a drive letter and both separators are all outside it - and a narrow rule that
-     * refuses a legal name is a rename, while a wide one that admits an illegal path is the operator's
-     * railway being opened by a test.
+     * What a scenario may be called: the shape it is, in lower case, hyphenated.  Deliberately narrow, because this is
+     * the whole of the protection against a caller reaching out of the library (`..`, a drive letter, a separator).
      */
     private static final String NAME_RULE = "[a-z0-9]+(-[a-z0-9]+)*";
 
@@ -86,34 +67,20 @@ public final class Scenario
     }
 
     /**
-     * Copies the named scenario to a sandbox, builds a model and a session over it, and hands back
-     * everything a test needs.
+     * Copies the named scenario to a sandbox, builds a model and a session over it, and hands back everything a test
+     * needs.  The ORDER is the reason this is one call: `LayoutSandbox` must be opened BEFORE the model (OB-111), the
+     * pages must be the MODEL's own rather than a second parse (or every switch comes back with a null accessory), and
+     * the session must be pointed at the sandbox COPY.
      *
-     * The ORDER is the reason this exists as one call.  `LayoutSandbox` must be opened BEFORE the model
-     * (OB-111: `init` reads the layout preference, which on Adam's machine names his real railway), the
-     * pages must be the MODEL's own rather than a second parse (or every switch comes back with a null
-     * accessory and the railway reduces to a handful of edges), and the session has to be pointed at
-     * the sandbox COPY rather than the checked-in folder.  Three rules, each of which has been got
-     * wrong in this suite, and none of which a caller has to remember again.
-     *
-     * @param name the scenario folder's name - the SHAPE, e.g. "single-switch"
-     * @return the opened scenario, to be closed when the class is done with it
      * @throws IllegalArgumentException if the name is not a scenario in `test/layouts`
-     * @throws Exception if the folder cannot be copied or the model cannot be built
      */
     public static Scenario open(String name) throws Exception
     {
         File folder = folderFor(name);
 
-        // INSIDE THE TRY, and closed again if anything below throws.
-        //
-        // A test class opens its sandbox in `@BeforeClass` and is safe without this, because
-        // `@AfterClass(alwaysRun = true)` runs even when the set-up threw. THIS method is not a setup
-        // method: it is three more things that can throw - `init` failing to bind its port, an
-        // unreadable fixture folder, a configuration the session refuses - and a caller that never
-        // receives a Scenario has nothing to call `close()` on. What that leaves behind is the
-        // machine-global layout preference pointing at a folder under %TEMP%, which is the railway
-        // TrainControl opens the next time Adam starts it.
+        // INSIDE THE TRY, and closed again if anything below throws: this is not a setup method, so a caller that never
+        // receives a Scenario has nothing to call `close()` on, and the machine-global layout preference would be left
+        // pointing at a folder under %TEMP%.
         LayoutSandbox sandbox = null;
 
         try
@@ -133,8 +100,7 @@ public final class Scenario
         }
         catch (Exception | Error failed)
         {
-            // The preference goes back before the failure is reported, so a scenario that could not be
-            // opened costs the test and nothing else.
+            // The preference goes back before the failure is reported.
             if (sandbox != null) sandbox.close();
 
             throw failed;
@@ -142,12 +108,8 @@ public final class Scenario
     }
 
     /**
-     * The checked-in folder a scenario name refers to, with the name checked.
-     *
-     * Separate from `open` so the guards can ask the same question without standing a railway up.
-     *
-     * @param name the scenario name
-     * @return the folder, which is guaranteed to exist and to be under ROOT
+     * The checked-in folder a scenario name refers to, with the name checked; separate from `open` so the guards can
+     * ask without standing a railway up.
      */
     public static File folderFor(String name)
     {
@@ -170,11 +132,7 @@ public final class Scenario
         return folder;
     }
 
-    /**
-     * Every scenario in the library, by name.
-     *
-     * @return the folder names under ROOT, sorted; empty when the library is missing
-     */
+    /** Every scenario in the library, by name, sorted; empty when the library is missing. */
     public static List<String> names()
     {
         List<String> out = new ArrayList<>();
@@ -194,14 +152,8 @@ public final class Scenario
     }
 
     /**
-     * Builds the running graph from the session as it stands, which is what the application does after
-     * every edit.
-     *
-     * Call it again after changing anything - a length, a station flag - because the configuration is
-     * generated from the session and the `Layout` is a snapshot of one generation of it.
-     *
-     * @return the built layout
-     * @throws Exception if the configuration will not parse
+     * Builds the running graph from the session as it stands, which is what the application does after every edit.
+     * Call it again after changing anything, because the `Layout` is a snapshot of one generation of the configuration.
      */
     public Layout build() throws Exception
     {
@@ -218,13 +170,7 @@ public final class Scenario
         return built;
     }
 
-    /**
-     * A square on the scenario's FIRST page, which is the only page the hand-authored scenarios have.
-     *
-     * @param x the column
-     * @param y the row, growing downwards
-     * @return the key
-     */
+    /** A square on the scenario's FIRST page, which is the only page the hand-authored scenarios have. */
     public TileKey tile(int x, int y)
     {
         if (pages.isEmpty())
@@ -235,68 +181,45 @@ public final class Scenario
         return tile(pages.get(0).getName(), x, y);
     }
 
-    /**
-     * A square on a named page, for the scenarios that have more than one.
-     *
-     * The page NAME rather than its id, because that is what a `TileKey` holds once the store has
-     * loaded - the id form only exists on disk. Getting this the wrong way round produces a key that
-     * matches nothing and a test that asserts about null.
-     *
-     * @param page the page name
-     * @param x the column
-     * @param y the row
-     * @return the key
-     */
+    /** A square on a named page: the page NAME, because that is what a `TileKey` holds once the store has loaded. */
     public TileKey tile(String page, int x, int y)
     {
         return new TileKey(page, x, y);
     }
 
-    /**
-     * @return the scenario's name
-     */
+    /** The scenario's name. */
     public String getName()
     {
         return name;
     }
 
-    /**
-     * @return the throwaway COPY the session and the model are pointed at, never the checked-in folder
-     */
+    /** The throwaway COPY the session and the model are pointed at, never the checked-in folder. */
     public File getFolder()
     {
         return sandbox.getFolder();
     }
 
-    /**
-     * @return the control station, in simulation, with no window
-     */
+    /** The control station, in simulation, with no window. */
     public MarklinControlStation getModel()
     {
         return model;
     }
 
-    /**
-     * @return the autonomy session over the copy
-     */
+    /** The autonomy session over the copy. */
     public AutonomySession getSession()
     {
         return session;
     }
 
-    /**
-     * @return the model's own wired pages, in its order
-     */
+    /** The model's own wired pages, in its order. */
     public List<LayoutDiagram> getPages()
     {
         return pages;
     }
 
     /**
-     * Puts the layout preference back, exactly as `LayoutSandbox` does.
-     *
-     * A test that does not call this has changed which layout the application opens the next time the
-     * operator starts it, which is worse than the churn the sandbox exists to remove.
+     * Puts the layout preference back, exactly as `LayoutSandbox` does; a test that does not call this changes which
+     * layout the application opens next.
      */
     public void close()
     {

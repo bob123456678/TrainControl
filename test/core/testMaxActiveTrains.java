@@ -14,21 +14,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The limit on how many trains may be out at once is a limit, not a suggestion.
  *
- * The cap was counted from the locomotives the layout had REGISTERED as running - and a locomotive is
- * not registered until after its path has been locked, its accessories thrown, and the wait for those
- * accessories to confirm has finished. That wait deliberately holds no lock and takes up to a second
- * per accessory, so the gap between "this train has claimed its route" and "this train is counted" is
- * seconds wide. Two trains taking routes that do not touch could both cross it: each checked the cap,
- * each saw the other uncounted, and both went.
+ * The cap was counted from the locomotives REGISTERED as running, and a locomotive is not registered until its path is
+ * locked, its accessories thrown and the wait for them to confirm has finished (up to a second per accessory, holding
+ * no lock).  Two trains taking routes that do not touch could both cross that gap: each checked the cap, each saw the
+ * other uncounted, and both went.  The track was never at risk, but a cap is often set for something the model cannot
+ * see (what a booster will carry, how much the operator wants to watch), and quietly running more trains than asked
+ * for is not small.
  *
- * The track was never at risk - the edges are exclusively locked either way - so this was never a
- * collision. It is a cap that is usually set for something the model cannot see, like what a booster
- * will carry or how much the operator wants to watch at once, and quietly running more trains than
- * asked for is not a small thing to get wrong.
- *
- * The race is made deterministic here rather than provoked with threads: a train that has locked its
- * path but is not yet registered is exactly the state the gap consists of, and it can be arranged
- * exactly. A timing test for this would pass on a fast machine while the bug was still there.
+ * The race is made deterministic rather than provoked with threads: a train that has locked its path but is not yet
+ * registered is exactly the state the gap consists of.  A timing test would pass on a fast machine while the bug was
+ * still there.
  */
 public class testMaxActiveTrains
 {
@@ -48,10 +43,8 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A second train is refused while the first has locked a route but has not yet set off.
-     *
-     * The two routes do not touch, so nothing else refuses it: the edge locks are satisfied, the
-     * sensors are clear, and the only thing that should say no is the cap.
+     * A second train is refused while the first has locked a route but has not yet set off; the routes do not touch, so
+     * only the cap can say no.
      */
     @Test
     public void testATrainThatHasClaimedARouteCounts() throws Exception
@@ -84,10 +77,8 @@ public class testMaxActiveTrains
     }
 
     /**
-     * And a cap of two still lets the second train out.
-     *
-     * The same arrangement with room for both. A fix that simply refused the second train would pass
-     * the test above and halve the railway.
+     * And a cap of two still lets the second train out: a fix that simply refused the second train would pass the test
+     * above and halve the railway.
      */
     @Test
     public void testTheCapStillAllowsWhatItAllows() throws Exception
@@ -117,11 +108,8 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A claim that comes to nothing gives its place back.
-     *
-     * The failure mode of the fix itself, and the one worth guarding: a claim left behind lowers the
-     * cap for the rest of the session, so the railway gets quieter and quieter with nothing to say
-     * why. Releasing the path is one of the two ways a claim ends.
+     * A claim that comes to nothing gives its place back: a claim left behind lowers the cap for the rest of the
+     * session.
      */
     @Test
     public void testAReleasedRouteGivesTheSlotBack() throws Exception
@@ -152,40 +140,23 @@ public class testMaxActiveTrains
     }
 
     /**
-     * AND IT BINDS ONLY WHILE THE RAILWAY IS RUNNING ITSELF - a hand dispatch is exempt (Adam,
-     * 2026-09-09: the cap "stays enforced only under full autonomy").
+     * It binds only while the railway is running itself: a hand dispatch is exempt (Adam: the cap "stays enforced only
+     * under full autonomy").  The guard is `maxActiveTrains > 0 && isAutoRunning() && trainsUnderway() >=
+     * maxActiveTrains`, and the middle clause is the whole of this claim: `isAutoRunning()` is the flag
+     * `runLocomotives()` sets and `stopLocomotives()` clears, so a train dispatched by hand is neither counted nor
+     * refused.  Deliberate (behaviour/tiers-and-choice.md section 1): a cap is a preference about how much railway the
+     * operator wants moving, not a fact about what the track will hold, unlike the length rules, which bind in every
+     * tier.
      *
-     * The guard is `maxActiveTrains > 0 && isAutoRunning() && trainsUnderway() >= maxActiveTrains`,
-     * and the middle clause is the whole of this claim.  `isAutoRunning()` is the flag
-     * `runLocomotives()` sets and `stopLocomotives()` clears; a right-click "-> somewhere" from the
-     * diagram sets nothing, so a train dispatched by hand is neither counted nor refused.
+     * "Only under full autonomy" is not quite what the fence says: `executeTimetableInternal` sets `running` too, so a
+     * timetable, and Return Home, are capped.  No test can tell those apart from here, so the claim is: nothing running
+     * means no cap.  The wording is Adam's to settle; `behaviour/tiers-and-choice.md` section 1 records it.
      *
-     * **That is deliberate, and it is the shape behaviour.md section 1 gives the tiers**: autonomy is
-     * the stricter tier, and a cap is a preference about how much railway the operator wants moving at
-     * once rather than a fact about what the track will hold.  A person who has just clicked a
-     * destination is looking at the railway and has said what they want.  It is the same reasoning
-     * that puts the FR-001 occupancy restrictions behind full autonomy and NOT the reasoning behind
-     * the length rules, which are physical and bind in every tier.
+     * Every claim above starts by calling `runLocomotives()`, so all three would pass with the `isAutoRunning()` clause
+     * deleted and the cap refusing hand dispatches for ever.
      *
-     * **"ONLY UNDER FULL AUTONOMY" IS NOT WHAT THIS FENCE SAYS, and the difference is a tier.**  It
-     * asks `isAutoRunning()`, and `executeTimetableInternal` sets `running` too - so a timetable, and
-     * Return Home, which IS a timetable, are capped.  No test can tell those two apart from here,
-     * because both set one flag, so the claim below is the one that can be made: nothing running means
-     * no cap.  The wording is Adam's to settle; `docs/reference/behaviour.md` section 1 records it.
-     *
-     * The occupancy restrictions used to be the comparison here - they asked `isFullAutonomyRunning`,
-     * which is narrower - and since his ruling of 2026-09-10 they ask nothing at all: they bind in
-     * every tier.  So the cap is now the ONLY rule in this file with a tier fence on it.
-     *
-     * **It was in no document until 2026-09-09** - the cap appears nowhere in behaviour.md - and in no
-     * test either: every claim above starts by calling `runLocomotives()`, so all three would go on
-     * passing with the `isAutoRunning()` clause deleted and the cap silently refusing hand dispatches
-     * for ever.
-     *
-     * MUTATION: take `this.isAutoRunning() &&` out of the guard in `Layout.isPathClear` and this is
-     * the only test in the class that fails - measured, not assumed.
-     *
-     * @throws Exception if the fixture cannot be built
+     * MUTATION: take `this.isAutoRunning() &&` out of the guard in `Layout.isPathClear` and this is the only test in
+     * the class that fails.
      */
     @Test
     public void testTheCapDoesNotBindAHandDispatch() throws Exception
@@ -197,9 +168,8 @@ public class testMaxActiveTrains
         Locomotive first = model.getLocByName(model.getLocList().get(0));
         Locomotive second = model.getLocByName(model.getLocList().get(1));
 
-        // NOT RUNNING, and that is the whole fixture.  Nothing else differs from
-        // testATrainThatHasClaimedARouteCounts, which is the same arrangement with the run started
-        // and which asserts the opposite answer.
+        // NOT RUNNING is the whole fixture: nothing else differs from testATrainThatHasClaimedARouteCounts, which
+        // asserts the opposite answer.
         assertFalse(layout.isAutoRunning(),
             "the layout came up already running, so this is the autonomy case again and the claim"
             + " below is a copy of testATrainThatHasClaimedARouteCounts asserting the reverse");
@@ -223,18 +193,12 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A train sent by hand while a run is going is not refused by the cap.
-     *
-     * behaviour.md 1: a hand dispatch is *"neither counted nor refused, however many trains a run already has out"* - and
-     * the exemption rested on the running flag alone, which a run sets, so a hand send made during one was refused and
-     * the operator was told the path was occupied.  A hand send is now marked as one for its journey.
-     *
-     * A run going, a cap of one reached by the first train's claim, and the second sent by hand down a route that touches
-     * nothing: it arrives.
+     * A train sent by hand while a run is going is not refused by the cap.  behaviour/tiers-and-choice.md 1: a hand
+     * dispatch is *"neither counted nor refused, however many trains a run already has out"*; the exemption rested on
+     * the running flag alone, which a run sets, so a hand send made during one was refused.  A run going, a cap of one
+     * reached by the first train's claim, and the second sent by hand down a route that touches nothing: it arrives.
      *
      * MUTATION: let the cap refuse a train on a hand send again, and this fails.
-     *
-     * @throws Exception if the fixture cannot be built
      */
     @Test
     public void testAHandSendDuringARunIsNotRefusedByTheCap() throws Exception
@@ -276,14 +240,11 @@ public class testMaxActiveTrains
     }
 
     /**
-     * A train on a journey sent by hand does not count against the cap the run's own trains are held to.
-     *
-     * The second train marked as on a hand send - as `executePathByHand` marks it for its journey - and holding its route:
-     * the first train's claim, autonomy's, is still under a cap of one.
+     * A train on a journey sent by hand does not count against the cap the run's own trains are held to: the second
+     * train is marked as on a hand send, as `executePathByHand` marks it, and holds its route, while the first train's
+     * claim, autonomy's, is still under a cap of one.
      *
      * MUTATION: count a train sent by hand again, and this fails.
-     *
-     * @throws Exception if the fixture cannot be built
      */
     @Test
     public void testAHandSentTrainDoesNotCountAgainstTheCap() throws Exception
@@ -327,15 +288,11 @@ public class testMaxActiveTrains
     }
 
     /**
-     * The reasons a train's right-click menu gives for a hand send ask as a hand send: no destination is said to be over
-     * the cap.
-     *
-     * A run going, the cap reached by the first train's claim: the second train's destination down its own clear route is
-     * offered by hand, with no reason against it.
+     * The reasons a train's right-click menu gives for a hand send ask as a hand send: with a run going and the cap
+     * reached by the first train's claim, the second train's destination down its own clear route is offered by hand,
+     * with no reason against it.
      *
      * MUTATION: let the hand send's reasons ask the cap again, and this fails.
-     *
-     * @throws Exception if the fixture cannot be built
      */
     @Test
     public void testTheReasonsForAHandSendDoNotAskTheCap() throws Exception
@@ -378,14 +335,11 @@ public class testMaxActiveTrains
         }
     }
 
-    /**
-     * Four points and two edges that share nothing.
-     */
+    /** Four points and two edges that share nothing. */
     private static Layout twoSeparateRoutes() throws Exception
     {
-        // THE FOUR SENSORS CLEAR FIRST.  The tests share them, and a train an earlier test sent clears its arrival's sensor
-        // from its own thread a moment after that test has ended - under a battery's load once (battery 81) late enough that
-        // the next test's route was refused as occupied.
+        // The four sensors clear first: the tests share them, and a train an earlier test sent clears its arrival's
+        // sensor from its own thread a moment after that test has ended.
         long until = System.currentTimeMillis() + 5000;
 
         for (int sensor = 190; sensor <= 193; sensor++)

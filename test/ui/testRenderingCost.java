@@ -20,7 +20,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * What drawing the track diagram actually costs, measured rather than guessed.
  *
  * A MEASUREMENT, and deliberately generous about what it will accept. Its job is to keep the figures
- * of the 2026-08-19 rendering-cost report honest - a report saying "this is fast now" that is never
+ * of the rendering-cost report honest - a report saying "this is fast now" that is never
  * re-run stops being true the first time somebody puts a loop where a lookup should be. That report
  * was deleted with the review folder; the thresholds below are what is left of it, which is the half
  * that can fail.
@@ -306,7 +306,7 @@ public class testRenderingCost
             + " perDecode=" + String.format("%.2f", decoded == 0 ? 0 : ms / decoded) + "ms");
 
         // The decode loop swallows every exception, so a getImage that throws for EVERY
-        // tile leaves decoded at 0 and ms near zero - which used to read as a fast, passing test.
+        // tile leaves decoded at 0 and ms near zero - which would read as a fast, passing test.
         // That is the "0.00ms looks like good news" failure this class's own header comment says it
         // was rewritten to avoid; the floor below is what closes it for this loop too.
         assertTrue(decoded > 0,
@@ -489,23 +489,16 @@ public class testRenderingCost
         final LayoutDiagram drawing = page;
         final javax.swing.JPanel host = new javax.swing.JPanel();
 
-        // Counted ON the thread that builds, between the reset and the constructor returning
-        // (OB-084).
+        // Counted ON the thread that builds, between the reset and the constructor returning (OB-084).
         //
-        // This is what makes the number mean something. It was read from the test thread the instant
-        // invokeAndWait returned, and both LayoutGrid and LayoutLabel post further work with
-        // invokeLater - so the reading was a stable floor plus however much of the deferred work had
-        // landed, and five runs against one unchanged fixture gave 720, 621, 685, 720, 597 against a
-        // bound of 672. It failed or passed depending on nothing at all.
+        // Read from the test thread after invokeAndWait returns, the count would be a stable floor plus however much of
+        // the deferred work had landed (both LayoutGrid and LayoutLabel post further work with invokeLater), so it
+        // would pass or fail on timing.  Waiting for quiet is worse: the deferred work rebuilds labels, so the longer
+        // you wait the more you count, and the total depends on when you stop looking.
         //
-        // Waiting for quiet instead was tried first and is worse: the deferred work rebuilds labels,
-        // so the longer you wait the more you count. Eight runs of that gave 756 to 1152 - the same
-        // coin toss with a bigger coin. There is no "total labels built" to measure, because the
-        // total depends on when you stop looking.
-        //
-        // Inside one EDT runnable there is nothing to race: invokeLater work cannot run while the
-        // event thread is busy with this, so what is counted is exactly what BUILDING THE GRID does,
-        // which is the question the test is asking.
+        // Inside one EDT runnable there is nothing to race: invokeLater work cannot run while the event thread is busy
+        // with this, so what is counted is exactly what BUILDING THE GRID does, which is the question the test is
+        // asking.
         final long[] built = new long[1];
         final long[] applied = new long[1];
 
@@ -533,27 +526,17 @@ public class testRenderingCost
 
         // Exactly ONE label per cell, and the bound is a quarter above that (OB-084).
         //
-        // Measured six times, deterministically, at 384 for 384: building the grid constructs one
-        // label per cell of the bounding box and no more. The bound was twice the cell count, and the
-        // comment here said 1.6 per cell "when this was written" - but every figure in that history,
-        // from 613 up to the 720 and 1152 that made this a coin toss, was measuring construction PLUS
-        // however much deferred rebuilding had landed before somebody looked. That is a different
-        // quantity and it has no fixed value.
+        // Building the grid constructs one label per cell of the bounding box and no more (384 for 384, measured six
+        // times).  A bound of twice the cell count would let a grid that builds itself twice over pass; at a quarter
+        // above, it goes to 2.0 and fails.
         //
-        // So the ratio this test was written to watch was never 1.6; it is 1.0, and always was. The
-        // bound is tight now because the measurement finally deserves one: a grid that builds itself
-        // twice over goes to 2.0 and fails, where against the old bound of 2.0 it would have passed.
+        // WHAT IS NOT MEASURED HERE, and is the interesting number: after construction the diagram goes on rebuilding
+        // labels, and settles somewhere between 2.0 and 3.0 per cell depending on timing. That is real work and it is
+        // the subject of OB-053, which Adam has asked to be left alone for now. It is not asserted because there is
+        // nothing stable to assert - the total depends on when you stop watching.
         //
-        // WHAT IS NOT MEASURED HERE, and is the interesting number: after construction the diagram
-        // goes on rebuilding labels, and settles somewhere between 2.0 and 3.0 per cell depending on
-        // timing. That is real work and it is the subject of OB-053, which Adam has asked to be left
-        // alone for now. It is not asserted because there is nothing stable to assert - the total
-        // depends on when you stop watching.
-        //
-        // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes
-        // the count to 729 and fails this. Against the old bound of twice the cell count - 768 - the
-        // same mutation PASSED. So the assertion this test was named for could not catch the thing it
-        // was named for, and the tightening is not bookkeeping.
+        // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes the count to 729
+        // and fails this.
         assertTrue(built[0] <= cells * 5 / 4,
             "the grid built " + built[0]
             + " labels for " + cells + " cells.  Building it constructs exactly one label per cell, "

@@ -25,19 +25,14 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train whose tail stops at the switch behind its platform is still drawn in orange where it lies (OB-290).
+ * A train whose tail stops at the switch behind its platform is still drawn in orange where it lies (OB-290; MT-543:
+ * *"With not known, there is no orange tail.  The tiles up to the switch are greyed out, as expected."*).
  *
- * Adam, 2026-09-24: *"in the CURRENT setup, 75 407 DB gets no orange line at bottommaina.  it did earlier"* - and, on
- * MT-543, *"With not known, there is no orange tail.  The tiles up to the switch are greyed out, as expected."*
- *
- * A train with no road into its platform - placed by hand, answered Not known, or re-stood after a restart or an edit,
- * none of which keeps the road it drove - has its tail decided by the side it came in by.  Where more than one rail
- * comes in by that side and they part behind the platform, the walk claims the squares they share, up to the switch,
- * and stops (MT-477).  It claims them as PLACES, which is what the gray is drawn from, and covers no EDGE - and the
- * orange line was drawn only from covered edges.  So the gray was right and the train itself was drawn nowhere.
- *
- * At BottomMainA on the frozen `live-snapshot`, where rails from the west part behind the platform, with this class's
- * own four-unit train (75 407 DB's length) standing there, having come in from the west.
+ * A train with no road into its platform (placed by hand, answered Not known, or re-stood after a restart or an edit)
+ * has its tail decided by the side it came in by. Where more than one rail comes in by that side and they part behind
+ * the platform, the walk claims the squares they share, up to the switch (MT-477), as PLACES, which is what the gray is
+ * drawn from; it covers no EDGE, and the orange line was drawn only from covered edges. At BottomMainA on the frozen
+ * `live-snapshot`, with this class's own four-unit train standing there, come in from the west.
  *
  * MUTATION: take the claimed-places drawing out of `AutonomySession.routesCoveredByStandingTrains` and the first claim
  * fails; draw every road seen on a square rather than the one they agree on, and the second does.
@@ -113,9 +108,7 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
         }
     }
 
-    /**
-     * The train is drawn where it lies: its own square, and the squares its tail claims behind it.
-     */
+    /** The train is drawn where it lies: its own square, and the squares its tail claims behind it. */
     @Test
     public void testTheTrainIsDrawnWhereItsTailStops()
     {
@@ -162,7 +155,7 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
     @Test
     public void testNoSquareIsDrawnAlongTwoRoads()
     {
-        // LONG ENOUGH TO REACH THE SWITCH where the rails part, which four units at BottomMainA is not.
+        // Long enough to reach the switch where the rails part, which four units at BottomMainA is not.
         train.setTrainLength(12);
 
         try
@@ -202,21 +195,15 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
 
     /**
      * The orange is drawn along the road the railway says the train covers, of two between one pair of sensors
-     * (OB-239).
-     *
-     * The walk kept only the two squares at the ends of each covered edge and stepped between them along the FIRST
-     * reduced edge joining the pair, either way round - so where two roads join the same two sensors it drew whichever
-     * the reduction listed first, and a train on the other was drawn on track it is not on: track the railway would let
-     * another train onto.  Built here, since no railway in `test/layouts` has two roads between one pair of sensors: a
-     * passing loop between A and B, its upper road one-way east and its lower road one-way west, so the edge from A to
-     * B runs over the upper and the edge from B to A over the lower.  A four-unit train stands at each end in turn,
-     * come along the road that ends there - and whichever road the reduction lists first, one of the two is the other
+     * (OB-239). The walk stepped between a covered edge's two end squares along the FIRST reduced edge joining the
+     * pair, so where two roads join the same two sensors a train on the other was drawn on track it is not on. Built
+     * here, since no railway in `test/layouts` has two roads between one pair of sensors: a passing loop between A and
+     * B, its upper road one-way east and its lower road one-way west. A four-unit train stands at each end in turn,
+     * come along the road that ends there, so whichever road the reduction lists first, one of the two is the other
      * road.
      *
      * MUTATION: take the first reduced edge joining a covered edge's two squares, either way round, as `pathBetween`
      * did, and this fails at one end or the other.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testTheOrangeFollowsTheRoadTheTrainCovers() throws Exception
@@ -233,13 +220,12 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
             TileKey westSwitch = new TileKey("main", 4, 2);
             TileKey eastSwitch = new TileKey("main", 7, 2);
 
-            // THE UPPER ROAD EAST ONLY AND THE LOWER WEST ONLY, set by the two switches' arms (OB-351): the west switch
-            // lets trains out north and west, not east, so nothing runs east along the lower road; the east switch
-            // lets them out east and west, not north, so nothing runs west along the upper one.
+            // The upper road east only and the lower west only, set by the two switches' arms (OB-351): the west switch
+            // lets trains out north and west, not east; the east switch east and west, not north.
             arms(loop, westSwitch, Side.N, Side.W);
             arms(loop, eastSwitch, Side.E, Side.W);
 
-            // ONE UNIT A SQUARE, so a four-unit train lies on its own square and three behind it
+            // One unit a square, so a four-unit train lies on its own square and three behind it.
             for (TileKey square : new ArrayList<>(loop.getGraph().getTiles().keySet())) loop.setTileLength(square, 1);
 
             loop.rebuild();
@@ -332,11 +318,8 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
 
     /**
      * A passing loop on a page of its own (OB-239): C 1,2 - 2,2 - A 3,2 - switch 4,2 - 5,2 - 6,2 - switch 7,2 - B 8,2 -
-     * 9,2 - D 10,2, both switches branching north onto an upper road 4,1 - 5,1 - 6,1 - 7,1.  The switches are
-     * addressed, as a railway's are; C and D give A and B a way in from both sides.
-     *
-     * @return the page
-     * @throws java.io.IOException from the diagram
+     * 9,2 - D 10,2, both switches branching north onto an upper road 4,1 - 5,1 - 6,1 - 7,1. The switches are addressed,
+     * as a railway's are; C and D give A and B a way in from both sides.
      */
     private static LayoutDiagram passingLoop() throws java.io.IOException
     {
@@ -364,17 +347,7 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
         return page;
     }
 
-    /**
-     * Puts a tile down, and gives a switch the accessory a railway's switch has.
-     *
-     * @param page the page
-     * @param type the tile
-     * @param x its column
-     * @param y its row
-     * @param orientation its orientation
-     * @param address a sensor's or a switch's address, 0 for plain track
-     * @throws java.io.IOException from the diagram
-     */
+    /** Puts a tile down, and gives a switch the accessory a railway's switch has. */
     private static void lay(LayoutDiagram page, componentType type, int x, int y, int orientation, int address)
         throws java.io.IOException
     {
@@ -389,12 +362,8 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
     }
 
     /**
-     * Sets the arms of a switch trains may leave it by, and shuts the others (OB-351): each road runs out of whichever of
-     * its ends is open.
-     *
-     * @param on the setup
-     * @param square the switch
-     * @param open the sides trains may leave it by
+     * Sets the arms of a switch trains may leave it by, and shuts the others (OB-351): each road runs out of whichever
+     * of its ends is open.
      */
     private static void arms(AutonomySession on, TileKey square, Side... open)
     {
@@ -414,15 +383,7 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
         on.setDirections(square, answers);
     }
 
-    /**
-     * Whether the reduction's edge from one square to another runs over every one of these squares.
-     *
-     * @param on the setup
-     * @param from where the edge starts
-     * @param to where it ends
-     * @param squares the squares
-     * @return true when such an edge exists and runs over them all
-     */
+    /** Whether the reduction's edge from one square to another runs over every one of these squares. */
     private static boolean runsOver(AutonomySession on, TileKey from, TileKey to, Set<TileKey> squares)
     {
         for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : on.getReducer().getEdges())
@@ -439,11 +400,7 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
         return false;
     }
 
-    /**
-     * Deletes a folder and everything in it, as far as it can.
-     *
-     * @param file the folder
-     */
+    /** Deletes a folder and everything in it, as far as it can. */
     private static void deleteQuietly(java.io.File file)
     {
         java.io.File[] inside = file.listFiles();

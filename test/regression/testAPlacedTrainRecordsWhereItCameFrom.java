@@ -17,7 +17,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.GraphLocAssign;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -26,28 +26,21 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train put down by the assign dialog records which way it came in.
  *
- * Adam, 2026-09-11, settling the question `behaviour.md` section 4 had left open: **"the missing
- * arrival side should be set - either from the data, by the user, or randomly"**, then **"proceed with
- * this combo.  Try to reuse the machinery/checks of the current popup."**
+ * Adam, settling the question `behaviour/facing.md` section 4 had left open: **"the missing arrival side should be
+ * set - either from the data, by the user, or randomly"**, then **"proceed with this combo.  Try to reuse the
+ * machinery/checks of the current popup."**
  *
- * **What the side is for.**  `Layout.edgesCoveredByStandingTrains` walks back from a standing train
- * along the side it came in by and blocks that track for everything else.  Three doors put a train
- * down by hand and only one of them - the diagram's drag and paste - worked the side out; the other
- * two placed an identical train and blocked nothing behind it, so the same placement protected the
- * track or did not depending on which menu the operator reached it through.
- *
- * **Why this drives the DOOR and not the rule.**  The rule has had tests since it was written
- * (`testATrainCoversTheTrackBehindIt` pins `forPlacement` and `wouldAsk` case by case) and it was
- * never wrong - it was never CALLED.  A test over `ArrivalSidePrompt` would have been green through
- * the whole life of this defect, which is this project's most repeated shape: the extracted rule is
- * covered and the call site is the uncovered part.
+ * `Layout.edgesCoveredByStandingTrains` walks back from a standing train along the side it came in by and blocks that
+ * track for everything else.  Three doors put a train down by hand and only the diagram's drag and paste worked the
+ * side out.  This drives the DOOR and not the rule: `testATrainCoversTheTrackBehindIt` pins `forPlacement` and
+ * `wouldAsk`, and the rule was never wrong, it was never CALLED.
  *
  * ON THE FROZEN SNAPSHOT, never `cs2_sample_layout`.
  *
  * MUTATION: take the `session.setArrivedFrom` / `point.setArrivedFrom` pair back out of
- * `GraphLocAssign.commitAndRecord` and the first test fails; make `refreshArrivalSide` skip
- * `recordedHere()` and the second fails, naming the side it overwrote; drop the `size() < 2` guard in
- * `buildArrivalSide` and the third fails on the terminus.
+ * `GraphLocAssign.commitAndRecord` and the first test fails; make `refreshArrivalSide` skip `recordedHere()` and the
+ * second fails, naming the side it overwrote; drop the `size() < 2` guard in `buildArrivalSide` and the third fails on
+ * the terminus.
  *
  * @author Adam
  */
@@ -92,17 +85,14 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         model = support.TestStation.simulated();
 
-        // THE MODEL'S OWN PAGES, wired to their accessories - a second parse of the same bytes gives a
-        // railway of five edges with most of its points isolated, and every square then has one side.
-        // See `LayoutSandbox.wiredPages`.
+        // The model's own pages, wired to their accessories (`LayoutSandbox.wiredPages`): a second parse gives a
+        // railway of five edges with most points isolated.
         session = new AutonomySession(sandbox.getFolder());
         session.open(support.LayoutSandbox.wiredPages(model));
 
-        // A STATION WITH TWO WAYS IN, made in this copy.  On Adam's railway refrozen 2026-09-23 there is none left:
-        // his one-way track and barred sides close the second way into every square a train may stop at, so the
-        // choice of arrival side this class is about is never offered there.  RampDown's barred south side is lifted
-        // here - in the sandbox only - which gives it back the second way in it had before; BottomMainA keeps its bar,
-        // which is what the barred-side claim below needs.
+        // A station with two ways in, made in this copy: on Adam's railway his one-way track and barred sides close the
+        // second way into every square a train may stop at.  RampDown's barred south side is lifted here, in the
+        // sandbox only; BottomMainA keeps its bar, which the barred-side claim needs.
         session.setBarredArrivals(new TileKey("1 - Main", 21, 6),
             java.util.Collections.<org.traincontrol.automationui.TilePorts.Side>emptySet());
 
@@ -129,30 +119,18 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * A side the operator has barred is not a side a train can have arrived by (Adam, OB-204).
+     * A side the operator has barred is not a side a train can have arrived by (OB-204).  Adam: *"when copying (moving)
+     * a locomotive from bottommainc to bottommaina, it does not always show the orange tail facing west.  seems to
+     * appear about half the time."*
      *
-     * *"when copying (moving) a locomotive from bottommainc to bottommaina, it does not always show the
-     * orange tail facing west.  seems to appear about half the time."*
+     * `AutonomyBuilder.splitSides`, which every placement door reads through `StationIndex.arrivalSidesAt`, collected
+     * entry sides with no reference to the barred list, so a square with one way in and one barred side looked
+     * two-sided, `ArrivalSidePrompt.suggestedFor`'s first rule could not fire, and the compass fallback read the
+     * train's FACING, which alternates.  So the claim is STABILITY, not a particular side: the same square, the same
+     * train, two facings, one answer.
      *
-     * **"About half the time" was the diagnosis.**  `AutonomyBuilder.splitSides` - which is what every
-     * placement door reads, through `StationIndex.arrivalSidesAt` - walks the reduced edges arriving at
-     * a square and collects their entry sides with no reference to the barred list. So a square with one
-     * way in and one barred side looked two-sided, `ArrivalSidePrompt.suggestedFor`'s first and best rule
-     * (*"one way in that is not the way it is pointing"*) could not fire, and it fell through to the
-     * compass assumption - which reads the train's FACING. The facing alternates when the square the
-     * train came from turns it round, and so did the recorded side.
-     *
-     * So the claim is about STABILITY, not about a particular side: the same square, the same train, two
-     * facings, one answer. A test that asserted "west" would pass on a railway where the rule had simply
-     * stopped working and always said west.
-     *
-     * **The control is the other half**, and it is what makes this a measurement: asked with the RAW
-     * geometric sides - what the doors used to be handed - the two facings give different answers. If
-     * they ever stop doing so, this fixture can no longer show the defect and the claim above is
-     * vacuous, which fails out loud.
-     *
-     * Searched rather than named, like everything else in this class: a station named here is a station
-     * somebody re-plumbs.
+     * The control is the other half: with the RAW geometric sides the two facings give different answers; if they stop
+     * doing so the fixture can no longer show the defect and this fails out loud.  Squares are searched, not named.
      */
     @Test
     public void testABarredSideIsNotASideATrainArrivedBy() throws Exception
@@ -173,16 +151,13 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
             if (at == null) continue;
 
-            // The shape the defect needs, defined from the STORED data rather than from the method
-            // under test: the geometry says two ways in and the operator has closed all but one of
-            // them. Asking `unbarredArrivalSides` here instead would make this search agree with
-            // whatever that method does, so breaking it would SKIP this test rather than fail it.
+            // The shape the defect needs, defined from the STORED data rather than the method under test: otherwise
+            // breaking that method would SKIP this test rather than fail it.
             if (session.arrivalSides(at).size() > 1
                 && session.arrivalSides(at).size() - session.getBarredArrivals(at).size() == 1)
             {
-                // AND ONE WHERE THE CONTROL BELOW CAN SEE THE DEFECT: the raw sides give the two facings
-                // different answers.  Taking the first square of the right shape took BottomMainPost on the
-                // railway refrozen 2026-09-23, where they agree, and every run skipped.
+                // And one where the control below can see the defect: the raw sides give the two facings different
+                // answers.
                 String rawOne = ArrivalSidePrompt.suggestedFor(layout, point, "E", false, session.arrivalSides(at));
                 String rawOther = ArrivalSidePrompt.suggestedFor(layout, point, "W", false, session.arrivalSides(at));
 
@@ -227,8 +202,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
             "a square with one unbarred way in answered nothing at all, so a train placed there records"
             + " no tail and the track behind it is left open");
 
-        // THE CONTROL: with the raw geometry - what the doors were handed before OB-204 - the two
-        // facings really do disagree here, so the claim above is measuring something.
+        // The control: with the raw geometry the two facings really do disagree here, so the claim above is measuring
+        // something.
         String rawOne = ArrivalSidePrompt.suggestedFor(layout, narrowed, "E", false,
             session.arrivalSides(square));
 
@@ -244,11 +219,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * Picks one square with a choice of arrival sides and one with none.
-     *
-     * Searched rather than named: the fixture is a snapshot of a real railway and a station named here
-     * would be a station somebody re-plumbs. What the tests need is the SHAPE - two ways in, and one -
-     * and the search says plainly when the fixture stopped offering either.
+     * Picks one square with a choice of arrival sides and one with none; searched, not named, as the fixture is a
+     * snapshot of a real railway.
      */
     private static void findTheSquares()
     {
@@ -283,11 +255,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     {
         try
         {
-            // THE DIALOG WRITES THESE BACK ON EVERY OK, and the locomotive database is the operator's
-            // own - the sandbox covers the layout folder and nothing else. Both values are read out of
-            // the locomotive when the form is built, so they normally round-trip unchanged; a
-            // preferred speed of zero is the exception, because the form shows the layout default
-            // instead and committing would make that default real.
+            // The dialog writes these back on every OK, and the locomotive database is the operator's own.  A preferred
+            // speed of zero is the exception to a round trip: the form shows the layout default and committing would
+            // make that default real.
             if (train != null)
             {
                 train.setPreferredSpeed(speedBefore == null ? 0 : speedBefore);
@@ -303,16 +273,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * Accepting the dialog records a side, in the setup AND on the railway.
-     *
-     * **Both stores, because they answer different questions.** The walk that blocks track reads the
-     * live `Point`; the setup is the half that survives a restart and reaches the railway only at the
-     * next rebuild. Written to one alone, the operator answers the question, watches nothing become
-     * blocked, and cannot tell "it does not work" from "it has not been rebuilt yet" - which is the
-     * shape of the paste door's defect.
-     *
-     * The square is CLEARED first, so this cannot pass on a value that was already there - which is
-     * exactly how a test of a default passes while measuring nothing.
+     * Accepting the dialog records a side, in the setup AND on the railway: the walk that blocks track reads the live
+     * `Point`, the setup survives a restart, and written to one alone the operator cannot tell "it does not work" from
+     * "it has not been rebuilt yet".  The square is CLEARED first, so this cannot pass on a value already there.
      */
     @Test
     public void testAcceptingTheDialogRecordsTheArrivalSide() throws Exception
@@ -351,15 +314,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * A side something WATCHED a train arrive by is not replaced by a derived one.
-     *
-     * Re-opening this dialog to change a function must not quietly overwrite a measured value with the
-     * rule's guess. Autonomy writes the real side as a train arrives; the dialog's suggestion is worked
-     * out from the heading and is right about an ordinary station and no more than a starting point
-     * anywhere else.
-     *
-     * The side chosen is deliberately the one the rule would NOT pick - the other end of the list -
-     * so that "the recorded value survived" cannot be satisfied by the suggestion happening to agree.
+     * A side something WATCHED a train arrive by is not replaced by a derived one: re-opening the dialog to change a
+     * function must not overwrite a measured value with the rule's guess.  The side chosen is the one the rule would
+     * NOT pick, so agreement cannot satisfy it.
      */
     @Test
     public void testARecordedSideSurvivesAVisitToTheDialog() throws Exception
@@ -403,13 +360,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * The combo appears where there is a choice, and the rule answers where there is not.
-     *
-     * A terminus has one way in. Offering a one-entry combo there would be a control that looks like a
-     * decision and is not - and the popup this borrows from says the same thing by never asking:
-     * *"asking would be a dialog with one button"*. What matters is that the ANSWER is the same either
-     * way, which is the second claim: the door gets a side out of the dialog whether or not the
-     * operator was shown anything.
+     * The combo appears where there is a choice, and the rule answers where there is not: a one-entry combo at a
+     * terminus would look like a decision and not be one ("asking would be a dialog with one button").  The ANSWER is
+     * the same either way: the door gets a side whether or not the operator was shown anything.
      */
     @Test
     public void testTheChoiceIsOfferedOnlyWhereThereIsOne() throws Exception
@@ -443,24 +396,14 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * Every entry on the combo is a side, and a placement therefore always records one.
+     * Every entry on the combo is a side, and a placement therefore always records one.  Adam: **"clearing should not
+     * be possible, only setting."**  A "Not known" entry was taken out of the arrived-from MENU on the argument that
+     * every side the square has is offered, so a wrong answer is corrected by choosing the right one; a blank only
+     * offers a way to switch the tail blocking off.  The entries are read off what the dialog would really show, so a
+     * second row added anywhere in the wrapper is caught too.
      *
-     * Adam, 2026-09-07: **"clearing should not be possible, only setting."**  The arrived-from MENU
-     * used to carry a "Not known" entry and it was taken out then, on the argument `behaviour.md`
-     * still states: every side the square has is offered, so a wrong answer is corrected by choosing
-     * the right one, and what a blank really offers is a way to switch the tail blocking off - a
-     * preference about the check rather than a fact about the railway.
-     *
-     * This combo was built with a "---" row at the top before that ruling was re-read, which would
-     * have put the cleared state back into the one surface it had been taken out of. The claim is
-     * here because the mistake is easy: a combo that starts on a DERIVED value looks like it needs a
-     * way to say "actually, I do not know".
-     *
-     * The entries are read off what the dialog would really show, not off the field, so a second row
-     * added anywhere in the wrapper is caught too.
-     *
-     * MUTATION: put `entries.add(NONE_LABEL);` back at the top of `buildArrivalSide` and the first
-     * claim fails, naming the entry that is not a side.
+     * MUTATION: put `entries.add(NONE_LABEL);` back at the top of `buildArrivalSide` and the first claim fails, naming
+     * the entry that is not a side.
      */
     @Test
     public void testTheComboOffersSidesAndNothingElse() throws Exception
@@ -501,15 +444,11 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).
-     *
-     * Adam, 2026-09-24: *"separately, increase choosable train lengths up to 40 in the dropdown."*  The two lists are one
-     * question, and this one wrote its own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX` - so a
-     * train longer than its last entry opened here showing that entry, and OK saved it.
+     * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  Adam: *"separately,
+     * increase choosable train lengths up to 40 in the dropdown."*  The two lists are one question; this one wrote its
+     * own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
      *
      * MUTATION: leave the limit at 20, or write this list out by hand again, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheEditViewOffersEveryLengthTheMenuDoes() throws Exception
@@ -599,20 +538,14 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * OK on a placement the railway refuses leaves the locomotive as it was.
+     * OK on a placement the railway refuses leaves the locomotive as it was.  `Layout.moveLocomotive` refuses while
+     * autonomy runs, for a point the railway does not have, and for one that is no station; `commitChanges` threw the
+     * answer away and wrote the form's settings onto the locomotive anyway.
      *
-     * `Layout.moveLocomotive` refuses while autonomy runs, for a point the railway does not have, and for one that is
-     * no station, and answers false with a line in the log.  `commitChanges` threw the answer away and wrote the form's
-     * length, speed, functions and reversing onto the locomotive anyway - so the operator read that the train had not
-     * been placed and found its settings changed regardless, and `commitAndRecord` went on as though it had been.
-     *
-     * Refused here by a point the railway does not have - what the dialog holds when a rebuild drops the station it
-     * was opened on - so nothing on the fixture is changed to get the refusal.  A different length is chosen in the
-     * form, as the operator would choose it, so a write cannot pass for the value already there going round.
+     * Refused here by a point the railway does not have, so nothing on the fixture is changed to get the refusal; a
+     * different length is chosen in the form so a write cannot pass for the value already there.
      *
      * MUTATION: take the `if (!... moveLocomotive(...)) return false;` guard out of `commitChanges`, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARefusedPlacementLeavesTheTrainAsItWas() throws Exception
@@ -665,14 +598,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * The form's train-length list, found by what it offers.
-     *
-     * Its field is generated and private, so it is recognized by its entries: the one list in the form that runs from
-     * 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.  The locomotive list holds names, and the two function lists start
-     * with their "none" entry.
-     *
-     * @param in where to look
-     * @return the list, or null when none is shown
+     * The form's train-length list, found by what it offers: its field is generated and private, so it is the one list
+     * that runs from 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
      */
     private static javax.swing.JComboBox<?> theLengthCombo(java.awt.Container in)
     {
@@ -700,14 +627,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * The arrival-side combo as the operator would see it, found in what the dialog actually shows.
-     *
-     * Searched through the wrapper rather than read off a field: the form itself carries four combos
-     * of its own, so the one that matters is the one OUTSIDE it - which is also the arrangement the
-     * claim above is about.
-     *
-     * @param edit the dialog
-     * @return the combo, or null when none is shown
+     * The arrival-side combo as the operator would see it, searched through the wrapper: the form carries four combos
+     * of its own and the one that matters is OUTSIDE it.
      */
     private static javax.swing.JComboBox<?> theArrivalSideCombo(GraphLocAssign edit)
     {
@@ -728,12 +649,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
         return null;
     }
 
-    /**
-     * Puts the train on a named copy, the way a placement door does.
-     *
-     * @param pointName the copy
-     * @return the Point, with the train on it
-     */
+    /** Puts the train on a named copy, the way a placement door does. */
     private static Point putTheTrainOn(String pointName) throws Exception
     {
         model.getAutoLayout().moveLocomotive(train.getName(), pointName, false);
@@ -749,12 +665,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
         return point;
     }
 
-    /**
-     * The dialog both assignment menus open, built on the event thread as they build it.
-     *
-     * @param point the point being assigned
-     * @return the dialog, as though the operator had just pressed OK
-     */
+    /** The dialog both assignment menus open, built on the event thread as they build it. */
     private static GraphLocAssign dialogOn(Point point) throws Exception
     {
         final GraphLocAssign[] built = new GraphLocAssign[1];

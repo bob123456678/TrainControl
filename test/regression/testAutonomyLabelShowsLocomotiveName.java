@@ -17,21 +17,13 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * The name of a placed locomotive, as the diagram has to draw it.
  *
- * Reported 2026-08-22 with a screenshot: instead of "EN57-203" sitting in the caption in the track
- * diagram's own style, the autonomy editor drew {"name":"EN57-203"} in a box wide enough to cover
- * three neighboring tiles.
+ * Instead of "EN57-203" in the caption in the track diagram's own style, the autonomy editor drew
+ * {"name":"EN57-203"} in a box wide enough to cover three neighboring tiles.  A placement is stored as an OBJECT
+ * ({"name": ..., "speed": ..., "arrivalFunc": ...}) because parseAuto resets whatever a placement omits, and the label
+ * called String.valueOf on what came back.  The unwrapping already existed twice (AutonomyEditorPanel.locomotiveAt and
+ * Layout.parseAuto); the label was a third copy that got it wrong, so the shape is now in one place and all three ask.
  *
- * A placement is stored as an OBJECT - {"name": ..., "speed": ..., "arrivalFunc": ...} - because
- * parseAuto resets whatever a placement omits, so the extra settings have to travel with it. The
- * label asked for the property and called String.valueOf on what came back, which for a JSONObject
- * is its JSON. Correct for a string, and the property has never been one.
- *
- * The unwrapping already existed, twice: AutonomyEditorPanel.locomotiveAt did it right, and
- * Layout.parseAuto does it right with an extra guard. The label was a third copy that got it wrong,
- * so the fix puts the shape in one place - here - and has all three ask.
- *
- * What this pins is that asking the session for a name yields a NAME. Anything drawing a placement
- * goes through this method, so a regression shows up here rather than in a screenshot.
+ * What this pins is that asking the session for a name yields a NAME.
  *
  * @author Adam
  */
@@ -53,9 +45,7 @@ public class testAutonomyLabelShowsLocomotiveName
         delete(layout);
     }
 
-    /**
-     * The whole bug, in one assertion.
-     */
+    /** The whole bug, in one assertion. */
     @Test
     public void testAPlacedLocomotiveReadsBackAsItsName() throws IOException
     {
@@ -67,11 +57,8 @@ public class testAutonomyLabelShowsLocomotiveName
     }
 
     /**
-     * And the settings that travel with the placement are not disturbed by reading it.
-     *
-     * The temptation when fixing this is to store the name as a bare string, which would make the
-     * label right and quietly reset a train's length and functions on the next build. Nothing about
-     * how it is READ may change how it is stored.
+     * And the settings that travel with the placement are not disturbed by reading it: storing the name as a bare
+     * string would quietly reset a train's length and functions on the next build.
      */
     @Test
     public void testReadingTheNameLeavesTheRestOfThePlacementAlone() throws IOException
@@ -92,11 +79,8 @@ public class testAutonomyLabelShowsLocomotiveName
     }
 
     /**
-     * An empty square says so, rather than saying "null".
-     *
-     * String.valueOf(null) is the four characters n-u-l-l, and a label given those draws them. The
-     * old code guarded that with an explicit null check; a rewrite that unwraps the object has to
-     * keep the guard, and this is what notices if it does not.
+     * An empty square says so, rather than saying "null": String.valueOf(null) is four characters and a label given
+     * those draws them.
      */
     @Test
     public void testAnEmptySquareHasNoName() throws IOException
@@ -113,11 +97,8 @@ public class testAutonomyLabelShowsLocomotiveName
     }
 
     /**
-     * A placement somebody hand-edited into a bare string still reads.
-     *
-     * Not a shape this program writes, but setup files get edited by hand and an older autonomy.json
-     * may carry one. Drawing nothing there would look exactly like an empty platform, which is the
-     * one wrong answer a label can give about a placement.
+     * A placement somebody hand-edited into a bare string still reads; drawing nothing would look exactly like an empty
+     * platform.
      */
     @Test
     public void testAHandWrittenBareNameStillReads() throws IOException
@@ -136,13 +117,9 @@ public class testAutonomyLabelShowsLocomotiveName
     }
 
     /**
-     * A caption is bracketed and cut to length, whatever is standing on the platform.
-     *
-     * Reported 2026-08-22, after the JSON above was fixed: the editor still drew "a large white
-     * rectangle overlay with the name of the locomotive, rather than seeing its name inside [---]".
-     * Both halves of that are one cause - the editor set the NAME where the running diagram sets a
-     * CAPTION, and a caption is bracketed and cut to LAYOUT_STATION_MAX_LENGTH precisely so that a
-     * platform is the same width whatever is on it.
+     * A caption is bracketed and cut to length, whatever is standing on the platform: the editor set the NAME where the
+     * running diagram sets a CAPTION, which is cut to LAYOUT_STATION_MAX_LENGTH so a platform is the same width
+     * whatever is on it.
      */
     @Test
     public void testACaptionIsJustTheNameCutToLength()
@@ -164,9 +141,7 @@ public class testAutonomyLabelShowsLocomotiveName
             "what survives the cut is the beginning of the name: " + caption);
     }
 
-    /**
-     * The facing arrow lives INSIDE the brackets, and is paid for out of the same width.
-     */
+    /** The facing arrow lives INSIDE the brackets, and is paid for out of the same width. */
     @Test
     public void testTheFacingArrowIsPartOfTheCaption()
     {
@@ -179,10 +154,7 @@ public class testAutonomyLabelShowsLocomotiveName
     }
 
     /**
-     * An empty platform is the placeholder, spelled by the same method.
-     *
-     * So that the two cannot drift into different widths, which is the drift this whole entry is
-     * about.
+     * An empty platform is the placeholder, spelled by the same method so the two cannot drift into different widths.
      */
     @Test
     public void testAnEmptyPlatformIsThePlaceholder()

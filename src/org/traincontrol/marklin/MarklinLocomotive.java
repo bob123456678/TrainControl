@@ -60,22 +60,11 @@ public class MarklinLocomotive extends Locomotive
     
     // Locomotives linked to this locomotive that will operate as a multi-unit
     // Key - the other locomotive, Value - the speed adjustment (negative will force the opposite direction of this locomotive)
-    // REPLACED, NEVER EDITED, AND READ WITHOUT A LOCK BY DESIGN.
-    //
-    // The save path is the reader that decides the shape of this field: MarklinSimpleComponent reads
-    // getLinkedLocomotives() with no lock, and restoreState rebuilds every consist from exactly what it
-    // wrote - so a save that sees this map empty writes a locomotive with NO members into locdb.data,
-    // and the consist is gone after the next start with the file as the only record.  The rebuild runs
-    // off the event thread inside syncWithCS2; the save runs from the window-closing path and from
-    // Backup Data's own thread, and nothing serializes them.
-    //
-    // It was a live LinkedHashMap cleared and refilled in place, so every reader shared one instance and
-    // there was a window in which it was empty.  Locking the readers was the other candidate and was
-    // rejected: there are nine of them, one on a thread of its own in applyPreferredFunctions, and an
-    // event-thread save would then wait behind a fan-out that holds this monitor across a UDP send.
-    //
-    // So: every published value is unmodifiable, a rebuild ASSIGNS a new one, and a reader keeps
-    // whatever it was holding.  volatile is what makes that assignment visible to the threads above.
+    // Replaced, never edited, and read without a lock by design: MarklinSimpleComponent saves getLinkedLocomotives()
+    // with no lock while a rebuild runs off the event thread, so a map emptied in place for a moment would write a
+    // consist with no members into locdb.data.  Locking the readers was rejected (nine of them, one on its own thread,
+    // and a save would wait behind a fan-out holding the monitor across a UDP send).  So every published value is
+    // unmodifiable and a rebuild assigns a new one; volatile makes that visible.
     private volatile Map <Locomotive, Double> linkedLocomotives = java.util.Collections.emptyMap();     
     private Map <String, Double> preLinkedLocomotives;
     
@@ -603,18 +592,10 @@ public class MarklinLocomotive extends Locomotive
                     new byte[] {m.getData()[4], m.getData()[5]}
                 );
                 
-                // ROUNDED, NOT TRUNCATED (C7).
-                //
-                // The Central Station speaks 0-1000 and this model stores 0-100, so every received
-                // speed is scaled.  Integer division always rounds DOWN, so a fine step set on
-                // another controller came back as the step below it - and `syncFromState` then
-                // re-sends what it believes, which put the train back slightly slower than the
-                // operator had just set it.  A systematic bias in one direction rather than a
-                // rounding error either way.
-                //
-                // It matters more than a display detail now: the length and blocking rules reason
-                // about what the model BELIEVES a train is doing, and this is where that belief
-                // comes in from the outside world.
+                // Rounded, not truncated: the Central Station speaks 0-1000 and this model 0-100, and truncating biased
+                // every received speed downward, so syncFromState re-sent a slower speed than the operator set.  The
+                // length and blocking rules reason about what the model believes a train is doing, and this is where
+                // that belief comes in.
                 speed = (int) Math.round(speed / 10.0);
                 
                 this._setSpeed(speed);
@@ -753,12 +734,8 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Says, once, that this locomotive has been waiting a long time for a sensor.
-     *
-     * The operator otherwise has nothing at all to go on: a train that fails to start, or that takes a
-     * different route from the one it was given, simply stops being mentioned - it is waiting for a
-     * sensor it will never reach, and the wait is silent and endless by design.  Nothing here changes
-     * that design; it only says so out loud, which is the half that was missing.
+     * Says, once, that this locomotive has been waiting a long time for a sensor; otherwise such a wait is silent by
+     * design.
      *
      * @param feedbackName the sensor being waited for
      * @param waitedMs how long the wait has gone on
@@ -768,18 +745,9 @@ public class MarklinLocomotive extends Locomotive
     {
         if (this.network == null) return;
 
-        // Off this thread, because this thread is holding the lock every sensor event needs.
-        //
-        // The hook is called from inside synchronized(monitor), and that monitor is STATIC - one for
-        // every locomotive in the application - so Feedback._setState cannot run while it is held, and
-        // s88 events arrive on a single thread.  The log call goes to a java.util.logging handler
-        // writing to System.out, which blocks whenever its consumer does: run from the IDE with output
-        // to the editor window, and a slow console write would stop arrival detection for EVERY train
-        // under way, not just this one.
-        //
-        // The base class's javadoc says this hook must not block.  This was the only override, and it
-        // did.  A single thread rather than a pool: these are strictly ordered notices about the same
-        // railway, and two of them interleaved would read as one.
+        // Off this thread, because it holds the static monitor every sensor event needs and the log call can block on a
+        // slow console, which would stop arrival detection for every train.  A single thread rather than a pool: these
+        // are ordered notices about the same railway.
         final String said = this.getName();
         final long elapsed = waitedMs;
 
@@ -788,10 +756,7 @@ public class MarklinLocomotive extends Locomotive
     }
 
     /**
-     * The one thread that says these out loud.
-     *
-     * A daemon, so it cannot keep the application alive on its own - an advisory that has not been
-     * printed is not a reason to refuse to shut down.
+     * The one thread that says these out loud; a daemon, so an unprinted advisory never keeps the application alive.
      */
     private static final java.util.concurrent.ExecutorService ADVISORIES =
         java.util.concurrent.Executors.newSingleThreadExecutor(runnable ->
@@ -806,18 +771,9 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setSpeed(int speed)
     {
-        // CLAMPED BEFORE ANYTHING IS SENT.
-        //
-        // _setSpeed is wrapped in `if (speed >= 0 && speed <= 100)` with no else, so an out-of-range
-        // value is DISCARDED: getSpeed() still reports whatever it was, and the head then re-transmits
-        // that old speed while every member is sent the scaled value clamped to 100.  The members were
-        // protected from this and the head was not, one level above where the member clamp was written -
-        // and its comment describes exactly this outcome, "the two engines of one consist pulled against
-        // each other".
-        //
-        // Clamped to 0 rather than to -1, which is the opposite of RouteCommand's rule and deliberately
-        // so: -1 means instant stop to a ROUTE, and execRoute calls instantStop() for it rather than
-        // coming here.  This method's argument is a speed.
+        // Clamped before anything is sent: _setSpeed discards an out-of-range value, so the head would re-transmit its
+        // old speed while members get the value clamped to 100.  To 0 rather than -1: -1 means instant stop to a route,
+        // and execRoute calls instantStop() for it.
         speed = Math.max(0, Math.min(speed, 100));
 
         // Pass through commands
@@ -840,9 +796,7 @@ public class MarklinLocomotive extends Locomotive
             // rather than clamping it, and the member then transmits its previous speed - so past the
             // threshold (67 for a 1.5x member) the member silently froze while the head kept
             // accelerating, and the two engines of one consist pulled against each other.
-            // TWO-SIDED.  A negative argument scaled by a multiplier stays negative, and
-            // _setSpeed ignores it for the same reason it ignores 150 - so the member re-transmitted
-            // its old speed at this end of the range too.
+            // Two-sided: _setSpeed ignores a negative scaled value just as it ignores 150.
             roundedSpeed = Math.max(0, Math.min(roundedSpeed, 100));
 
             entry.getKey().setSpeed(roundedSpeed);
@@ -916,16 +870,8 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Records a function and sends its command to the station, whatever this decoder's function count
-     * says (MT-359).
-     *
-     * The count bounds what is RECORDED - `_setF` ignores a number past it - and nothing else: the
-     * command goes to the station either way, which decides what it means for the decoder it reaches.
-     * Called for the head and each member by `setF`, after `setF` has refused anything beyond the whole
-     * consist's range.
-     *
-     * @param fNumber the function
-     * @param state on or off
+     * Records a function and sends its command to the station whatever this decoder's function count says (MT-359); the
+     * count bounds only what is recorded (`_setF`).
      */
     private synchronized void sendFunction(int fNumber, boolean state)
     {
@@ -948,35 +894,16 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
-        // THE CONSIST'S RANGE, WHICH IS THE HIGHEST OF ITS MEMBERS (Adam, MT-359, 2026-09-11).
-        //
-        // *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean
-        // F0-4 do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
-        //
-        // An earlier version had this refuse anything the HEAD could not do, which fixed the real defect - the state
-        // going nowhere - and answered the wrong question with it: the point of a consist is that a
-        // member can do things the head cannot, and an MM2 head with an MFX member is a configuration
-        // the program allows on purpose.
-        //
-        // What stays fixed is the part that mattered.  A function outside the whole consist's range is
-        // still refused rather than sent and forgotten, `getF` answers for the members where the head's
-        // own decoder has no such function, and `functionsOff` clears the same range it can set - so
-        // nothing can be switched on that nothing can switch off, which is what made the original defect
-        // worth a finding.
+        // The consist's range is the highest of its members' (MT-359).  Adam: "Make the allowed function be the highest
+        // possible for the consist - so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mean all
+        // functions are unlocked." A function outside that range is refused rather than sent and forgotten, `getF`
+        // answers for the members where the head has none, and `functionsOff` clears the same range it can set.
         if (fNumber < 0 || fNumber >= this.drivableFunctionCount()) return this;
 
-        // EVERY LOCOMOTIVE IN THE CONSIST IS SENT THE COMMAND, HEAD INCLUDED (Adam, MT-359, 2026-09-13).
-        //
-        // *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply propagate a F6 command
-        // to all the consist's locomotives as per normal.  The CS will figure out whether that means
-        // anything."*  Asked whether the range above stays: **"Send to all, keep the cap."**
-        //
-        // This asked each member through its own `setF`, whose `validF` refused a number its decoder does
-        // not list - so the MM2 member of an MFX-headed consist never heard f6, and an MM2 head skipped
-        // its own copy.  Whether a decoder does anything with f6 is the station's business, and a
-        // function count is a guess at it.  What is recorded locally is still bounded by each
-        // locomotive's own count (`_setF`), so no state appears for a function nothing has; `getF` on
-        // the head answers for the consist, as before.
+        // Every locomotive in the consist is sent the command, head included.  Adam: "Pressing F6 on the MM2 head, if
+        // it has a MFX/DCC member, should simply propagate a F6 command to all the consist's locomotives as per normal.
+        // The CS will figure out whether that means anything."  What is recorded locally stays bounded by each
+        // locomotive's own count (`_setF`).
         for (Locomotive l : this.linkedLocomotives.keySet())
         {
             if (l instanceof MarklinLocomotive)
@@ -1149,18 +1076,9 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Every locomotive this one commands when it is driven - itself excluded.
-     *
-     * **Two ways of being a consist, one question.**  A locomotive may command others because somebody
-     * linked them in TrainControl (`linkedLocomotives`) or because the Central Station holds it as a
-     * multi-unit (`modelMultiUnitLocomotives`), and the two are exclusive:
-     * `setLinkedLocomotives` clears the links and returns -1 for a `MULTI_UNIT`, because *"multi units
-     * defined in the Central Station cannot be linked to other locomotives"*.
-     *
-     * It existed as two spellings inside `isSimultaneousMultiUnitCompatible`, kept in step by
-     * somebody remembering - and they were not: the second of the two loops asked the raw links, which
-     * for a Central Station multi-unit is always empty, so two of them driving the same locomotive
-     * read as safe to run together.  Asked once here so that cannot happen again.
+     * Every locomotive this one commands when it is driven - itself excluded.  A consist is either linked in
+     * TrainControl (`linkedLocomotives`) or held by the Central Station as a multi-unit (`modelMultiUnitLocomotives`),
+     * and the two are exclusive.  Asked in one place so callers cannot disagree.
      *
      * @return the locomotives this one drives, empty when it drives only itself
      */
@@ -1175,19 +1093,9 @@ public class MarklinLocomotive extends Locomotive
     }
 
     /**
-     * NOT SYMMETRIC, AND BOTH DIRECTIONS HAVE TO BE ASKED.
-     *
-     * `a.isSimultaneousMultiUnitCompatible(b)` and `b.isSimultaneousMultiUnitCompatible(a)` can
-     * disagree, because the question is asked from the left-hand locomotive's point of view: it walks
-     * what THIS one commands, and a plain member commands nothing.  Measured on a Central Station
-     * multi-unit at address 4003 holding a member at 62: asked one way round the answer is false, the
-     * other way true.
-     *
-     * `Layout.clearMultiUnitConflictsWith` is the only production caller - reached from placing, loading, every edit
-     * door's sweep and the Central Station sync's - and it asks both ways.  A second caller
-     * that asked once would let the pair through half the time, which is the shape of the old fault: a
-     * missing branch in one of the two loops made both directions answer the same wrong thing, and the
-     * both-ways call could not compensate because neither direction knew.
+     * Not symmetric, so both directions have to be asked: the question is asked from the left-hand locomotive's point
+     * of view and a plain member commands nothing.  `Layout.clearMultiUnitConflictsWith` is the only production caller
+     * and asks both ways; a caller asking once would let the pair through half the time.
      *
      * Checks if this locomotive can be in a multi-unit with another, at the same time, based
      * on whether it is already linked to another as a multi-unit, or has the same address
@@ -1206,23 +1114,9 @@ public class MarklinLocomotive extends Locomotive
             return false;
         }
         
-        // ONE QUESTION, ASKED OF BOTH SIDES.
-        //
-        // "Which locomotives does this one command?" had two spellings here - a decoder-type branch in
-        // the first loop and the raw `getLinkedLocomotives()` in the second - and the second loop is
-        // the one that compares MY members against YOURS.  So two Central Station multi-units driving
-        // the same locomotive read as safe to run as two trains: both were placed on the graph, both
-        // dispatched, and every speed and direction command sent to one fanned out to a decoder the
-        // other was also driving.
-        //
-        // It was not merely likely to miss that case, it was provably dead for it:
-        // `setLinkedLocomotives` clears `linkedLocomotives` and returns -1 for a MULTI_UNIT - *"multi
-        // units defined in the Central Station cannot be linked to other locomotives"* - so the whole
-        // body of the second loop could never run for exactly the case the first loop's branch was
-        // written for.
-        //
-        // `Layout.clearMultiUnitConflictsWith` asks this both ways round and cannot compensate: both directions
-        // had the same gap when both sides are multi-units, so neither answered.
+        // One question, asked of both sides: the second loop compares MY members against YOURS, and the raw links are
+        // always empty for a Central Station multi-unit (`setLinkedLocomotives` clears them), so two multi-units
+        // driving the same locomotive read as safe to run as two trains.
         Collection<Locomotive> ours = this.commandedLocomotives();
 
         for (Locomotive other : ours)
@@ -1262,18 +1156,10 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * Stages a list and applies it in one call, so no second thread can be staging at the same time.
-     *
-     * **`preSetLinkedLocomotives` writes an INSTANCE FIELD and `setLinkedLocomotives` reads it, with
-     * nothing serializing the pair**.  Two threads rebuild consists: `syncWithCS2`, which the
-     * window runs off the event thread, and the multi-unit dialog, on the event thread.  One thread's
-     * staged list could be overwritten before its own apply read it, and the consist was then rebuilt
-     * from the other thread's list - silently, because both calls succeed.
-     *
-     * Every caller that has its list in hand should use this.  The two-call form remains for the one
-     * caller that cannot: `restoreState` stages each consist while the locomotives are still being
-     * loaded and applies them all afterwards, because a member cannot be resolved by name until it
-     * exists.  That runs before the window is built, so nothing else is staging.
+     * Stages a list and applies it in one call, so no second thread can be staging at the same time:
+     * `preSetLinkedLocomotives` writes an instance field that `setLinkedLocomotives` reads, and `syncWithCS2` and the
+     * multi-unit dialog both rebuild consists.  The two-call form remains for `restoreState`, which stages each consist
+     * before every member exists and applies them all afterwards, before the window is built.
      *
      * @param locList member name to speed adjustment, as `preSetLinkedLocomotives` takes it
      * @return the number of members linked, or -1 where a Central Station multi-unit refuses linking
@@ -1285,7 +1171,6 @@ public class MarklinLocomotive extends Locomotive
 
     /**
      * Processes the preset list and maps locomotives to be linked to this one
-     * @return
      */
     @Override
     public int setLinkedLocomotives()
@@ -1293,12 +1178,7 @@ public class MarklinLocomotive extends Locomotive
         return this.applyLinkedLocomotives(this.preLinkedLocomotives);
     }
 
-    /**
-     * Validates a list of member names and publishes the consist it describes.
-     *
-     * @param preLinkedLocomotives the staged list; null or a Central Station multi-unit clears
-     * @return the number of members linked, or -1
-     */
+    /** Validates a list of member names and publishes the consist it describes. */
     private int applyLinkedLocomotives(Map<String, Double> preLinkedLocomotives)
     {              
         // Staged in a local map and swapped in one step, rather than clearing the live map and
@@ -1347,20 +1227,10 @@ public class MarklinLocomotive extends Locomotive
             }
         }
         
-        // ONE ASSIGNMENT, of a map nothing will edit again - see the field.  This is what the staging
-        // above was already most of the way towards; what it still did was clear() then putAll() on the
-        // instance every reader holds.
-        //
-        // UNDER THE MONITOR, WHICH IS NOT ABOUT THE READERS.  They read a volatile reference
-        // and take no lock, which is the whole point of the design.  This excludes the other WRITER:
-        // `unlinkLocomotive` is a read-copy-write on the same field and is synchronized, so without
-        // this a rebuild overlapping an unlink would silently discard one of them - and the one that
-        // loses is either a deleted locomotive put back into a consist, or a freshly synced consist
-        // reverted.  The publish before this change was inside `synchronized (this)` and excluded it
-        // for free; the exclusion went out with the clear-and-refill.
-        //
-        // The monitor is held for a field assignment and nothing else - not across the validation
-        // above, which logs through the UI, and not across a fan-out, which sends UDP.
+        // One assignment of a map nothing will edit again (see the field), under the monitor: readers take no lock, but
+        // this excludes the other writer - `unlinkLocomotive` is a read-copy-write on the same field - so neither
+        // silently discards the other.  The monitor is held for the assignment only, not across the validation above
+        // (which logs through the UI) or a fan-out (UDP).
         synchronized (this)
         {
             this.linkedLocomotives = java.util.Collections.unmodifiableMap(staged);
@@ -1376,13 +1246,8 @@ public class MarklinLocomotive extends Locomotive
     }
     
     /**
-     * How many functions this locomotive can drive, counting the consist it heads.
-     *
-     * Adam's rule, MT-359: *"the allowed function [is] the highest possible for the consist"*.  Two MM2
-     * locomotives give five; one MM2 and one MFX give thirty-two, and all of them are reachable because
-     * the MFX member can do them.
-     *
-     * A locomotive with no members answers exactly what it always did.
+     * How many functions this locomotive can drive, counting the consist it heads: the highest of its members', so two
+     * MM2 locomotives give five and one MM2 with one MFX gives thirty-two.
      *
      * @return the largest function count in this consist, including the head's own
      */
@@ -1400,14 +1265,9 @@ public class MarklinLocomotive extends Locomotive
     }
 
     /**
-     * Whether a function is on, asking the members for the ones the head's own decoder does not have.
-     *
-     * **NOT by widening `validF`**, which would be the obvious way and is wrong: `Locomotive.getF`
-     * tests `validF` and then indexes `functionState`, an array sized to this decoder's own function
-     * count, so a widened range would read past the end of it.
-     *
-     * The head's own functions answer from the head.  Beyond them the question is about the consist, and
-     * the consist's answer is its members' - which is also the only place that state exists.
+     * Whether a function is on, asking the members for the ones the head's own decoder does not have.  Not by widening
+     * `validF`: `Locomotive.getF` indexes `functionState`, which is sized to this decoder's own count, so a widened
+     * range would read past its end.
      *
      * @param fNumber the function
      * @return whether it is on
@@ -1428,12 +1288,8 @@ public class MarklinLocomotive extends Locomotive
     }
 
     /**
-     * Turns off every function this consist can turn on.
-     *
-     * The base walks `getNumF()`, which is the head's own count - so on a consist whose members have
-     * more functions than the head, it could switch one on and not off again.  That asymmetry is the
-     * defect to guard against, and it survives the change of rule: whatever range `setF` accepts,
-     * this has to clear.
+     * Turns off every function this consist can turn on: the base walks only the head's own `getNumF()`, so whatever
+     * range `setF` accepts, this has to clear.
      *
      * @return this
      */
@@ -1453,7 +1309,6 @@ public class MarklinLocomotive extends Locomotive
 
     /**
      * Gets the list of linked locomotives (names only - suitable for export)
-     * @return
      */
     @Override
     public Map<String, Double> getLinkedLocomotiveNames()
@@ -1546,11 +1401,8 @@ public class MarklinLocomotive extends Locomotive
     @Override
     public Map<Locomotive, Double> getLinkedLocomotives()
     {
-        // Unmodifiable at the door as well as at the assignment.  Every published value is already
-        // unmodifiable, and this covers the one path that does not come from setLinkedLocomotives: a
-        // MarklinLocomotive restored by Java serialization, whose map comes back as whatever was
-        // written.  Nothing in src/ or test/ mutates what this returns - checked - so wrapping costs a
-        // caller nothing and closes the door for the next one.
+        // Unmodifiable at the door too: this covers a MarklinLocomotive restored by Java serialization, whose map comes
+        // back as written.
         return java.util.Collections.unmodifiableMap(this.linkedLocomotives);
     }
     
@@ -1582,10 +1434,7 @@ public class MarklinLocomotive extends Locomotive
 
         if (!current.containsKey(member)) return false;
 
-        // COPIED, not edited, for the reason the field gives: a save or a fan-out may be holding this
-        // map, and removing from underneath it is the same defect as rebuilding in place.  The javadoc
-        // above described the monitor as what made the removal safe; the monitor only ever covered the
-        // readers that take it, which the save path does not.
+        // Copied, not edited, for the reason the field gives: a save or a fan-out may be holding this map.
         Map<Locomotive, Double> without = new LinkedHashMap<>(current);
 
         without.remove(member);

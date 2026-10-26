@@ -25,22 +25,17 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * The facing an import of a 2.8.1 file gives a train is the way the file ran it, and where the file cannot say, a
- * guess trains may arrive in over the finished setup.
+ * The facing an import of a 2.8.1 file gives a train is the way the file ran it, and where the file cannot say, a guess
+ * trains may arrive in over the finished setup.
  *
- * A 2.8.1 graph states direction as one-way edges: a train on a point goes only along the edges that start there, so
- * where they all leave the square by one side, that is the way the train drives.  The import read none of
- * them and guessed, and a guess the wrong way round sends a train along a path locked one way while its decoder drives
- * it the other.
+ * A 2.8.1 graph states direction as one-way edges: where a point's edges all leave the square by one side, that is the
+ * way the train drives.  Where it has none the old format cannot say which way a train points, so the import chooses,
+ * and it chose the first copy the build emits (N, E, S, W), barred or not: at BottomMainA, with arrivals from the east
+ * barred, the westbound copy, which is no station.  The build honors a recorded facing even where only such a copy
+ * holds it (the copy IS the direction), so the guess put an imported train where autonomy will not start it.  A guess
+ * is not a fact, and the one guess autonomy can start is a way trains may arrive.
  *
- * The old format cannot say which way a train points, so the import chooses - and it chose the first copy the build
- * emits, barred or not.  Copies are emitted N, E, S, W, so at BottomMainA, with arrivals from the east barred, that is
- * the westbound copy: no station.  Since the build honors a recorded facing even where only such a copy holds it -
- * the copy IS the direction, and a train that really faces that way must stand there - the guess put an imported train
- * where autonomy will not start it, under a log line saying "just run them".  A guess is not a fact, and the one guess
- * autonomy can start is a way trains may arrive.
- *
- * On a fresh configuration over the frozen railway, with only BottomMainA carrying a train in the file - and its edges
+ * On a fresh configuration over the frozen railway, with only BottomMainA carrying a train in the file and its edges
  * taken out, so the file cannot say and the import has to guess.
  *
  * MUTATION: have the import take the first copy's facing again and this fails.
@@ -73,11 +68,7 @@ public class testAnImportedFacingGuessCanStart
         }
     }
 
-    /**
-     * The guess at BottomMainA is the way trains may arrive there.
-     *
-     * @throws Exception from the fixture
-     */
+    /** The guess at BottomMainA is the way trains may arrive there. */
     @Test
     public void testTheGuessIsAWayTrainsMayArrive() throws Exception
     {
@@ -166,17 +157,12 @@ public class testAnImportedFacingGuessCanStart
     /**
      * The guess is made over the setup the import leaves, after it has marked the squares trains turn round at.
      *
-     * A legacy terminus or reversing point is written as "must turn round" further down the same point's import, and a
-     * square trains must turn at has only turning copies, which face the other way from its plain ones.  Guessed
+     * A square trains must turn at has only turning copies, which face the other way from its plain ones.  Guessed
      * before the mark, the way trains may arrive was asked of the plain copies, and at a terminus with one side barred
-     * the guess was the one facing only the barred turning copy holds: the train stood where autonomy will not start
-     * it, whichever side was barred.
-     *
-     * BottomMainA, arrivals from the east barred, its legacy point marked a terminus, its edges taken out.
+     * the guess was the facing only the barred turning copy holds.  BottomMainA, arrivals from the east barred, its
+     * legacy point marked a terminus, its edges taken out.
      *
      * MUTATION: guess inside the points loop again, before the mark, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheGuessIsMadeOverTheFinishedSetup() throws Exception
@@ -221,22 +207,16 @@ public class testAnImportedFacingGuessCanStart
     /**
      * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round.
      *
-     * A fresh upgrade: the frozen railway with the diagram's directions and the barred arrivals taken out, which is how a
-     * 2.8.1 user meets the diagram - plain track both ways, a switch by default out of its toe only.  TopMainR1's one
-     * legacy edge leads north, to TopMainPost, and 2.8.1 drove the 2-8-4 standing there no other way; but the square is
-     * arrived at from both sides by default, so the first copy the build makes faces south, and the import stood the
-     * train facing south.
+     * A fresh upgrade: the frozen railway with the diagram's directions and the barred arrivals taken out, as a 2.8.1
+     * user meets the diagram (plain track both ways, a switch out of its toe only).  TopMainR1's one legacy edge leads
+     * north and 2.8.1 drove the 2-8-4 standing there no other way, but the square is arrived at from both sides by
+     * default, so the first copy faces south and the import stood the train facing south.
      *
      * Where the diagram cannot hold the file's facing, no impossible facing is saved (OB-270) and the import names the
-     * square rather than calling it a guess.  Since the old file's directions are carried onto the diagram
-     * (`testTheOldDirectionsAreCarried`) this fixture no longer reaches that branch - TopMainR1Inter, which it used to,
-     * now holds the file's east - and `testTheOperatorsOwnDirectionIsKept` claims it.  Tunnel is not split on a fresh
-     * upgrade, so it has no facing to give.  (On Adam's own railway all three agree with the sides he bars, and hold
-     * the file's.)
+     * square; `testTheOperatorsOwnDirectionIsKept` claims that branch.  Tunnel is not split on a fresh upgrade, so it
+     * has no facing to give.
      *
      * MUTATION: ignore the file's edges and guess, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheFileSaysWhichWayItRan() throws Exception
@@ -319,16 +299,13 @@ public class testAnImportedFacingGuessCanStart
 
     /**
      * The old file's one-way running is carried onto the diagram, so on a fresh upgrade every train can stand the way
-     * the file ran it (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
-     * possible."*).
+     * the file ran it.  Adam: "Carry the old file's directions onto the diagram - yes, to the extent possible."
      *
      * Without it the diagram's defaults decide: a switch lets trains out of its toe only, so TopMainR1Inter, reached
-     * from the north in the old graph through such a switch, could be arrived at from the east only - one copy, facing
-     * north - and the train the file ran east from there was stood facing north.
+     * from the north in the old graph, could be arrived at from the east only and the train the file ran east was stood
+     * facing north.
      *
      * MUTATION: carry nothing, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheOldDirectionsAreCarried() throws Exception
@@ -378,18 +355,16 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * Onto a diagram whose directions have been set, nothing is carried - it is counted, and the diagram is left as it
-     * is (2026-09-24).
+     * Onto a diagram whose directions have been set, nothing is carried: it is counted, and the diagram is left as it
+     * is.
      *
      * A direction left at its default is stored as nothing, so filling the gaps cannot tell track the operator left
-     * running both ways on purpose from track nobody has looked at.  On Adam's own railway - 118 directions set - the
-     * gap-fill made 176 pieces of track one-way, 170 of them plain track he runs both ways, in `setup.json`, which every
-     * configuration shares: importing an old file into a new configuration, as MT-491 does, would have changed the
-     * railway under all of them.  The upgrade Adam ruled on is a fresh diagram, which has none set.
+     * running both ways on purpose from track nobody has looked at.  On Adam's railway the gap-fill made 176 pieces of
+     * track one-way (170 of them plain track he runs both ways) in `setup.json`, which every configuration shares, so
+     * an import into a new configuration (MT-491) would have changed the railway under all of them.  The upgrade Adam
+     * ruled on is a fresh diagram, which has none set.
      *
      * MUTATION: carry onto a diagram whose directions have been set, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testATunedDiagramGetsNoDirectionsCarried() throws Exception
@@ -423,24 +398,19 @@ public class testAnImportedFacingGuessCanStart
 
     /**
      * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
-     * import says so (Adam: *"to the extent possible"*; OB-270).
+     * import says so (Adam: "to the extent possible"; OB-270).
      *
      * Every piece of track the old file's edges run one way is set the other way round beforehand, by an operator who
-     * drew the railway backwards.  Every one stays so;
-     * TopMainR1Inter, which the file entered from the north and left east, is now entered from the east only and cannot
-     * hold the east the file ran its train; and the import names it.  With the old directions carried the fixture no
-     * longer reaches that path by itself, so this is the claim that keeps it.
+     * drew the railway backwards.  Every one stays so; TopMainR1Inter, which the file entered from the north and left
+     * east, is now entered from the east only and cannot hold the east the file ran its train, and the import names it.
      *
      * Beside it, a baseline: the same file imported onto a diagram tuned by one direction on a square no old edge
-     * crosses, so none of its roads is the file's.  The log's count of "pieces the file ran one way that this diagram
-     * does not" leaves out the operator's own roads, so the backwards railway's count falls short of the baseline's by
-     * exactly those.  Nothing is written either way - a tuned diagram is left as it is - so this count is the only
-     * place the operator's-own rule shows.
+     * crosses.  The log's count of "pieces the file ran one way that this diagram does not" leaves out the operator's
+     * own roads, so the backwards railway's count falls short of the baseline's by exactly those; nothing is written
+     * either way, so this count is the only place the operator's-own rule shows.
      *
      * MUTATION: overwrite a direction the operator set, and this fails; so does dropping the operator's-own `continue`
      * in `SessionImport.carryTheOldDirections`.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheOperatorsOwnDirectionIsKept() throws Exception
@@ -555,17 +525,13 @@ public class testAnImportedFacingGuessCanStart
         }
     }
 
-    /**
-     * The directions the setup holds, as the setup's snapshot writes them - shared by every configuration.
-     */
+    /** The directions the setup holds, as the setup's snapshot writes them - shared by every configuration. */
     private static String directionsHeld(AutonomySession session)
     {
         return String.valueOf(session.snapshotSetup().getJSONObject("shared").opt("tileDirections"));
     }
 
-    /**
-     * For a failure message: the named squares a walk leaving each side of a square meets first.
-     */
+    /** For a failure message: the named squares a walk leaving each side of a square meets first. */
     private static String nextByEachSide(AutonomySession session, TileKey tile)
     {
         java.util.Set<TileKey> named = new java.util.LinkedHashSet<>(session.getStore().getNamedTiles());
@@ -606,9 +572,7 @@ public class testAnImportedFacingGuessCanStart
         return null;
     }
 
-    /**
-     * The file with one train, one the file names elsewhere, standing only on the named point.
-     */
+    /** The file with one train, one the file names elsewhere, standing only on the named point. */
     private static JSONObject onlyThisPointPlaced(JSONObject legacy, String name)
     {
         JSONArray points = legacy.getJSONArray("points");
@@ -659,9 +623,7 @@ public class testAnImportedFacingGuessCanStart
         legacy.put("edges", kept);
     }
 
-    /**
-     * A copy of the sandbox with the diagram's directions and barred arrivals taken out of the setup.
-     */
+    /** A copy of the sandbox with the diagram's directions and barred arrivals taken out of the setup. */
     private static File freshUpgrade() throws Exception
     {
         java.nio.file.Path from = sandbox.getFolder().toPath();

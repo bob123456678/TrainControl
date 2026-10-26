@@ -23,24 +23,13 @@ public class NetworkProxy
     /**
      * Whether this process may take ANY receive port instead of the Marklin one.
      *
-     * Off, and it has to stay off for the application: a Central Station sends to 15730 and nowhere
-     * else, so a TrainControl bound anywhere else would transmit perfectly and hear nothing back -
-     * which looks like a railway that has stopped responding rather than like a misconfiguration.
-     * That is why this is not a silent fallback when the port is busy.
+     * Off, and it has to stay off for the application: a Central Station sends to 15730 and nowhere else, so a
+     * TrainControl bound anywhere else would transmit perfectly and hear nothing back, which looks like a railway that
+     * has stopped responding.  That is why this is not a silent fallback when the port is busy.
      *
-     * It exists for tests. Every test class that builds a MarklinControlStation binds this port, so
-     * only one could run at a time, a hung class kept the port and made every class after it report a
-     * mass failure, and none of them could run at all while Adam had the application open. None of
-     * them receives anything from a Central Station either - there is none - so the port number is
-     * pure contention with no benefit.
-     *
-     * Read from a system property rather than set in code, so the battery turns it on for the whole
-     * run with one flag and no test has to remember anything:
-     *
-     *   java -Dtraincontrol.anyReceivePort=true ...
-     *
-     * Adam, 2026-08-24: "cant we have a mode where it runs without the ports so we stop being
-     * blocked?"
+     * It exists for tests: every class that builds a MarklinControlStation binds the port, so only one could run at a
+     * time, and none receives anything from a Central Station anyway.  Read from a system property so the battery turns
+     * it on with one flag: java -Dtraincontrol.anyReceivePort=true ...
      */
     public static final boolean ANY_RECEIVE_PORT =
         Boolean.getBoolean("traincontrol.anyReceivePort");
@@ -70,14 +59,9 @@ public class NetworkProxy
     }
 
     /**
-     * The receive socket: the Marklin port, or any free one when ANY_RECEIVE_PORT says so.
-     *
-     * One method rather than two call sites, because there are two - the constructor and the reopen
-     * in sendMessage - and a mode that applied to one of them would give a test a socket that worked
-     * until the first send failure and then quietly tried to take the real port back.
-     *
-     * @return a bound socket
-     * @throws IOException if even an ephemeral port cannot be had
+     * The receive socket: the Marklin port, or any free one when ANY_RECEIVE_PORT says so.  One method because there
+     * are two call sites, the constructor and the reopen in sendMessage, and a mode applied to only one would give a
+     * test a socket that worked until the first send failure.
      */
     private static DatagramSocket openReceiveSocket() throws IOException
     {
@@ -100,18 +84,11 @@ public class NetworkProxy
     }
 
     // The listener thread, kept so that `listen()` can tell whether one is still running.
-    //
-    // The comment here used to say "kept so that stopListening can end it".  `stopListening` closes the
-    // socket, which is what ends the thread, and never mentions this field - so the field was read
-    // nowhere at all and the sentence described a mechanism that was not there.
     private ReadMessages reader;
 
     /**
-     * Closes the socket, which is what ends the listener.
-     *
-     * Nothing needs this while the application is running - the thread is a daemon and goes with the
-     * JVM.  It is here so that a caller who creates a control station and finishes with it can give
-     * the port back: a second init() in the same JVM otherwise found 15730 still held by the first.
+     * Closes the socket, which is what ends the listener.  Nothing needs this while the application runs (the thread is
+     * a daemon); it lets a caller that finishes with a control station give the port back.
      */
     public synchronized void stopListening()
     {
@@ -134,52 +111,31 @@ public class NetworkProxy
         );
         
         // Start reader.
-        //
-        // A DAEMON, because it exists only to serve a running application: its only exit condition is
-        // the socket closing, so as an ordinary thread it kept the JVM alive for ever after the caller
-        // was done.  The GUI hid that behind System.exit(0); anything embedding TrainControl - the
-        // example in org.traincontrol.examples, or a test - simply hung on return.
         listen();
     }
 
     /**
      * Makes sure something is listening on the socket, starting a listener if nothing is.
      *
-     * **THE OTHER HALF OF THE REOPEN**.  A listener stops for one reason - the socket being
-     * closed - and `sendMessage` reopens the socket when it finds it closed, which brings TRANSMISSION
-     * back.  Nothing restarted the listener, so the end state was an open socket with nothing on it:
-     * *"able to transmit but deaf - no feedback, no accessory echoes, no power state changes, and path
-     * integrity validation failing every path"*, which is the state this class was hardened to prevent,
-     * made permanent.  Measured: readers before a close 1, after it 0, and after a send that reopened
-     * the socket still 0.
-     *
-     * One method owns the question so that the two halves cannot drift apart again - which is how they
-     * drifted in the first place, the reopen being added where the send is and the listener living
-     * where the model is set.
+     * The other half of the reopen: a listener stops only when the socket closes, and `sendMessage` reopens the socket,
+     * which brings transmission back but, without this, leaves an open socket with nothing on it: able to transmit but
+     * deaf.  One method owns the question so the two halves cannot drift apart.
      */
     private synchronized void listen()
     {
         if (this.reader != null && this.reader.isAlive()) return;
 
-        // AND NOT BEFORE THERE IS A MODEL TO READ INTO.
-        //
-        // This was lifted out of setModel, where `this.model = model` had just run, and is now also
-        // called from sendMessage - where the model may still be null. The catch below says why that
-        // window exists: the model is set AFTER this class is constructed, and the control station's
-        // constructor transmits a ping and a power command before it gets there. `ReadMessages.run()`
-        // opens with `model.initMessageBuffer()`.
-        //
-        // It needs the socket to be closed in that window to reach here at all, which a normal
-        // construction does not do - so this is the precondition the original call site had and the
-        // new one did not, rather than a fault anybody has seen.
+        // Not before there is a model to read into: the model is set AFTER this class is constructed, and the control
+        // station's constructor transmits a ping and a power command before it gets there, while `ReadMessages.run()`
+        // opens with `model.initMessageBuffer()`.  Reaching here in that window needs a closed socket, so this is a
+        // precondition rather than a fault anybody has seen.
         if (this.model == null) return;
 
         this.reader = new ReadMessages();
 
-        // A DAEMON, because it exists only to serve a running application: its only exit condition is
-        // the socket closing, so as an ordinary thread it kept the JVM alive for ever after the caller
-        // was done.  The GUI hid that behind System.exit(0); anything embedding TrainControl - the
-        // example in org.traincontrol.examples, or a test - simply hung on return.
+        // A DAEMON, because it exists only to serve a running application: its only exit condition is the socket
+        // closing, so as an ordinary thread it kept the JVM alive after an embedding caller (an example, a test) was
+        // done.
         this.reader.setName("cs2-can-listener");
         this.reader.setDaemon(true);
         this.reader.start();
@@ -219,9 +175,8 @@ public class NetworkProxy
             {
                 this.socket = openReceiveSocket();
 
-                // AND SOMETHING TO LISTEN ON IT.  Reopening the socket restored transmission
-                // and nothing else; the listener had already exited on the close and was never
-                // replaced.
+                // And something to listen on it: reopening the socket restored transmission only; the listener had
+                // exited.
                 listen();
             }
 
@@ -229,10 +184,8 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            // The model is set AFTER this class is constructed, and the constructor of the control
-            // station transmits - a ping and a power command - before it gets there.  A send that
-            // failed in that window threw a NullPointerException out of this catch block, out of the
-            // constructor, and out of main, which printed "Error occurred: null" and stopped.
+            // The model is set AFTER this class is constructed, and the control station's constructor transmits before
+            // it gets there, so a send can fail with no model to log to.
             if (this.model != null)
             {
                 this.model.logf(
@@ -291,15 +244,9 @@ public class NetworkProxy
                         // Wait to receive a datagram
                         socket.receive(packet);
 
-                        // Only a datagram of the right LENGTH is parsed.
-                        //
-                        // One buffer is reused for every receive, and the message is read out of the
-                        // buffer rather than out of the packet - so a short datagram (a probe, a
-                        // truncated frame, a device of another generation) was parsed as its own
-                        // header followed by whatever the last message left behind in the tail.  That
-                        // is a stale locomotive or accessory command re-applied under an unrelated
-                        // command byte, and the duplicate-suppression window cannot catch it because
-                        // the bytes are not identical to the last packet.
+                        // Only a datagram of the right LENGTH is parsed: one buffer is reused for every receive, so a
+                        // short datagram would be parsed as its own header followed by whatever the last message left
+                        // in the tail, a stale command re-applied that the duplicate-suppression window cannot catch.
                         if (packet.getLength() == buffer.length)
                         {
                             // Send message to listener

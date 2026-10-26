@@ -33,11 +33,7 @@ public class RunTrainsOnAGraph
 
     private static final int[] SENSORS = {921, 922, 923};
 
-    /**
-     * @param station the Central Station to run on
-     * @return a line of text for each thing seen along the way
-     * @throws Exception when the graph cannot be built
-     */
+    /** Runs a train along the graph on this station, and returns a line of text for each thing seen along the way. */
     public static List<String> run(MarklinControlStation station) throws Exception
     {
         // Several threads add to this: the train's own, and the little watchers started below.
@@ -182,10 +178,7 @@ public class RunTrainsOnAGraph
         return found;
     }
 
-    /**
-     * @param points some points
-     * @return their names, in alphabetical order
-     */
+    /** The names of some points, in alphabetical order. */
     private static String names(Collection<Point> points)
     {
         TreeSet<String> sorted = new TreeSet<>();

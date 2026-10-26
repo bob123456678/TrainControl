@@ -16,18 +16,13 @@ import org.testng.annotations.Test;
 /**
  * Copy Customizations carries the custom ICONS, and Cancel puts the old ones back (MT-466).
  *
- * Adam, 2026-09-21, having copied from a locomotive whose F0 carried an icon: *"all icons are cleared
- * (source locomotive only had f0 with an icon), but the one customized icon on f0 is not loaded on the
- * target loc."*
+ * Adam, having copied from a locomotive whose F0 carried an icon: "all icons are cleared (source locomotive only had f0
+ * with an icon), but the one customized icon on f0 is not loaded on the target loc."  Both halves come from one
+ * omission: the copy wrote the source's function TYPES, triggers and custom flag and never read the local image URLs,
+ * and the type change altered which standard icon every other button drew.
  *
- * **Both halves of that come from one omission.**  The copy wrote the source's function TYPES, its
- * triggers and its custom flag, and never read the local image URLs - so the one thing he wanted
- * carried was not, while the type change altered which standard icon every other button drew, which is
- * the "all icons are cleared" half.
- *
- * The rule is `Locomotive.Customizations` now, captured and applied as one value, so the copy and the
- * Cancel that undoes it cannot come to disagree about what a customization is.  They were three
- * parallel fields and three assignments, and the icons were in neither list.
+ * The rule is `Locomotive.Customizations`, captured and applied as one value, so the copy and the Cancel that undoes it
+ * cannot disagree about what a customization is.
  *
  * MUTATION: take the `setLocalFunctionImageURLs` line out of `applyCustomizations` and the first two
  * claims go red - the copy leaves the target with no icon, and Cancel leaves it with the source's.
@@ -87,9 +82,7 @@ public class testACopiedCustomizationBringsTheIcons
         }
     }
 
-    /**
-     * Sets the two locomotives up as Adam had them: one custom icon on the source, one on the target.
-     */
+    /** Sets the two locomotives up as Adam had them: one custom icon on the source, one on the target. */
     private static void asHeHadThem()
     {
         int[] plain = new int[source.getNumF()];
@@ -106,13 +99,9 @@ public class testACopiedCustomizationBringsTheIcons
         source.setLocalFunctionImageURL(0, THE_SOURCES_ICON);
         source.setCustomFunctions(true);
 
-        // The target: an icon of its own on ANOTHER function, so a Cancel that restores nothing and a
-        // Cancel that restores the source's map read differently.
-        //
-        // THE FUNCTION NUMBER IS CHECKED RATHER THAN CHOSEN (the first draft used F8).
-        // `setLocalFunctionImageURL` refuses anything at or above `numF` and says so in its return
-        // value, which nobody reads - so on a locomotive with fewer functions the icon was never
-        // stored and the claim below failed against code that was right.
+        // The target: an icon of its own on ANOTHER function, so a Cancel that restores nothing and one that restores
+        // the source's map read differently.  The function number is checked rather than chosen:
+        // `setLocalFunctionImageURL` refuses anything at or above `numF` and says so only in its return value.
         assertTrue(target.setLocalFunctionImageURL(THE_TARGETS_OWN_FUNCTION, THE_TARGETS_OWN_ICON),
             "precondition: F" + THE_TARGETS_OWN_FUNCTION + " is beyond this locomotive's "
             + target.getNumF() + " functions, so nothing was stored and this fixture says nothing");
@@ -120,9 +109,7 @@ public class testACopiedCustomizationBringsTheIcons
         target.setCustomFunctions(false);
     }
 
-    /**
-     * The copy brings the source's icon.
-     */
+    /** The copy brings the source's icon. */
     @Test
     public void testTheCopyBringsTheIcon()
     {
@@ -147,17 +134,14 @@ public class testACopiedCustomizationBringsTheIcons
             + " than copying one - and the panel would show an icon no locomotive was copied from");
     }
 
-    /**
-     * Cancel puts the target's own icons back, not the source's.
-     */
+    /** Cancel puts the target's own icons back, not the source's. */
     @Test
     public void testCancelPutsTheOldIconsBack()
     {
         asHeHadThem();
 
-        // WHAT IT SAID BEFORE, not what the fixture asked for: `isCustomFunctions` is derived, and a
-        // locomotive with any custom icon reads as customized whatever the flag was set to.  The claim
-        // is that Cancel puts the answer BACK, so the answer has to be read rather than assumed.
+        // WHAT IT SAID BEFORE, not what the fixture asked for: `isCustomFunctions` is derived, so the answer has to be
+        // read rather than assumed.
         boolean customBefore = target.isCustomFunctions();
 
         Locomotive.Customizations was = target.captureCustomizations();
@@ -185,11 +169,11 @@ public class testACopiedCustomizationBringsTheIcons
 
     /**
      * Copy Customizations and Cancel leave the locomotive's own customized flag as it was, and saving it stores that
-     * flag, not the answer its icons give (OB-245; Adam, 2026-10-06: "Fix OB-245").
+     * flag, not the answer its icons give (OB-245).
      *
-     * `isCustomFunctions` is derived - any custom icon makes it true.  The Cancel's snapshot recorded that derived answer,
-     * so a locomotive customized by an icon alone came back from a canceled copy with its flag set by the copy, and the
-     * save wrote the derived answer as the flag.  Delete the icon afterwards and it read as customized for ever - and
+     * `isCustomFunctions` is derived - any custom icon makes it true.  The Cancel's snapshot recorded that derived
+     * answer, so a locomotive customized by an icon alone came back from a canceled copy with its flag set by the copy,
+     * and the save wrote the derived answer as the flag; deleting the icon afterwards left it customized for ever, and
      * the Central Station sync never gives a customized locomotive its function types again.
      *
      * MUTATION: snapshot or save the derived answer again, and this fails.
@@ -208,7 +192,6 @@ public class testACopiedCustomizationBringsTheIcons
         target.copyCustomizationsFrom(source);
         target.setCustomFunctions(true);
 
-        // Cancel
         target.applyCustomizations(was);
 
         // And the icon that made it read as customized deleted later
@@ -239,11 +222,9 @@ public class testACopiedCustomizationBringsTheIcons
     }
 
     /**
-     * The two locomotives do not end up sharing one map.
-     *
-     * `setLocalFunctionImageURLs` keeps the reference it is given, so a copy that passed the source's
-     * own map would make every later edit on one show up on the other - and a snapshot holding it
-     * would restore the state it was taken to undo.
+     * The two locomotives do not end up sharing one map: `setLocalFunctionImageURLs` keeps the reference it is given,
+     * so a copy that passed the source's own map would make later edits on one show on the other, and a snapshot
+     * holding it would restore the state it was taken to undo.
      */
     @Test
     public void testTheyDoNotShareTheMap()
@@ -252,12 +233,10 @@ public class testACopiedCustomizationBringsTheIcons
 
         Locomotive.Customizations was = target.captureCustomizations();
 
-        // THE SNAPSHOT'S CLAIM IS MADE FIRST, BEFORE ANYTHING REPLACES THE MAP.
-        //
-        // `copyCustomizationsFrom` gives the target a fresh map, so an icon written to the target after
-        // the copy lands somewhere the snapshot could never have held whatever `captureCustomizations`
-        // does - the assertion below used to sit there and could not fail.  Written into the map the
-        // snapshot was taken FROM, it fails exactly when the capture hands back a live reference.
+        // THE SNAPSHOT'S CLAIM IS MADE FIRST, BEFORE ANYTHING REPLACES THE MAP: `copyCustomizationsFrom` gives the
+        // target a fresh map, so an icon written after the copy lands where the snapshot could never have held it.
+        // Written into the map the snapshot was taken FROM, this fails exactly when the capture hands back a live
+        // reference.
         assertTrue(target.setLocalFunctionImageURL(2, "file:///C:/icons/added-to-the-target.png"),
             "precondition: F2 is within this locomotive's functions, so the write below really happens");
 

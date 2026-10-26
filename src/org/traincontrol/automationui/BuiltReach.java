@@ -64,9 +64,8 @@ public final class BuiltReach
     }
 
     /**
-     * @param built the configuration as the builder emitted it, or null
-     * @param squareOf the builder's own name-to-square map (`AutonomyBuilder.tilesByName`)
-     * @return the reach of that build, or null where there is no build to read
+     * The reach of the build the builder emitted, or null where there is no build to read; `squareOf` is
+     * `AutonomyBuilder.tilesByName`.
      */
     public static BuiltReach of(JSONObject built, Map<String, TileKey> squareOf)
     {
@@ -76,14 +75,9 @@ public final class BuiltReach
     }
 
     /**
-     * The squares, other than its own, where a train starting on this copy can be sent to a station copy.
-     *
-     * With `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses
-     * it; the start is exempt, since a train standing on a square switched off is driven off it by hand.
-     *
-     * @param copy the Point a train stands on
-     * @param closures whether squares out of service stop the walk
-     * @return the squares reached
+     * The squares, other than its own, where a train starting on this copy can be sent to a station copy.  With
+     * `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses it;
+     * the start is exempt, since a train on a square switched off is driven off it by hand.
      */
     public Set<TileKey> stationsReachedFrom(String copy, boolean closures)
     {
@@ -116,37 +110,41 @@ public final class BuiltReach
     }
 
     /**
-     * Each square to the squares reached from the copies a train stops at there, out-of-service squares obeyed.
-     *
-     * The copies a train stops at are the square's station copies, as a train sent there stands on one of them; where
-     * it has none (track, or a station barred every way in) every copy is a place to start.  A barred copy that reaches
-     * plenty therefore does not hide a station copy that reaches nothing.
-     *
-     * @return square to the squares reached
+     * Each square to the squares reached from the copies a train stops at there (`startsOf`), out-of-service squares
+     * obeyed, so a barred copy that reaches plenty does not hide a station copy that reaches nothing.
      */
     public Map<TileKey, Set<TileKey>> bySquare()
     {
         Map<TileKey, Set<TileKey>> out = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, List<String>> square : copiesOf.entrySet())
+        for (TileKey square : copiesOf.keySet())
         {
-            List<String> starts = new ArrayList<>();
-
-            for (String copy : square.getValue())
-            {
-                if (stations.contains(copy)) starts.add(copy);
-            }
-
-            if (starts.isEmpty()) starts = square.getValue();
-
             Set<TileKey> reached = new LinkedHashSet<>();
 
-            for (String copy : starts) reached.addAll(stationsReachedFrom(copy, true));
+            for (String copy : startsOf(square)) reached.addAll(stationsReachedFrom(copy, true));
 
-            out.put(square.getKey(), reached);
+            out.put(square, reached);
         }
 
         return out;
+    }
+
+    /**
+     * The copies a train at this square starts from: its station copies, as a train sent there stands on one of them;
+     * where it has none (track, or a station barred every way in), every copy.
+     */
+    public List<String> startsOf(TileKey square)
+    {
+        List<String> copies = copiesOf.getOrDefault(square, Collections.<String>emptyList());
+
+        List<String> starts = new ArrayList<>();
+
+        for (String copy : copies)
+        {
+            if (stations.contains(copy)) starts.add(copy);
+        }
+
+        return starts.isEmpty() ? copies : starts;
     }
 
     /** @return whether an edge leaves this copy */

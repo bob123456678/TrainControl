@@ -12,25 +12,18 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 
 /**
  * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else.
  *
- * Adam, 2026-09-12: *"Is control+M taken in the autonomy editor?  If not, map it to the station maximum
- * train length, and add a tooltip."*  It was taken - the main window toggles the menu bar with it, and
- * since the post-processor of 2026-09-11 that reaches this editor too - so he was told what was free and
- * picked **B**, for berth.
- *
- * **The shape of this class is not new and neither is the defect it is here for.**  `MT-313` was Control+S
- * renaming plain track, because the key asked only whether the tile was null while the menu asked three
- * things; `testControlEAsksTheMenusQuestion` is the same class for Control+E, written after that key was
- * found to act on text labels the menu offers nothing on. A key and a menu item that mean the same action
- * have to ask the same question, and the only way to know they do is to put them side by side on every
+ * MT-313 was Control+S renaming plain track, because the key asked only whether the tile was null while the menu asked
+ * three things; `testControlEAsksTheMenusQuestion` is the same class for Control+E.  A key and a menu item that mean
+ * the same action have to ask the same question, and the only way to know they do is to put them side by side on every
  * square of a page.
  *
- * So `AutonomyEditorPanel.offersAMaximumTrainLength` is the one predicate: the menu item is added inside
- * the conditions it encodes, and the key calls it. This walks the page and fails when they part company.
+ * `AutonomyEditorPanel.offersAMaximumTrainLength` is the one predicate: the menu item is added inside the conditions
+ * it encodes, and the key calls it.  This walks the page and fails when they part company.
  *
  * @author Adam
  */
@@ -39,16 +32,12 @@ public class testControlBAsksTheMenusQuestion
     /**
      * The two doors agree about every square on the page.
      *
-     * The claim that would have caught `MT-313` and Control+E's text-label defect on its own, and the one
-     * that catches the NEXT condition somebody adds to `buildTileMenu` and forgets to add to the key.
+     * This catches the NEXT condition somebody adds to `buildTileMenu` and forgets to add to the key.  Both answers
+     * have to occur on this page or the agreement is between two constants: a station, plain track, a text label and
+     * a sensor that is not a station.
      *
-     * Both answers have to occur on this page or the agreement is between two constants - a station, and
-     * plain track, a text label and a sensor that is not a station.
-     *
-     * MUTATION: gating the menu's item on anything the predicate does not ask - or dropping `isStation`
-     * from the predicate - fails this on the sensor that is not a station.
-     *
-     * @throws Exception from the panel
+     * MUTATION: gating the menu's item on anything the predicate does not ask, or dropping `isStation` from the
+     * predicate, fails this on the sensor that is not a station.
      */
     @Test
     public void testTheTwoDoorsAgreeAboutEverySquareOnThePage() throws Exception
@@ -142,13 +131,9 @@ public class testControlBAsksTheMenusQuestion
     }
 
     /**
-     * A sensor that is not a station is refused, which is the condition this key exists inside.
-     *
-     * Named separately from the walk above because it is the interesting square: plain track and text
-     * labels are refused by conditions Control+E already had, and `isStation` is the one this key adds.
-     * A predicate that dropped it would still pass every other square on the page.
-     *
-     * @throws Exception from the panel
+     * A sensor that is not a station is refused, which is the condition this key exists inside.  Named separately from
+     * the walk because it is the interesting square: `isStation` is the condition this key adds, and a predicate that
+     * dropped it would still pass every other square on the page.
      */
     @Test
     public void testASensorThatIsNotAStationIsRefused() throws Exception
@@ -197,12 +182,8 @@ public class testControlBAsksTheMenusQuestion
     }
 
     /**
-     * The tooltip Adam asked for exists, in every language.
-     *
-     * *"Map it to the station maximum train length, and add a tooltip."*  A tooltip that is on the menu
-     * item in English and missing in German is the failure this catches - `core.testMessageBundles`
-     * checks that a key present in one bundle is present in all, so what is left is whether the key is
-     * used at all.
+     * The tooltip Adam asked for exists, in every language: `core.testMessageBundles` checks that a key present in one
+     * bundle is present in all, so what is left is whether the key is used at all.
      */
     @Test
     public void testTheMenuItemCarriesItsTooltip() throws Exception
@@ -247,12 +228,8 @@ public class testControlBAsksTheMenusQuestion
     }
 
     /**
-     * The menu item's label up to its number, so a square with any maximum on it can be recognized.
-     *
-     * Taken from the bundle rather than written here, so a reworded item does not quietly stop being
-     * found - which would make the walk above compare "false" against "false" on every square.
-     *
-     * @return the text before the value
+     * The menu item's label up to its number, taken from the bundle so a reworded item does not quietly stop being
+     * found (which would make the walk compare "false" against "false" on every square).
      */
     private static String menuPrefix()
     {
@@ -263,16 +240,7 @@ public class testControlBAsksTheMenusQuestion
         return at < 0 ? pattern : pattern.substring(0, at);
     }
 
-    /**
-     * Whether this menu, or any submenu of it, offers the maximum.
-     *
-     * The item lives inside the station submenu, so a flat read of the popup's own components finds
-     * nothing and would report every square as refusing.
-     *
-     * @param menu the popup
-     * @param prefix what the item's label starts with
-     * @return whether it is there
-     */
+    /** Whether this menu, or any submenu of it, offers the maximum: the item lives inside the station submenu. */
     private static boolean offersMaximum(javax.swing.JPopupMenu menu, String prefix)
     {
         return findItem(menu, prefix) != null;
@@ -319,13 +287,8 @@ public class testControlBAsksTheMenusQuestion
     }
 
     /**
-     * A page with two sensors and a run of plain track between them, plus a text label.
-     *
-     * One sensor becomes a station and the other does not, which is the pair the interesting claim needs:
-     * both are Points, and only one of them may hold a maximum.
-     *
-     * @param name the page
-     * @return the diagram
+     * A page with two sensors and a run of plain track between them, plus a text label: one sensor becomes a station
+     * and the other does not, the pair the interesting claim needs.
      */
     private static LayoutDiagram aPageWithAStationAndAPlainSensor(String name) throws java.io.IOException
     {
@@ -347,9 +310,7 @@ public class testControlBAsksTheMenusQuestion
         return page;
     }
 
-    /**
-     * `AutonomyEditorPanel` builds real Swing components, so this needs a display.
-     */
+    /** `AutonomyEditorPanel` builds real Swing components, so this needs a display. */
     private static void needsADisplay()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
@@ -359,11 +320,7 @@ public class testControlBAsksTheMenusQuestion
         }
     }
 
-    /**
-     * A temporary directory and everything under it.
-     *
-     * @param file what to remove
-     */
+    /** A temporary directory and everything under it. */
     private static void deleteRecursively(java.io.File file)
     {
         java.io.File[] children = file.listFiles();

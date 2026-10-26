@@ -22,47 +22,32 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A state Adam has CONFIRMED is right, and everything that should still follow from it.
  *
- * Adam: "Once we are bug free, can you capture confirmed good state along with config files for
- * validation? That is better than guessing."
+ * Adam: "Once we are bug free, can you capture confirmed good state along with config files for validation? That is
+ * better than guessing."  Every other test in this suite asserts a rule somebody believed (three rules were wrong on
+ * the first draft and passed anyway).  A blessed baseline makes no claim about WHY anything is
+ * correct: this exact input produced this exact output, and a person who knows the railway said yes.  It does not
+ * replace the rules, since a baseline cannot catch a fault the first time it appears: a rule says "this was never
+ * allowed", a baseline says "this changed since you approved it".
  *
- * He is right, and the word doing the work is *confirmed*. Every other test in this suite - mine
- * included - asserts a rule somebody believed. Three of the rules I wrote on 2026-08-23 were wrong on
- * the first draft and passed anyway; the mutation checks caught them. A blessed baseline makes no claim
- * about WHY anything is correct. It says: this exact input produced this exact output, and a person who
- * knows the railway looked at it and said yes. Nothing to be mistaken about.
+ * The layout is copied INTO the baseline, not referenced: a baseline that carries its own inputs is answerable on its
+ * own terms, and a pointer at his railway would go stale the first time he moved a tile.
  *
- * It does not replace the rules - a baseline cannot catch a fault the first time it appears, because
- * whatever it captured is by definition what it expects. The two answer different questions: a rule
- * says "this was never allowed", a baseline says "this changed since you approved it".
- *
- * **The layout is copied INTO the baseline.** Not referenced. This was written when the fixture and
- * Adam's own railway were the same folder: it was edited between sessions and rewritten by the
- * application itself, so a baseline pointing at it would go stale the first time he moved a tile, and
- * the failure would look like a regression in TrainControl rather than a change he made on purpose.
- *
- * `test/test_layout` is a frozen copy now, and his railway is `cs2_sample_layout`, so the hazard that
- * motivated this is gone. The copy stays: a baseline that carries its own inputs is answerable on its
- * own terms, and nothing about that depended on which folder was volatile.
- *
- * **To capture, or to bless a deliberate change:**
+ * To capture, or to bless a deliberate change:
  *
  * <pre>
  *   java -Dbaseline.capture=true ... regression.testConfirmedGoodState
  * </pre>
  *
- * That writes `test/baseline/` from the current sample layout and passes. Read the git diff before
- * committing it: that diff IS the change being blessed, and it is the only moment anybody looks at it.
+ * That writes `test/baseline/` from the current sample layout and passes.  Read the git diff before committing it: that
+ * diff IS the change being blessed, and the only moment anybody looks at it.
  *
  * @author Adam
  */
 public class testConfirmedGoodState
 {
     /**
-     * Where the blessed state lives.
-     *
-     * Overridable with -Dbaseline.dir so the capture-and-compare cycle can be exercised end to end in
-     * a scratch directory. That matters more than it looks: the alternative is handing somebody a
-     * button nobody has ever pressed, and the first press would be the one that blesses the real thing.
+     * Where the blessed state lives, overridable with -Dbaseline.dir so the capture-and-compare cycle can be exercised
+     * end to end in a scratch directory: a button nobody has pressed would bless the real thing on its first press.
      */
     private static final File BASELINE =
         new File(System.getProperty("baseline.dir", "test/baseline"));
@@ -84,20 +69,16 @@ public class testConfirmedGoodState
     }
 
     /**
-     * The graph the blessed configuration reduces to has not changed.
-     *
-     * Points and edges, sorted and written as text, because a diff of text is something a person can
-     * read: "this edge is gone" is a sentence, and a changed byte in a JSON blob is not.
+     * The graph the blessed configuration reduces to has not changed: points and edges, sorted and written as text,
+     * because a diff of text is something a person can read.
      */
     @Test
     public void testTheDerivedGraphIsWhatWasBlessed() throws Exception
     {
         AutonomySession session = openBaseline();
 
-        // An ASSERTION, not a skip.  A reduction that collapses to nothing is the loudest regression a
-        // baseline exists to catch, and as a skip it was the one failure this test could not report.
-        // Reaching here at all means a baseline was found, so there is
-        // something to reduce.
+        // An ASSERTION, not a skip: a reduction that collapses to nothing is the loudest regression a baseline exists
+        // to catch.
         assertNotNull(session.getReducer(),
             "the blessed baseline reduced to NOTHING - no graph at all came out of a layout that was "
             + "confirmed good. That is the regression this test exists for, not a reason to stand down");
@@ -112,9 +93,8 @@ public class testConfirmedGoodState
 
         String was = read(GRAPH);
 
-        // Compared through firstDifference rather than by assertEquals on the whole text. Asserting
-        // two 4kB strings prints both of them, which is not a report - it is the diff a person came
-        // here to avoid reading.
+        // Compared through firstDifference: asserting two 4kB strings prints both, the diff a person came to avoid
+        // reading.
         assertEquals(firstDifference(was, now), "",
             "the railway the blessed setup reduces to has changed - points or edges differ from what "
             + "was confirmed. If that is deliberate, re-capture with -Dbaseline.capture=true and read "
@@ -122,10 +102,8 @@ public class testConfirmedGoodState
     }
 
     /**
-     * And the configuration it builds is byte for byte what was blessed.
-     *
-     * This is the file autonomy actually runs from, so a change here is a change to the railway's
-     * behavior whatever the diagram looks like.
+     * And the configuration it builds is byte for byte what was blessed: the file autonomy runs from, so a change here
+     * is a change to the railway's behavior whatever the diagram looks like.
      */
     @Test
     public void testTheBuiltConfigurationIsWhatWasBlessed() throws Exception
@@ -152,10 +130,8 @@ public class testConfirmedGoodState
     }
 
     /**
-     * The baseline, opened as a session.
-     *
-     * Copied from the sample layout on the capture run, and read from `test/baseline/layout` on every
-     * other - so nothing Adam does to his own railway afterwards can move this.
+     * The baseline, opened as a session: copied from the sample layout on the capture run and read from
+     * `test/baseline/layout` on every other, so nothing Adam does to his railway can move it.
      */
     private AutonomySession openBaseline() throws Exception
     {
@@ -251,20 +227,10 @@ public class testConfirmedGoodState
                 + "-Dbaseline.capture=true once the railway is in a state you have confirmed");
         }
 
-        // CARRIAGE RETURNS STRIPPED, because git puts them there (found by the battery, 2026-09-03).
-        //
-        // `describe` and `buildConfiguration` join their lines with LF, and this repository checks out
-        // with `core.autocrlf=true` - so the blessed copy on disk has CRLF, and every comparison failed
-        // at line 1 with two lines that LOOK identical, the difference being an invisible byte.
-        //
-        // A baseline that reports a railway change because of how git wrote a file is worse than no
-        // baseline: it is the boy who cried wolf, in the one test whose whole value is that it speaks
-        // only when something really moved.
-        //
-        // Same answer as for `testEditorSurfaceRules`, and for the same reason -
-        // a source read that behaves differently depending on how git wrote the file is not a guard.
-        // `test/baseline/**` is pinned to LF in `.gitattributes` as well; both, because either alone
-        // leaves a way for this to come back.
+        // CARRIAGE RETURNS STRIPPED, because git puts them there: `describe` and `buildConfiguration` join with LF and
+        // this repository checks out with `core.autocrlf=true`, so every comparison failed at line 1 over an invisible
+        // byte.  A baseline that reports a railway change because of how git wrote a file is worse than none.
+        // `test/baseline/**` is pinned to LF in `.gitattributes` as well; either alone leaves a way for this to return.
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)
             .replace("\r", "");
     }

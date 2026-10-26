@@ -20,11 +20,8 @@ import support.SourceOf;
 
 /**
  * A setup is built into the railway, saved, reopened and captured back without losing what was decided, and a
- * page that would not read is never judged.
- *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * page that would not read is never judged.  One of the topic classes split from `testAutonomyDiagramSession`
+ * (FR-136 Phase 3); `AutonomySessionFixture` builds the session and layout folder every claim starts from.
  *
  * @author Adam
  */
@@ -32,23 +29,13 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 {
 
     /**
-     * A stand-in for a page that would not read is not a page autonomy may judge.
+     * A stand-in for a page that would not read is not a page autonomy may judge.  `CS2File` substitutes a blank page
+     * (same NAME and ID) so that link tiles after it still resolve; `pagesNotLoaded` compares names, so the stand-in
+     * made the session think it saw the whole railway, and the next `save()` reconciled the real page's setup against
+     * one text tile (MT-135, "all stations are gone", by a third route).
      *
-     * **`CS2File` substitutes a blank page when a file will not parse**, so that a link tile after it
-     * still resolves to the right page - Adam's ruling of 2026-09-10, and the reason is that a page
-     * which simply vanished re-aimed every arrow after it.
-     *
-     * The stand-in carries the missing page's NAME and ID, and both are how this session decides whether
-     * it is looking at the whole railway. So it made things worse than the absence it replaced:
-     * `pagesNotLoaded` compares names and came back empty, `pagesSafeToJudge` went true, the entries
-     * held out of memory for a page nobody can see were released, and the next `save()` reconciled the
-     * real page's whole setup against the one text tile the stand-in carries. That is MT-135 - *"all
-     * stations are gone"* - reached by a third route.
-     *
-     * **Three loops in this class build that name set, and a repair reaching two of them is worse than
-     * one reaching none**: the prune is then declined while `Reconciliation.declined` with an
-     * empty absent-list reports `wasDeclined()` as false, so the save refuses to judge the page and
-     * tells every caller it did not. This asserts the ANSWER rather than the loops, so it holds however
+     * Three loops in this class build that name set, and a repair reaching two of them is worse than one reaching
+     * none (the prune is declined while `wasDeclined()` reads false).  This asserts the ANSWER, so it holds however
      * many copies of them there are.
      *
      * MUTATION: take `if (page.isUnreadable()) continue;` out of `pagesSafeToJudge` or out of `open`
@@ -66,8 +53,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.setPointName(onTheSecondPage, "Second Platform");
         session.save();
 
-        // Now the second page's file will not read, so CS2File hands over a blank stand-in for it -
-        // same name, same id, one text tile.
+        // Now the second page's file will not read, so CS2File hands over a blank stand-in: same name, same id.
         LayoutDiagram standIn = new LayoutDiagram("second", 6, 4, null, null);
 
         standIn.setPageId("2");
@@ -94,15 +80,12 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             "the name on a page that could not be read was reconciled away by a save that should have "
             + "declined to judge it");
 
-        // THE CONTROL: with both pages really present, the session does judge - so the refusal above is
-        // about the stand-in and not about this having stopped answering yes.
+        // THE CONTROL: with both pages really present the session does judge, so the refusal above is about the
+        // stand-in.
         assertAWholeLayoutIsJudged();
     }
 
-    /**
-     * The control for `testAPageThatWouldNotReadIsNotJudged`: a layout with every page loaded is safe
-     * to judge.
-     */
+    /** The control for `testAPageThatWouldNotReadIsNotJudged`: a layout with every page loaded is safe to judge. */
     private void assertAWholeLayoutIsJudged() throws IOException
     {
         AutonomySession whole = new AutonomySession(layout);
@@ -115,17 +98,12 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A capture does not judge a page whose file would not read either.
+     * A capture does not judge a page whose file would not read either.  `captureFromLayout` prunes every entry whose
+     * square is not in the graph on the pages "in play"; a blank stand-in counted, so every placement, home, priority
+     * and exclusion on the real page was removed and written.  The capture runs when the autonomy editor opens and
+     * closes, at the exit save, and before every configuration load.
      *
-     * `captureFromLayout` folds the running layout back into the configuration and prunes every entry whose
-     * square is not in the graph, on the pages "in play".  That set was every page not excluded - so a blank
-     * stand-in for a page that would not read counted, the one text tile it carries was all that was "still
-     * there", and every placement, home, priority and exclusion on the real page was removed and written.  It
-     * is the same loss `save()` is guarded against, by a door that guard did not reach: the capture runs when the
-     * autonomy editor opens and closes, at the exit save, and before every configuration load.
-     *
-     * THE CONTROL is on the page that did read: a setting on a square that is not there is pruned, so the
-     * first assertion is about the stand-in and not about a capture that has stopped pruning.
+     * THE CONTROL is on the page that did read: a setting on a square that is not there is pruned.
      */
     @Test
     public void testACaptureDoesNotJudgeAPageThatWouldNotRead() throws IOException
@@ -170,11 +148,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     /**
      * A station's allow-only mode goes into the railway with its list and comes back from it (FR-121): the build writes
      * `excludedLocsMode` on the station's point, and a capture of a railway whose point no longer carries it takes it
-     * off the setup, as it takes the list - the mode is one of the settings the railway owns.
+     * off the setup.
      *
      * MUTATION: leave the mode out of the settings a capture carries back, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAnAllowOnlyModeGoesIntoTheRailwayAndComesBack() throws Exception
@@ -216,11 +192,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * Moving a train in the setup takes its tail off the square it left.
-     *
-     * `placeLocomotive(tile, null)` and `clearEveryPlacement` clear `loc`, the facing, `arrivedFrom` and
-     * `arrivedAlong` together.  The third door - placing the same train somewhere else, which
-     * sweeps it off every other square - cleared the first two only.
+     * Moving a train in the setup takes its tail off the square it left: placing the same train elsewhere must clear
+     * `loc`, the facing, `arrivedFrom` and `arrivedAlong` together, as `placeLocomotive(tile, null)` does.
      */
     @Test
     public void testMovingATrainInTheSetupTakesItsTailOffTheSquareItLeft() throws IOException
@@ -253,13 +226,10 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * An entry of a page in play whose file does not load at a start is kept until the page is back: the load
-     * dropped what it could not build and the next fold wrote the railway's timetable without it.  While the pages are
-     * not all there, the build sets such an entry aside rather than hand it to the railway.
+     * An entry of a page in play whose file does not load at a start is kept until the page is back: while the pages
+     * are not all there, the build sets such an entry aside rather than hand it to the railway.
      *
      * MUTATION: leave an entry the build cannot build in the timetable while a page is not loaded, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAnEntryOfAPageThatDidNotLoadIsKept() throws Exception
@@ -305,12 +275,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         return standIn;
     }
 
-    /**
-     * An edit changes the graph immediately, not at some later save.
-     *
-     * A derivation lagging behind an edit shows a graph that was true a moment ago, which is worse than
-     * showing none: the user is checking their work against the wrong answer and has no way to tell.
-     */
+    /** An edit changes the graph immediately, not at some later save: a lagging derivation shows a wrong answer. */
     @Test
     public void testAnEditChangesTheGraphAtOnce() throws IOException
     {
@@ -332,11 +297,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A default is not written out as though it were a decision.
-     *
-     * It matters here more than it looks: the defaults are not all the same - plain track runs both ways
-     * while a switch runs base to forks - so a stored "default" would freeze whichever default happened
-     * to apply on the day, and stop tracking the rule.
+     * A default is not written out as though it were a decision: plain track runs both ways and a switch runs base to
+     * forks, so a stored "default" would freeze whichever applied that day.
      */
     @Test
     public void testSettingATileBackToItsDefaultStoresNothing() throws IOException
@@ -358,17 +320,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * Bulk editing sets what clicking one tile would have set.
+     * Bulk editing sets what clicking one tile would have set.  The fixture is a single run of track, so closing EITHER
+     * selected tile severs the only path and connectivity alone cannot tell "both tiles were set" from "one was".
      *
-     * Not a convenience: switches default to base-to-forks, so most of setting a real layout up is
-     * opening trailing moves, and one tile at a time would be the bulk of the work.
-     *
-     * The fixture is a single run of track, so closing EITHER of the two selected tiles already severs
-     * the only path - checking connectivity alone cannot tell "both tiles were set" from "one was".
-     * MUTATION this catches: replace the loop in AutonomySession.setDirection(Set&lt;TileKey&gt;,
-     * Direction) (AutonomySession.java:3036-3050) with a single call touching only
-     * tiles.iterator().next() - the run would still read severed, but the per-tile store check below
-     * would find one of the two tiles never recorded a direction at all.
+     * MUTATION: make the loop in AutonomySession.setDirection(Set, Direction) touch only
+     * tiles.iterator().next(); the per-tile store check below finds a tile with no direction recorded.
      */
     @Test
     public void testBulkEditingAppliesToEveryTileSelected() throws IOException
@@ -383,8 +339,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(edgesBetween(11, 12), 0, "a closed run should carry nothing");
         assertEquals(edgesBetween(12, 11), 0);
 
-        // The connectivity check above is satisfied by closing just one of the two tiles, so ask the
-        // store directly whether EVERY tile of the selection actually recorded the edit.
+        // Connectivity is satisfied by closing just one tile, so ask the store whether EVERY tile recorded the edit.
         for (TileKey tile : selection)
         {
             RouteId route = session.getRoutes(tile).keySet().iterator().next();
@@ -394,13 +349,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         }
     }
 
-    /**
-     * Initializing twice makes a second configuration rather than quietly doing nothing.
-     *
-     * It used to create one only when the store was empty, which was right while it was the "set
-     * autonomy up for the first time" button and wrong the moment the menu offered "add a
-     * configuration": the second one did nothing at all, and said so nowhere.
-     */
+    /** Initializing twice makes a second configuration rather than quietly doing nothing ("add a configuration"). */
     @Test
     public void testInitialisingAgainAddsAnotherConfiguration() throws IOException
     {
@@ -416,9 +365,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(session.getStore().getActiveConfiguration(), "Morning");
     }
 
-    /**
-     * And a name already taken is refused rather than silently replacing what is there.
-     */
+    /** And a name already taken is refused rather than silently replacing what is there. */
     @Test
     public void testInitialisingOntoAnExistingNameIsRefused() throws IOException
     {
@@ -439,22 +386,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * The routing rule travels with the configuration (Adam).
-     *
-     * "Let's update it so that the preference is written into the autonomy config, not the UI
-     * preferences.  that way it travels with the config, not the UI."
-     *
-     * It used to be a static on Layout, loaded from a UI preference by the window's menu builder - so
-     * it belonged to the running application rather than to the railway, one value shared by every
-     * configuration, and anything that ran autonomy without opening that window used the default no
-     * matter what had been chosen.
-     *
-     * THE MIDDLE IS WHAT THIS TESTS. Writing it in toJSON and reading it in fromJSON are two ends;
-     * what makes it travel is captureFromLayout copying every top-level key into "globals" and the
-     * builder putting them back. That road already carried the timetable, which is a reason to expect
-     * it to work and not a reason to assert that it does.
-     *
-     * Checked at both ends of that middle, since a break in either is invisible from the other.
+     * The routing rule travels with the configuration, not the UI preferences (Adam's ruling).  What makes it travel
+     * is `captureFromLayout` copying every top-level key into "globals" and the builder putting them back, so this
+     * checks both ends of that middle, since a break in either is invisible from the other.
      */
     @Test
     public void testTheRoutingRuleTravelsWithTheConfiguration() throws Exception
@@ -485,20 +419,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A page that is switched off cannot refuse the railway (Adam).
+     * A page that is switched off cannot refuse the railway.  `placedLocomotives` read the configuration's points
+     * straight out of the JSON, so a placement left behind on an excluded page raised the duplicate-locomotive ERROR.
      *
-     * "the first few times it told me there was a conflict with page 2, and the changes didn't save,
-     * even though page 2 was off."
-     *
-     * `placedLocomotives` read the configuration's points straight out of the JSON, so it handed the
-     * checks placements on pages the user had excluded - the only reader in that class not going
-     * through the reducer, which drops excluded pages for everybody else. The duplicate-locomotive
-     * finding it feeds is an ERROR that says autonomy "refuses the whole setup", so a placement left
-     * behind on a switched-off page could refuse the railway and send the user to that page to fix it.
-     *
-     * BOTH HALVES, because either alone is worthless. "An excluded page raises nothing" is satisfied
-     * by a check that never fires - including by deleting the check - so the same placement on a page
-     * still in play has to be reported, in the same test, from the same setup.
+     * BOTH HALVES, because either alone is worthless: "an excluded page raises nothing" is satisfied by deleting the
+     * check, so the same placement on a page still in play has to be reported from the same setup.
      */
     @Test
     public void testAPageThatIsOffCannotRefuseTheRailway() throws Exception
@@ -520,9 +445,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(session.excludeRepeatedSensorPages(), Arrays.asList("other"),
             "the fixture depends on the repeating page being the one excluded");
 
-        // THE DUPLICATE SPANS THE EXCLUSION: one copy on a page in use, one on the page just
-        // switched off.  Written straight into the configuration because that is where a stale
-        // placement lives - excluding a page does not move the trains standing on it.
+        // THE DUPLICATE SPANS THE EXCLUSION: one copy on a page in use, one on the page just switched off, written
+        // straight into the configuration because excluding a page does not move the trains standing on it.
         org.json.JSONObject configuration = session.getStore().getConfiguration("Default");
 
         // A fresh configuration has no points object until something writes one.
@@ -550,8 +474,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
                 + "is no duplicate among the pages in play - and this finding refuses the whole setup");
         }
 
-        // THE CONTROL: a duplicate wholly on pages in use must still refuse the setup.  Without it,
-        // the assertions above are equally satisfied by deleting the check.
+        // THE CONTROL: a duplicate wholly on pages in use must still refuse the setup.
         points.put(new TileKey(first.getName(), 3, 1).toString(),
             new org.json.JSONObject().put("loc", new org.json.JSONObject().put("name", "BR 218")));
 
@@ -571,9 +494,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             + "assertions above prove nothing - scoping the check to live pages must not turn it off");
     }
 
-    /**
-     * What was decided comes back after a restart, and the graph derived from it matches.
-     */
+    /** What was decided comes back after a restart, and the graph derived from it matches. */
     @Test
     public void testASetupSurvivesBeingReopened() throws IOException
     {
@@ -598,9 +519,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(reopened.getReducer().getEdges().get(0).getLength(), 7);
     }
 
-    /**
-     * The generated configuration is the ordinary format, so nothing downstream has to learn a new one.
-     */
+    /** The generated configuration is the ordinary format, so nothing downstream has to learn a new one. */
     @Test
     public void testTheGeneratedConfigurationIsTheOrdinaryFormat() throws IOException
     {
@@ -622,8 +541,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A configuration's per-point data - placements, termini, homes - rides into the generated file,
-     * without being able to touch what the reduction decided.
+     * A configuration's per-point data (placements, termini, homes) rides into the generated file without touching what
+     * the reduction decided.
      */
     @Test
     public void testConfigurationPointDataRidesIntoTheGeneratedFile() throws IOException
@@ -639,9 +558,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         extras.put("maxTrainLength", 7);
         extras.put("loc", new org.json.JSONObject().put("name", "BR 218"));
 
-        // Derived, not operational: terminus is what the "trains can turn round here" switch compiles
-        // to, so one sitting in a configuration is a leftover and must not reach the generated file.
-        // Carried through, it would put a terminus on the plain copy of a split square as well.
+        // Derived, not operational: a terminus sitting in a configuration is a leftover and must not reach the file.
         extras.put("terminus", true);
 
         // an attempt to override a structural field, which must lose
@@ -660,9 +577,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
             if (p.getInt("s88") != 11) continue;
 
-            // The copy carrying the locomotive, where the square became several.  A placement is a
-            // physical object and rides on exactly ONE copy; taking whichever was emitted last found a
-            // copy with every other authored property and no "loc" on it.
+            // A placement rides on exactly ONE copy of a split square; taking whichever was emitted last found a copy
+            // with no "loc" on it.
             if (builtPoint == null || p.has("loc")) builtPoint = p;
         }
 
@@ -676,8 +592,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * What the running layout knew is lifted back into the active configuration, keyed by tile, with
-     * points that no longer exist dropped rather than carried forward onto nothing.
+     * What the running layout knew is lifted back into the active configuration, keyed by tile; vanished points are
+     * dropped.
      */
     @Test
     public void testCaptureLiftsTheRunningLayoutIntoTheConfiguration() throws IOException
@@ -724,9 +640,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(extras.getJSONObject("loc").getString("name"), "BR 218");
         assertFalse(extras.has("station"), "structural fields are the reduction's, not captured");
 
-        // Terminus is the builder's answer, not the user's.  Read back it would land on the square
-        // somebody marked "trains can turn round here" and the next build would turn round every train
-        // that passed - the setting asserting itself long after the switch that made it was turned off.
+        // Terminus is the builder's answer, not the user's: read back, it would turn round every train that passed.
         assertFalse(extras.has("terminus"), "derived flags are not lifted off the running layout");
 
         // pace settings land in globals, and points/edges do not
@@ -753,12 +667,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             }
         }
 
-        // Floor: without this, a rebuild that dropped s88 11 entirely (or renumbered it) would leave
-        // the loop above running zero matching iterations and the test green regardless.
+        // Floor: a rebuild that dropped s88 11 would leave the loop above with zero iterations and the test green.
         assertTrue(sawS88Eleven, "the rebuilt configuration should still contain the captured point");
 
-        // capture by NAME lands in that configuration even when another one is active - which is what
-        // keeps a refused load from having another configuration's state written over it at exit
+        // capture by NAME lands in that configuration even when another is active, so a refused load cannot have
+        // another configuration's state written over it at exit
         session.getStore().createConfiguration("Other", null);
 
         assertEquals(session.getStore().getActiveConfiguration(), "Default");
@@ -772,10 +685,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             "and the active one should keep what it already had");
     }
 
-    /**
-     * Editing marks the setup unsaved, and saving clears it - which is what decides whether closing the
-     * editor has to ask.
-     */
+    /** Editing marks the setup unsaved, and saving clears it: that decides whether closing the editor has to ask. */
     @Test
     public void testEditingMarksTheSetupUnsavedUntilItIsSaved() throws IOException
     {
@@ -793,9 +703,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertFalse(session.isDirty());
     }
 
-    /**
-     * Excluding a page takes its sensors out of the graph, which is what the flag is for.
-     */
+    /** Excluding a page takes its sensors out of the graph, which is what the flag is for. */
     @Test
     public void testExcludingAPageTakesItOutOfTheGraph() throws IOException
     {
@@ -810,9 +718,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
 
-    /**
-     * The name the builder generated for the Point with this s88 - what a running Layout would call it.
-     */
+    /** The name the builder generated for the Point with this s88, as a running Layout would call it. */
     private String pointName(int s88)
     {
         org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
@@ -848,16 +754,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A path that ends where it started is not offered, even from a configuration this index predates.
-     *
-     * The dedupe used to short-circuit on the names being equal before ever consulting the index.
-     * Moved into the index it lost that, and the index answers "different place" about two Points it
-     * has never heard of - which is exactly a configuration built before the last diagram edit.  The
-     * train is then offered a journey to the platform it is standing on.
-     *
-     * sameSquare/squareOf are the helper, not the rule: the rule the two menus actually call is
-     * distinctDestinations (StationIndex.java:458), which has no test of its own anywhere in the suite.
-     * This drives that method directly, not just the primitives underneath it.
+     * A path that ends where it started is not offered, even from a configuration this index predates: the index
+     * answers "different place" about two Points it has never heard of.  Drives `distinctDestinations` (what the two
+     * menus call) directly, not just the primitives under it.
      */
     @Test
     public void testAPathBackToWhereItStartedIsDroppedEvenForUnknownPoints() throws Exception
@@ -880,9 +779,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         List<org.traincontrol.automation.Edge> genuineJourney =
             Arrays.asList(new org.traincontrol.automation.Edge(ghost, elsewhere));
 
-        // MUTATION this catches: delete `if (sameSquare(from, to)) continue;` at
-        // StationIndex.java:474 - both loopsBack and genuineJourney would then survive, offering the
-        // train a journey back to the platform it is standing on.
+        // MUTATION this catches: delete `if (sameSquare(from, to)) continue;` in StationIndex.distinctDestinations;
+        // both loopsBack and genuineJourney would then survive.
         List<List<org.traincontrol.automation.Edge>> kept =
             index.distinctDestinations(Arrays.asList(loopsBack, genuineJourney));
 
@@ -892,11 +790,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A station reachable from two Points of the same square is offered once, not once per copy.
-     *
-     * Both copies answer to a different name, since the copies are what stop them being confused for
-     * one another everywhere else - so the dedupe here has to go by SQUARE, and this is the only test
-     * anywhere in the suite that drives distinctDestinations against a square that actually splits.
+     * A station reachable from two Points of the same square is offered once, not once per copy: the dedupe has to go
+     * by SQUARE, because the copies answer to different names.
      */
     @Test
     public void testDistinctDestinationsKeepsOnlyOneCopyOfAStation() throws Exception
@@ -925,17 +820,15 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         List<org.traincontrol.automation.Edge> viaSecondCopy =
             Arrays.asList(new org.traincontrol.automation.Edge(origin, secondCopy));
 
-        // MUTATION this catches: key the "seen" set in distinctDestinations by `to` (the point name)
-        // instead of by square - both copies would then be kept, and the menu would list one station
-        // twice, which is what the javadoc there calls "the same destination listed twice".
+        // MUTATION this catches: key the "seen" set in distinctDestinations by `to` (the point name) instead of by
+        // square, and the menu lists one station twice.
         List<List<org.traincontrol.automation.Edge>> kept =
             index.distinctDestinations(Arrays.asList(viaFirstCopy, viaSecondCopy));
 
         assertEquals(kept.size(), 1, "two Points of one platform must be offered as one destination");
         assertEquals(kept.get(0), viaFirstCopy, "the first copy reached should be the one kept");
 
-        // Control: a genuinely different destination is not swallowed by the same dedupe - proves the
-        // check above can detect a SECOND distinct destination, not just fail to detect duplicates.
+        // Control: a genuinely different destination is not swallowed by the same dedupe.
         org.traincontrol.automation.Point somewhereElse =
             new org.traincontrol.automation.Point("Somewhere else", false, null);
         List<org.traincontrol.automation.Edge> aThirdPath =
@@ -945,9 +838,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
             "two genuinely different destinations must both survive");
     }
 
-    /**
-     * The restriction survives being written out and read back.
-     */
+    /** The restriction survives being written out and read back. */
     @Test
     public void testArrivalRestrictionsSurviveASaveAndLoad() throws Exception
     {
@@ -973,18 +864,13 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * The translation between squares and Points is derived once and agrees with itself.
-     *
-     * It used to be worked out wherever it was needed, by building a fresh AutonomyBuilder - and the
-     * copies were configured differently, so one of them split a square and another did not.  Both
-     * answered confidently and they were not answers to the same question.
+     * The translation between squares and Points is derived once and agrees with itself: copies built by separate
+     * AutonomyBuilders were configured differently, so one split a square and another did not.
      */
     @Test
     public void testTheIndexRoundTripsSquaresAndPoints() throws Exception
     {
-        // A square that actually SPLITS.  Run on a station at the end of a line - one way in, one
-        // Point - the closing check below reduced to sameSquare(x, x), and the whole test would have
-        // passed against an index that could not split at all.
+        // A square that actually SPLITS: on a one-Point station the closing check reduces to sameSquare(x, x).
         LayoutDiagram page = pageWithATwoEndedStation();
 
         session.open(Arrays.asList(page));
@@ -1016,11 +902,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * Renaming a square is visible to the index immediately.
-     *
-     * The index is cached, and a cache that outlives the thing it describes is the failure this class
-     * has now had three times: the labels look up names the running graph has never heard of, and that
-     * station quietly stops filling in.
+     * Renaming a square is visible to the index immediately: a cache that outlives what it describes stops stations
+     * filling in.
      */
     @Test
     public void testTheIndexIsDroppedWhenTheSetupChanges() throws Exception
@@ -1043,24 +926,10 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A save that declines to tidy up SAYS SO, and names the pages.
+     * A save that declines to tidy up SAYS SO, and names the pages.  An EMPTY reconciliation and a REFUSED one used to
+     * be the same object, and five of the six doors that call `save()` threw the result away, so nobody was told.
      *
-     * The test next door proves the setup survives a page that did not load. This one is about the
-     * other half of that finding, which had no coverage at all: nobody was ever told.
-     *
-     * `absent` was computed inside `save()` and used only as a boolean. The comment beside it said a
-     * caller "can ask store.pagesNotLoaded the same question" - and no caller did; the method's only
-     * two references were inside `save()` itself. Meanwhile five of the six doors that call `save()`
-     * threw the returned Reconciliation away, so the one moment when putting the missing file back
-     * would have fixed everything passed in silence, while the next page operation quietly retired
-     * that page's id.
-     *
-     * The distinction the report could not previously make is the point: an EMPTY reconciliation and a
-     * REFUSED one were the same object. "Nothing needed tidying" and "I was not allowed to tidy" are
-     * opposite situations and only one of them is worth interrupting somebody for.
-     *
-     * MUTATION: having `save()` return a plain `new Reconciliation()` for the incomplete case - which
-     * is what it did - fails this test.
+     * MUTATION: having `save()` return a plain `new Reconciliation()` for the incomplete case fails this test.
      */
     @Test
     public void testASaveThatDeclinesToTidySaysWhichPagesStoppedIt() throws IOException
@@ -1108,21 +977,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A page that did not load keeps its setup.
-     *
-     * OB-068. `CS2File.parseLayout` skips a page whose file will not parse or is not there, quietly and
-     * on purpose - on a layout that lives in OneDrive an unhydrated placeholder or a file held by the
-     * sync client is enough, and neither is anything the user did.
-     *
-     * The session then opens without it, and `save()` reconciled against the pages that DID load: every
-     * name, station, direction, length, signal pairing and caption on the missing page read as track
-     * that had been deleted, and was pruned and written. Three of the four doors that reach that save
-     * discard the report, so it happened in silence - and the next page operation dropped the page from
-     * gleisbild.cs2 as well, orphaning its file.
-     *
-     * `readShared` is relaxed about the same absence, and says why: "Absent is fine - the page may
-     * simply not be loaded." Both halves agreed a missing page was survivable and then one of them
-     * deleted its contents.
+     * A page that did not load keeps its setup (OB-068).  `CS2File.parseLayout` skips a page whose file will not parse
+     * or is not there, quietly and on purpose (an unhydrated OneDrive placeholder is enough), and `save()` used to
+     * reconcile against the pages that DID load, pruning everything on the missing one.
      *
      * The mutation here is the absence itself: set up two pages, then reopen holding only one.
      */
@@ -1150,10 +1007,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         partial.open(Arrays.asList(runOfTrack()));
 
-        // Its entries are still in memory, but under RAW ID keys - with no page called "second"
-        // loaded, pageOf has no name to resolve id 2 to, so it hands back the id. That is why they
-        // look like squares that do not exist to anything working in page names, and it is exactly
-        // the state in which they must not be deleted.
+        // Its entries are in memory under RAW ID keys, since pageOf has no name to resolve id 2 to; that is why they
+        // look like squares that do not exist, and exactly the state in which they must not be deleted.
         assertFalse(partial.getStore().pagesNotLoaded(
                 java.util.Collections.singletonList("main")).isEmpty(),
             "the store cannot tell that a page it knows about is missing, so the guard below has "
@@ -1178,18 +1033,12 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * The model, and the doors that ask about the railway off the event thread, ask for it once.
-     * `hasAutoLayout()` then `getAutoLayout()` is two takes of the model's lock, and Unload, on the event thread, can
-     * clear the model between them; the second then builds an empty railway that `hasAutoLayout` answers yes about.  The
-     * sync and a route edit reach the model's pairs, the switching thread the protection question, a worker the path
-     * options; `getAutoLayoutIfLoaded()` asks once.
-     *
-     * Read from the source, because the moment between the two calls cannot be held open from here.  It knows the
-     * model's file as a whole and the three methods it names, and nothing else.
+     * The model, and the doors that ask about the railway off the event thread, ask for it once.  `hasAutoLayout()`
+     * then `getAutoLayout()` is two takes of the model's lock, and Unload can clear the model between them;
+     * `getAutoLayoutIfLoaded()` asks once.  Read from the source, because the moment between the two calls cannot be
+     * held open from here; it knows the model's file as a whole and the three methods it names.
      *
      * MUTATION: put back any one of the pairs, and this fails.
-     *
-     * @throws Exception reading the source
      */
     @Test
     public void testTheModelAndTheDoorsOffTheEventThreadAskForTheRailwayOnce() throws Exception
@@ -1229,13 +1078,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * The diagram's path gather asks for the railway once, and asks every question of that one.  It read the
-     * railway once at its head and then asked the model for it again, build-on-miss, twice per path on its worker: Unload
-     * in between built an empty railway, and a load in between put the new railway's questions to the old one's Points.
+     * The diagram's path gather asks for the railway once, and asks every question of that one: asking the model again
+     * per path let Unload build an empty railway in between, or a load put the new railway's questions to the old
+     * Points.
      *
      * MUTATION: let the gather ask the model for the railway again, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheDiagramsGatherAsksForTheRailwayOnce() throws Exception

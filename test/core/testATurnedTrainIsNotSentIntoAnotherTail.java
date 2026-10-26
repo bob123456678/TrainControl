@@ -23,19 +23,16 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A train turned where it stands is not sent out into another train's tail (OB-285).
  *
- * `Layout.isPathClear` asks three questions of each piece of track a route runs over - whose tail was traced along it,
- * whose tail lies on track sharing its metal, whose tail lies on the squares it runs over - and it stopped at the first
- * answer.  Where that answer was the moving train itself, the piece was passed and the other two were never asked.  That
- * is every train turned where it stands - reversed on the throttle, turned with the Facing menu, or turned at a square
- * trains may turn at - with its tail on the side it will now leave by: its way out runs over its own tail.  Measured on
- * the frozen railway, 10 cases on 4 squares, every one cleared.  Adam, 2026-09-24: *"Add the refusal"*.
+ * `Layout.isPathClear` asks three questions of each piece of track a route runs over (whose tail was traced along it,
+ * whose tail lies on track sharing its metal, whose tail lies on the squares it runs over) and stopped at the first
+ * answer.  Where that was the moving train itself, the other two were never asked: every train turned where it stands
+ * has its tail on the side it will now leave by, so its way out runs over its own tail.  Measured on the frozen
+ * railway, 10 cases on 4 squares, every one cleared.  Adam: "Add the refusal".
  *
- * His railway's clearest case: a train comes into Tunnel from the south and is reversed, so it stands on Tunnel's
- * southbound copy with its tail to the south, and is sent back south towards BottomMainAPre.  A three-unit train in
- * TunnelRightPark lies back across the points at column 7, which that way out runs over.
- *
- * Return Home's planner mirrored the same exit on purpose (never refuse a move the railway would make), so the
- * two change together, and both are claimed here.
+ * The clearest case: a train comes into Tunnel from the south and is reversed, so it stands on Tunnel's southbound copy
+ * with its tail to the south, and is sent back south towards BottomMainAPre; a three-unit train in TunnelRightPark lies
+ * back across the points at column 7.  Return Home's planner mirrors the same exit on purpose (never refuse a move the
+ * railway would make), so the two change together and both are claimed here.
  *
  * MUTATION: stop at the moving train's own tail again, in either, and the matching claim fails.
  *
@@ -168,9 +165,7 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
         return null;
     }
 
-    /**
-     * The train at Tunnel: came in from the south, turned where it stands, so its tail lies on its way out.
-     */
+    /** The train at Tunnel: came in from the south, turned where it stands, so its tail lies on its way out. */
     private static void standTheTurnedTrain()
     {
         turned.setTrainLength(1);
@@ -182,9 +177,7 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
             + " tail is not what lies on its way out, so this is not the case OB-285 is about");
     }
 
-    /**
-     * The train in TunnelRightPark, come in over the points, as long as given.
-     */
+    /** The train in TunnelRightPark, come in over the points, as long as given. */
     private static void parkATrainOf(int length)
     {
         parked.setTrainLength(length);
@@ -206,9 +199,7 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
         return false;
     }
 
-    /**
-     * The railway refuses the turned train's way out while the parked train's tail lies across it.
-     */
+    /** The railway refuses the turned train's way out while the parked train's tail lies across it. */
     @Test
     public void testTheRailwayRefusesTheWayOutAcrossAnotherTail() throws Exception
     {
@@ -234,9 +225,7 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
             + " way out and nothing else was asked (OB-285)");
     }
 
-    /**
-     * Return Home asks the same: the way out stays shut while the parked train has not moved.
-     */
+    /** Return Home asks the same: the way out stays shut while the parked train has not moved. */
     @Test
     public void testReturnHomeRefusesTheSameWayOut() throws Exception
     {

@@ -11,27 +11,22 @@ import org.traincontrol.base.ThreeWaySwitch;
 /**
  * A three-way point, as the pair of ordinary switch commands a route actually holds.
  *
- * There is nothing in a route file that says two Switch lines are one point.  Adam wrote the three
- * shapes down:
+ * Nothing in a route file says two Switch lines are one point.  Adam wrote the three shapes down and said the sequence
+ * is deliberate:
  *
  *   left        Switch 2,straight,300   then   Switch 1,turn
  *   straight    Switch 1,straight,300   then   Switch 2,straight
  *   right       Switch 1,straight,300   then   Switch 2,turn
  *
- * and said the sequence is deliberate.  It is: the motor that has to end up straight is settled
- * first and given a moment, and only then does the one that chooses the branch move.  Sending them
- * the other way round drives the point through the position in between on its way.
+ * The motor that has to end up straight is settled first and given a moment, and only then does the one that chooses
+ * the branch move; the other order drives the point through the position in between.
  *
- * What these tests are really about is the round trip.  An editor that shows two lines as one row
- * has to be able to put the row back exactly as it found it, or opening a route and saving it
- * unchanged rewrites somebody's railway - and it does so quietly, which is the failure a translation
- * layer is for.
+ * What these tests are really about is the round trip: an editor that shows two lines as one row has to put the row
+ * back exactly as it found it, or opening a route and saving it unchanged quietly rewrites somebody's railway.
  */
 public class testThreeWaySwitch
 {
-    /**
-     * Each of the three shapes is what Adam wrote down.
-     */
+    /** Each of the three shapes is what Adam wrote down. */
     @Test
     public void testTheThreeShapesAreTheOnesThatWereSpecified()
     {
@@ -45,9 +40,7 @@ public class testThreeWaySwitch
             "right settles the first and then turns the second");
     }
 
-    /**
-     * The pause is on the FIRST command, which is the whole reason the order matters.
-     */
+    /** The pause is on the FIRST command, which is the whole reason the order matters. */
     @Test
     public void testThePauseIsOnTheCommandThatGoesFirst()
     {
@@ -66,10 +59,8 @@ public class testThreeWaySwitch
     }
 
     /**
-     * Every position survives being written out and read back.
-     *
-     * The property the editor rests on: a row becomes two lines, and those two lines become the same
-     * row again.  Anything less and opening a route and saving it moves the railway.
+     * Every position survives being written out and read back: a row becomes two lines and those become the same row
+     * again, or saving a route moves the railway.
      */
     @Test
     public void testEveryPositionComesBackAsItself()
@@ -98,11 +89,8 @@ public class testThreeWaySwitch
     }
 
     /**
-     * The three shapes cannot be mistaken for one another.
-     *
-     * Left has its turn one BELOW the straightened motor and right has it one above, so no pair can
-     * be read two ways.  Were that not so, one of the three would open as another and the point
-     * would be set the wrong way the next time the route ran.
+     * The three shapes cannot be mistaken for one another: left has its turn one BELOW the straightened motor and right
+     * one above, so no pair reads two ways.
      */
     @Test
     public void testOneShapeIsNeverReadAsAnother()
@@ -118,11 +106,8 @@ public class testThreeWaySwitch
     }
 
     /**
-     * A pair that is not one of the shapes stays two ordinary commands.
-     *
-     * The half that protects everything already on somebody's layout.  Two switch commands next to
-     * each other are the commonest thing in a route, and rolling an unrecognized pair up would show
-     * the user a point that is not there and write a different pair back out on the next save.
+     * A pair that is not one of the shapes stays two ordinary commands: rolling an unrecognized pair up would show a
+     * point that is not there and write a different pair back out.
      */
     @Test
     public void testAnythingElseIsLeftAlone()
@@ -159,12 +144,7 @@ public class testThreeWaySwitch
             "there is nothing after the last command to pair with");
     }
 
-    /**
-     * A pause other than the usual one is carried rather than replaced.
-     *
-     * A layout with slower motors needs a bigger number, and a translation layer that normalized it
-     * to three hundred would undo that every time the route was opened.
-     */
+    /** A pause other than the usual one is carried rather than replaced: slower motors need a bigger number. */
     @Test
     public void testAnUnusualPauseIsKept()
     {

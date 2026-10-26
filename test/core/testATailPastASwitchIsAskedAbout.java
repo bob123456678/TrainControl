@@ -25,25 +25,19 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * A train at BottomSecondary whose tail has passed switch 51 without reaching a sensor is asked which way it lies, and
- * the answer is the rail it covers (MT-477).
+ * the answer is the rail it covers (MT-477; Adam: "that length should qualify for the prompt").
  *
- * Adam, 2026-09-23, on MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing
- * straight toward rampdown.  Not a major issue, but technically that length should qualify for the prompt.  Also, since
- * there is only one choice, it should be auto selected without a prompt."*
+ * On his measured railway two rails come into BottomSecondary from the east: RampDown's, 4 units, straight over
+ * switch 51, and BottomCrossover's, 5 units, turned.  At 3 units the tail reached neither sensor, so the question,
+ * which asked only where a sensor had been crossed, was not put, and the tail was laid on whichever rail the walk met
+ * first.
  *
- * **On his measured railway.**  Two rails come into BottomSecondary from the east: RampDown's, 4 units, straight over
- * switch 51, and BottomCrossover's, 5 units, turned.  At 3 units the tail reached neither sensor, so the question - which
- * asked only where a sensor had been crossed - was not put, and the tail was laid on whichever rail the walk met first:
- * the turned one.  At 4 it reached RampDown only, and the list offered RampDown alone, which is the one choice he saw;
- * the tail could as well be 4 units up the turned rail.
+ * Three units is exactly the switch: the rails share every square up to and including switch 51 at 18,11, so a
+ * three-unit tail covers the same squares on either and ends on the points.  A tail that reaches into the square where
+ * the rails part has passed the switch; one that ends before it is not asked, because every answer covers the same
+ * track.  The boundary is worked out from the rails' own places, so a re-measured switch moves it with the railway.
  *
- * **Three units is exactly the switch.**  The two rails share every square up to and including switch 51 at 18,11, three
- * units in all, so a three-unit tail covers the same squares on either - and ends on the points, on one leg of them or
- * the other, which is what he saw drawn turned.  A tail that reaches into the square where the rails part has passed the
- * switch.  One that ends before it is still not asked: every answer covers the same track.  That boundary is worked out
- * from the rails' own places rather than written down, so a re-measured switch moves it with the railway.
- *
- * ON THE FROZEN RAILWAY (OB-111).
+ * Runs on the frozen railway (OB-111).
  *
  * @author Adam
  */
@@ -55,8 +49,8 @@ public class testATailPastASwitchIsAskedAbout
     private static final String TUNNEL = "Tunnel (southbound)";
 
     /**
-     * Every square of the four rails, as he measured them on 2026-09-23: RampDown's 4 and BottomCrossover's 5 into
-     * BottomSecondary, sharing three units up to switch 51 at 18,11; TunnelPre's 4 and 12,7's 5 into Tunnel.
+     * Every square of the four rails as he measured them: RampDown's 4 and BottomCrossover's 5 into BottomSecondary,
+     * sharing three units up to switch 51 at 18,11; TunnelPre's 4 and 12,7's 5 into Tunnel.
      */
     private static final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, Integer> DISTANCES =
         new java.util.LinkedHashMap<>();
@@ -99,9 +93,9 @@ public class testATailPastASwitchIsAskedAbout
 
         session.open(pages);
 
-        // THE DISTANCES THESE CLAIMS ARE ABOUT, SET HERE (FR-136): his measurements of 2026-09-23 on the two rails into
-        // BottomSecondary from the east and the two into Tunnel from the north, nothing answered 0.  Re-measured since, the
-        // RampDown rail is 6 and no longer the four-units-against-five every claim below turns on.
+        // THE DISTANCES THESE CLAIMS ARE ABOUT, SET HERE (FR-136): his measurements on the two rails into
+        // BottomSecondary from the east and the two into Tunnel from the north, nothing answered 0.  The railway's own
+        // RampDown rail is 6 since, no longer the four-against-five every claim below turns on.
         session.setTileLengths(DISTANCES);
 
         model.parseAuto(session.buildConfiguration());
@@ -134,10 +128,7 @@ public class testATailPastASwitchIsAskedAbout
         }
     }
 
-    /**
-     * Past the switch and short of both sensors, he is asked - offered the way towards RampDown and towards BottomCrossover;
-     * short of the switch he is not.
-     */
+    /** Past the switch and short of both sensors, he is asked, offered both ways; short of the switch he is not. */
     @Test
     public void testATailPastSwitch51ShortOfBothSensorsIsAsked()
     {
@@ -170,7 +161,8 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * At four units RampDown is reached and BottomCrossover is not: both are offered, so the list no longer has one entry.
+     * At four units RampDown is reached and BottomCrossover is not: both are offered, so the list no longer has one
+     * entry.
      *
      * MUTATION: offer no rail the tail lies on short of its sensor (MT-477), and this fails.
      */
@@ -199,11 +191,9 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * Told the tail lies towards RampDown, a three-unit train is laid on the straight rail - the leg of switch 51 its end
-     * is on - and a four-unit one covers the straight rail's own squares past the switch and none of the turned one's.
-     *
-     * At three units the squares are the same either way, so what the answer changes there is the rail the tail is
-     * recorded on, which is the leg the orange line is drawn along and the one Adam saw drawn turned.
+     * Told the tail lies towards RampDown, a three-unit train is laid on the straight rail (the leg of switch 51 its
+     * end is on, which the orange line is drawn along) and a four-unit one covers the straight rail's own squares past
+     * the switch and none of the turned one's.
      */
     @Test
     public void testTheAnswerPutsTheTailOnTheStraightRail()
@@ -279,14 +269,10 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * With no answer - or Not known - a tail past switch 51 stops at the switch (Adam, 2026-09-24, on MT-477: *"stop at
-     * the switch"*).
-     *
-     * Every other fork stops the tail where the roads part (his rule of 2026-09-07, "end locking at the switch").  The
-     * fork right behind the platform did not: with no road to follow, the walk took the first rail by that side - the
-     * turned one from BottomCrossover - and laid a four-unit tail up it, claiming track the train may not be on and none
-     * of the rail it may be on.  So the squares both rails share are claimed, up to and including the switch, and none
-     * that only one of them runs over.
+     * With no answer, or Not known, a tail past switch 51 stops at the switch (Adam: "stop at the switch").  Every
+     * other fork stops the tail where the roads part; with no road to follow, this one took the first rail by that side
+     * and claimed track the train may not be on.  So the squares both rails share are claimed, up to and including the
+     * switch, and none that only one of them runs over.
      *
      * MUTATION: take the first rail by the side again, and this fails.
      */
@@ -346,16 +332,10 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * A question with one answer on its list takes it, with no dialog (Adam, 2026-09-24, on MT-437).
-     *
-     * *"when a tail question comes up and there is only one option (len 4 on tunnel), it should auto select that
-     * option."*  He asked the same on MT-477 (*"since there is only one choice, it should be auto selected without a
-     * prompt"*); that list was missing a rail, and offering it left two.  At Tunnel the one entry is real.  The two rails
-     * in from the north - TunnelPre's, 4 units, and 12,7's, 5 - share every square back to the switch at 11,5, which
-     * measures nothing, and so does the square after it.  So a four-unit tail spends out one square short of the switch,
-     * on track both rails share, and has reached TunnelPre by the whole-rail count (OB-226): the question is put, and
-     * TunnelPre is all it can offer.
-     *
+     * A question with one answer on its list takes it, with no dialog (MT-437; Adam: "when a tail question comes up and
+     * there is only one option (len 4 on tunnel), it should auto select that option").  The two rails in from the north
+     * share every square back to the switch at 11,5, which measures nothing, so a four-unit tail spends out one square
+     * short of the switch and has reached TunnelPre by the whole-rail count (OB-226): TunnelPre is all it can offer.
      * The dialog is closed if it is shown, so a question put to the operator comes back unanswered.
      *
      * MUTATION: show the dialog for one choice again, and this fails.
@@ -387,12 +367,9 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * Two answers on the list are still asked about - including where the list starts on one of them.
-     *
-     * The control on the rule above: at five units the tail at Tunnel has reached TunnelPre on the one rail and 12,7 on
-     * the other, and which it lies on is the operator's to say.  At four units at BottomSecondary the list starts on
-     * RampDown, the one sensor crossed (FR-088), and the train may as well lie up the other rail: a start is a
-     * suggestion for OK, not an answer.
+     * Two answers on the list are still asked about, including where the list starts on one of them: at five units
+     * the tail at Tunnel has reached TunnelPre on one rail and 12,7 on the other, and at four units at BottomSecondary
+     * the list starts on RampDown, the one sensor crossed (FR-088), which is a suggestion for OK, not an answer.
      *
      * MUTATION: take the first entry, or the one the list starts on, whatever the list holds, and this fails.
      */
@@ -428,8 +405,8 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * Stands the train at the platform at this length, answers the question with the way towards RampDown, and hands back
-     * the rails it then covers.  The train is left standing, for the caller to read and then clear.
+     * Stands the train at the platform at this length, answers the question with the way towards RampDown, and hands
+     * back the rails it then covers; the train is left standing.
      */
     private static Map<Edge, Locomotive> standAnswered(Point platform, int length)
     {
@@ -497,7 +474,7 @@ public class testATailPastASwitchIsAskedAbout
 
     /**
      * How many units of train the two rails in carry over the same squares before the last of them, which holds switch
-     * 51 - the longest tail that does not reach the points.
+     * 51: the longest tail that does not reach the points.
      */
     private static int unitsBeforeTheSwitch(Point platform)
     {

@@ -39,7 +39,7 @@ import org.testng.annotations.Test;
  *
  * Mutation these must fail: in `MarklinControlStation.restoreState`, truncate the restored list -
  * `instance = ((List&lt;MarklinSimpleComponent&gt;) obj).subList(0, 1);`.  Before the manifests that
- * passed all seven tests; run 2026-08-25 against a mutant compiled outside the repository, it fails
+ * passed all seven tests; run against a mutant compiled outside the repository, it fails
  * all 8 of them.
  *
  * A figure here changing is not automatically a bug - but it is always a question, and the answer has

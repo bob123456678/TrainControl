@@ -25,43 +25,26 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * How many Points each of Adam's squares becomes - the guard the two-copies decision rests on.
+ * How many Points each of Adam's squares becomes: the guard the two-copies decision rests on.
  *
- * `docs/reference/two-copies-evaluation.md` (removed 2026-09-24; git history, 0a5dab2a) answers his question - *"having two copies seems like
- * unnecessary complexity, I wonder if it can be done more easily by simply following the edges?"* -
- * and its first reason for leaving the copies alone is a measurement: how much of that complexity the
- * railway actually carries today. That measurement had no guard. It was cited as
- * `testEverySquareOnThisLayoutBuildsToOneCopy` twice in that document, once in `behaviour.md` section
- * 3 and once in `testTheAutoTierScopeMatchesTheRuntime`, and no such class or method existed anywhere
- * under `test/`. This is the guard those four sentences were describing, under the name of the
- * property it can actually assert.
+ * `docs/reference/two-copies-evaluation.md` (removed; git history, 0a5dab2a) answers his question - *"having two copies
+ * seems like unnecessary complexity, I wonder if it can be done more easily by simply following the edges?"* - and its
+ * first reason for leaving the copies alone is a measurement of how much complexity the railway carries.  That
+ * measurement was published wrong ("every named square builds to exactly one copy") because it was taken on a diagram
+ * parsed WITHOUT its accessories: `TileGraph` will not trace through a switch with no `Accessory`, so the reduction
+ * falls from 128 edges to 18 and almost every square has one arrival side, hence one copy.  Whether that changes the
+ * recommendation is Adam's to decide; this file makes the number true and watched.
  *
- * **The property they described is false, and this is how it got published.** The evaluation's
- * headline was *"every named square builds to exactly one copy, may-reverse ones included"*. Measured
- * here on the wired railway: **30 of 58 squares build to more than one Point, and 13 of the 33
- * stations do**, four of them to four Points each. The number in the document is what the same census
- * returns on a diagram parsed WITHOUT its accessories - 57 of 58 squares at one copy - because a
- * switch with no `Accessory` behind it is a tile `TileGraph` will not trace through, so the railway
- * falls from 128 reduced edges to 18, almost every square is left with a single arrival side, and a
- * single arrival side is a single copy. `LayoutSandbox.wiredPages` records that recipe defect and the
- * day it was found, which is the day after the evaluation was written.
+ * What it asserts:
  *
- * So the evaluation's second and third reasons stand untouched, its first does not, and **whether that
- * changes the recommendation is Adam's to decide** - it is a question about what to do with his
- * railway, not a fault to repair. What this file does is make the number true and make it watched.
- *
- * **What it asserts.**
- *
- *   - THE RULE. Every square emits the Points the setup implies: one per arrival side, plus one
- *     turning copy per arrival side where a train may turn round, less the plain copies that would be
- *     dead ends, and no plain copy at all where turning is compulsory. A square with no arrival side
- *     is emitted whole. That is checked square by square against the emitted names, so a builder
- *     change that silently splits or merges one is caught wherever it happens.
- *   - THE CENSUS. The counts above, pinned. This is the tripwire the evaluation asked for, running in
- *     the direction that turned out to matter: it goes red when the split fires MORE, and equally when
- *     it fires less.
- *   - THAT THE CENSUS LOOKED AT A RAILWAY. The edge count is asserted, because 18 edges is what
- *     produced the published number and it is indistinguishable from a real result by reading.
+ *   - THE RULE.  Every square emits the Points the setup implies: one per arrival side, plus one turning copy per
+ *     arrival side where a train may turn round, less the plain copies that would be dead ends, and no plain copy at
+ *     all where turning is compulsory; a square with no arrival side is emitted whole.  Checked square by square
+ *     against the emitted names.
+ *   - THE CENSUS.  The counts, pinned: a tripwire that goes red when the split fires more, and equally when it fires
+ *     less.
+ *   - THAT THE CENSUS LOOKED AT A RAILWAY.  The edge count is asserted, because 18 edges is indistinguishable from a
+ *     real result by reading.
  *
  * Read against a `LayoutSandbox` copy of `cs2_sample_layout` (OB-111). His railway is only ever read.
  *
@@ -70,20 +53,9 @@ import org.traincontrol.marklin.file.CS2File;
 public class testEverySquareBuildsToTheCopiesTheSetupImplies
 {
     /**
-     * The census, measured on the wired railway on 2026-09-08 and again on 2026-09-23.
-     *
-     * A change to any of these is either an edit Adam made to his own railway - in which case update
-     * the number and re-read `two-copies-evaluation.md`, because these are the figures its
-     * recommendation is costed against - or a builder change that has started splitting or merging
-     * squares, which is the thing this file exists to notice.
-     *
-     * 30 split squares and 13 split stations on 2026-09-08; **25 and 9** on the railway refrozen
-     * 2026-09-23 from `e36df979`.  His setup of that day made seven tracks one-way, made BottomMainC a
-     * compulsory turn and changed which sides are barred - each takes an arrival side away, and an
-     * arrival side is a copy.  The rule test above stayed green through the refreeze, so the builder
-     * still emits exactly what each square's setup implies: this is the railway moving, not squares
-     * being merged.  The evaluation was re-read and its recommendation stands (its first reason, already
-     * withdrawn, is recounted there).
+     * The census, measured on the wired railway of the frozen snapshot.  A change is either an edit Adam made to his
+     * own railway (update the numbers and re-read `two-copies-evaluation.md`, whose recommendation is costed against
+     * them) or a builder change that has started splitting or merging squares.
      */
     private static final int SQUARES = 58;
     private static final int STATIONS = 33;
@@ -91,12 +63,8 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     private static final int SPLIT_STATIONS = 9;
 
     /**
-     * The squares that carry the FULL split - two arrival sides and a turn at each.
-     *
-     * By name rather than by tile, because these are the squares the rest of the documentation talks
-     * about by their split copies.  Four until 2026-09-23; BottomMainB and BottomMainC left the list
-     * that day - B has no westbound copy any more (its east side is one-way since his marks of that day),
-     * and C became a compulsory turn, which emits no plain copy.
+     * The squares that carry the FULL split, two arrival sides and a turn at each; named, because the documentation
+     * talks about them by their split copies.
      */
     private static final String[] FOUR_COPY_SQUARES =
     {
@@ -109,21 +77,12 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
 
     private static int edgesAtOpen;
 
-    /**
-     * Opens a throwaway copy of the operator's railway, wires it, and reduces it.
-     *
-     * @throws Exception when the folder cannot be read at all, which is a broken harness rather than a
-     *         failing guard and is better raised than reported as skipped tests
-     */
+    /** Opens a throwaway copy of the operator's railway, wires it, and reduces it. */
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and the review's B8).
-        //
-        // Every figure below is a count of what Adam's railway builds to, and it moves as he works on
-        // it - so this pinned four numbers against a folder with uncommitted edits in it, and a clean
-        // checkout measured something else.  `live-snapshot` is the same railway with the clock
-        // stopped, which is what a pin needs.
+        // The frozen copy, not the railway he is operating (OB-111): every figure below is a count of what the railway
+        // builds to, and it moves as he works on it; `live-snapshot` is the same railway with the clock stopped.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -134,14 +93,9 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
         CS2File parser = new CS2File(path, model);
         parser.setLayoutDataLoc(path);
 
-        // WIRED, not merely parsed, and this class is the reason that distinction is worth stating
-        // rather than assuming.  `LayoutSandbox.wired` runs the application own `wireComponents`
-        // loop after the parse, which is what puts an Accessory behind each switch; a bare
-        // `parseLayout` leaves them null, TileGraph refuses to trace through a switch it cannot
-        // command, and the reduction falls from 128 edges to 18.  Almost every square is then left
-        // with a single arrival side, a single arrival side is a single copy, and the census below
-        // reports ONE split square out of fifty-eight - which is the number that was published as a
-        // property of this railway.
+        // WIRED, not merely parsed: `LayoutSandbox.wired` runs the application's `wireComponents` loop, which puts an
+        // Accessory behind each switch.  A bare `parseLayout` leaves them null, TileGraph refuses to trace through, the
+        // reduction falls from 128 edges to 18 and the census reports one split square.
         List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
         session = new AutonomySession(sandbox.getFolder());
@@ -150,9 +104,7 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
         edgesAtOpen = session.getReducer().getEdges().size();
     }
 
-    /**
-     * Puts the layout preference back.
-     */
+    /** Puts the layout preference back. */
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
@@ -160,33 +112,22 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     }
 
     /**
-     * Every square emits the Points its own settings imply.
+     * Every square emits the Points its own settings imply, stated from what the setup knows (which sides trains arrive
+     * by, whether they may turn round there, whether they must) and checked against what the builder emitted:
      *
-     * The rule, stated from the three things the setup knows about a square - which sides trains
-     * arrive by, whether they may turn round there, whether they must - and checked against what the
-     * builder actually emitted:
+     *   - no arrival side at all: emitted whole, one Point, no facing to record;
+     *   - turning not allowed: one Point per arrival side, none a turning copy;
+     *   - turning compulsory: one Point per arrival side, EVERY one a turning copy (the plain copy is not emitted);
+     *   - turning optional: a turning copy per arrival side, plus the plain copies that have somewhere to go other than
+     *     back the way they came.
      *
-     *   - no arrival side at all, and the square is emitted whole: one Point, no facing to record;
-     *   - turning not allowed: exactly one Point per arrival side, and none of them a turning copy;
-     *   - turning compulsory: exactly one Point per arrival side, and EVERY one of them a turning copy
-     *     - the plain copy is not emitted, which is the whole difference between may and must;
-     *   - turning optional: a turning copy per arrival side, plus the plain copies that have somewhere
-     *     to go other than back the way they came.
+     * Plain and turning copies are told apart by their emitted names, which carry ", reverse", so this reads the
+     * configuration rather than re-deriving the split.
      *
-     * Plain and turning copies are told apart by their emitted names, which carry ", reverse" - so
-     * this reads the configuration rather than re-deriving the split and agreeing with itself.
-     *
-     * MUTATION, run: stopping `AutonomyBuilder.nodesFor` emitting the turning copy fails this with
-     * twenty squares named, seventeen of them reported as emitted as NO Point at all - a compulsory
-     * turn has no plain copy to fall back on, so it leaves the railway entirely.
-     *
-     * TWO MUTATIONS THAT DO NOT FAIL IT, and they are worth writing down because they look like they
-     * should. Dropping `onwards ||` from the plain-copy guard, and dropping `!must` from it, both
-     * change nothing here: every compulsory turn on this railway is a dead end, so `onwards` is
-     * already false at each of them and either guard alone is enough. The clause that is actually
-     * load-bearing on this layout is the turning copy itself.
-     *
-     * @throws Exception on a failure to build
+     * MUTATIONS: stopping `AutonomyBuilder.nodesFor` emitting the turning copy fails this, with the squares named,
+     * those that lost their turning copy emitted as NO Point at all.  Dropping `onwards ||` from the plain-copy guard,
+     * or `!must` from it, does NOT: every compulsory turn on this railway is a dead end, so either guard alone is
+     * enough.
      */
     @Test
     public void testTheCopiesAreWhatTheSquaresSettingsImply() throws Exception
@@ -200,10 +141,8 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
 
         List<String> wrong = new ArrayList<>();
 
-        // OVER THE SQUARES, NOT OVER WHAT WAS EMITTED.  Walking the emitted names cannot see a square
-        // that came back as NOTHING - which is a real outcome of this code, not a hypothetical: remove
-        // the turning copy from `nodesFor` and a compulsory-turn square emits neither copy and simply
-        // disappears from the railway, silently, while every square still present looks correct.
+        // Over the squares, not over what was emitted: walking the emitted names cannot see a square that came back as
+        // NOTHING, which removing the turning copy from `nodesFor` produces for a compulsory turn.
         for (TileKey square : session.getReducer().getPoints().keySet())
         {
             List<String> names = emitted.containsKey(square)
@@ -264,9 +203,8 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
                     + " the plain copies that are not dead ends");
             }
 
-            // AND THE MIX, which is where a merge or a split actually shows up.  Only asked of a square
-            // that split, because a square emitted as one Point is named without the suffix whether it
-            // turns or not.
+            // And the mix, which is where a merge or a split shows up; only asked of a square that split, since one
+            // Point is named without the suffix either way.
             if (names.size() > 1)
             {
                 int expectedTurning = canTurn ? sides.size() : 0;
@@ -301,28 +239,14 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     }
 
     /**
-     * The census, and it is the tripwire `two-copies-evaluation.md` asked for.
+     * The census, the tripwire `two-copies-evaluation.md` asked for: the number its first reason ("it buys nothing on
+     * your railway today") is made of.  Red is not automatically a fault: a square Adam adds, marks may-reverse or
+     * joins to a second approach moves these numbers legitimately; update them here and re-read that document.  What
+     * must not happen is the numbers moving without anybody noticing.
      *
-     * That document's recommendation - don't follow the edges instead, not now, not ruled out - lists
-     * "it buys nothing on your railway today" first, and this is the number that claim is made of.
-     * The number is not what the document says. Thirty of the fifty-eight squares split, thirteen of
-     * the thirty-three stations do, and four stations are emitted as four Points each. **Read the
-     * evaluation again before trusting its first reason**; the other two - that this is a change to
-     * the thing every feature stands on, and that the facing property does not go away - are
-     * independent of it and still hold.
-     *
-     * Red is not automatically a fault. A square Adam adds, marks may-reverse, or joins to a second
-     * approach moves these numbers legitimately: update them here and re-read that document, which is
-     * exactly what it asks for. What must not happen is the numbers moving without anybody noticing.
-     *
-     * MUTATION, run, and it is the one that shows why this is here as well as the rule above:
-     * `AutonomySession.reversibleTiles` returning nothing takes the turning copy off every may-turn
-     * square. The RULE TEST STAYS GREEN - a square with no turn is correctly emitted as one Point per
-     * arrival side, which is exactly what it then sees - while this reports 29 split squares against
-     * 30 and an empty four-copy set. A change in how much splitting the railway carries is not a
-     * broken rule; it is a different railway, and only a census can see it.
-     *
-     * @throws Exception on a failure to build
+     * MUTATION: `AutonomySession.reversibleTiles` returning nothing takes the turning copy off every may-turn square.
+     * The RULE TEST STAYS GREEN (a square with no turn is correctly emitted as one Point per arrival side) while this
+     * reports fewer split squares and an empty four-copy set: a different railway, which only a census can see.
      */
     @Test
     public void testTheCopyCensusIsWhatItWasMeasuredAt() throws Exception
@@ -387,20 +311,13 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     }
 
     /**
-     * And the census looked at a wired railway rather than at rubble.
+     * And the census looked at a wired railway rather than at rubble: a diagram parsed without its accessories reduces
+     * to 18 edges instead of 128, and the same census then returns 1 split square out of 58, a clean, plausible, wrong
+     * answer.  The edge count is asserted before the counts above mean anything.
      *
-     * This is the control that the published number did not have. A diagram parsed without its
-     * accessories reduces to 18 edges instead of 128; almost every square is then left with one
-     * arrival side, so the same census returns 1 split square out of 58 - a clean, plausible,
-     * completely wrong answer that reads exactly like a real one. It is how
-     * *"on this railway the split does not fire"* came to be written down.
-     *
-     * So the edge count is asserted before the counts above mean anything.
-     *
-     * MUTATION, run: replacing `LayoutSandbox.wired(model, parser)` in the setup with a bare
-     * `parser.parseLayout(new LinkedList&lt;&gt;())` - the recipe every sandbox test used until
-     * 2026-09-08 - reduces this railway to 18 edges and fails this, and the census with it, at 1 split
-     * square of 58.
+     * MUTATION: replacing `LayoutSandbox.wired(model, parser)` in the setup with a bare
+     * `parser.parseLayout(new LinkedList&lt;&gt;())` reduces this railway to 18 edges and fails this, and the census
+     * with it.
      */
     @Test
     public void testTheCensusLookedAtAWiredRailway()
@@ -414,14 +331,8 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
     }
 
     /**
-     * Every Point the builder would emit, grouped by the square it belongs to.
-     *
-     * Read from `tilesByName`, which is the map the emitted configuration is keyed by - so this counts
-     * what the railway is actually built as rather than re-deriving the split rule and agreeing with
-     * itself.
-     *
-     * @param builder the builder to ask
-     * @return square to the names it is emitted under, in the builder's own order
+     * Every Point the builder would emit, grouped by the square it belongs to, read from `tilesByName` so this counts
+     * what the railway is built as.
      */
     private static Map<TileKey, List<String>> namesPerSquare(AutonomyBuilder builder)
     {

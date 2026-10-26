@@ -166,12 +166,9 @@ abstract public class Route
     }
 
     /**
-     * Takes every command that runs a deleted route out of this one.
-     *
-     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' calls to it, as deleting a locomotive
-     * removes the commands that drive it (`locomotiveDeleted`).  A command naming a route that is not there does nothing
-     * when this one fires - and then runs whatever route is next given that name, which nobody put here.  The wait the
-     * command carried goes with it, as a deleted locomotive's commands take theirs.
+     * Takes every command that runs a deleted route out of this one, as deleting a locomotive removes the commands that
+     * drive it (`locomotiveDeleted`): a command naming a route that is not there does nothing when this one fires, and
+     * then runs whatever route is next given that name.  The wait the command carried goes with it.
      *
      * Through the iterator, on the live list, as `locomotiveDeleted` does: a route already running walks a copy taken
      * when it started, so it finishes the commands it began with.
@@ -216,28 +213,13 @@ abstract public class Route
     }
 
     /**
-     * Takes a deleted locomotive out of this route's COMMANDS, and reports its conditions.
+     * Takes a deleted locomotive out of this route's COMMANDS, and reports its conditions.  A command for a locomotive
+     * that cannot be resolved does nothing when the route fires, which looks exactly like a route that ran, so it goes.
      *
-     * Renaming has always been followed into a route and deleting never was, so a route went on naming
-     * a locomotive that is not in the database - and what that does is quiet.  A command for a
-     * locomotive that cannot be resolved does nothing when the route fires, and a route is a list of
-     * commands: one of them silently not applying looks exactly like a route that ran.  So the command
-     * is removed: it cannot do anything, and leaving it keeps the route looking complete while it is
-     * not.
-     *
-     * **The conditions are deliberately left alone, and an earlier version of this comment was wrong
-     * to say otherwise.**  It reasoned that a condition which can never be true is a route that can
-     * never run, and should go the same way.  That is true and the remedy is worse than the fault.
-     * Conditions are combined with AND - see NodeExpression.fromList - so a term naming a deleted
-     * locomotive makes the whole condition false, and the route stops firing.  Removing the term does
-     * not restore the route the operator had: it creates a route that fires on what is LEFT, which is a
-     * weaker condition than they ever wrote.  These routes throw switches and signals ahead of moving
-     * trains, so a route that has quietly stopped firing is safe and a route that quietly starts firing
-     * on a condition nobody agreed to is not.
-     *
-     * A term inside an OR could be dropped safely, since false is its identity there - but a rule that
-     * depends on where in the tree a term sits is one nobody can predict from the outside, and the
-     * caller is told either way.
+     * The conditions are deliberately left alone: they are combined with AND (NodeExpression.fromList), so a term
+     * naming a deleted locomotive makes the whole condition false and the route stops firing, which is safe.  Removing
+     * the term would make the route fire on a weaker condition than the operator wrote, and these routes throw switches
+     * and signals ahead of moving trains.  The caller is told either way.
      *
      * @param name the locomotive that no longer exists
      * @return true if a CONDITION still names it, so the caller can say so - this route will not fire
@@ -265,14 +247,10 @@ abstract public class Route
     }
 
     /**
-     * Every command in this route that names a locomotive - in its COMMANDS and in its CONDITIONS.
-     *
-     * The conditions were missed for as long as this rule has existed.  They are RouteCommands too -
-     * "has locomotive X reached sensor Y" is one - and NodeExpression.toList hands back the objects
-     * themselves rather than copies, so changing one here changes the condition.
-     *
-     * A renamed locomotive left in a condition is the worst of the shapes this can take: the condition
-     * cannot be satisfied, so the route stops firing, and nothing anywhere says that a rename did it.
+     * Every command in this route that names a locomotive, in its COMMANDS and in its CONDITIONS (which are
+     * RouteCommands too: "has locomotive X reached sensor Y").  NodeExpression.toList hands back the objects
+     * themselves, so changing one here changes the condition.  A renamed locomotive left in a condition silently stops
+     * the route firing.
      *
      * @return the commands naming a locomotive, live
      */
@@ -297,12 +275,9 @@ abstract public class Route
     }
 
     /**
-     * Whether this route's COMMANDS drive the named locomotive, so deleting it would take them away.
-     *
-     * Asked before the deletion rather than after, because `locomotiveDeleted` removes them silently
-     * and there is then nothing left to count.  Commands only: a CONDITION naming the locomotive is
-     * left alone by that method and reported separately, so counting it here would say a route is about
-     * to lose something it keeps.
+     * Whether this route's COMMANDS drive the named locomotive, so deleting it would take them away.  Asked before the
+     * deletion, because `locomotiveDeleted` removes them silently.  Commands only: a CONDITION naming the locomotive is
+     * left alone by that method and reported separately.
      *
      * @param name the locomotive that may be deleted
      * @return true when at least one command in this route drives it
@@ -378,17 +353,9 @@ abstract public class Route
         {
             // TODO rc should maintain the accessory type
 
-            // ASKED WITHOUT REGISTERING (C13).  getAccessoryState creates a switch on a miss, so
-            // merely evaluating a condition against an address the Central Station has never mentioned
-            // invented that accessory - and conditions are evaluated on a timer while a route waits,
-            // so one typo made a permanent one.
-            //
-            // toCSV already used the non-creating lookup for exactly this reason, and NodeExpression
-            // was fixed for it with a comment naming "this display path".  This path was next door to
-            // both and was not swept.
-            //
-            // The verdict is unchanged: the created switch was created UNSWITCHED and then read back
-            // as false, which is what an absent one reads as now.
+            // Asked without registering: getAccessoryState creates a switch on a miss, and conditions are evaluated on
+            // a timer while a route waits, so one typo made a permanent accessory.  The verdict is unchanged: an absent
+            // accessory reads as not switched.
             return control.getAccessoryStateIfPresent(rc.getAddress(), rc.getProtocol())
                 == rc.getSetting();
         }
@@ -427,9 +394,8 @@ abstract public class Route
      */
     private static boolean trainStandsAt(Layout layout, Locomotive loc, String s88)
     {
-        // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer: while the train stands on
-        // the sensor its run has not yet recorded - the gap in which a route fired by that sensor asks - and not at all
-        // for a sensor it has not reached, which this used to wait for, untimed, until the train got there
+        // Lets the run record a train standing on the sensor it waits for (the gap in which a route fired by that
+        // sensor asks); no wait for a sensor the train has not reached or one already recorded.
         layout.waitForTheRunToRecord(loc, 3000);
 
         // The last milestone reached, while the locomotive is running a path
@@ -438,11 +404,10 @@ abstract public class Route
             return true;
         }
 
-        // Otherwise WHERE THE TRAIN IS NOW (OB-250; Adam, 2026-10-08: "250- the first" - the last sensor it
-        // reached, or where it stands): the start of the road it was given until it reaches a sensor, and wherever
-        // it stands once a path has completed.  This asked which Point holds the train, and every Point of a locked
-        // path holds it - the first in hash order, which could be one the train had not reached.  A locomotive that
-        // is not on the autonomy graph at all is nowhere, and so stands at no sensor
+        // Otherwise where the train is now (OB-250): the start of the road it was given until it reaches a sensor, and
+        // wherever it stands once a path has completed.  Not "which Point holds the train": every Point of a locked
+        // path holds it, and the first in hash order could be one the train had not reached.  A locomotive not on the
+        // autonomy graph is nowhere, and so stands at no sensor
         Point location = layout.whereTheTrainIs(loc);
 
         return location != null && s88.equals(location.getS88());

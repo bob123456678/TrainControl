@@ -13,23 +13,18 @@ import support.ProgramConstants;
 /**
  * A tested path's line stays on its rail, however many times the path crosses the square.
  *
- * Adam, OB-216, 2026-09-13: *"When running Test a path from BottomMainB to BottomMainC, the orange lines
- * over the switch at 12,13 are misaligned.  A small offset as on the other tiles is OK."*
+ * Adam, OB-216: *"When running Test a path from BottomMainB to BottomMainC, the orange lines over the switch at 12,13
+ * are misaligned.  A small offset as on the other tiles is OK."*
  *
- * **What the square was given.**  On his railway the route out from BottomMainB leaves west straight
- * through the switch at 12,13, runs the whole loop, and comes back in from the west to take the
- * diverging leg down to BottomMainC; the route back does the same the other way round.  So that one
- * square carries four segments - E to W and W to S going out, S to W and W to E coming back - where an
- * ordinary square on the route carries two, one each way.
+ * On his railway the route out from BottomMainB leaves west straight through the switch at 12,13, runs the whole loop,
+ * and comes back in from the west to take the diverging leg down to BottomMainC, and the route back does the same the
+ * other way round, so that one square carries four segments (E to W and W to S going out, S to W and W to E coming
+ * back) where an ordinary square carries two.  Each segment after the first was pushed sideways by a ninth of the tile
+ * times its position in the list, so the fourth, the straight rail again, went two and a half ninths off its rail,
+ * where an ordinary square's second segment goes half a ninth, the small offset he is content with.
  *
- * **Why it drifted.**  Each segment after the first was pushed sideways by a ninth of the tile times its
- * position in the list, so the fourth - W to E, the straight rail again - went two and a half ninths off
- * its rail, which is the line Adam saw hanging below the track.  An ordinary square's second segment
- * goes half a ninth, which is the small offset he is content with.
- *
- * **Read off the painted pixels.**  Only the eastern quarter of the square is examined, which the
- * diverging leg - drawn from the west edge to the south edge - never reaches, so everything there in a
- * line color belongs to the straight rail and must lie on it.
+ * Read off the painted pixels: only the eastern quarter of the square is examined, which the diverging leg (west edge
+ * to south edge) never reaches, so everything there in a line color belongs to the straight rail and must lie on it.
  *
  * @author Adam
  */
@@ -44,9 +39,7 @@ public class testATestedPathStaysOnItsRail
         ProgramConstants.colour(TileAnnotation.class, "TRACE_RETURN").getRGB() & 0xFFFFFF
     };
 
-    /**
-     * Four passes over a switch keep the straight rail's line as close to it as an ordinary square's.
-     */
+    /** Four passes over a switch keep the straight rail's line as close to it as an ordinary square's. */
     @Test
     public void testASwitchCrossedFourTimesKeepsItsLineOnTheRail()
     {
@@ -73,10 +66,9 @@ public class testATestedPathStaysOnItsRail
     }
 
     /**
-     * The control: an ordinary square's offset is the small one Adam accepted, not something larger.
-     *
-     * Without this, a painter that pushed EVERY square's second pass far off its rail would satisfy the
-     * claim above by making the comparison meaningless.
+     * The control: an ordinary square's offset is the small one Adam accepted, not something larger; otherwise a
+     * painter that pushed EVERY square's second pass far off its rail would satisfy the claim above by making the
+     * comparison meaningless.
      */
     @Test
     public void testAnOrdinarySquaresOffsetIsSmall()
@@ -85,9 +77,8 @@ public class testATestedPathStaysOnItsRail
             new TileAnnotation.Trace(Side.E, Side.W, true),
             new TileAnnotation.Trace(Side.W, Side.E, false)));
 
-        // Half the stroke, plus the offset a second pass over the same rail is moved aside by, plus a
-        // pixel of rim.  Both are the painter's own: the stroke is a fixed part of the square, and so is
-        // the offset (OB-216: "a small offset as on the other tiles").
+        // Half the stroke, plus the offset a second pass over the same rail is moved aside by (OB-216: "a small offset
+        // as on the other tiles"), plus a pixel of rim; both are the painter's own.
         double strokeParts = ProgramConstants.real(TileAnnotation.class, "TRACE_STROKE_PARTS");
         double nudgeParts = ProgramConstants.real(TileAnnotation.class, "TRACE_NUDGE_PARTS");
 
@@ -99,10 +90,8 @@ public class testATestedPathStaysOnItsRail
     }
 
     /**
-     * Paints one square and measures how far from the rail's center line any line-colored pixel in its
-     * eastern quarter lies.
-     *
-     * @return the largest distance in pixels, or -1 when nothing line-colored was painted there
+     * Paints one square and measures how far from the rail's center line any line-colored pixel in its eastern quarter
+     * lies; -1 when nothing line-colored was painted there.
      */
     private static int furthestFromTheRail(List<TileAnnotation.Trace> traces)
     {

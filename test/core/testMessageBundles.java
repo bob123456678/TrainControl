@@ -650,7 +650,7 @@ public class testMessageBundles
         return null;
     }
     /**
-     * The terminus error names the menu that actually closes a side (Adam, 2026-09-12).
+     * The terminus error names the menu that actually closes a side.
      *
      * The rule was right the first time and the sentence was not.  It said *"Bar one way in with the
      * arrows"*, and the arrows are the DEPARTURE setting - so Adam did what it told him and reported
@@ -658,8 +658,8 @@ public class testMessageBundles
      * then diagnosed it himself: *"can't arrive is different than can't depart.  Just make the message
      * more explicit."*
      *
-     * **An error that stops the railway has to name a control the reader can find**, and this one is
-     * two menus away from the one it used to point at. So each bundle's sentence quotes its OWN
+     * **An error that stops the railway has to name a control the reader can find**, and the one that closes a side is
+     * not the departure arrows. So each bundle's sentence quotes its OWN
      * `menuArrivalsGroup` label, and this is what keeps the two in step: rename the menu and the error
      * goes on naming a control that is no longer there, which is the same fault in a slower form.
      *
@@ -711,7 +711,7 @@ public class testMessageBundles
 
     /**
      * The line a switch click leaves in the message strip names the menu its arms are ticked in, by the name that menu has
-     * in each language (Adam, 2026-10-06, accepting D19 of the documentation pass).
+     * in each language.
      *
      * It said "Connections and direction", a heading the square's menu no longer has: the arms are ticked under "Trains May
      * Depart...".  Compared without the trailing ellipsis, as the terminus error's menu is.
@@ -921,8 +921,8 @@ public class testMessageBundles
     }
 
     /**
-     * Every message key a screen asks for is in every language, with a value - the mechanical half of MT-468 (Adam,
-     * 2026-09-25: "OK" to testing that half, and folding the reading of the sentences into MT-291).
+     * Every message key a screen asks for is in every language, with a value - the mechanical half of MT-468; the
+     * reading of the sentences is MT-291.
      *
      * `testNothingAsksForAKeyThatIsNotThere` reads the `I18n.t` / `I18n.f` calls, in English.  The NetBeans-generated code
      * of the older windows reads its labels another way - `bundle.getString("...")` and
@@ -1006,9 +1006,15 @@ public class testMessageBundles
         assertTrue(keysInConstants > 30, "precondition: the constants gave only " + keysInConstants + " keys the other roads"
             + " do not see");
 
-        File[] forms = new File("src/org/traincontrol/gui").listFiles((dir, name) -> name.endsWith(".form"));
+        // Walked, not listed: the forms live in gui's sub-packages too.
+        List<File> forms = new ArrayList<>();
 
-        assertTrue(forms != null && forms.length > 0, "precondition: no .form files were found under src/org/traincontrol/gui");
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File("src/org/traincontrol/gui").toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".form")).forEach(path -> forms.add(path.toFile()));
+        }
+
+        assertTrue(!forms.isEmpty(), "precondition: no .form files were found under src/org/traincontrol/gui");
 
         for (File file : forms)
         {
@@ -1261,7 +1267,7 @@ public class testMessageBundles
     }
 
     /**
-     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes* (Adam, 2026-10-10:
+     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes* (Adam:
      * *"rephrase "place all at their homes" to "place all trains at their homes" in the right click menu"*).  The other
      * seven languages said trains already.
      *
@@ -1282,7 +1288,7 @@ public class testMessageBundles
     /**
      * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
      * trains are, any change to the autonomy settings, and the timetable recorded since the last save (Adam,
-     * 2026-10-10, asked: *"b, easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit,
+     * asked: *"b, easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit,
      * which saves nothing while anything runs, and say so).  It named the timetable and not the settings.
      *
      * MUTATION: leave the settings out of the English sentence again, and this fails.

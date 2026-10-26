@@ -14,46 +14,27 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 
 /**
  * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
  *
- * The editor's own whole-column and whole-row gesture was replaced by multi-select on 2026-08-19 and its code
- * removed.  Dragging or pasting a selected column asks the store the same thing, through
- * `moveTiles`, so the lines here are built by `support.TileLine`.
- *
- * Adam moved a column in the layout editor and his links came unpaired.  The cause was that a bulk
- * edit is not built out of single-tile moves: it copies the whole line into place with the move flag
- * OFF and deletes the source line afterwards, so the one call that carries a square's setup - which
- * only happens on a move - was never made for any of the twenty squares.  Everything autonomy knew
- * about that column stayed where the track used to be, and reconcile, finding stations on squares with
- * no sensors, threw the lot away.  Links show it first because a pairing is mutual: the partner is
- * left pointing at a bare square, which reads as "it unpaired itself".
- *
- * The other half of the same defect is the line being written ONTO.  Its tiles are deleted and other
- * tiles put in their place, so what the setup says about those squares is about track that is gone -
- * and reconcile cannot catch that one at all, because it drops setup from squares that are EMPTY and
- * these are occupied, just by something else.  A copied column therefore arrived carrying whatever
- * station names the column it landed on used to have.
- *
- * So there are two rules, and they are tested apart because they fail apart:
+ * A bulk edit copies the whole line into place with the move flag OFF and deletes the source afterwards, so the one
+ * call that carries a square's setup (a move) was never made and reconcile threw the setup away; links show it first
+ * because a pairing is mutual.  The line being written ONTO is the other half: its setup is about track that is gone,
+ * and reconcile cannot catch it because those squares are occupied.  Two rules, tested apart because they fail apart:
  *
  *   - what is VACATED travels, on a move, and stays put on a copy
  *   - what is BUILT OVER is forgotten, on a move and on a copy alike
  *
- * These run against the store rather than against the editor, which is a window wanting a whole running
- * TrainControlUI behind it.
+ * These run against the store, since the editor is a window wanting a whole running TrainControlUI; the lines are built
+ * by `support.TileLine`.
  */
 public class testLayoutEditorBulkEdits
 {
     private static final String PAGE = "1 - Main";
 
-    /**
-     * A column carries its stations to the new column.
-     *
-     * The bug, in one assertion: everything about the square, on every square of the line.
-     */
+    /** A column carries its stations to the new column: everything about the square, on every square of the line. */
     @Test
     public void testAMovedColumnTakesItsSetupWithIt()
     {
@@ -93,11 +74,7 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A pairing survives, and so does the half of it that lives on another page.
-     *
-     * This is what Adam saw.  A pairing is two entries, one at each end, and moving one end has to
-     * rewrite the OTHER end's entry as well - otherwise the partner points at a square that no longer
-     * holds a link and the pair is broken from the far side while looking intact from the near one.
+     * A pairing survives, and so does the half of it on another page: moving one end rewrites the OTHER end's entry.
      */
     @Test
     public void testAMovedLinkKeepsItsPartnerAndItsPartnerKeepsIt()
@@ -131,9 +108,7 @@ public class testLayoutEditorBulkEdits
         assertFalse(store.isPortalDisabled(was), "and the old square is still switched off");
     }
 
-    /**
-     * A caption follows its square, and a caption elsewhere still names the station that moved.
-     */
+    /** A caption follows its square, and a caption elsewhere still names the station that moved. */
     @Test
     public void testCaptionsFollowAndKeepPointingAtTheRightStation()
     {
@@ -158,10 +133,8 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * The line being written over lets go of what it was.
-     *
-     * Reconcile cannot find these: it drops setup from squares that are empty, and one of these is
-     * not empty, it is occupied by somebody else's track.
+     * The line being written over lets go of what it was; reconcile cannot find these, as they are occupied by other
+     * track.
      */
     @Test
     public void testTheColumnBeingBuiltOverIsForgotten()
@@ -188,12 +161,7 @@ public class testLayoutEditorBulkEdits
         assertFalse(store.isPortalDisabled(doomed), "and is still switched off");
     }
 
-    /**
-     * A COPY takes nothing away from the source, and still clears what it lands on.
-     *
-     * Two squares cannot both be one station, so nothing travels on a copy.  But the line being
-     * copied onto is being built over just the same.
-     */
+    /** A COPY takes nothing away from the source, and still clears what it lands on. */
     @Test
     public void testACopiedColumnLeavesTheSourceAloneAndStillClearsTheTarget()
     {
@@ -221,10 +189,7 @@ public class testLayoutEditorBulkEdits
         assertNull(store.getPointName(doomed), "and kept its name");
     }
 
-    /**
-     * A row is the same rule with the axes swapped, which is the sort of thing that gets typed once
-     * and pasted once.
-     */
+    /** A row is the same rule with the axes swapped. */
     @Test
     public void testAMovedRowTakesItsSetupWithIt()
     {
@@ -246,14 +211,8 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A square that is both landed on and vacated keeps what it is taking with it.
-     *
-     * Cannot arise for a column moved onto a different column, and is silent data loss the day some
-     * other operation reuses this rule: the forgetting happens first, so a square that is about to
-     * travel would be emptied before it went anywhere.
-     *
-     * Asserted through the store rather than through the plan, because the store is what decides it -
-     * that is the point of handing it both halves in one call.
+     * A square that is both landed on and vacated keeps what it is taking with it: the forgetting happens first, so a
+     * square about to travel would be emptied before it went anywhere.  Asserted through the store, which decides it.
      */
     @Test
     public void testASquareThatIsBothSourceAndTargetIsNotForgotten()
@@ -280,19 +239,9 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A paste that overlaps the squares it was cut from still carries all of them.
-     *
-     * cutMoves asks, per origin, whether that square is still empty.  Right question, wrong
-     * moment: pasteSelection places its tiles first, so an origin that is also a LANDING has been
-     * refilled by this very paste before cutMoves looks at it.
-     *
-     * That is not merely a skipped move.  A landing square is in `builtOver`, and the per-index sparing
-     * only spares a landing that equals its OWN origin - so the setup on such a square was forgotten as
-     * built-over while nothing had carried it anywhere.  Destroyed, where it should have moved.
-     *
-     * Cut a column and paste it one square down and that is every square on the column except the top.
-     * Two stations, one square apart, so both the moved-onto-a-landing case and the ordinary case are
-     * in the same run.
+     * A paste that overlaps the squares it was cut from still carries all of them: pasteSelection places its tiles
+     * first, so an origin that is also a LANDING was refilled before cutMoves looked, and its setup was forgotten as
+     * built-over.  Two stations one square apart cover both the landing case and the ordinary one.
      */
     @Test
     public void testAPasteOverlappingItsOwnOriginCarriesEveryone() throws Exception
@@ -303,9 +252,8 @@ public class testLayoutEditorBulkEdits
             session.getStore().setStation(at(page, 5, 4), true);
             session.getStore().setPointName(at(page, 5, 4), "The One Below");
 
-            // A THREE-SQUARE STRIP, not the whole column.  A full-height selection shifted down can
-            // never fit - pasteSelection refuses it with a modal dialog, and a modal dialog inside
-            // invokeAndWait is a deadlock, which is how this test hung a suite for six hours.
+            // A THREE-SQUARE STRIP, not the whole column: a full-height selection shifted down is refused with a modal
+            // dialog, which deadlocks invokeAndWait.
             editor.getSelection().addRectangle(5, 2, 5, 4);
             editor.cutSelection();
 
@@ -332,30 +280,18 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * Undo after a shrink does not put a station’s name back outside the page.
-     *
-     * shrinkEdges snapshots for undo BEFORE it drops the captions on the row and column it is about to
-     * remove - that is the fix, and correct on its own path.  Undo then restores the components
-     * and the captions, but the page SIZE is not part of an undo entry, and a shrink is only offered
-     * when the trimmed edge holds no track, so no restored component pins the size back either.
-     *
-     * So Ctrl+Z after "-" gives the caption back and not the row it stood on: a name that is present in
-     * the setup, never drawn, and with no square left to click to remove it.  Exactly the state the shrink's cleanup
-     * exists to prevent, reached through undo instead of through the shrink.
-     *
-     * A fix was made with no test of its own and its disposition said otherwise, which is the failure
-     * this file exists to catch in the editor and did not catch in itself.
+     * Undo after a shrink does not put a station's name back outside the page: the page SIZE is not part of an undo
+     * entry, so the restored caption would be present in the setup, never drawn, with no square to click to remove it.
      */
     @Test
     public void testUndoingAShrinkDoesNotRestoreACaptionOffThePage() throws Exception
     {
         withEditor("tc-shrink-undo", (editor, session, page) ->
         {
-            // On the last row, which is what the shrink takes away.  A caption goes on a blank square
-            // by preference, so this is where one naturally ends up.
+            // On the last row, which is what the shrink takes away.
             session.setCaption(at(page, 3, 15), at(page, 5, 3));
 
-            // THE CAPTION IS THERE BEFORE THE SHRINK - the absence below means nothing if it never was
+            // THE CAPTION IS THERE BEFORE THE SHRINK, or the absence below means nothing
             assertEquals(session.captionsOnPage(page).get(at(page, 3, 15)), at(page, 5, 3),
                 "precondition: the caption was not set on the last row, so its absence after the undo shows nothing");
 
@@ -372,22 +308,10 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A cut still carries its setup when the paste is not the very next thing the user does.
-     *
-     * `clipboardWasCut` is the ONLY thing that carries a group cut's setup - cutSelection calls
-     * deleteSelection(false), which deliberately tells autonomy nothing, because the paste is the other
-     * half of the gesture. Standing that flag down inside snapshotLayout was tried, on the reasoning that any
-     * edit falsifies it. Every edit snapshots, so any edit at all between the two halves - growing the
-     * diagram to make room, rotating a tile, dropping one from the palette - turned the move back into
-     * a delete-and-lose, with nothing on screen to say so.
-     *
-     * Here the user cuts a set-up column, presses "+" to make room, and pastes. Growing is the most
-     * likely of those gestures and the most obviously harmless: it adds a column on the right and a row
-     * at the bottom, and moves nothing.
-     *
-     * A SOURCE SCAN CANNOT SEE THIS, which is why it is here and not in testTheEditorTellsAutonomy.
-     * The flag is read in the right place and written in the right place; what is wrong is when the
-     * write happens relative to the read, and that is only visible by driving the two gestures apart.
+     * A cut still carries its setup when the paste is not the very next thing the user does: `clipboardWasCut` is the
+     * only thing that carries a group cut's setup, and any edit between the halves (growing the diagram, rotating a
+     * tile) once turned the move into a delete-and-lose.  A source scan cannot see this, since the flag is read and
+     * written in the right places and what is wrong is the order.
      */
     @Test
     public void testAnEditBetweenTheCutAndThePasteStillCarriesTheSetup() throws Exception
@@ -397,7 +321,7 @@ public class testLayoutEditorBulkEdits
             editor.selectColumn(5);
             editor.cutSelection();
 
-            // The unrelated edit.  Right and bottom only, so no square this test names moves.
+            // The unrelated edit, right and bottom only, so no square this test names moves.
             editor.growEdges();
 
             editor.pasteSelection(9, 0);
@@ -418,16 +342,9 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An undo between the cut and the paste leaves the setup where the track came back.
-     *
-     * The other direction, and the reason the flag was once stood down. Undo puts the
-     * cut track back on the squares it emptied, so those squares are occupied again and their setup
-     * belongs to what is standing on them - carrying it to the paste target would be the loss the stand-down
-     * was written to prevent, arriving from the opposite side.
-     *
-     * The fix is not the flag but the question it was standing in for, asked per square: is the square
-     * this setup came from still EMPTY? Undo makes the answer no for exactly the squares it refilled,
-     * which is why this test and the one above can both pass.
+     * An undo between the cut and the paste leaves the setup where the track came back: those squares are occupied
+     * again, so their setup belongs to what stands on them.  The question is asked per square (is the origin still
+     * EMPTY?).
      */
     @Test
     public void testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs() throws Exception
@@ -453,40 +370,24 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * A paste that carried nothing does not use up the cut.
+     * A paste that carried nothing does not use up the cut: `cutMoves` returns an empty map after an undo or on another
+     * page, and clearing `clipboardWasCut` then made the next paste destroy the setup it should have carried.  One
+     * square, not a column, because `emptyCutOrigins` counts the column's never-occupied squares as vacated and the
+     * paste would be a real move.
      *
-     * `clipboardWasCut` says "the squares these tiles came from are empty now, so the setup should
-     * move with them". It was cleared by **any** paste that reached `cutMoves`, and `cutMoves` returns
-     * an empty-but-not-null map whenever no origin is both cut and still empty - after an undo has put
-     * the track back, or on another page, where the setup is deliberately left behind to be picked up
-     * on the way back.
-     *
-     * So a paste that moved nothing spent the cut, and the next paste - the one that would have
-     * carried it - fell into the `else` and called `forgetBuiltOver` on the origins. Pasting the block
-     * back where it came from then **destroyed** its setup instead of leaving it alone, which is
-     * the same loss arriving through a door a rewrite opened.
-     *
-     * **One square, not a column**, and that is the whole difficulty of writing this. A column cut
-     * from this fixture has fifteen squares that were never occupied; `emptyCutOrigins` counts them as
-     * vacated - rightly, an empty square can still hold a caption - so the map comes back with fifteen
-     * moves in it and the paste is a real move that spends the cut fairly. The sequence the finding is
-     * about needs every cut square full again, which here means cutting only the square that has
-     * anything on it.
-     *
-     * MUTATION: clearing `clipboardWasCut` unconditionally - which is what `:2967` did - fails this.
+     * MUTATION: clearing `clipboardWasCut` unconditionally fails this.
      */
     @Test
     public void testAPasteThatCarriedNothingDoesNotUseUpTheCut() throws Exception
     {
         withEditor("tc-cut-spent", (editor, session, page) ->
         {
-            // The one square with anything on it.  There is no single-square door on the editor -
-            // selectRow and selectColumn are the two it offers - and a row or a column would drag in
-            // squares that were empty before the cut, which is the case this test exists to avoid.
+            // The one square with anything on it: the editor has no single-square door, and a row or column would drag
+            // in empty squares.
             try
             {
                 java.lang.reflect.Field picked =
-                    org.traincontrol.gui.LayoutEditor.class.getDeclaredField("selection");
+                    org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("selection");
 
                 picked.setAccessible(true);
 
@@ -505,8 +406,8 @@ public class testLayoutEditorBulkEdits
             // ...and this paste therefore carries no setup and must not spend the cut.
             editor.pasteSelection(9, 0);
 
-            // Back where it came from.  The landing square gets its own tile, so there is nothing here
-            // to forget - unless the paste above has already been read as the move.
+            // Back where it came from.  The landing square gets its own tile, so there is nothing to forget unless the
+            // paste above was read as the move.
             editor.pasteSelection(5, 3);
         }, (session, page) ->
         {
@@ -519,34 +420,11 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An undone cut is outstanding nowhere, not mostly (second half).
+     * An undone cut is outstanding nowhere, not mostly: `emptyCutOrigins` asked each cut square "are you empty now?"
+     * and a square that was always empty answers yes whether or not the cut was undone, so a column cut then undone
+     * still moved fifteen of its sixteen squares.  The question is now asked of the squares the cut emptied of a tile.
      *
-     * `clipboardCutSquares` is every picked square, occupied or not - deliberately, because an empty
-     * square can still hold a caption worth moving. `emptyCutOrigins` then asked each of them "are you
-     * empty now?", and **a square that was always empty answers yes whether the cut has been undone or
-     * not**. A column selection is mostly such squares.
-     *
-     * So: cut a column, press Ctrl+Z, and fifteen of its sixteen squares still said the cut was
-     * outstanding. The move map came back with fifteen entries in it, the next paste was read as the
-     * move and spent the cut - and the setup on the one square that had any track, correctly left
-     * behind because that square was full again, was then forgotten by the paste that put the block
-     * back. The station was destroyed by a sequence whose second step was an undo.
-     *
-     * Undo is atomic, so the question is now asked of the squares the cut emptied **of a tile**: if any
-     * of those is full again, the cut has been put back and nothing is outstanding.
-     *
-     * Found while writing the test above, which failed against this rather than against the flag it
-     * was aimed at - the two are one gesture apart and need separate fixes.
-     *
-     * **One assertion, not two.** This carried a second - that the station had not traveled to
-     * `9,3` - and no implementation can make it false: with the fix nothing moves at all,
-     * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
-     * A check that both branches satisfy is not a check.
-     *
-     * **One assertion, not two.** This carried a second - that the station had not traveled to
-     * `9,3` - and no implementation can make it false: with the fix nothing moves at all,
-     * and without it `5,3` is full again, so it is excluded from `vacated` and skipped by `cutMoves`.
-     * A check that both branches satisfy is not a check.
+     * One assertion, not two: a second (the station did not travel to `9,3`) no implementation can make false.
      *
      * MUTATION: dropping the `clipboardCutHadTiles` check from `emptyCutOrigins` fails this.
      */
@@ -560,8 +438,8 @@ public class testLayoutEditorBulkEdits
 
             editor.undo();
 
-            // Fifteen of the sixteen squares on this column were never occupied, so before the fix
-            // this paste carried their setup away and spent the cut with it.
+            // Fifteen of the sixteen squares on this column were never occupied, so this paste once carried their setup
+            // away.
             editor.pasteSelection(9, 0);
 
             editor.pasteSelection(5, 0);
@@ -590,15 +468,10 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * One set-up square, a real editor over it, a gesture, and a look at what the setup says after.
-     *
-     * A LayoutEditor that never shows itself and an AutonomySession in a temp folder, joined through the
-     * reflectively-set TrainControlUI field, so the call sites under test are the real ones. Factored out
-     * because two tests need it, and a second copy of forty lines of wiring is where the drift starts.
-     *
-     * @param folder a name for the temp autonomy folder, so a failure says which test left it
-     * @param gesture what to do to the editor, run on the event thread
-     * @param check what to assert afterwards, run on this thread
+     * One set-up square, a real editor over it, a gesture, and a look at what the setup says after.  A LayoutEditor
+     * that never shows itself and an AutonomySession in a temp folder, joined through the reflectively-set
+     * TrainControlUI field, so the call sites under test are the real ones; `folder` names the temp autonomy folder so
+     * a failure says which test left it.
      */
     private void withEditor(String folder, Gesture gesture, Check check) throws Exception
     {
@@ -610,7 +483,7 @@ public class testLayoutEditorBulkEdits
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
@@ -660,10 +533,10 @@ public class testLayoutEditorBulkEdits
             sessionField.set(ui[0], session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
             drawGrid.setAccessible(true);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -678,16 +551,9 @@ public class testLayoutEditorBulkEdits
                 }
             });
 
-            // ON A DEADLINE, not invokeAndWait.
-            //
-            // A gesture that makes the editor raise a modal dialog - an out-of-bounds paste is one -
-            // deadlocks invokeAndWait outright: the gesture waits for the dialog and the dialog waits
-            // for a click.  One did, and the suite sat on it for six hours using twelve seconds of CPU,
-            // reporting nothing, because a class that prints no summary reads like a class that passed.
-            //
-            // A minute is far more than any of these gestures needs and far less than a working day.
-            // The failure names the likely cause, because the stack trace of a blocked event thread
-            // does not.
+            // ON A DEADLINE, not invokeAndWait: a gesture that raises a modal dialog (an out-of-bounds paste) deadlocks
+            // it, and a suite once sat on that for six hours reporting nothing.  A minute is far more than any gesture
+            // needs, and the failure names the likely cause, since a blocked event thread's stack does not.
             final java.util.concurrent.CountDownLatch finished =
                 new java.util.concurrent.CountDownLatch(1);
 
@@ -722,8 +588,8 @@ public class testLayoutEditorBulkEdits
         }
         finally
         {
-            // POSTED, NOT WAITED ON.  If the deadline above expired the event thread is
-            // still blocked, and waiting for it here would turn a reported failure back into a hang.
+            // POSTED, NOT WAITED ON: if the deadline expired the event thread is still blocked, and waiting would turn
+            // a failure back into a hang.
             if (editor[0] != null)
             {
                 javax.swing.SwingUtilities.invokeLater(() -> editor[0].dispose());
@@ -774,23 +640,12 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * Nothing outlines the grid's padding.
+     * Nothing outlines the grid's padding (MT-228; Adam: "a phantom row gets permanently highlighted in blue.").  The
+     * grid is one row taller and one column wider than the diagram, blank labels hold it together (OB-055), and
+     * clearBordersFromChildren leaves spacers alone, so a landing outline painted there never came off.  Both doors are
+     * tested: the landing set through a drag, the picked set through a box released on the padding.
      *
-     * Adam, on MT-228: "the flicker is gone, but when dragging the selected tiles to the bottom of the
-     * diagram, a phantom row gets permanently highlighted in blue."
-     *
-     * The grid is built one row taller and one column wider than the diagram, and that extra row and
-     * column are blank labels that hold the GridBagLayout together (OB-055).  getValueAt hands them out
-     * like any other square, so a group dragged onto the last row has its landing outline - the blue
-     * one - painted straight onto the padding underneath.  And clearBordersFromChildren deliberately
-     * leaves spacers alone, being the grid's own furniture rather than squares, so nothing ever takes
-     * that outline off again.  Permanent, exactly as reported.
-     *
-     * Both doors are tested, because both are open: the landing set gets there through a drag, and the
-     * picked set gets there through a box released on the padding, which is the same mistake in red.
-     *
-     * MUTATION this catches: the whole of it.  Take the spacer guard out of highlightLabel and both
-     * assertions fail with a border on a label that is not a square.
+     * MUTATION: take the spacer guard out of highlightLabel and both assertions fail.
      */
     @Test
     public void testTheOutlineNeverLandsOnTheGridsPadding() throws Exception
@@ -805,9 +660,8 @@ public class testLayoutEditorBulkEdits
                 org.traincontrol.gui.LayoutGrid grid =
                     (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
 
-                // The fixture's diagram is 21 x 16, so the padding is row 16.  Asserted rather than
-                // assumed: if the grid ever stops being built one bigger than the diagram, this test
-                // would pass by looking at nothing at all.
+                // The fixture's diagram is 21 x 16, so the padding is row 16; asserted, or the test would look at
+                // nothing.
                 org.traincontrol.gui.LayoutLabel padding = grid.getValueAt(5, 16);
 
                 assertNotNull(padding, "the grid has no row 16, so this test is looking at nothing");
@@ -828,8 +682,8 @@ public class testLayoutEditorBulkEdits
                     LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
                 refresh.setAccessible(true);
 
-                // A group on the bottom row, dragged one row further down: the landing runs off the
-                // diagram and onto the padding.
+                // A group on the bottom row, dragged one row further down: the landing runs off the diagram onto the
+                // padding.
                 editor.getSelection().add(5, 15);
 
                 landing.add(5, 16);
@@ -840,8 +694,7 @@ public class testLayoutEditorBulkEdits
                     "the padding row is wearing the blue landing outline, and clearBordersFromChildren "
                     + "will never take it off again - which is the phantom row Adam reported");
 
-                // And the same square picked outright, which is what a selection box released on the
-                // padding does.
+                // And the same square picked outright, as a selection box released on the padding does.
                 landing.clear();
 
                 editor.getSelection().add(5, 16);
@@ -851,8 +704,7 @@ public class testLayoutEditorBulkEdits
                 assertNull(grid.getValueAt(5, 16).getBorder(),
                     "the padding row is wearing the red selected outline, by the same door");
 
-                // The real square above it still gets its outline, so the guard has not simply turned
-                // the feature off.
+                // The real square above it still gets its outline, so the guard has not simply turned the feature off.
                 assertNotNull(grid.getValueAt(5, 15).getBorder(),
                     "the square that IS picked lost its outline, so the guard is too wide");
             }

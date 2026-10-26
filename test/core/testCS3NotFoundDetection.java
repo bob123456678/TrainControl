@@ -11,20 +11,13 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * A CS3 that answers "Not Found" in the BODY is recognized as not having it.
  *
- * From the test suite audit inside [OB-089]. `isNotFoundError` has two branches and the suite
- * only ever exercised one: the mock Central Station returns real HTTP 404s, which land in the
- * `FileNotFoundException` catch. The audit demonstrated the gap by replacing the whole method with
- * `return false` and watching everything stay green.
+ * `isNotFoundError` has two branches and the suite only exercised one (OB-089): the mock Central Station returns real
+ * HTTP 404s, which land in the `FileNotFoundException` catch.  The untested branch is the one that matters on real
+ * hardware: a CS3 running firmware before 2.6.0 answers an unknown endpoint with **HTTP 200 and a JSON object**
+ * `{"error": "Not Found"}` rather than a 404, which is why the method reads the body at all.
  *
- * The untested branch is the one that matters on real hardware. A CS3 running firmware before 2.6.0
- * answers an unknown endpoint with **HTTP 200 and a JSON object** `{"error": "Not Found"}` rather than
- * a 404, which is exactly why the method reads the body at all instead of trusting the status. So the
- * half that was covered is the half that only newer firmware produces, and the half that decides
- * whether TrainControl talks to Adam's own station correctly was never run.
- *
- * **No model, no layout, no network.** `fetchURL` reads any URL the JVM understands, including `file:`
- * - which the application itself relies on when a local layout override is set. So the responses can
- * be written to disk and pointed at, and this test needs nothing running.
+ * No model, no layout, no network: `fetchURL` reads any URL the JVM understands, including `file:`, which the
+ * application relies on when a local layout override is set, so the responses are written to disk and pointed at.
  */
 public class testCS3NotFoundDetection
 {
@@ -46,11 +39,7 @@ public class testCS3NotFoundDetection
         folder.deleteOnExit();
     }
 
-    /**
-     * The pre-2.6.0 answer: a 200, with the refusal in the body.
-     *
-     * This is the assertion the audit showed was missing. With it, `return false` no longer passes.
-     */
+    /** The pre-2.6.0 answer: a 200, with the refusal in the body; with this, `return false` no longer passes. */
     @Test
     public void testAnErrorObjectInTheBodyCountsAsNotFound() throws Exception
     {
@@ -61,9 +50,7 @@ public class testCS3NotFoundDetection
     }
 
     /**
-     * And the same thing however the station capitalizes it.
-     *
-     * The comparison is deliberately case-insensitive in the code; that is worth holding, because a
+     * And the same thing however the station capitalizes it: the comparison is case-insensitive in the code, and a
      * firmware that says "not found" would otherwise be read as success.
      */
     @Test
@@ -73,9 +60,7 @@ public class testCS3NotFoundDetection
             "the same refusal in lower case was not recognised");
     }
 
-    /**
-     * A real answer is not a refusal - which is the half that decides anything is fetched at all.
-     */
+    /** A real answer is not a refusal, which is the half that decides anything is fetched at all. */
     @Test
     public void testAnArrayIsNeverNotFound() throws Exception
     {
@@ -85,10 +70,8 @@ public class testCS3NotFoundDetection
     }
 
     /**
-     * An object that is not an error is not a refusal either.
-     *
-     * Worth its own case: the branch returns on `error` being absent, and "any object means trouble"
-     * is an easy way to write this wrongly.
+     * An object that is not an error is not a refusal either: the branch returns on `error` being absent, and "any
+     * object means trouble" is an easy way to write this wrongly.
      */
     @Test
     public void testAnOrdinaryObjectIsNotAnError() throws Exception
@@ -97,12 +80,7 @@ public class testCS3NotFoundDetection
             "an ordinary JSON object was treated as a refusal");
     }
 
-    /**
-     * And a genuine 404, which is what newer firmware sends - the branch that was already covered.
-     *
-     * Kept so that the two answers stay tested together: a change that fixed one by breaking the
-     * other would otherwise look like a pass.
-     */
+    /** And a genuine 404, which newer firmware sends: kept so the two answers stay tested together. */
     @Test
     public void testAMissingResourceIsNotFound() throws Exception
     {

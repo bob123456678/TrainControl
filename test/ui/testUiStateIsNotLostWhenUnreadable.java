@@ -17,26 +17,21 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A UIState.data that will not read is copied aside before it is written over.
+ * A UIState.data that will not read is copied aside before it is written over (MT-038). The rule comes from the
+ * locomotive database: one transient read failure at startup plus an ordinary exit destroyed everything the user had
+ * set up, and writing atomically is no protection, since a complete successful write of nothing is not a partial write.
  *
- * MT-038.  The rule comes from the locomotive database, which learned it the hard way: one transient
- * read failure at startup plus an ordinary exit destroyed everything the user had set up, with no undo
- * and no automatic backup.  Writing atomically is no protection at all against this - a complete
- * successful write of nothing is not a partial write.
- *
- * **This test writes where the application keeps the file** - `Util.dataPath`, which is the working directory,
- * or under `docs/tools/one.sh` and `battery.sh` a copy of the run's own, so that there it never touches the
- * operator's file at all.  Where it is the working directory, the real `UIState.data` is copied aside before anything
- * happens and put back afterwards, whatever the outcome - which is exactly why Adam asked for a backup
- * before this was run by hand.  If the restore ever fails, the copy is left in the scratch file named
- * in the failure message rather than deleted.
+ * This test writes where the application keeps the file (`Util.dataPath`: the working directory, or under
+ * `docs/tools/one.sh` and `battery.sh` a copy of the run's own, so it never touches the operator's file there). Where
+ * it is the working directory, the real `UIState.data` is copied aside before anything happens and put back afterwards,
+ * whatever the outcome; if the restore ever fails, the copy is left in the scratch file named in the failure message.
  */
 public class testUiStateIsNotLostWhenUnreadable
 {
     /**
-     * The file this class backs up, overwrites and restores, asked of the application rather than restated: a
-     * rename in the program must move this test along with it, not leave it shuffling some other file.  Resolved
-     * when the class loads, so a member that has gone fails the class before a single file is touched.
+     * The file this class backs up, overwrites and restores, asked of the application rather than restated, so a rename
+     * in the program moves this test along with it. Resolved when the class loads, so a member that has gone fails the
+     * class before a single file is touched.
      */
     private static final String DATA = dataFileName();
 
@@ -59,53 +54,36 @@ public class testUiStateIsNotLostWhenUnreadable
     }
 
     /**
-     * What the operator's file held, read before this class does anything at all.
-     *
-     * In memory rather than in a temp file, and taken in @BeforeClass rather than in the test.  The
-     * first version took the copy inside the test method, AFTER the headless check - so the headless
-     * run threw SkipException before the copy was taken, and the teardown, seeing no copy and a file
-     * on disk, deleted the operator's real one.  It was recovered from a safety copy taken by hand.
-     *
-     * That is the whole lesson of this test in one paragraph: a guard that runs after the thing it
-     * guards is not a guard.
+     * What the operator's file held, read before this class does anything at all: in memory, and in @BeforeClass rather
+     * than in the test, because a copy taken after the headless check's SkipException left the teardown seeing no copy
+     * and a file on disk, and deleting the operator's real one. A guard that runs after the thing it guards is not a
+     * guard.
      */
     private static byte[] original;
 
-    /** Whether there was a file at all when this started - the only thing that licenses a delete */
+    /** Whether there was a file at all when this started, the only thing that licenses a delete. */
     private static boolean hadOne;
 
-    /** And whether this class is the one that put a file there */
+    /** And whether this class is the one that put a file there. */
     private static boolean weWroteIt;
 
     /**
-     * The operator’s railway is not this test’s to open (OB-111).
-     *
-     * Constructing the window opens whatever the saved layout preference names, which on his machine is
-     * his live layout - so this class rewrote his configuration on every battery, identical but for
-     * line endings, and left it showing as modified in git status. The sandbox points the preference
-     * at a copy of the fixture and puts it back afterwards.
+     * The operator's railway is not this test's to open (OB-111): constructing the window opens whatever the saved
+     * layout preference names, which on his machine is his live layout. The sandbox points the preference at a copy of
+     * the fixture and puts it back afterwards.
      */
     private static support.LayoutSandbox sandbox;
 
     /**
-     * The same bytes, on DISK, for the whole time the live file is rubbish.
-     *
-     * Holding the only copy in a static field is holding it nowhere: this test overwrites the
-     * operator's real file and then builds a whole TrainControlUI, and anything that ends the JVM in
-     * between - a hang in invokeAndWait, an out-of-memory, the operator stopping the run, or the
-     * runner's own orphan reaper, which taskkills leftover test JVMs before every battery - takes the
-     * only copy with it and leaves the file corrupt with nothing to restore from.
-     *
-     * An earlier version of this class destroyed that file once already, by a different route.  Once is
-     * a mistake; twice would be a habit.
+     * The same bytes, on DISK, for the whole time the live file is rubbish. Holding the only copy in a static field is
+     * holding it nowhere: anything that ends the JVM between the overwrite and the restore (a hang in invokeAndWait, an
+     * out-of-memory, the operator stopping the run, the runner's orphan reaper) takes the only copy with it.
      */
     private static File onDisk;
 
     /**
-     * Before anything: what is on disk now.
-     *
-     * Unconditionally, and before the headless check - a run that skips must still put back anything a
-     * teardown might otherwise tidy away.
+     * Before anything: what is on disk now. Unconditionally and before the headless check, since a run that skips must
+     * still put back anything a teardown might tidy away.
      */
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -117,9 +95,7 @@ public class testUiStateIsNotLostWhenUnreadable
         if (hadOne) original = Files.readAllBytes(live.toPath());
     }
 
-    /**
-     * The whole thing: an unreadable file, a session, and a copy in the backup folder afterwards.
-     */
+    /** The whole thing: an unreadable file, a session, and a copy in the backup folder afterwards. */
     @Test
     public void testAnUnreadableStateFileIsKept() throws Exception
     {
@@ -152,16 +128,9 @@ public class testUiStateIsNotLostWhenUnreadable
 
         final TrainControlUI[] window = new TrainControlUI[1];
 
-        // BEFORE the window is built: it reads the layout preference in its constructor (OB-111).
-        // Opened here rather than in a @BeforeClass because this is the only place that builds one,
-        // and the finally below is already where this method puts things back.
-        // INSIDE THE TRY, so the close cannot be skipped.
-        //
-        // This stood one line above `new TrainControlUI()` - the statement it exists to protect - and
-        // outside the `try` whose `finally` closes it.  A throw from the constructor left the
-        // operator's machine-global layout preference pointing at a folder under %TEMP%, which is what
-        // TrainControl would then open on his next start.  This class's own javadoc states the rule
-        // it was breaking: a guard that runs after the thing it guards is not a guard.
+        // BEFORE the window is built, because it reads the layout preference in its constructor (OB-111), and INSIDE
+        // THE TRY so the close cannot be skipped: a throw from the constructor with the sandbox opened outside the
+        // `try` would leave the operator's machine-global layout preference pointing at a %TEMP% folder.
         try
         {
             sandbox = support.LayoutSandbox.open();
@@ -220,10 +189,9 @@ public class testUiStateIsNotLostWhenUnreadable
         {
             Files.write(live.toPath(), original);
 
-            // Checked, not assumed.  This file is the operator's, and "restored" is a claim.
-            //
-            // The copy on disk is named here rather than described, because a failure message about a
-            // file somebody has to go and find is only useful if it says where.
+            // Checked, not assumed: this file is the operator's, and "restored" is a claim. The copy on disk is named
+            // in the failure message, since a message about a file somebody has to go and find is only useful if it
+            // says where.
             assertEquals(Files.readAllBytes(live.toPath()), original,
                 "UIState.data was NOT put back as it was found.  A copy of the original is on disk at "
                 + (onDisk == null ? "(none)" : onDisk.getAbsolutePath())
@@ -240,17 +208,15 @@ public class testUiStateIsNotLostWhenUnreadable
             live.delete();
         }
 
-        // And the staging file, if the save that this test provokes did not get as far as moving it
-        // into place.  Harmless where it lies - the next write overwrites it - but it is litter in the
-        // project root, and litter beside a data file is the sort of thing somebody later has to work
-        // out the meaning of.
+        // And the staging file, if the save this test provokes did not get as far as moving it into place: harmless
+        // where it lies, but litter in the project root.
         File staging = new File(Util.dataPath(DATA + Util.PARTIAL_DOWNLOAD_SUFFIX));
 
         if (staging.exists()) staging.delete();
 
-        // And the copy this run put in the backup folder, which holds the test's own rubbish rather
-        // than anything of the operator's.  Checked by CONTENT, not by name: deleting from a backup
-        // folder on a guess is exactly the wrong instinct.
+        // And the copy this run put in the backup folder, which holds the test's own rubbish rather than anything of
+        // the operator's. Checked by CONTENT, not by name: deleting from a backup folder on a guess is the wrong
+        // instinct.
         File backups = new File(Util.dataPath(BACKUPS));
 
         String[] found = backups.list();

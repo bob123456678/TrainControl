@@ -20,24 +20,20 @@ import org.traincontrol.util.I18n;
 /**
  * A dispatch that fails says the right thing about restarting (MT-327, MT-328).
  *
- * Adam, 2026-09-12, on both entries: *"I don't know how to trigger this error condition. Seems like
- * something to test offline."* - so it is tested here rather than asked of him. Reaching this sentence by
- * hand means making a real dispatch fail part way, with a decoder that does not answer or an accessory
- * that has gone missing, and then reading the log fast enough to catch it.
+ * Adam, on both entries: "I don't know how to trigger this error condition. Seems like something to test offline."
+ * Reaching this sentence by hand means making a real dispatch fail part way, with a decoder that does not answer or an
+ * accessory that has gone missing.
  *
- * **Two doors, two sentences.** `executePath` has three callers: autonomy itself, the commands panel and
- * the diagram's right-click menu. The last two work with autonomy stopped, and the message they used to
- * get - *"Autonomy has stopped itself so the railway can be parked and started again"* - is a sentence
- * about something that was never running. It sent the operator to press Start over a hand dispatch.
+ * Two doors, two sentences: `executePath` has three callers (autonomy, the commands panel, the diagram's right-click
+ * menu); the last two work with autonomy stopped, and the old "Autonomy has stopped itself so the railway can be parked
+ * and started again" sent the operator to press Start over a hand dispatch.
  *
- * **The trap the entries name.** *"If both cases say the same thing, the flag that chooses between them
- * is being read after the stop has already cleared it."* `stopLocomotives()` clears `running`, and the
- * handler calls it before it logs - so `wasRunning` has to be captured first. Reading it a line later
- * gives "not running" for both, and the running case silently loses its correct sentence.
+ * The trap the entries name: "If both cases say the same thing, the flag that chooses between them is being read after
+ * the stop has already cleared it."  `stopLocomotives()` clears `running` and the handler calls it before it logs, so
+ * `wasRunning` has to be captured first.
  *
- * MUTATION: move the `final boolean wasRunning = this.running;` below `stopLocomotives()` and the
- * running case fails while the hand-dispatch case stays green - which is exactly the shape the entry
- * predicts.
+ * MUTATION: move the `final boolean wasRunning = this.running;` below `stopLocomotives()` and the running case fails
+ * while the hand-dispatch case stays green.
  *
  * @author Adam
  */
@@ -46,10 +42,8 @@ public class testAFailedDispatchSaysWhichKindItWas
     private static MarklinControlStation model;
 
     /**
-     * A copy of a fixture, so `init` does not load whatever railway this machine happens to have.
-     *
-     * Nothing here reads the diagram - the two-point railway below is built by hand - but `init`
-     * points at the layout preference regardless, and on Adam's machine that is his own railway.
+     * A copy of a fixture, so `init` does not load whatever railway this machine happens to have: nothing here reads
+     * the diagram, but `init` points at the layout preference regardless.
      * `regression.testSwitchingToACentralStationLayout` ratchets the number of classes that skip this.
      */
     private static support.LayoutSandbox sandbox;
@@ -66,10 +60,8 @@ public class testAFailedDispatchSaysWhichKindItWas
 
         model = support.TestStation.simulatedInDebug();
 
-        // THE LOG, READ AT ITS OWN LOGGER.  `MarklinControlStation.log(String)` ends in
-        // `log.info(message)`, and attaching a handler there needs nothing added to the program for
-        // the sake of the test - which is the difference between testing the message and testing a
-        // hook put in to test the message.
+        // THE LOG, READ AT ITS OWN LOGGER: `MarklinControlStation.log(String)` ends in `log.info(message)`, so no hook
+        // is added to the program for the sake of the test.
         tap = new java.util.logging.Handler()
         {
             @Override
@@ -107,8 +99,6 @@ public class testAFailedDispatchSaysWhichKindItWas
 
     /**
      * MT-327: with autonomy NOT running, the message says there is nothing to restart.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAHandDispatchIsNotToldToPressStart() throws Exception
@@ -129,12 +119,8 @@ public class testAFailedDispatchSaysWhichKindItWas
     }
 
     /**
-     * MT-328: with autonomy running, the old sentence is the right one and is still said.
-     *
-     * The half that keeps the fix honest - a message that always says "nothing to restart" would pass
-     * the claim above and lose the case where Start really is what puts the railway back.
-     *
-     * @throws Exception from the railway
+     * MT-328: with autonomy running, the old sentence is the right one and is still said: a message that always says
+     * "nothing to restart" would pass the claim above.
      */
     @Test(dependsOnMethods = "testAHandDispatchIsNotToldToPressStart")
     public void testARunThatStopsItselfStillSaysToStartItAgain() throws Exception
@@ -156,8 +142,6 @@ public class testAFailedDispatchSaysWhichKindItWas
 
     /**
      * Builds a two-point railway, makes the dispatch throw part way, and returns the locomotive.
-     *
-     * @param running whether autonomy is going when the failure happens
      */
     private static Locomotive failADispatch(String fromName, int fromSensor, String toName,
         int toSensor, boolean running) throws Exception
@@ -186,8 +170,7 @@ public class testAFailedDispatchSaysWhichKindItWas
 
         assertNotNull(path.get(0), "the fixture produced no edge, so nothing below is exercised");
 
-        // The throw, after the path has been locked - the same gesture
-        // `testAFailedPathStopsTheRunAndGivesTheTrackBack` uses to reach this handler.
+        // The throw, after the path has been locked - as in `testAFailedPathStopsTheRunAndGivesTheTrackBack`.
         loc.setCallback(Layout.CB_ROUTE_START, l ->
         {
             throw new RuntimeException("deliberate mid-path failure");

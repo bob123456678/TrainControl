@@ -27,12 +27,10 @@ import org.traincontrol.marklin.MarklinAccessory;
 /**
  * Turning round: one sensor, two things a train may do there.
  *
- * The shape under test is taken from the sample layout, where it was written by hand.  BottomMainC and
- * BottomMainCTerm are both stations and both s88 4; both are entered from BottomMainCPre; one leaves to
- * BottomMainPost carrying on, the other to TunnelReversePre having turned round.  A single Point per
- * sensor cannot say that - arriving from the west and going on east is the same edge set as arriving
- * from the west and backing out west again - so either the reversal is unreachable or every passing
- * train performs one.
+ * The shape under test is taken from the sample layout, where it was written by hand.  BottomMainC and BottomMainCTerm
+ * are both stations and both s88 4; both are entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
+ * other to TunnelReversePre having turned round.  A single Point per sensor cannot say that, since arriving from the
+ * west and going on east is the same edge set as arriving from the west and backing out west again.
  *
  * The track built here is that junction:
  *
@@ -51,11 +49,9 @@ public class testAutonomyDiagramReversal
     /**
      * Nothing marked, and the impossible move is already gone.
      *
-     * This test used to state the defect: with one Point per sensor, F11 -> F4 and F4 -> F18 both
-     * existed, so a path to the siding was offered even though the second leg leaves by the side the
-     * first arrived at - and a locomotive sent to F18 would simply never get there.  Splitting every
-     * square by arrival side is what makes that sayable, so the marking is not what fixes it and this
-     * now pins the fix rather than the fault.
+     * With one Point per sensor, F11 -> F4 and F4 -> F18 both existed, so a path to the siding was offered although the
+     * second leg leaves by the side the first arrived at.  Splitting every square by arrival side is what removes it,
+     * so the marking is not what fixes it.
      *
      * Running west, the siding is straight ahead and needs no reversal at all; running east it is
      * behind the train.  Two copies, and only one of them can reach it.
@@ -116,11 +112,8 @@ public class testAutonomyDiagramReversal
     @Test
     public void testBothCopiesAreReachableFromTheSameIncomingPoint() throws IOException
     {
-        // West11 is marked as well, and has to be: it is a buffer stop.  Track runs east from it and
-        // nowhere else, so a train there arrived from the east and is pointing west, and until somebody
-        // says trains turn round there it cannot set off towards the junction at all.  That is the
-        // derivation being right about the fixture rather than wrong about the split - what is under
-        // test here is Main4, and West11 only has to be able to reach it.
+        // West11 is a buffer stop and must be marked too: track runs east from it only, so it cannot set off towards
+        // the junction until trains turn round there.  What is under test is Main4, and West11 only has to reach it.
         JSONObject built = build(junction(), stations(key("main", 5, 2)),
             marked(key("main", 5, 2), key("main", 1, 2)), extras());
 
@@ -131,9 +124,8 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * The whole point of splitting by arrival side: the plain copy goes ON, and only the turning copy
-     * goes BACK.  Get this wrong in either direction and the feature is worse than not having it - one
-     * way the siding stays unreachable, the other way every passing train reverses.
+     * The whole point of splitting by arrival side: the plain copy goes ON, and only the turning copy goes BACK.  Wrong
+     * in either direction, the siding stays unreachable or every passing train reverses.
      */
     @Test
     public void testThePlainCopyCarriesOnAndOnlyTheTurningCopyGoesBack() throws IOException
@@ -177,9 +169,8 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * A sensor that is not a station says the same thing as "reversing" rather than "terminus".  Same
-     * physical act; the model spells it two ways, and which one is right depends on whether trains are
-     * allowed to stop there.
+     * A sensor that is not a station says "reversing" rather than "terminus": the same physical act, spelled by whether
+     * trains are allowed to stop there.
      */
     @Test
     public void testANonStationMarkedCanReverseGetsReversingCopies() throws IOException
@@ -218,9 +209,8 @@ public class testAutonomyDiagramReversal
         straight(page, 4, 2);
         feedback(page, 5, 2, 4);
 
-        // END is a stub on its north side at orientation 0, so orientation 1 - three turns clockwise -
-        // puts the stub west, facing the sensor.  Pointing it any other way leaves it unconnected, and
-        // the test would then pass for the wrong reason.
+        // END is a stub on its north side at orientation 0, so orientation 1 puts the stub west, facing the sensor; any
+        // other way leaves it unconnected and the test would pass for the wrong reason.
         add(page, componentType.END, 6, 2, 1);
 
         JSONObject built = build(page, stations(key("main", 5, 2)),
@@ -228,10 +218,8 @@ public class testAutonomyDiagramReversal
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
-        // One, not two.  The plain copy would be a train that arrived and is pointing at the buffers
-        // with no track ahead of it - a station autonomy could pick as a destination and never get the
-        // train out of again - so it is not emitted at all where a turning copy exists to carry the
-        // arrival.  The turning copy is the whole truth about a dead end.
+        // One, not two: the plain copy would be a station autonomy could pick and never get the train out of again, so
+        // only the turning copy is emitted.
         assertEquals(copies.size(), 1, "a dead end is the turning copy and nothing else");
 
         // And it has to carry what the mark means, or the platform emits no flag at all and its trains
@@ -347,15 +335,12 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none
-     * of this has to come out byte for byte as it did before.
+     * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none of this comes
+     * out byte for byte as an unconfigured builder's.
      *
-     * **The pair, not the half**.  This used to assert only that an empty mark set builds what
-     * an unconfigured builder builds - and `reversible` is already an empty set from its field
-     * initializer, so the two builders were in provably identical state and the assertion could not
-     * fail for the reason it named.  Marking a real tile is what shows the comparison is live: if the
-     * builder ignored the set entirely, the first assertion below would fail and the second would go
-     * on passing exactly as it did.
+     * The pair, not the half: an empty mark set is already the field's initializer, so asserting only that could not
+     * fail.  Marking a real tile shows the comparison is live: if the builder ignored the set entirely, the first
+     * assertion would fail and the second go on passing.
      */
     @Test
     public void testAnUnmarkedLayoutIsUntouched() throws IOException
@@ -390,9 +375,8 @@ public class testAutonomyDiagramReversal
     /**
      * A station autonomy may not choose says exactly that, and nothing else.
      *
-     * The point of the flag.  Before it, the only way to keep autonomy off a station was to make it a
-     * reversing one, which also turned every arriving train round and refused any path through - three
-     * statements welded into one switch, two of which nobody had asked for.
+     * The only way to keep autonomy off a station was to make it a reversing one, which also turned every arriving
+     * train round and refused any path through.
      */
     @Test
     public void testAStationAutonomyMayNotChooseSaysSoAndNothingElse() throws IOException
@@ -402,9 +386,8 @@ public class testAutonomyDiagramReversal
 
         List<JSONObject> copies = pointsNamed(built, "Main4");
 
-        // Two, because two lines reach this square and each arrival is its own Point - which is true of
-        // every square and has nothing to do with the flag under test.  What matters is that BOTH copies
-        // say the one thing that was asked for and nothing more.
+        // Two, because two lines reach this square and each arrival is its own Point, as everywhere; what matters is
+        // that BOTH copies say the one thing that was asked for.
         assertEquals(copies.size(), 2, "one Point per arrival side, as everywhere else");
 
         for (JSONObject copy : copies)
@@ -418,12 +401,9 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * A berth that turns trains round AND is left alone by autonomy - which is what a berth usually is,
-     * and which could not be authored at all until now.
-     *
-     * As a reversing station plus a terminus it was two flags on one Point, and Point refuses that
-     * combination in either order: the configuration failed wholesale rather than at the square that
-     * caused it.  Said separately, the two do not touch.
+     * A berth that turns trains round AND is left alone by autonomy, which is what a berth usually is.  As a reversing
+     * station plus a terminus it was two flags on one Point, which Point refuses in either order; said separately, the
+     * two do not touch.
      */
     @Test
     public void testABerthCanTurnTrainsRoundAndStillBeLeftAloneByAutonomy() throws IOException
@@ -469,13 +449,10 @@ public class testAutonomyDiagramReversal
     /**
      * The running line with a siding trailing off behind the junction sensor.
      *
-     * SWITCH_LEFT at orientation 0 has its toe south, straight ahead north and its branch west.  Ports
-     * rotate by (4 - orientation) quarter turns clockwise - see TilePorts.ports, which follows what
-     * getImage does to the artwork - so orientation 1 is three turns: toe EAST, straight west, branch
-     * south.  A train running west out of F4 therefore meets the toe and may diverge into the siding,
-     * while a train running east out of F11 meets the same switch trailing and can only carry straight
-     * on.  That asymmetry is the whole point: it is what makes the siding reachable only by turning
-     * round at F4.
+     * SWITCH_LEFT at orientation 0 has its toe south, straight ahead north and its branch west; ports rotate by (4 -
+     * orientation) quarter turns clockwise (see TilePorts.ports), so orientation 1 puts the toe EAST, straight west,
+     * branch south.  A train running west out of F4 meets the toe and may diverge into the siding, while a train
+     * running east out of F11 meets the same switch trailing, so the siding is reachable only by turning round at F4.
      */
     private LayoutDiagram junction() throws IOException
     {
@@ -524,11 +501,9 @@ public class testAutonomyDiagramReversal
         TileGraph graph = new TileGraph(
             new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
 
-        // Switches default to base-to-forks - out of the toe only - which is a sensible starting point
-        // on a real layout and an unrelated variable here.  Left alone, the junction below admits
-        // trains from the east and nowhere else, so the sensor has ONE arrival side and never splits:
-        // the test would then be measuring the default rather than the reversal.  Everything is opened
-        // both ways so that what is asserted is the split and nothing else.
+        // Switches default to base-to-forks (out of the toe only), which would admit trains from the east only, so the
+        // sensor would have ONE arrival side and never split.  Everything is opened both ways, so that what is asserted
+        // is the split and nothing else.
         for (TileKey tile : graph.getTiles().keySet())
         {
             for (RouteId routeId : graph.getRoutes(tile).keySet())
@@ -563,9 +538,7 @@ public class testAutonomyDiagramReversal
         return reducer;
     }
 
-    /**
-     * Readable names, so a failure names a place on the railway rather than a coordinate.
-     */
+    /** Readable names, so a failure names a place on the railway rather than a coordinate. */
     private String names(TileKey tile)
     {
         if (tile.getX() == 1 && tile.getY() == 2) return "West11";
@@ -603,9 +576,7 @@ public class testAutonomyDiagramReversal
         return new LinkedHashSet<>(Arrays.asList(tiles));
     }
 
-    /**
-     * Stations autonomy may not choose for itself.
-     */
+    /** Stations autonomy may not choose for itself. */
     private Set<TileKey> manualOnly(TileKey... tiles)
     {
         return new LinkedHashSet<>(Arrays.asList(tiles));
@@ -715,10 +686,9 @@ public class testAutonomyDiagramReversal
     /**
      * A split copy never takes a name some other square already has.
      *
-     * The base names are made unique, and the " (eastbound)" suffixes are added afterwards - so a point
-     * named "Main (eastbound)" by hand and a neighboring "Main" that splits produced two Points with
-     * one name.  Layout refuses that, and refuses the whole configuration with it, reporting a Point
-     * name that appears nowhere on the diagram.
+     * The suffixes are added after the base names are made unique, so a point named "Main (eastbound)" by hand and a
+     * neighboring "Main" that splits produced two Points with one name, which Layout refuses, and with it the whole
+     * configuration.
      */
     @Test
     public void testASplitCopyNeverCollidesWithAnAuthoredName() throws Exception
@@ -756,11 +726,9 @@ public class testAutonomyDiagramReversal
     /**
      * A locomotive is emitted on the copy that is pointing the way it is pointing.
      *
-     * The copy was chosen by comparing the recorded facing against each copy's ARRIVAL side, and a
-     * turning copy's facing is its arrival side rather than the opposite of it - so a facing learned
-     * from a train that had just reversed matched no copy, fell through to the first one, and put the
-     * locomotive on the copy pointing the other way.  Its first move was then the backwards edge the
-     * whole split exists to forbid.
+     * A turning copy's facing is its arrival side rather than the opposite of it, so a facing learned from a train that
+     * had just reversed must still match; otherwise it falls through to the first copy, pointing the other way, and the
+     * first move is the backwards edge the whole split exists to forbid.
      */
     @Test
     public void testAPlacedLocomotiveLandsOnTheCopyItIsFacing() throws Exception
@@ -803,9 +771,8 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * Like reduce above, but with the point names authored by the test rather than by names() - the
-     * split-copy test has to author a colliding name, which the fixed fixture names cannot express.
-     * Every route is opened both ways for the same reason reduce does it.
+     * Like reduce above, but with the point names authored by the test, which the split-copy test needs to author a
+     * colliding name.  Every route is opened both ways, as reduce does.
      */
     private GraphReducer reduceWithNames(LayoutDiagram page, final Map<TileKey, String> authored)
     {

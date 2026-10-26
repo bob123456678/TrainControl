@@ -26,22 +26,15 @@ import org.traincontrol.automationui.TilePorts;
 /**
  * Every setting the store holds, against every structural thing that can happen to a diagram.
  *
- * The store keeps eleven separate collections of settings, all keyed by square, and a diagram edit has
- * to do the right thing to every one of them.  The tests for that were written one setting at a time,
- * as each was added - and so was the code, which is why the misses have always been of the same shape:
- * a collection that some operation forgot about.  tileDirections were left behind by every move for a
- * release, because their keys carry a suffix and the mover matched whole keys.  disabledPortals had to
- * be added to the mover separately.  captions were dropped by a move that landed on them, which is how
- * a station nudged one square down lost its name.  In each case the other ten were handled correctly,
- * a test existed for the operation, and it used one of the ten.
+ * The store keeps eleven separate collections of settings, all keyed by square, and a diagram edit has to do the right
+ * thing to every one of them.  Tests written one setting at a time left misses of one shape: a collection that some
+ * operation forgot (`tileDirections` left behind by every move because their keys carry a suffix; `captions` dropped by
+ * a move that landed on them).  So this is a matrix, settings down one side and operations along the other, every cell
+ * asserted.
  *
- * So this is a matrix rather than a list of cases: settings down one side, operations along the other,
- * and every cell asserted.  A cell nobody thought about is a cell that fails.
- *
- * The last test is the important one for the future.  It reflects over the store's own fields and
- * refuses to pass unless every collection in there is either in the matrix or on the list of things
- * that are not keyed by square.  Adding a twelfth setting without deciding which it is fails the build,
- * which is the only way a matrix stays complete once the person who wrote it has moved on.
+ * The last test is the important one for the future: it reflects over the store's own fields and refuses to pass
+ * unless every collection is in the matrix or on the list of things not keyed by square, so adding a setting without
+ * deciding which fails the build.
  */
 public class testAutonomyStoreSettingsMatrix
 {
@@ -55,25 +48,15 @@ public class testAutonomyStoreSettingsMatrix
     private static final TileKey ON_ANOTHER_PAGE = new TileKey(OTHER_PAGE, 2, 2);
 
     /**
-     * ASYMMETRIC, and that is the whole of why this constant has a comment.
-     *
-     * It was `RouteId(0, 0)`, which reads the same either way round - so every column of this matrix
-     * that carries a direction across a move, a rename, a delete or a restore could not see the route
-     * half of the key at all. A review proved it: making `DirectionKey.withSquare` throw the route
-     * away and substitute route 0,0 - which would silently collapse every direction on a switch onto
-     * one route, last write wins, on any page rename - passed 209 tests across seven classes.
-     *
-     * Every fixture in the repository used 0,0. The same discovery had already been made once for the
-     * READ path, when swapping the two numbers in `readDirectionMap` passed everything; it was not
-     * carried to the write path.
+     * ASYMMETRIC on purpose: `RouteId(0, 0)` reads the same either way round, so a column carrying a direction across a
+     * move, rename, delete or restore could not see the route half of the key (a `withSquare` that threw the route away
+     * passed 209 tests).
      */
     private static final RouteId ROUTE = new RouteId(1, 3);
 
     private static final String CONFIGURATION = "Evening";
 
-    /**
-     * One setting: how to put it on a square, and how to read it back off one.
-     */
+    /** One setting: how to put it on a square, and how to read it back off one. */
     private static final class Setting
     {
         final String name;
@@ -115,8 +98,8 @@ public class testAutonomyStoreSettingsMatrix
             (store, at) -> store.setTileLength(at, 42),
             (store, at) -> store.getTileLength(at)),
 
-        // Keyed by the square AND a route across it, so its keys carry a suffix - which is how they
-        // came to be left behind by a mover that matched whole keys
+        // Keyed by the square AND a route across it, so its keys carry a suffix a mover matching whole keys leaves
+        // behind
         new Setting("which way trains may run", "tileDirections",
             (store, at) -> store.setTileDirection(at, ROUTE, Direction.TOWARD_A),
             (store, at) -> store.getTileDirection(at, ROUTE)),
@@ -125,8 +108,8 @@ public class testAutonomyStoreSettingsMatrix
             (store, at) -> store.setBarredArrivals(at, sides(TilePorts.Side.N)),
             (store, at) -> store.getBarredArrivals(at)),
 
-        // Key and value are both squares, and the pairing is mutual: the far end has to be rewritten
-        // whenever the near one moves, or the pair is broken from the page nobody is looking at
+        // Key and value are both squares and the pairing is mutual: the far end must be rewritten whenever the near
+        // moves
         new Setting("what a link is paired with", "portals",
             (store, at) -> store.pairPortals(at, ON_ANOTHER_PAGE),
             (store, at) -> store.getPortalPartner(at)),
@@ -158,8 +141,7 @@ public class testAutonomyStoreSettingsMatrix
             (store, at) -> store.setPortalDisabled(at, true),
             (store, at) -> store.isPortalDisabled(at)),
 
-        // The configurations key by square too - the facings, the placements, the homes, the termini -
-        // which renamePage found out about the hard way
+        // The configurations key by square too: the facings, the placements, the homes, the termini
         new Setting("what a configuration says about the square", "configurations",
             (store, at) -> configurationPoints(store).put(at.toString(),
                 new JSONObject().put("facing", "N")),
@@ -173,10 +155,8 @@ public class testAutonomyStoreSettingsMatrix
     );
 
     /**
-     * Everything in the store that is NOT keyed by square, and so has no cell in this matrix.
-     *
-     * Listed rather than inferred, so that the guard below can tell a setting somebody forgot to cover
-     * from one that genuinely does not belong here.
+     * Everything in the store NOT keyed by square, listed rather than inferred so the guard can tell a forgotten
+     * setting from one that does not belong here.
      */
     private static final Set<String> NOT_KEYED_BY_SQUARE = new LinkedHashSet<>(Arrays.asList(
         "excludedPages",         // by page
@@ -186,18 +166,14 @@ public class testAutonomyStoreSettingsMatrix
         "pageIdToName",          // by page id
         "pageNamesWhenWritten",  // by page id
         "pageIdConflicts",       // by page
-        // By FIELD name, and deliberately outside every rule in this matrix: it holds the file's own
-        // JSON for pages that are not loaded, and is written back exactly as it came in.  Moving,
-        // building over, renaming or restoring it would be acting on squares of a page nobody can
-        // see - which is the loss it exists to prevent (OB-067).
+        // By FIELD name, outside every rule here: it holds the file's own JSON for pages that are not loaded and is
+        // written back as it came, so acting on it would act on squares of a page nobody can see (OB-067).
         "heldForAbsentPages"
     ));
 
     // The matrix
 
-    /**
-     * Every setting follows its square when the tile moves.
-     */
+    /** Every setting follows its square when the tile moves. */
     @Test
     public void testEverySettingFollowsAMovedTile()
     {
@@ -224,12 +200,9 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting is dropped when its square is built over by other track.
-     *
-     * The opposite direction, and it needs stating: "carry everything, always" passes the test above
-     * and leaves a station's name, its signals and its length attached to a square that now holds
-     * somebody else's track.  Nothing else finds those - reconcile only drops settings from squares
-     * that are EMPTY, and one of these is occupied.
+     * Every setting is dropped when its square is built over by other track.  "Carry everything, always" would pass
+     * the test above and leave a station's name, signals and length on a square holding somebody else's track;
+     * reconcile only drops settings from squares that are EMPTY.
      */
     @Test
     public void testEverySettingIsDroppedWhenItsSquareIsBuiltOver()
@@ -241,8 +214,8 @@ public class testAutonomyStoreSettingsMatrix
 
             setting.write.accept(store, doomed);
 
-            // A tile carrying nothing at all arrives on top of it, which is the case that used to
-            // leave the settings behind: the mover only cleared a square it had something to write on
+            // A tile carrying nothing arrives on top of it: the mover only cleared a square it had something to write
+            // on
             store.moveTiles(one(at(1, 1), doomed));
 
             assertEquals(setting.read.apply(store, doomed), absent(setting),
@@ -254,23 +227,14 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every setting is forgotten when the page it is on is deleted.
      *
-     * The column this matrix was missing, and the one with the worst consequence.  `deletePage`
-     * gathers the page's squares by naming all twelve collections one at a time - deliberately, so
-     * that testStoreCollectionsAreHandledEverywhere's textual guard governs it - and hands them to
-     * `forgetSquares`.  That guard only requires the collection's NAME to appear in the method.  A
-     * gathering loop that mentions `disabledPortals` and gathers nothing from it reads as covered and
-     * is not: the setting survives the page, keyed to track that no longer exists, and page-id reuse
-     * (testPageIdsAreDurable) then hands it to whatever page arrives next.
+     * `deletePage` gathers the page's squares by naming every collection, so testStoreCollectionsAreHandledEverywhere's
+     * textual guard governs it; but that guard only requires the NAME to appear, and a loop that mentions
+     * `disabledPortals` and gathers nothing reads as covered.  The setting would then survive the page and, by page-id
+     * reuse (testPageIdsAreDurable), go to whatever page arrives next.
      *
-     * Mutation this must fail: in `AutonomyCompanionStore.deletePage`, neuter one gathering loop while
-     * still naming its collection - `for (TileKey key : new LinkedHashSet<>(disabledPortals)) if
-     * (isOnPage(key, page)) squares.add(key);` becomes `... squares.size();`.  Before this test that
-     * mutant passed 85 tests across all four store guard classes.  It now fails one row here.
-     *
-     * The id-reuse half of the same loss is pinned separately and does not need repeating twelve
-     * times - see testPageIdsAreDurable.testAPageReusingARetiredIdInheritsNothing.  In this store the
-     * two are the same assertion anyway: keys carry the page NAME, so a page created again under the
-     * deleted page's name reads exactly the squares asserted absent below.
+     * MUTATION: in `AutonomyCompanionStore.deletePage`, neuter one gathering loop while still naming its collection
+     * (`for (TileKey key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);` becomes
+     * `... squares.size();`) and one row here fails.
      */
     @Test
     public void testEverySettingIsForgottenWhenItsPageIsDeleted()
@@ -282,8 +246,7 @@ public class testAutonomyStoreSettingsMatrix
 
             setting.write.accept(store, doomed);
 
-            // Assert the variable, not the control: without this a setting whose writer silently did
-            // nothing on a second page would read as absent afterwards and pass having tested nothing
+            // Assert the variable, not the control: a writer that did nothing on a second page would read as absent.
             assertNotEquals(setting.read.apply(store, doomed), absent(setting),
                 "the fixture wrote nothing onto the page it is about to delete: " + setting);
 
@@ -296,14 +259,9 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * And deleting a page leaves every other page exactly as it was.
-     *
-     * The mirror, for the same reason the built-over test needs the moved test: "forget everything"
-     * passes the column above and empties the operator's whole setup because one page went.  The page
-     * deleted here holds nothing and is named by nothing, so the correct answer is that this store is
-     * untouched - which is the weakest form of the property and the only one that is free of the
-     * fixture's own cross-page values (the portal row pairs its square with a square on OTHER_PAGE, so
-     * deleting OTHER_PAGE is *meant* to break that pair).
+     * And deleting a page leaves every other page exactly as it was: "forget everything" would pass the column above.
+     * The page deleted here holds nothing and is named by nothing, so the store must be untouched (the portal row pairs
+     * its square with one on OTHER_PAGE, so deleting OTHER_PAGE is *meant* to break that pair).
      */
     @Test
     public void testDeletingAPageLeavesEverySettingOnEveryOtherPageAlone()
@@ -327,10 +285,7 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting comes back when a page is put back the way it was.
-     *
-     * What "exit without saving" is made of.  A setting the snapshot does not take is a setting the
-     * restore cannot bring back, and the user is told their edits were undone.
+     * Every setting comes back when a page is put back the way it was, which is what "exit without saving" is made of.
      */
     @Test
     public void testEverySettingComesBackWhenThePageIsRestored()
@@ -360,10 +315,8 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting survives the page being renamed.
-     *
-     * Settings are keyed by page and square, so a rename rewrites every key on that page - and the
-     * values that name squares on it, which is the half that gets missed.
+     * Every setting survives the page being renamed: a rename rewrites every key on that page and the values that name
+     * squares on it, the half that gets missed.
      */
     @Test
     public void testEverySettingSurvivesAPageRename()
@@ -387,28 +340,15 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting survives being written to disk and read back.
+     * Every setting survives being written to disk and read back, with page ids set.
      *
-     * **With page ids set, which they had not been before.** The store keys by page NAME in
-     * memory and by page ID on disk, and `setPageIds` is what tells it the mapping. Without that call
-     * `toStored` and `fromStored` pass keys through unchanged, `withoutAbsentPages` returns early on
-     * an empty index, and the held path never runs - so this test, whose whole charter is "every
-     * setting against every structural thing", round-tripped all twelve rows with the translation
-     * layer switched off.
+     * The store keys by page NAME in memory and by page ID on disk, and `setPageIds` tells it the mapping; without it
+     * `toStored` and `fromStored` pass keys through, `withoutAbsentPages` returns early and the held path never runs,
+     * so the round trip ran with the translation layer switched off.
      *
-     * What that cost: a thirteenth collection whose author forgot the translate call passed all sixty
-     * cells of this matrix. The store has already had that defect once - `excludedPages` was written
-     * raw, and the comment where it was fixed says it "broke the rule setPageIds states".
-     *
-     * MUTATION: making `fromStored` return its argument unchanged fails this test. Before ids were
-     * set it did not, because with no ids to translate through, returning the argument unchanged is
-     * what the method already did.
-     *
-     * Recorded because it was measured rather than assumed: making `toStored` return its argument -
-     * the written-raw defect itself - does NOT fail this, and does not fail the renumber test either.
-     * A file written with page NAMES in it round-trips perfectly well as long as the names do not
-     * change. What it cannot survive is a RENAME, which is the whole reason the file is keyed by id,
-     * and that is what the third test below is for.
+     * MUTATION: making `fromStored` return its argument unchanged fails this test.  Making `toStored` return its
+     * argument (the written-raw defect itself) does NOT fail this or the renumber test: a file written with page NAMES
+     * round-trips while names do not change.  Only a RENAME exposes it, which is what the third test below is for.
      */
     @Test
     public void testEverySettingSurvivesASaveAndLoad() throws IOException
@@ -454,12 +394,8 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every collection the store holds is either in this matrix or declared not to belong in it.
      *
-     * The point of the whole file.  A matrix is only worth writing if it cannot quietly stop being
-     * complete, and the way it stops being complete is that somebody adds a twelfth setting and tests
-     * it the way the first eleven were tested - on its own, against the operation they had in mind.
-     *
-     * Reflection rather than a hand-kept list, because a hand-kept list has exactly the same failure
-     * mode as the thing it is checking.
+     * The point of the whole file: a matrix stays complete only if adding a setting forces the decision.  Reflection
+     * rather than a hand-kept list, which has the same failure mode as the thing it checks.
      */
     @Test
     public void testEveryCollectionInTheStoreIsAccountedFor()
@@ -493,9 +429,7 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * And every setting in the matrix names a field that actually exists.
-     *
-     * So that a renamed field turns into a failure here rather than into a guard that silently checks
+     * And every setting in the matrix names a field that exists, so a renamed field fails here instead of guarding
      * nothing.
      */
     @Test
@@ -516,23 +450,19 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * What this setting reads as on a square that has never had one, so that "gone" can be asserted
-     * without every setting needing its own idea of empty - null, zero, false, or an empty set.
+     * What this setting reads as on a square that never had one, so "gone" is asserted without each setting's own idea
+     * of empty.
      */
     private static Object absent(Setting setting)
     {
         return setting.read.apply(store(), at(4, 4));
     }
 
-    /**
-     * A rename moves the page part of every key AND of every value that names a square on that page.
-     */
+    /** A rename moves the page part of every key AND of every value that names a square on that page. */
     private static Object renamed(Object expected)
     {
-        // A LIST of squares as well as one, because a setting may name several - a station can be held
-        // back by more than one point (FR-001). Without this the list came back correctly repointed at
-        // the renamed page and was compared against the old one, which reads as the store having failed
-        // when it was this helper that could not follow.
+        // A LIST of squares as well as one (a station can be held back by more than one point, FR-001); otherwise a
+        // repointed list was compared against the old page's.
         if (expected instanceof java.util.List)
         {
             java.util.List<Object> out = new java.util.ArrayList<>();
@@ -592,19 +522,11 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every setting survives its page being RENUMBERED while the file sits on disk.
      *
-     * The real subject. The test above now exercises the translation layer, but it translates
-     * through the same numbering both ways, so a store that simply wrote names would still pass it.
-     * This one changes the numbers between the save and the load, which is the thing page ids exist
-     * for: the layout index is rewritten - a page added, deleted or combined - and the number a page
-     * answers to is not the one it had when the setup was written.
+     * The save-and-load test above translates through the same numbering both ways, so a store that wrote names would
+     * still pass it.  This one changes the numbers between the save and the load, which is what page ids exist for (the
+     * MT-135 loss in miniature).
      *
-     * That is the MT-135 loss in miniature, and it cost Adam 19 point names, 14 stations, 22
-     * directions and 15 captions to a single rename on 23 August. It was found one setting at a time,
-     * which is the history this matrix's own javadoc warns about, and `testPageIdsAreDurable` still
-     * covers this ground for `pointNames` only.
-     *
-     * MUTATION: making `fromStored` return its argument unchanged fails this test, and does NOT fail
-     * the save-and-load test above - which is exactly the gap.
+     * MUTATION: making `fromStored` return its argument unchanged fails this test and NOT the save-and-load test above.
      */
     @Test
     public void testEverySettingSurvivesItsPageBeingRenumbered() throws IOException
@@ -630,9 +552,8 @@ public class testAutonomyStoreSettingsMatrix
 
                 store.save();
 
-                // The layout index is rewritten and every page comes back under a different number.
-                // The NAMES are unchanged, which is the point: the setup is keyed by name in memory
-                // and by number on disk, so nothing the operator can see has moved.
+                // The layout index is rewritten and every page comes back under a different number; the names are
+                // unchanged.
                 Map<String, String> renumbered = new LinkedHashMap<>();
 
                 renumbered.put(PAGE, "7");
@@ -659,42 +580,18 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every setting survives its page being RENAMED while the file sits on disk.
      *
-     * The case page ids exist for, and the one the other two cannot see. A setup written with page
-     * names in it round-trips fine under renumbering, because names do not change when numbers do -
-     * so the "written raw" defect class needs a rename to show itself, and a rename is exactly
-     * what cost Adam his setup on 23 August (MT-135).
+     * A setup written with page names round-trips under renumbering, so the "written raw" defect needs a rename to
+     * show.  The rename is driven as the application drives it - `renamePage` in memory, then a save, then a load under
+     * the new name - because this matrix checks the real path.
      *
-     * The store is keyed by name in memory and by id on disk. A rename changes the name and keeps the
-     * id, so the entries have to be found through the id and come back under whatever the page is
-     * called now.
+     * Skipping the in-memory `renamePage` and reloading under the new index passes for eleven of the twelve settings
+     * and fails "what a configuration says about the square": the eleven live in setup.json, keyed by page ID, while
+     * the configurations are keyed by page NAME on disk and never translated, so a rename by any path that does not
+     * call `renamePage` orphans the configuration and nothing else.
      *
-     * The rename is driven the way the application drives it - `renamePage` in memory, then a save,
-     * then a load under the new name - because that is the sequence a menu item performs and this
-     * matrix exists to check the real path rather than a convenient one.
-     *
-     * **What was measured on the way, and is worth knowing.** Skipping the in-memory `renamePage` and
-     * simply reloading under the new index passes for ELEVEN of the twelve settings and fails for the
-     * twelfth, "what a configuration says about the square". The eleven live in setup.json, which is
-     * keyed by page ID, so they are found whatever the page is called now. The configurations are
-     * keyed by page NAME on disk and are never translated - the opposite keying, in the same folder -
-     * so they survive a rename only because the application rekeys them in memory first. That is not
-     * a defect today; it is a dependency nothing states, and it means a rename performed by any path
-     * that does not call `renamePage` orphans the configuration and nothing else.
-     *
-     * MUTATION: this test does NOT catch `toStored` returning its argument unchanged, and an earlier
-     * version of this javadoc claimed it did.
-     *
-     * Review ran it: with `toStored` neutered the class reports one failure, and it is
-     * `testEveryIdKeyedSettingSurvivesARenameNothingSaw`, not this one. The reason is written out
-     * sixty lines below and is worth reading before trusting any of these four columns - this test
-     * renames the page IN MEMORY before saving, so the new name is already in the keys and never
-     * needs translating. A setup written with page names in it survives that perfectly well.
-     *
-     * The two javadocs were written the same day and said opposite things. Anyone trimming this
-     * matrix on the strength of the old one would have deleted the only column that can catch a raw
-     * name in setup.json - the MT-135 loss.
-     *
-     * What this column does catch is a setting that does not survive a rename at all.
+     * MUTATION: this test does NOT catch `toStored` returning its argument unchanged (the class then reports one
+     * failure, `testEveryIdKeyedSettingSurvivesARenameNothingSaw`): renaming IN MEMORY first puts the new name in the
+     * keys, so nothing needs translating.  What it does catch is a setting that does not survive a rename at all.
      */
     @Test
     public void testEverySettingSurvivesItsPageBeingRenamedOnDisk() throws IOException
@@ -723,8 +620,7 @@ public class testAutonomyStoreSettingsMatrix
 
                 store.save();
 
-                // Same id, different name: what the index reports after a rename, and the one case a
-                // name-keyed file cannot survive on its own.
+                // Same id, different name: what the index reports after a rename.
                 Map<String, String> afterRename = new LinkedHashMap<>();
 
                 afterRename.put("main renamed", "3");
@@ -753,28 +649,16 @@ public class testAutonomyStoreSettingsMatrix
     /**
      * Every id-keyed setting survives a rename that happened while nothing was running.
      *
-     * The column that catches a raw write, and it took three attempts to find one that could. The
-     * other three all rename the page IN MEMORY first, which is what the menu item does - and a setup
-     * written with page names in it survives that perfectly well, because by the time it is saved the
-     * names in memory are already the new ones. Making `toStored` return its argument passes all
-     * three.
+     * The column that catches a raw write: the other three rename IN MEMORY first, so by the save the names are already
+     * the new ones.  This is a rename the application never saw (TrainControl closed, another machine, the Central
+     * Station): setup.json holds keys under the OLD name, the index offers only the new one, and only the id can
+     * reunite them.
      *
-     * What it cannot survive is a rename that the running application never saw: the page renamed
-     * with TrainControl closed, or on the other machine this layout syncs to, or through the Central
-     * Station. Then setup.json holds keys written under the OLD name and the index offers only the
-     * new one, and the only thing that can reunite them is the id - which is why the file is keyed by
-     * id and why `toStored` exists.
+     * The configuration row is excluded by name: it is keyed by page NAME on disk and never translated, which is no
+     * defect today (every path that renames a page rekeys the configurations first) but a dependency nothing stated.
      *
-     * **The configuration row is excluded, deliberately and by name.** `configurations` is keyed by
-     * page NAME on disk and is never translated - the opposite keying from setup.json, in the same
-     * folder - so it cannot survive this and is not expected to. That is not a defect today: every
-     * path that renames a page rekeys the configurations in memory first. It is a dependency that
-     * nothing stated until this test, and it means a rename by any path that does not call
-     * `renamePage` orphans the configuration and nothing else. Worth Adam knowing; not worth changing
-     * a file format over.
-     *
-     * MUTATION: making `toStored` return its argument unchanged fails this test on the eleven
-     * id-keyed settings, and fails none of the other three columns.
+     * MUTATION: making `toStored` return its argument unchanged fails this test on the eleven id-keyed settings, and
+     * none of the other three columns.
      */
     @Test
     public void testEveryIdKeyedSettingSurvivesARenameNothingSaw() throws IOException
@@ -807,8 +691,7 @@ public class testAutonomyStoreSettingsMatrix
 
                 store.save();
 
-                // No renamePage: nothing was running when this happened.  All that changed is the
-                // index, which now gives id 3 a different name.
+                // No renamePage: nothing was running, so only the index changed, giving id 3 a different name.
                 Map<String, String> afterRename = new LinkedHashMap<>();
 
                 afterRename.put("main renamed", "3");
@@ -839,12 +722,8 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * The numbering this matrix saves and loads through.
-     *
-     * Three pages, numbered from something other than one, so that a translation which happens to be
-     * the identity is not mistaken for one that works.
-     *
-     * @return page name to page id, in the string form the index hands out
+     * The numbering this matrix saves and loads through: three pages numbered from something other than one, so an
+     * identity translation is not mistaken for one that works.
      */
     private static Map<String, String> pageIds()
     {

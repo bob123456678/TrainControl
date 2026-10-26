@@ -18,35 +18,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * When a run ends, whoever draws the railway is told - from every door, not from two of the four.
+ * When a run ends, whoever draws the railway is told, from every door and not from two of the four (sibling of OB-189).
  *
- * The sibling `OB-189` missed it. A destination reversal is recorded by toggling the
- * locomotive's name into `Layout.reversedOnArrival`, and the window writes it to the setup in
- * `TrainControlUI.reconcileFacingWhenIdle` - which refuses while anything is moving and is reached
- * only from `updateVisiblePoints()`. So a turn a run made is PENDING until a refresh happens with the
- * railway idle.
- *
- * `41913ecd` fixed that for the two hand-driven doors by calling `updateVisiblePoints()` after the
- * journey returns. The third and fourth doors are the timetable button and Return Home - which loads
- * a timetable and runs it through the same shared arrival path, so every terminus arrival toggles
- * `reversedOnArrival` - and neither completion handler refreshed anything. After a Return Home run
- * the diagram went on showing every returned train facing the way it set off, a dispatch made before
- * any unrelated repaint was offered paths for the wrong heading, and the exit capture wrote the
- * un-reconciled facing to disk.
- *
- * **Why the announcements a run already makes were not enough.** `Layout` announces to its registered
- * callbacks at both ends of every path, and `announceRunFinished()` announces again when the last
- * locomotive thread goes. Every one of those, during a timetable, fires while `isRunning()` is still
- * true: the arrival callback fires before `executePath`'s `finally` has decremented the thread count,
- * and the thread count reaching zero between two legs happens while `running` is still set for the
- * length of the run. `reconcileFacingWhenIdle` correctly refuses at all of them, and nothing announced
- * afterwards. So the reversals accumulated with nobody to drain them.
- *
- * **One place rather than a fourth copy.** The remedy is that a timetable announces once the railway
- * has actually gone idle - `executeTimetableInternal` already waits for exactly that before it returns
- * - and that the window's single refresh callback tells the graph. That one pair covers the timetable,
- * Return Home, and both hand-driven doors, whose `announceRunFinished()` already fires with the count
- * at zero and nothing running.
+ * A destination reversal is recorded in `Layout.reversedOnArrival` and written to the setup by
+ * `TrainControlUI.reconcileFacingWhenIdle`, which refuses while anything is moving and is reached only from
+ * `updateVisiblePoints()`, so a turn a run made is PENDING until a refresh happens with the railway idle.  The
+ * timetable button and Return Home had no refresh at completion, and every announcement `Layout` makes during a
+ * timetable fires while `isRunning()` is still true.  The remedy is one pair: a timetable announces once the railway
+ * has gone idle, and the window's single refresh callback tells the graph.
  *
  * @author Adam
  */
@@ -61,21 +40,12 @@ public class testTheGraphIsToldWhenARunEnds
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // BEFORE the model (OB-111): `init` reads the machine-global layout preference, and on the
-        // operator's machine that names his real railway - which the suite then reads, writes back
-        // with different line endings, and can raise a modal dialog over.
-        //
-        // This class was written on 2026-09-08 without one, which
-        // `testSwitchingToACentralStationLayout` reported at once: it pins the classes that still
-        // build a model bare, and its own instruction for a NEW one is to give it a sandbox rather
-        // than to add it to the list.
+        // BEFORE the model (OB-111): `init` reads the machine-global layout preference, which on the operator's machine
+        // names his real railway.
         sandbox = support.LayoutSandbox.open();
 
-        // DEBUG, because one of the tests below needs `Layout.setSimulate(true)` and that refuses
-        // outside debug mode - `(!control.isDebug() || control.getNetworkCommState())` - so a hand
-        // dispatch could never reach its destination without it.  The flag adds logging and nothing
-        // else; `testAutonomySimulationSanity`, which is the other class that drives a path to its
-        // arrival, is built the same way.
+        // DEBUG, because `Layout.setSimulate(true)` refuses outside debug mode and a hand dispatch could not reach its
+        // destination without it; the flag adds logging and nothing else.
         model = support.TestStation.simulatedInDebug();
 
         // And the network is explicitly down, which is the other half of that condition.
@@ -91,28 +61,25 @@ public class testTheGraphIsToldWhenARunEnds
     }
 
     /**
-     * Not registered in the locomotive database - a timetable entry only holds the reference, and a
-     * test that took a real address would collide with the operator's own railway (OB-111).
+     * Not registered in the locomotive database: a test that took a real address would collide with the operator's
+     * railway (OB-111).
      */
     private MarklinLocomotive dummyLoc()
     {
         MarklinLocomotive loc = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2,
             "RunEnd Loc " + (++locCounter));
 
-        // The dispatch loop skips an entry whose locomotive has no usable speed, so without this the
-        // run ends for a reason that has nothing to do with what is being measured.
+        // The dispatch loop skips an entry whose locomotive has no usable speed, which would end the run for an
+        // unrelated reason.
         loc.setPreferredSpeed(35);
 
         return loc;
     }
 
     /**
-     * A timetable of one entry that can never execute, over a layout with one edge.
-     *
-     * The same fixture `testLayoutTimetable.testAPermanentlyUnexecutableEntryEndsTheRun` uses: an
-     * invalidated layout is refused by `executePath` on its first line, so the run gives up on its own
-     * after `TIMETABLE_STUCK_MS` rather than needing hardware. What is being measured here is what
-     * happens when the run ENDS, which is the same moment either way.
+     * A timetable of one entry that can never execute, over a layout with one edge: the fixture of
+     * `testLayoutTimetable.testAPermanentlyUnexecutableEntryEndsTheRun`, so the run gives up on its own after
+     * `TIMETABLE_STUCK_MS` without hardware.
      */
     private Layout stuckTimetable() throws Exception
     {
@@ -140,20 +107,11 @@ public class testTheGraphIsToldWhenARunEnds
     }
 
     /**
-     * A timetable run - which is what Return Home is - announces once the railway has gone idle.
+     * A timetable run, which is what Return Home is, announces once the railway has gone idle: every announcement a
+     * timetable makes today is made while `isRunning()` is still true, so `reconcileFacingWhenIdle` refuses at each.
      *
-     * The graph is told about a reversal only by a refresh that happens while nothing is running, and
-     * the ONLY thing that tells the window a timetable has anything to say is the callback `Layout`
-     * fires. Every announcement a timetable makes today is made while `isRunning()` is still true, so
-     * `reconcileFacingWhenIdle` refuses at every one of them and the turns a Return Home run made stay
-     * pending until something unrelated repaints.
-     *
-     * MUTATION this catches: remove `announceRunFinished()` from the end of `executeTimetableInternal`
-     * and this fails, reporting that nothing was announced with the railway idle. Moving it above the
-     * completion wait fails it too, which is the point - an announcement made while the last train is
-     * still arriving is one `reconcileFacingWhenIdle` refuses.
-     *
-     * @throws Exception on a failure to build the fixture
+     * MUTATION: remove `announceRunFinished()` from the end of `executeTimetableInternal` and this fails, reporting
+     * that nothing was announced with the railway idle. Moving it above the completion wait fails it too.
      */
     @Test(timeOut = 120000)
     public void testATimetableRunAnnouncesOnceTheRailwayIsIdle() throws Exception
@@ -163,19 +121,10 @@ public class testTheGraphIsToldWhenARunEnds
         final AtomicInteger announcements = new AtomicInteger();
         final AtomicInteger whileIdle = new AtomicInteger();
 
-        // SAMPLED WHERE THE ANNOUNCEMENT IS MADE, not where it is acted on, and the first version of
-        // this test got that wrong and passed.
-        //
-        // `AutonomyRefreshCallback` posts its runnable to the event thread, so asking `isRunning()`
-        // inside it asks whenever the queue gets round to it - which on a fixture that announces
-        // hundreds of times in four seconds is often after the run has ended.  The test then reported
-        // a property nothing in the program has: the announcements were all made mid-run and merely
-        // ARRIVED late.  That is exactly the "self-heals on the next unrelated refresh", which is
-        // what makes the defect intermittent, and a test that accepts it cannot see the defect.
-        //
-        // A raw callback under its own name - `Layout` keys them, so this coexists with the window's
-        // rather than replacing it - answers the question that decides the outcome: was an
-        // announcement ever MADE with the railway idle?
+        // SAMPLED WHERE THE ANNOUNCEMENT IS MADE, not where it is acted on: `AutonomyRefreshCallback` posts to the
+        // event thread, so asking `isRunning()` inside it answers whenever the queue gets round to it, often after the
+        // run ended.  A raw callback under its own name (`Layout` keys them) asks whether an announcement was ever MADE
+        // with the railway idle.
         layout.setCallback("W7A2Probe",
             new Layout.TriFunction<List<Edge>, org.traincontrol.base.Locomotive, Boolean, Void>()
         {
@@ -184,23 +133,20 @@ public class testTheGraphIsToldWhenARunEnds
             {
                 announcements.incrementAndGet();
 
-                // WHAT reconcileFacingWhenIdle ASKS.  It returns immediately while anything is
-                // moving - a train between two copies is meant to disagree with the graph - so an
-                // announcement made then reaches the window and changes nothing.
+                // WHAT reconcileFacingWhenIdle ASKS: it returns immediately while anything is moving, so an
+                // announcement then changes nothing.
                 if (!layout.isRunning()) whileIdle.incrementAndGet();
 
                 return null;
             }
         });
 
-        // And the window's own door is attached as well, because that is the one the remedy has to
-        // travel through: it is what carries the announcement above to updateVisiblePoints().
+        // And the window's own door is attached as well: the remedy has to travel through it to updateVisiblePoints().
         AutonomyRefreshCallback.attach(layout, () -> { });
 
         long was = Layout.TIMETABLE_STUCK_MS;
 
-        // Short enough to finish inside the timeout above.  The shipped value is minutes, because a
-        // train in a parallel timetable may legitimately wait a long time for another to clear its way.
+        // Short enough to finish inside the timeout above; the shipped value is minutes.
         Layout.TIMETABLE_STUCK_MS = 4000;
 
         try
@@ -211,9 +157,7 @@ public class testTheGraphIsToldWhenARunEnds
             runner.setDaemon(true);
             runner.start();
 
-            // The run must actually have STARTED, or the wait below sees a `false` that has nothing to
-            // do with the run ending.  executeTimetableInternal sets `running` only after the worker is
-            // scheduled - testLayoutTimetable guards its own waits the same way.
+            // The run must actually have STARTED, or the wait below sees a `false` unrelated to the run ending.
             long startDeadline = System.currentTimeMillis() + 5000;
 
             while (!layout.isAutoRunning() && System.currentTimeMillis() < startDeadline)
@@ -251,46 +195,23 @@ public class testTheGraphIsToldWhenARunEnds
     }
 
     /**
-     * A HAND DISPATCH announces once its journey is over, with nothing running.
+     * A HAND DISPATCH announces once its journey is over, with nothing running (OB-189).  `isRunning()` is three things
+     * ORed (`running`, a non-empty `activeLocomotives`, a positive thread count) and the announcement has to land after
+     * all three have gone; the end-of-path callback fires with the dispatching thread still counted, so the two are
+     * counted separately.  A real journey, not a refusal, and autonomy is never started, since `running` is not cleared
+     * by a path completing.
      *
-     * This is the door OB-189 was reported at, and the one `759aabda` left standing on an argument.
-     * That commit deleted the explicit `updateVisiblePoints()` call from both hand-driven doors -
-     * `AutoLocomotiveStatus` and `LayoutRightclickAutonomyMenu` - in favor of `announceRunFinished()`
-     * plus the window's single refresh callback, on the reasoning that *"a hand dispatch's
-     * announceRunFinished() already fires with the thread count at zero and nothing running, so the
-     * two pasted copies are deleted rather than joined by a third"*. That sentence was true. Nothing
-     * asserted it: the only behavioral test drove the TIMETABLE door, and the hand-driven door was
-     * covered by a source grep and the paragraph above.
-     *
-     * It is not a small assumption. `isRunning()` is three things ORed together - `running`, a
-     * non-empty `activeLocomotives`, and a positive thread count - and the announcement has to land
-     * after ALL THREE have gone. The end-of-path callback a few lines earlier does not qualify: it
-     * fires with `activeLocomotives` already emptied but the dispatching thread still counted, so a
-     * test that accepted any announcement at the end of a journey would pass with
-     * `announceRunFinished()` deleted. So this counts the two separately and asserts the idle one.
-     *
-     * **A real journey, not a refusal.** `executePath` also reaches its `finally` when it turns a
-     * dispatch away at one of its eight entry checks, and an announcement made there says nothing
-     * about a run that ENDED. This one runs in simulate mode from one sensor to the next and asserts
-     * it arrived before asking anything about the end of it.
-     *
-     * **And autonomy is never started.** `runLocomotives()` would set `running`, and `running` is not
-     * cleared by a path completing - so `isRunning()` would answer true at every announcement and the
-     * assertion would be about the wrong thing entirely.
-     *
-     * MUTATION this catches: removing `announceRunFinished()` from `executePath`'s `finally` leaves
-     * the announcements from the path's own start, milestone and end - all of them made while the
-     * dispatching thread is still counted - and none with the railway idle.
-     *
-     * @throws Exception on a failure to run the fixture
+     * MUTATION: removing `announceRunFinished()` from `executePath`'s `finally` leaves announcements from the path's
+     * own start, milestone and end, all made while the dispatching thread is still counted, and none with the railway
+     * idle.
      */
     @Test(timeOut = 120000)
     public void testAHandDispatchTellsTheGraphWhenItsJourneyEnds() throws Exception
     {
         Layout layout = new Layout(model);
 
-        // In the database, because `moveLocomotive` - the door every hand placement goes through -
-        // resolves by name against the control station.  Removed again in the finally.
+        // In the database, because `moveLocomotive` resolves by name against the control station; removed again in the
+        // finally.
         MarklinLocomotive loc = model.newMM2Locomotive("W7A2 hand dispatch", 231);
 
         assertNotNull(loc, "the fixture locomotive could not be created");
@@ -300,17 +221,15 @@ public class testTheGraphIsToldWhenARunEnds
 
         try
         {
-            // The same two sensors `testAutonomySimulationSanity` uses, primed the same way: a sensor
-            // nobody has reported does not default to clear, and an occupied destination is refused
-            // before the run starts.
+            // The same two sensors `testAutonomySimulationSanity` uses, primed the same way: an unreported sensor does
+            // not default to clear, and an occupied destination is refused before the run starts.
             if (!model.isFeedbackSet("47411")) model.newFeedback(47411, null);
             if (!model.isFeedbackSet("47412")) model.newFeedback(47412, null);
 
             model.setFeedbackState("47411", false);
             model.setFeedbackState("47412", false);
 
-            // AND THE LAYOUT SIMULATES.  Without this nothing ever sets the destination sensor and the
-            // run waits on it forever - a railway event wait is deliberately unbounded.
+            // AND THE LAYOUT SIMULATES: otherwise nothing sets the destination sensor and the run waits forever.
             layout.setMaxDelay(0);
             layout.setMinDelay(0);
             layout.setSimulate(true);
@@ -326,10 +245,7 @@ public class testTheGraphIsToldWhenARunEnds
             final AtomicInteger announcements = new AtomicInteger();
             final AtomicInteger whileIdle = new AtomicInteger();
 
-            // SAMPLED WHERE THE ANNOUNCEMENT IS MADE, for the reason the timetable test above gives at
-            // length: `AutonomyRefreshCallback` posts to the event thread, so asking `isRunning()`
-            // inside it asks whenever the queue gets round to it, which is the "self-heals on the next
-            // unrelated refresh" that makes this defect intermittent in the first place.
+            // SAMPLED WHERE THE ANNOUNCEMENT IS MADE, for the reason the timetable test above gives.
             layout.setCallback("W7A2HandProbe",
                 new Layout.TriFunction<List<Edge>, org.traincontrol.base.Locomotive, Boolean, Void>()
             {
@@ -347,10 +263,8 @@ public class testTheGraphIsToldWhenARunEnds
 
             AutonomyRefreshCallback.attach(layout, () -> { });
 
-            // NOT `runLocomotives()`.  This is the hand-driven door - the diagram's right-click menu
-            // and the Locomotive commands tab both call executePath on a bare thread with autonomy
-            // stopped - and starting autonomy would set `running`, which a finished path does not
-            // clear.
+            // NOT `runLocomotives()`: this is the hand-driven door, and starting autonomy would set `running`, which a
+            // finished path does not clear.
             assertFalse(layout.isAutoRunning(),
                 "precondition: autonomy must NOT be running, or every announcement below is made"
                 + " while isRunning() is true for a reason that has nothing to do with this dispatch");
@@ -397,22 +311,12 @@ public class testTheGraphIsToldWhenARunEnds
     }
 
     /**
-     * And the window's ONE refresh callback is what tells the graph.
+     * And the window's ONE refresh callback is what tells the graph: `attachAutonomyRefresh` is the single registration
+     * the window makes on every layout it builds, so the call there covers the timetable, Return Home and both
+     * hand-driven doors at once.  The comments are stripped before the check, since an assertion its own documentation
+     * satisfies is not one.
      *
-     * The announcement above is useless unless somebody acts on it, and the acting is
-     * `updateVisiblePoints()` - the only route to `reconcileFacingWhenIdle`. `attachAutonomyRefresh`
-     * is the single registration the window makes on every layout it builds, so putting the call there
-     * covers the timetable, Return Home and both hand-driven doors at once, rather than adding a
-     * fourth copy of the same line at a fourth caller (the per-caller shape is what left the
-     * timetable out).
-     *
-     * The comments are stripped before the check, because the paragraph explaining why the call is
-     * there contains the name of the call - and an assertion its own documentation satisfies is not an
-     * assertion. `testTheWindowAttachesItsRefreshCallback` was caught making exactly that mistake.
-     *
-     * MUTATION this catches: delete `updateVisiblePoints()` from the runnable and this fails.
-     *
-     * @throws Exception on a failure to read the source
+     * MUTATION: delete `updateVisiblePoints()` from the runnable and this fails.
      */
     @Test
     public void testTheWindowsOneRefreshTellsTheGraph() throws Exception

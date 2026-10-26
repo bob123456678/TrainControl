@@ -123,6 +123,39 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.AutoJSONExport;
+import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.autonomy.DiagramExport;
+import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
+import org.traincontrol.gui.autonomy.DiagramTileRegistry;
+import org.traincontrol.gui.autonomy.ManualReversalPrompt;
+import org.traincontrol.gui.autonomy.RightClickTimetableMenu;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.locomotive.AddLocomotive;
+import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.gui.locomotive.LocButtonTransferHandler;
+import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
+import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
+import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
+import org.traincontrol.gui.locomotive.LocomotiveSelector;
+import org.traincontrol.gui.locomotive.LocomotiveStats;
+import org.traincontrol.gui.locomotive.RightClickFunctionMenu;
+import org.traincontrol.gui.locomotive.RightClickMenuListener;
+import org.traincontrol.gui.locomotive.RightClickPageMenu;
+import org.traincontrol.gui.locomotive.UsageHistogram;
+import org.traincontrol.gui.widgets.About;
+import org.traincontrol.gui.widgets.BackupAction;
+import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.gui.widgets.DetailsArea;
+import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.PositionAwareJFrame;
+import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.gui.widgets.RestoreAction;
+import org.traincontrol.gui.widgets.StartupSplash;
+import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.widgets.UpdateFlow;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONObject;
@@ -146,7 +179,7 @@ import org.traincontrol.util.SelfUpdate;
 public class TrainControlUI extends PositionAwareJFrame implements View 
 {
     // Data save file name
-    static final String DATA_FILE_NAME = "UIState.data";
+    public static final String DATA_FILE_NAME = "UIState.data";
     public static final String AUTONOMY_FILE_NAME = "autonomy.json";
     
     // External resources
@@ -180,6 +213,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** This computer's last layout folder, kept when switching to the Central Station's layout (OB-308). */
     public static final String LAST_LOCAL_LAYOUT_PREF = "LastLocalLayoutFolder" + Conversion.getFolderHash(10);
+
+    /** The layout folders opened lately, most recent first, one per line (FR-145). */
+    public static final String RECENT_LAYOUTS_PREF = "RecentLayoutFolders" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
 
     /** Whether station captions are drawn light gray instead of the theme blue (FR-031); app-wide, not per folder. */
@@ -315,12 +351,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // the locomotive list can say the same thing in the same color
     public static final Color COLOR_AT_HOME = new Color(0, 200, 210);
 
-    private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
+    javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
 
     private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
 
-    private javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
-    private javax.swing.JCheckBoxMenuItem allowedDirectionsMenuItem;
+    javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
 
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
@@ -340,12 +375,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     // Download & Update from its question to the exit (FR-125): armed by `closeForTheUpdate` before it asks for the
     // exit, disarmed whatever the exit does, taken by `WindowClosed`.
-    final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
+    public final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
 
     private final UpdateFlow updateFlow = new UpdateFlow(this);
 
     /** The Help > Download Update item, which shows a download's progress. */
-    javax.swing.JMenuItem downloadUpdateMenuItem()
+    public javax.swing.JMenuItem downloadUpdateMenuItem()
     {
         return this.downloadUpdateMenuItem;
     }
@@ -481,22 +516,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     RouteEditorFrame routeEditor;
 
-    /**
-     * Whether every window holding unsaved work is willing to be closed: the exit's first question (`WindowClosed` ends
-     * in `System.exit`).  The layout editor is asked first (OB-070).
-     */
+    /** Delegates to `EditorWindows.everyOpenWindowMaySettle`. */
     public boolean everyOpenWindowMaySettle()
     {
-        if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit()) return false;
-
-        // A non-modal frame with its own discard question; without it File > Exit would drop typing silently.
-        return routeEditor == null || !routeEditor.isDisplayable() || routeEditor.maySettleBeforeExit();
+        return this.editorWindows.everyOpenWindowMaySettle();
     }
 
-    /** Whether the route editor holds work the exit would throw away: `maySettleBeforeExit` without the dialog. */
+    /** Delegates to `EditorWindows.routeEditorHasUnsavedWork`. */
     public boolean routeEditorHasUnsavedWork()
     {
-        return routeEditor != null && routeEditor.isDisplayable() && routeEditor.hasUnsavedWork();
+        return this.editorWindows.routeEditorHasUnsavedWork();
     }
 
     // Popup references
@@ -985,8 +1014,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
            
         // Restore UI component state
         mountRoutingLogic();
-        buildDiagramDrawingMenu();
-        buildDiagramExportMenu();
+        layoutMenus.buildDiagramDrawingMenu();
+        layoutMenus.buildDiagramExportMenu();
 
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
@@ -1635,7 +1664,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Logs that a save left the setup alone because a page is not loaded, for saves that fire constantly (an edit, a
      * placement) where a dialog would be unusable.  The refusal is right but must not be silent.
      */
-    private void noteIfTheSetupWasNotTidied(
+    void noteIfTheSetupWasNotTidied(
         org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation report)
     {
         if (report == null || !report.wasDeclined()) return;
@@ -1675,7 +1704,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The file a stored image URL names, or null when it names no readable file: `new File(url)` keeps the scheme. */
-    static File fileOf(String url)
+    public static File fileOf(String url)
     {
         if (url == null) return null;
 
@@ -2329,14 +2358,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.runningLayoutSync.keepThePendingTurnsAcross(load);
     }
 
-    void captureRunningLayout()
+    /** Folds where a stopped run left the trains into the setup, and writes it (`RunningLayoutSync`). */
+    public void captureRunningLayout()
     {
         this.runningLayoutSync.captureRunningLayout();
     }
 
     private void captureRunningLayout(boolean underWayToo)
     {
-        this.runningLayoutSync.captureRunningLayout(underWayToo);
+        Exception failed = this.runningLayoutSync.captureRunningLayout(underWayToo);
+
+        if (failed != null) this.model.log(failed);
+    }
+
+    /**
+     * The fold a backup takes first, answering what kept it from being written, or null.  Skipped while an editor holds
+     * the setup (it would commit the editor's unsaved edits; opening one folds, OB-144) or a rebuild from the setup is
+     * under way (it would fold the railway from before the edit over it; the rebuild folds after).
+     */
+    public Exception foldForABackup()
+    {
+        if (anEditorIsOpenOrOnItsWay() || refreshesUnderWay.get() > 0) return null;
+
+        return this.runningLayoutSync.captureRunningLayout(false);
     }
 
     /** Drops the setup so the next request reads it again; called when the layout changes underneath it. */
@@ -2378,396 +2422,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         refreshConfigurationTitles();
     }
 
-    /**
-     * Grays the Layout menu while an editor has the diagram and offers the way back (OB-033): saving or rebuilding then
-     * commits edits the editor has not saved.  Applied when the menu opens, when the answer is certainly current.
-     */
-    private void guardLayoutMenu()
-    {
-        if (layoutMenu == null) return;
-
-        boolean busy = isLayoutEditorOpen();
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            java.awt.Component child = layoutMenu.getMenuComponent(i);
-
-            if (child == goToEditorItem) continue;
-
-            // A heading is a disabled label by design; do not switch it back on.
-            if (child == localHeading || child == centralStationHeading) continue;
-
-            // Taken away, never handed back: `repaintPathLabel` owns the Central Station items and grays them when none
-            // is reachable (OB-098), which IS their guard (the switch action checks no connection).
-            // initializeLocalLayoutMenuItem likewise: its listener disables it before createAndApplyEmptyLayout runs
-            // off the EDT, and only the completion callback re-enables it.
-            if (child == switchCSLayoutMenuItem || child == downloadCSLayoutMenuItem
-                || child == initializeLocalLayoutMenuItem)
-            {
-                if (busy) child.setEnabled(false);
-
-                continue;
-            }
-
-            child.setEnabled(!busy);
-        }
-
-        applyLayoutEditingAvailability();
-
-        refreshDataSourceLabel();
-
-        // The items that need a local layout to act on (OB-128); left alone when an editor is open.
-        if (!busy)
-        {
-            boolean workable = layoutCanBeEdited();
-
-            // Manage Pages is not set here: this menu, opening on its own schedule, disagreed with the owner,
-            // `applyLayoutEditingAvailability`, during a layout database rebuild.
-            if (editPageMenu != null) editPageMenu.setEnabled(workable && isLayoutLoaded());
-
-            // Pop-outs and the picture export need loaded pages, not a local folder (a Central Station diagram works),
-            // and the export would be handed the null page that activeLayoutPage returns when the selector is empty.
-            boolean loaded = isLayoutLoaded();
-
-            if (popUpAllMenuItem != null) popUpAllMenuItem.setEnabled(loaded);
-
-            if (exportDiagramItem != null) exportDiagramItem.setEnabled(loaded);
-
-            // Its own question: excluded from the loop above, and its only other writer never re-enables it, so opening
-            // this menu once with an editor open grayed it for the session on a CS3.
-            if (openCS3AppMenuItem != null) openCS3AppMenuItem.setEnabled(
-                this.model != null && this.model.isCS3());
-        }
-
-        // While autonomy runs or a route holds the setup (`aRunHoldsTheSetup`), what changes the diagram or the folder
-        // is grayed with the reason (each also refuses on the click, MT-141); the folder, pop-outs, picture and CS3 app
-        // stay.
-        boolean running = isAutonomyBusy() || (this.model != null && this.model.isAutonomyRunning())
-            || aRunHoldsTheSetup();
-
-        String why = running ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
-
-        greyForTheRun(chooseLocalDataFolderMenuItem, running, false, why);
-        greyForTheRun(modifyLocalLayoutMenu, running, false, why);
-        greyForTheRun(editPageMenu, running, false, why);
-        greyForTheRun(initializeLocalLayoutMenuItem, running, true, why);
-
-        // The two Central Station items' owner works them out again once they are given back
-        if (greyForTheRun(switchCSLayoutMenuItem, running, true, why)
-            | greyForTheRun(downloadCSLayoutMenuItem, running, true, why))
-        {
-            repaintPathLabel();
-        }
-
-        if (goToEditorItem == null)
-        {
-            goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
-
-            goToEditorItem.addActionListener(e -> showOpenEditor());
-
-            layoutMenu.add(goToEditorItem, 0);
-        }
-
-        goToEditorItem.setVisible(busy);
-    }
-
-    /** The "an editor has this diagram" item on the Layout menu. */
-    private javax.swing.JMenuItem goToEditorItem;
-
-    /** What a Layout menu item had before a run grayed it: whether it was live, and its tooltip */
-    private static final String GREYED_FOR_THE_RUN = "greyedForTheRun";
-
-    /**
-     * Grays the item with `why` as its tooltip while a run goes and gives the tooltip back after it (the enabled state
-     * too, when `owned` by something else); returns true when it was given back just now.
-     */
-    private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
-    {
-        if (item == null) return false;
-
-        Object[] kept = (Object[]) item.getClientProperty(GREYED_FOR_THE_RUN);
-
-        if (running)
-        {
-            if (kept == null)
-            {
-                item.putClientProperty(GREYED_FOR_THE_RUN, new Object[] {item.isEnabled(), item.getToolTipText()});
-            }
-
-            item.setEnabled(false);
-
-            item.setToolTipText(AutonomyEditorPanel.wrapped(why));
-
-            return false;
-        }
-
-        if (kept == null) return false;
-
-        item.putClientProperty(GREYED_FOR_THE_RUN, null);
-
-        if (owned) item.setEnabled((Boolean) kept[0]);
-
-        item.setToolTipText((String) kept[1]);
-
-        return true;
-    }
-
-    /** The two section labels on the Layout menu. */
-    private javax.swing.JMenuItem localHeading;
-    private javax.swing.JMenuItem centralStationHeading;
-
-    /**
-     * Preferences > Debug, in debug and simulation only.  Echo Sent Commands is `DEBUG_SIMULATE_PACKETS`: a simulation
-     * then answers every command as a Central Station would, so the window can follow a throttle reversal (MT-488).
-     * An unattended test sets the flag in code, so there the stored choice is neither read into it nor written from it.
-     */
-    private void mountDebugMenu()
-    {
-        if (this.model == null || !this.model.isDebug() || !this.model.isSimulation()) return;
-
-        if (interfaceMenu == null) return;
-
-        // On in every simulation: otherwise it answers nothing it sends (power, switch, route) and autonomy cannot run.
-        // Turned on at each start and said where the stored choice was off; the menu item still turns it off.
-        if (!isUnattended())
-        {
-            boolean wasOn = prefs.getBoolean(ECHO_COMMANDS_PREF, false);
-
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
-
-            prefs.putBoolean(ECHO_COMMANDS_PREF, true);
-
-            if (!wasOn)
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(this, I18n.t("ui.main.infoEchoTurnedOn")));
-            }
-        }
-
-        javax.swing.JMenu debug = new javax.swing.JMenu(I18n.t("ui.main.toolbar.debug"));
-
-        final javax.swing.JCheckBoxMenuItem echo =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.echoCommands"));
-
-        echo.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("ui.main.toolbar.tooltip.echoCommands")));
-
-        echo.setSelected(org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS);
-
-        echo.addActionListener(e ->
-        {
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echo.isSelected();
-
-            if (!isUnattended()) prefs.putBoolean(ECHO_COMMANDS_PREF, echo.isSelected());
-        });
-
-        debug.add(echo);
-
-        interfaceMenu.add(debug);
-    }
-
-    /** A disabled bold item as a label (as LayoutRightclickAutonomyMenu): a plain grayed item looks unavailable. */
-    private javax.swing.JMenuItem menuHeading(String text)
-    {
-        javax.swing.JMenuItem heading = new javax.swing.JMenuItem(text);
-
-        heading.setEnabled(false);
-        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
-
-        return heading;
-    }
-
-    /** Items are looked up, not counted, as everything above the headings moves. */
-    private void mountLayoutHeadings()
-    {
-        if (layoutMenu == null || localHeading != null) return;
-
-        localHeading = menuHeading(I18n.t("ui.main.toolbar.headingLocalLayout"));
-        centralStationHeading = menuHeading(I18n.t("ui.main.toolbar.headingCentralStationLayout"));
-
-        int local = indexOnLayoutMenu(chooseLocalDataFolderMenuItem);
-
-        if (local >= 0) layoutMenu.add(localHeading, local);
-
-        int station = indexOnLayoutMenu(switchCSLayoutMenuItem);
-
-        if (station >= 0) layoutMenu.add(centralStationHeading, station);
-
-        // Below both sections: both take whatever is loaded and put it in a window or a file, so they sit under no
-        // heading, moved together and in order so the export stays beside the pop-out.
-        if (popUpAllMenuItem != null)
-        {
-            layoutMenu.remove(popUpAllMenuItem);
-
-            if (exportDiagramItem != null) layoutMenu.remove(exportDiagramItem);
-
-            layoutMenu.addSeparator();
-            layoutMenu.add(popUpAllMenuItem);
-
-            if (exportDiagramItem != null) layoutMenu.add(exportDiagramItem);
-        }
-
-        tidyLayoutMenuSeparators();
-    }
-
-    /** Walks the children, not the generated `jSeparator8` and `jSeparator24`, which the designer renumbers. */
-    private void tidyLayoutMenuSeparators()
-    {
-        if (layoutMenu == null) return;
-
-        boolean previousWasSeparator = true;
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            boolean separator = layoutMenu.getMenuComponent(i) instanceof javax.swing.JSeparator;
-
-            if (separator && previousWasSeparator)
-            {
-                layoutMenu.remove(i);
-
-                i--;
-
-                continue;
-            }
-
-            previousWasSeparator = separator;
-        }
-
-        // And a trailing one, which the loop above cannot see because nothing follows it.
-        int last = layoutMenu.getMenuComponentCount() - 1;
-
-        if (last >= 0 && layoutMenu.getMenuComponent(last) instanceof javax.swing.JSeparator)
-        {
-            layoutMenu.remove(last);
-        }
-    }
-
-    private int indexOnLayoutMenu(java.awt.Component item)
-    {
-        if (layoutMenu == null || item == null) return -1;
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            if (layoutMenu.getMenuComponent(i) == item) return i;
-        }
-
-        return -1;
-    }
-
-    /**
-     * Empties the track diagram panel when there is no longer a diagram (OB-128), as a grayed tab holding the last
-     * railway looks live.  The page cache stays: its grids belong to pages that may come back with their captions.
-     */
-    private void clearLayoutPanel()
-    {
-        if (InnerLayoutPanel == null) return;
-
-        InnerLayoutPanel.removeAll();
-        InnerLayoutPanel.revalidate();
-        InnerLayoutPanel.repaint();
-    }
-
-    /**
-     * Names the current data source on the menu item that opens it (FR-040), asked from `guardLayoutMenu` when somebody
-     * looks.  A local layout whose pages are not loaded is None, not Local: the folder a preference points at would
-     * describe a railway not on screen.
-     */
-    private void refreshDataSourceLabel()
-    {
-        if (showCurrentLayoutFolderMenuItem == null) return;
-
-        String source;
-
-        // isLayoutLoaded(), not the raw getLayoutList().isEmpty() (see the layoutLoaded field), so this item cannot
-        // disagree with guardLayoutMenu's during a refreshLayouts() rebuild.
-        if (this.model == null || !isLayoutLoaded())
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceNone");
-        }
-        else if (isLocalLayout())
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceLocal");
-        }
-        else
-        {
-            source = I18n.t("ui.main.toolbar.dataSourceCentralStation");
-        }
-
-        showCurrentLayoutFolderMenuItem.setText(I18n.f("ui.main.toolbar.dataSource", source));
-    }
-
-    /** "Edit Layout Page..." on the Layouts menu, one entry per page; rebuilt on every mount as the pages change. */
-    private void mountEditPageMenu()
-    {
-        if (layoutMenu == null) return;
-
-        if (editPageMenu != null) layoutMenu.remove(editPageMenu);
-
-        editPageMenu = new javax.swing.JMenu(I18n.t("layout.ui.menuEditLayoutPage"));
-
-        editPageMenu.setToolTipText(
-            AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipEditLayoutPage")));
-
-        List<String> pages = this.model == null ? new ArrayList<>() : this.model.getLayoutList();
-
-        for (final String page : pages)
-        {
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(page);
-
-            item.addActionListener(event -> openLayoutEditor(page, null, null));
-
-            editPageMenu.add(item);
-        }
-
-        editPageMenu.setEnabled(!pages.isEmpty() && isLocalLayout());
-
-        // Directly under Manage Pages, its other half (OB-021); add() would put it at the bottom.
-        int under = -1;
-
-        for (int i = 0; i < layoutMenu.getMenuComponentCount(); i++)
-        {
-            if (layoutMenu.getMenuComponent(i) == modifyLocalLayoutMenu)
-            {
-                under = i;
-                break;
-            }
-        }
-
-        if (under >= 0) layoutMenu.add(editPageMenu, under + 1);
-        else layoutMenu.add(editPageMenu);
-    }
+    /** Layouts > Manage Pages..., in place of the hidden menu of that name. */
+    javax.swing.JMenuItem managePagesItem;
 
     /** The one Edit Layout Page menu, rebuilt rather than duplicated. */
-    private javax.swing.JMenu editPageMenu;
-
-    /** Drops separators that separate nothing (OB-021), leading and trailing ones too; swept, not removed by index. */
-    private void tidySeparators(javax.swing.JMenu menu)
-    {
-        if (menu == null) return;
-
-        boolean previousWasSeparator = true;
-
-        for (int i = 0; i < menu.getMenuComponentCount(); )
-        {
-            boolean separator = menu.getMenuComponent(i) instanceof javax.swing.JSeparator;
-
-            if (separator && previousWasSeparator)
-            {
-                menu.remove(i);
-                continue;
-            }
-
-            previousWasSeparator = separator;
-
-            i++;
-        }
-
-        while (menu.getMenuComponentCount() > 0
-            && menu.getMenuComponent(menu.getMenuComponentCount() - 1)
-                instanceof javax.swing.JSeparator)
-        {
-            menu.remove(menu.getMenuComponentCount() - 1);
-        }
-    }
+    javax.swing.JMenu editPageMenu;
 
     /** The autonomy menu, built in code as its items are rebuilt from the configurations on disk at each opening. */
     private AutonomyMenu autonomyMenu;
@@ -2902,7 +2561,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Redraws the pop-up diagrams whose captions differ from the setup's (OB-341): their labels are registered under
      * their own window, so the main window's rebuild never lets go of them.  The others stay, so none flickers.
      */
-    private void refreshPopupsWhoseCaptionsChanged()
+    void refreshPopupsWhoseCaptionsChanged()
     {
         if (!javax.swing.SwingUtilities.isEventDispatchThread())
         {
@@ -3032,7 +2691,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Above the no-session return: these concern the Layout menu, not a session, and a Central Station layout
         // always has a null `session`, so below it the guard, the data-source label and the headings would never exist
         // for it.
-        mountLayoutHeadings();
+        layoutMenus.mountLayoutHeadings();
+        layoutMenus.mountManagePages();
+        layoutMenus.mountRecentLayouts();
+        mountRestoreFromBackup();
         mountFindRoute();
 
         if (layoutMenu != null && layoutMenu.getMenuListeners().length == 0)
@@ -3042,7 +2704,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 @Override
                 public void menuSelected(javax.swing.event.MenuEvent e)
                 {
-                    guardLayoutMenu();
+                    layoutMenus.guardLayoutMenu();
                 }
 
                 @Override
@@ -3068,7 +2730,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Built but not shown: it stays as the home of the actions the Autonomy menu runs (a few hundred lines of
         // dialogs and file handling).
 
-        mountEditPageMenu();
+        layoutMenus.mountEditPageMenu();
     }
 
     /** Re-attaches the timetable and status panels: callbacks live on the Layout, which parseAuto replaces (OB-097). */
@@ -3706,85 +3368,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return autonomyTileMenus;
     }
 
-    /**
-     * Opens the diagram editor in autonomy mode on a tile's page and reveals it; a null tile just opens the current
-     * page.
-     */
+    /** Delegates to `EditorWindows.openAutonomyEditor`. */
     public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile)
     {
-        openAutonomyEditor(tile, null);
+        this.editorWindows.openAutonomyEditor(tile);
     }
 
-    /** As above, also outlining {@code related}, the squares a finding names beside its own (MT-505); may be null. */
+    /** Delegates to `EditorWindows.openAutonomyEditor`. */
     public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile,
         final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> related)
     {
-        openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile, false, related);
+        this.editorWindows.openAutonomyEditor(tile, related);
     }
 
-    /** Selects the page being edited before a window is built, since the editor edits one page. */
+    /** Delegates to `EditorWindows.selectLayoutPage`. */
     public void selectLayoutPage(String page)
     {
-        if (page != null) this.LayoutList.setSelectedItem(page);
+        this.editorWindows.selectLayoutPage(page);
     }
 
-    /**
-     * Whether the Edit button may be pressed; an editor switching page or mode does not close, so it restores the
-     * button.
-     */
+    /** Delegates to `EditorWindows.setEditLayoutEnabled`. */
     public void setEditLayoutEnabled(boolean enabled)
     {
-        // Remembered, not applied: "an editor is open" and "there is a layout to edit" (OB-126) are re-asked
-        // separately.
-        this.noEditorOpen = enabled;
-
-        applyLayoutEditingAvailability();
+        this.editorWindows.setEditLayoutEnabled(enabled);
     }
 
-    /** Lights or grays everything that edits the track diagram; call it on every transition that changes the answer. */
+    /** Delegates to `EditorWindows.applyLayoutEditingAvailability`. */
     void applyLayoutEditingAvailability()
     {
-        // Also no editor window: a switch's hand-over says no editor is open while its window still is.
-        boolean live = this.noEditorOpen && !isLayoutEditorOpen() && layoutCanBeEdited();
-
-        this.editLayoutButton.setEnabled(live);
-
-        // Manage Pages goes with it: it is the same permission, asked about the same folder.
-        if (this.modifyLocalLayoutMenu != null) this.modifyLocalLayoutMenu.setEnabled(live);
-
-        // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
-        // stay lit while an editor is open (OB-057).  Set here rather than at the four places that enable the layout
-        // button.
-        if (this.editAutonomyFromSettings != null)
-        {
-            this.editAutonomyFromSettings.setEnabled(live);
-        }
+        this.editorWindows.applyLayoutEditingAvailability();
     }
 
-    /** Whether there is a track diagram of the user's own to edit (OB-126): not with a CS layout or none loaded. */
-    private boolean layoutCanBeEdited()
+    /** Delegates to `EditorWindows.layoutCanBeEdited`. */
+    boolean layoutCanBeEdited()
     {
-        return isLayoutLoaded() && isLocalLayout();
+        return this.editorWindows.layoutCanBeEdited();
     }
 
-    /**
-     * Whether a track diagram is loaded (OB-127): stored because `getLayoutList().isEmpty()` asked at many places gave
-     * different answers.  Volatile: set on the event thread, read from the workers that rebuild the grid.
-     */
-    private volatile boolean layoutLoaded = false;
-
-    /** Whether a track diagram is loaded; the stored answer. */
+    /** Delegates to `EditorWindows.isLayoutLoaded`. */
     public boolean isLayoutLoaded()
     {
-        return this.layoutLoaded;
+        return this.editorWindows.isLayoutLoaded();
     }
 
-    /** Stores the model's answer; the only assignment to {@link #layoutLoaded}. */
+    /** Delegates to `EditorWindows.updateLayoutLoaded`. */
     private void updateLayoutLoaded()
     {
-        this.layoutLoaded = this.model != null
-            && this.model.getLayoutList() != null
-            && !this.model.getLayoutList().isEmpty();
+        this.editorWindows.updateLayoutLoaded();
     }
 
     /**
@@ -3804,260 +3434,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
     }
 
-    /** Why the Edit Layout button is gray, as a message key (OB-126); asks in `layoutCanBeEdited`'s order. */
+    /** Delegates to `EditorWindows.reasonLayoutIsNotEditable`. */
     private String reasonLayoutIsNotEditable()
     {
-        String why = whyLayoutCannotBeEdited();
-
-        // Never null in practice; a dialog saying "null" would be worse than a slightly wrong sentence.
-        return why != null ? why : "autosetup.ui.errorEditorAlreadyOpen";
+        return this.editorWindows.reasonLayoutIsNotEditable();
     }
 
+    /** Delegates to `EditorWindows.whyLayoutCannotBeEdited`. */
     public String whyLayoutCannotBeEdited()
     {
-        if (!isLayoutLoaded())
-        {
-            return "layout.ui.errorNoLayoutLoaded";
-        }
-
-        if (!isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
-
-        // Last: it is about a window, not the layout, and the caller may answer it by bringing that window forward.
-        if (!this.noEditorOpen) return "autosetup.ui.errorEditorAlreadyOpen";
-
-        return null;
+        return this.editorWindows.whyLayoutCannotBeEdited();
     }
 
     /** Whether no editor window is currently open - the caller's half of the availability answer. */
-    private boolean noEditorOpen = true;
+    boolean noEditorOpen = true;
 
-    /** Remembers the editor the user last chose in the sidebar; not called for a mode forced back to the track. */
+    /** Delegates to `EditorWindows.rememberEditorChoice`. */
     public void rememberEditorChoice(boolean autonomy)
     {
-        prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, autonomy);
+        this.editorWindows.rememberEditorChoice(autonomy);
     }
 
-    /**
-     * Why the autonomy editor would refuse to open, as a message key, or null (FR-026): openLayoutEditor's refusals in
-     * its order, with the same keys (`testEditorSurfaceRules`).  An editor already open is no refusal when a window can
-     * be brought forward.
-     */
+    /** Delegates to `EditorWindows.whyAutonomyEditorCannotOpen`. */
     public String whyAutonomyEditorCannotOpen()
     {
-        if (!this.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
-
-        // A setup that is there but would not read is not a layout with nowhere to keep one; both keys are answered
-        // here.
-        if (this.getAutonomySession() == null)
-        {
-            return whyTheSetupCannotBeRead() != null
-                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit";
-        }
-
-        // Not while a route runs either: the edit refusal's own sentence (`RunGates.refuseWhileARunHoldsTheSetup`)
-        if (this.aRunHoldsTheSetup()) return RunGates.NO_EDITS_WHILE_RUNNING;
-
-        if (!this.editLayoutButton.isEnabled() && !isLayoutEditorOpen())
-        {
-            return "autosetup.ui.errorEditorAlreadyOpen";
-        }
-
-        return null;
+        return this.editorWindows.whyAutonomyEditorCannotOpen();
     }
 
-    /** A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show; an unreadable setup says why. */
+    /** Delegates to `EditorWindows.sayWhyAutonomyEditorCannotOpen`. */
     public String sayWhyAutonomyEditorCannotOpen(String why)
     {
-        if ("autosetup.ui.errorSetupUnreadable".equals(why))
-        {
-            return I18n.f("autosetup.ui.errorSetupUnreadable", String.valueOf(whyTheSetupCannotBeRead()));
-        }
-
-        return I18n.t(why);
+        return this.editorWindows.sayWhyAutonomyEditorCannotOpen(why);
     }
 
+    /** Delegates to `EditorWindows.openLayoutEditor`. */
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal)
     {
-        openLayoutEditor(page, autonomy, reveal, false);
+        this.editorWindows.openLayoutEditor(page, autonomy, reveal);
     }
 
-    /**
-     * Opens the layout editor, on a page, in a mode: the one way in, so the guards cannot drift.  `page` null is the
-     * page the main window shows; `autonomy` TRUE is the setup, FALSE the track, null the last used; `reveal` is a
-     * square to scroll to and flash.  `remember` is whether this counts as the user CHOOSING a mode to come back to:
-     * most ways in do not, and remembering them would silently change what the Edit button does next time.
-     */
+    /** Delegates to `EditorWindows.openLayoutEditor`. */
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember)
     {
-        openLayoutEditor(page, autonomy, reveal, remember, null);
+        this.editorWindows.openLayoutEditor(page, autonomy, reveal, remember);
     }
 
-    /**
-     * As above, with {@code outline}, the squares a finding names beside the revealed one, outlined with it (or null).
-     */
-    private void openLayoutEditor(String page, Boolean autonomy,
-        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember,
-        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)
-    {
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles"));
-            return;
-        }
-
-        // What can be OPENED is any session at all (a setup with blocking errors will not load, and the editor is the
-        // only place to fix them); what can be DEFAULTED to is a configuration actually chosen.
-        final org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        // When last time is no longer possible (a setup since unloaded): the track, silently, since the user asked to
-        // edit.
-        boolean wantsAutonomy = autonomy == null
-            ? prefs.getBoolean(LAST_EDITOR_AUTONOMY_PREF, false) && editableAutonomySession() != null
-            : autonomy;
-
-        if (wantsAutonomy && session == null)
-        {
-            // An explicit request says why it cannot be honored; a remembered one just falls back
-            if (autonomy != null)
-            {
-                // With the reason when the setup is there and would not read (the two keys whyAutonomyEditorCannotOpen
-                // answers).
-                JOptionPane.showMessageDialog(this, whyTheSetupCannotBeRead() != null
-                    ? I18n.f("autosetup.ui.errorSetupUnreadable", whyTheSetupCannotBeRead())
-                    : I18n.t("autosetup.ui.errorNoSetupToEdit"));
-                return;
-            }
-
-            wantsAutonomy = false;
-        }
-
-        // Neither editor while trains run (OB-047): a tile could be moved or deleted under a train on its way to it.
-        // No silent fallback, as falling back means opening something; a route counts too (`aRunHoldsTheSetup`).
-        if (refuseWhileARunHoldsTheSetup(this)) return;
-
-        // One editor at a time, gated on the same button: two editors share one LayoutDiagram and one edit flag, so
-        // closing either sets edit false under the other and re-enables the button for a third.
-        if (!this.editLayoutButton.isEnabled())
-        {
-            // Bring the editor FORWARD when there is one (OB-058); the dialog is for a disabled button with no editor
-            // to show.
-            if (isLayoutEditorOpen())
-            {
-                showOpenEditor();
-                return;
-            }
-
-            // Which of the three reasons (OB-126); the already-open case was handled above.
-            JOptionPane.showMessageDialog(this, I18n.t(reasonLayoutIsNotEditable()));
-            return;
-        }
-
-        setEditLayoutEnabled(false);
-
-        // the editor edits one page, so the page has to be selected before it is opened
-        if (page != null) this.LayoutList.setSelectedItem(page);
-
-        // Remembered only when it is a choice: not when the mode was forced back to the track, a temporary fact about
-        // right now.
-        if (remember && autonomy != null)
-        {
-            prefs.putBoolean(LAST_EDITOR_AUTONOMY_PREF, wantsAutonomy);
-        }
-
-        // Folds where the trains actually are into the setup before the editor snapshots it (OB-144): a run leaves a
-        // locomotive's position in `Point.currentLoc` alone, so Save would write back where the train STARTED.  Before
-        // the constructor, which takes the undo point; a no-op with no session, no active configuration, or a run in
-        // progress.
-        captureRunningLayout();
-
-        final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
-
-        // Whether a square was clicked in the editor this one replaces, asked now since the build is posted
-        final boolean carried = clickCarried;
-
-        // Set until the posted build shows the editor; every door that sends a train asks this too
-        this.editorOnItsWay = true;
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try
-            {
-                // Trains may have started since the question above (Start's worker, a staging flow): refuse, say so,
-                // give Edit back.
-                if (refuseWhileARunHoldsTheSetup(this, () ->
-                    {
-                        this.editorOnItsWay = false;
-
-                        setEditLayoutEnabled(true);
-                    }))
-                {
-                    return;
-                }
-
-                LayoutEditor editor = openEditor = new LayoutEditor(
-                    this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
-                    this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
-                    this,
-                    this.LayoutList.getSelectedIndex()
-                );
-
-                this.setAlwaysOnTop(false);
-
-                editor.render();
-
-                if (opening != null) editor.setAutonomyMode(opening);
-
-                if (carried) editor.carryTheClick();
-
-                // Runs after render()'s own posted task shows the editor
-                javax.swing.SwingUtilities.invokeLater(() -> this.editorOnItsWay = false);
-
-                // Posted twice: render() and setAutonomyMode only QUEUE the work that builds the grid, so reveal must
-                // wait for it.
-                if (reveal != null)
-                {
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                        javax.swing.SwingUtilities.invokeLater(() ->
-                        {
-                            editor.reveal(reveal);
-
-                            // Outline what the finding names beside it, as the editor's own list does (OB-352); a door
-                            // that is not a finding passes none
-                            if (outline != null && editor.getAutonomyPanel() != null)
-                            {
-                                editor.getAutonomyPanel().outlineTheNotice(reveal, outline);
-                            }
-                        }));
-                }
-            }
-            catch (Exception | Error e)
-            {
-                // Give the button back, or autonomy setup is unreachable until restart.
-                setEditLayoutEnabled(true);
-
-                this.editorOnItsWay = false;
-
-                // Rethrow an Error after giving the button back, or Edit would stay grayed for the session with no
-                // editor anywhere
-                if (e instanceof Error) throw (Error) e;
-
-                if (this.model.isDebug()) this.model.log((Exception) e);
-            }
-        });
-    }
-
-    /**
-     * The setup, if there is any point opening: a CHOSEN configuration even if it did not load, since the editor is the
-     * only place to fix its errors.  Null when there is nothing to set up.
-     */
+    /** Delegates to `EditorWindows.editableAutonomySession`. */
     public org.traincontrol.automationui.AutonomySession editableAutonomySession()
     {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        return session != null && session.getStore().getActiveConfiguration() != null ? session : null;
+        return this.editorWindows.editableAutonomySession();
     }
 
     /**
@@ -4631,7 +4058,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Delegates to `RunGates.refuseWhileARunHoldsTheSetup`. */
-    boolean refuseWhileARunHoldsTheSetup(Component source)
+    public boolean refuseWhileARunHoldsTheSetup(Component source)
     {
         return RunGates.refuseWhileARunHoldsTheSetup(this, source, null);
     }
@@ -4750,7 +4177,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * `refusedToSendATrain`, `whyThisPathCannotBeTaken`, the reversal question, `refusedForAnEditorOnItsWay` again
      * and the atomic-routes gate; the dispatch then runs on its own thread, as it holds the railway's monitor (OB-192).
      */
-    void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path,
+    public void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path,
         final Locomotive train)
     {
         if (railway == null || path == null || path.isEmpty() || train == null) return;
@@ -4982,49 +4409,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The setup and the running railway kept in step: the folds, the rebuild and the settings as built. */
     private final RunningLayoutSync runningLayoutSync = new RunningLayoutSync(this);
 
+    /** Delegates to `EditorWindows.isLayoutEditorOpen`. */
     public boolean isLayoutEditorOpen()
     {
-        // The editor, not the button that opens it (OB-126): the button is also grayed for a Central Station layout.
-        return anEditorWindow() != null;
+        return this.editorWindows.isLayoutEditorOpen();
     }
 
-    /**
-     * An editor window of this window's that is still there, or null (newest first).  Asked of the windows, not of
-     * `openEditor` or the Edit button, which a switch between editors gives back early.
-     */
-    private LayoutEditor anEditorWindow()
+    /** Delegates to `EditorWindows.anEditorWindow`. */
+    LayoutEditor anEditorWindow()
     {
-        if (openEditor != null && openEditor.isDisplayable()) return openEditor;
-
-        for (java.awt.Frame frame : java.awt.Frame.getFrames())
-        {
-            if (frame instanceof LayoutEditor && frame.isDisplayable() && ((LayoutEditor) frame).isEditorOf(this))
-            {
-                return (LayoutEditor) frame;
-            }
-        }
-
-        return null;
+        return this.editorWindows.anEditorWindow();
     }
 
-    /** An editor window has gone: Edit and the doors beside it ask again.  Called from `LayoutEditor.dispose`. */
-    void editorWindowClosed()
+    /** Delegates to `EditorWindows.editorWindowClosed`. */
+    public void editorWindowClosed()
     {
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
-        {
-            applyLayoutEditingAvailability();
-
-            applyAlwaysOnTop();
-        }
-        else
-        {
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                applyLayoutEditingAvailability();
-
-                applyAlwaysOnTop();
-            });
-        }
+        this.editorWindows.editorWindowClosed();
     }
 
     /** The windows this one opens follow its always-on-top, heard from the window's own property. */
@@ -5042,16 +4442,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /** The operator's always-on-top setting, except while an editor window is open; see `editorWindowClosed`. */
+    /** Delegates to `EditorWindows.applyAlwaysOnTop`. */
     private void applyAlwaysOnTop()
     {
-        boolean editing = this.openEditor != null && this.openEditor.isDisplayable();
-
-        setAlwaysOnTop(!editing && prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
+        this.editorWindows.applyAlwaysOnTop();
     }
 
     /** The editor window, held (a JFrame has no owner) so a refusing menu can offer a way back (OB-033). */
-    private LayoutEditor openEditor;
+    LayoutEditor openEditor;
 
     /**
      * Diagram refreshes under way, read by the one gate: a run started in between ran the railway built before the
@@ -5062,550 +4460,98 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     final java.util.concurrent.atomic.AtomicInteger refreshesUnderWay = new java.util.concurrent.atomic.AtomicInteger();
 
     /** An editor asked for and not yet shown; read by `anEditorIsOpenOrOnItsWay`.  Event thread only. */
-    private boolean editorOnItsWay;
+    boolean editorOnItsWay;
 
-    /** Breaks every line over 90 characters at spaces (a line with no space stays whole), so a dialog fits. */
-    static String wrappedToFit(String text)
-    {
-        final int columns = 90;
-
-        if (text == null) return null;
-
-        StringBuilder out = new StringBuilder();
-
-        for (String line : text.split("\n", -1))
-        {
-            if (out.length() > 0) out.append('\n');
-
-            while (line.length() > columns)
-            {
-                int at = line.lastIndexOf(' ', columns);
-
-                if (at <= 0) break;
-
-                out.append(line, 0, at).append('\n');
-
-                line = line.substring(at + 1);
-            }
-
-            out.append(line);
-        }
-
-        return out.toString();
-    }
-
-    /**
-     * The layout editor's window while one is open where it can be seen, or null: for a question that has to open in
-     * front of it (MT-575).  NOT a minimized one: on Windows its owned windows hide with it, leaving a modal invisible.
-     */
+    /** Delegates to `EditorWindows.openLayoutEditorWindow`. */
     java.awt.Window openLayoutEditorWindow()
     {
-        return openEditor != null && openEditor.isDisplayable() && openEditor.isShowing()
-            && (openEditor.getExtendedState() & java.awt.Frame.ICONIFIED) == 0 ? openEditor : null;
+        return this.editorWindows.openLayoutEditorWindow();
     }
 
-    /** Brings the open editor forward, for the menu item that says "it is over there". */
+    /** Delegates to `EditorWindows.showOpenEditor`. */
     public void showOpenEditor()
     {
-        LayoutEditor shown = anEditorWindow();
-
-        if (shown == null) return;
-
-        shown.setVisible(true);
-        shown.toFront();
-        shown.requestFocus();
+        this.editorWindows.showOpenEditor();
     }
 
-    /** Whether the editor about to open starts knowing a square was clicked; set only during `openCarryingTheClick`. */
-    private boolean clickCarried = false;
-
-    /**
-     * Opens an editor in place of one that closed itself to change page, carrying whether a square had been clicked.
-     * Cleared whatever the opening does, so a refused opening cannot hand the click to the next Edit.
-     */
+    /** Delegates to `EditorWindows.openCarryingTheClick`. */
     public void openCarryingTheClick(boolean clicked, Runnable open)
     {
-        clickCarried = clicked;
-
-        try
-        {
-            open.run();
-        }
-        finally
-        {
-            clickCarried = false;
-        }
+        this.editorWindows.openCarryingTheClick(clicked, open);
     }
 
-    /**
-     * An autonomy editor closing (Save, Cancel, a jump): the refresh is counted before its window goes and taken over
-     * by the posted `autonomyEditorClosed`.
-     *
-     * @param then run after `autonomyEditorClosed`, on the event thread, or null
-     */
+    /** Delegates to `EditorWindows.autonomyEditorClosedFromTheEditor`. */
     public void autonomyEditorClosedFromTheEditor(final Runnable then)
     {
-        refreshesUnderWay.incrementAndGet();
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try
-            {
-                autonomyEditorClosed();
-
-                if (then != null) then.run();
-            }
-            finally
-            {
-                refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1));
-            }
-        });
+        this.editorWindows.autonomyEditorClosedFromTheEditor(then);
     }
 
+    /** Delegates to `EditorWindows.autonomyEditorClosed`. */
     public void autonomyEditorClosed()
     {
-        // reapplies the stored preference, which is what the diagram path does here too
-        windowAlwaysOnTopMenuItemActionPerformed(null);
-
-        setEditLayoutEnabled(true);
-
-        repaintLayout();
-
-        refreshPopupsWhoseCaptionsChanged();
-
-        // Refresh the banner too: an editor closing never called its one decider, so a fix left it stale.
-        refreshAutonomyPrompt();
-
-        // The running graph is rebuilt from what the setup now says: an edit that changes how a square SPLITS changes
-        // its copies and their names.  Not while trains are moving.
-        rebuildRunningLayoutFromSetup();
-
-        // The file is written (Adam: "on exit or editor load or editor close, save to the setup file.").  AFTER the
-        // rebuild: capturing first would fold the pre-edit running layout over the configuration.
-        captureRunningLayout();
+        this.editorWindows.autonomyEditorClosed();
     }
 
-    /** Opens the setup editor on a named page, switching the diagram to it first (a menu names no page). */
+    /** Delegates to `EditorWindows.openAutonomyEditorOnPage`. */
     public void openAutonomyEditorOnPage(String page)
     {
-        // A menu item that names the setup editor is somebody saying which editor they want
-        openLayoutEditor(page, Boolean.TRUE, null, true);
+        this.editorWindows.openAutonomyEditorOnPage(page);
     }
 
-    /**
-     * The station on a square, for a right-click on the track itself: only while the overlay is on and only for a
-     * station.  There is no page-less overload: the main window's page says nothing about a popup.
-     *
-     * @param onPage the page the square is actually on
-     * @return the station's square, or null when there is nothing there to act on
-     */
-    public org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(
-        String onPage, int x, int y)
+    /** The window's editors: opening, closing, and whether the diagram may be edited. */
+    private final EditorWindows editorWindows = new EditorWindows(this);
+
+    /** The diagram's keyboard gestures and the turns they write. */
+    private final DiagramLocGestures diagramLocGestures = new DiagramLocGestures(this);
+
+    /** Delegates to `DiagramLocGestures.autonomyStationAt`. */
+    public org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(String onPage, int x, int y)
     {
-        if (autonomyOverlayToggle == null || !autonomyOverlayToggle.isOverlayShown()) return null;
-
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        if (session == null || activeDiagramConfiguration == null) return null;
-
-        Object showing = onPage != null ? onPage : this.LayoutList.getSelectedItem();
-
-        if (showing == null) return null;
-
-        String page = showing.toString();
-
-        if (isPageExcludedFromAutonomy(page)) return null;
-
-        org.traincontrol.automationui.TileGraph.TileKey tile =
-            new org.traincontrol.automationui.TileGraph.TileKey(page, x, y);
-
-        if (!session.getStore().isStation(tile)) return null;
-
-        return tile;
+        return this.diagramLocGestures.autonomyStationAt(onPage, x, y);
     }
 
-    /** The diagram square under the pointer, or null: no cursor or selection exists, so this says what a key means. */
-    private volatile org.traincontrol.automationui.TileGraph.TileKey hoveredDiagramTile;
-
-    /** Sets the hovered square; page is null when the pointer has left the diagram. */
+    /** Delegates to `DiagramLocGestures.setHoveredDiagramTile`. */
     public void setHoveredDiagramTile(String page, int x, int y)
     {
-        hoveredDiagramTile = page == null || x < 0 || y < 0
-            ? null : new org.traincontrol.automationui.TileGraph.TileKey(page, x, y);
+        this.diagramLocGestures.setHoveredDiagramTile(page, x, y);
     }
 
-    /**
-     * Moves a locomotive between squares from the keyboard: Control+X takes it off the hovered square and remembers
-     * it, Control+V puts one down (what Control+X last took, else the selected locomotive), Delete takes one off
-     * without remembering.  Same keys as the locomotive buttons, told apart by the pointer.  Refused while autonomy is
-     * busy.  True when this handled the key, so the caller must not also act on it.
-     */
+    /** Delegates to `DiagramLocGestures.locomotiveGestureOnDiagram`. */
     private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
     {
-        org.traincontrol.automationui.TileGraph.TileKey over = hoveredDiagramTile;
-
-        // No square under the pointer, or no autonomy at all: the keys mean the buttons.
-        if (over == null || !this.model.hasAutoLayout()) return false;
-
-        boolean cut = controlPressed && keyCode == KeyEvent.VK_X;
-        boolean paste = controlPressed && keyCode == KeyEvent.VK_V;
-        // Delete only: Backspace cycles the tabs, and this is asked first whenever the pointer rests on the diagram.
-        boolean clear = !controlPressed && keyCode == KeyEvent.VK_DELETE;
-
-        if (!cut && !paste && !clear) return false;
-
-        // From here the key is ours: say why when refusing, as returning false would hand it to a locomotive button.
-        // A route too (`aRunHoldsTheSetup`): these keys write a placement into the setup.
-        if (this.aRunHoldsTheSetup())
-        {
-            this.model.log(whyTheSetupIsHeld("layout.warnDiagramKeyWhileBusy"));
-
-            return true;
-        }
-
-        // Nor while an editor holds the setup (OB-076): its Cancel would revert and write back this placement.
-        if (isLayoutEditorOpen())
-        {
-            this.model.logf("layout.warnDiagramKeyWhileEditorOpen");
-
-            return true;
-        }
-
-        // The square under the pointer, or the station its LABEL is about: pointing at the name is pointing at it.
-        org.traincontrol.automationui.TileGraph.TileKey aimed = over;
-
-        org.traincontrol.automation.Point point = getAutonomyPointForTile(aimed);
-
-        if (point == null)
-        {
-            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-            org.traincontrol.automationui.TileGraph.TileKey captioned =
-                session == null ? null : session.getCaptionTarget(over);
-
-            if (captioned != null)
-            {
-                aimed = captioned;
-                point = getAutonomyPointForTile(aimed);
-            }
-        }
-
-        if (point == null)
-        {
-            // Autonomy does not know this square: worth saying over one the user believes is a station.
-            this.model.logf("layout.warnNoAutonomyPointHere", over.toString());
-
-            return true;
-        }
-
-        if (paste)
-        {
-            Locomotive placing = this.cutLocomotive != null ? this.cutLocomotive : this.getActiveLoc();
-
-            // Nothing to put down must not fall through to the button shortcut: the user is pointing at the diagram.
-            if (placing == null) return true;
-
-            // A train is only ever placed at a station (OB-365): said before the facing and tail questions.
-            org.traincontrol.automationui.AutonomySession onto = getAutonomySession();
-
-            if (onto == null || !onto.getStore().isStation(aimed))
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorTrainOnlyAtStation"));
-
-                return true;
-            }
-
-            // Asked of the square, not one copy: an empty square may hand back the dead-end copy while another can
-            // depart.  A station no copy can leave is placed on all the same (OB-350).
-            boolean anyWayOut = onto.canDepartFrom(this.model.getAutoLayout(), aimed);
-
-            // Where it would end up if it drove there, read before the move takes it off the walk's starting copy.
-            facingAtTheLanding = getAutonomySession() == null ? null
-                : getAutonomySession().facingByPath(this.model == null ? null
-                    : this.model.getAutoLayout(), placing.getName(), aimed);
-
-            // A cut train keeps the heading it was cut with (MT-368): Control+X took it off the railway, so the walk
-            // has nowhere to start.  Only where the landing can HOLD it (as `facingAfterAPaste`), only for the
-            // clipboard's train, and only while it is off the railway: `placing == this.cutLocomotive` stays true
-            // while another door can put it back, so the condition is "the walk had nowhere to start".
-            boolean stillLifted = this.model == null || this.model.getAutoLayout() == null
-                || this.model.getAutoLayout().getLocomotiveLocation(placing) == null;
-
-            // Walked from the square it was cut from, first (OB-270): the cut heading is a compass heading, and a
-            // route that loops round arrives the other way.  The cut heading stands only where no route reaches it.
-            org.traincontrol.automationui.TilePorts.Side walkedFromTheCut =
-                placing == this.cutLocomotive && stillLifted && this.cutFrom != null
-                    && getAutonomySession() != null && this.model != null
-                ? getAutonomySession().facingByPathFrom(this.model.getAutoLayout(), this.cutFrom, aimed) : null;
-
-            if (walkedFromTheCut != null)
-            {
-                facingAtTheLanding = walkedFromTheCut;
-            }
-            else if (this.cutFacing != null && placing == this.cutLocomotive && stillLifted
-                && getAutonomySession() != null
-                && getAutonomySession().facingsFor(aimed).containsValue(this.cutFacing))
-            {
-                facingAtTheLanding = this.cutFacing;
-            }
-
-            // Where its tail is, asked BEFORE anything moves: a dismissed prompt refuses the placement and leaves the
-            // train on the clipboard, unlike the other two nulls `forPlacement` answers.
-            tailAtTheLanding = org.traincontrol.gui.ArrivalSidePrompt.forPlacement(
-                this.model == null ? null : this.model.getAutoLayout(), point,
-                facingAtTheLanding == null ? null : facingAtTheLanding.name(),
-            // The build's sides, which the model reads too (OB-182): the geometric answer names where the neighboring
-            // POINT lies, and a reduced run turns corners.  `Layout.entrySideOf` is what both writes and the walk read.
-                mayTurnHere(aimed), this,
-                getAutonomySession() == null ? null : getAutonomySession().unbarredArrivalSides(aimed));
-
-            if (tailAtTheLanding == null && org.traincontrol.gui.ArrivalSidePrompt.wouldAsk(
-                this.model == null ? null : this.model.getAutoLayout(), point,
-                mayTurnHere(aimed), getAutonomySession() == null
-                    ? null : getAutonomySession().unbarredArrivalSides(aimed)))
-            {
-                return true;
-            }
-
-            // A second question, the way it points (Adam: "If pasting at a 'may reverse' square, ask what direction
-            // the train should face."): both headings are reachable there.  Asked before the move.
-            facingChosenAtTheLanding = null;
-
-            if (mayTurnHere(aimed) && getAutonomySession() != null)
-            {
-                java.util.Collection<org.traincontrol.automationui.TilePorts.Side> canHold =
-                    getAutonomySession().facingsFor(aimed).values();
-
-                if (org.traincontrol.gui.FacingPrompt.wouldAsk(canHold))
-                {
-                    // Named as the square: a copy's name states a heading, which is what this asks.
-                    facingChosenAtTheLanding = org.traincontrol.gui.FacingPrompt.forPlacement(
-                        canHold, facingAtTheLanding, getAutonomySession().baseNameOf(point.getName()), this);
-
-                    if (facingChosenAtTheLanding == null) return true;
-                }
-            }
-
-            // The train goes onto the copy that faces that way (MT-394): direction is which copy a train stands on.
-            if (facingChosenAtTheLanding != null)
-            {
-                org.traincontrol.automation.Point facingThatWay =
-                    copyFacing(aimed, facingChosenAtTheLanding);
-
-                if (facingThatWay != null) point = facingThatWay;
-            }
-            else
-            {
-                // Where nobody was asked, the heading the rule arrives at (OB-270): `point` is any copy, so the
-                // train could stand on the opposite-facing copy while the setup recorded the walk's heading.
-                org.traincontrol.automationui.TilePorts.Side intended =
-                    org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                        placeableFacings(aimed), facingAtTheLanding, point.getName());
-
-                org.traincontrol.automation.Point facingThatWay = !anyWayOut
-                    ? getAutonomySession().copyWithNoFacing(aimed, this.model.getAutoLayout())
-                    : copyFacing(aimed, intended);
-
-                if (facingThatWay != null) point = facingThatWay;
-            }
-
-            // The railway's answer decides here too: `isAutonomyBusy()` does not catch a target that is not a
-            // destination, and the clipboard was cleared for a move that did not happen.  What the train had on the
-            // railway, before this paste moves it: the tail question's keep-or-drop is decided from these.
-            org.traincontrol.automation.Point wasOn = null;
-
-            for (org.traincontrol.automation.Point each : this.model.getAutoLayout().getPoints())
-            {
-                if (each.getCurrentLocomotive() == placing) wasOn = each;
-            }
-
-            roadBeforeTheLanding = wasOn == null ? null : wasOn.getArrivedAlong();
-            sideBeforeTheLanding = wasOn == null ? null : wasOn.getArrivedFrom();
-            squareBeforeTheLanding = wasOn == null || getAutonomySession() == null
-                || getAutonomySession().getStationIndex() == null
-                ? null : getAutonomySession().getStationIndex().squareOf(wasOn);
-
-            if (!this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false, true))
-            {
-                // The clipboard still holds it, so the next square accepts the same paste.
-                return true;
-            }
-
-            this.cutLocomotive = null;
-
-            this.cutFacing = null;
-
-            this.cutFrom = null;
-        }
-        else
-        {
-            // Remembered before the move, which clears the square.
-            this.cutLocomotive = cut ? point.getCurrentLocomotive() : null;
-
-            // Control+X takes the train off the layout, so its facing is read from the railway, which alone knows
-            // where a run left the trains (MT-368); where it stood is kept so the paste can walk from there (OB-270).
-            this.cutFrom = cut ? point.getName() : null;
-
-            this.cutFacing = !cut || getAutonomySession() == null ? null
-                : getAutonomySession().facingOf(
-                    point.getCurrentLocomotive() == null ? null
-                        : point.getCurrentLocomotive().getName(),
-                    this.model == null ? null : this.model.getAutoLayout());
-
-            // AND THE HEADING FROM THE LAST DRAG GOES WITH IT.  This branch clears a square
-            // rather than filling one, so it leaves no heading behind - and a value left over from a
-            // previous placement would be read as this one as by whatever comes next.
-            facingAtTheLanding = null;
-            tailAtTheLanding = null;
-
-            this.model.getAutoLayout().moveLocomotive(null, point.getName(), true);
-        }
-
-        // Into the setup too, against the square aimed at, since the setup records trains against sensors.
-        rememberPlacement(point, aimed);
-
-        this.updateVisiblePoints();
-        this.repaintAutoLocList(false);
-
-        return true;
+        return this.diagramLocGestures.locomotiveGestureOnDiagram(keyCode, controlPressed);
     }
 
-    /**
-     * Whether the operator marked this square as one trains may turn round at.  Asked of the setup, as `canReverse`
-     * never reaches the running layout (the builder expresses it by splitting the square).
-     *
-     * @param tile the square
-     * @return true when trains may turn there
-     */
-    private boolean mayTurnHere(org.traincontrol.automationui.TileGraph.TileKey tile)
+    /** Delegates to `DiagramLocGestures.writeTheTurnsOwed`. */
+    void writeTheTurnsOwed()
     {
-        return getAutonomySession() != null && tile != null
-            && getAutonomySession().mayTurnTiles().contains(tile);
+        this.diagramLocGestures.writeTheTurnsOwed();
+    }
+
+    /** Delegates to `DiagramLocGestures.reconcileFacingWhenIdle`. */
+    public void reconcileFacingWhenIdle()
+    {
+        this.diagramLocGestures.reconcileFacingWhenIdle();
     }
 
     /**
      * Which side the train being placed came in by, decided before the drop, so a dismissed question changes nothing.
      */
-    private String tailAtTheLanding;
+    String tailAtTheLanding;
 
-    private java.util.List<org.traincontrol.automation.Edge> roadBeforeTheLanding;
+    java.util.List<org.traincontrol.automation.Edge> roadBeforeTheLanding;
 
-    private String sideBeforeTheLanding;
+    String sideBeforeTheLanding;
 
-    private org.traincontrol.automationui.TileGraph.TileKey squareBeforeTheLanding;
+    org.traincontrol.automationui.TileGraph.TileKey squareBeforeTheLanding;
 
     /**
      * Which way the train being placed will face on its landing square, worked out before the drag moves it.
      */
-    private org.traincontrol.automationui.TilePorts.Side facingAtTheLanding;
+    org.traincontrol.automationui.TilePorts.Side facingAtTheLanding;
 
     /** The operator's chosen facing; null where not asked, and the write then uses `facingAfterAPaste`. */
-    private org.traincontrol.automationui.TilePorts.Side facingChosenAtTheLanding;
-
-    /** The copy of a square a train facing this way stands on, preferring one that does not turn it; null if none. */
-    private org.traincontrol.automation.Point copyFacing(
-        org.traincontrol.automationui.TileGraph.TileKey square,
-        org.traincontrol.automationui.TilePorts.Side facing)
-    {
-        if (square == null || facing == null || getAutonomySession() == null
-            || this.model == null || !this.model.hasAutoLayout())
-        {
-            return null;
-        }
-
-        // The session's rule; it falls back to a copy no train arrives at where only that one faces that way (OB-284).
-        return getAutonomySession().copyFacing(square, facing, this.model.getAutoLayout());
-    }
-
-    /** Writes the turns made at destinations into the setup, keeping those it could not; null `session` writes none. */
-    private void writeTheTurns(org.traincontrol.automation.Layout built,
-        org.traincontrol.automationui.AutonomySession session)
-    {
-        // Forgotten only once written, so a turn that never reached the graph is put back.
-        java.util.Map<String, String> turnedRound = built.takeReversalsOnArrival();
-
-        try
-        {
-            if (session != null)
-            {
-                for (java.util.Iterator<java.util.Map.Entry<String, String>> pending
-                    = turnedRound.entrySet().iterator(); pending.hasNext();)
-                {
-                    java.util.Map.Entry<String, String> turned = pending.next();
-
-                    // The way it came in, not the setup's stored facing, which is stale now (a run moves trains
-                    // and writes nothing back; OB-190).  A train turned round faces the way it came in.
-                    if (session.faceTheWayItCameIn(turned.getKey(),
-                        built.getPoint(turned.getValue()), built) == null)
-                    {
-                        // Not written, so not forgotten; retrying is safe because the write is absolute.
-                        continue;
-                    }
-
-                    pending.remove();
-                }
-            }
-        }
-        finally
-        {
-            built.restoreReversalsOnArrival(turnedRound);
-        }
-    }
-
-    /**
-     * Writes the turns the railway owes into the running configuration before a fold that leaves the railway during a
-     * run (Stop Using Autonomy, another configuration chosen), as turns are otherwise written only while idle (OB-189).
-     */
-    void writeTheTurnsOwed()
-    {
-        if (this.model == null || !this.model.hasAutoLayout()) return;
-
-        writeTheTurns(this.model.getAutoLayout(), getAutonomySession());
-    }
-
-    /**
-     * Levels the direction baseline whenever the railway is idle, so nothing is followed twice.
-     *
-     * Adam: "Reversals during the run should be ignored and not queued.  Only count reversals when nothing is running.
-     * That way, there is no backlog."
-     *
-     * Called from the refresh, not the automation layer, which must not reach into the window; safe to repeat.
-     */
-    public void reconcileFacingWhenIdle()
-    {
-        try
-        {
-            if (this.model == null || !this.model.hasAutoLayout()) return;
-
-            org.traincontrol.automation.Layout built = this.model.getAutoLayout();
-
-            // ONLY WHEN NOTHING IS RUNNING, which is the whole of the rule.  A train part way through
-            // a journey is MEANT to disagree with the graph: it is between two copies.
-            if (built.isRunning()) return;
-
-            // What the railway turned round at its destination is written to the graph before the baseline is leveled,
-            // or a manual "no, turn" there is invisible and the next dispatch offers paths for the wrong heading.
-            org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-            writeTheTurns(built, session);
-
-            for (org.traincontrol.automation.Point point : built.getPoints())
-            {
-                org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();
-
-                if (loc == null || loc.getName() == null) continue;
-
-                // The baseline is what the window last acted on.  Bringing it level here is what stops
-                // the first idle echo re-following a turn the run already made.
-                lastSeenDirection.put(loc.getName(), loc.goingForward());
-            }
-        }
-        catch (Exception cannotReconcile)
-        {
-            // A DIAGRAM SLIGHTLY OUT OF DATE rather than a broken refresh.
-            if (this.model != null) this.model.log(cannotReconcile.getMessage());
-        }
-    }
+    org.traincontrol.automationui.TilePorts.Side facingChosenAtTheLanding;
 
     /**
      * The diagram squares a standing train is lying across, as of the last refresh.  Cached, as the diagram asks once
@@ -5826,63 +4772,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes a square's occupant into the autonomy setup, after the layout has been changed.
-     */
-
-    private void rememberPlacement(org.traincontrol.automation.Point point,
-        org.traincontrol.automationui.TileGraph.TileKey tile)
-    {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        if (session == null) return;
-
-        boolean setupStands = true;
-
-        session.placeLocomotive(tile,
-            point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
-
-        // And its heading: with no stored facing, `placementCopy` falls through to copy 0, which nobody chose.
-        if (point.getCurrentLocomotive() != null)
-        {
-            // And its tail: a train put down by hand has no arrival to watch, so the side it came in by is worked out,
-            // or asked where trains may turn.  Decided before the move and only recorded here.
-            String tail = tailAtTheLanding;
-
-            // Read now, not after the tail question: a second Control+V in that wait (FR-100) overwrites these fields.
-            final java.util.List<org.traincontrol.automation.Edge> roadBefore = roadBeforeTheLanding;
-            final boolean sameSquareAsBefore = tile.equals(squareBeforeTheLanding);
-            final String sideBefore = sideBeforeTheLanding;
-            final org.traincontrol.automationui.TilePorts.Side facingChosen = facingChosenAtTheLanding;
-            final org.traincontrol.automationui.TilePorts.Side facingFound = facingAtTheLanding;
-
-            // The landing copy's side is not the train's heading (read before the move into `facingAtTheLanding`).  The
-            // operator's answer wins, else `facingAfterAPaste` over the copies a train may stand on (OB-270).  Written
-            // before the tail question.
-            session.setFacing(tile, facingChosen != null ? facingChosen
-                : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                    placeableFacings(tile), facingFound, point.getName()));
-
-            setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, tile, this.model.getAutoLayout(),
-                point, tail, point.getCurrentLocomotive().getName(), roadBefore, sameSquareAsBefore, sideBefore, this,
-                this::noteIfTheSetupWasNotTidied);
-        }
-
-        // Not a setup the window has let go: one replaced in the wait was written by the reset that replaced it, and
-        // saving it now would reconcile against pages the editor changed in place.
-        if (!setupStands) return;
-
-        try
-        {
-            noteIfTheSetupWasNotTidied(session.save());
-        }
-        catch (java.io.IOException e)
-        {
-            // The placement stands either way; only the memory of it is at risk
-            this.model.log(e);
-        }
-    }
-
-    /**
      * What Control+X took off a square, waiting for a Control+V (not the button clipboard).  Package-private,
      * with `cutFrom` and `cutFacing`, because `LocomotiveActions.deleteLoc` clears all three on the event thread.
      */
@@ -5890,21 +4779,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The Point the cut locomotive stood on when taken off the railway; the paste walks from here (OB-270). */
     String cutFrom;
-
-    /**
-     * The copies of a square a train may be put down on, with their facings, by name in build order (OB-270): those
-     * it could leave (OB-284), so a paste never saves a facing the train is not standing in.
-     */
-    private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(
-        org.traincontrol.automationui.TileGraph.TileKey square)
-    {
-        if (square == null || getAutonomySession() == null || this.model == null || !this.model.hasAutoLayout())
-        {
-            return new java.util.LinkedHashMap<>();
-        }
-
-        return getAutonomySession().departableFacingsFor(square, this.model.getAutoLayout());
-    }
 
     /** Which way the cut locomotive pointed when taken off the railway (MT-368); a train off it cannot be asked. */
     org.traincontrol.automationui.TilePorts.Side cutFacing;
@@ -6256,7 +5130,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The band holding the banner and the controls, kept so its color can follow whether autonomy sees this page. */
     private javax.swing.JPanel autonomyDiagramStrip;
 
-    private AutonomyOverlayToggle autonomyOverlayToggle;
+    AutonomyOverlayToggle autonomyOverlayToggle;
 
     /** Whether the strip's copy of the run buttons already follows the real ones, apart from the strip existing. */
     private boolean listeningToRunButtons;
@@ -6909,7 +5783,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // Once the model says which mode this is.
-        mountDebugMenu();
+        layoutMenus.mountDebugMenu();
                 
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
@@ -8419,6 +7293,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         b.setOpaque(false);
     }
     
+    /** The height limit that means none: the key stays url + size, as a plain request has always been cached. */
+    private static final int NO_HEIGHT_LIMIT = Integer.MAX_VALUE;
+
     /**
      * Returns a scaled locomotive image
      * @param url
@@ -8428,28 +7305,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public Image getLocImage(String url, int size) throws IOException, Exception
     {
-        String key = url + Integer.toString(size);
-        
-        if (!TrainControlUI.getImageCache().containsKey(key))
-        {
-            Image img = ImageIO.read(new URL(url));
-            
-            if (img != null)
-            {
-                float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
-                TrainControlUI.getImageCache().put(key, 
-                    // img.getScaledInstance(size, (int) (size * aspect), 1)
-                    // Higher quality scaling
-                    ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(img), size, (int) (size * aspect))
-                );
-            }
-        }
-
-        return TrainControlUI.getImageCache().get(key);        
+        return getLocImageMaxHeight(url, size, NO_HEIGHT_LIMIT);
     }
     
     /**
-     * Returns a scaled locomotive image
+     * Returns a scaled locomotive image no taller than maxHeight (Integer.MAX_VALUE: no limit).  The limit is part of
+     * the cache key: one URL and width asked with and without a limit are two pictures.
      * @param url
      * @param size
      * @param maxHeight
@@ -8458,7 +7319,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public Image getLocImageMaxHeight(String url, int size, int maxHeight) throws IOException
     {
-        String key = url + Integer.toString(size);
+        String key = maxHeight == NO_HEIGHT_LIMIT ? url + size : url + size + 'x' + maxHeight;
         
         if (!TrainControlUI.getImageCache().containsKey(key))
         {
@@ -8469,7 +7330,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
                 
                 // Limit maximum height
-                if (size * aspect > maxHeight)
+                if (maxHeight != NO_HEIGHT_LIMIT && size * aspect > maxHeight)
                 {
                     size = (int) (size * (maxHeight / (size * aspect)));
                 }
@@ -8891,229 +7752,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * The three settings that decide what an autonomy setup DRAWS on the ordinary track diagram.  None needs a setup
-     * loaded: `showStaticAutonomyLayer` returns when there is no session, graph or configuration.
-     */
-    private void buildDiagramDrawingMenu()
-    {
-        if (autonomyToolbarMenu == null) return;
-
-        autonomyToolbarMenu.addSeparator();
-
-        // Built here (generated blocks drop hand-written items).  On by default: a vanishing caption surprises more.
-        final javax.swing.JCheckBoxMenuItem show = new javax.swing.JCheckBoxMenuItem(
-            I18n.t("autolayout.ui.menuShowInactiveLabels"),
-            prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT));
-
-        show.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels")));
-
-        show.addActionListener(event ->
-        {
-            prefs.putBoolean(SHOW_INACTIVE_LABELS_PREF, show.isSelected());
-
-            // Applied to what is already drawn; the grid rebuilds only for other reasons.
-            refreshCaptionVisibility();
-        });
-
-        autonomyToolbarMenu.add(show);
-
-        this.greyStationLabelsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
-
-        this.greyStationLabelsMenuItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.greyStationLabels")));
-
-        this.greyStationLabelsMenuItem.setSelected(stationLabelsAreGrey());
-
-        this.greyStationLabelsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(STATION_LABELS_GREY, this.greyStationLabelsMenuItem.isSelected());
-
-            // The grid, not a repaint: a caption's color is chosen when it is built.
-            repaintLayout();
-        });
-
-        autonomyToolbarMenu.add(this.greyStationLabelsMenuItem);
-
-        this.restrictionArrowsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.restrictionArrows"));
-
-        this.restrictionArrowsMenuItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restrictionArrows")));
-
-        this.restrictionArrowsMenuItem.setSelected(
-            prefs.getBoolean(DIAGRAM_RESTRICTION_ARROWS, true));
-
-        this.restrictionArrowsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(DIAGRAM_RESTRICTION_ARROWS,
-                this.restrictionArrowsMenuItem.isSelected());
-
-            // The annotation layer, not the grid; handed the overlay's own state, which is safe with no setup loaded.
-            showStaticAutonomyLayer(
-                autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
-        });
-
-        autonomyToolbarMenu.add(this.restrictionArrowsMenuItem);
-
-        // And the green (FR-110), chosen apart from the red: either, or both.
-        this.allowedDirectionsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
-
-        this.allowedDirectionsMenuItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.allowedDirections")));
-
-        this.allowedDirectionsMenuItem.setSelected(diagramShowsAllowedDirections());
-
-        this.allowedDirectionsMenuItem.addActionListener(event ->
-        {
-            prefs.putBoolean(DIAGRAM_ALLOWED_DIRECTIONS, this.allowedDirectionsMenuItem.isSelected());
-
-            showStaticAutonomyLayer(
-                autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
-        });
-
-        autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
-    }
-
-    /**
-     * "Save diagram as a picture", on the Layout menu; built by hand so the feature is one method and one class.
-     */
-    private void buildDiagramExportMenu()
-    {
-        if (layoutMenu == null) return;
-
-        // One item, for the page on screen: a second one asking which page was rarely worth a menu line.
-        javax.swing.JMenuItem active =
-            new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
-
-        active.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("layout.ui.tooltipExportActiveDiagram")));
-
-        active.addActionListener(event -> exportDiagram(activeLayoutPage()));
-
-        // Beside the pop-out, both making a picture in a window of their own; looked up rather than counted.
-        int beside = indexOnLayoutMenu(popUpAllMenuItem);
-
-        if (beside >= 0) layoutMenu.add(active, beside + 1);
-        else layoutMenu.add(active);
-
-        // Kept so guardLayoutMenu can gray it by name (OB-128).
-        exportDiagramItem = active;
-    }
-
-    private javax.swing.JMenuItem exportDiagramItem;
-
-    /**
-     * The diagram page currently on screen, or null when there is none.
-     *
-     * The selector's own answer rather than a remembered one, so it cannot disagree with what the
-     * user is looking at.
-     */
-    private String activeLayoutPage()
-    {
-        Object showing = this.LayoutList == null ? null : this.LayoutList.getSelectedItem();
-
-        return showing == null ? null : showing.toString();
-    }
-
-    /**
-     * Writes a diagram page to a picture file: asks which page, at what size, and where.  Drawn OFF the event thread
-     * behind a spinner: it WAITS for tile images applied on the event thread, which holding would deadlock.
-     *
-     * @param page the page to draw, or null to ask which one
-     */
-    private void exportDiagram(String page)
-    {
-        java.util.List<String> pages = this.model.getLayoutList();
-
-        if (pages == null || pages.isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorNoDiagramToExport"));
-
-            return;
-        }
-
-        // A page that is no longer there - a rename or a reload between opening the menu and choosing
-        // from it - falls back to asking rather than exporting the wrong thing or nothing
-        if (page != null && !pages.contains(page)) page = null;
-
-        if (page == null)
-        {
-            page = (String) JOptionPane.showInputDialog(this,
-                I18n.t("layout.ui.promptWhichDiagram"), I18n.t("layout.ui.menuExportDiagram"),
-                JOptionPane.PLAIN_MESSAGE, null, pages.toArray(), pages.get(0));
-        }
-
-        if (page == null) return;
-
-        // Large or small, not a free pixel size, which is not a question about their railway.
-        Object[] sizes = {
-            I18n.f("layout.ui.diagramSizeLarge", DiagramExport.DEFAULT_TILE_SIZE),
-            I18n.f("layout.ui.diagramSizeSmall", DiagramExport.SCREEN_TILE_SIZE)
-        };
-
-        Object size = JOptionPane.showInputDialog(this, I18n.t("layout.ui.promptDiagramSizeChoice"),
-            I18n.t("layout.ui.menuExportActiveDiagram"), JOptionPane.PLAIN_MESSAGE, null,
-            sizes, sizes[0]);
-
-        if (size == null) return;
-
-        int tileSize = sizes[1].equals(size)
-            ? DiagramExport.SCREEN_TILE_SIZE : DiagramExport.DEFAULT_TILE_SIZE;
-
-        javax.swing.JFileChooser chooser = new QuickFileChooser();
-
-        chooser.setDialogTitle(I18n.t("layout.ui.menuExportDiagram"));
-
-        // A sensible name that is also a legal one, since a page may be called anything at all
-        chooser.setSelectedFile(new java.io.File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
-
-        if (chooser.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
-
-        java.io.File destination = chooser.getSelectedFile();
-
-        if (!destination.getName().toLowerCase().endsWith(".png"))
-        {
-            destination = new java.io.File(destination.getParentFile(), destination.getName() + ".png");
-        }
-
-        final java.io.File writeTo = destination;
-        final int pixels = tileSize;
-        final String chosen = page;
-        final Exception[] failed = new Exception[1];
-
-        // Off the event thread, behind the spinner: the render WAITS for tile images decoded on the event thread.
-        BusyDialog.run(this, I18n.t("layout.ui.busyExportingDiagram"),
-            () ->
-            {
-                try
-                {
-                    DiagramExport.writePng(this.model.getLayout(chosen), pixels, this, writeTo);
-                }
-                catch (Exception e)
-                {
-                    failed[0] = e;
-                }
-            },
-            () ->
-            {
-                if (failed[0] != null)
-                {
-                    this.model.log(failed[0]);
-
-                    JOptionPane.showMessageDialog(this,
-                        I18n.f("layout.ui.errorDiagramExportFailed",
-                            String.valueOf(failed[0].getMessage())));
-
-                    return;
-                }
-
-                this.log(I18n.f("layout.ui.infoDiagramExported", writeTo.getAbsolutePath()));
-
-                showFileExplorer(writeTo.getParentFile());
-            });
-    }
+    javax.swing.JMenuItem exportDiagramItem;
 
     public ExecutorService getTileImageLoader()
     {
@@ -9186,7 +7825,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /** Which way each locomotive was last seen running, by name; only a CHANGE relates it to the facing. */
-    private final java.util.Map<String, Boolean> lastSeenDirection =
+    final java.util.Map<String, Boolean> lastSeenDirection =
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /** Turns held while a route alone held the setup, by locomotive name; a second change removes it.  EDT-written. */
@@ -17180,6 +15819,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             field.setText(field.getText().substring(0, maxLength));
         }
     }
+
+    /** A text field that takes the keyboard 50 ms after it is shown, once its dialog has settled. */
+    public static JTextField textFieldTakingFocus()
+    {
+        return new JTextField()
+        {
+            @Override
+            public void addNotify()
+            {
+                super.addNotify();
+                javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
+                focusTimer.setRepeats(false);
+                focusTimer.start();
+            }
+        };
+    }
          
     public void editRoute(String routeName)
     {
@@ -17620,7 +16275,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * waits for the first, as two at once would share a staging file and an archive name.  Returns the archive, or no
      * archive, and what could not be saved.
      */
-    BackupAction.BackupOutcome backupData()
+    public BackupAction.BackupOutcome backupData()
     {
         synchronized (this.oneBackupAtATime)
         {
@@ -17635,9 +16290,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final BackupAction backupAction = new BackupAction(this);
 
     /** File > Backup TrainControl Data, which a backup grays while it runs. */
-    javax.swing.JMenuItem backupDataMenuItem()
+    public javax.swing.JMenuItem backupDataMenuItem()
     {
         return this.backupDataMenuItem;
+    }
+
+    /** File &gt; Restore from Backup (FR-124), placed by hand under Backup TrainControl Data. */
+    private javax.swing.JMenuItem restoreDataMenuItem;
+
+    private void mountRestoreFromBackup()
+    {
+        if (fileMenu == null || restoreDataMenuItem != null) return;
+
+        restoreDataMenuItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.restoreData"));
+
+        restoreDataMenuItem.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restoreData")));
+
+        restoreDataMenuItem.addActionListener(e ->
+        {
+            // It replaces the layout folder, so it waits for a run and for the layout editor, as Open Layout does
+            if (refuseWhileARunHoldsTheSetup(this)) return;
+
+            if (refuseWhileEditorOpen()) return;
+
+            new RestoreAction(this).restoreFromBackup();
+        });
+
+        int backup = -1;
+
+        for (int i = 0; i < fileMenu.getMenuComponentCount(); i++)
+        {
+            if (fileMenu.getMenuComponent(i) == backupDataMenuItem) backup = i;
+        }
+
+        fileMenu.add(restoreDataMenuItem, backup + 1);
     }
 
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
@@ -17732,7 +16418,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
-        layoutFolderIs(fc.getSelectedFile().getPath());
+        openLayoutFolder(fc.getSelectedFile());
+    }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
+
+    /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
+    void openLayoutFolder(File folder)
+    {
+        layoutFolderIs(folder.getPath());
 
         applyLayoutEditingAvailability();
 
@@ -17765,7 +16457,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
                 }
             });
-    }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
+    }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
         
@@ -18810,7 +17502,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * (FR-129).  Adam: "There should be no setup edit possible during a run".  Doors that send trains keep their own
      * question.
      */
-    boolean aRunHoldsTheSetup()
+    public boolean aRunHoldsTheSetup()
     {
         return somethingIsRunning(this.model, this.stagingFlowActive || theAutoTabWaits());
     }
@@ -19388,10 +18080,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         final java.util.List<String> savedArmed = json == null
             ? java.util.Collections.<String>emptyList() : this.model.routesSavedArmed(json);
 
-        // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), wrapped:
-        // many routes made a dialog wider than the screen.
+        // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), in a
+        // Details list under the question.
         final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
-            wrappedToFit(I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed))),
+            DetailsArea.message(I18n.f("route.ui.confirmRearmImported", savedArmed.size()), savedArmed),
             I18n.t("route.ui.confirmRearmImportedTitle"),
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
             == JOptionPane.YES_OPTION;
@@ -19453,13 +18145,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 for (String[] pair : this.model.getRoutesSplitByLastImport()) split.add(pair[0]);
 
-                JOptionPane.showMessageDialog(this, (rearmed[0] > 0
+                String notice = rearmed[0] > 0
                     ? I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
                         rearmed[0])
                     : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
-                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")))
-                    + (split.isEmpty() ? "" : "\n\n" + wrappedToFit(I18n.f("route.ui.infoImportSplitStopRoutes",
-                        String.join(", ", split)))));
+                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution"));
+
+                JOptionPane.showMessageDialog(this, split.isEmpty() ? notice
+                    : DetailsArea.message(notice + "\n\n" + I18n.t("route.ui.infoImportSplitStopRoutes"), split));
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
@@ -19506,7 +18199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Answers the update question in place of the user, in a test: given the buttons and the default, returns the index
      * pressed.
      */
-    static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
+    public static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
 
     /**
      * Sets `updateQuestionForTests`; the hook returns the index pressed, -1 for the window closed, null for the real
@@ -19614,7 +18307,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Why this window's update cannot start now, or null (FR-125): `whyAnUpdateMustWait` with everything the Auto tab
      * waits for.
      */
-    String whyThisUpdateMustWait()
+    public String whyThisUpdateMustWait()
     {
         return whyAnUpdateMustWait(this.model, this.stagingFlowActive || theAutoTabWaits());
     }
@@ -19648,7 +18341,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * have started.  The update is disarmed whatever the exit does (`HandOver.exitWith`), so a throwing exit cannot
      * leave it armed for a later, ordinary exit.
      */
-    void closeNowForTheUpdate(final File jar, final File download)
+    public void closeNowForTheUpdate(final File jar, final File download)
     {
         try
         {
@@ -19770,22 +18463,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Opens a window and prompts the user for layout name
+     * @param over the window that asked
      * @param defaultVal
      * @return 
      */
-    private String promptUserForLayout(String defaultVal)
+    private String promptUserForLayout(Component over, String defaultVal)
     {
-        JTextField textField = new JTextField()
-        {
-            @Override
-            public void addNotify()
-            {
-                super.addNotify();
-                javax.swing.Timer focusTimer = new javax.swing.Timer(50, e -> requestFocusInWindow());
-                focusTimer.setRepeats(false);
-                focusTimer.start();
-            }
-        };
+        JTextField textField = textFieldTakingFocus();
         
         textField.addKeyListener(new KeyAdapter()
         {
@@ -19802,7 +18486,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         // Display the input dialog
         int result = JOptionPane.showOptionDialog(
-            this,
+            over,
             textField,
             I18n.t("layout.ui.enterLayoutName"),
             JOptionPane.OK_CANCEL_OPTION,
@@ -19822,15 +18506,83 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void renameLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_renameLayoutMenuItemActionPerformed
 
-        showLayoutTab();
+        final LayoutEditor from = editorBehind(evt);
 
-        String name = promptUserForLayout(this.LayoutList.getSelectedItem().toString());
+        if (from == null) showLayoutTab();
+
+        String name = promptUserForLayout(from == null ? this : from, this.LayoutList.getSelectedItem().toString());
 
         if (name != null)
         {
-            duplicateOrRenameCurrentLayout(name, true, false, false);
+            this.layoutFileActions.duplicateOrRenameCurrentLayout(name, true, false, false, from);
         }
     }//GEN-LAST:event_renameLayoutMenuItemActionPerformed
+
+    /**
+     * The layout editor a page action was started from (the event's source), or null for the Layouts menu.  That editor
+     * is not refused as an open one: it steps aside once nothing can refuse the action, and the dialogs hang off it.
+     */
+    private static LayoutEditor editorBehind(java.awt.event.ActionEvent evt)
+    {
+        Object source = evt == null ? null : evt.getSource();
+
+        return source instanceof LayoutEditor && ((LayoutEditor) source).isDisplayable() ? (LayoutEditor) source : null;
+    }
+
+    /** A menu item's event with the layout editor as its source, as `editorBehind` reads it. */
+    private static java.awt.event.ActionEvent pressedIn(LayoutEditor editor)
+    {
+        return new java.awt.event.ActionEvent(editor, java.awt.event.ActionEvent.ACTION_PERFORMED, null);
+    }
+
+    /** Add Blank Page from the layout editor: the Layouts menu's handler, with the editor as the source (FR-109). */
+    public void addBlankPageFromTheEditor(LayoutEditor editor)
+    {
+        addBlankPageMenuItemActionPerformed(pressedIn(editor));
+    }
+
+    /** Rename Current Page from the layout editor, on the main window's selected page, which the editor has set. */
+    public void renamePageFromTheEditor(LayoutEditor editor)
+    {
+        renameLayoutMenuItemActionPerformed(pressedIn(editor));
+    }
+
+    /** Delete Current Page from the layout editor, on the main window's selected page, which the editor has set. */
+    public void deletePageFromTheEditor(LayoutEditor editor)
+    {
+        deleteLayoutMenuItemActionPerformed(pressedIn(editor));
+    }
+
+    /** Duplicate Current Page from the layout editor, on the main window's selected page (FR-146). */
+    public void duplicatePageFromTheEditor(LayoutEditor editor)
+    {
+        pressFromTheEditor(editor, this::duplicateLayoutMenuItemActionPerformed);
+    }
+
+    /** Combine Linked Pages from the layout editor, from the main window's selected page. */
+    public void combinePagesFromTheEditor(LayoutEditor editor)
+    {
+        pressFromTheEditor(editor, this::combineMenuPressed);
+    }
+
+    /** Presses a handler for the editor, which is `pageActionFrom` while it runs, for the calls that take no event. */
+    private void pressFromTheEditor(LayoutEditor editor,
+        java.util.function.Consumer<java.awt.event.ActionEvent> handler)
+    {
+        pageActionFrom = editor;
+
+        try
+        {
+            handler.accept(pressedIn(editor));
+        }
+        finally
+        {
+            pageActionFrom = null;
+        }
+    }
+
+    /** The layout editor a page action is pressed from while its handler runs (`pressFromTheEditor`), or null. */
+    private LayoutEditor pageActionFrom;
 
     private void duplicateLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_duplicateLayoutMenuItemActionPerformed
         
@@ -19844,7 +18596,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             newName += " " + I18n.t("layout.ui.copy");
         }
 
-        showLayoutTab();
+        if (editorBehind(evt) == null) showLayoutTab();
 
         duplicateOrRenameCurrentLayout(newName, false, true, false);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
@@ -19854,49 +18606,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void combineLinkedPages()
     {
-        this.layoutFileActions.combineLinkedPages();
+        this.layoutFileActions.combineLinkedPages(pageActionFrom);
     }
 
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
-        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank);
+        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank, pageActionFrom);
     }
     
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
 
+        final LayoutEditor from = editorBehind(evt);
+
+        final Component over = from == null ? this : from;
+
         // Refused while a run holds the setup: deleting a page rebuilds the autonomy session under moving trains
         // (MT-141: "Never allow any modifications to a running layout.").
-        if (refuseWhileARunHoldsTheSetup(this)) return;
+        if (refuseWhileARunHoldsTheSetup(over)) return;
 
-        if (refuseWhileEditorOpen()) return;
+        if (from == null && refuseWhileEditorOpen()) return;
 
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(
-                this,
+                over,
                 I18n.t("layout.ui.errorCannotManipulateRemoteLayouts")
             );
             return;
         }
         
-        showLayoutTab();
+        if (from == null) showLayoutTab();
         
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             if (this.model.getLayoutList().size() <= 1)
             {
                 JOptionPane.showMessageDialog(
-                    this,
+                    over,
                     I18n.t("layout.ui.errorCannotDeleteOnlyRemainingPage")
                 );
                 return;
             }
 
+            final String going = this.LayoutList.getSelectedItem().toString();
+
             int dialogResult = JOptionPane.showOptionDialog(
-                this,
+                over,
                 I18n.f(
                     "layout.ui.confirmDeleteLayoutPageAreYouSure",
-                    this.LayoutList.getSelectedItem().toString()
+                    going
                 ),
                 I18n.t("layout.ui.dialogConfirmDeletion"),
                 JOptionPane.YES_NO_OPTION,
@@ -19909,89 +18667,110 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                try
-                {
-                    List<String> layoutList = this.model.getLayoutList();
-
-                    String going = this.LayoutList.getSelectedItem().toString();
-
-                    // Any other missing page is asked about BEFORE the file goes: everything below is irreversible
-                    // (FR-018).
-                    // The page being deleted counts as a deliberate removal, so it is not asked about.
-                    java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
-                        java.util.Arrays.asList(going));
-
-                    if (keepAbsent == null) return;
-
-                    // The page FIRST, then the setup: deleteLayoutFile can fail (a file held open by a sync client,
-                    // say), and done the other way round a failure leaves the setup forgotten for a page that still
-                    // exists.
-                    this.model.getLayout(going).deleteLayoutFile();
-
-                    // Only a session already built and a setup already there, as in the rename above:
-                    // saveWithoutReconciling ends in store.save(), which creates the folder and the file.
-                    org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-                    try
-                    {
-                        if (session == null)
-                        {
-                            org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
-                                new java.io.File(this.getLocalLayoutPath()), going);
-                        }
-                        else
-                        {
-                            // Before forgetting the page, as in the rename: the capture that runs afterwards works its
-                            // keys out from a session whose pages still include this one and would write the deleted
-                            // page's settings back.
-                            captureRunningLayout();
-
-                            // The session's own page list must lose it too: the fold behind the reset below would write
-                            // the page back.
-                            int forgotten = session.deletePage(going);
-
-                            if (forgotten > 0)
-                            {
-                                this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
-                            }
-
-                            if (session.exists()) session.saveWithoutReconciling();
-                        }
-                    }
-                    catch (java.io.IOException e)
-                    {
-                        // The page is going either way; only the record of it is at risk
-                        this.model.log(e);
-                    }
-
-                    layoutList.remove(going);
-
-                    // No rename map: the deleted page's id is retired and every surviving page keeps its own.
-                    writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
-
-                    this.layoutEditingComplete();
-                }
-                catch (Exception ex)
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
-                    );
-                    this.model.log(ex);
-                }
+                if (from == null) deleteConfirmedPage(going, null);
+                else from.stepOutFor(() -> deleteConfirmedPage(going, from));
             }
         });
     }//GEN-LAST:event_deleteLayoutMenuItemActionPerformed
 
+    /**
+     * Delete Current Page's work once the page is confirmed.  `from` is the layout editor that asked, or null: it is
+     * told which page to show however this ends.
+     */
+    private void deleteConfirmedPage(String going, LayoutEditor from)
+    {
+        final Component over = from == null ? this : from;
+
+        boolean arriving = false;
+
+        try
+        {
+            List<String> layoutList = this.model.getLayoutList();
+
+            // Any other missing page is asked about BEFORE the file goes: everything below is irreversible
+            // (FR-018).
+            // The page being deleted counts as a deliberate removal, so it is not asked about.
+            java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
+                java.util.Arrays.asList(going));
+
+            if (keepAbsent == null) return;
+
+            // The page FIRST, then the setup: deleteLayoutFile can fail (a file held open by a sync client,
+            // say), and done the other way round a failure leaves the setup forgotten for a page that still
+            // exists.
+            this.model.getLayout(going).deleteLayoutFile();
+
+            // Only a session already built and a setup already there, as in the rename above:
+            // saveWithoutReconciling ends in store.save(), which creates the folder and the file.
+            org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+            try
+            {
+                if (session == null)
+                {
+                    org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
+                        new java.io.File(this.getLocalLayoutPath()), going);
+                }
+                else
+                {
+                    // Before forgetting the page, as in the rename: the capture that runs afterwards works its
+                    // keys out from a session whose pages still include this one and would write the deleted
+                    // page's settings back.
+                    captureRunningLayout();
+
+                    // The session's own page list must lose it too: the fold behind the reset below would write
+                    // the page back.
+                    int forgotten = session.deletePage(going);
+
+                    if (forgotten > 0)
+                    {
+                        this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
+                    }
+
+                    if (session.exists()) session.saveWithoutReconciling();
+                }
+            }
+            catch (java.io.IOException e)
+            {
+                // The page is going either way; only the record of it is at risk
+                this.model.log(e);
+            }
+
+            layoutList.remove(going);
+
+            // No rename map: the deleted page's id is retired and every surviving page keeps its own.
+            writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
+
+            this.layoutEditingComplete(from == null ? null
+                : () -> from.arriveOn(String.valueOf(this.LayoutList.getSelectedItem())));
+
+            arriving = true;
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(
+                over,
+                I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
+            );
+            this.model.log(ex);
+        }
+        finally
+        {
+            if (from != null && !arriving) from.arriveOn(null);
+        }
+    }
+
     private void addBlankPageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBlankPageMenuItemActionPerformed
 
-        showLayoutTab();
+        final LayoutEditor from = editorBehind(evt);
 
-        String name = promptUserForLayout("");
+        if (from == null) showLayoutTab();
+
+        String name = promptUserForLayout(from == null ? this : from, "");
 
         if (name != null)
         {
-            duplicateOrRenameCurrentLayout(name, false, true, true);
+            this.layoutFileActions.duplicateOrRenameCurrentLayout(name, false, true, true, from);
         }
     }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
 
@@ -21036,6 +19815,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The layout's folder and its pages (Duplicate, Rename, Add Blank Page, Combine, Create New Layout, Download). */
     private final LayoutFileActions layoutFileActions = new LayoutFileActions(this);
 
+    /** The Layouts menu, its Recent Layouts and picture export, the drawing settings and the Debug menu. */
+    private final LayoutMenus layoutMenus = new LayoutMenus(this);
+
     /** The route list: running, editing, duplicating, bulk arming, finding and refreshing routes. */
     private final RouteListPanel routeListPanel = new RouteListPanel(this);
 
@@ -21063,6 +19845,76 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JMenuItem initializeLocalLayoutMenuItem()
     {
         return this.initializeLocalLayoutMenuItem;
+    }
+
+    javax.swing.JMenu layoutMenu()
+    {
+        return this.layoutMenu;
+    }
+
+    javax.swing.JMenu interfaceMenu()
+    {
+        return this.interfaceMenu;
+    }
+
+    javax.swing.JMenu autonomyToolbarMenu()
+    {
+        return this.autonomyToolbarMenu;
+    }
+
+    javax.swing.JMenuItem chooseLocalDataFolderMenuItem()
+    {
+        return this.chooseLocalDataFolderMenuItem;
+    }
+
+    javax.swing.JMenuItem switchCSLayoutMenuItem()
+    {
+        return this.switchCSLayoutMenuItem;
+    }
+
+    javax.swing.JMenuItem downloadCSLayoutMenuItem()
+    {
+        return this.downloadCSLayoutMenuItem;
+    }
+
+    javax.swing.JMenu modifyLocalLayoutMenu()
+    {
+        return this.modifyLocalLayoutMenu;
+    }
+
+    javax.swing.JButton editLayoutButton()
+    {
+        return this.editLayoutButton;
+    }
+
+    javax.swing.JComboBox sizeList()
+    {
+        return this.SizeList;
+    }
+
+    javax.swing.JButton editAutonomyFromSettings()
+    {
+        return this.editAutonomyFromSettings;
+    }
+
+    javax.swing.JMenuItem openCS3AppMenuItem()
+    {
+        return this.openCS3AppMenuItem;
+    }
+
+    javax.swing.JMenuItem popUpAllMenuItem()
+    {
+        return this.popUpAllMenuItem;
+    }
+
+    javax.swing.JMenuItem showCurrentLayoutFolderMenuItem()
+    {
+        return this.showCurrentLayoutFolderMenuItem;
+    }
+
+    javax.swing.JPanel innerLayoutPanel()
+    {
+        return this.InnerLayoutPanel;
     }
 
     /** The autonomy session as the field holds it now; null until one is built. */
@@ -22928,14 +21780,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Says which layout the application is on (a folder of this computer's, or "" for the Central Station's) and
      * remembers a folder as the last local one, which switching to the Central Station does not forget (OB-308).  Every
-     * writer of the layout preference comes through here; "" is never remembered.
+     * writer of the layout preference comes through here; "" is never remembered.  A folder also heads Recent Layouts
+     * (FR-145).
      */
-    static void layoutFolderIs(String path)
+    public static void layoutFolderIs(String path)
     {
         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
 
-        if (path != null && !path.isEmpty()) prefs.put(LAST_LOCAL_LAYOUT_PREF, path);
+        if (path != null && !path.isEmpty())
+        {
+            // The local layout being left comes next, so the one open at start-up, never opened here, is listed too
+            String leaving = prefs.get(LAST_LOCAL_LAYOUT_PREF, "");
+
+            prefs.put(LAST_LOCAL_LAYOUT_PREF, path);
+
+            List<String> recent = new ArrayList<>(Collections.singletonList(path));
+
+            File left = leaving.isEmpty() ? null : new File(leaving).getAbsoluteFile();
+
+            if (left != null && !left.equals(new File(path).getAbsoluteFile())) recent.add(leaving);
+
+            for (String folder : LayoutMenus.recentLayoutsWithout(path))
+            {
+                if (!new File(folder).getAbsoluteFile().equals(left)) recent.add(folder);
+            }
+
+            // One more than are shown, as the open one is not shown
+            prefs.put(RECENT_LAYOUTS_PREF, String.join("\n", recent.subList(0, Math.min(recent.size(),
+                RECENT_LAYOUTS_SHOWN + 1))));
+        }
     }
+
+    /** How many folders Layouts &gt; Recent Layouts lists (FR-145). */
+    static final int RECENT_LAYOUTS_SHOWN = 5;
 
     /**
      * A chooser for a layout folder, opening beside this computer's last one (OB-308): switching to the Central Station
@@ -23003,7 +21880,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** `getLocalLayoutPath`, for the window's collaborators in this package. */
-    String localLayoutPath()
+    public String localLayoutPath()
     {
         return getLocalLayoutPath();
     }
@@ -23160,7 +22037,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     // And emptied, not just grayed (OB-128): the grid stayed mounted, so anything that reached this tab
                     // showed the railway just unloaded, looking live.
-                    clearLayoutPanel();
+                    layoutMenus.clearLayoutPanel();
                     // this.KeyboardTab.remove(this.layoutPanel);
                 }
                 else 

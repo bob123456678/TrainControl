@@ -83,9 +83,9 @@ public class testNoSelfRecursiveWrappers
 
     private static final String SESSION = "src/org/traincontrol/automationui/AutonomySession.java";
 
-    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
+    private static final String EDITOR = "src/org/traincontrol/gui/layouteditor/LayoutEditor.java";
 
-    private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/AutonomyEditorPanel.java";
+    private static final String AUTONOMY_EDITOR = "src/org/traincontrol/gui/autonomyeditor/AutonomyEditorPanel.java";
 
     /**
      * The collaborators (FR-136), one row each: the field of the owner that holds it, the file it is declared in, its
@@ -93,8 +93,8 @@ public class testNoSelfRecursiveWrappers
      * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`, `editor.`).
      */
     private static final String[][] COLLABORATORS = {
-        { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
-        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
+        { "backupAction", "src/org/traincontrol/gui/widgets/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
+        { "updateFlow", "src/org/traincontrol/gui/widgets/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
         { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions", WINDOW, "TrainControlUI",
             "ui." },
         { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions", WINDOW,
@@ -105,11 +105,11 @@ public class testNoSelfRecursiveWrappers
             "AutonomySession", "owner." },
         { "sessionRuns", "src/org/traincontrol/automationui/SessionRuns.java", "SessionRuns", SESSION,
             "AutonomySession", "owner." },
-        { "selectionOps", "src/org/traincontrol/gui/LayoutEditorSelection.java", "LayoutEditorSelection", EDITOR,
+        { "selectionOps", "src/org/traincontrol/gui/layouteditor/LayoutEditorSelection.java", "LayoutEditorSelection", EDITOR,
             "LayoutEditor", "editor." },
-        { "reshapeOps", "src/org/traincontrol/gui/LayoutEditorReshape.java", "LayoutEditorReshape", EDITOR,
+        { "reshapeOps", "src/org/traincontrol/gui/layouteditor/LayoutEditorReshape.java", "LayoutEditorReshape", EDITOR,
             "LayoutEditor", "editor." },
-        { "undoOps", "src/org/traincontrol/gui/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
+        { "undoOps", "src/org/traincontrol/gui/layouteditor/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
             "LayoutEditor", "editor." },
         { "autonomySettingsTab", "src/org/traincontrol/gui/AutonomySettingsTab.java", "AutonomySettingsTab", WINDOW,
             "TrainControlUI", "ui." },
@@ -121,20 +121,22 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "captionVisibility", "src/org/traincontrol/gui/CaptionVisibility.java", "CaptionVisibility", WINDOW,
             "TrainControlUI", "ui." },
-        { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
+        { "tileMenus", "src/org/traincontrol/gui/autonomyeditor/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "prompts", "src/org/traincontrol/gui/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
+        { "prompts", "src/org/traincontrol/gui/autonomyeditor/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "signalPairing", "src/org/traincontrol/gui/EditorSignals.java", "EditorSignals", AUTONOMY_EDITOR,
+        { "signalPairing", "src/org/traincontrol/gui/autonomyeditor/EditorSignals.java", "EditorSignals", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "massAssignment", "src/org/traincontrol/gui/EditorMassAssign.java", "EditorMassAssign", AUTONOMY_EDITOR,
+        { "massAssignment", "src/org/traincontrol/gui/autonomyeditor/EditorMassAssign.java", "EditorMassAssign", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
-        { "whyAnswers", "src/org/traincontrol/gui/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
+        { "whyAnswers", "src/org/traincontrol/gui/autonomyeditor/EditorWhy.java", "EditorWhy", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
         { "RunGates", "src/org/traincontrol/gui/RunGates.java", "RunGates", WINDOW, "TrainControlUI", "ui." },
         { "returnHomeController", "src/org/traincontrol/gui/ReturnHomeController.java", "ReturnHomeController", WINDOW,
             "TrainControlUI", "ui." },
         { "runningLayoutSync", "src/org/traincontrol/gui/RunningLayoutSync.java", "RunningLayoutSync", WINDOW,
+            "TrainControlUI", "ui." },
+        { "editorWindows", "src/org/traincontrol/gui/EditorWindows.java", "EditorWindows", WINDOW,
             "TrainControlUI", "ui." },
     };
 
@@ -756,7 +758,7 @@ public class testNoSelfRecursiveWrappers
         {
             if ("AutonomyEditorPanel".equals(name)) continue;
 
-            File helper = new File("src/org/traincontrol/gui/" + name + ".java");
+            File helper = new File("src/org/traincontrol/gui/autonomyeditor/" + name + ".java");
 
             assertTrue(helper.isFile(), "cannot find " + helper.getAbsolutePath());
 

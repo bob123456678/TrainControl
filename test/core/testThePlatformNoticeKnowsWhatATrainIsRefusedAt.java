@@ -17,9 +17,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 /**
  * The editor measures a platform against the track behind it, and says the figure a train is refused above.
  *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * The session and layout folder every claim starts from are built by `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -27,12 +25,12 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
 {
 
     /**
-     * A stretch answered 0 on purpose is not reported as a reversal without a length (Adam, 2026-09-23: *"stop
-     * listing answered zeros as missing"*).
+     * A stretch answered 0 on purpose is not reported as a reversal without a length (Adam: *"stop listing answered
+     * zeros as missing"*).
      *
      * The same railway as the claim below, at its last step - measured elsewhere, nothing on this run-in - where the
-     * notice fires.  Every square of the run-in answered 0 then silences it; the rules still read those squares as
-     * unmeasured, so the guard stays exactly as blind as the notice used to say.
+     * notice fires.  Every square of the run-in answered 0 then silences it, though the rules still read those squares
+     * as unmeasured.
      */
     @Test
     public void testAReversalWhoseStretchIsAnsweredZeroIsNotAsked() throws IOException
@@ -61,20 +59,15 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * The editor asks for lengths where trains reverse - but only on a layout that measures track.
      *
-     * Adam: "Add notices to the autonomy editor to add track lengths between stations and switches
-     * that accept reversal (if any other track length is set anywhere)."
+     * Adam: "Add notices to the autonomy editor to add track lengths between stations and switches that accept reversal
+     * (if any other track length is set anywhere)."  The guard that stops a train being backed over the switch behind
+     * its berth can only refuse what it can measure, so these are the squares where it is blind.
      *
-     * The guard that stops a train being backed over the switch behind its berth can only refuse what
-     * it can measure, so these are the squares where it is blind: somewhere trains turn round, with
-     * nothing recorded about how much room is there.
+     * The second half is the one worth testing: a railway that records no lengths at all has decided not to model them.
+     * The same fixture is asked twice, and the only difference is one length recorded somewhere else entirely.
      *
-     * **The second half is the half worth testing.** A railway that records no lengths at all has
-     * decided not to model them, and listing every reversing square on it would be a page of notices
-     * about something nobody is attempting. The same fixture is asked twice, and the only difference
-     * between the two answers is one length recorded somewhere else entirely.
-     *
-     * MUTATION: dropping the measuresAnything test reports the square in both halves; dropping the
-     * isTurnAround test reports squares nothing reverses at.
+     * MUTATION: dropping the measuresAnything test reports the square in both halves; dropping the isTurnAround test
+     * reports squares nothing reverses at.
      */
     @Test
     public void testTheEditorAsksForLengthsWhereTrainsReverse() throws IOException
@@ -96,40 +89,25 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
             "a layout that records no track lengths at all was asked to record one here, which is a "
             + "notice about something nobody on that railway is trying to do");
 
-        // ONE LENGTH, ON A SQUARE OUTSIDE THIS STRETCH, so the layout is one that measures track
-        // without that measurement being about the run-in under test.
-        //
-        // 4,1 is the sensor at the far end; the stretch behind the reversal at 1,1 is 3,1, 2,1 and
-        // 1,1 itself.  This used to measure 2,1, which IS in the stretch - harmless while the notice
-        // waited for every square, and the thing being measured once it waits for any (MT-364).
+        // ONE LENGTH, ON A SQUARE OUTSIDE THIS STRETCH (4,1, the far sensor), so the layout measures track without the
+        // measurement being about the run-in under test (MT-364).
         session.setTileLength(new TileKey("main", 4, 1), 7);
 
         assertTrue(session.reversalsWithoutLength().containsKey(turns),
             "the layout measures track now, and the square where a train turns round - the one place "
             + "the length rule cannot do its job without a number - was not asked about");
 
-        // ONE ENTRY, NOT ONE PER SQUARE (OB-171).
-        //
-        // Adam: "warnings ... fire on many tiles along a line.  Dedupe them, one per segment between a
-        // switch and a station."  The map is the reversal square mapped to how many squares its guard
-        // still needs measured, so a run of ten unmeasured squares is one notice saying ten - not ten
-        // notices saying the same sentence.
+        // ONE ENTRY, NOT ONE PER SQUARE (OB-171).  Adam: "warnings ... fire on many tiles along a line.  Dedupe them,
+        // one per segment between a switch and a station."  The map is the reversal square mapped to how many squares
+        // its guard still needs measured.
         assertEquals(session.reversalsWithoutLength().size(), 1,
             "one square trains turn at, and the notice is not one entry: "
             + session.reversalsWithoutLength());
 
-        // AND IT GOES ONCE THE STRETCH IS MEASURED AT ALL (Adam, MT-364, 2026-09-12).
-        //
-        // This used to assert the opposite - that the notice stays until EVERY square of the run-in
-        // has a number - on the reasoning that "the guard needs every square before it can judge
-        // anything".  That reasoning was true when it was written and stopped being true on
-        // 2026-09-06, when Adam ruled that a stretch is only indeterminate if ALL of it is zero: a
-        // half-measured run-in makes the guard PESSIMISTIC rather than blind, and it still binds.
-        //
-        // He met the consequence on his own railway: *"I set the track at 10,10 to length 2, so now we
-        // know that the track to TunnelLongPark is 2.  But it is still asking for the tile at 10,9
-        // (TunnelLongPark) to get a length."*  The reversal square was asked for on its own account,
-        // before the walk was consulted, so measuring the track behind it could never have helped.
+        // AND IT GOES ONCE THE STRETCH IS MEASURED AT ALL (MT-364): a stretch is only indeterminate if ALL of it is
+        // zero, so a half-measured run-in makes the guard PESSIMISTIC rather than blind.  Adam: *"I set the track at
+        // 10,10 to length 2, so now we know that the track to TunnelLongPark is 2.  But it is still asking for the tile
+        // at 10,9 (TunnelLongPark) to get a length."*
         session.setTileLength(turns, 5);
 
         assertFalse(session.reversalsWithoutLength().containsKey(turns),
@@ -138,10 +116,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
             + "length\" - the guard judges what it can see, and a notice about a stretch it can "
             + "already judge is a list you can never empty: " + session.reversalsWithoutLength());
 
-        // AND THE CASE THE NOTICE EXISTS FOR IS UNTOUCHED: nothing measured in the stretch at all.
-        //
-        // Without this the claim above is satisfied by a notice that has stopped firing entirely,
-        // which is the direction this change could most easily go wrong in.
+        // AND THE CASE THE NOTICE EXISTS FOR IS UNTOUCHED: nothing measured in the stretch at all, so the claim above
+        // is not satisfied by a notice that has stopped firing entirely.
         session.setTileLength(turns, 0);
 
         assertTrue(session.reversalsWithoutLength().containsKey(turns),
@@ -153,28 +129,15 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * The editor says when a platform is told to hold more train than its track measures.
      *
-     * Adam, 2026-09-11: *"Let's add an autonomy editor notice that alerts the user if a run-in is
-     * shorter than the berth length, that way they can decide if it makes sense or not.  for example, a
-     * station of length 4 may have two segments of tracks on either side of a switch, of length 2.  that
-     * is acceptable and its limitations are understood."*
+     * Adam: *"Let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth length,
+     * that way they can decide if it makes sense or not.  for example, a station of length 4 may have two segments of
+     * tracks on either side of a switch, of length 2.  that is acceptable and its limitations are understood."*
      *
-     * **Two numbers set by two different hands.**  `maxTrainLength` is what somebody typed on the
-     * platform; the measured room is what the track says, counted back from the platform to whichever of
-     * the last switch and a reversal is met first.  Where the second is smaller the first never binds,
-     * and a train inside the stated maximum is refused by a rule quoting a number nobody typed.
-     *
-     * **His own example is the first half of this test**, because it is the case that is NOT a fault: a
-     * four-unit platform whose track is two stretches of two either side of a switch.  Nothing is wrong
-     * with that railway - the geometry is finer than one number per station - and the notice exists so he
-     * can say so and move on, which is why it is a NOTICE and not a warning.
-     *
-     * **The second half is the reversal**, which is the branch the switch case cannot reach: an edge
-     * crossing no switch does not bound anything on its own, because the guard carries on walking back
-     * through earlier edges - unless the train turns round where that edge starts, which is where the
-     * walk stops under Adam's other ruling of the same day.
-     *
-     * **And three silences, each about a different missing half**, because a notice that fires when it
-     * cannot know anything is the wall this list has twice been called.
+     * `maxTrainLength` is what somebody typed on the platform; the measured room is what the track says, counted back
+     * from the platform to whichever of the last switch and a reversal is met first.  Where the second is smaller the
+     * first never binds.  His example is the first half (not a fault, hence a NOTICE and not a warning); the second
+     * half is the reversal, which the switch case cannot reach: an edge crossing no switch bounds nothing on its own,
+     * unless the train turns round where that edge starts.  Three silences follow, each about a different missing half.
      *
      * MUTATIONS: comparing against the edge's whole length rather than `getRoomAtTheEnd` loses the
      * switch case; taking the `isTurnAround` test out reports every station with a short arriving edge,
@@ -305,12 +268,6 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
             + "number that would refuse the train");
     }
 
-    /**
-     * The first finding carrying a message key, or null.
-     *
-     * @param messageKey the check to look for
-     * @return the finding, or null when nothing raised it
-     */
     /** The run-in notice, whichever of its two sentences it has - the berth's, or a platform autonomy chooses (MT-555). */
     private org.traincontrol.automationui.AutonomyChecks.Finding runInNotice()
     {
@@ -332,17 +289,15 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     private static final String RUN_IN_AT_A_PLATFORM_REFUSED = "autosetup.ui.checkRunInShorterThanThePlatformRefused";
 
     /**
-     * The platform notice names the figure a train is refused above, where there is one (Adam, 2026-09-24).
+     * The platform notice names the figure a train is refused above, where there is one.
      *
-     * *"Add the refusing figure where there is one."*  `Layout.whyTooLongForThisRoute` admits a train longer than the
-     * room past the switch only as far as the measured route in holds (FR-087, `theApproachItselfHoldsIt`), so a train
-     * that sets off from the station just behind is refused above that route's length - on his railway, a four-unit train
-     * from TopR1ParkShort at TopMainR1Inter.  Here the way in from 1,1 measures 4 (2, the switch, 2) and the platform is
-     * set to 6: a train of 5 stands across the switch coming from further back, and is refused coming from 1,1.
+     * Adam: *"Add the refusing figure where there is one."*  `Layout.whyTooLongForThisRoute` admits a train longer than
+     * the room past the switch only as far as the measured route in holds (FR-087, `theApproachItselfHoldsIt`), so a
+     * train that sets off from the station just behind is refused above that route's length.  Here the way in from 1,1
+     * measures 4 (2, the switch, 2) and the platform is set to 6: a train of 5 stands across the switch coming from
+     * further back, and is refused coming from 1,1.
      *
      * MUTATION: leave the figure out of the finding, or leave a station copy behind out of it, and this fails.
-     *
-     * @throws Exception from the fixture or the reflection
      */
     @Test
     public void testThePlatformNoticeNamesTheFigureATrainIsRefusedAbove() throws Exception
@@ -385,17 +340,14 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * No refusing figure from a station no train is started at facing the platform's way (found measuring the
-     * frozen railway: Tunnel's notice said 3, from BottomInnerOtherside, where no route the railway runs into Tunnel
-     * measures under 6).
+     * No refusing figure from a station no train is started at facing the platform's way (Tunnel's notice said 3, from
+     * BottomInnerOtherside, where no route into Tunnel measures under 6).
      *
      * The square behind the platform is a station, but trains may not arrive at it from the west, so its copy heading
      * for the platform is no station and no train is started there - and nothing further back is a station either.  A
      * figure read off the square said a train setting off from it is refused above 4.
      *
      * MUTATION: take a square that is a station as one a train sets off from facing either way, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testNoRefusingFigureFromACopyNoTrainStartsAt() throws Exception
@@ -434,16 +386,13 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * The refusing figure counts back over a sensor no train is started at, as the route in does: read
-     * off one leg, it was given only where a station stood straight behind the platform - and on his railway a `...Pre`
-     * sensor stands behind most of them.
+     * The refusing figure counts back over a sensor no train is started at, as the route in does: read off one leg, it
+     * was given only where a station stood straight behind the platform.
      *
      * The station is two sensors back: 2 of track to the sensor, then 1, the switch and 2 to the platform.  A train set
      * off from it is refused above 5; the platform is set to 6.
      *
      * MUTATION: read the figure off the leg straight into the platform only, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testTheRefusingFigureCountsBackOverASensor() throws Exception
@@ -481,17 +430,15 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
      * The refusing figure over built railways written by hand, one shape each:
      * the walk that reads it off the built railway, asked directly.
      *
-     * - **A loop walked whole**: a leg first reached inside a loop of sensors is not remembered as having no way in.
-     * - **A turn stops it**: behind a copy trains turn at, nothing counts, as the route in stops there.
-     * - **A switched-off point is no way in**: the railway runs no route through one.
-     * - **No way in from the platform itself**, round a loop from another of its copies.
-     * - **A way in with no length hides nothing**: the railway refuses no train on it, and the measured way's figure stands.
-     * - **Never under the room**: a way in with nothing measured after its switch is not the notice's, and gives none.
+     * - **A loop walked whole**: a leg first reached inside a loop of sensors is not remembered as having no way in.  -
+     * **A turn stops it**: behind a copy trains turn at, nothing counts, as the route in stops there.  - **A
+     * switched-off point is no way in**: the railway runs no route through one.  - **No way in from the platform
+     * itself**, round a loop from another of its copies.  - **A way in with no length hides nothing**: the railway
+     * refuses no train on it, and the measured way's figure stands.  - **Never under the room**: a way in with nothing
+     * measured after its switch is not the notice's, and gives none.
      *
      * MUTATION: remember a leg a loop cut short, count on past a turn, walk through a switched-off point or from the
      * platform's own copy, take a 0 as the least, or read a way in with no room after its switch - and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testTheRefusingFigureWalksTheBuiltRailwayAsTheRouteInDoes() throws Exception
@@ -554,8 +501,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         assertEquals(order.get("P"), Integer.valueOf(2), "the walk stopped before it had worked back to the station"
             + " behind, with the legs listed into the platform first: " + order);
 
-        // AN ANSWERED 0 IS PASSED, adding nothing, as the railway's route in passes it (Adam, 2026-09-25); a 0 nobody
-        // answered still ends the walk.  S -1-> A -0-> B -1-> P.
+        // AN ANSWERED 0 IS PASSED, adding nothing, as the railway's route in passes it; a 0 nobody answered still ends
+        // the walk.  S -1-> A -0-> B -1-> P.
         java.util.Map<String, Integer> answered = figures(
             new String[][] {{"S", "station"}, {"A", ""}, {"B", ""}, {"P", "station"}},
             new Object[][] {{"S", "A", 1, null}, {"A", "B", 0, null, true}, {"B", "P", 1, 1}});
@@ -674,11 +621,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         return page;
     }
 
-    /**
-     * The sentence with the refusing figure is in all eight languages and names it as {4}.
-     *
-     * @throws Exception reading the bundles
-     */
+    /** The sentence with the refusing figure is in all eight languages and names it as {4}. */
     @Test
     public void testTheRefusingFigureIsInEveryLanguage() throws Exception
     {
@@ -709,15 +652,13 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * A side trains may not arrive by is not an approach, and its run-in is not compared with the maximum (MT-552).
      *
-     * Adam, 2026-09-24: *"RampDown and BottomMainPost should not have the ... warning as worded, since both sides are
-     * measured (and moreover, they only accept arrivals from one side)."*  Every arriving edge was judged, the barred
-     * one too - and no train comes in that way, so nothing about its track can refuse one.
+     * Adam: *"RampDown and BottomMainPost should not have the ... warning as worded, since both sides are measured (and
+     * moreover, they only accept arrivals from one side)."*  No train comes in by the barred side, so nothing about its
+     * track can refuse one.
      *
      * The control first: with both sides open the short side is reported, so the fixture can say it.
      *
      * MUTATION: judge every arriving edge in `runInsShorterThanTheBerth` again, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testABarredApproachIsNotJudgedForItsRunIn() throws Exception
@@ -746,13 +687,10 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * The half-measured warning says how many squares have no length, in every language (found with MT-552).
      *
-     * A finding renders {0} as the square, {1} as its subject - here the station's name - {2} as its count and {3} as its
-     * detail.  The sentence put {1} where it meant the count, so Adam's list read *"BottomMainPost can refuse trains ...
-     * BottomMainPost squares leading to it still have no length"*.
+     * A finding renders {0} as the square, {1} as its subject - here the station's name - {2} as its count and {3} as
+     * its detail; the sentence put {1} where it meant the count.
      *
      * MUTATION: put {1} back in any one language, and this fails.
-     *
-     * @throws Exception reading the bundles
      */
     @Test
     public void testTheHalfMeasuredWarningCountsTheSquares() throws Exception
@@ -785,17 +723,15 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * A side trains may not stop on is still asked to be measured for a turn there (Adam, 2026-09-24).
+     * A side trains may not stop on is still asked to be measured for a turn there.
      *
-     * *"Arrivals THAT STOP THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor
-     * this in, since the former would govern the behavior."*  A barred side keeps its turning copy, so a train may come
-     * in that way and turn - and the room rule judges that turn over the track after the last switch, which is what the
-     * reversal notice asks to be measured.  `e09fe989` skipped the barred side here along with the two berth checks,
-     * which are right to: nothing stops there.
+     * Adam: *"Arrivals THAT STOP THERE should only be allowed from the configured side(s).  Turning shouldn't need to
+     * factor this in, since the former would govern the behavior."*  A barred side keeps its turning copy, so a train
+     * may come in that way and turn, and the room rule judges that turn over the track after the last switch, which is
+     * what the reversal notice asks to be measured.  Only the two berth checks skip the barred side: nothing stops
+     * there.
      *
      * MUTATION: skip the barred side in `reversalsWithoutLength` again, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testABarredApproachIsStillAskedToBeMeasuredForATurn() throws Exception
@@ -831,8 +767,6 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
      * side nothing arrives by.
      *
      * MUTATION: judge every arriving edge in `stationsWithAHalfMeasuredApproach` again, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testABarredApproachIsNotJudgedAsHalfMeasured() throws Exception
@@ -862,13 +796,11 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
      * At a station autonomy may choose, a train longer than the run-in stands across the switch and blocks the railway
      * behind it; at a parking berth it is refused - and the notice says which (MT-555).
      *
-     * Adam, 2026-09-24: *"Notices work, but they are wrong.  'so a train longer than x is refused' - 'so a train
-     * longer than x may block other parts of the layout...'"*  `Layout.whyTooLongForThisRoute` refuses it at a berth
-     * and, at a station autonomy may choose, admits it as far as the measured route in holds (FR-087).
+     * Adam: *"Notices work, but they are wrong.  'so a train longer than x is refused' - 'so a train longer than x may
+     * block other parts of the layout...'"*  `Layout.whyTooLongForThisRoute` refuses it at a berth and, at a station
+     * autonomy may choose, admits it as far as the measured route in holds (FR-087).
      *
      * MUTATION: word both kinds of station the same, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAPlatformIsToldALongTrainMayBlockAndABerthThatItIsRefused() throws Exception
@@ -904,23 +836,21 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * A home on a square every train turns at is warned about only at a parking berth no route can back a train into
-     * (Adam, 2026-10-11, of BottomMainC: *"we get a 'every train must turn around... and would have to back out...'
-     * warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should
-     * only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"*).  A way to
-     * reverse in is another terminus that leads straight to the berth: Return Home rests a train that cannot reverse
-     * there and drives it home tail first - Adam's two-step parking (*"That's why we started the 2 step process
-     * for parking, which is OK in my opinion."*) - and with one, MT-552's *"Non-reversible trains can still be backed in
-     * there"* holds.  A reversing point on the way is not one: no door drives a route on through it and back.
+     * A home on a square every train turns at is warned about only at a parking berth no route can back a train into.
+     *
+     * Adam, of BottomMainC: *"we get a 'every train must turn around... and would have to back out...' warning on
+     * BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be
+     * shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"*.  A way to reverse
+     * in is another terminus that leads straight to the berth: Return Home rests a train that cannot reverse there and
+     * drives it home tail first (*"That's why we started the 2 step process for parking, which is OK in my opinion."*).
+     * A reversing point on the way is not one: no door drives a route on through it and back.
      *
      * A line B - X - R: B the home, every train turning there.  Active: no warning.  A parking berth with R a plain
      * sensor: the warning.  R a reversing point: still the warning.  R a terminus - a train rested there is backed into
      * B: no warning.
      *
-     * MUTATION: warn at an active terminus again, or at a berth a train can back into, or at no berth at all, or count a
-     * reversing point on the way as a way in, and this fails.
-     *
-     * @throws Exception from the fixture
+     * MUTATION: warn at an active terminus again, or at a berth a train can back into, or at no berth at all, or count
+     * a reversing point on the way as a way in, and this fails.
      */
     @Test
     public void testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto() throws Exception
@@ -1075,13 +1005,9 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * And the station-capacity notice is gated the same way.
      *
-     * The two halves of the length rule are `placedTrainsWithoutLength` and `stationsWithoutMaxLength`,
-     * and only the reversal notice ever got Adam's condition: *"if any other track length is set
-     * anywhere"*.  So a railway that models no lengths at all had every one of its stations listed -
-     * thirty of them on his - beside the real problems, on the list this feature's own javadoc twice
-     * says is made useless by exactly that.
-     *
-     * The same fixture, asked twice, with one length recorded somewhere else entirely between them.
+     * Only the reversal notice ever got Adam's condition *"if any other track length is set anywhere"*, so a railway
+     * that models no lengths at all had every one of its stations listed.  The same fixture is asked twice, with one
+     * length recorded somewhere else entirely between them.
      *
      * MUTATION this catches: removing the `measuresAnyTrack()` gate reports the station in both halves.
      */
@@ -1118,14 +1044,9 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * The station-capacity notice does not need a measured tile.
      *
-     * This check was gated on `measuresAnyTrack()`, which is Adam's condition for the REVERSAL
-     * notice - and there the gate and the notice are about the same data, tile lengths. Station
-     * capacity is not that data: `Point.validateTrainLength` compares the station's typed maximum
-     * against the locomotive's own authored length, and no tile length enters into it.
-     *
-     * So the gate was a precondition that lost its subject on the way over, and somebody who authors
-     * train lengths and station maxima but has never measured track got no notices at all - about the
-     * feature they are actively using.
+     * `Point.validateTrainLength` compares the station's typed maximum against the locomotive's own authored length,
+     * and no tile length enters into it, so the `measuresAnyTrack()` gate (right for the reversal notice) had lost its
+     * subject: somebody who authors train lengths and station maxima but never measured track got no notices.
      *
      * MUTATION this catches: putting `measuresAnyTrack()` back in place of `modelsAnyLength()`.
      */

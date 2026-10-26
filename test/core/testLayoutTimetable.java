@@ -507,7 +507,7 @@ public class testLayoutTimetable
 
     /**
      * A timetable entry through a point the railway does not have - one on a page left out of autonomy - is kept as it
-     * was written, not dropped at the load (Adam, 2026-09-30: "Just keep the entries, and if a path is run that contains
+     * was written, not dropped at the load (Adam: "Just keep the entries, and if a path is run that contains
      * a point on a disabled page, reject it with an error").  Dropped, the next fold wrote the shorter timetable over the
      * configuration and the entry was gone for good.
      *
@@ -540,7 +540,7 @@ public class testLayoutTimetable
     }
 
     /**
-     * The run stops at an entry the railway cannot run, and says why (Adam, 2026-09-30: "stop the timetable run upon
+     * The run stops at an entry the railway cannot run, and says why (Adam: "stop the timetable run upon
      * encountering an invalid path, and let the user know").  Refused and passed over, a train's later entries started
      * where it was not, and the run stood for minutes before giving up, saying only that the track never became free.
      * The entry is left unrun, so the window names it, and nothing after it runs.
@@ -752,7 +752,7 @@ public class testLayoutTimetable
 
     /**
      * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or nothing
-     * (OB-260; Adam, 2026-10-06: "Fix OB-260").
+     * (OB-260).
      *
      * The delete asked, held a confirmation open as long as the operator liked, and then removed the row by number from
      * the plain list capture appends to under this railway's lock.  So it is asked of the entry, and taken under the lock.

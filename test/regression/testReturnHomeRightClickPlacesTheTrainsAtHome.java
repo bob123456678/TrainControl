@@ -137,8 +137,6 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * delivers the mouse to a disabled button, and a right-click that did nothing would not say why.
      *
      * MUTATION: open the menu only when the button is enabled, or leave the count out of the label, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARightClickOffersToPlaceTheTrainsAtTheirHomes() throws Exception
@@ -200,13 +198,11 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * The item is grayed, with the reason, while autonomy, Return Home or a route runs, while an editor is open and when no
-     * train has a home - and a press that arrives after one of them began says why and changes nothing.
+     * The item is grayed, with the reason, while autonomy, Return Home or a route runs, while an editor is open and
+     * when no train has a home - and a press that arrives after one of them began says why and changes nothing.
      *
      * MUTATION: leave any one of the cases out of `whyTheTrainsCannotBePlacedAtTheirHomes`, or let the press skip the
      * question, and this fails naming it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheItemIsGreyedWithItsReasonUnlessNothingIsRunning() throws Exception
@@ -349,8 +345,6 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * An open editor refuses both with the one sentence, and the item does not start a run the button would not.
      *
      * MUTATION: have the item do anything but call the button's `requestReturnToHome`, and the two answers differ.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testRunTrainsToTheirHomesIsTheButtonItself() throws Exception
@@ -428,8 +422,6 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * Answering No at the confirmation changes nothing, and the confirmation says the trains must be moved by hand.
      *
      * MUTATION: let No fall through to the placement, or drop the by-hand sentence from the text, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testNoLeavesTheSetupAsItWas() throws Exception
@@ -468,7 +460,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             assertEquals(asked.size(), 1, "pressing the item asked " + asked.size() + " questions: " + asked);
 
             assertTrue(asked.get(0).contains(I18n.f("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand", 0, 0)
-                .split("\n")[2]), "the confirmation does not say the trains must be moved by hand: " + asked);
+                .split("\\? ", 2)[1]), "the confirmation does not say the trains must be moved by hand: " + asked);
 
             assertEquals(session.placementsAutonomyWillWrite(), before, "answering No changed the setup");
 
@@ -482,12 +474,10 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * Answering Yes puts each homed train on its home and takes the others off, on the live setup, and the file on disk has
-     * the same; the result is said in the log.
+     * Answering Yes puts each homed train on its home and takes the others off, on the live setup, and the file on disk
+     * has the same; the result is said in the log.
      *
      * MUTATION: skip the save, or the placement, or leave a train off the names the rebuild is told, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testYesPutsTheTrainsOnTheirHomesAndSavesIt() throws Exception
@@ -551,13 +541,12 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * The track diagram's own Bulk Tools item is the same door as Return Home's: refused while anything runs, asking with
-     * the by-hand sentence, and saying its result in the log rather than on a banner the track diagram does not have.
+     * The track diagram's own Bulk Tools item is the same door as Return Home's: refused while anything runs, asking
+     * with the by-hand sentence, and saying its result in the log rather than on a banner the track diagram does not
+     * have.
      *
      * MUTATION: let the track diagram's item ask the editor's question and say its result on the editor's banner, as it
      * did, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheTrackDiagramsBulkToolsItemIsTheSameDoor() throws Exception
@@ -681,8 +670,6 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * A run that begins while the confirmation is on screen stops the placement: the question is asked again after it.
      *
      * MUTATION: take the second question out of the panel's door, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testARunThatBeginsWhileTheConfirmationIsUpStopsTheChange() throws Exception
@@ -773,16 +760,14 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * Return Home does not say "already on its home" over a train that is paused away from its home (OB-355; Adam: "'every
-     * locomotive is already at its home' is shown, and return home is greyed out, even if the reason is that locomotives are
-     * inactive but not on their stations.").  With every other train home and one homed train paused away, the button is
-     * grayed and says the train is paused and how to set it going - the menu's Run Trains to Their Homes the same;
-     * set going, the button is offered; with every train home, it says they are.
+     * Return Home does not say "already on its home" over a train that is paused away from its home (OB-355; Adam:
+     * "'every locomotive is already at its home' is shown, and return home is greyed out, even if the reason is that
+     * locomotives are inactive but not on their stations.").  With every other train home and one homed train paused
+     * away, the button is grayed and says the train is paused and how to set it going - the menu's Run Trains to Their
+     * Homes the same; set going, the button is offered; with every train home, it says they are.
      *
-     * MUTATION: let the triage count a paused train as home without saying so (answer ALREADY_HOME for it), and the first
-     * reason fails.
-     *
-     * @throws Exception from the window
+     * MUTATION: let the triage count a paused train as home without saying so (answer ALREADY_HOME for it), and the
+     * first reason fails.
      */
     @Test
     public void testAPausedTrainAwayFromHomeIsNotSaidToBeHome() throws Exception

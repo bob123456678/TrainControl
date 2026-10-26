@@ -18,14 +18,11 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 /**
  * MT-062: delete and the line inserts, which had not had the move audit.
  *
- * Everything the setup holds is keyed by SQUARE - the station designation, the name, the caption, the
- * arrival restrictions, the length, the placement, the pairing. So any operation that relocates or
- * destroys track has to tell the setup, and the ones that were audited are the drag, the shift and the
- * bulk line copy. Delete and the row/column inserts were not.
- *
- * `testAutonomyStoreSettingsMatrix` pins the RULES - every setting follows a moved tile, every setting
- * is dropped when its square is built over. This pins that delete and insert produce the right moves
- * and losses for those rules to act on, which is the half between the editor and the store.
+ * Everything the setup holds is keyed by SQUARE, so any operation that relocates or destroys track has to tell the
+ * setup; the drag, the shift and the bulk line copy were audited, delete and the row/column inserts were not.
+ * `testAutonomyStoreSettingsMatrix` pins the RULES (every setting follows a moved tile, every setting is dropped when
+ * its square is built over); this pins that delete and insert produce the right moves and losses for those rules to act
+ * on, the half between the editor and the store.
  *
  * @author Adam
  */
@@ -48,11 +45,8 @@ public class testDeleteAndInsertKeepTheSetup
     }
 
     /**
-     * Deleting a square takes its setup with it, and leaves every other square alone.
-     *
-     * Both halves matter. A delete that leaves the setup behind puts a station on track that is not
-     * there - which is what the next reconcile silently tidies away, so the loss is discovered later
-     * and somewhere else. A delete that takes MORE than its square is straightforward data loss.
+     * Deleting a square takes its setup with it, and leaves every other square alone: leaving it puts a station on
+     * track that is not there, and taking MORE is data loss.
      */
     @Test
     public void testDeletingASquareTakesOnlyItsOwnSetup() throws IOException
@@ -75,12 +69,8 @@ public class testDeleteAndInsertKeepTheSetup
     }
 
     /**
-     * Inserting a line moves the setup of everything it pushes along.
-     *
-     * An insert is a move of every square from the insertion point onward, and the setup has to travel
-     * with the track exactly as it does for a drag. It did not have a test, and the failure would be
-     * quiet: the track moves, the station names stay where they were, and the diagram reads as though
-     * somebody renamed half a railway.
+     * Inserting a line moves the setup of everything it pushes along, as a drag does; the failure would be quiet, the
+     * names staying while the track moves.
      */
     @Test
     public void testInsertingALineCarriesTheSetupAlong() throws IOException
@@ -105,9 +95,7 @@ public class testDeleteAndInsertKeepTheSetup
             "the square the track left is still a station, so the setup now says there are two");
     }
 
-    /**
-     * A square with a name, a station designation and a locomotive on it.
-     */
+    /** A square with a name, a station designation and a locomotive on it. */
     private TileKey furnish(TileKey tile, String name, String locomotive) throws IOException
     {
         if (session.getStore().getActiveConfiguration() == null)

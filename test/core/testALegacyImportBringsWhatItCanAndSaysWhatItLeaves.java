@@ -21,11 +21,8 @@ import support.SourceOf;
 
 /**
  * An import of a legacy file or a bundle brings its names, trains, settings and stations across, never
- * overwrites what is set, and says what it left behind.
- *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder
- * every claim starts from are built by `AutonomySessionFixture`.
+ * overwrites what is set, and says what it left behind.  The session and layout folder come from
+ * `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -33,14 +30,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 {
 
     /**
-     * Names out of a legacy autonomy.json land on the squares carrying the same sensors.
-     *
-     * The graph this replaces held points by name and recorded the s88 each watched; the diagram
-     * derives its points from the feedback squares themselves.  The sensor is the one thing both
-     * models agree on, so it is what the two are matched by.
-     *
-     * The names were never derivable from a diagram - the track's shape is, but what any of it is
-     * CALLED is a decision - so without this every upgrading user would enter them all again.
+     * Names out of a legacy autonomy.json land on the squares carrying the same sensors, which is all the two models
+     * share.
      */
     @Test
     public void testLegacyNamesLandOnTheSquaresCarryingTheirSensors() throws Exception
@@ -49,17 +40,14 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         session.open(Arrays.asList(page));
 
-        // A configuration to import INTO, as every other import test has and as the menu path does.
-        // The operational settings - priority, speed multiplier, exclusions, the station's own length
-        // limit - are stored per configuration, so without one they are silently skipped and this
-        // method would have asked nothing about them.
+        // A configuration to import INTO: operational settings are stored per configuration and are skipped without
+        // one.
         session.getStore().createConfiguration("Legacy", null);
         session.getStore().setActiveConfiguration("Legacy");
 
         org.json.JSONArray points = new org.json.JSONArray();
 
-        // pageOnDisk puts a feedback with raw address 11 at 1,1 - and the raw address is what an
-        // autonomy Point's s88 has always meant
+        // pageOnDisk puts a feedback with raw address 11 at 1,1, and a legacy Point's s88 is that raw address
         org.json.JSONObject named = new org.json.JSONObject();
         named.put("name", "Hauptbahnhof");
         named.put("station", true);
@@ -84,17 +72,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         assertTrue(session.getStore().isStation(tile), "the station flag did not come across");
 
-        // A STATION'S CAPACITY, NOT A TRACK LENGTH.
-        //
-        // This asserted `getTileLength(tile) == 240` until 2026-08-31, which is the confusion the
-        // import itself was making: `points[].maxTrainLength` is the longest train the STATION can
-        // hold, and `tileLengths` is how long a piece of TRACK is - the quantity the shortest-track
-        // and longest-track routing rules are computed from.  A legacy file carries both, capacity on
-        // the points and length on the edges, and the import was reading one as the other.
-        //
-        // What it cost: every upgrading user's stations lost their limits, so validateTrainLength
-        // passed a train of any length onto any platform; and the squares that had a capacity gained
-        // a track length nobody measured, which changed which route those rules pick.
+        // A station's capacity, not a track length: `maxTrainLength` is the longest train a STATION holds,
+        // `tileLengths` is how long a piece of TRACK is.  Reading one as the other cost every imported station its
+        // limit and gave squares a track length nobody measured.
         assertEquals(session.getPointProperty(tile, "maxTrainLength"), 240,
             "the station's own length limit did not come across, so autonomy will send a train of "
             + "any length onto it");
@@ -110,18 +90,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * An imported legacy file brings its settings, not only its points.
-     *
-     * A 2.7.4c `autonomy.json` is one object: the points and edges, and above them the whole settings
-     * panel - pace, default speed, how many trains may run, whether routes are fired, and the
-     * timetable. `importLegacy` read the points array and nothing else, so an upgrading user kept
-     * their station names and lost everything about how their railway RUNS.
-     *
-     * On Adam's own legacy file that is ten settings. The timetable and the two route-activation keys
-     * are deliberately NOT carried - see the assertions below for why each one would do harm.
-     *
-     * Gap-filled, like the rest of this import: re-running it must not undo a setting somebody
-     * changed after the first run.
+     * An imported legacy file brings its settings, not only its points, gap-filled so a re-run cannot undo a later
+     * change.  The timetable and the two route-activation keys are deliberately NOT carried (see the assertions).
      *
      * MUTATION: dropping the globals copy from importLegacy fails the first assertion; making it
      * overwrite rather than gap-fill fails the last.
@@ -153,9 +123,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         legacy.put("maxActiveTrains", 4);
         legacy.put("activateRoutes", true);
 
-        // BOTH keys, because the assertion below about the id list cannot fail without this one.
-        // The fixture set only the flag, so removing the id list from the exclusion left the test
-        // green - the more important half of the most important exclusion, untested.
+        // BOTH keys: the id-list assertion below cannot fail without the second.
         legacy.put("activateRouteIDs", new org.json.JSONArray());
 
         org.json.JSONArray timetable = new org.json.JSONArray();
@@ -177,13 +145,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "the default locomotive speed did not come across");
         assertEquals(globals.optInt("maxActiveTrains", -1), 4,
             "the limit on how many trains may run did not come across");
-        // AND THE THREE THAT MUST NOT COME ACROSS.
-        //
-        // activateRoutes and activateRouteIDs do not stay inside the configuration: parseAuto ends in
-        // applyAutonomyRouteActivations, which disables every route in the live Central Station
-        // database whose id is not listed, and fires the ones that are.  Adam's own legacy file says
-        // `activateRoutes: true` with an empty list, so carrying them would switch off every route he
-        // has - on import and again on every diagram edit.
+        // Not carried: parseAuto ends in applyAutonomyRouteActivations, which disables every route in the live Central
+        // Station database whose id is not listed.  A legacy `activateRoutes: true` with an empty list would switch off
+        // every route, on import and on every diagram edit.
         assertFalse(globals.has("activateRoutes"),
             "the import carried the route activation flag, so loading the setup will disable every "
             + "route in the Central Station that the file does not list - and the file lists none");
@@ -191,21 +155,16 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertFalse(globals.has("activateRouteIDs"),
             "the import carried the route id list, which decides which routes are switched off");
 
-        // The timetable is left in autonomy.json rather than half-migrated.  Its legs name points by
-        // NAME, and a legacy name only reaches the diagram when its sensor lands on exactly one
-        // square; TimetablePath.fromJSON throws on the first edge it cannot resolve and drops that
-        // leg.  Measured on Adam's file, two of thirty-six could survive - and the next capture writes
-        // what is left back over these globals for good.
+        // The timetable stays in autonomy.json: its legs name points by NAME, TimetablePath.fromJSON throws on the
+        // first edge it cannot resolve, and the next capture would write what is left back over these globals.
         assertFalse(globals.has("timetable"),
             "the timetable was carried across, where all but a couple of its legs will be dropped one "
             + "warning at a time and the remains written back permanently by the next capture");
 
-        // Neither points nor edges belong up here: they are the setup, not the settings.
         assertFalse(globals.has("points"), "the points were copied into the settings as well");
         assertFalse(globals.has("edges"), "the edges were copied into the settings as well");
 
-        // GAP-FILLED, not overwritten.  Somebody who imported, then changed a setting, then imported
-        // again must keep their change - which is the rule every other part of this import follows.
+        // Gap-filled: a setting changed after the first import survives a second.
         globals.put("minDelay", 9);
 
         session.importLegacy(legacy);
@@ -215,13 +174,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a second import overwrote a setting that had been changed since the first one");
     }
 
-    /**
-     * A square that already has a name keeps it.
-     *
-     * Same rule as importing a configuration: this fills gaps, it does not overwrite somebody's work
-     * with a file's.  Without the assertion a fix that adopted the file wholesale would look correct
-     * against the test above.
-     */
+    /** A square that already has a name keeps it: the import fills gaps, it does not overwrite. */
     @Test
     public void testLegacyNamesDoNotOverwriteNamesAlreadyEntered() throws Exception
     {
@@ -252,14 +205,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The locomotive that was standing on a Point is put back on the square carrying its sensor.
-     *
-     * The old graph recorded the locomotive with the speed, arrival and departure functions and train
-     * length it was placed with; the builder reads that same shape back out, so the object is carried
-     * over whole rather than picked apart and rebuilt.
-     *
-     * A placement belongs to a configuration and not to the shared half - it is where a train happens
-     * to be standing, not a decision about the track - so it is written there, keyed by tile.
+     * The locomotive standing on a Point is put back on the square carrying its sensor.  A placement belongs to the
+     * configuration, not the shared half, so it is written there, keyed by tile.
      */
     @Test
     public void testALegacyImportPutsTheLocomotivesBack() throws Exception
@@ -306,10 +253,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A square somebody has already named still gets its locomotive back.
-     *
-     * The placement is about the SQUARE, so it must not be skipped along with the name - which it was
-     * when both were decided by one branch.
+     * A square somebody has already named still gets its locomotive back: the placement is not skipped with the name.
      */
     @Test
     public void testALegacyImportPlacesEvenWhereTheNameIsKept() throws Exception
@@ -350,17 +294,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A legacy terminus and a legacy reversing point both come back as squares that turn trains round.
-     *
-     * Neither word can be written down any more - the build derives both, and which one it emits
-     * follows from whether the square is a station.  What the old graph was recording in both cases is
-     * that every arriving train reverses, and that is authored as mustReverse, so one flag restores
-     * both readings.
-     *
-     * The station case of "reversing" is the old reversing station, which said two things at once: it
-     * turns trains round AND autonomy never chooses it.  Those are separate ideas now, so it has to
-     * take the parking flag as well - without it, importing would quietly turn a shunting neck into a
-     * destination trains get sent to.
+     * A legacy terminus and a legacy reversing point both come back as squares that turn trains round (mustReverse).
+     * A reversing station also takes the parking flag, so importing does not turn a shunting neck into a destination.
      */
     @Test
     public void testALegacyImportRestoresTerminiAndReversingPoints() throws Exception
@@ -413,13 +348,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a terminus is an ordinary destination, and must not have been shut to autonomy");
     }
 
-    /**
-     * A square that already says something about reversing keeps what it says.
-     *
-     * The same gap-filling rule the names and placements follow, asserted because the marking is set
-     * through two properties at once and a fix that wrote them unconditionally would look correct
-     * against the test above.
-     */
+    /** A square that already says something about reversing keeps what it says (two properties, gap-filled). */
     @Test
     public void testALegacyImportDoesNotOverrideReversingAlreadySet() throws Exception
     {
@@ -459,15 +388,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * Priorities, speed multipliers, exclusions and a station's switch come across too.
-     *
-     * The builder passes unknown extras straight through to the built graph, so these need no
-     * translation - only carrying.  They are per-point operational settings rather than decisions
-     * about the track, so they go to the configuration, beside the placement.
-     *
-     * The exclusions are asserted by content rather than by identity because they must be a COPY: a
-     * JSONArray handed straight over would still be the one the caller's parsed file holds, and
-     * editing the exclusions here later would reach back into that.
+     * Priorities, speed multipliers, exclusions and a station's switch come across to the configuration.  The
+     * exclusions are asserted by content because they must be a COPY of the parsed file's array.
      */
     @Test
     public void testALegacyImportCarriesThePerPointSettings() throws Exception
@@ -509,9 +431,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertEquals(session.getPointProperty(tile, "speedMultiplier"), 0.75,
             "the speed multiplier did not come across");
 
-        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (Adam 2026-09-24: "translate as on but
-        // not auto destination").  At v2.8.1 it kept autonomy out and still took a train sent by hand; carried as
-        // `active: false` it became a square nothing may pass through or end on.
+        // A switched-off station arrives as on but not an autonomy destination (Adam: "translate as on but not auto
+        // destination"); carried as `active: false` it would be a square nothing may pass through or end on.
         assertEquals(session.getPointProperty(tile, "active"), null,
             "a station the 2.8.1 file switched off arrived switched off, so no train may be sent there by hand");
 
@@ -530,9 +451,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "the exclusions are the file's own array, so editing them here would edit the file's copy");
     }
 
-    /**
-     * A setting already present is kept, so a second import cannot undo an edit made after the first.
-     */
+    /** A setting already present is kept, so a second import cannot undo an edit made after the first. */
     @Test
     public void testALegacyImportDoesNotOverrideSettingsAlreadySet() throws Exception
     {
@@ -568,16 +487,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The diagram shows the imported names without being reloaded.
-     *
-     * The squares, their names, their station markers and their captions are all drawn from the
-     * REDUCTION, which is derived from a snapshot of the authored data taken when the session opened.
-     * Writing to the store therefore changes nothing anybody can see until that derivation is redone -
-     * so the import wrote every name correctly and the diagram went on showing what it knew before,
-     * which from the outside is indistinguishable from the import having done nothing.
-     *
-     * Asserted against the reduction rather than the store for exactly that reason: the store was
-     * always right.
+     * The diagram shows the imported names without being reloaded.  Asserted against the reduction, which is derived
+     * from a snapshot taken when the session opened; the store alone was always right.
      */
     @Test
     public void testTheDiagramSeesTheImportWithoutBeingReloaded() throws Exception
@@ -588,9 +499,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         TileKey tile = new TileKey("main", 1, 1);
 
-        // Not null: a square nobody has named still gets a name, generated from its page and
-        // coordinates, so that every Point in the built graph has one.  The precondition worth
-        // asserting is therefore that it is not ALREADY called what the import is about to call it.
+        // Not null: an unnamed square gets a generated name; what matters is that it is not ALREADY the imported one.
         assertNotEquals(session.getReducer().getPoints().get(tile).getName(), "Hauptbahnhof",
             "precondition: this square is not already named what the import will name it");
 
@@ -615,17 +524,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A terminus and a station's switch survive being exported and imported again.
-     *
-     * Both are DERIVED at build time - terminus from mustReverse plus the station flag, active from a
-     * property the build copies through - so neither can be looked for in the store, and neither shows
-     * up until the derivation is redone.  Importing a bundle wrote the configuration holding both and
-     * never re-derived, so they arrived and stayed invisible, which is indistinguishable from their
-     * not having arrived.
-     *
-     * Asserted against the BUILT graph rather than the store or the reduction: the store was always
-     * right, and the reduction does not carry these at all.  What matters is what the running model
-     * would be handed.
+     * A terminus and a station's switch survive being exported and imported again.  Both are derived at build time,
+     * so they are asserted against the BUILT graph, not the store or the reduction.
      */
     @Test
     public void testATerminusAndAStationSwitchSurviveAnExportAndImport() throws Exception
@@ -686,13 +586,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A sensor carried by more than one square is reported rather than guessed at.
-     *
-     * Two squares on one s88 is ordinary - a station and its approach guard - and on a layout whose
-     * pages repeat a section it happens across pages too.  A legacy file names ONE point per sensor,
-     * so nothing in it says which square was meant, and taking whichever came last would land a
-     * station on the wrong page without a word.  Excluding the duplicating pages first is what makes
-     * the rest of an import unambiguous, and this is what tells somebody they need to.
+     * A sensor carried by more than one square is reported rather than guessed at: a legacy file names ONE point per
+     * sensor, so nothing in it says which square was meant.
      */
     @Test
     public void testALegacyImportRefusesASensorOnTwoSquares() throws Exception
@@ -735,15 +630,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A page repeating an earlier page's sensor is left out; the earlier page stays in.
-     *
-     * A layout that draws the same track twice - an overview and a detail view of one yard - gives two
-     * squares the same s88, and nothing downstream can tell which one a train is on.  The reduction
-     * makes a Point of each, so one sensor becomes two destinations, and a legacy import cannot decide
-     * which square a name belongs to.
-     *
-     * Earliest page wins, in the order the layout lists them: it is the one a reader thinks of as the
-     * real one, and it is the only rule that does not depend on which page happens to be open.
+     * A page repeating an earlier page's sensor is left out; the earlier page stays in.  Earliest page wins, in the
+     * order the layout lists them, the only rule that does not depend on which page is open.
      */
     @Test
     public void testAPageRepeatingASensorIsLeftOut() throws Exception
@@ -774,12 +662,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "the earlier page was excluded, which is the wrong one of the two");
     }
 
-    /**
-     * Pages that share nothing are all left in.
-     *
-     * The precondition that keeps the test above honest: a rule that excluded every page after the
-     * first would satisfy it and be useless.
-     */
+    /** Pages that share nothing are all left in: the precondition that keeps the test above honest. */
     @Test
     public void testPagesWithDistinctSensorsAreAllKept() throws Exception
     {
@@ -793,23 +676,12 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * Running again over a settled setup changes nothing.
+     * Running again over a settled setup changes nothing.  The excluded pages are SHARED, not per-configuration, so
+     * anything that re-asserted itself would fight the user.
      *
-     * Worth pinning because the excluded pages are SHARED, not per-configuration: anything here that
-     * re-asserted itself would fight the user, and the page checkboxes are the whole point.
-     *
-     * Note what this does NOT promise.  A page the user deliberately switches back on WOULD be shut
-     * again by another run - the method has no record of having been overruled, and inventing one to
-     * carry that would be a second source of truth beside the checkbox itself.  What protects that
-     * choice is the caller, and there are TWO of them (OB-130, settled 2026-08-29). Creating the
-     * first configuration on a layout is the one moment there are no decisions to overrule. Importing
-     * a legacy graph is not - it will overrule them - and Adam has ruled that it may: "yes, it may
-     * override." A page repeating another page’s sensors is not a preference but a diagram the
-     * reduction cannot read, and a setting made before the rule existed is not a decision the rule
-     * has to honor.
-     *
-     * This comment used to end "if a second call site ever appears, this is the test whose comment
-     * explains why it must not". It appeared, it was argued over, and it stays.
+     * Not promised: a page the user switches back on WOULD be shut again by another run, as the method keeps no record
+     * of being overruled.  The two callers protect that choice (OB-130), and Adam ruled the import may override: "yes,
+     * it may override."
      */
     @Test
     public void testRunningAgainOverASettledSetupChangesNothing() throws Exception
@@ -834,24 +706,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The invariant the comment above states - "runs only from the one call site that has no
-     * decisions to overrule" - checked against src/, not just asserted in prose.
-     *
-     * The idempotence test above calls excludeRepeatedSensorPages() itself, twice, so it cannot tell a
-     * safe call site from an unsafe one - both look identical from here. The comment names the actual
-     * protection as "the caller", so this checks the caller.
-     *
-     * TWO CALL SITES, BOTH SANCTIONED (OB-130, settled 2026-08-29). Configuration creation (:885) and
-     * legacy import into an existing setup (:1137). So this is no longer a count held while an argument
-     * runs - it is the number of places the behavior is wanted, and a third would still be one nobody
-     * has argued for.
-     *
-     * The second was raised on the reading that it silently re-excludes a page the user had
-     * switched back on. Adam ruled twice, and the two rulings are about different things: on
-     * 2026-08-29 that the import "may override" pages he had chosen to keep - a page whose sensors
-     * repeat another's is not a preference - and on 2026-09-11 that a page he had deliberately turned
-     * BACK ON stays on, which is a decision rather than the absence of one. Both call sites are still
-     * wanted; what changed is what the method itself skips.
+     * The callers of excludeRepeatedSensorPages() (OB-130) are checked against src/: the idempotence test above calls
+     * it itself, so it cannot tell a safe call site from an unsafe one.
      */
     @Test
     public void testExcludeRepeatedSensorPagesHasOnlyOneCallSite() throws IOException
@@ -874,20 +730,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             }
         }
 
-        // TWO, AND THAT IS NOW A DECISION RATHER THAN A TRUCE (OB-130).
-        //
-        // This used to say the number was held while a question ran: the comment on
-        // testRunningAgainOverASettledSetupChangesNothing called a second call site the bug, and the
-        // second site carried its own later justification, and the two contradicted each other. The
-        // question was whether importing a legacy graph may shut pages the operator had already
-        // decided about.
-        //
-        // Adam, 2026-08-29: "yes, it may override." A page that repeats another page\u2019s sensors is
-        // not a preference - it is a diagram the reduction cannot make sense of - and a setting made
-        // before the rule existed is not a decision the rule has to honor.
-        //
-        // So the ratchet stands for a different reason than it did: not "nobody has settled this" but
-        // "these two are wanted and a third has never been argued for".
+        // Two call sites are wanted: configuration creation and legacy import into an existing setup (OB-130).
+        // Adam: "yes, it may override."  A third has never been argued for.
         assertEquals(calls, 2,
             "excludeRepeatedSensorPages() is called from " + calls + " place(s) in src/, not the 2 "
             + "that are wanted - creating a configuration, and importing a legacy graph. Both are "
@@ -895,9 +739,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             + "for, and a removed one means the behaviour was dropped without the ruling changing.");
     }
 
-    /**
-     * Every .java file under a directory, for the source scan above.
-     */
     private static List<File> javaFilesUnder(File dir)
     {
         List<File> found = new ArrayList<>();
@@ -916,33 +757,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A page the user deliberately re-enabled is silently shut again by the next legacy import.
-     *
-     * The javadoc on {@link #testRunningAgainOverASettledSetupChangesNothing} promises this "must not"
-     * happen, and names the caller as what makes that safe - but AutonomyViewerPanel.java now calls
-     * excludeRepeatedSensorPages() from a second place, at line 1137, when importing a legacy graph into
-     * an EXISTING setup.  That call site is not a different method: it is the same
-     * excludeRepeatedSensorPages() exercised above, called again after the operator has had a chance to
-     * change their mind.
-     *
-     * excludeRepeatedSensorPages() only skips pages ALREADY in the excluded set (:825) - it has no
-     * record of a page having been deliberately turned back on, so re-running it after that happens
-     * treats the page exactly like one that was never looked at, and re-excludes it.
-     *
-     * CLOSED, AND ENABLED (Adam 2026-09-11). Asked which way it should go, he took the first:
-     * a page the operator turned back on stays on. `AutonomyCompanionStore` now remembers a deliberate
-     * re-enable - `getPagesKeptDespiteRepeats`, written when a page that really was excluded is
-     * switched off again - and `excludeRepeatedSensorPages` skips those pages.
-     *
-     * **The 2026-08-29 ruling still stands, and this does not contradict it.** Asked whether the import
-     * may shut pages he had chosen to keep, Adam said *"yes, it may override"*, and that is about pages
-     * nobody has had an opinion on: a page whose sensors repeat another's is not a preference, it is a
-     * diagram the reduction cannot make sense of. An explicit re-enable IS an opinion, and the method's
-     * own javadoc already drew that line - *"turning one back on is not undone by adding a
-     * configuration"*. The legacy import was the one door that undid it.
-     *
-     * This test was off for two weeks because enabling it was the reproduction. It is the assertion
-     * that closes the finding, so it goes back on with the fix rather than being rewritten to match it.
+     * A page the user deliberately re-enabled is not shut again by the next legacy import (Adam: a page he turned
+     * back on stays on).  `AutonomyCompanionStore` remembers the re-enable in `getPagesKeptDespiteRepeats`.
      *
      * MUTATION: take the `getPagesKeptDespiteRepeats` skip out of `excludeRepeatedSensorPages` and this
      * is the only test in the class that fails.
@@ -969,9 +785,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertFalse(session.getStore().getExcludedPages().contains("repeat"),
             "precondition: the operator's re-enable did not take");
 
-        // Second call site: a legacy import into the now-existing setup calls the very same method
-        // (AutonomyViewerPanel.java:1137), which is the "second call site" the javadoc says must not
-        // exist.
+        // Second call site: a legacy import into the now-existing setup calls the very same method.
         session.excludeRepeatedSensorPages();
 
         assertFalse(session.getStore().getExcludedPages().contains("repeat"),
@@ -981,23 +795,16 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * Importing a bundle re-derives, so the stations it brought are Points immediately.
-     *
-     * The diagram draws a caption for every station the setup knows, and then asks the RUNNING
-     * derivation what is standing at each one.  A station that exists in the setup and not in the
-     * derivation therefore gets a label with nothing behind it, and stays blank - which is
-     * indistinguishable, on screen, from the import not having worked.
-     *
-     * The companion to testTheDiagramSeesTheImportWithoutBeingReloaded, which pins the same property
-     * for the legacy path.  Both doors need it and only one had it.
+     * Importing a bundle re-derives, so the stations it brought are Points immediately; the companion to
+     * testTheDiagramSeesTheImportWithoutBeingReloaded for the bundle door.
      */
     @Test
     public void testImportingABundleReDerivesImmediately() throws Exception
     {
         LayoutDiagram page = pageOnDisk();
 
-        // A setup that already has a configuration, which is the case that was broken: an import onto
-        // an empty setup happened to work because it was loaded afterwards anyway.
+        // A setup that already has a configuration: an import onto an empty setup happened to work since it loaded
+        // afterwards.
         session.open(Arrays.asList(page));
         session.getStore().createConfiguration("Existing", null);
         session.getStore().setActiveConfiguration("Existing");
@@ -1038,21 +845,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A bundle from a BIGGER railway lands what it can and keeps the rest.
-     *
-     * The realistic import: somebody's setup, exported, brought to a layout that is not the same shape.
-     * Squares the diagram does have take their settings; squares it does not have are kept in the store
-     * rather than dropped, and neither refuses the import nor throws.
-     *
-     * Kept rather than dropped, deliberately.  A square that is not in the derivation is not the same
-     * thing as a square that does not exist - a page switched off is absent from the graph too, and an
-     * earlier version of this pruned against the graph and destroyed the arrival restrictions of every
-     * excluded page.  So the rule is that the store remembers what it was told, and the derivation uses
-     * what it can find.
-     *
-     * That does mean an import onto a genuinely different layout is quiet about the half that did not
-     * apply.  Asserted here so the behavior is at least written down, and so that anyone adding a
-     * report of it later has to come through this test.
+     * A bundle from a BIGGER railway lands what it can and keeps the rest.  Squares the diagram lacks stay in the
+     * store, not dropped: a page switched off is absent from the graph too, and pruning against the graph destroyed
+     * its arrival restrictions.  The import is therefore quiet about the half that did not apply, written down here.
      */
     @Test
     public void testAnImportFromADifferentLayoutKeepsWhatItCannotPlace() throws Exception
@@ -1113,14 +908,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * An import reloads whatever was already running, rather than leaving it alone.
-     *
-     * This is the rule the screen depended on and no test could see, because it lived as an early
-     * return inside a button.  An import onto an empty setup worked - it was loaded afterwards anyway
-     * - while an import onto a setup with a configuration running returned immediately, and that is
-     * every backup import onto a working railway.  The running layout is derived from the setup, so
-     * leaving it left the diagram describing the setup as it was: a caption for every imported station
-     * with no Point behind it, blank until an editor round trip reloaded.
+     * An import reloads whatever was already running.  The running layout is derived from the setup, so leaving it
+     * left every imported station a caption with no Point behind it.
      */
     @Test
     public void testAnImportReloadsWhateverWasAlreadyRunning() throws Exception
@@ -1142,14 +931,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The one Import action tells the shapes apart by reading them, not by their names.
-     *
-     * A user has one Import.  Being asked which menu item their own file belongs to is a question they
-     * should never have to answer, so the file is identified by something only its own shape has.
-     *
-     * The two real files are pinned as fixtures deliberately.  A synthetic sample proves the rule
-     * against itself; these are what the application actually wrote, and they are the reason the
-     * array-versus-object distinction below is safe rather than merely plausible.
+     * The one Import action tells the shapes apart by reading them, not by their names.  The two real files are
+     * pinned as fixtures because they are what the application actually wrote.
      */
     @Test
     public void testEveryImportableShapeIsRecognised() throws Exception
@@ -1164,16 +947,14 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             AutonomySession.ImportFormat.LEGACY_GRAPH,
             "a second real autonomy.json is not recognised as one");
 
-        // A bundle, built the way exportBundle builds one rather than copied from a file, so this
-        // cannot drift away from what the exporter actually writes
+        // A bundle, built the way exportBundle builds one, so this cannot drift from what the exporter writes
         LayoutDiagram page = pageOnDisk();
 
         session.open(Arrays.asList(page));
         session.getStore().createConfiguration("Adam 1", null);
 
-        // Given the globals every real configuration carries.  A configuration created and never
-        // touched holds nothing but its own name, and a file that says only "name" is not something
-        // this should claim to recognize - see the note on detectImportFormat.
+        // Given the globals every real configuration carries: one holding only its name is not claimed (see
+        // detectImportFormat).
         session.getStore().getConfiguration("Adam 1").put("globals", new org.json.JSONObject());
 
         org.json.JSONObject bundle = session.getStore().exportBundle("Adam 1");
@@ -1188,11 +969,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * Something that is not an autonomy file at all is refused rather than half-imported.
-     *
-     * A routes file is the realistic mistake - it sits in the same backup folder, under a similar
-     * name - and importing one as a configuration would write a configuration full of nothing and
-     * report success.
+     * Something that is not an autonomy file at all is refused rather than half-imported.  A routes file in the same
+     * backup folder is the realistic mistake.
      */
     @Test
     public void testAFileThatIsNotAnAutonomySetupIsRefused() throws Exception
@@ -1206,9 +984,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertEquals(AutonomySession.detectImportFormat(new org.json.JSONObject()),
             AutonomySession.ImportFormat.UNKNOWN, "an empty object says nothing about what it is");
 
-        // A configuration that has never been used carries only its name, and a name is not evidence:
-        // half the JSON in the world has one.  Refusing it costs a user nothing - there is nothing in
-        // it to import - and claiming it would mean claiming any file with a name field.
+        // A never-used configuration carries only its name, and a name is not evidence: half the JSON in the world has
+        // one.
         org.json.JSONObject nameOnly = new org.json.JSONObject();
         nameOnly.put("name", "Adam 1");
 
@@ -1220,12 +997,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The two formats that share the key "points" disagree about its type, which is what keeps them
+     * The old graph's "points" is a LIST of Points; a configuration's is keyed BY SQUARE, which keeps the formats
      * apart.
-     *
-     * The old graph is a LIST of Points; a configuration is keyed BY SQUARE.  Asserting this directly
-     * says why the detection is safe rather than lucky - a file merely containing the word cannot be
-     * mistaken for either.
      */
     @Test
     public void testTheTwoPointsShapesCannotBeConfused() throws Exception
@@ -1243,9 +1016,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             AutonomySession.ImportFormat.CONFIGURATION, "points keyed by square is a configuration");
     }
 
-    /**
-     * Reads a pinned fixture and says what it is.
-     */
     private AutonomySession.ImportFormat formatOf(String path) throws Exception
     {
         String text = new String(Files.readAllBytes(new File(path).toPath()),
@@ -1255,16 +1025,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * A legacy file naming two homes for one locomotive imports one of them.
-     *
-     * OB-075. `setHome` sweeps duplicates, and its comment names the reason - "a rule enforced at one
-     * door of two is the shape this defect came from". The import is the second door: it writes
-     * "home" straight into the configuration, so it went round setHome and its sweep entirely.
-     *
-     * A pre-rule autonomy.json can legitimately hold two, because the rule did not exist when it was
-     * written. Both were imported; `Layout.rebuildHomeStations` then dropped one by iteration order
-     * with a log line, and the next capture wrote that arbitrary choice back permanently. The user
-     * ended up with a home they never chose and nothing to say which had been theirs.
+     * A legacy file naming two homes for one locomotive imports one of them (OB-075).  The import writes "home"
+     * straight into the configuration, so it bypassed setHome's duplicate sweep.
      */
     @Test
     public void testAnImportLeavesOneHomePerLocomotive() throws Exception
@@ -1273,15 +1035,13 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         session.open(Arrays.asList(page));
 
-        // Homes live in a configuration, so there has to be one for the import to write into.
+        // Homes live in a configuration, so there has to be one to write into.
         session.getStore().createConfiguration("Only", null);
         session.getStore().setActiveConfiguration("Only");
 
         org.json.JSONArray points = new org.json.JSONArray();
 
-        // Both squares carry a sensor the diagram has - 11 at 1,1 and 12 at 4,1 - and both name the
-        // SAME locomotive as home, which is what a file written before the one-home rule looks like.
-        // which is what a file written before the one-home rule looks like.
+        // Both squares carry a sensor the diagram has (11 at 1,1 and 12 at 4,1) and name the SAME locomotive as home.
         org.json.JSONObject first = new org.json.JSONObject();
         first.put("name", "Hauptbahnhof");
         first.put("station", true);
@@ -1320,15 +1080,10 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
     /**
      * An import says what it left on a square already taken: a placement onto a square another train stands on, and a
-     * home onto a square that is already another train's home (OB-304).
-     *
-     * Both were skipped without a word - the square keeps its train and its home, which is right, and the operator was
-     * told nothing about the train the file put there.  The same train already on its own square, which is what a file
-     * imported a second time meets, is nothing to say.
+     * home onto a square that is already another train's home (OB-304).  The same train already on its own square,
+     * which a second import meets, is nothing to say.
      *
      * MUTATION: skip either silently again, or name the train already there as another, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAnImportSaysWhatItLeftOnATakenSquare() throws Exception
@@ -1376,17 +1131,10 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
     /**
      * A facing the square records is kept by an import only where trains may arrive that way, and counted as the guess
-     * it is (OB-304).
-     *
-     * Where the old file cannot say which way a placed train faces, the facing the square last recorded was kept as it
-     * stood - unchecked against the ways trains may arrive, though the guess made in its place prefers one of
-     * those, and uncounted, so the log said no facing was guessed.  Here the middle square of a line, with
-     * arrivals from the east barred, records the barred way; the file places a train there with no edges to say.  Then,
-     * the bar lifted, the same way is one trains may arrive in, and is kept - and counted.
+     * it is (OB-304).  The middle square of a line with arrivals from the east barred records the barred way; then,
+     * with the bar lifted, the same way is kept and counted.
      *
      * MUTATION: keep any recorded facing again, or keep one without counting it, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAnImportKeepsARecordedFacingOnlyWhereTrainsMayArrive() throws Exception
@@ -1456,12 +1204,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
     /**
      * The import's message names every skip it counts or lists (OB-304): the trains and homes left on a taken square,
-     * and the homes the file named twice - each read by the viewer's import door into the message, through its own
-     * sentence in the English bundle.
+     * and the homes the file named twice, each through its own sentence in the English bundle.
      *
      * MUTATION: leave any of the three out of the message, and this fails naming it.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheImportMessageNamesEverySkip() throws Exception
@@ -1494,24 +1239,10 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         }
     }
     /**
-     * The import NAMES the signals it will no longer drive, rather than counting them.
-     *
-     * **An aggregate that cannot say the thing the operator needs.** A legacy file's edge commands
-     * are mostly switch positions, which the derivation reproduces from the track diagram and which
-     * nobody has to think about. A signal is the exception: the new model drives one only where the
-     * operator pairs it with a station, by address, from that station's own menu.
-     *
-     * Measured on Adam's own file, which is where this came from. Twelve signals were driven red by
-     * hand; he paired seven from memory; the other five stay green after every arrival. The report he
-     * saw said "69 connections with commands" - true, useless, and it means three of the twelve. The
-     * model does not obey signals, so no train is misrouted, but four stations show an aspect that
-     * lies about occupancy until five specific pairings are made.
-     *
-     * **Named, not compared, and on purpose.** Deciding which of these is already paired means
-     * resolving each address to a square through the reduction - and this report runs on a file that
-     * has not been imported yet, so the reduction it would need is the one the import is about to
-     * replace. Naming a signal the operator has already paired costs them a glance; omitting one
-     * costs them a signal that lies for as long as the railway runs.
+     * The import NAMES the signals it will no longer drive, rather than counting them: the new model drives a signal
+     * only where the operator pairs it with a station.  Named, not compared, because deciding which is already paired
+     * needs the reduction the import is about to replace; naming one already paired costs a glance, omitting one leaves
+     * a signal that lies for as long as the railway runs.
      *
      * MUTATION: removing the signal block fails the second assertion; the first is the control that
      * stops it passing by reporting nothing at all.
@@ -1525,9 +1256,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         java.util.List<String> without = session.whatALegacyImportLeaves(switchesOnly);
 
-        // THE CONTROL, twice over: the report works at all, and a file whose commands are only switch
-        // positions gets NO signal line - which is what stops the assertion below being satisfied by
-        // a report that names something on every file.
+        // THE CONTROL: the report works at all, and a file whose commands are only switch positions gets NO signal
+        // line.
         assertEquals(without.size(), 1,
             "expected exactly the edge-command line for a file whose only extra is a switch "
             + "position, and got: " + without);
@@ -1557,11 +1287,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "the signal line does not name both addresses, which is the whole of what it is for - "
             + "the operator works down it with Pair Signal open: " + named);
 
-        // TWO, not three: Signal 116 is authored on both edges and is one signal to pair.
-        //
-        // Asserted as the RENDERED COUNT rather than `line.contains("2")`.  The addresses
-        // are in the same sentence, so a substring check passes on a wrong count of 3 as soon as any
-        // address in the list contains a digit 2 - which is the ordinary case for a real file.
+        // TWO, not three: Signal 116 is authored on both edges and is one signal to pair.  Asserted as the RENDERED
+        // COUNT, since `line.contains("2")` passes on a wrong 3 when any address contains a 2.
         assertTrue(line.startsWith("2 "),
             "the line should begin with the number of distinct signals, and say two - 116 appears on "
             + "two edges and is still one signal to pair.  Line was: " + line);
@@ -1573,12 +1300,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * The signal-name parser takes signals and leaves everything else alone.
-     *
-     * A legacy command names its accessory as a display string, so this is string work on data the
-     * user could have typed. Each row below is a way that has gone wrong somewhere in this tree: a
-     * switch that must not be read as a signal, a name that merely BEGINS with the word, a number
-     * that does not parse, and the null that arrives from a command with no `acc` at all.
+     * The signal-name parser takes signals and leaves everything else alone: switches, names that merely begin with the
+     * word, bad numbers, null.
      */
     @Test
     public void testTheSignalNameParserIsNotFooled() throws Exception
@@ -1596,14 +1319,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signalbox 4"),
             "a user-named accessory that merely begins with the word is not a signal");
 
-        // THE NAME THIS PROGRAM ACTUALLY GENERATES for anything that is not the implicit protocol.
-        // `Accessory.getNameWithProtocol` appends the decoder, so a DCC railway writes
-        // "Signal 116 DCC" - and parsing the whole remainder as a number returned null for every one
-        // of them.  The address set stayed empty and the report written to stop a signal being
-        // silently left out was silent about an entire protocol.
-        //
-        // Adam's own five signals are MM2, which is exactly why a fixture built from his file could
-        // not see this.
+        // The name this program generates for anything not on the implicit protocol: `Accessory.getNameWithProtocol`
+        // appends the decoder ("Signal 116 DCC"), and parsing the whole remainder as a number returned null for all of
+        // them.
         assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 116 DCC"),
             Integer.valueOf(116), "a DCC signal is a signal");
 
@@ -1613,8 +1331,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal east"),
             "a report that throws on a malformed old file is worse than one that leaves a line out");
 
-        // NOT AN ADDRESS, though Integer.valueOf takes both.  Rendering "-5" into the
-        // operator's work list sends them looking for a signal that cannot exist.
+        // NOT AN ADDRESS, though Integer.valueOf takes both: "-5" would send the operator looking for a signal that
+        // cannot exist.
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal -5"),
             "a negative number is not an accessory address");
 
@@ -1628,26 +1346,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a command with no acc at all");
     }
     /**
-     * A legacy import says it is leaving hand-written locks behind.
-     *
-     * A 2.8.1 edge could carry `lockedges` - *"when this edge is taken, these others are locked
-     * too"* - and the diagram model derives locks from geometry instead: `GraphReducer.deriveLocks`
-     * locks any two edges that occupy a shared tile.
-     *
-     * That reproduces most of them and **cannot reproduce the conservative kind**: a lock between
-     * edges that share no tile, written by hand for parallel adjacent tracks, an electrical section, a
-     * clearance rule. Those vanish, and what makes it worth a line is that two trains are then
-     * permitted to move at once where the file forbade it.
-     *
-     * The import already speaks about the four other things it drops - edge commands, edge lengths,
-     * the timetable, route activations - and presents that list as the whole account. This was the
-     * fifth thing and the only silent one. Adam's own legacy file carries 116 references across 50 of
-     * its 90 edges.
-     *
-     * **Counted, not compared.** Deciding which of them the geometry already covers means building
-     * the derived graph inside the report, and a report that names locks which turn out to be
-     * reproduced is wrong in the safe direction; one that is silent about locks which are not is
-     * wrong in the other.
+     * A legacy import says it is leaving hand-written locks behind.  `GraphReducer.deriveLocks` reproduces locks from
+     * shared tiles but not the conservative kind between edges that share none, after which two trains may move at once
+     * where the file forbade it.  Counted, not compared: naming locks the geometry already covers errs the safe way.
      *
      * MUTATION: removing the `withLocks` block from `whatALegacyImportLeaves` fails the second
      * assertion, and the first is what stops that passing by reporting nothing at all.
@@ -1661,7 +1362,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         java.util.List<String> without = session.whatALegacyImportLeaves(plain);
 
-        // THE CONTROL: the report is working at all, and says the one thing this file does drop.
+        // THE CONTROL: the report works at all, and says the one thing this file does drop.
         assertEquals(without.size(), 1,
             "expected exactly the edge-length line for a file whose only extra is a length, and got: "
             + without);
@@ -1690,19 +1391,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             + "is for: " + with);
     }
     /**
-     * A modern export coming back through the legacy door is spotted by each of its three keys.
-     *
-     * `detectImportFormat` calls any file whose `points` is an ARRAY a legacy graph, and a
-     * configuration serialized by `Layout.toJSON` is one of those - so a modern setup exported and
-     * re-imported comes through a door that carries none of the fields the modern format added.
-     *
-     * **The first version of this check asked for `blocks` and the key is `block`**, singular, as
-     * `Layout:7533` reads it and `AutonomyBuilder:844` writes it. The detector therefore missed every
-     * file whose only modern key was that one, and nothing caught it because the fix shipped with no
-     * test at all.
-     *
-     * Each key is asserted separately for that reason: a test that checked only `autoDestination`
-     * would have passed against the broken one.
+     * A modern export coming back through the legacy door is spotted by each of its three keys (`detectImportFormat`
+     * calls any file whose `points` is an ARRAY legacy).  Each key is asserted separately: one check once asked for
+     * `blocks` where the key is `block`, and a test of only `autoDestination` would have passed.
      *
      * MUTATION: renaming any of the three keys in `whatALegacyImportLeaves` fails its own assertion
      * here.
@@ -1725,8 +1416,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
                 + "reported as looking like an export from this version.  Report was: " + said);
         }
 
-        // AND THE CONTROL: a genuine legacy file must say nothing, or the check above is satisfied by
-        // a report that fires on everything.
+        // AND THE CONTROL: a genuine legacy file must say nothing, or the check above passes on a report that fires on
+        // everything.
         String plain = "{'points':[{'name':'A','s88':1}],'edges':[]}".replace('\'', '"');
 
         assertEquals(session.whatALegacyImportLeaves(new org.json.JSONObject(plain)),

@@ -36,18 +36,14 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.util.I18n;
 
 /**
- * A square's arrows are the whole of which way trains may run through it (OB-351).
+ * A square's arrows are the whole of which way trains may run through it (OB-351): "Align it so that the arrows tell
+ * the full story."  Arrows are drawn per arm (a side is green where any road through it lets a train out) while
+ * directions were stored per road, so a road could be shut a way its arm's arrow showed open.
  *
- * Adam, of a switch whose spur was closed while its main line ran both ways: *"into spur should simply require S to be
- * green, and out of spur should require W to be green.  Align it so that the arrows tell the full story.   If we need
- * more granular control, we can just prevent movement on the track attached to s."*  The arrows are drawn per arm - a
- * side of the square is green where any road through it lets a train out - and the directions were stored per road, so a
- * road could be shut a way its arm's arrow showed open.  Switch 118 on his example layout held its main line both ways
- * and its spur closed: drawn exactly as a spur trains may leave toward the toe, it let none out.
- *
- * Each claim asks a train's own question of the graph - entered by this side, may it leave by that one - and holds the
- * answer to the arrows drawn: a move is allowed exactly where the arm it leaves by is green and the blades run that way.
- * The switch is `test/layouts/single-switch`'s, toe west, main line east and spur north; the other kinds are drawn here.
+ * Each claim asks a train's own question of the graph (entered by this side, may it leave by that one) and holds the
+ * answer to the arrows drawn: a move is allowed exactly where the arm it leaves by is green and the blades run that
+ * way.  The switch is `test/layouts/single-switch`'s, toe west, main line east and spur north; the other kinds are
+ * drawn here.
  *
  * @author Adam
  */
@@ -98,15 +94,13 @@ public class testTheArrowsTellTheWholeStory
      * is green, east to west and out of the spur where west is, into the spur where north is.
      *
      * MUTATION: store a road's answer other than its two arms' in `applyArmMask`, and this fails.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testEveryCombinationTheClickSetsMovesAsItsArrowsShow() throws Exception
     {
         allOpen();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = panel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = panel();
 
         Set<Set<Side>> seen = new LinkedHashSet<>();
 
@@ -126,13 +120,11 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * A setup holding a switch's main line both ways and its spur closed - switch 118 on Adam's layout - is read as its
+     * A setup holding a switch's main line both ways and its spur closed (switch 118 on Adam's layout) is read as its
      * arrows draw it: the spur runs toward the toe, the square is said once, the setup is saved that way, and the path
      * out of the spur is there.
      *
      * MUTATION: leave out `normalizeToArms` from `AutonomyCompanionStore.applyTo`, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testASpurClosedUnderAGreenToeIsReadAsItsArrowsShow() throws Exception
@@ -208,13 +200,11 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * No door stores a road shut a way its square's arrow shows open: the session's single-road and bulk setters, the
-     * run setter the branch submenus called, the one-way tool through the switch and through its spur, and Allow Every
-     * Path.  Every road and answer of the switch is tried through the single-road setter, from both ways open - which
-     * holds the brief's own example, main line toward east and spur both ways, drawn all green and refusing east to west.
+     * run setter the branch submenus called, the one-way tool through the switch and its spur, and Allow Every Path.
+     * Every road and answer of the switch is tried through the single-road setter, from both ways open.
      *
-     * MUTATION: record what was wanted in `AutonomySession.recordSquare` and leave out `normalizeToArms`, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: record what was wanted in `AutonomySession.recordSquare` and leave out `normalizeToArms`, and this
+     * fails.
      */
     @Test
     public void testNoDoorStoresAMoveItsArrowsDoNotShow() throws Exception
@@ -285,12 +275,10 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * A switch's menu offers its arms and every branch at once, and no road of its own: a road's submenu could shut the
-     * spur's way out at the toe under the main line's green arrow.  A crossing's roads end at arms of their own, so its
-     * roads keep their submenus.
+     * spur's way out at the toe under the main line's green arrow.  A crossing's roads end at arms of their own, so
+     * they keep their submenus.
      *
      * MUTATION: offer the branch submenus on every square with more than one road again, and this fails.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testASwitchsMenuOffersItsArmsAndNoRoadOfItsOwn() throws Exception
@@ -320,10 +308,10 @@ public class testTheArrowsTellTheWholeStory
 
         try
         {
-            final org.traincontrol.gui.AutonomyEditorPanel[] other = new org.traincontrol.gui.AutonomyEditorPanel[1];
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] other = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                other[0] = new org.traincontrol.gui.AutonomyEditorPanel(kinds.session, "main", () -> { }));
+                other[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(kinds.session, "main", () -> { }));
 
             Set<String> crossing = menuTexts(other[0].buildTileMenu(kinds.crossing, null));
 
@@ -341,14 +329,12 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * The other squares whose roads share an arm - a three-way, a double slip, a permanent left and a permanent
-     * three-way - hold no move their arrows hide, whatever road is set to whatever answer, and keep their blades' own
-     * restriction: no road is left an answer the hardware refuses, and the click steps only through what it may store.
-     * A crossing and a double curve, whose roads end at arms of their own, store each answer exactly as it was set.
+     * The other squares whose roads share an arm (a three-way, a double slip, a permanent left and a permanent
+     * three-way) hold no move their arrows hide and keep their blades' own restriction: no road is left an answer the
+     * hardware refuses.  A crossing and a double curve, whose roads end at arms of their own, store each answer as set.
      *
-     * MUTATION: record what was wanted in `AutonomySession.recordSquare` and leave out `normalizeToArms`, and this fails.
-     *
-     * @throws Exception from the session
+     * MUTATION: record what was wanted in `AutonomySession.recordSquare` and leave out `normalizeToArms`, and this
+     * fails.
      */
     @Test
     public void testEveryKindOfSquareRunsAsItsArrowsShowWithinItsBlades() throws Exception
@@ -378,10 +364,10 @@ public class testTheArrowsTellTheWholeStory
                     }
                 }
 
-                final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+                final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
-                    panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(on, "main", () -> { }));
+                    panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(on, "main", () -> { }));
 
                 for (int click = 1; click <= 20; click++)
                 {
@@ -423,10 +409,8 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * Why a square's moves and its arrows disagree, or null where they agree: a train entering by one end of a road may
-     * leave by the other exactly where that end's arrow is green and the blades run that way.
-     *
-     * Not half of a two-square crossing: the side its squares meet at draws no arrow, and each track is told by its two
-     * outer ends, one on each square (OB-320, OB-322).  Nor track no station is on, which draws no arrows at all (OB-353).
+     * leave by the other exactly where that end's arrow is green and the blades run that way.  Not half of a
+     * two-square crossing (its meeting side draws no arrow; OB-320), nor track no station is on (OB-353).
      */
     static String hidden(AutonomySession on, TileKey square)
     {
@@ -509,10 +493,7 @@ public class testTheArrowsTellTheWholeStory
         assertNull(hidden(session, turnout), after + ": the switch hides a move from its arrows");
     }
 
-    /**
-     * Every road of the square stores an answer its blades leave a meaning.  A road left at its default stores
-     * nothing: a permanent turnout's is `BOTH`, which the blades narrow to the one way there is.
-     */
+    /** Every road of the square stores an answer its blades leave a meaning; a road at its default stores nothing. */
     private static void assertPossible(AutonomySession on, TileKey square, String after)
     {
         for (Map.Entry<RouteId, Route> road : on.getGraph().getRoutes(square).entrySet())
@@ -564,12 +545,9 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * A door other than opening that brings roads shut a way their arrows show open into the setup says so, once per
-     * square, and leaves the setup marked unsaved: a write straight into the store followed by the rebuild, as the
-     * panel's doors make, and a bundle import (OB-351; C1).
+     * square, and leaves the setup marked unsaved: a write straight into the store followed by the rebuild (OB-351).
      *
      * MUTATION: leave the squares brought to their arrows out of `AutonomySession.rebuild`, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testADoorOtherThanOpeningSaysWhichSquaresItBroughtToTheirArrows() throws Exception
@@ -610,13 +588,7 @@ public class testTheArrowsTellTheWholeStory
         }
     }
 
-    /**
-     * A bundle import whose track decisions shut a road its arrows show open says so as well (C1).
-     *
-     * MUTATION: as the claim above.
-     *
-     * @throws Exception from the session
-     */
+    /** A bundle import whose track decisions shut a road its arrows show open says so as well.  MUTATION: as above. */
     @Test
     public void testABundleImportSaysWhichSquaresItBroughtToTheirArrows() throws Exception
     {
@@ -663,12 +635,10 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * A setup that cannot be saved as it opens does not say it was: the squares are said without "saved that way", and the
-     * failure is said as its own line with its reason, every time it is opened that way (C2).
+     * A setup that cannot be saved as it opens does not say it was: the squares are said without "saved that way", and
+     * the failure is said as its own line with its reason, every time it is opened that way.
      *
      * MUTATION: put the saved sentence back on every line, or leave the failure unsaid, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testASetupThatCannotBeSavedAsItOpensSaysSo() throws Exception
@@ -724,16 +694,12 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * Track no station is on draws no arrows and is grayed in the editor, and a click there changes nothing; track joined
-     * to a station keeps its arrows (OB-353).  Adam: *"make it so that arrows are hidden from track segments not connected
-     * (naively) to any station.  in this case, it's just cosmetic route tiles, so 3,4 should also be greyed out.  make
-     * sure 4,14 keeps arrows."*  On the frozen railway: the route button at 1 - Main 9,4, which carries the line between
-     * the two buttons beside it and so reaches nothing, as 3,4 does on his; a route button on a line that reaches stations,
-     * as 4,14 is on his; and a straight, a sensor and a straight added on blank squares, joined to nothing.
+     * Track no station is on draws no arrows and is grayed in the editor, and a click there changes nothing; track
+     * joined to a station keeps its arrows (OB-353).  On the frozen railway: the route button at 1 - Main 9,4, which
+     * carries the line between the two buttons beside it and so reaches nothing; a route button on a line that reaches
+     * stations; and a straight, a sensor and a straight added on blank squares, joined to nothing.
      *
      * MUTATION: draw the arrows of every square again, and this fails.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testTrackNoStationIsOnDrawsNoArrows() throws Exception
@@ -755,7 +721,7 @@ public class testTheArrowsTellTheWholeStory
             assertFalse(frozen.getRoutes(button).isEmpty(), "precondition: the route button at " + button + " carries no"
                 + " track");
 
-            final org.traincontrol.gui.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
 
             // A route button on a line that reaches stations, as 4,14 is on his, drawing its arrows
             TileKey track = null;
@@ -813,12 +779,10 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * Track no station is on still takes every other edit (OB-353; Adam, asked: "yes, it can accept edits"): a length set
-     * on a square of it from the editor is kept.
+     * Track no station is on still takes every other edit (OB-353): a length set on a square of it from the editor is
+     * kept.
      *
      * MUTATION: gray it by `isIgnored`, which refuses every edit, and this fails.
-     *
-     * @throws Exception from the panel
      */
     @Test
     public void testTrackNoStationIsOnStillTakesALength() throws Exception
@@ -835,7 +799,7 @@ public class testTheArrowsTellTheWholeStory
 
             TileKey[] stray = aPieceOfTrackOnItsOwn(snapshot);
 
-            final org.traincontrol.gui.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
 
             final TileKey square = stray[0];
 
@@ -857,9 +821,8 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * A straight, a sensor and a straight added east to west on blank squares of a page of the frozen railway, with a blank
-     * square at each end - all three join nothing above or below - and the session rebuilt: a piece of track no station
-     * is on.
+     * A straight, a sensor and a straight added east to west on blank squares of a frozen-railway page, a blank square
+     * at each end, and the session rebuilt: track no station is on.
      */
     private static TileKey[] aPieceOfTrackOnItsOwn(support.Scenario snapshot) throws Exception
     {
@@ -908,31 +871,31 @@ public class testTheArrowsTellTheWholeStory
         return out;
     }
 
-    private static org.traincontrol.gui.AutonomyEditorPanel panelOn(AutonomySession on, String page) throws Exception
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panelOn(AutonomySession on, String page) throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(on, page,
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(on, page,
             () -> { }));
 
         return panel[0];
     }
 
-    private static org.traincontrol.gui.AutonomyEditorPanel panel() throws Exception
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session,
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session,
             scenario.getPages().get(0).getName(), () -> { }));
 
         return panel[0];
     }
 
     /** A left click on a square, as the editor takes it. */
-    private static void cycle(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square) throws Exception
+    private static void cycle(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square) throws Exception
     {
         final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
 
         cycle.setAccessible(true);
 
@@ -966,10 +929,7 @@ public class testTheArrowsTellTheWholeStory
 
     // ---------------------------------------------------------------- every other kind, drawn here
 
-    /**
-     * One page holding each kind of square with more than one road, each with track off every arm, in a session of its
-     * own in a folder of its own.
-     */
+    /** One page holding each kind of square with more than one road, each with track off every arm. */
     private static final class Kinds
     {
         private final File folder;

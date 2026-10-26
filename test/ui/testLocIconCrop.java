@@ -9,17 +9,9 @@ import support.SourceOf;
 /**
  * FR-032: a crop remembers the picture it was cut from, so it can be cropped again.
  *
- * Adam: "once a custom icon is set, make it possible to crop/pan without first reselecting the
- * source."
- *
- * The wrinkle that makes this worth a test rather than a line of code: re-cropping the icon that is
- * SET means cropping a crop, and everything outside the last crop is already gone - so panning could
- * only ever go tighter, never back out. That is not what "crop/pan" means, and it would have been the
- * next ticket. A crop therefore keeps a note beside it naming the photograph it came from.
- *
- * Notes rot. The photograph is the user's, in the user's folder, and nothing here has any claim on it
- * - they may move it, rename it or delete it between one crop and the next. So the interesting cases
- * are the ones where the note is wrong, and they are what most of this checks.
+ * Re-cropping the icon that is SET means cropping a crop, so panning could only go tighter; a note beside the crop
+ * names the photograph it came from. Notes rot (the user may move, rename or delete the photograph), so most of this
+ * checks the cases where the note is wrong.
  *
  * @author Adam
  */
@@ -34,22 +26,14 @@ public class testLocIconCrop
     @Test
     public void testACropRemembersWhereItCameFrom() throws Exception
     {
-        // On the EDT, as every other test in this package builds one (C3).  A Swing window put
-        // together off the event thread is a race that usually wins, which is the worst kind.
-        // The window reads the layout preference in its constructor, so without this it opens the
-        // operator's own railway (OB-111).
+        // On the EDT, as every test in this package builds one. The window reads the layout preference in its
+        // constructor, so without the sandbox it opens the operator's own railway (OB-111).
         support.LayoutSandbox sandbox = null;
 
         try
         {
-            // INSIDE the try, because everything below it throws.
-            //
-            // The window constructor, the temporary folder, the writes - and the
-            // SkipException below, which is not a failure at all but an ordinary
-            // outcome on a machine where the icon folder cannot be made.  Opened
-            // outside, every one of those left the machine-global layout preference
-            // pointing at a folder under %TEMP%, which is the railway TrainControl
-            // opens next time (OB-111).
+            // INSIDE the try, because everything below it throws, including the SkipException: opened outside, each of
+            // those left the layout preference pointing at a %TEMP% folder (OB-111).
             sandbox = support.LayoutSandbox.open();
 
             final TrainControlUI[] built = new TrainControlUI[1];
@@ -68,12 +52,8 @@ public class testLocIconCrop
             write(crop, "not really a png");
             write(source, "not really a jpeg");
 
-            // A crop of OURS is the only kind that carries a note - `cropSourceOf` asks isLocIconFile
-            // first, and a picture in the user's own folder is never ours to annotate.
-            // The round trip, in the folder crops actually live in.
-            // A name of its own, because tc_loc_icons is the REAL folder and already holds Adam's crops
-            // (C3).  A fixed name races any other run - the battery runs this class while anything else
-            // might be running it too - and two runs sharing one file fail each other for no reason.
+            // A crop of OURS is the only kind that carries a note: `cropSourceOf` asks isLocIconFile first. A name of
+            // its own, because tc_loc_icons is the REAL folder and a fixed name races any other run.
             File ours = org.traincontrol.util.Util.getLocIconFile(
                 "fr032_test_" + java.util.UUID.randomUUID() + ".png");
 
@@ -120,16 +100,8 @@ public class testLocIconCrop
                     "the crop was deleted and its note was left behind - a file in the application's own "
                     + "folder that nothing points at and nothing would ever remove");
 
-                // AND THAT ANYBODY CALLS ANY OF IT (C4).
-                //
-                // Everything above tests the three helpers directly, and all of it passes with the whole
-                // feature unwired: nothing fails if `cropLocIcon` stops writing the note, if `recropLocIcon`
-                // stops reading it, or if re-crop stops deleting the crop it replaced. That is the same
-                // fault this project has a name for - extracting a rule moves the defect to its call site -
-                // and the OB-117 test had to be patched for it two days ago.
-                //
-                // Read rather than run: these are private, on a frame, driven by a modal dialog. What this
-                // catches is the wiring being dropped, which is what a reader can break here.
+                // And that anybody calls any of it: the helper checks above pass with the feature unwired. Read rather
+                // than run (private, on a frame, driven by a modal dialog); this catches the wiring being dropped.
                 assertTrue(SourceOf.declaration("private String cropLocIcon(").contains("rememberCropSource("),
                     "a crop is saved without noting where it came from, so re-cropping it can never pan "
                     + "back out to anything the crop discarded");
@@ -142,13 +114,8 @@ public class testLocIconCrop
                 assertTrue(recrop.contains("cropSourceNoteOf("),
                     "re-crop no longer READS the note when the picture is missing");
 
-                // AND WRITES IT BACK, which is the half that carries the path.
-                //
-                // Checking only the read did not bind: a validator replaced the write-back with an empty
-                // block and this test passed, with the data-loss defect fully restored - the old note is
-                // still deleted, and the fresh one still names the crop. Reading a value and then not using
-                // it is precisely the shape of that defect, so a test that only proves the read happened
-                // proves nothing about it.
+                // And writes it back, the half that carries the path: checking only the read let an emptied write-back
+                // pass with the data-loss defect restored.
                 assertTrue(recrop.contains("rememberCropSource(fresh, remembered)"),
                     "re-crop reads the old note and never writes it over the fresh one, so the fresh note "
                     + "names the crop this was cut from and the path to the photograph is gone the moment "
@@ -181,9 +148,7 @@ public class testLocIconCrop
         }
     }
 
-    /**
-     * Writes a small file, since none of these are ever decoded as pictures.
-     */
+    /** Writes a small file, since none of these are ever decoded as pictures. */
     private void write(File where, String what) throws Exception
     {
         java.nio.file.Files.write(where.toPath(),
@@ -191,13 +156,8 @@ public class testLocIconCrop
     }
 
     /**
-     * An unreadable picture is refused whether or not Crop is ticked.
-     *
-     * The guard for this shipped inside the `if (crop.isSelected())` branch, so untick Crop and pick a
-     * CMYK JPEG or a `.png` that is really something else - both get past the chooser's extension
-     * filter - and nothing read the file at all: it was assigned, and the crop it superseded was
-     * deleted. The note recording this bug was sitting on that same unguarded branch (validator,
-     * 2026-08-28).
+     * An unreadable picture is refused whether or not Crop is ticked: the guard must not sit inside the `if
+     * (crop.isSelected())` branch, or a CMYK JPEG or a `.png` that is really something else goes unread.
      *
      * MUTATION: moving the call back inside the crop branch fails this, and so does removing it.
      */
@@ -210,8 +170,8 @@ public class testLocIconCrop
         int asks = source.indexOf("pictureCanBeRead(f, source)");
         int ticked = source.indexOf("if (crop.isSelected())");
 
-        // Both present before either is ordered - indexOf answers -1 for something absent, and -1 is
-        // less than every real index, so the ordering alone passes when the guard is deleted outright.
+        // Both present before either is ordered: indexOf answers -1 for something absent, which would pass the ordering
+        // if the guard were deleted.
         assertTrue(asks >= 0,
             "nothing asks whether the picked picture can be read, so a file that renders as nothing "
             + "is assigned to the locomotive and the crop it replaces is deleted");
@@ -232,35 +192,24 @@ public class testLocIconCrop
     }
 
     /**
-     * The note carries the view, and an older note still reads as a path (OB-125).
+     * The note carries the view, and an older note still reads as a path (OB-125). The compatibility half matters:
+     * every note FR-032 wrote is a bare path with no second line, so a reader that needs two lines would break
+     * re-cropping for the whole existing set.
      *
-     * Adam: "if an image is cropped, upon re edit, the crop editor initially shows the default
-     * zoom/crop instead of the active crop."
-     *
-     * The compatibility half is the part worth writing down. Every note FR-032 wrote is a bare path
-     * with no second line, and every crop Adam already has carries one - so a reader that needs two
-     * lines would have quietly broken re-cropping for the whole existing set.
-     *
-     * MUTATION: reading the note with `trim()` over the whole file rather than taking the first line
-     * fails the path assertion, because the view line comes back as part of the filename.
+     * MUTATION: reading the note with `trim()` over the whole file rather than taking the first line fails the path
+     * assertion, because the view line comes back as part of the filename.
      */
     @Test
     public void testACropRemembersTheViewItWasTakenAt() throws Exception
     {
-        // The window reads the layout preference in its constructor, so without this it opens the
-        // operator's own railway (OB-111).
+        // The window reads the layout preference in its constructor: the sandbox keeps it off the operator's railway
+        // (OB-111).
         support.LayoutSandbox sandbox = null;
 
         try
         {
-            // INSIDE the try, because everything below it throws.
-            //
-            // The window constructor, the temporary folder, the writes - and the
-            // SkipException below, which is not a failure at all but an ordinary
-            // outcome on a machine where the icon folder cannot be made.  Opened
-            // outside, every one of those left the machine-global layout preference
-            // pointing at a folder under %TEMP%, which is the railway TrainControl
-            // opens next time (OB-111).
+            // INSIDE the try, because everything below it throws, including the SkipException: opened outside, each of
+            // those left the layout preference pointing at a %TEMP% folder (OB-111).
             sandbox = support.LayoutSandbox.open();
 
             final TrainControlUI[] built = new TrainControlUI[1];
@@ -375,18 +324,12 @@ public class testLocIconCrop
     }
 
     /**
-     * The panel opens on the view it is given, and on the covering crop when it is given none.
+     * The panel opens on the view it is given, and on the covering crop when it is given none. Driven with no display;
+     * `getScale` settles the opening view. The control matters more than the assertion: without it a `setView` that did
+     * nothing would pass if the default were close.
      *
-     * Driven with no display, which the panel is built for - "it can be constructed, given a size and
-     * painted into a BufferedImage with no display attached". `getScale` is what settles the opening
-     * view, so asking for it is what makes this happen.
-     *
-     * The control matters more than the assertion here: without it, a `setView` that did nothing at
-     * all would pass if the default happened to be close.
-     *
-     * MUTATION: applying the view in `setView` rather than deferring it to `startAtCover` fails this,
-     * because the opening view then lands on top of it - which is the defect `setZoomFraction`
-     * already carries a comment about.
+     * MUTATION: applying the view in `setView` rather than deferring it to `startAtCover` fails this, because the
+     * opening view then lands on top of it.
      */
     @Test
     public void testTheCropPanelOpensOnARememberedView() throws Exception
@@ -396,8 +339,8 @@ public class testLocIconCrop
 
         double[] wanted = { 250.5, 200.25, 0.4, 2.5, 0.7 };
 
-        org.traincontrol.gui.LocIconCropDialog.CropPanel restored =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel restored =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         restored.setSize(600, 420);
         restored.setView(wanted);
@@ -408,8 +351,8 @@ public class testLocIconCrop
         restored.copyViewInto(got);
 
         // THE CONTROL: what the same panel does with no view to open on.
-        org.traincontrol.gui.LocIconCropDialog.CropPanel plain =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel plain =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         plain.setSize(600, 420);
         plain.getScale();
@@ -439,8 +382,8 @@ public class testLocIconCrop
         }
 
         // An unusable view is ignored rather than believed.
-        org.traincontrol.gui.LocIconCropDialog.CropPanel nonsense =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel nonsense =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         nonsense.setSize(600, 420);
         nonsense.setView(new double[] { 1, 2, Double.NaN, 4, 5 });
@@ -459,14 +402,10 @@ public class testLocIconCrop
     }
 
     /**
-     * A remembered view crops the same part of the photograph in a dialog of another shape (OB-257; Adam, 2026-10-06:
-     * "Fix OB-257").
-     *
-     * The five numbers saved held the zoom relative to the panel, and the crop window's size relative to the panel too,
-     * so the same view reopened in a dialog resized to another shape cropped a different rectangle.  A sixth number now
-     * holds the crop's width in the photograph's own pixels, and the zoom is worked out from it.
-     *
-     * The control: the same view without the sixth number does crop differently there, or this would prove nothing.
+     * A remembered view crops the same part of the photograph in a dialog of another shape (OB-257): the five numbers
+     * held the zoom relative to the panel, so a sixth holds the crop's width in the photograph's own pixels and the
+     * zoom is worked out from it. The control: the same view without the sixth number does crop differently there, or
+     * this would prove nothing.
      *
      * MUTATION: open on the saved zoom alone again, and this fails.
      */
@@ -476,8 +415,8 @@ public class testLocIconCrop
         java.awt.image.BufferedImage picture =
             new java.awt.image.BufferedImage(800, 600, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        org.traincontrol.gui.LocIconCropDialog.CropPanel first =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel first =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         first.setSize(600, 420);
         first.setView(new double[] { 250.5, 200.25, 0.4, 2.5, 0.7 });
@@ -490,8 +429,8 @@ public class testLocIconCrop
         first.copyViewInto(saved);
 
         // ANOTHER SHAPE OF DIALOG: tall rather than wide
-        org.traincontrol.gui.LocIconCropDialog.CropPanel again =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel again =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         again.setSize(420, 640);
         again.setView(saved);
@@ -500,8 +439,8 @@ public class testLocIconCrop
         java.awt.Rectangle reopened = again.sourceRect();
 
         // THE CONTROL: the five numbers alone, in the same tall dialog
-        org.traincontrol.gui.LocIconCropDialog.CropPanel byZoom =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel byZoom =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
 
         byZoom.setSize(420, 640);
         byZoom.setView(java.util.Arrays.copyOf(saved, 5));
@@ -520,11 +459,9 @@ public class testLocIconCrop
     }
 
     /**
-     * The view is handed in only when the re-crop works from the photograph it was measured over.
-     *
-     * The fallback crops the crop itself. The same numbers point somewhere else in that picture, so
-     * opening on them would be worse than opening on the default - and the note rewritten in that
-     * branch names the photograph, not the crop, so no view may be stored against it either.
+     * The view is handed in only when the re-crop works from the photograph it was measured over: the fallback crops
+     * the crop itself, where the same numbers point somewhere else, and the note it rewrites names the photograph, so
+     * no view may be stored against it.
      */
     @Test
     public void testTheViewOnlyTravelsWithItsOwnPicture() throws Exception
@@ -548,22 +485,13 @@ public class testLocIconCrop
     }
 
     /**
-     * Pressing OK at full zoom-out does not allocate an image squared in the source.
+     * Pressing OK at full zoom-out does not allocate an image squared in the source: at `zoomFraction = 0` the scale is
+     * half the fit, so the rectangle `contentOf` built was twice the source each way (~134 MB for a 4032 x 3024
+     * photograph) though the output is 296 x 114. The OutOfMemoryError lands in the OK listener on the EDT, so the user
+     * sees OK doing nothing.
      *
-     * `contentOf` built the whole overhanging rectangle at source resolution and then threw it away:
-     * the output is 296 x 114. At `zoomFraction = 0` - the left end of the slider, and what
-     * `setZoomFraction` clamps to - the scale is half the fit, so the rectangle is about twice the
-     * source each way and its **area is quadratic in the source and independent of the dialog's**
-     * **size**, because the window and the fit scale together. The finding's table: a 4032 x 3024
-     * phone photograph asks for ~134 MB, an 8000 x 6000 one ~528 MB, 12000 x 9000 ~1.2 GB.
-     *
-     * The `OutOfMemoryError` lands in the OK listener on the EDT, so what the user sees is not a
-     * crash: it is OK doing nothing and the dialog staying open.
-     *
-     * **Asserted on the allocation, not on the symptom.** Waiting for an OOM would need a JVM sized to
-     * fail, which is a test that passes on a bigger machine for the wrong reason. `contentOf` is asked
-     * directly, by reflection, what it built - and it must not be bigger than what the caller can use,
-     * which is the icon.
+     * Asserted on the allocation, not the symptom (an OOM would need a JVM sized to fail): `contentOf` is asked by
+     * reflection what it built, and it must not be bigger than the icon needs.
      *
      * MUTATION: allocating `region.width x region.height` again fails the size assertion below.
      */
@@ -576,12 +504,8 @@ public class testLocIconCrop
         java.awt.image.BufferedImage source =
             new java.awt.image.BufferedImage(8000, 6000, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        // PAINTED, so the composition can be asserted and not only its size.
-        //
-        // A blank source lets every assertion below pass against a bound that puts the photograph in
-        // the wrong place - swapping the scale and the offset, which is the one mistake the code’s
-        // own comment names, produces an image of identical dimensions.  Two blocks of different
-        // colors make "where did it land" answerable.
+        // Painted, so the composition can be asserted and not only its size: with two blocks of different colors "where
+        // did it land" is answerable (swapping the scale and the offset gives identical dimensions).
         java.awt.Graphics2D paint = source.createGraphics();
 
         try
@@ -596,22 +520,21 @@ public class testLocIconCrop
             paint.dispose();
         }
 
-        org.traincontrol.gui.LocIconCropDialog.CropPanel panel =
-            new org.traincontrol.gui.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
+        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel panel =
+            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
 
         panel.setSize(600, 420);
         panel.setZoomFraction(0.0);
 
         java.awt.Rectangle region = panel.sourceRect();
 
-        // PRECONDITION, and it is the finding: at the left end of the slider the frame hangs off the
-        // photograph in both directions, so the cheap getSubimage branch is never the one taken and
-        // the rectangle asked for is bigger than the picture it is cut from.
+        // PRECONDITION: at the left end of the slider the frame hangs off the photograph both ways, so the getSubimage
+        // branch is not the one taken.
         assertTrue(region.width > source.getWidth() && region.height > source.getHeight(),
             "the rectangle at full zoom-out no longer overhangs the source, so this test is not "
             + "exercising the branch it is about: " + region);
 
-        java.lang.reflect.Method contentOf = org.traincontrol.gui.LocIconCropDialog.CropPanel.class
+        java.lang.reflect.Method contentOf = org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel.class
             .getDeclaredMethod("contentOf", java.awt.Rectangle.class);
 
         contentOf.setAccessible(true);
@@ -631,8 +554,8 @@ public class testLocIconCrop
             + "inside the OK listener on the EDT - and what the user sees is OK doing nothing "
             + "(IPR-B4)");
 
-        // AND THE SHAPE IS KEPT, because the caller fits the cut into the icon and centers it: a
-        // bound that squashed the rectangle would put the photograph in the frame stretched.
+        // And the shape is kept: the caller fits the cut into the icon, so a bound that squashed the rectangle would
+        // stretch the photograph.
         double wanted = (double) region.width / region.height;
         double got = (double) cut.getWidth() / cut.getHeight();
 
@@ -643,18 +566,13 @@ public class testLocIconCrop
         // AND THE WHOLE WAY THROUGH still gives the icon that was asked for.
         java.awt.image.BufferedImage icon = panel.getCroppedImage();
 
-        // Both of these are structural: every return path of getCroppedImage is CONSTRUCTED at the
-        // icon size, so no value of `cut` can make them fail.  Kept as a shape check and not counted
-        // as evidence.
+        // Structural: every return path of getCroppedImage is CONSTRUCTED at the icon size, so these cannot fail; a
+        // shape check, not evidence.
         assertEquals(icon.getWidth(), OUT_WIDTH, "the icon is the wrong width");
         assertEquals(icon.getHeight(), OUT_HEIGHT, "the icon is the wrong height");
 
-        // AND THE PICTURE LANDED WHERE IT SHOULD, which is the assertion that can actually fail.
-        //
-        // The frame is centered on the source, so the middle of the cut is the middle of the
-        // photograph - red above, blue below.  A bound that scaled without moving the offset with it,
-        // or that translated before it scaled, puts the join somewhere else entirely while leaving
-        // every size assertion above green.
+        // And the picture landed where it should, the assertion that can fail: the frame is centered on the source, so
+        // the middle of the cut is the middle of the photograph (red above, blue below).
         int middle = cut.getWidth() / 2;
 
         java.awt.Color above = new java.awt.Color(cut.getRGB(middle, cut.getHeight() / 2 - 1), true);
@@ -670,16 +588,10 @@ public class testLocIconCrop
     }
 
     /**
-     * The picture's own tool is a wrench in its upper left that chooses the icon, and the pointer over it is the plain one
-     * (FR-104).
-     *
-     * Adam, 2026-09-29: *"instead of "right click to change icon", add a wrench icon to the upper-left of the locomotive
-     * icon."*  And on the pointer: *"change the cover icon for the loc icon from the hand to regular"*.  The right-click
-     * still opens the same chooser; the sentence telling you to right-click is gone with the need for it.
+     * The picture's tool is a wrench in its upper left that chooses the icon, and the pointer over it is the plain one
+     * (FR-104); the right-click still opens the same chooser.
      *
      * MUTATION: leave the hand on the picture, or wire the wrench to nothing, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheWrenchChoosesTheIconAndThePointerIsPlain() throws Exception
@@ -766,17 +678,11 @@ public class testLocIconCrop
     }
 
     /**
-     * A picture from the Central Station can be cropped here (FR-104).
-     *
-     * Adam, 2026-09-29: *"also, make central station supplied icons croppable locally."*  The crop mark was offered only on
-     * a picture of this computer's, and re-cropping refused anything else, so a locomotive showing the Central Station's
-     * own picture had nothing to crop with.  The crop is kept here, as every crop is; the Central Station's picture is
-     * kept beside it to crop again from, and never as one of the crops that replacing a crop deletes.
+     * A picture from the Central Station can be cropped here (FR-104). The crop is kept as every crop is; the station's
+     * picture is kept beside it to crop again from, never as one of the crops that replacing a crop deletes.
      *
      * MUTATION: crop nothing for a Central Station picture, or offer the mark only on a picture of this computer's, and
      * this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testACentralStationPictureCanBeCropped() throws Exception
@@ -901,12 +807,9 @@ public class testLocIconCrop
 
     /**
      * A picture that cannot be read, picked with the wrench, is refused by name and leaves the locomotive's icon as it
-     * was: in the locomotive, and in the locomotive database once saved (FR-022).  Crop is unticked, the case the
-     * guard once missed.
+     * was, in the locomotive and in the database once saved (FR-022). Crop is unticked, the case the guard once missed.
      *
      * MUTATION: take `pictureCanBeRead` out of `setLocIcon`, and this fails.
-     *
-     * @throws Exception from the event thread or the save
      */
     @Test
     public void testAnUnreadablePictureLeavesTheIconAsItWas() throws Exception
@@ -1137,13 +1040,10 @@ public class testLocIconCrop
     }
 
     /**
-     * The wrench looks like a wrench from both ends (MT-591; Adam, 2026-09-29: *"make the wrench icon look like a wrench
-     * on both sides. it looks more like a wine glass right now"*): a handle with an open jaw at each end, so turned half
+     * The wrench looks like a wrench from both ends (MT-591): a handle with an open jaw at each end, so turned half
      * round it is the same drawing.
      *
      * MUTATION: draw a jaw at one end only, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheWrenchHasAJawAtEachEnd() throws Exception
@@ -1189,15 +1089,10 @@ public class testLocIconCrop
     }
 
     /**
-     * The picture's tools wait for the power to be off, and while it is on the picture says so (MT-591).
-     *
-     * Adam, 2026-09-29, on MT-591: *"hide hover edit controls when the power is on ... Add a tooltip (if power is on)
-     * saying turn power off to manage icon."*  Told through the window's own door for a change of power, so it follows
-     * the power as it changes.
+     * The picture's tools wait for the power to be off, and while it is on the picture says so (MT-591). Told through
+     * the window's own door for a change of power, so it follows the power as it changes.
      *
      * MUTATION: offer the tools whatever the power, or say nothing while it is on, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testTheIconToolsWaitForThePowerOff() throws Exception
@@ -1270,16 +1165,10 @@ public class testLocIconCrop
 
     /**
      * Over a Central Station picture replaced or cropped, a revert stands beside the wrench and clears the icon of this
-     * computer's; the wrench stays, and still chooses a new one (MT-591).
-     *
-     * Adam, 2026-09-29, on MT-591: *"if there is a cs icon and we switched to a local icon or cropped it, replace the
-     * wrench icon with a revert icon (circular arrow symbol) that has the same function as "clear local locomotive
-     * icon"."*  And then: *"don't hide the wrench, since that will save a click"* - a new icon is one click away, not a
-     * revert and then the wrench.  Over a locomotive with no Central Station picture there is nothing to go back to.
+     * computer's; the wrench stays and still chooses a new one, saving a click (MT-591). Over a locomotive with no
+     * Central Station picture there is nothing to go back to.
      *
      * MUTATION: put the revert in the wrench's place again, or wire it to the chooser, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
      */
     @Test
     public void testARevertStandsBesideTheWrenchOverAReplacedStationPicture() throws Exception
@@ -1399,16 +1288,11 @@ public class testLocIconCrop
     }
 
     /**
-     * The icon chooser the wrench opens has a Clear Icon button that clears the locomotive's icon as Clear Local Locomotive
-     * Icon does and closes the chooser, and it is disabled over a locomotive with no icon (FR-142).
+     * The icon chooser the wrench opens has a Clear Icon button that clears the locomotive's icon as Clear Local
+     * Locomotive Icon does and closes the chooser, and it is disabled over a locomotive with no icon (FR-142).
      *
-     * Adam: "In the locomotive icon file chooser, we should have a button to also clear the current icon, so it's accessible
-     * via the wrench."
-     *
-     * MUTATION: wire the button to nothing (or to `cancelSelection` alone), or leave it enabled over a locomotive with no
-     * icon, and this fails.
-     *
-     * @throws Exception from the event thread or reflection
+     * MUTATION: wire the button to nothing (or to `cancelSelection` alone), or leave it enabled over a locomotive with
+     * no icon, and this fails.
      */
     @Test
     public void testTheIconChooserCanClearTheIcon() throws Exception
@@ -1519,12 +1403,9 @@ public class testLocIconCrop
     }
 
     /**
-     * The revert's arrowhead is a solid head, not two thin barbs (Adam, 2026-09-29: *"make the arrow at the end of the
-     * circle more prominent, right now it doesn't really look like an arrow"*): the middle of the head is ink.
+     * The revert's arrowhead is a solid head, not two thin barbs (MT-591): the middle of the head is ink.
      *
      * MUTATION: draw no head, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheRevertHasASolidArrowhead() throws Exception
@@ -1586,18 +1467,15 @@ public class testLocIconCrop
     }
 
     /**
-     * The crop window is owned by the window it is given (the popups sweep, on Adam's MT-703 note): `crop` asked for
-     * the window AROUND its parent, and the main window - which the crop mark and Set Local Locomotive Icon hand it -
-     * has none, so the modal crop window had no owner and opened under an always-on-top main window.
+     * The crop window is owned by the window it is given (MT-703): `crop` asked for the window AROUND its parent, and
+     * the main window has none, so the modal crop window opened under an always-on-top main window.
      *
      * MUTATION: ask for the window around a window again, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testTheCropWindowIsOwnedByTheWindowItIsGiven() throws Exception
     {
-        java.lang.reflect.Method ownerOf = org.traincontrol.gui.LocIconCropDialog.class.getDeclaredMethod("ownerOf",
+        java.lang.reflect.Method ownerOf = org.traincontrol.gui.locomotive.LocIconCropDialog.class.getDeclaredMethod("ownerOf",
             java.awt.Component.class);
 
         ownerOf.setAccessible(true);

@@ -18,16 +18,13 @@ import org.traincontrol.util.I18n;
 import support.SourceOf;
 
 /**
- * A locomotive a running route drives is neither deleted nor renamed, and the refusal names the route (OB-287).
+ * A locomotive a running route drives is neither deleted nor renamed, and the refusal names the route (OB-287; Adam:
+ * "make an automated test for this").  `core.testAdvancedRoutes` holds the half about the route finishing its
+ * commands and the `runningRouteDriving` question; nothing asked whether the doors ask it.
  *
- * Adam, on MT-464, 2026-09-22: *"make an automated test for this"*.  `core.testAdvancedRoutes` holds the half about the
- * route finishing its commands, and `runningRouteDriving` - the question - is claimed there too; nothing asked whether
- * the doors ask it.  Deleting a locomotive rewrites every route's commands, and renaming it rewrites every command that
- * names it, under a route part-way along its list.
- *
- * The two doors a person uses are driven here on a real window: the refusal is a message dialog, which this closes; had
- * the door gone on, the dialog it shows next is a different one, which this also closes without answering yes.  The
- * third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
+ * The two doors a person uses are driven here on a real window: the refusal is a message dialog, which this closes;
+ * had the door gone on, the dialog it shows next is a different one, which this also closes without answering yes.
+ * The third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
  *
  * MUTATION: take the refusal out of either door, and the matching claim fails.
  *
@@ -38,18 +35,16 @@ public class testARouteDrivenLocomotiveIsNotEdited
     private static final String LOC = "OB-287 loc";
     private static final String ROUTE = "OB-287 route";
 
-    /** A second locomotive, for a multi-unit the route's locomotive is ticked into */
+    /** A second locomotive, for a multi-unit the route's locomotive is ticked into. */
     private static final String UNIT = "OB-287 unit";
 
-    /** A Central Station multi-unit with the route's locomotive among its members */
+    /** A Central Station multi-unit with the route's locomotive among its members. */
     private static final String CS_UNIT = "OB-287 CS unit";
 
     /**
      * The delete door and the edit door each refuse, naming the route, and leave the locomotive as it was; and the
-     * multi-unit door (Adam, 2026-10-03) - from the locomotive database's menu and the keyboard's, and asked again at OK
-     * of a locomotive ticked into another's multi-unit.
-     *
-     * @throws Exception from the event thread
+     * multi-unit door (from the locomotive database's menu and the keyboard's, and asked again at OK of a locomotive
+     * ticked into another's multi-unit).
      */
     @Test
     public void testBothDoorsRefuseWhileTheRouteRuns() throws Exception
@@ -60,8 +55,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         try
         {
-            // OPENED INSIDE THE TRY (OB-111): anything thrown between the open and the close would leave the
-            // layout preference pointing at a folder under %TEMP%.
+            // OPENED INSIDE THE TRY (OB-111): a throw between the open and the close would leave the layout preference
+            // pointing at a folder under %TEMP%.
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStation.simulated();
@@ -133,16 +128,16 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             assertNotNull(model.getLocByName(LOC), "the edit door renamed a locomotive a running route drives");
 
-            // THE MULTI-UNIT DOOR, from the locomotive database's menu (Adam, 2026-10-03) ...
+            // THE MULTI-UNIT DOOR, from the locomotive database's menu ...
             final javax.swing.JPopupMenu[] database = new javax.swing.JPopupMenu[1];
 
-            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.RightClickSelectorMenu(window, null, loc));
+            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(window, null, loc));
 
             final javax.swing.JMenuItem fromTheDatabase = multiUnitItemIn(database[0]);
 
             assertNotNull(fromTheDatabase, "the locomotive database's menu offers no multi-unit item");
 
-            // WITH A DIVIDER ABOVE IT (Adam, 2026-10-03)
+            // WITH A DIVIDER ABOVE IT
             int at = java.util.Arrays.asList(database[0].getComponents()).indexOf(fromTheDatabase);
 
             assertTrue(at > 0 && database[0].getComponent(at - 1) instanceof javax.swing.JSeparator, "the locomotive"
@@ -164,13 +159,13 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             SwingUtilities.invokeAndWait(() -> window.mapLocToCurrentButton(LOC));
 
-            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.RightClickMenuListener");
+            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.locomotive.RightClickMenuListener");
 
             final Object listener = listenerClass.getConstructor(TrainControlUI.class, javax.swing.JButton.class)
                 .newInstance(window, button);
 
             final java.lang.reflect.Constructor<?> make = Class.forName(
-                "org.traincontrol.gui.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
+                "org.traincontrol.gui.locomotive.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
                 TrainControlUI.class);
 
             make.setAccessible(true);
@@ -283,11 +278,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
         }
     }
 
-    /**
-     * The Central Station's name proposal asks it too, of both names, before it renames.
-     *
-     * @throws Exception from the file
-     */
+    /** The Central Station's name proposal asks it too, of both names, before it renames. */
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
@@ -309,22 +300,16 @@ public class testARouteDrivenLocomotiveIsNotEdited
     private static final String SYNCED_ROUTE = "GSR-B2 route";
 
     /**
-     * A Central Station sync does not re-address a locomotive a running route drives.
-     *
-     * The sync's address change waited for autonomy and nothing else.  A route sends its commands to a locomotive by
-     * NAME, one after another with delays between them, and each goes to whatever address the name has when its turn
-     * comes - so a sync landing part-way along moved the locomotive to another address under the route, and the
-     * route's remaining commands went to a different decoder: another train, or none.  The delete and edit doors refuse
-     * the same change while a route drives the locomotive (OB-287); the sync is the door nobody opens by hand.
+     * A Central Station sync does not re-address a locomotive a running route drives.  A route sends its commands to a
+     * locomotive by NAME with delays between them, so a sync landing part-way along moved the locomotive to another
+     * address under the route and the remaining commands went to a different decoder.  The delete and edit doors refuse
+     * the same change (OB-287); the sync is the door nobody opens by hand.
      *
      * The sync's address step is asked directly, with the Central Station's description of the locomotive at another
-     * address, because the whole sync needs a station on the network.  Autonomy is idle throughout, so the route is the
-     * only thing that can hold the address back.
+     * address, because the whole sync needs a station on the network.  Autonomy is idle throughout.
      *
      * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
      * fails.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testASyncDoesNotReAddressALocomotiveARouteDrives() throws Exception
@@ -334,7 +319,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         try
         {
-            // OPENED INSIDE THE TRY, as the claims above open theirs (OB-111).
+            // OPENED INSIDE THE TRY (OB-111).
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStation.simulated();
@@ -400,11 +385,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
     }
 
     /**
-     * Runs a door on the event thread, and closes the first message it shows without answering yes.
-     *
-     * @param door the door
-     * @return the message, or null when none was shown
-     * @throws Exception from the wait
+     * Runs a door on the event thread, and closes the first message it shows without answering yes; null when none was
+     * shown.
      */
     private static String askAndClose(Runnable door) throws Exception
     {
@@ -452,12 +434,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
         return said;
     }
 
-    /**
-     * The multi-unit item at a menu's own level - set, edit or view - or null.
-     *
-     * @param menu the menu
-     * @return the item
-     */
+    /** The multi-unit item at a menu's own level (set, edit or view), or null. */
     private static javax.swing.JMenuItem multiUnitItemIn(javax.swing.JPopupMenu menu)
     {
         java.util.Set<String> texts = new java.util.HashSet<>(java.util.Arrays.asList(I18n.t("loc.ui.menuSetAsMultiUnit"),
@@ -476,13 +453,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
     }
 
     /**
-     * Opens the multi-unit dialog through a door, ticks one locomotive in it and presses OK; then the first message after
-     * the OK, closed without answering yes.
-     *
-     * @param door the door
-     * @param member the locomotive to tick
-     * @return the message after OK, or null when none was shown
-     * @throws Exception from the wait
+     * Opens the multi-unit dialog through a door, ticks one locomotive in it and presses OK; then the first message
+     * after the OK, closed without answering yes.
      */
     private static String tickAndOk(Runnable door, String member) throws Exception
     {
@@ -592,17 +564,11 @@ public class testARouteDrivenLocomotiveIsNotEdited
     private static final String TAKEN = "OB-301 taken";
 
     /**
-     * A name the edit door refuses changes nothing - not the address either (OB-301; Adam, 2026-10-06: "fix the mentioned
-     * OB's that are valid").
-     *
-     * The door applied the new address first and checked the name after.  A refused name returned once the address had
-     * gone through and before the sweep that takes a clash off the railway - so a train given another standing train's
-     * address and a taken name stayed on the railway beside it, the two answering to one decoder address, every command
-     * for one reaching both.
+     * A name the edit door refuses changes nothing, not the address either (OB-301).  The door applied the new address
+     * first and checked the name after, so a train given another standing train's address and a taken name stayed on
+     * the railway beside it, every command for one reaching both.
      *
      * MUTATION: apply the address before the name is asked, and this fails.
-     *
-     * @throws Exception from the windows
      */
     @Test
     public void testARefusedNameChangesNothing() throws Exception
@@ -676,12 +642,6 @@ public class testARouteDrivenLocomotiveIsNotEdited
     /**
      * Opens the edit door, types an address and a name into it and presses OK; then the first message after the OK,
      * closed without answering yes.
-     *
-     * @param door the door
-     * @param address the address to type
-     * @param name the name to type
-     * @return the message after OK, or null when none was shown
-     * @throws Exception from the wait
      */
     private static String answerTheEditDoor(Runnable door, String address, String name) throws Exception
     {
@@ -715,7 +675,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
                     JOptionPane pane = paneIn((java.awt.Container) window);
 
-                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.LocomotiveAddressChange)) continue;
+                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.locomotive.LocomotiveAddressChange)) continue;
 
                     try
                     {

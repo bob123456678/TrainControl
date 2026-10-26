@@ -14,23 +14,15 @@ import org.traincontrol.marklin.udp.NetworkProxy;
 /**
  * A message handed to the proxy arrives on the wire, byte for byte.
  *
- * From the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".
- * The existing `testNetworkProxy` covers the socket's LIFECYCLE well - a transient receive error does
- * not stop the listener, closing stops it, a send reopens a closed socket - and `testSendReopensAClosedSocket`
- * asserts that `sendMessage` returned true and that the socket is open afterwards. Neither of those
- * says anything about what was sent, or that anything was sent at all.
+ * From the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".  `testNetworkProxy`
+ * covers the socket's LIFECYCLE and `testSendReopensAClosedSocket` asserts that `sendMessage` returned true, but
+ * neither says anything about what was sent.  This is the one path that reaches the physical railway, and "returned
+ * true" is a statement about a method, not about a locomotive moving; the receive port is now optionally ephemeral and
+ * opened through a shared method used by the constructor and the reopen inside `sendMessage`, which nothing would have
+ * noticed breaking transmission.
  *
- * That gap is worth closing on its own terms - this is the one path in the application that reaches
- * the physical railway, and "returned true" is a statement about a method, not about a locomotive
- * moving. It is worth closing NOW because `e45d7241` changed the socket this sends through: the
- * receive port is now optionally ephemeral, opened through a new shared method used by both the
- * constructor and the reopen inside `sendMessage`. Nothing in the suite would have noticed if that
- * change had broken transmission, because nothing in the suite has ever read a byte off a socket.
- *
- * **No model, no layout, no fixture.** This constructs a `NetworkProxy` directly against loopback, so
- * it does not load the sample layout and does not care whether TrainControl is running. That is
- * deliberate: it keeps the one test that proves bytes leave the machine independent of everything
- * that has made the rest of the battery fragile.
+ * No model, no layout, no fixture: a `NetworkProxy` is constructed directly against loopback, independent of everything
+ * that makes the rest of the battery fragile.
  */
 public class testUdpMessagesReachTheWire
 {
@@ -58,12 +50,9 @@ public class testUdpMessagesReachTheWire
     }
 
     /**
-     * The bytes that arrive are the bytes the message is made of.
-     *
-     * Compared against the message's OWN serialization rather than against a hand-written array. A
-     * literal here would be a second statement of the CAN frame format, and the two would drift - the
-     * DR family of findings is entirely about that. What is being tested is the transmission path, not
-     * the encoding, and this asserts exactly that: whatever `getRawMessage` says, that is what left.
+     * The bytes that arrive are the bytes the message is made of: compared against the message's OWN serialization, not
+     * a hand-written array (a second statement of the CAN frame format that would drift).  What is tested is the
+     * transmission path, not the encoding.
      */
     @Test
     public void testAPingArrivesUnchanged() throws Exception
@@ -93,12 +82,9 @@ public class testUdpMessagesReachTheWire
     }
 
     /**
-     * And a second one, after the socket has been closed underneath it.
-     *
-     * `sendMessage` reopens a closed socket, and since `e45d7241` it does so through the same method
-     * the constructor uses - so the reopened socket may be on a different local port than the first.
-     * The existing lifecycle test asserts the reopen happened; this asserts the reopened socket still
-     * TRANSMITS, which is the part that matters and the part that would have broken silently.
+     * And a second one, after the socket has been closed underneath it: `sendMessage` reopens a closed socket through
+     * the constructor's method, so the reopened socket may be on a different local port.  The lifecycle test asserts
+     * the reopen happened; this asserts the reopened socket still TRANSMITS.
      */
     @Test
     public void testASendStillArrivesAfterTheSocketIsReopened() throws Exception

@@ -18,7 +18,7 @@ import org.traincontrol.util.SelfUpdate;
 import support.SourceOf;
 
 /**
- * One-click updates are wired together end to end (FR-125, the validation of 2026-10-13).
+ * One-click updates are wired together end to end (FR-125).
  *
  * `core.testTheUpdaterSwapsTheJar` hands the updater its launcher, mover and starter, so it says nothing about the
  * real ones or about the places that call them; every one of these could be broken with those claims green:
@@ -34,11 +34,11 @@ import support.SourceOf;
  * - one backup at a time, the menu's and the update's;
  * - the Java options carried into the restart, less a debugger.
  *
- * **Two kinds of claim.**  The real launcher and starter are run, against plain JVMs of `support.ReportsStarted` -
- * nothing of TrainControl's but `SelfUpdate`, no jar, nothing outside a temporary folder.  The places that call them
- * cannot be run without starting TrainControl or ending this JVM, so their order is read from the source, as
- * `regression.testEditorSurfaceRules` reads `WindowClosed`'s.  Those are pinned only by reading: a claim that reads
- * the order catches a line moved or dropped, not one that behaves differently at the same place.
+ * Two kinds of claim.  The real launcher and starter are run against plain JVMs of `support.ReportsStarted` (nothing of
+ * TrainControl's but `SelfUpdate`, no jar, nothing outside a temporary folder).  The places that call them cannot be
+ * run without starting TrainControl or ending this JVM, so their order is read from the source, as
+ * `regression.testEditorSurfaceRules` reads `WindowClosed`'s: that catches a line moved or dropped, not one that
+ * behaves differently at the same place.
  */
 public class testTheUpdateIsWiredEndToEnd
 {
@@ -67,8 +67,6 @@ public class testTheUpdateIsWiredEndToEnd
      * reads, and that version's report is what `waitForTheStart` hears.
      *
      * MUTATION: `prepareEnvironment` not setting the variable, or `reportStarted` reading another, and this fails.
-     *
-     * @throws Exception from the process
      */
     @Test
     public void testTheRealLauncherHandsTheMarkerToTheVersionItStarts() throws Exception
@@ -88,8 +86,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: `startDetached` not removing the variable, and the relayed probe sees it; `stop` not ending the
      * process, and the second half fails.
-     *
-     * @throws Exception from the processes
      */
     @Test
     public void testTheRealStarterStartsTheUpdaterCleanAndCanStopIt() throws Exception
@@ -182,8 +178,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: put `SelfUpdate.reportStarted()` back at the top of `TrainControl.main`, or drop any of the three
      * calls, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheMarkerIsWrittenWhereTheVersionIsUp() throws Exception
@@ -226,8 +220,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: move `writeMarker(request.running)` after `update(...)`, and this fails - as every real update would,
      * refused after fifteen seconds.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheUpdaterSaysItRunsFirst() throws Exception
@@ -247,8 +239,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: move the `take()` above `everyOpenWindowMaySettle`, or drop the `return` after the updater fails to
      * start, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheExitStartsTheUpdaterLastOfAll() throws Exception
@@ -274,8 +264,6 @@ public class testTheUpdateIsWiredEndToEnd
      *
      * MUTATION: ask `isAutonomyBusy` in `whyThisUpdateMustWait` instead of `theAutoTabWaits`, or call
      * `closeNowForTheUpdate` without `whenNoModalDialog`, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testTheUpdateLeavesThroughTheExitAsTheAutoTabAsks() throws Exception
@@ -306,8 +294,6 @@ public class testTheUpdateIsWiredEndToEnd
      * writes.  Pinned by reading.
      *
      * MUTATION: call `writeTheBackup` from the update, or drop the `synchronized`, and this fails.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testOneBackupAtATime() throws Exception

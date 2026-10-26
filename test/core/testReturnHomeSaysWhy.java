@@ -19,20 +19,14 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A Return Home plan that fails says, in the log, why each train cannot get home.
+ * A Return Home plan that fails says, in the log, why each train cannot get home (FR-078; Adam: "if a return home plan
+ * fails, state the reason why the layout doesn't allow a locomotive to go to its home in the log (length, blocked,
+ * etc.)"; MT-346: "seems OK, just needs to be easier for the user to debug").
  *
- * Adam, FR-078, 2026-09-13: *"if a return home plan fails, state the reason why the layout doesn't allow a
- * locomotive to go to its home in the log (length, blocked, etc.)"*.  And on MT-346, the same evening:
- * *"seems OK, just needs to be easier for the user to debug"*.
- *
- * **Before this the plan named the trains and nothing else.**  Each check that puts a train on the
- * unreachable list is a different fact with a different remedy - a length to measure, a switch to open,
- * a station to switch back on - and the dialog could only say "these trains cannot reach their homes".
- *
- * **Asked of the words, not of a flag:** each claim finds the sentence for the rule that actually refused
- * and checks it carries the numbers or names the operator would act on, so a plan that logged a reason
- * but the wrong one fails here.  And the log is read as well as the plan, because a reason kept in the
- * plan and never written is what the request was about.
+ * Each check that puts a train on the unreachable list is a different fact with a different remedy.  Asked of the
+ * words, not of a flag: each claim finds the sentence for the rule that actually refused and checks it carries the
+ * numbers or names the operator would act on.  The log is read as well as the plan, since a reason never written is
+ * what the request was about.
  *
  * @author Adam
  */
@@ -70,8 +64,8 @@ public class testReturnHomeSaysWhy
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // BEFORE the model: `init` reads the machine-global layout preference and would otherwise open
-        // Adam's real railway (OB-111).
+        // BEFORE the model: `init` reads the machine-global layout preference and would otherwise open Adam's real
+        // railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulated();
@@ -96,9 +90,7 @@ public class testReturnHomeSaysWhy
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * A home too short for the train says so, with both lengths.
-     */
+    /** A home too short for the train says so, with both lengths. */
     @Test
     public void testAHomeTooShortForTheTrainSaysSoWithBothLengths()
     {
@@ -150,9 +142,7 @@ public class testReturnHomeSaysWhy
         }
     }
 
-    /**
-     * A home with no way in says there is no route, and names both ends.
-     */
+    /** A home with no way in says there is no route, and names both ends. */
     @Test
     public void testAHomeWithNoWayInSaysThereIsNoRoute()
     {
@@ -188,9 +178,7 @@ public class testReturnHomeSaysWhy
             + " that did not refuse: " + why);
     }
 
-    /**
-     * The control: a plan that succeeds carries no reasons, so a reason is never noise.
-     */
+    /** The control: a plan that succeeds carries no reasons, so a reason is never noise. */
     @Test
     public void testAPlanThatSucceedsGivesNoReasons()
     {
@@ -215,12 +203,9 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * A home square emitted as two copies, one of which is not a destination, still says "too short".
-     *
-     * A platform whose arrival from one side is barred is built as a destination copy and a copy that is
-     * not one, in one block.  `Point.validateTrainLength` answers yes for a copy that is not a destination,
-     * so asking "is ANY copy long enough" was answered by the copy no train can stop at - the length
-     * sentence was suppressed, and the operator was told to check the connections instead.
+     * A home square emitted as two copies, one of which is not a destination, still says "too short":
+     * `Point.validateTrainLength` answers yes for the copy that is not a destination, so asking "is ANY copy long
+     * enough" suppressed the length sentence.
      */
     @Test
     public void testAHomeWithABarredCopyStillSaysItIsTooShort()
@@ -268,9 +253,7 @@ public class testReturnHomeSaysWhy
         }
     }
 
-    /**
-     * A home switched out of service says so.
-     */
+    /** A home switched out of service says so. */
     @Test
     public void testAHomeOutOfServiceSaysSo()
     {
@@ -279,9 +262,7 @@ public class testReturnHomeSaysWhy
         assertSays(plan, model.getLocByName(LOC), "autolayout.whyHomeOutOfService", "RHW H");
     }
 
-    /**
-     * A home that excludes the train says so.
-     */
+    /** A home that excludes the train says so. */
     @Test
     public void testAHomeThatExcludesTheTrainSaysSo()
     {
@@ -290,9 +271,7 @@ public class testReturnHomeSaysWhy
         assertSays(plan, model.getLocByName(LOC), "autolayout.whyHomeExcludesIt", "RHW H");
     }
 
-    /**
-     * A train standing on a square switched out of service says it cannot start from there.
-     */
+    /** A train standing on a square switched out of service says it cannot start from there. */
     @Test
     public void testAStartOutOfServiceSaysSo()
     {
@@ -306,9 +285,7 @@ public class testReturnHomeSaysWhy
         assertSays(plan, model.getLocByName(LOC), "autolayout.whyHomeStartOutOfService", "RHW A");
     }
 
-    /**
-     * Two homes on one detection section say which two.
-     */
+    /** Two homes on one detection section say which two. */
     @Test
     public void testTwoHomesOnOneSectionSayWhichTwo()
     {
@@ -327,8 +304,8 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * Where the search only ran out of room, the home another train stands on is named, and nothing is
-     * claimed to be impossible.
+     * Where the search only ran out of room, the home another train stands on is named, and nothing is claimed
+     * impossible.
      */
     @Test
     public void testAnOccupiedHomeIsNamedWhenNoArrangementIsFound()
@@ -350,11 +327,8 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * The reasons name squares, not the direction copies the builder made of them.
-     *
-     * Adam's ruling that the copy machinery is masked from the user covers the log as much as a dialog, and
-     * a home is stood on as one of its copies - so "its home X (eastbound, reverse) is switched out of
-     * service" was what the log said.
+     * The reasons name squares, not the direction copies the builder made of them (Adam: the copy machinery is masked
+     * from the user).
      */
     @Test
     public void testTheReasonsNameSquaresNotCopies()
@@ -384,9 +358,8 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * A planned move names the square it goes to, not the builder's copy of it.
-     *
-     * The "planned" lines are logged in the same block as the reasons, and only the reasons are masked.
+     * A planned move names the square it goes to, not the builder's copy of it: the "planned" lines are logged beside
+     * the reasons.
      */
     @Test
     public void testAPlannedMoveNamesTheSquare()
@@ -418,16 +391,9 @@ public class testReturnHomeSaysWhy
     }
 
     /**
-     * Every reason a plan gives names squares, across every sentence the refusals can reach.
-     *
-     * `testTheReasonsNameSquaresNotCopies` reached one sentence, so reverting any of the other sites that
-     * name a square left it green.  Each fixture here is named the way the builder names copies, and each
-     * is checked for the sentence it must produce, so a site is only counted as covered when its own
-     * sentence was actually said.
-     *
-     * Not reached: "the start is not a station", "the home is not a station" and "no arrangement found" -
-     * the loader or the search decides those before a reason is written, on these small railways - and the
-     * fallback at the end of `whyNotHome`, which a refused train with no other reason would need.
+     * Every reason a plan gives names squares, across every sentence the refusals can reach, each checked for the
+     * sentence it must produce.  Not reached: "the start is not a station", "the home is not a station" and "no
+     * arrangement found" (the loader or the search decides those first) and the fallback at the end of `whyNotHome`.
      */
     @Test
     public void testEveryReachableReasonNamesSquaresNotCopies()
@@ -537,9 +503,7 @@ public class testReturnHomeSaysWhy
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
-    /**
-     * The plan kept, for this train, a sentence that is the given key's own wording and names every part.
-     */
+    /** The plan kept, for this train, a sentence that is the given key's own wording and names every part. */
     private static void assertSays(HomeStaging.Plan plan, Locomotive loc, String key, String... parts)
     {
         List<String> why = plan.getReasons().get(loc);
@@ -547,8 +511,7 @@ public class testReturnHomeSaysWhy
         assertNotNull(why, "the plan (" + plan.getOutcome() + ") kept no reason for " + loc.getName()
             + ": " + plan.getReasons());
 
-        // The key's own fixed words, so the sentence is shown to be THIS rule and not another naming the
-        // same squares.
+        // The key's own fixed words, so the sentence is shown to be THIS rule and not another naming the same squares.
         String fixed = org.traincontrol.util.I18n.t(key).replaceAll("\\{\\d\\}", "\u0000");
 
         String longest = "";

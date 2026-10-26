@@ -183,7 +183,7 @@ public class testLocomotive
         l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
         assertTrue(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
 
-        // THE MODULE HAS TO EXIST, AND THIS USED TO PARK THE WHOLE SUITE.
+        // THE MODULE HAS TO EXIST, OR THE WHOLE SUITE PARKS.
         //
         // `waitForOccupiedFeedback` is an untimed Object.wait(), and the only thing that can release it
         // is the `setFeedbackState("1001", true)` on the thread above.  That setter looks the module up
@@ -191,8 +191,7 @@ public class testLocomotive
         // missing the test waited for ever, held the runner's user-wide lock, and had to be killed by
         // hand.
         //
-        // 1001 was never created by any test: it came from `LocDB.data`, the live file Adam's own
-        // application writes, which is why this class was green earlier the same day and then was not.
+        // 1001 was never created by any test: it came from `LocDB.data`, the live file Adam's own application writes.
         //
         // The `assertFalse` below reads like a check that the module is there and is exactly the
         // opposite - `getFeedbackState` also answers false for a module that does not exist, so it
@@ -933,7 +932,7 @@ public class testLocomotive
 
         Thread.sleep(300);
 
-        // The Central Station saying GO again, which changes nothing and used to cost everything
+        // The Central Station saying GO again, which changes nothing and costs nothing
         timed.notifyOfPowerStateChange(true);
 
         Thread.sleep(50);
@@ -953,12 +952,7 @@ public class testLocomotive
      * An address with exactly one locomotive on it is not in the duplicate list - the fact the
      * "check for duplicates" dialog's bug (and its fix) both turn on.
      *
-     * This used to close with `assertTrue(all.containsKey(single), ...)`, labeled as the
-     * substantive check - but `single` was obtained by iterating `all.entrySet()` in the first place,
-     * so that assertion could never fail; it is true by construction, not by anything about the
-     * database.  Removed rather than kept as padding.
-     *
-     * What is left cannot, by itself, catch AddLocomotive.java's checkDuplicatesActionPerformed being
+     * This cannot, by itself, catch AddLocomotive.java's checkDuplicatesActionPerformed being
      * reverted to consult getDuplicateLocAddresses instead of getLocAddresses (the actual regression
      * this class is named for) - that logic is private, inline in a Swing action handler inside a
      * JDialog, and exercising it means instantiating AddLocomotive, which is GUI-dialog testing outside

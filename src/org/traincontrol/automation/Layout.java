@@ -478,7 +478,8 @@ public class Layout
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
 
-    // Trains on a journey sent by hand: the cap on trains out neither counts nor refuses them (behaviour.md 1).
+    // Trains on a journey sent by hand: the cap on trains out neither counts nor refuses them
+    // (behaviour/tiers-and-choice.md 1).
     private final Set<Locomotive> sentByHand = Collections.synchronizedSet(Collections.newSetFromMap(
         new java.util.IdentityHashMap<Locomotive, Boolean>()));
 
@@ -1587,7 +1588,8 @@ public class Layout
 
     /**
      * Whether full autonomy is running: the railway choosing its own destinations.  Not isAutoRunning, which a
-     * timetable (Return Home included) also sets; behaviour.md 1 puts a timetable with manual.  Nothing asks it today.
+     * timetable (Return Home included) also sets; behaviour/tiers-and-choice.md 1 puts a timetable with manual.
+     * Nothing asks it today.
      *
      * @return true while autonomy is dispatching and no timetable is
      */
@@ -2401,7 +2403,7 @@ public class Layout
 
                 if (!sameRailBack.isRunOver(loc)) continue;
 
-                // A train never blocks itself (behaviour.md 5c): Return Home holds the rail its earlier legs took.
+                // A train never blocks itself (behaviour/tail.md 5c): Return Home holds the rail its earlier legs took.
                 if (railHeldByThisTrain(sameRailBack, loc)) continue;
 
                 logPathError(loc, path, logFailures,
@@ -2548,8 +2550,9 @@ public class Layout
         // A square held back while another has a train standing on it (FR-001), for every square the route arrives at
         // (OB-295; Adam: "It means trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock
         // on the other specified station(s).").  The route half is lock edges (Edge.isLockHeld).  Two restrictions set
-        // against each other hold both trains until one is cleared (behaviour.md 1).  In every tier; HomeStaging
-        // applies it too, against the occupancy its plan has reached (auditAgainstRuntime proves they agree).
+        // against each other hold both trains until one is cleared (behaviour/tiers-and-choice.md 1).  In every tier;
+        // HomeStaging applies it too, against the occupancy its plan has reached (auditAgainstRuntime proves they
+        // agree).
         {
             // The train leaving the watched point is exempt (Adam: "The condition should not apply to trains leaving -
             // only departing."), or the one move that clears the condition would be forbidden.  The window that
@@ -4776,7 +4779,7 @@ public class Layout
     }
 
     /**
-     * Whether this rail is held by the asking train's own path (OB-269): a train never blocks itself (behaviour.md
+     * Whether this rail is held by the asking train's own path (OB-269): a train never blocks itself (behaviour/tail.md
      * 5c), and occupancy counters record no owner.
      */
     private boolean railHeldByThisTrain(Edge rail, Locomotive loc)
@@ -5915,7 +5918,7 @@ public class Layout
 
     /**
      * The same walk, over only the trains asked for: the maps keep one train per place, the last walked, so a
-     * question about one train's route walks every other train (its own tail is no obstacle, behaviour.md 5c).
+     * question about one train's route walks every other train (its own tail is no obstacle, behaviour/tail.md 5c).
      */
     private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places,
         java.util.function.Predicate<Locomotive> which)
@@ -6179,7 +6182,7 @@ public class Layout
 
     /**
      * A journey sent by hand: executePath, with the train marked as a hand send for its length, which the cap on
-     * trains out neither counts nor refuses (behaviour.md 1).  Every hand door comes here.
+     * trains out neither counts nor refuses (behaviour/tiers-and-choice.md 1).  Every hand door comes here.
      *
      * @param path the route
      * @param loc the train

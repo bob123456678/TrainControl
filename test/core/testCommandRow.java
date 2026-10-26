@@ -10,21 +10,14 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
 
 /**
- * A command taken apart into columns and put back together is the command it started as.
- *
- * This is what makes the new route editor safe to open a route in.  It shows each command as three
- * dropdowns, and if that trip loses anything then opening somebody's route and pressing Save would
- * quietly change what their railway does - the failure would be invisible until a train took the wrong
- * turning.
- *
- * The kinds with no controls yet must come back as null rather than as something approximate, so the
- * editor can keep them exactly as it found them.
+ * A command taken apart into columns and put back together is the command it started as: if that trip loses anything,
+ * opening somebody's route and pressing Save would quietly change what their railway does.  The kinds with no controls
+ * yet must come back as null rather than as something approximate, so the editor can keep them exactly as it found
+ * them.
  */
 public class testCommandRow
 {
-    /**
-     * Every kind the editor offers survives being shown as columns.
-     */
+    /** Every kind the editor offers survives being shown as columns. */
     @Test
     public void testEveryEditableKindRoundTrips()
     {
@@ -158,21 +151,12 @@ public class testCommandRow
             + "changed");
     }
 
-    /**
-     * A kind with no controls comes back as null, so the editor keeps the original.
-     */
+    /** A kind with no controls comes back as null, so the editor keeps the original. */
     @Test
     public void testEveryCommandTheModelCanExpressHasControls()
     {
-        // This test used to say the opposite: that autonomy-lights-on had no controls and had to be
-        // refused so it could be kept exactly as found.  That was true and is no longer - Adam asked
-        // for the special commands the editor was missing, so all four of them (lights, autonomy
-        // lights, triggering another route, and an auto-locomotive condition) now build.
-        //
-        // The invariant the old test protected is still worth having and still holds: a command the
-        // editor cannot represent must come back as null so it is preserved untouched rather than
-        // approximated into something that nearly means the same.  It just has no example left to
-        // point at, because there is nothing the editor cannot represent - which is the point.
+        // The editor now builds every special command, so no example is left of one it cannot represent; the invariant
+        // still holds: such a command must come back as null so it is preserved untouched rather than approximated.
         assertNotNull(CommandRow.of(RouteCommand.RouteCommandAutonomyLightsOn()),
             "autonomy lights on is buildable now, so it must read back as a row");
 
@@ -188,13 +172,8 @@ public class testCommandRow
     }
 
     /**
-     * A signal can be commanded in a signal's words.
-     *
-     * A signal and a switch are the same device - the type only decides which picture is drawn - so
-     * the same two states carry two pairs of names, and Accessory has understood all four for as long
-     * as it has existed. The editor understood two, so a route built against a signal in the words a
-     * signal uses was refused at Save with a message about a vocabulary the user had no reason to
-     * expect.
+     * A signal can be commanded in a signal's words: a signal and a switch are the same device, so the same two states
+     * carry two pairs of names, and the editor understood only two of the four.
      */
     @Test
     public void testASignalMayBeCommandedInRedAndGreen()
@@ -216,9 +195,7 @@ public class testCommandRow
     }
 
     /**
-     * A word that is none of the four is still refused.
-     *
-     * Widening what is accepted is exactly the change that turns a strict reader into one that
+     * A word that is none of the four is still refused: widening what is accepted turns a strict reader into one that
      * guesses, and a guess here throws a real switch.
      */
     @Test
@@ -237,12 +214,7 @@ public class testCommandRow
         }
     }
 
-    /**
-     * And each of them survives the trip back out again.
-     *
-     * Reading a command into a row is half of it; the half that loses data is writing it back. Both
-     * of the data-loss bugs this editor has had were invisible until Save.
-     */
+    /** And each of them survives the trip back out again: writing a row back is the half that loses data. */
     @Test
     public void testTheNewKindsRoundTrip()
     {
@@ -266,11 +238,9 @@ public class testCommandRow
     }
 
     /**
-     * A train NOT at a sensor is a row of its own kind, and back again (FR-141).
-     *
-     * One stored command asked either way round, offered as two kinds because this kind's setting is already the sensor's
-     * address and has no room for the way round - as Switch and Signal are two kinds of one command.  A condition and
-     * never a command, like the at form.
+     * A train NOT at a sensor is a row of its own kind, and back again (FR-141).  One stored command asked either way
+     * round is offered as two kinds because this kind's setting is already the sensor's address, as Switch and Signal
+     * are two kinds of one command.
      *
      * MUTATION: answer AUTO_LOCOMOTIVE for both in `CommandRow.of` and the first assertion fails.
      */
@@ -296,9 +266,7 @@ public class testCommandRow
             "the command Kind drop-down offers a fact as an instruction");
     }
 
-    /**
-     * A row that cannot be made into a command says which part is wrong.
-     */
+    /** A row that cannot be made into a command says which part is wrong. */
     @Test
     public void testABadRowSaysWhatIsWrongWithIt()
     {
@@ -342,9 +310,7 @@ public class testCommandRow
         }
     }
 
-    /**
-     * The kinds with nothing to point at say so, so the editor can gray those cells.
-     */
+    /** The kinds with nothing to point at say so, so the editor can gray those cells. */
     @Test
     public void testTheKindsWithNoTargetSaySo()
     {
@@ -355,9 +321,7 @@ public class testCommandRow
         assertTrue(CommandRow.hasSetting(CommandRow.Kind.LOCOMOTIVE_SPEED));
     }
 
-    /**
-     * A list keeps its shape, with a null where a command has no controls.
-     */
+    /** A list keeps its shape, with a null where a command has no controls. */
     @Test
     public void testAListKeepsItsPositions()
     {
@@ -371,9 +335,8 @@ public class testCommandRow
         assertEquals(rows.size(), 3, "a row per command, so positions still line up");
         assertNotNull(rows.get(0));
 
-        // Was a null here, when autonomy-lights-on had no controls.  The positions rule is what this
-        // test is about and it is unchanged: one entry per command, in order, so that a row's index is
-        // the command's index - which is what lets a kept command be written back where it was found.
+        // The positions rule: one entry per command, in order, so a row's index is the command's index and a kept
+        // command is written back where it was found.
         assertNotNull(rows.get(1), "autonomy lights on is buildable now");
         assertNotNull(rows.get(2));
     }

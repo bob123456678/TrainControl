@@ -717,14 +717,11 @@ public class testLayoutPickPath
     /**
      * An inactive endpoint is refused at EVERY door - and an inactive start is not.
      *
-     * Adam, 2026-09-06: **"In manual mode, inactive endpoints and intermediates should be refused as
+     * Adam: **"In manual mode, inactive endpoints and intermediates should be refused as
      * well. Just not inactive start points. Inactive really means nothing can pass."**
      *
-     * **This test asserted the opposite until 2026-09-08**, and it was right when it was written: the
-     * destination check used to be fenced behind `isAutoRunning`, so a hand-driven send could finish on
-     * a closed square while a Return Home run could not - and the cross drawn on that square meant two
-     * different things depending on who was asking. His ruling removed the fence. Nobody swept the
-     * test, and it went red in the first full battery run since.
+     * The destination check is not fenced behind `isAutoRunning`: a hand-driven send cannot finish on a closed square,
+     * any more than a Return Home run can, so the cross drawn on that square means one thing whoever is asking.
      *
      * The START stays exempt, and that is the whole of the exception: a train standing on a square that
      * has been switched off is driven OUT by hand, which is what closing a square around a train is

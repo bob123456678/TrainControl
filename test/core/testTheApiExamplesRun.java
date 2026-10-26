@@ -26,16 +26,14 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * The API examples in test/examples run, against a station that is not there (FR-138).
  *
- * The examples teach the public Java API (AutomationAPI.md points to them), and a teaching example that no longer
- * compiles or no longer does what its words say is worse than none.  They compile with the tests, so a renamed method
- * breaks the build; this class runs each one on a simulated station and reads back what it claims to have done, so a
- * method that still exists but behaves differently fails here.
+ * The examples teach the public Java API (AutomationAPI.md points to them), and one that no longer compiles or does
+ * what its words say is worse than none.  They compile with the tests, so a renamed method breaks the build; this class
+ * runs each on a simulated station and reads back what it claims to have done, so a method that still exists but
+ * behaves differently fails here.
  *
- * Every example takes its station as a parameter, and none connects to a real Central Station: the only call to
- * `init` is in `SimulatedStation`, and it asks for a simulation.
- *
- * One station per JVM, because it binds a fixed network port, so the examples share one and use names, addresses and
- * sensors that do not meet.
+ * Every example takes its station as a parameter, and none connects to a real Central Station: the only call to `init`
+ * is in `SimulatedStation`, and it asks for a simulation.  One station per JVM, because it binds a fixed network port,
+ * so the examples share one and use names, addresses and sensors that do not meet.
  *
  * MUTATION: change a call in an example so it does something else (turn where it says straight, say), and the line it
  * reports no longer matches.
@@ -81,18 +79,14 @@ public class testTheApiExamplesRun
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * Whether a report has a line that says exactly this, with a message that prints the report.
-     */
+    /** Whether a report has a line that says exactly this, with a message that prints the report. */
     private static void assertSays(List<String> found, String line)
     {
         assertTrue(found.contains(line), "the example did not report \"" + line + "\"; it reported:\n"
             + String.join("\n", found));
     }
 
-    /**
-     * Whether a report has a line that begins like this.
-     */
+    /** Whether a report has a line that begins like this. */
     private static void assertHasLine(List<String> found, String start)
     {
         for (String line : found)
@@ -104,11 +98,7 @@ public class testTheApiExamplesRun
             + String.join("\n", found));
     }
 
-    /**
-     * The station tells what it holds, and a power switch it is asked to make is confirmed by the answer.
-     *
-     * @throws Exception from the example
-     */
+    /** The station tells what it holds, and a power switch it is asked to make is confirmed by the answer. */
     @Test
     public void testKnowYourStation() throws Exception
     {
@@ -131,8 +121,6 @@ public class testTheApiExamplesRun
 
     /**
      * Every direction, speed and function the example sets reads back as set, and it leaves the locomotive standing.
-     *
-     * @throws Exception from the example
      */
     @Test
     public void testDriveALocomotive() throws Exception
@@ -173,8 +161,6 @@ public class testTheApiExamplesRun
     /**
      * Switches and signals take the setting they are given, the sensor is read as set, and the stored route throws what
      * it holds and is gone again at the end.
-     *
-     * @throws Exception from the example
      */
     @Test(timeOut = 120000)
     public void testSwitchesSignalsAndSensors() throws Exception
@@ -218,8 +204,6 @@ public class testTheApiExamplesRun
     /**
      * The graph answers what it was built to answer, a changed setting or lock is gone, and a saved graph loads again
      * the same.
-     *
-     * @throws Exception from the example
      */
     @Test
     public void testBuildAGraph() throws Exception
@@ -267,8 +251,6 @@ public class testTheApiExamplesRun
 
     /**
      * A train set off by the layout is seen leaving, passing its sensor and arriving, and stands at its destination.
-     *
-     * @throws Exception from the example
      */
     @Test(timeOut = 120000)
     public void testRunTrainsOnAGraph() throws Exception
@@ -299,8 +281,6 @@ public class testTheApiExamplesRun
 
     /**
      * A sensor makes a thread of the example's own act, a sensor starts the stored route, and the commands are counted.
-     *
-     * @throws Exception from the example
      */
     @Test(timeOut = 120000)
     public void testReactToEvents() throws Exception
@@ -326,10 +306,117 @@ public class testTheApiExamplesRun
     }
 
     /**
+     * `FullAutonomyExample` (in src/, with AutomationAPI.md) sets a train off by itself: one of its two trains leaves,
+     * no faster than the preferred speed the example gives it, under its station's signal set green, and the other
+     * waits for the track the two share.  Its code is called by reflection, since its only public door is a `main`
+     * that opens a real station; the run it starts has no handle, so it is ended by retiring every Layout, which stops
+     * a journey at its next check.  The trains, accessories and sensors it names are made where the station lacks
+     * them, and the preferred speeds it writes are put back.
+     *
+     * MUTATION: in `Layout.runLocomotives`, drop `this.running = true;`, and no train sets off.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFullAutonomyExampleSetsATrainOff() throws Exception
+    {
+        final String[] trains = {"SNCF 422365", "140 024-1 DB AG"};
+        final int[] speeds = {30, 50};
+        final String[] signals = {"Signal 1", "Signal 2"};
+
+        java.util.Map<String, Integer> preferredWas = new java.util.HashMap<>();
+        java.util.List<String> made = new java.util.ArrayList<>();
+
+        for (int i = 0; i < trains.length; i++)
+        {
+            if (station.getLocByName(trains[i]) == null)
+            {
+                station.newMM2Locomotive(trains[i], 70 + i);
+                made.add(trains[i]);
+            }
+
+            preferredWas.put(trains[i], station.getLocByName(trains[i]).getPreferredSpeed());
+        }
+
+        for (int address : new int[] {1, 2})
+        {
+            if (station.getAccessoryByName("Signal " + address) == null)
+            {
+                station.newSignal(address, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+            }
+
+            if (!station.isFeedbackSet(Integer.toString(address))) station.newFeedback(address, null);
+
+            station.setFeedbackState(Integer.toString(address), false);
+        }
+
+        if (station.getAccessoryByName("Switch 10") == null)
+        {
+            station.newSwitch(10, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+        }
+
+        if (!station.isFeedbackSet("3")) station.newFeedback(3, null);
+
+        station.setFeedbackState("3", false);
+
+        station.go();
+
+        assertTrue(station.waitForPowerState(true, 10000), "precondition: the power did not come on");
+
+        try
+        {
+            Method code = Class.forName("org.traincontrol.examples.FullAutonomyExample")
+                .getDeclaredMethod("execCode", MarklinControlStation.class);
+
+            code.setAccessible(true);
+            code.invoke(null, station);
+
+            int moving = -1;
+
+            for (int waited = 0; waited < 30000 && moving < 0; waited += 100)
+            {
+                for (int i = 0; i < trains.length; i++)
+                {
+                    if (station.getLocByName(trains[i]).getSpeed() > 0) moving = i;
+                }
+
+                if (moving < 0) Thread.sleep(100);
+            }
+
+            assertTrue(moving >= 0, "neither of the example's trains set off within 30 seconds");
+
+            for (int i = 0; i < trains.length; i++)
+            {
+                assertEquals(station.getLocByName(trains[i]).getPreferredSpeed(), speeds[i], trains[i]
+                    + " was not given the preferred speed the example says");
+            }
+
+            // At most that speed: it is slowed for the arrival once past the shared track
+            assertTrue(station.getLocByName(trains[moving]).getSpeed() <= speeds[moving], trains[moving]
+                + " runs faster than the preferred speed the example gives it: "
+                + station.getLocByName(trains[moving]).getSpeed());
+
+            assertTrue(station.getAccessoryByName(signals[moving]).isGreen(), trains[moving] + " set off with "
+                + signals[moving] + " not green");
+
+            assertEquals(station.getLocByName(trains[1 - moving]).getSpeed(), 0, trains[1 - moving] + " set off too,"
+                + " over the track the two trains share");
+        }
+        finally
+        {
+            org.traincontrol.automation.Layout.retireEveryLayout();
+
+            for (String train : trains)
+            {
+                station.getLocByName(train).setSpeed(0);
+                station.getLocByName(train).setPreferredSpeed(preferredWas.get(train));
+            }
+
+            for (String train : made) station.deleteLoc(train);
+        }
+    }
+
+    /**
      * Each example takes its station as a parameter, has a main to run by itself, and none opens a real station: the
      * only init in the folder is the simulation.
-     *
-     * @throws Exception from reading the sources
      */
     @Test
     public void testNoExampleReachesForARealStation() throws Exception
@@ -380,12 +467,8 @@ public class testTheApiExamplesRun
     }
 
     /**
-     * The methods kept for the people who use the API are shown in the examples.
-     *
-     * A method nothing in the program calls survives only because someone may use it; this keeps the promise made when
-     * it was kept (FR-138) from lapsing when an example is edited.
-     *
-     * @throws Exception from reading the sources
+     * The methods kept for the people who use the API are shown in the examples, so the promise made when they were
+     * kept (FR-138) cannot lapse when an example is edited.
      */
     @Test
     public void testEveryKeptMethodIsShown() throws Exception
@@ -401,9 +484,7 @@ public class testTheApiExamplesRun
         }
     }
 
-    /**
-     * @return the example sources
-     */
+    /** The example sources. */
     private static File[] sources()
     {
         File[] files = new File("test/examples").listFiles((dir, name) -> name.endsWith(".java"));
@@ -415,11 +496,7 @@ public class testTheApiExamplesRun
         return files;
     }
 
-    /**
-     * @param source a Java file
-     * @return its code, without comments and text in quotes
-     * @throws Exception when it cannot be read
-     */
+    /** A Java file's code, without comments and text in quotes. */
     private static String code(File source) throws Exception
     {
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);

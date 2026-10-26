@@ -33,12 +33,11 @@ import org.traincontrol.util.Util;
 
 /**
  * Routes > Import, driven as Adam drives it: the file chooser answered with an export of his routes, the question about
- * automatic firing answered No (MT-496) or Yes (MT-497), and what the door then says and leaves armed read (Adam,
- * 2026-09-25: automated tests supersede the MTs they answer).
+ * automatic firing answered No (MT-496) or Yes (MT-497), and what the door then says and leaves armed read.
  *
- * The file is `exportRoutes()`, which is the text Routes > Export shows and saves; the Export door itself is not pressed
- * because it also copies the text to the clipboard, which is the machine's and not the run's.  An import deletes every
- * route in the data it runs on, so this runs only where the run has its own copy of the data (one.sh, battery.sh), as
+ * The file is `exportRoutes()`, the text Routes > Export shows and saves; the Export door itself is not pressed because
+ * it also copies the text to the clipboard, which is the machine's and not the run's.  An import deletes every route in
+ * the data it runs on, so this runs only where the run has its own copy of the data (one.sh, battery.sh), as
  * `core.testAnImportSaysItsRoutesAreOff` does.
  *
  * @author Adam
@@ -49,12 +48,10 @@ public class testTheRoutesImportDoorAsksByName
     private static final String YES = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
 
     /**
-     * Answered No: the question named the routes saved with automatic firing on and started on No, the message says every
-     * route came in with it off, and none has it on (MT-496).
+     * Answered No: the question named the routes saved with automatic firing on and started on No, the message says
+     * every route came in with it off, and none has it on (MT-496).
      *
-     * MUTATION: fill the question with the count again, start it on Yes, or arm on No, and this fails.
-     *
-     * @throws Exception from the window or the import
+     * MUTATION: leave the names out of the question's Details list, start it on Yes, or arm on No, and this fails.
      */
     @Test
     public void testAnsweredNoEveryRouteArrivesOff() throws Exception
@@ -63,9 +60,12 @@ public class testTheRoutesImportDoorAsksByName
 
         assertEquals(run.initial, NO, "the question does not start on No (MT-496)");
 
-        // WORDS, NOT LINES: the question is wrapped to fit the screen.
-        assertEquals(words(run.question), words(I18n.f("route.ui.confirmRearmImported", String.join(", ", run.savedArmed))),
-            "the question does not name the routes saved with automatic firing on (MT-496): " + run.question);
+        // THE COUNT IN THE SENTENCE, THE NAMES IN THE DETAILS LIST UNDER IT
+        assertEquals(run.questionShape.sentence, I18n.f("route.ui.confirmRearmImported", run.savedArmed.size()),
+            "the question does not count the routes saved with automatic firing on: " + run.questionShape);
+
+        assertEquals(run.questionShape.details, run.savedArmed, "the question does not name the routes saved with"
+            + " automatic firing on (MT-496): " + run.questionShape);
 
         for (String name : run.armedBefore)
         {
@@ -84,12 +84,10 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * Answered Yes: the message says automatic firing is on again for the routes saved with it on, and exactly those have
-     * it (MT-497).
+     * Answered Yes: the message says automatic firing is on again for the routes saved with it on, and exactly those
+     * have it (MT-497).
      *
      * MUTATION: arm none, arm every route, or say another count, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testAnsweredYesTheSavedArmedRoutesAreArmedAgain() throws Exception
@@ -107,18 +105,12 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route saved armed that has no sensor to watch is not armed by Yes - the model arms only a route with one, as the
-     * right-click item does - and the door neither counts it as armed again (found automating MT-497, 2026-09-25) nor
-     * names it in the question as one Yes will arm.
-     *
-     * The door said "on again for the N that were saved with it on", N counted from the file, while the model counted
-     * the routes it armed; so a file whose saved-armed route had lost its sensor told the operator a route was armed
-     * again that was not, and the log said the opposite.  Such a file is what an export gives of a route whose sensor was
-     * removed while its automatic firing was on.
+     * A route saved armed that has no sensor to watch is not armed by Yes (the model arms only a route with one, as the
+     * right-click item does), and the door neither counts it as armed again nor names it in the question.  The door
+     * counted N from the file while the model counted the routes it armed, so the operator was told a route was armed
+     * again that was not.
      *
      * MUTATION: count from the file again, or name every route saved armed, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testASavedArmedRouteWithNoSensorIsNotCountedAsArmed() throws Exception
@@ -151,16 +143,14 @@ public class testTheRoutesImportDoorAsksByName
 
         assertNotNull(noSensor[0], "precondition: no route with no sensor was saved armed in the file");
 
-        // THE QUESTION ON SCREEN, not the model's list: its names, after the colon, split as they were joined.
-        String asked = words(run.question);
-        String opening = words(I18n.f("route.ui.confirmRearmImported", "@@@"));
-        String listed = asked.substring(opening.indexOf("@@@"), asked.length() - (opening.length() - opening.indexOf("@@@") - 3));
+        // THE QUESTION ON SCREEN, not the model's list: the names in its Details list.
+        List<String> listed = run.questionShape.details;
 
-        assertFalse(java.util.Arrays.asList(listed.split(", ")).contains(noSensor[0]), "the question names " + noSensor[0]
+        assertFalse(listed.contains(noSensor[0]), "the question names " + noSensor[0]
             + ", saved armed with no sensor, among the routes Yes turns automatic firing on for - and Yes does not"
             + " (RLU-C2): " + run.question);
 
-        assertEquals(java.util.Arrays.asList(listed.split(", ")), run.savedArmed, "the question does not name exactly the"
+        assertEquals(listed, run.savedArmed, "the question does not name exactly the"
             + " routes the import arms: " + run.question);
 
         assertEquals(run.armedAfter, run.armedBefore, "answered Yes, a route saved armed with no sensor was armed, or a"
@@ -171,16 +161,13 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * A route whose name has a letter outside ASCII comes back by the name it was exported with.
-     *
-     * Export writes the file as UTF-8; the door read it in the machine's own character set, which on Java 8 under
-     * Windows is a code page - so "Ausfahrt Süd" came back as "Ausfahrt SÃ¼d", and a route's locomotive command naming
-     * "Köf II" named no locomotive, and was skipped when the route fired.  On a JVM whose own character set is UTF-8 the
-     * two readings agree and this can see nothing, so there it is skipped rather than passed.
+     * A route whose name has a letter outside ASCII comes back by the name it was exported with.  Export writes UTF-8;
+     * the door read it in the machine's own character set, which on Java 8 under Windows is a code page, so a route's
+     * locomotive command naming a non-ASCII locomotive named none and was skipped when the route fired.  On a JVM whose
+     * own character set is UTF-8 the two readings agree and this can see nothing, so there it is skipped rather than
+     * passed.
      *
      * MUTATION: read the file without a character set, and this fails.
-     *
-     * @throws Exception from the window or the import
      */
     @Test
     public void testARouteNamedOutsideAsciiComesBackByItsName() throws Exception
@@ -231,13 +218,11 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * The line naming the routes an import split fits the screen too: no line of the message after the import runs past a
-     * dialog's width.  The file carries one route that mixes an emergency stop with
-     * other commands, which the import splits.
+     * The notice naming the routes an import split fits the screen too: short paragraphs over the names in a Details
+     * list, in a popup no wider than about 640 px.  The file carries one route that mixes an emergency stop with other
+     * commands, which the import splits.
      *
-     * MUTATION: put the split routes' line back unwrapped, and this fails.
-     *
-     * @throws Exception from the window or the import
+     * MUTATION: put the split routes back into the notice's text, and this fails.
      */
     @Test
     public void testTheLineNamingTheRoutesItSplitFitsTheScreen() throws Exception
@@ -272,46 +257,37 @@ public class testTheRoutesImportDoorAsksByName
             return json.toString();
         });
 
-        String opening = words(I18n.f("route.ui.infoImportSplitStopRoutes", "@@@"));
+        String opening = words(I18n.t("route.ui.infoImportSplitStopRoutes"));
 
-        opening = opening.substring(0, opening.indexOf("@@@")).trim();
+        support.PopupShape told = null;
 
-        String told = null;
-
-        for (String message : run.said)
+        for (support.PopupShape shown : run.saidShapes)
         {
-            if (words(message).contains(opening)) told = message;
+            if (words(shown.sentence).contains(opening)) told = shown;
         }
 
-        assertNotNull(told, "precondition: the import did not name the route it split: " + run.said);
+        assertNotNull(told, "the import did not say it split a route, in one sentence over a list: " + run.said);
 
-        // THE PARAGRAPH NAMING THEM: the notice above it is one sentence of a known length; the list is what grows
-        String paragraph = null;
+        // THE NAMES IN THE DETAILS LIST, and each paragraph above it one short sentence
+        assertTrue(told.details.contains("RL5 a route that mixes a stop with its other commands"), "the route the import"
+            + " split is not in the Details list under the notice: " + told);
 
-        for (String part : told.split("\n\n"))
+        for (String paragraph : told.sentence.split("\n\n"))
         {
-            if (words(part).contains(opening)) paragraph = part;
+            assertTrue(support.PopupShape.words(paragraph) <= 30, "a paragraph above the list is "
+                + support.PopupShape.words(paragraph) + " words long: " + told);
         }
 
-        assertNotNull(paragraph, "precondition: no paragraph of the message names the routes it split: " + told);
-
-        for (String line : paragraph.split("\n"))
-        {
-            assertTrue(line.length() <= 100, "a line naming the routes the import split is " + line.length() + " characters"
-                + " long, so the dialog is as wide as that list (RLU5-C4): " + line);
-        }
+        assertTrue(told.width <= support.PopupShape.MAX_WIDTH, "the notice naming the routes the import split is "
+            + told.width + " px wide, so the dialog is as wide as that list (RLU5-C4): " + told);
     }
 
     /**
-     * The question fits the screen however many routes it names: no line of it runs past a dialog's width.
+     * The question fits the screen however many routes it names: one short sentence with their count, the names in a
+     * scrolling Details list under it, in a popup no wider than about 640 px.  Here every route with a sensor is saved
+     * armed, which made a question of over 200 words.
      *
-     * The names went into the middle of the first line, joined with commas, and a question does not wrap a line - so a
-     * file with many routes saved armed made a dialog wider than the screen, its question past the right-hand edge.
-     * Here every route with a sensor is saved armed.
-     *
-     * MUTATION: put the names on one line again, and this fails.
-     *
-     * @throws Exception from the window or the import
+     * MUTATION: put the names back into the question's text, and this fails.
      */
     @Test
     public void testAQuestionNamingManyRoutesFitsTheScreen() throws Exception
@@ -334,11 +310,21 @@ public class testTheRoutesImportDoorAsksByName
         assertTrue(String.join(", ", run.savedArmed).length() > 200, "precondition: the routes saved armed make a list of"
             + " only " + String.join(", ", run.savedArmed).length() + " characters, which fits on one line anyway");
 
-        for (String line : run.question.split("\n"))
-        {
-            assertTrue(line.length() <= 100, "a line of the question is " + line.length() + " characters long, so the"
-                + " dialog is as wide as its list of routes and can run off the screen (RLU-C3): " + line);
-        }
+        // ONE SHORT SENTENCE, THE NAMES UNDER IT IN A DETAILS LIST, AND A DIALOG THAT FITS
+        assertEquals(run.questionShape.sentence, I18n.f("route.ui.confirmRearmImported", run.savedArmed.size()),
+            "the question is not its sentence with the count: " + run.questionShape);
+
+        assertEquals(run.questionShape.details, run.savedArmed, "the Details list does not name the routes saved armed: "
+            + run.questionShape);
+
+        assertTrue(run.questionShape.width <= support.PopupShape.MAX_WIDTH, "the question is " + run.questionShape.width
+            + " px wide, as wide as its list of routes, and can run off the screen (RLU-C3): " + run.questionShape);
+    }
+
+    /** A popup's text: its sentence, then each line of its Details list. */
+    private static String textOf(support.PopupShape shown)
+    {
+        return shown.details.isEmpty() ? shown.sentence : shown.sentence + "\n" + String.join("\n", shown.details);
     }
 
     /** A sentence as its words, whatever lines they are on. */
@@ -356,8 +342,10 @@ public class testTheRoutesImportDoorAsksByName
         Set<String> armedBefore;
         List<String> savedArmed;
         String question;
+        support.PopupShape questionShape;
         String initial;
         List<String> said;
+        List<support.PopupShape> saidShapes;
         Set<String> routesAfter;
         Set<String> armedAfter;
     }
@@ -369,8 +357,8 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
-     * Arms a route with a sensor where none is armed (MT-496 and MT-497 step 1, through Enable Auto Execution's own call),
-     * exports, and imports the file through Routes > Import, answering the question.
+     * Arms a route with a sensor where none is armed (MT-496 and MT-497 step 1), exports, and imports the file through
+     * Routes > Import, answering the question.
      */
     private static Imported importHisRoutes(boolean yes, Edit edit) throws Exception
     {
@@ -419,8 +407,8 @@ public class testTheRoutesImportDoorAsksByName
 
                 SwingUtilities.invokeAndWait(() -> ui[0].enableOrDisableRoute(arming, true));
 
-                // THE EDIT DELETES AND RE-ADDS THE ROUTE, so for a moment it is in the list under no name at all: asked
-                // then, getRoute answered null and this threw (the battery of 2026-09-26, another run's JVMs up)
+                // THE EDIT DELETES AND RE-ADDS THE ROUTE, so for a moment it is in the list under no name at all, and
+                // getRoute answered null.
                 for (long end = System.currentTimeMillis() + 10000; (model.getRoute(arming) == null
                     || !model.getRoute(arming).isEnabled()) && System.currentTimeMillis() < end; ) Thread.sleep(50);
             }
@@ -465,8 +453,10 @@ public class testTheRoutesImportDoorAsksByName
                 + " saved with it on");
 
             run.question = answerer.question;
+            run.questionShape = answerer.questionShape;
             run.initial = answerer.initial;
             run.said = new ArrayList<>(answerer.said);
+            run.saidShapes = new ArrayList<>(answerer.saidShapes);
             run.routesAfter = new TreeSet<>(model.getRouteList());
             run.armedAfter = armed(model);
 
@@ -537,6 +527,8 @@ public class testTheRoutesImportDoorAsksByName
         private volatile boolean running = true;
         private volatile boolean chose = false;
         private volatile String question;
+        private volatile support.PopupShape questionShape;
+        private final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
         private volatile String initial;
 
         Answerer(File file, boolean yes)
@@ -588,7 +580,8 @@ public class testTheRoutesImportDoorAsksByName
 
                     if (I18n.t("route.ui.confirmRearmImportedTitle").equals(dialog.getTitle()))
                     {
-                        question = String.valueOf(pane.getMessage());
+                        questionShape = support.PopupShape.of(pane);
+                        question = textOf(questionShape);
                         initial = String.valueOf(pane.getInitialValue());
 
                         final String answer = yes ? YES : NO;
@@ -604,7 +597,10 @@ public class testTheRoutesImportDoorAsksByName
                         continue;
                     }
 
-                    said.add(String.valueOf(pane.getMessage()));
+                    support.PopupShape shown = support.PopupShape.of(pane);
+
+                    saidShapes.add(shown);
+                    said.add(textOf(shown));
 
                     SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
                 }

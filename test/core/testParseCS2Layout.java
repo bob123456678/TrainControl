@@ -347,10 +347,9 @@ public class testParseCS2Layout
      * other.
      *
      * Driven against three names added directly to the model's layout database in a scrambled order,
-     * rather than against whatever model.getLayoutList() already returns.  That used to compare the
-     * list with a sorted copy of itself - trivially true at 0 or 1 pages, and the list it compared came
-     * from LAYOUT_OVERRIDE_PATH_PREF, a machine preference, rather than from this test's own fixture,
-     * so it was really asserting nothing about production sorting.  RemoteDeviceCollection stores names
+     * rather than against whatever model.getLayoutList() already returns: that list comes from
+     * LAYOUT_OVERRIDE_PATH_PREF, a machine preference, not from this test's own fixture, and comparing it with a
+     * sorted copy of itself is trivially true at 0 or 1 pages.  RemoteDeviceCollection stores names
      * in a plain HashMap, whose iteration order is neither insertion order nor alphabetical, so three
      * names added as Zulu, Alpha, Mike coming back as Alpha, Mike, Zulu is real evidence that
      * getLayoutList()'s own Collections.sort ran, not a coincidence of insertion order.
@@ -1045,7 +1044,7 @@ public class testParseCS2Layout
      *
      * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -
      * opens with exactly this: a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id` at all.
-     * An absent id is ZERO - Adam, 2026-09-10 - which is what `pageIdOrPosition` says and what
+     * An absent id is ZERO (Adam) - which is what `pageIdOrPosition` says and what
      * `readLayoutIndexIds` does with the same file - so a reader that insisted on a stated id would
      * drop the offsets of the one page in the shipped export that has any.
      *

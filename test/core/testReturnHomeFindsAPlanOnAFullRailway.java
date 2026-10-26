@@ -22,20 +22,19 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * where it does not (OB-230).
  *
  * Adam, deferring this until his railway was measured: *"I want to do the heuristic, but I think this needs to be
- * deferred until I deliver you the fully measured layout."*  Measured on it (2026-09-24, `test/operator_layout`), four
- * trains come home in a second or two, and six or more answered NO_PLAN_FOUND at the fifteen-second budget - and at
- * ten times the budget.  Counted: fifteen seconds examined 3,852 arrangements and spent 14.4 of them in 643,129 route
- * searches, some thirty-three onward moves an arrangement.  A search for the SHORTEST plan cannot get through that
- * breadth with any estimate that never overstates the moves left; weighting the estimate found a ten-move plan for
- * the arrangement below in under five seconds.  So the budget is shared: the shortest plan is looked for first, as it
- * always has been, and the last share of the budget looks for any plan from the railway as it stands.
+ * deferred until I deliver you the fully measured layout."*  Measured on it (`test/operator_layout`), four trains come
+ * home in a second or two, and six or more answered NO_PLAN_FOUND at the fifteen-second budget - and at ten times the
+ * budget: fifteen seconds examined 3,852 arrangements and spent 14.4 of them in 643,129 route searches, some
+ * thirty-three onward moves an arrangement.  A search for the SHORTEST plan cannot get through that breadth with any
+ * estimate that never overstates the moves left, while weighting the estimate found a ten-move plan for the arrangement
+ * below in under five seconds.  So the budget is shared: the shortest plan is looked for first, and the last share
+ * looks for any plan from the railway as it stands.
  *
  * The search's clock is stepped a fixed amount a read, so its budget is a count of arrangements rather than of seconds
- * on whatever machine runs this - the same answer every time.
+ * on whatever machine runs this.
  *
- * No lengths, as in `core.testTrainsComeHomeFromAPinnedArrangement` (Adam, 2026-09-15: *"i recommend relaxing
- * restrictions (track/station lengths) in the layout used for the A* tests"*): this is about the search, not the room
- * rules.
+ * No lengths, as in `core.testTrainsComeHomeFromAPinnedArrangement` (Adam: *"i recommend relaxing restrictions
+ * (track/station lengths) in the layout used for the A* tests"*): this is about the search, not the room rules.
  *
  * @author Adam
  */
@@ -103,11 +102,9 @@ public class testReturnHomeFindsAPlanOnAFullRailway
 
     /**
      * Six trains, one of them already home, the others each standing on somebody else's platform - an arrangement a run
-     * leaves.  NO_PLAN_FOUND before OB-230, whatever the budget; a plan now, and one that brings everybody home.
+     * leaves: a plan is found, and one that brings everybody home.
      *
      * MUTATION: search only for the shortest plan, for the whole budget, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testSixTrainsOnAFullRailwayComeHome() throws Exception
@@ -129,12 +126,10 @@ public class testReturnHomeFindsAPlanOnAFullRailway
     /**
      * An arrangement the shortest-plan search solves in its half of the budget still gets the shortest plan (OB-230).
      *
-     * Four trains each moved one platform along: six moves, as before OB-230.  The any-plan share is reached only when
-     * the shortest-plan shares find nothing, so where a shortest plan is found it is the one given.
+     * Four trains each moved one platform along: six moves.  The any-plan share is reached only when the shortest-plan
+     * shares find nothing, so where a shortest plan is found it is the one given.
      *
      * MUTATION: search for any plan first, and this fails on the number of moves.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testAnEasyArrangementStillGetsTheShortestPlan() throws Exception
@@ -201,9 +196,7 @@ public class testReturnHomeFindsAPlanOnAFullRailway
         return staging.plan();
     }
 
-    /**
-     * Where the plan's moves leave each train, and that it is home.
-     */
+    /** Where the plan's moves leave each train, and that it is home. */
     private static void assertEverybodyHome(HomeStaging.Plan plan, String[] homes, String[] standing)
     {
         Map<String, Point> at = new LinkedHashMap<>();

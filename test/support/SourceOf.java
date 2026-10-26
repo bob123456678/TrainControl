@@ -12,13 +12,9 @@ import java.util.Map;
 
 /**
  * The program's source, as text, for the tests that read it - found by what a declaration says, never by which file
- * holds it.
- *
- * A source-reading claim used to open one named file, `indexOf` a signature and cut up to `"\n    }"`.  Moved to
- * another file, the declaration was then "not found" (a loud red) or, worse, a negative claim such as
- * `assertFalse(ui.contains("void autoLoadOff("))` stayed green over a file the code had left (FR-136).  Here a
- * declaration is looked for in every `.java` file under `src/`, must be there exactly once, and a negative claim asks
- * {@link #allCode()}, which still holds the code wherever it moves.
+ * holds it.  A claim that opened one named file went "not found" when the declaration moved or, worse, a negative claim
+ * stayed green over a file the code had left (FR-136).  Here a declaration is looked for in every `.java` file under
+ * `src/`, must be there exactly once, and a negative claim asks {@link #allCode()}.
  *
  * The rules every method shares:
  * <ul>
@@ -50,11 +46,9 @@ public final class SourceOf
     }
 
     /**
-     * The declaration that starts with this signature, from its first character to the brace that closes its body
-     * (or the `;` that ends a field or an abstract method), wherever it is under `src/`.
-     *
-     * @param signature enough of the declaration to name it once, e.g. `"private void checkAutoLayoutLatency("`
-     * @return the declaration's text
+     * The declaration that starts with this signature (enough of it to name it once, e.g.
+     * `"private void checkAutoLayoutLatency("`), from its first character to the brace that closes its body (or the `;`
+     * that ends a field or an abstract method), wherever it is under `src/`.
      */
     public static String declaration(String signature)
     {
@@ -64,11 +58,8 @@ public final class SourceOf
     }
 
     /**
-     * What is between the braces of the declaration that starts with this signature: its body without the signature,
-     * so a claim about what the body calls cannot be met by the declaration's own name or parameters.
-     *
-     * @param signature enough of the declaration to name it once
-     * @return the text after its opening brace and before its closing one
+     * What is between the braces of the declaration that starts with this signature: its body without the signature, so
+     * a claim about what the body calls cannot be met by the declaration's own name.
      */
     public static String body(String signature)
     {
@@ -87,12 +78,8 @@ public final class SourceOf
     }
 
     /**
-     * The whole text of the one file that declares this signature, for a claim that compares places in the file
-     * holding it (the order of two calls, say).  A claim about one declaration asks {@link #declaration} instead,
-     * which does not care where its neighbors went.
-     *
-     * @param signature enough of a declaration to name it once
-     * @return the file's text
+     * The whole text of the one file that declares this signature, for a claim that compares places in the file holding
+     * it; a claim about one declaration asks {@link #declaration} instead.
      */
     public static String fileDeclaring(String signature)
     {
@@ -100,12 +87,8 @@ public final class SourceOf
     }
 
     /**
-     * The declaration that starts with this signature in text a claim already holds - a body, say - by the same rules
-     * as {@link #declaration}: once, in the code, to its closing brace.
-     *
-     * @param text the text to look in
-     * @param signature enough of the declaration to name it once there
-     * @return the declaration's text
+     * The declaration that starts with this signature in text a claim already holds, by the same rules as {@link
+     * #declaration}.
      */
     public static String declarationIn(String text, String signature)
     {
@@ -125,11 +108,8 @@ public final class SourceOf
     }
 
     /**
-     * Every `.java` file under `src/`, one after another, comments and all - for a claim that something is said
-     * nowhere in the program.  Usually {@link #allCode()} is the one wanted: a comment elsewhere may well name a call
-     * that the code no longer makes.
-     *
-     * @return the text of every source file
+     * Every `.java` file under `src/`, comments and all, for a claim that something is said nowhere in the program;
+     * usually {@link #allCode()} is wanted.
      */
     public static synchronized String all()
     {
@@ -138,11 +118,7 @@ public final class SourceOf
         return all;
     }
 
-    /**
-     * {@link #all()} with every comment blanked: for a claim that the program does something nowhere, or somewhere.
-     *
-     * @return the code of every source file
-     */
+    /** {@link #all()} with every comment blanked: for a claim that the program does something nowhere, or somewhere. */
     public static synchronized String allCode()
     {
         if (allCode == null) allCode = String.join("\n", code().values());
@@ -151,13 +127,10 @@ public final class SourceOf
     }
 
     /**
-     * The code of every `.java` file under one folder of `src/`, its subfolders included, comments blanked and joined
-     * as {@link #allCode()} joins the whole program: for a claim about a layer rather than a class - "nothing in the
-     * automation package names the dialog" - which a class split out of the layer's biggest file cannot escape.
-     *
-     * @param folder the folder from the project root, e.g. `"src/org/traincontrol/automation/"`; a missing trailing
-     *     `/` is added, so `automation` never takes in `automationui`
-     * @return the code of every source file under it, in path order
+     * The code of every `.java` file under one folder of `src/`, subfolders included, comments blanked and joined as
+     * {@link #allCode()} joins the whole program: for a claim about a layer rather than a class.  The folder is from
+     * the project root, e.g. `"src/org/traincontrol/automation/"`; a missing trailing `/` is added, so `automation`
+     * never takes in `automationui`.
      */
     public static String codeUnder(String folder)
     {
@@ -181,25 +154,13 @@ public final class SourceOf
         return String.join("\n", under);
     }
 
-    /**
-     * How many times this text is in the program's code (comments blanked), counted without overlaps - for a claim
-     * such as "exactly one door calls it" or "nothing calls it any more".
-     *
-     * @param text the text to count
-     * @return the number of places, 0 when none
-     */
+    /** How many times this text is in the program's code (comments blanked), counted without overlaps. */
     public static int occurrences(String text)
     {
         return occurrencesIn(allCode(), text.replace("\r\n", "\n")).size();
     }
 
-    /**
-     * The text with every comment blanked to spaces, keeping its line breaks, string literals and length, so an
-     * offset in one is the same place in the other.
-     *
-     * @param source Java source
-     * @return the same text with `//` and block comments as spaces
-     */
+    /** The text with every comment blanked to spaces, keeping its line breaks, string literals and length. */
     public static String withoutComments(String source)
     {
         char[] out = source.toCharArray();

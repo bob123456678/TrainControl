@@ -423,7 +423,7 @@ do
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in this run's preference node before any test (FR-136)
     "$JAVA" $JAVA_FLAGS $EXTRA -Dtraincontrol.batteryRun="$RUN_ID" \
-        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
+        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
     JVM=$!
 
@@ -486,7 +486,10 @@ do
         #
         # Both wordings, because a 64-bit JDK 8 says "Unable to allocate NNN bitmaps ... for the
         # requested NNNKB heap" as well as "Could not reserve enough space for %I64uKB object heap".
-        if grep -qE "Could not reserve enough space|Unable to allocate.*heap" "$S/one-run.txt"
+        if grep -q "UNANSWERED DIALOG" "$S/one-run.txt"
+        then
+            echo "$(grep 'UNANSWERED DIALOG' "$S/one-run.txt" | head -1 | sed "s/^\*\*\* /*** $T: /")"
+        elif grep -qE "Could not reserve enough space|Unable to allocate.*heap" "$S/one-run.txt"
         then
             echo "*** $T DID NOT RUN - no heap (machine busy, rerun)"
         elif grep -q "OutOfMemoryError" "$S/one-run.txt"

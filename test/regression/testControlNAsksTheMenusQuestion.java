@@ -13,19 +13,15 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**
- * Control+N offers a station name exactly where the right-click menu does.
+ * Control+N offers a station name exactly where the right-click menu does (FR-086).
  *
- * FR-086 (Adam, on MT-397, 2026-09-15): *"let's add a hotkey for 'show station name here' too"*.  The key's javadoc
- * says it asks what the menu asks; it did not ask `isIgnored`, so on an ignored square - a page left out of autonomy,
- * say - it opened the station chooser and wrote a caption where the menu offers nothing but the bulk tools.  The shape
- * `testControlEAsksTheMenusQuestion` already holds for Control+E: the guard and the affordance asking one question,
- * put side by side through a public predicate because the key itself opens a modal dialog.
- *
- * Read-only: its own diagram in a temporary folder.
+ * The key asks what the menu asks, put side by side through a public predicate because the key itself opens a modal
+ * dialog (the shape `testControlEAsksTheMenusQuestion` holds for Control+E).  Read-only: its own diagram in a
+ * temporary folder.
  *
  * @author Adam
  */
@@ -33,8 +29,6 @@ public class testControlNAsksTheMenusQuestion
 {
     /**
      * On plain track the menu offers a name and so does the key; on the same track on an ignored page, neither does.
-     *
-     * @throws Exception from the session or the reflection
      */
     @Test
     public void testTheKeyOffersNoNameWhereTheMenuOffersNone() throws Exception
@@ -53,7 +47,7 @@ public class testControlNAsksTheMenusQuestion
 
             TileKey track = new TileKey("main", 3, 1);
 
-            // THE CONTROL: a square the menu offers a name on, and the key agrees.
+            // The control: a square the menu offers a name on, and the key agrees.
             javax.swing.JPopupMenu menu = panel.buildTileMenu(track, null);
 
             assertNotNull(menu, "precondition: no menu on the plain track at " + track);
@@ -64,9 +58,8 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(keyOffersAName(panel, track),
                 "the key offers no station name on plain track where the menu does: " + itemNames(menu));
 
-            // AND THE SQUARES THE MENU SENDS TO ITS TEXT MENU: a label and an empty square, which carry no
-            // track - an empty square counts as ignored, so a predicate that asked `isIgnored` before the text branch
-            // would refuse the very square a station name is usually put on, and the two squares above would not see it.
+            // The squares the menu sends to its text menu (a label, an empty square) carry no track and count as
+            // ignored; a predicate asking `isIgnored` before the text branch would refuse them.
             for (TileKey square : new TileKey[] { new TileKey("main", 3, 3), new TileKey("main", 4, 2) })
             {
                 javax.swing.JPopupMenu there = panel.buildTileMenu(square, null);
@@ -80,7 +73,7 @@ public class testControlNAsksTheMenusQuestion
                     + itemNames(there) + " (MFV-C3)");
             }
 
-            // AN IGNORED SQUARE: the same track, its page left out of autonomy.
+            // An ignored square: the same track, its page left out of autonomy.
             session.setPageExcluded("main", true);
 
             javax.swing.JPopupMenu ignored = panel.buildTileMenu(track, null);
@@ -102,13 +95,8 @@ public class testControlNAsksTheMenusQuestion
     /**
      * Every key in the editor puts down a gesture in progress, as the right-click menu does.
      *
-     * The menu abandons an armed tool before it offers anything - opening it is how somebody says "not that, this
-     * instead".  Control+N does the same; Control+S and Control+E did not, so with Test a Path armed one
-     * key disarmed it and the next two left it waiting for a click.  Asked on a page left out of autonomy, where no key
-     * opens a dialog - each key's own predicate is checked first, so a key that would open one fails a precondition
-     * rather than hanging the run.
-     *
-     * @throws Exception from the session or the reflection
+     * Asked on a page left out of autonomy, where no key opens a dialog; each key's own predicate is checked first, so
+     * a key that would open one fails a precondition rather than hanging the run.
      */
     @Test
     public void testEveryEditorKeyPutsDownAGestureAsTheMenuDoes() throws Exception
@@ -135,15 +123,14 @@ public class testControlNAsksTheMenusQuestion
             assertFalse(panel.offersAMaximumTrainLength(track), "precondition: Control+B would open a dialog on " + track);
             assertFalse(keyOffers(panel, "offersAHome", track), "precondition: Control+H would open a dialog on " + track);
 
-            // EVERY KEY THAT IS A DOOR ONTO THE MENU: S, E, N, and B and H, which the first version left out.
+            // Every key that is a door onto the menu: S, E, N, B and H.
             String[] keys = { "Control+S", "Control+E", "Control+N", "Control+B", "Control+H" };
             Runnable[] presses = { () -> panel.promptNameFor(track), () -> panel.promptLengthFor(track),
                 () -> panel.showStationNameFor(track), () -> panel.promptMaxTrainLengthFor(track),
                 () -> panel.promptHomeFor(track) };
 
-            // ARMED THROUGH THE PANEL'S OWN FIELD, not its button: on an ignored page the panel's refresh disables Test a
-            // Path (`testButton.setEnabled(!ignored)`), so after the first click every further doClick did nothing and
-            // the claim failed on its own precondition.  The state a click leaves is what the keys are asked about.
+            // Armed through the panel's own field, not its button: on an ignored page the refresh disables Test a Path,
+            // so a second doClick would do nothing.
             final java.lang.reflect.Field tool = AutonomyEditorPanel.class.getDeclaredField("tool");
 
             tool.setAccessible(true);
@@ -171,18 +158,14 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * A station square showing another station's only name asks before it shows its own, and No leaves that name where it
-     * is; Yes still shows its own, the item being live there.
+     * A station square showing another station's only name asks before it shows its own, and No leaves that name where
+     * it is; Yes still shows its own.
      *
-     * A drag can leave a station square showing ANOTHER station's caption, and "Show a Station Name Here" on it captioned
-     * the square with itself and asked nothing - so the other station was then named nowhere on the diagram, which the
-     * setup's checks call an error (`AutonomyChecks.checkStationLabels`).  The drop refuses the same loss outright
-     * (`refuseCaptionDrop`).  Driven through Control+N, which opens what the menu item opens, and answered through
+     * Otherwise the other station is named nowhere on the diagram, which the setup's checks call an error
+     * (`AutonomyChecks.checkStationLabels`).  Driven through Control+N and answered through
      * `answerTakeAnotherNameForTests`, so no dialog is put on screen.
      *
      * MUTATION: drop the question from `promptStationLabel`'s station branch, and the No half fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAStationSquareAsksBeforeTakingAnotherStationsOnlyName() throws Exception
@@ -203,7 +186,7 @@ public class testControlNAsksTheMenusQuestion
             session.setStation(here, true);
             session.setStation(other, true);
 
-            // THE OTHER STATION'S NAME ON THIS STATION'S SQUARE, and nowhere else - as a drag leaves it
+            // The other station's name on this station's square, and nowhere else - as a drag leaves it
             session.setCaption(here, other);
 
             assertEquals(session.captionsFor(other), java.util.Collections.singleton(here),
@@ -221,12 +204,12 @@ public class testControlNAsksTheMenusQuestion
             assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another"
                 + " station had off the diagram without asking, or after being answered No (GSE-C5)");
 
-            // AND IT SAYS THE STATION IS LEFT OFF THE DIAGRAM, which Yes does: this is its only name anywhere (OB-341)
+            // And it says the station is left off the diagram, which Yes does: this is its only name anywhere (OB-341)
             assertEquals(AutonomyEditorPanel.takeAnotherNameQuestionForTests(),
                 I18n.f("autosetup.ui.confirmTakeAnotherStationsOnlyName", session.describeTile(other), session.describeTile(here)),
                 "the question does not say that Yes leaves the station shown nowhere");
 
-            // AND YES STILL SHOWS ITS OWN: the item is live, and asking is not refusing
+            // And Yes still shows its own: the item is live, and asking is not refusing
             AutonomyEditorPanel.answerTakeAnotherNameForTests(true);
 
             panel.showStationNameFor(here);
@@ -243,15 +226,10 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * The question about taking another station's only name is about THIS PAGE (OB-341).
-     *
-     * Adam, 2026-10-12, on the editor going per page: a page shows a station's name at most once, so the name this square
-     * shows is the station's only one ON THIS PAGE when no other square of the page names it - whatever other pages do.
-     * Taking it asks then, and does not when the station is named on another square of the page as well.
+     * The question about taking another station's only name is about this page (OB-341): it is asked when no other
+     * square of the page names the station, whatever other pages do.
      *
      * MUTATION: look at the station's captions on every page, as before, and the first half fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testAStationSquareAsksAboutAnotherStationsOnlyNameOnThisPageOnly() throws Exception
@@ -272,7 +250,7 @@ public class testControlNAsksTheMenusQuestion
             session.setStation(here, true);
             session.setStation(other, true);
 
-            // THE OTHER STATION'S NAME ON THIS STATION'S SQUARE, and on the other page - its only one on this page
+            // The other station's name on this station's square, and on the other page - its only one on this page
             session.getStore().setCaption(here, other);
             session.getStore().setCaption(new TileKey("second", 3, 2), other);
 
@@ -287,12 +265,12 @@ public class testControlNAsksTheMenusQuestion
             assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another station"
                 + " had on this page off it without asking, because it is named on another page as well");
 
-            // AND IT SAYS ONLY THIS PAGE, since the station stays shown on the other (OB-341)
+            // And it says only this page, since the station stays shown on the other (OB-341)
             assertEquals(AutonomyEditorPanel.takeAnotherNameQuestionForTests(),
                 I18n.f("autosetup.ui.confirmTakeAnotherStationsName", session.describeTile(other), session.describeTile(here)),
                 "the question says more than that the station leaves this page");
 
-            // NAMED ON ANOTHER SQUARE OF THIS PAGE TOO, through the store's door as a hand edit leaves it: not its only name
+            // Named on another square of this page too, through the store's door: not its only name
             session.getStore().setCaption(new TileKey("main", 3, 2), other);
 
             panel.showStationNameFor(here);
@@ -314,13 +292,7 @@ public class testControlNAsksTheMenusQuestion
     /**
      * A label can be dropped only on its own page, and moves only that page's caption (OB-341).
      *
-     * `refuseCaptionDrop` has always refused a square of another page - a drag happens inside one page's grid - so a drag
-     * cannot carry a caption from page to page; on its own page it moves that page's caption through `moveCaption`, which
-     * now takes off only the station's captions on that page, and the other page's stays.
-     *
      * MUTATION: let `moveCaption` take the station's captions off every page, and the last assertion fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testALabelDropsOnlyOnItsOwnPageAndMovesOnlyThatPagesCaption() throws Exception
@@ -353,7 +325,7 @@ public class testControlNAsksTheMenusQuestion
             assertEquals(session.captionsFor(station), new java.util.LinkedHashSet<>(Arrays.asList(here, there)),
                 "a refused drop changed the captions");
 
-            // ON ITS OWN PAGE it moves, and the other page's is left alone
+            // On its own page it moves, and the other page's is left alone
             TileKey free = new TileKey("main", 1, 3);
 
             assertTrue(panel.canDropCaption(here, free, null), "a label cannot be dropped on a free square of its own page");
@@ -369,17 +341,12 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * No station name is offered on a square the track diagram does not draw.
-     *
-     * The autonomy editor shows the whole page, padding included; the running diagram draws only the part its components
-     * cover, and a caption is not a component.  Show a Station Name Here on a blank square outside that part, Control+N
-     * over it, and a drop of a label on it stored a caption nothing would ever show - and the station counted as labeled.
-     * The menu item is present but grayed, with the reason on its tooltip, as it is on a station's own square; the key
-     * agrees; a dragged label is refused; and a blank square inside the area is still offered.
+     * No station name is offered on a square the track diagram does not draw: the editor shows the whole page, padding
+     * included, but a caption is not a component, so one there would never be shown.  The menu item is present but
+     * grayed with the reason on its tooltip, the key agrees, a dragged label is refused, and a blank square inside the
+     * area is still offered.
      *
      * MUTATION: leave the area test out of `offersAStationName`, the menu item or `refuseCaptionDrop`, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testNoNameIsOfferedOnASquareTheRunningDiagramDoesNotDraw() throws Exception
@@ -406,7 +373,7 @@ public class testControlNAsksTheMenusQuestion
 
             String name = I18n.t("autosetup.ui.menuShowStationHere");
 
-            // THE CONTROL: a blank square inside the drawn area is offered, live
+            // The control: a blank square inside the drawn area is offered, live
             javax.swing.JMenuItem live = itemNamed(panel.buildTileMenu(inside, null), name);
 
             assertTrue(live != null && live.isEnabled(), "precondition: no live name item on a blank square inside the area");
@@ -414,7 +381,7 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(panel.canDropCaption(new TileKey("main", 5, 2), inside, null), "precondition: a label cannot be dropped"
                 + " on a blank square inside the area");
 
-            // OUTSIDE IT: present, grayed, and the reason on the tooltip
+            // Outside it: present, grayed, and the reason on the tooltip
             javax.swing.JMenuItem shown = itemNamed(panel.buildTileMenu(outside, null), name);
 
             assertNotNull(shown, "the item is gone from the menu of a square outside the area, rather than greyed");
@@ -465,13 +432,8 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * Control+H offers a home exactly where the right-click menu does.
-     *
-     * The key was restored at Adam's word (*"set control+H for home"*) as one line that asked nothing, so on plain
-     * track, a switch or a page left out of autonomy it opened the home chooser and wrote a home onto a square that is
-     * not a station - taking the locomotive's home off the platform it had.  The menu offers the item only on a station.
-     *
-     * @throws Exception from the session or the reflection
+     * Control+H offers a home exactly where the right-click menu does: only on a station, so the key cannot write a
+     * home onto a square that is not one.
      */
     @Test
     public void testControlHOffersAHomeOnlyWhereTheMenuDoes() throws Exception
@@ -493,7 +455,7 @@ public class testControlNAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            // THE CONTROL: a station, where the menu offers a home and so must the key.
+            // The control: a station, where the menu offers a home and so must the key.
             javax.swing.JPopupMenu atTheStation = panel.buildTileMenu(station, null);
 
             assertTrue(offersAHome(atTheStation), "precondition: the menu offers no home on the station at " + station
@@ -502,7 +464,7 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(keyOffers(panel, "offersAHome", station),
                 "Control+H offers no home on the station at " + station + ", where the menu does");
 
-            // PLAIN TRACK: no home on the menu, none from the key.
+            // Plain track: no home on the menu, none from the key.
             javax.swing.JPopupMenu onTrack = panel.buildTileMenu(track, null);
 
             assertFalse(offersAHome(onTrack), "precondition: the menu offers a home on plain track: " + itemNames(onTrack));
@@ -511,7 +473,7 @@ public class testControlNAsksTheMenusQuestion
                 "Control+H offers a home on the plain track at " + track + ", where the menu offers " + itemNames(onTrack)
                 + " - a home written onto a square that is not a station (MFW-B1)");
 
-            // AND THE STATION ON A PAGE LEFT OUT OF AUTONOMY: only the bulk tools on the menu.
+            // And the station on a page left out of autonomy: only the bulk tools on the menu.
             session.setPageExcluded("main", true);
 
             javax.swing.JPopupMenu ignored = panel.buildTileMenu(station, null);
@@ -529,12 +491,8 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * Control+H refused on a square that is not a station says why in its own words.
-     *
-     * The refusal borrowed Control+B's sentence, which explains a maximum train length - the right remedy, make it a
-     * station, under the wrong reason.
-     *
-     * @throws Exception from the session or the reflection
+     * Control+H refused on a square that is not a station says why in its own words, not Control+B's maximum-length
+     * sentence.
      */
     @Test
     public void testControlHSaysWhyItOffersNoHome() throws Exception
@@ -580,12 +538,8 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /**
-     * The main window's menu does not name Control+N, which is the notes key there.
-     *
-     * The same menu is built for the main window's track diagram with `setMenuOnly`, and on a text or empty square it
-     * carries the caption items - whose tooltip named the editor's key.
-     *
-     * @throws Exception from the session
+     * The main window's menu does not name Control+N, which is the notes key there (the same menu is built for its
+     * track diagram with `setMenuOnly`).
      */
     @Test
     public void testTheMainWindowsMenuDoesNotNameTheEditorsKey() throws Exception
@@ -602,7 +556,7 @@ public class testControlNAsksTheMenusQuestion
 
             TileKey empty = new TileKey("main", 4, 2);
 
-            // THE CONTROL: the editor's menu names the key.
+            // The control: the editor's menu names the key.
             AutonomyEditorPanel editor = new AutonomyEditorPanel(session, "main", () -> { });
 
             String inTheEditor = nameTooltip(editor.buildTileMenu(empty, null));
@@ -611,7 +565,7 @@ public class testControlNAsksTheMenusQuestion
                 "precondition: the editor's menu does not name " + AutonomyEditorPanel.SHORTCUT_STATION + " on " + empty
                 + ": " + inTheEditor);
 
-            // THE MAIN WINDOW'S: the same menu, menu-only.
+            // The main window's: the same menu, menu-only.
             AutonomyEditorPanel mainWindow = new AutonomyEditorPanel(session, "main", () -> { });
 
             mainWindow.setMenuOnly(true);
@@ -632,17 +586,10 @@ public class testControlNAsksTheMenusQuestion
 
     /**
      * "Stop Showing" is on the menu of every square a caption sits on, so the setup check's error can always be cleared
-     * from the editor (OB-341).
-     *
-     * The check names the squares a station's name is drawn on.  The menu offers caption items only where a caption may be
-     * put, which is not on a switch or a signal, and a square on a page left out of autonomy offers only the bulk tools -
-     * so a caption on either, from a setup edited by hand, was named by the error and could not be stopped.  Asked
-     * through the real menu, by clicking the item.  The name item is still not offered on either square: a caption may
-     * not be PUT there, only taken off.
+     * from the editor (OB-341), including a switch or signal and a page left out of autonomy, which a hand-edited setup
+     * can caption.  The name item is still not offered there: a caption may not be put there, only taken off.
      *
      * MUTATION: leave the stop item out of either branch, and this fails.
-     *
-     * @throws Exception from the session
      */
     @Test
     public void testStopShowingIsOnTheMenuOfEverySquareACaptionSitsOn() throws Exception
@@ -673,11 +620,11 @@ public class testControlNAsksTheMenusQuestion
 
             String stop = I18n.f("autosetup.ui.menuClearStationHereNamed", session.describeTile(station));
 
-            // THE CONTROL: plain track with no caption on it has nothing to stop
+            // The control: plain track with no caption on it has nothing to stop
             assertFalse(itemNames(panel.buildTileMenu(track, null)).contains(stop),
                 "precondition: the menu offers to stop a caption that is not there: " + itemNames(panel.buildTileMenu(track, null)));
 
-            // A CAPTION ON THE SIGNAL, through the store's own door, which does not refuse where the menu does
+            // A caption on the signal, through the store's own door, which does not refuse where the menu does
             session.getStore().setCaption(signal, station);
 
             javax.swing.JPopupMenu onTheSignal = panel.buildTileMenu(signal, null);
@@ -692,7 +639,7 @@ public class testControlNAsksTheMenusQuestion
 
             assertEquals(session.getCaptionTarget(signal), null, "the menu's Stop Showing left the caption on the signal");
 
-            // A CAPTION ON PLAIN TRACK ON A PAGE LEFT OUT OF AUTONOMY
+            // A caption on plain track on a page left out of autonomy
             session.getStore().setCaption(track, station);
             session.setPageExcluded("main", true);
 
@@ -827,8 +774,8 @@ public class testControlNAsksTheMenusQuestion
 
         page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
 
-        // A label, the other square the menu sends to its text menu; (4,2) is left blank inside the area the diagram
-        // draws, and (9,2) lies outside it.
+        // A label, the other square the menu sends to its text menu; (4,2) is blank inside the drawn area, (9,2)
+        // outside.
         page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
 
         page.setPageId(name);

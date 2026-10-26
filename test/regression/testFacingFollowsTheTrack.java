@@ -22,25 +22,17 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Which way a train can be pointing is a fact about the TRACK it is standing on.
  *
- * MT-125, Adam: "feedback 1016/1015 offer south and west as facing directions, instead of north and
- * east."
+ * MT-125, Adam: "feedback 1016/1015 offer south and west as facing directions, instead of north and east."
  *
- * The choices were worked out as "the side the train came in by, reversed" - a train that entered by
- * the west side is pointing east. That is right on a straight and wrong on a curve, and the difference
- * is the whole bug: on a curve joining north to east, a train that enters by the north side leaves by
- * the EAST side. It is pointing east, not south. South is not a direction that square has any track in.
+ * The choices were worked out as "the side the train came in by, reversed", which is right on a straight and wrong on
+ * a curve: on a curve joining north to east, a train that enters by the north side leaves by the EAST side, and south
+ * is not a direction that square has any track in.  So the rule is "the other end of the piece of track I am standing
+ * on", which is the opposite compass point only on a straight.
  *
- * So the rule is not "the opposite compass point". It is "the other end of the piece of track I am
- * standing on" - which happens to BE the opposite compass point on a straight, which is why this
- * survived on every square anybody checked.
- *
- * Two assertions, because one of them turned out not to be able to fail. The RULE - every facing
- * offered for a square is a side that square's own track actually uses - is layout-independent and
- * sweeps every square, but it reads the same map the facings are built from, so every answer the real
- * branch gives satisfies it by construction. The TABLE - five named squares and where a train
- * standing on each of them can be pointing, worked out from the track rather than from the code - is
- * what actually pins the rule the bug was about, and the curve MT-125 was reported on is the first
- * line of it.
+ * Two assertions.  The RULE (every facing offered for a square is a side that square's own track uses) is
+ * layout-independent and sweeps every square, but it reads the same map the facings are built from, so it cannot fail
+ * by itself.  The TABLE (five named squares and where a train standing on each can be pointing, worked out from the
+ * track rather than the code) pins the rule the bug was about, the curve MT-125 was reported on first.
  *
  * @author Adam
  */
@@ -65,12 +57,8 @@ public class testFacingFollowsTheTrack
 
         List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
 
-        // A throwaway copy, not the tracked fixture itself. `session.open` runs
-        // `migrateStationLabels`, which calls `store.save()` and `page.saveChanges(...)` the moment a
-        // `Point:` label turns up in a page - not the case today, but `test/test_layout` is checked in and
-        // shared with every other class in the suite, and this one is the only sibling that opened a
-        // session on it directly instead of copying `config/autonomy` first, following
-        // `testDiscardedEditsDoNotDeleteSetup`'s and `testErrorsStopTheSetupRunning`'s precedent.
+        // A throwaway copy, not the tracked fixture itself: `session.open` runs `migrateStationLabels`, which saves the
+        // moment a `Point:` label turns up in a page, and `test/test_layout` is shared with every other class.
         File temp = File.createTempFile("tc-facings", "");
 
         assertTrue(temp.delete(), "making room for a directory of the same name");
@@ -94,51 +82,28 @@ public class testFacingFollowsTheTrack
     }
 
     /**
-     * The facings offered on five named squares, written out by hand from the track under them.
+     * The facings offered on five named squares, written out by hand from the track under them.  The RULE test below
+     * checks that every facing offered is a side `session.getRoutes(tile)` uses; a version that offered BOTH ends of
+     * every route (including the side the train arrived by, MT-125's own defect class turned round) passed it, because
+     * the arrival side is track too.  The facing menu now reads `facingsFor`, the BUILDER's `facingByName`, so the
+     * premise (`getRoutes`, what track is on the square) and the answer come from different places and the two
+     * assertions are independent.
      *
-     * The reason this table exists: the RULE test below
-     * checks that every facing offered is a side `session.getRoutes(tile)` uses, and at the time
-     * `onwardFrom` - which produced the facings - read that same map. Every answer the real branch
-     * gave satisfied that oracle by construction, so the test could only fail on the compass fallback.
-     * A version that offered BOTH ends of every route across the square - including the side the train
-     * arrived by, which is MT-125's own defect class turned round - passed it, because the arrival
-     * side is track too.
+     * Each line reads: the square, the track on it, and where a train standing there can be pointing.  The first is the
+     * curve MT-125 was reported about: `1 - Main:0,11` carries one piece of track joining its NORTH side to its EAST
+     * side.  A train that came down the north leg and round the curve is pointing EAST; one that came in by the east is
+     * pointing NORTH.  It is never pointing SOUTH, which is the answer the compass rule gives, and there is no track on
+     * that side.
      *
-     * **That circularity is gone**, and by a route nobody planned: the facing
-     * menu no longer works its own answer out, it reads `facingsFor`, which is the BUILDER's
-     * `facingByName`. So the premise below (`getRoutes` - what track is on the square) and the answer
-     * below it (what the build says a train there can face) now come from different places, and the
-     * two assertions are independent. The hand-written table is still the point: it is written from
-     * the LAYOUT, so it holds whichever component is asked.
+     * The straights are here as controls: on `1 - Main:0,3` the two rules agree, and a table of only curves would not
+     * notice a change that broke straights.  A square reachable from both ends offers both facings in the order the
+     * arrival sides are visited (N, E, S, W), which is load-bearing: on a square with no side barred the FIRST answer
+     * is the facing a placement with nothing recorded gets (`startableCopy` takes the first copy trains may arrive at).
      *
-     * So this is a table of answers, and it is written down from the LAYOUT rather than taken from the
-     * code.  Each line reads: the square, the track on it, and where a train standing there can be
-     * pointing.  The derivation, in full, for the first line - the curve MT-125 was reported about:
-     *
-     *   `1 - Main:0,11` carries one piece of track, joining its NORTH side to its EAST side.  A train
-     *   that came down the north leg and round the curve has its front at the east end: it is pointing
-     *   EAST.  One that came in by the east is pointing NORTH.  **What it is never pointing is SOUTH**,
-     *   which is the answer the compass rule gives, and there is no track at all on that side.  That is
-     *   the whole of MT-125 and it is what this line pins.
-     *
-     *   The line used to expect EAST alone, on the grounds that only the north end was reachable. That
-     *   was a fact about a graph with eighteen edges in it - the suite was building its pages with a
-     *   parser that wired no accessories, so most of the railway was missing (2026-09-08). On the real
-     *   reduction both ends are reachable and both answers are right.
-     *
-     * The straights are here for the same reason a control is: on `1 - Main:0,3` the two rules agree,
-     * and a table containing only curves would not notice a change that broke straights.  `6,1` is
-     * reachable from both ends and so offers both facings, in the order the arrival sides are visited
-     * (N, E, S, W) - which is load-bearing, because on a square with no side barred the FIRST answer is
-     * the facing a placement with nothing recorded on it gets (`startableCopy` takes the first copy
-     * trains may arrive at).
-     *
-     * Mutation this must fail: in `AutonomySession.onwardFrom`, offer every end of every route
-     * regardless of which side the train arrived by - `if (route.getA() != null) out.add(route.getA());
-     * if (route.getB() != null) out.add(route.getB());`.  Run 2026-08-25: the rule test below stays
-     * GREEN under it, and this one fails on its first line - `1 - Main:0,11 offers [N, E] where a
-     * train on its track can only be pointing [E]`.  The other four lines would fail too; the loop
-     * stops at the first.
+     * MUTATION: in `AutonomySession.onwardFrom`, offer every end of every route regardless of which side the train
+     * arrived by - `if (route.getA() != null) out.add(route.getA()); if (route.getB() != null)
+     * out.add(route.getB());`.  The rule test stays GREEN under it and this one fails on its first line
+     * (`1 - Main:0,11 offers [N, E] where a train on its track can only be pointing [E]`).
      */
     @Test
     public void testTheFacingsOfferedOnNamedSquaresAreTheOtherEndOfTheirTrack()
@@ -151,23 +116,18 @@ public class testFacingFollowsTheTrack
         // square, the track on it, where a train standing on it can be pointing
         Object[][] expected =
         {
-            // BOTH ENDS, since 2026-09-08.  The line used to read `Arrays.asList(Side.E)`, derived
-            // from "only the north end is reachable in the reduced graph" - see the javadoc. That was
-            // true of a graph with 18 edges in it, which is what this suite was building before the
-            // fixture recipe was fixed. On the real reduction the east end is reachable too, so a
-            // train here can have come in either way and can be pointing either way.
+            // Both ends: on the real reduction the east end is reachable too, so a train here can have come in either
+            // way and can be pointing either way.
             {"1 - Main:0,11", "N-E", Arrays.asList(Side.E, Side.N)},
-            // Reachable from 11,7 and from 16,10 - two directions, so both ends of the S-W track are
-            // arrival sides and both are facings.  Same correction as the line above.
+            // Reachable from 11,7 and from 16,10 - two directions, so both ends of the S-W track are arrival sides and
+            // both are facings.
             {"1 - Main:12,9", "S-W", Arrays.asList(Side.W, Side.S)},
             // A STRAIGHT, and the control for the two curves above: reached from 0,11 and from 2,1,
             // so both ends again - and on a straight both rules agree, which is the point of having it.
             {"1 - Main:0,3",  "N-S", Arrays.asList(Side.S, Side.N)},
-            // **THE LINE THAT STILL DISCRIMINATES.**  Reached only from 6,1 - one arrival side - so a
-            // train here has one possible heading.  The mutation this class was written against
-            // (offer every end of every route, regardless of which side the train arrived by) makes
-            // this square offer both, and the other four lines can no longer catch it: on the real
-            // railway they are reachable from both ends, so both answers are correct there.
+            // The line that still discriminates: reached only from 6,1, one arrival side, so one possible heading.  The
+            // mutation this class was written against makes this square offer both, and the other four lines can no
+            // longer catch it.
             {"1 - Main:2,1",  "E-W", Arrays.asList(Side.W)},
             {"1 - Main:6,1",  "E-W", Arrays.asList(Side.W, Side.E)}
         };
@@ -189,9 +149,7 @@ public class testFacingFollowsTheTrack
             assertEquals(describe(session.getRoutes(tile)), line[1],
                 name + " no longer carries the track the expected facing was worked out from");
 
-            // EVERY LINE, not the first one that disagrees.  A loop that fails on line one hides the
-            // other four, and the four are where a change is diagnosed: one wrong square is a square,
-            // five wrong squares is a rule.
+            // Every line, not the first one that disagrees: one wrong square is a square, five wrong squares is a rule.
             if (!session.facingChoices(tile).equals(line[2]))
             {
                 disagreed.add(name + " offers " + session.facingChoices(tile)
@@ -206,10 +164,8 @@ public class testFacingFollowsTheTrack
     }
 
     /**
-     * The square with this key, or null.
-     *
-     * By its printed key rather than by rebuilding a TileKey, so that a square which has moved fails
-     * as "the layout no longer has it" instead of as a facing that is missing.
+     * The square with this key, or null, found by its printed key so a square that has moved fails as "the layout no
+     * longer has it".
      */
     private static TileKey squareNamed(String key)
     {
@@ -222,22 +178,18 @@ public class testFacingFollowsTheTrack
     }
 
     /**
-     * Every facing offered is a side the square's own track uses.
+     * Every facing offered is a side the square's own track uses: the layout-independent half.  It cannot catch a
+     * facing that points at the wrong end of the right track (the table above does) but it sweeps every square rather
+     * than five.
      *
-     * The layout-independent half.  It cannot catch a facing that points at the wrong end of the right
-     * track - that is what the table above is for - but it sweeps every square rather than five.
-     *
-     * Mutation the assertNotNull must fail: make `AutonomySession.getReducer` return null.  This test
-     * used to `return` silently on that and report as green having run no assertion; both tests in the
-     * class now fail (run 2026-08-25).
+     * MUTATION: make `AutonomySession.getReducer` return null and the assertNotNull fails.
      */
     @Test
     public void testAFacingIsAlwaysASideTheTrackActuallyUses()
     {
         assertNotNull(session, "the session did not open, so nothing below tests anything");
 
-        // Was `if (... == null) return;`, which turned a reduction that produced nothing into a green
-        // class with no assertion run at all
+        // A reduction that produced nothing must fail, not return and report green with no assertion run.
         assertNotNull(session.getReducer(),
             "the graph did not reduce, so there are no squares to check");
 

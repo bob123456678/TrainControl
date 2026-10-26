@@ -15,22 +15,18 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * The repair that runs after a killed test JVM does what its javadoc says.
  *
- * On 2026-09-11 two killed JVMs left the machine-global layout preference naming a folder
- * under `%TEMP%` - and that is the key the APPLICATION reads, so Adam's own window would have opened a
- * test fixture as though it were his railway. `6fe9ec38` added a marker file, a repair that runs at the
- * next sandbox open, and a shutdown hook. Ninety-seven test classes depend on that machinery, and
- * nothing asserted any of it: `grep -rn "LayoutSandbox" test/` finds 97 files and every one of them is
- * a *user*.
+ * Two killed JVMs left the machine-global layout preference naming a folder under `%TEMP%`, the key the APPLICATION
+ * reads, so Adam's own window would have opened a test fixture as though it were his railway.  A marker file, a repair
+ * that runs at the next sandbox open, and a shutdown hook were added for that, and ninety-seven test classes depend on
+ * that machinery with nothing asserting any of it.
  *
- * **Nothing here touches the real preference.** `repairALeakedPreference` and `putBack` take the
- * preference node as a parameter, so this hands them a node of their own under a name nothing else
- * uses. That is deliberate and it is the whole reason this test can exist: the reviewer who found this
- * gap declined to mutate the machinery precisely because getting it wrong writes the key that damaged
+ * Nothing here touches the real preference: `repairALeakedPreference` and `putBack` take the preference node as a
+ * parameter, so this hands them a node of their own.  Mutating the machinery any other way writes the key that damaged
  * the railway in the first place.
  *
- * The marker file is shared - one fixed path in the temp directory - so whatever is there when this
- * starts is saved and put back at the end. If a marker is sitting there, a repair is PENDING, and
- * deleting it would destroy the value it is holding on the operator's behalf.
+ * The marker file is shared (one fixed path in the temp directory), so whatever is there when this starts is saved and
+ * put back at the end: a marker sitting there means a repair is PENDING, and deleting it would destroy the value it
+ * holds.
  *
  * MUTATION: remove the `if (repairMarker().exists()) return;` from `rememberForRepair` and the
  * second claim fails - a sandbox opening inside a killed one's mess records the sandbox path as the
@@ -83,10 +79,8 @@ public class testTheSandboxPutsThePreferenceBack
     }
 
     /**
-     * The marker records what the preference was, and it is written BEFORE the preference changes.
-     *
-     * The order is the whole point: a kill between the two lines has to leave a marker that says the
-     * truth rather than one that does not exist.
+     * The marker records what the preference was, and it is written BEFORE the preference changes: a kill between the
+     * two lines has to leave a marker that says the truth rather than none.
      */
     @Test
     public void testTheMarkerRecordsWhatWasThere() throws Exception
@@ -104,11 +98,9 @@ public class testTheSandboxPutsThePreferenceBack
     }
 
     /**
-     * A second sandbox does not overwrite the first one's marker.
-     *
-     * The first marker holds the OPERATOR's value. A second sandbox opening inside a killed one's mess
-     * would otherwise write down the leaked sandbox path as the thing to restore - and the repair would
-     * then faithfully restore the fixture.
+     * A second sandbox does not overwrite the first one's marker: the first holds the OPERATOR's value, and a second
+     * sandbox opening inside a killed one's mess would otherwise record the leaked sandbox path as the thing to
+     * restore.
      */
     @Test
     public void testASecondSandboxDoesNotOverwriteTheFirstMarker() throws Exception
@@ -125,9 +117,7 @@ public class testTheSandboxPutsThePreferenceBack
         Files.deleteIfExists(markerFile().toPath());
     }
 
-    /**
-     * A leaked preference is put back, and the marker goes with it.
-     */
+    /** A leaked preference is put back, and the marker goes with it. */
     @Test
     public void testALeakedPreferenceIsPutBack() throws Exception
     {
@@ -148,13 +138,9 @@ public class testTheSandboxPutsThePreferenceBack
     }
 
     /**
-     * And a value somebody set deliberately is left alone.
-     *
-     * The marker is only a diagnosis while the preference still points at a sandbox. If it names
-     * something else, the operator has chosen it since, and theirs wins - the marker is simply stale.
-     *
-     * This is the claim that stops the repair being a machine that overwrites a real setting with an
-     * old one every time a stale marker is lying about.
+     * And a value somebody set deliberately is left alone: the marker is only a diagnosis while the preference still
+     * points at a sandbox, otherwise the operator has chosen it since and theirs wins.  This stops the repair
+     * overwriting a real setting with an old one whenever a stale marker is lying about.
      */
     @Test
     public void testADeliberateValueIsNotOverwritten() throws Exception
@@ -173,9 +159,7 @@ public class testTheSandboxPutsThePreferenceBack
         Files.deleteIfExists(markerFile().toPath());
     }
 
-    /**
-     * `LayoutSandbox.rememberForRepair`, which is private because nothing but the sandbox should call it.
-     */
+    /** `LayoutSandbox.rememberForRepair`, which is private because nothing but the sandbox should call it. */
     private static void remember(String was) throws Exception
     {
         java.lang.reflect.Method write =
@@ -186,9 +170,7 @@ public class testTheSandboxPutsThePreferenceBack
         write.invoke(null, was);
     }
 
-    /**
-     * `LayoutSandbox.repairALeakedPreference`, against this test's own node.
-     */
+    /** `LayoutSandbox.repairALeakedPreference`, against this test's own node. */
     private static void repair() throws Exception
     {
         java.lang.reflect.Method fix = support.LayoutSandbox.class
@@ -200,8 +182,8 @@ public class testTheSandboxPutsThePreferenceBack
     }
 
     /**
-     * The one marker path, asked of the class that owns it rather than spelled again here - two
-     * spellings of a path is how a test comes to clean up something else.
+     * The one marker path, asked of the class that owns it: two spellings of a path is how a test cleans up something
+     * else.
      */
     private static File markerFile() throws Exception
     {

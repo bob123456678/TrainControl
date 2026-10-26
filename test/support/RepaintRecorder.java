@@ -13,22 +13,19 @@ import javax.swing.RepaintManager;
 import javax.swing.SwingUtilities;
 
 /**
- * The repaints production asks Swing for, written down, and a picture redrawn ONLY where they were asked (FR-136, issue 19).
+ * The repaints production asks Swing for, written down, and a picture redrawn ONLY where they were asked (FR-136, issue
+ * 19).
  *
- * **Why this exists.**  A tile decides what it draws when it is painted, so a test that paints a tile and looks at it sees
- * the right answer whether or not anything asked for that tile to be redrawn - and a window on screen redraws only what it
- * is asked to.  OB-180 lived exactly there: `CoveredTrackView.workOutCoveredTrack` worked the covered set out correctly and
- * nothing told the tiles, so the old squares stayed orange.  Taking out its `repaintTheWashWhereItChanged` call left
- * `ui.testTheShadingIsRedrawnWhenATrainMoves` and `core.testTheShadingFollowsTheTrain` green, because each painted the whole
- * grid or the label itself and so did the repaint it was there to check.
+ * **Why this exists.**  A tile decides what it draws when it is painted, so a test that paints a tile sees the right
+ * answer whether or not anything asked for it to be redrawn, while a window on screen redraws only what it is asked to.
+ * OB-180 lived there: `CoveredTrackView.workOutCoveredTrack` worked the covered set out correctly and nothing told the
+ * tiles, so the old squares stayed orange, yet `ui.testTheShadingIsRedrawnWhenATrainMoves` and
+ * `core.testTheShadingFollowsTheTrain` stayed green with the repaint call removed.
  *
- * So this is installed as the `RepaintManager` and records every `repaint()` before passing it on - before, so what is
- * counted is what production asked for rather than what Swing then chose to act on (a component that is not on screen is
- * dropped by Swing, and every component a test builds is not on screen).  `redrawWhereAsked` then plays those requests onto
- * a picture taken earlier, the way the screen would: what was asked for is painted again, and everything else keeps the
- * pixels it had.
- *
- * Swing's own manager is put back by `close`.
+ * So this is installed as the `RepaintManager` and records every `repaint()` before passing it on, so what is counted
+ * is what production asked for rather than what Swing chose to act on (a component not on screen is dropped, and every
+ * component a test builds is).  `redrawWhereAsked` then plays those requests onto a picture taken earlier, the way the
+ * screen would.  Swing's own manager is put back by `close`.
  *
  * @author Adam
  */
@@ -45,10 +42,7 @@ public final class RepaintRecorder extends RepaintManager implements AutoCloseab
     }
 
     /**
-     * Installs a recorder as Swing's repaint manager, on the event thread.
-     *
-     * @return the recorder; close it to put Swing's own manager back
-     * @throws Exception if the event thread cannot be reached
+     * Installs a recorder as Swing's repaint manager, on the event thread; close it to put Swing's own manager back.
      */
     public static RepaintRecorder install() throws Exception
     {
@@ -91,11 +85,7 @@ public final class RepaintRecorder extends RepaintManager implements AutoCloseab
         }
     }
 
-    /**
-     * The components asked to repaint since the last `clear`.
-     *
-     * @return them, in the order first asked
-     */
+    /** The components asked to repaint since the last `clear`, in the order first asked. */
     public Set<JComponent> dirtied()
     {
         synchronized (asked)
@@ -105,14 +95,10 @@ public final class RepaintRecorder extends RepaintManager implements AutoCloseab
     }
 
     /**
-     * What the screen shows now, given that it showed `shown`: the areas of `host` and of its descendants that were asked
-     * to repaint since the last `clear` are painted again, on white as `Rendered.snapshot` paints them, and every other
-     * pixel is the one it was.  Clears what was asked, so the next call starts from this picture.
-     *
-     * @param shown the picture the screen showed when the recording was last cleared, the size of `host`; not changed
-     * @param host the component the picture is of
-     * @return the picture now
-     * @throws Exception if the event thread cannot be reached
+     * What the screen shows now, given that it showed `shown` (the size of `host`; not changed): the areas of `host`
+     * and of its descendants that were asked to repaint since the last `clear` are painted again, on white as
+     * `Rendered.snapshot` paints them, and every other pixel is the one it was.  Clears what was asked, so the next
+     * call starts from this picture.
      */
     public BufferedImage redrawWhereAsked(final BufferedImage shown, final JComponent host) throws Exception
     {
@@ -170,11 +156,7 @@ public final class RepaintRecorder extends RepaintManager implements AutoCloseab
         return out;
     }
 
-    /**
-     * Puts Swing's own repaint manager back.
-     *
-     * @throws Exception if the event thread cannot be reached
-     */
+    /** Puts Swing's own repaint manager back. */
     @Override
     public void close() throws Exception
     {

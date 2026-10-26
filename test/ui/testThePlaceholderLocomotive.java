@@ -4,43 +4,36 @@ import java.awt.image.BufferedImage;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotivePlaceholder;
+import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 
 /**
  * The stand-in picture for a locomotive with no icon is the one Adam described (FR-054).
  *
- * "for locomotives without an icon, add a placeholder rather than nothing.  the placeholder should be
- * light gray and a simple electric locomotive consisting of: a main rectangle, trapezoid that 1/3 it's
- * height, 2 small closed pantographs, and 4 1/5 height circular wheels in sets of two on each side,
- * spaced evenly apart."
+ * "for locomotives without an icon, add a placeholder rather than nothing.  the placeholder should be light gray and a
+ * simple electric locomotive consisting of: a main rectangle, trapezoid that 1/3 it's height, 2 small closed
+ * pantographs, and 4 1/5 height circular wheels in sets of two on each side, spaced evenly apart."
  *
- * **Measured out of the pixels rather than read off the code.** A drawing test that asserts the
- * arithmetic the drawing itself used proves only that the file has not changed; these count what is
- * actually on the picture. Four wheels means four separate runs of ink across the wheel line, and
+ * Measured out of the pixels rather than read off the code: a drawing test that asserts the arithmetic the drawing used
+ * proves only that the file has not changed.  Four wheels means four separate runs of ink across the wheel line, and
  * "in sets of two on each side" means the gap in the middle is the biggest of the three.
  *
  * @author Adam
  */
 public class testThePlaceholderLocomotive
 {
-    /**
-     * Four wheels, in two pairs, with the widest gap between the pairs.
-     */
+    /** Four wheels, in two pairs, with the widest gap between the pairs. */
     @Test
     public void testItHasFourWheelsInTwoPairs()
     {
         BufferedImage picture = LocomotivePlaceholder.image(200);
 
-        // BELOW the body, not through it.
-        //
-        // The wheels occupy the bottom fifth and the body is drawn down to their center line, so a row
-        // through the middle of a wheel also crosses the body and reads as one continuous mark. Three
-        // quarters of the way down the wheels is clear of it and still well inside them.
+        // BELOW the body, not through it: the wheels occupy the bottom fifth and the body is drawn down to their center
+        // line, so a row through the middle of a wheel also crosses the body.  Three quarters of the way down is clear
+        // of it and still well inside them.
         int wheel = Math.max(3, Math.round(picture.getHeight() / 5f));
 
-        // FOUND, not assumed.  The drawing is padded away from the edges and how far is its own
-        // business - a row counted from the bottom of the PICTURE lands in the margin the moment that
-        // padding changes, and reads as no wheels at all rather than as a test that has gone stale.
+        // FOUND, not assumed: a row counted from the bottom of the PICTURE lands in the margin the moment the padding
+        // changes, and reads as no wheels at all rather than as a stale test.
         int lowest = -1;
 
         for (int y = picture.getHeight() - 1; y >= 0 && lowest < 0; y--)
@@ -72,9 +65,7 @@ public class testThePlaceholderLocomotive
             + lastGap);
     }
 
-    /**
-     * The wheels are a fifth of the height, and the trapezoid a third of the body's.
-     */
+    /** The wheels are a fifth of the height, and the trapezoid a third of the body's. */
     @Test
     public void testTheProportionsAreTheOnesAskedFor()
     {
@@ -130,9 +121,9 @@ public class testThePlaceholderLocomotive
     /**
      * The trapezoid starts where the rectangle does, and its sides lean at 45 degrees.
      *
-     * Adam: "make the end of the trapezoid match the end of the rectangles on the x axis, and increase
-     * the angle of the slope to be 45 degrees."  The two settle each other - at 45 degrees the step in
-     * equals the rise - so this measures the base against the body and then the top against the base.
+     * Adam: "make the end of the trapezoid match the end of the rectangles on the x axis, and increase the angle of the
+     * slope to be 45 degrees."  At 45 degrees the step in equals the rise, so this measures the base against the body
+     * and then the top against the base.
      */
     @Test
     public void testTheTrapezoidIsFlushAndSlopedAtFortyFive()
@@ -161,8 +152,8 @@ public class testThePlaceholderLocomotive
         assertEquals(atBase.length, 1,
             "the trapezoid's base is not one continuous span across the body");
 
-        // One row ABOVE the base the roof has stepped in by one on each side, and no more - which is
-        // what a 45-degree slope is. Two rows up, two.
+        // One row ABOVE the base the roof has stepped in by one on each side, and no more (a 45-degree slope); two up,
+        // two.
         int oneUp = spanOfInk(picture, bodyTop - 1);
         int twoUp = spanOfInk(picture, bodyTop - 2);
 
@@ -175,10 +166,8 @@ public class testThePlaceholderLocomotive
     }
 
     /**
-     * Nothing is cut off at the edges.
-     *
-     * Adam: "add some padding so the wheels don't get clipped ... make the pantograph visible."  Both
-     * are the same fault at opposite ends, and both show as ink on the outermost row.
+     * Nothing is cut off at the edges.  Adam: "add some padding so the wheels don't get clipped ... make the pantograph
+     * visible."  Both are the same fault at opposite ends, and both show as ink on the outermost row.
      */
     @Test
     public void testNothingTouchesTheEdges()
@@ -192,9 +181,7 @@ public class testThePlaceholderLocomotive
             "the top row of the picture has ink on it, so the pantographs are clipped");
     }
 
-    /**
-     * How wide the ink on a row reaches, first to last.
-     */
+    /** How wide the ink on a row reaches, first to last. */
     private static int spanOfInk(BufferedImage picture, int y)
     {
         int first = -1;
@@ -213,9 +200,7 @@ public class testThePlaceholderLocomotive
         return first < 0 ? 0 : last - first + 1;
     }
 
-    /**
-     * It is light gray, which is the one thing about it Adam specified twice.
-     */
+    /** It is light gray, which is the one thing about it Adam specified twice. */
     @Test
     public void testItIsLightGrey()
     {
@@ -229,12 +214,8 @@ public class testThePlaceholderLocomotive
             {
                 int argb = picture.getRGB(x, y);
 
-                // Solid enough to be judging the color of.
-                //
-                // It went down to 120 for the few hours the placeholder was translucent, and back up
-                // with it: the floor has to follow the color, or the assertions below run on
-                // antialiased edge pixels whose gray is a blend with the background rather than the
-                // paint.
+                // Solid enough to be judging the color of: the floor has to follow the placeholder's opacity, or the
+                // assertions below run on antialiased edge pixels whose gray is a blend with the background.
                 if ((argb >>> 24) < 200) continue;
 
                 int r = (argb >> 16) & 0xFF;
@@ -257,9 +238,7 @@ public class testThePlaceholderLocomotive
             + counted + " pixels");
     }
 
-    /**
-     * How many separate runs of ink a row crosses, and where each begins.
-     */
+    /** How many separate runs of ink a row crosses, and where each begins. */
     private static int[] runsOfInk(BufferedImage picture, int y)
     {
         java.util.List<Integer> starts = new java.util.ArrayList<>();
@@ -282,9 +261,7 @@ public class testThePlaceholderLocomotive
         return out;
     }
 
-    /**
-     * How many pixels of ink a row carries.
-     */
+    /** How many pixels of ink a row carries. */
     private static int inkOnRow(BufferedImage picture, int y)
     {
         int ink = 0;
@@ -300,10 +277,9 @@ public class testThePlaceholderLocomotive
     /**
      * It is a tenth lighter than solid, faded as a whole (FR-104).
      *
-     * Adam, 2026-09-29: *"increase the opacity of the default locomotive icon by 10%, so it's slightly lighter."*  Lighter
-     * is what he asked for, so a tenth of what is behind it shows through - the picture faded AS A WHOLE, so that where
-     * its own parts overlap nothing shows through them: the see-through wheels that ended the first translucent version
-     * came of fading each part as it was painted.
+     * Adam: "increase the opacity of the default locomotive icon by 10%, so it's slightly lighter."  Faded AS A WHOLE,
+     * so that where its own parts overlap nothing shows through them: fading each part as it was painted gave the
+     * see-through wheels of the first translucent version.
      *
      * MUTATION: leave it solid, or fade each part as it is painted, and this fails.
      */

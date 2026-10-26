@@ -15,12 +15,7 @@ public final class TestStation
     {
     }
 
-    /**
-     * No window, not in debug.
-     *
-     * @return the station
-     * @throws Exception from init
-     */
+    /** No window, not in debug. */
     public static MarklinControlStation simulated() throws Exception
     {
         return start(false, false);
@@ -29,32 +24,19 @@ public final class TestStation
     /**
      * No window, in debug: `Layout.setSimulate` refuses outside debug, and an unconnected station logs what it would
      * have sent only in debug.
-     *
-     * @return the station
-     * @throws Exception from init
      */
     public static MarklinControlStation simulatedInDebug() throws Exception
     {
         return start(false, true);
     }
 
-    /**
-     * With the application's own window (`getGUI()`), not in debug.  Needs a display.
-     *
-     * @return the station
-     * @throws Exception from init
-     */
+    /** With the application's own window (`getGUI()`), not in debug.  Needs a display. */
     public static MarklinControlStation simulatedWithWindow() throws Exception
     {
         return start(true, false);
     }
 
-    /**
-     * With the application's own window (`getGUI()`), in debug.  Needs a display.
-     *
-     * @return the station
-     * @throws Exception from init
-     */
+    /** With the application's own window (`getGUI()`), in debug.  Needs a display. */
     public static MarklinControlStation simulatedWithWindowInDebug() throws Exception
     {
         return start(true, true);

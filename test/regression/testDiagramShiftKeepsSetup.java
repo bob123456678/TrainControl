@@ -15,27 +15,20 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * Inserting or removing a row or a column, and what happens to the setup on the squares that move.
+ * Inserting or removing a row or a column, and what happens to the setup on the squares that move.  Adam: "Mostly OK
+ * after shifting, but links still got unlinked.  Seems the coordinate mapping there may be an issue."
  *
- * Adam, testing the shift operations: "Mostly OK after shifting, but links still got unlinked.  Seems
- * the coordinate mapping there may be an issue."
- *
- * A shift is a move like any other - it hands moveTiles a map of every square in the range and where it
- * is going - so the same rules apply and the same things can go wrong.  What makes it different from a
- * drag is SHAPE: the range covers half the page, every source lands on another source, and the one
- * destination outside the range is the row or column that has just been vacated at the far end.
- *
- * The link case is the sharp one because a pairing is two entries, one on each page, and only one of the
- * pages is being shifted.  The far end has to be rewritten by a move it is not part of.
+ * A shift hands moveTiles a map of every square in the range and where it is going, so the same rules apply as for a
+ * drag; the difference is SHAPE: every source lands on another source, and the one destination outside the range is the
+ * line just vacated at the far end.  The link case is the sharp one: a pairing is two entries on two pages and only one
+ * page is shifted, so the far end is rewritten by a move it is not part of.
  */
 public class testDiagramShiftKeepsSetup
 {
     private static final String PAGE = "1 - Main";
     private static final String FAR = "2 - Bottom";
 
-    /**
-     * A link on the shifted page keeps its partner, and its partner keeps it.
-     */
+    /** A link on the shifted page keeps its partner, and its partner keeps it. */
     @Test
     public void testAShiftedLinkKeepsItsPairing()
     {
@@ -66,10 +59,8 @@ public class testDiagramShiftKeepsSetup
     }
 
     /**
-     * Both ends move when both pages are shifted in the same gesture.
-     *
-     * Not something the editor does today - a shift is one page - but the store is handed the map, and a
-     * map covering two pages must not leave a pairing half-rewritten.
+     * Both ends move when both pages are shifted in the same gesture; a map covering two pages must not leave a pairing
+     * half-rewritten.
      */
     @Test
     public void testAPairingSurvivesBothEndsMoving()
@@ -92,12 +83,8 @@ public class testDiagramShiftKeepsSetup
     }
 
     /**
-     * A shift UP, where the range's first square lands on the row being written over.
-     *
-     * The opposite direction, and the one where something really is destroyed: the row above the range
-     * is built over by the row below it, so whatever was on it goes.  A link there loses its pairing at
-     * BOTH ends, which is correct - the tile is gone - and is worth pinning so that "links unpaired
-     * after a shift" can be told apart from this.
+     * A shift UP, where the range's first square lands on the row being written over: a link there loses its pairing at
+     * BOTH ends, correctly, and this tells that from "links unpaired after a shift".
      */
     @Test
     public void testAShiftUpDestroysWhatItWritesOver()
@@ -119,9 +106,7 @@ public class testDiagramShiftKeepsSetup
             "and the far end must not be left pointing at a square whose link has been destroyed");
     }
 
-    /**
-     * Everything else on a shifted square travels too.
-     */
+    /** Everything else on a shifted square travels too. */
     @Test
     public void testAShiftedStationKeepsEverything()
     {
@@ -150,13 +135,9 @@ public class testDiagramShiftKeepsSetup
     }
 
     /**
-     * The same thing again through a live SESSION, with the diagram actually shifted underneath it.
-     *
-     * The tests above hand the store a map directly.  This one does what the editor does - shift the
-     * page, then tell the session - so it also covers the rebuild the session runs afterwards, which
-     * re-derives the whole graph from the pages and applies the store to it.  That rebuild is the only
-     * part of the real path the store-level tests cannot see, and it is where a pairing could be
-     * dropped for looking stale.
+     * The same thing again through a live SESSION, with the diagram actually shifted underneath it, as the editor does:
+     * it covers the rebuild that re-derives the graph from the pages, where a pairing could be dropped for looking
+     * stale.
      */
     @Test
     public void testAShiftThroughTheSessionKeepsThePairing() throws Exception
@@ -182,9 +163,8 @@ public class testDiagramShiftKeepsSetup
             main.setPageId("1");
             far.setPageId("2");
 
-            // What the parser does after building one, and what every page in the application has had
-            // done to it: without it maxy is the row COUNT rather than the last INDEX, and shiftDown
-            // writes a row past the end.  See testDiagramResize.
+            // What the parser does after building one: without checkBounds maxy is the row COUNT rather than the last
+            // INDEX, and shiftDown writes a row past the end.  See testDiagramResize.
             main.checkBounds();
             far.checkBounds();
 
@@ -220,11 +200,8 @@ public class testDiagramShiftKeepsSetup
     }
 
     /**
-     * Shift LEFT through the session, which is the other axis and the other direction.
-     *
-     * Adam's suspicion was the coordinate mapping, and a transposition would live exactly here: the map
-     * builder takes a boolean for which axis it is walking, and the two loops it drives are the same
-     * shape with x and y the other way round.
+     * Shift LEFT through the session, the other axis and direction: a transposition in the map builder's boolean would
+     * live here.
      */
     @Test
     public void testAShiftLeftThroughTheSessionKeepsThePairing() throws Exception
@@ -257,8 +234,8 @@ public class testDiagramShiftKeepsSetup
 
             session.getStore().pairPortals(link, partner);
 
-            // Everything from column 4 leftwards by one, which is what the editor asks for when the
-            // pointer is on column 3
+            // Everything from column 4 leftwards by one, which is what the editor asks for when the pointer is on
+            // column 3
             Map<TileKey, TileKey> moving = shift(true, 4, main.getSx() - 1, -1, 0);
 
             main.shiftLeft(3);
@@ -280,26 +257,13 @@ public class testDiagramShiftKeepsSetup
     }
 
     /**
-     * The real gesture - `LayoutEditor.shiftDown()`, not this file's own `shift()` helper - carries a
-     * station on the far column.
+     * The real gesture, `LayoutEditor.shiftDown()` and not this file's own `shift()` helper, carries a station on the
+     * far column: the only production producer of the map is the private `LayoutEditor.setupShift`, which no other test
+     * calls.  The page is 21 columns by 16 rows so a transposed bound is visible: the station on column 18 is inside
+     * 0..20 (`getSx() - 1`, correct for a ROW shift) but outside 0..15 (`getSy() - 1`).
      *
-     * Every test above hands `moveTiles` a map this file builds itself, with `otherEnd` hardcoded to
-     * 22. The only production producer of that map is the private `LayoutEditor.setupShift`, called
-     * from `shiftUp`, `shiftDown`, `shiftLeft` and `shiftRight` - and grepping `test/` for `setupShift`
-     * before this method found one hit, a comment on the `shift()` helper above. Adam's own report was
-     * about this exact mapping: "Mostly OK after shifting, but links still got unlinked. Seems the
-     * coordinate mapping there may be an issue."
-     *
-     * The page is 21 columns by 16 rows on purpose - the two dimensions have to differ or a
-     * transposed bound is invisible - and the station sits on column 18: inside 0..20 (`getSx() - 1`,
-     * the correct bound for a ROW shift) but outside 0..15 (`getSy() - 1`, the wrong one).
-     *
-     * MUTATION this catches: transpose `LayoutEditorReshape.java`'s `setupShift` so a row shift
-     * (`across == false`) bounds the column loop by `getSy() - 1` instead of `getSx() - 1`. On this
-     * page that stops the loop at column 15 of 20, and the station on column 18 - deliberately placed
-     * past that - never enters the map: `moveTiles` never hears about it, and it is left behind on the
-     * row the shift moved everything else off of. Every test above stays green, because none of them
-     * ever calls `setupShift` - they build the map by hand, at the width they choose.
+     * MUTATION: transpose `LayoutEditorReshape.java`'s `setupShift` so a row shift (`across == false`) bounds the
+     * column loop by `getSy() - 1`: the station never enters the map and is left behind.  Every test above stays green.
      */
     @Test
     public void testTheEditorsShiftDownRespectsThePageWidth() throws Exception
@@ -312,12 +276,12 @@ public class testDiagramShiftKeepsSetup
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+        final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
         try
         {
-            // Before the model, not just before the window (OB-111) - constructing a TrainControlUI
-            // reads the layout-path preference, and without the sandbox it is Adam's own railway.
+            // Before the model, not just before the window (OB-111): constructing a TrainControlUI reads the
+            // layout-path preference.
             sandbox = support.LayoutSandbox.open();
 
             model = support.TestStation.simulatedInDebug();
@@ -337,16 +301,15 @@ public class testDiagramShiftKeepsSetup
                 }
             });
 
-            // Our own page, in our own temp folder - not "1 - Main", so this does not depend on what
-            // the sandboxed fixture happens to contain.
+            // Our own page in our own temp folder, not "1 - Main", so this does not depend on the sandboxed fixture.
             File autonomyFolder = Files.createTempDirectory("tc-shift-gesture").toFile();
 
             AutonomySession session = new AutonomySession(autonomyFolder);
 
             LayoutDiagram diagram = new LayoutDiagram("Shift Gesture Page", 21, 16, null, null);
 
-            // Every square counts towards the bounds - otherwise checkBounds ties an empty diagram's
-            // extent to nothing and the grid built from it is too small to reach column 18 at all.
+            // Every square counts towards the bounds, or checkBounds ties an empty diagram's extent to nothing and the
+            // grid is too small to reach column 18.
             diagram.setEdit(true);
             diagram.checkBounds();
 
@@ -359,23 +322,22 @@ public class testDiagramShiftKeepsSetup
             session.getStore().setPointName(at(diagram.getName(), farColumn, hoverRow),
                 "Far Column Station");
 
-            // getAutonomySession() only builds a session when the field is still null - pointed here
-            // at ours instead, so the editor's real setupShift/moveTiles call writes to the session
-            // this test can see.
+            // getAutonomySession() only builds a session when the field is still null: pointed at ours, the editor's
+            // real setupShift/moveTiles call writes to the session this test can see.
             java.lang.reflect.Field sessionField =
                 org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
             sessionField.setAccessible(true);
             sessionField.set(ui[0], session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
+                editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
+                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
             drawGrid.setAccessible(true);
 
             java.lang.reflect.Field hoveredY =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredField("lastHoveredY");
+                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("lastHoveredY");
             hoveredY.setAccessible(true);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -428,11 +390,8 @@ public class testDiagramShiftKeepsSetup
     }
 
     /**
-     * The map a shift hands to the store: every square from one line to another, moved by one.
-     *
-     * The same shape LayoutEditor.setupShift builds - a square outside the range is left out entirely
-     * rather than mapped to itself, so the store can tell a square that moved from a square something
-     * arrived on.
+     * The map a shift hands to the store, as LayoutEditor.setupShift builds it: squares outside the range are left out,
+     * not mapped to themselves.
      */
     private static Map<TileKey, TileKey> shift(boolean across, int from, int to, int dx, int dy)
     {

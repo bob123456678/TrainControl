@@ -12,8 +12,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.AutonomyEditorPanel;
-import org.traincontrol.gui.LayoutEditor;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -22,7 +22,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Unavailable While Occupied is answered with stations, by the list and by a click alike.
  *
- * Adam, MT-376, 2026-09-13, twice: *"works, but exclude non-station points from the list entirely"*, and
+ * Adam, MT-376, twice: *"works, but exclude non-station points from the list entirely"*, and
  * then *"if there are no stations on the diagram yet, the 'choose on diagram' button should be greyed out
  * to match the message."*
  *

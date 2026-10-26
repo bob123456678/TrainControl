@@ -19,34 +19,26 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A train that cannot reverse may still be sent to a station trains MAY turn at (Adam, MT-367).
  *
- * *"EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a terminus). It
- * is correctly barred from BottomMainC, a terminus."*
+ * "EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a terminus). It is correctly
+ * barred from BottomMainC, a terminus."
  *
- * **This is OB-205 claim 1 reading the flag that OB-205 claims 2 and 3 say cannot be read.** Those two
- * are one cause: *"`AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`,
- * so `isTerminus()` cannot tell it from a compulsory terminus"*, and their fix was to ask the DOOR
- * rather than the flag. Claim 1 went in the same evening asking exactly that flag, so a square trains
- * may turn at became a square a non-reversible train could not be sent to at all.
+ * This is OB-205 claim 1 reading the flag that claims 2 and 3 say cannot be read: `AutonomyBuilder` emits the turning
+ * copy of a MAY-turn square with `terminus: true`, so the fix was to ask the DOOR rather than the flag.
  *
- * **The question is about the SQUARE, not about this copy of it.** Measured on Adam's own railway, as
- * refrozen on 2026-09-23:
+ * **The question is about the SQUARE, not about this copy of it.**  Measured on Adam's own railway:
  *
  * <pre>
  *   BottomMainB   (eastbound, reverse) terminus     (eastbound) plain
- *   BottomMainC   one copy, a terminus - he made it a compulsory turn, and it is emitted with no plain copy
+ *   BottomMainC   one copy, a terminus - a compulsory turn, emitted with no plain copy
  * </pre>
  *
- * BottomMainB has a copy a train can stand at without turning, so a non-reversible train is not
- * stranded there. BottomMainC has none: every way to be on that square turns the train. That is what
- * "a terminus it could not leave" means, and it is answerable at runtime because `Point.getBlock`
- * knows which copies are one piece of track.
+ * BottomMainB has a copy a train can stand at without turning, so a non-reversible train is not stranded there.
+ * BottomMainC has none: every way to be on that square turns the train, which is what "a terminus it could not leave"
+ * means, and `Point.getBlock` knows which copies are one piece of track.  "Some sibling is not a terminus" is true of
+ * BottomMainC too, since its westbound copy is a REVERSING point: a way through has to be neither.
  *
- * **A first attempt at the discriminator was wrong and the probe caught it**: "some sibling is not a
- * terminus" is true of BottomMainC too, because its westbound copy is a REVERSING point rather than a
- * terminus. A way through has to be neither.
- *
- * MUTATION: drop the way-through clause and the BottomMainB claim fails; drop the whole terminus rule
- * and the BottomMainC claim fails; drop `isAutoDestination` and the berth claim fails.
+ * MUTATION: drop the way-through clause and the BottomMainB claim fails; drop the whole terminus rule and the
+ * BottomMainC claim fails; drop `isAutoDestination` and the berth claim fails.
  *
  * @author Adam
  */
@@ -84,7 +76,7 @@ public class testAMayTurnStationIsNotATerminus
 
         wasReversible = train.isReversible();
 
-        // Borrowed from the real database and given back - the suite runs against the live LocDB.
+        // Borrowed from the real database and given back: the suite runs against the live LocDB.
         train.setReversible(false);
     }
 
@@ -101,11 +93,7 @@ public class testAMayTurnStationIsNotATerminus
         }
     }
 
-    /**
-     * The claim: a square trains MAY turn at is still offered to a train that cannot turn.
-     *
-     * @throws Exception from the railway
-     */
+    /** The claim: a square trains MAY turn at is still offered to a train that cannot turn. */
     @Test
     public void testAMayTurnSquareIsStillOffered() throws Exception
     {
@@ -129,14 +117,8 @@ public class testAMayTurnStationIsNotATerminus
     }
 
     /**
-     * And the control: a square every way in turns the train at is still refused.
-     *
-     * **The compulsory case is his railway's own now.**  Until the refreeze of 2026-09-23 the snapshot
-     * predated his making BottomMainC a compulsory turn, so this closed its plain copies to build the
-     * case.  The snapshot now has it as he runs it - one copy, a terminus, no way through - so nothing is
-     * arranged, and the precondition says so.
-     *
-     * @throws Exception from the railway
+     * And the control: a square every way in turns the train at is still refused.  The compulsory case is his railway's
+     * own, so nothing is arranged.
      */
     @Test
     public void testACompulsoryTerminusIsStillRefused() throws Exception
@@ -154,25 +136,13 @@ public class testAMayTurnStationIsNotATerminus
     }
 
     /**
-     * The half of a compulsory turn that is spelled `reversing` is refused too.
+     * The half of a compulsory turn that is spelled `reversing` is refused too (Adam, MT-367: "still offered it for
+     * 2-8-4 3505.").
      *
-     * Adam, MT-367, 2026-09-13: **"still offered it for 2-8-4 3505."**
-     *
-     * **A turning copy carries whichever of two words the builder chose for it** -
-     * `stops ? "terminus" : "reversing"`, decided by whether a train may stop there - and this rule
-     * read only the first. Measured on his railway before this was written:
-     *
-     *     BottomMainC (eastbound, reverse)   terminus=true    offerable=false   <- refused
-     *     BottomMainC (westbound, reverse)   reversing=true   offerable=TRUE    <- the leak
-     *
-     * One compulsory-turn station, half refused and half offered, to the same locomotive. To a train
-     * that cannot reverse the two words say one thing: you must turn round here.
-     *
-     * **The spelling is arranged; the square is his.**  BottomMainC builds to one copy now, spelled
-     * `terminus`, so it is re-spelled `reversing` here for the length of the claim - the case the report
-     * was about, on the square it was about.
-     *
-     * @throws Exception from the railway
+     * A turning copy carries whichever of two words the builder chose, `stops ? "terminus" : "reversing"`, and the rule
+     * read only the first: BottomMainC (eastbound, reverse) was refused and (westbound, reverse) offered, to the same
+     * locomotive.  To a train that cannot reverse the two words say one thing.  The spelling is arranged: BottomMainC
+     * builds to one copy spelled `terminus`, so it is re-spelled `reversing` here for the length of the claim.
      */
     @Test
     public void testTheReversingCopyOfACompulsoryTurnIsRefusedToo() throws Exception
@@ -183,9 +153,9 @@ public class testAMayTurnStationIsNotATerminus
             "precondition: that copy is not one autonomy may choose, so the berth exemption applies"
             + " and refusing it is not what this claim is about");
 
-        // THE SPELLING HAS TO BE ARRANGED.  What the claim is about is the COMPULSORY case with a copy
-        // spelled `reversing` rather than `terminus`; his BottomMainC is compulsory and spelled
-        // `terminus`.  Any plain sibling is closed too, so the claim holds if the square ever grows one.
+        // THE SPELLING HAS TO BE ARRANGED: the claim is about a COMPULSORY case with a copy spelled `reversing`, and
+        // BottomMainC is spelled `terminus`.  Any plain sibling is closed too, so the claim holds if the square ever
+        // grows one.
         List<Point> closed = new java.util.ArrayList<>();
 
         boolean wasTerminus = false;
@@ -203,9 +173,8 @@ public class testAMayTurnStationIsNotATerminus
                 closed.add(sibling);
             }
 
-            // A Point refuses to be both - "Terminus stations cannot be set as reversing" - and in
-            // this snapshot that copy IS a terminus, which is the other spelling of the same thing.
-            // Cleared first, and put back in the finally.
+            // A Point refuses to be both ("Terminus stations cannot be set as reversing") and this copy IS a terminus:
+            // cleared first, put back in the finally.
             wasTerminus = reversing.isTerminus();
 
             if (wasTerminus) reversing.setTerminus(false);
@@ -240,11 +209,7 @@ public class testAMayTurnStationIsNotATerminus
         }
     }
 
-    /**
-     * And the exemption OB-205 was careful to keep: a parking berth is still offered.
-     *
-     * @throws Exception from the railway
-     */
+    /** And the exemption OB-205 was careful to keep: a parking berth is still offered. */
     @Test
     public void testAParkingBerthIsStillOffered() throws Exception
     {
@@ -261,12 +226,8 @@ public class testAMayTurnStationIsNotATerminus
     }
 
     /**
-     * And with the train able to reverse, the compulsory terminus comes back.
-     *
-     * Without this, every claim above is satisfied by a rule that refuses on something other than the
-     * locomotive - the square being switched off, say - and never looks at the train at all.
-     *
-     * @throws Exception from the railway
+     * And with the train able to reverse, the compulsory terminus comes back: otherwise a rule that never looks at the
+     * train would satisfy every claim above.
      */
     @Test(dependsOnMethods = "testACompulsoryTerminusIsStillRefused")
     public void testAReversibleTrainIsOfferedTheTerminus() throws Exception
@@ -289,15 +250,11 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway: autonomy does not choose BottomMainB's turning copy for a reversible train of 4, which no station
-     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes.
-     *
-     * The end-to-end validator ran his railway for twelve minutes with eight trains: a reversible train of 4 was turned
-     * there in four runs of seven and never moved again, and while it stood there Return Home found no plan for anyone.
-     * And a pick, which now asks this of each terminus it might choose, still takes well under a second here.
+     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes.  The end-to-end validator
+     * turned such a train there in four runs of seven and it never moved again, and Return Home found no plan for
+     * anyone.
      *
      * MUTATION: drop the clause from `barredFromAutonomy` and the first assertion fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainOfFourIsNotTurnedWhereItCouldNotLeave() throws Exception
@@ -362,14 +319,10 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway: Return Home names a train of 4 standing on BottomMainB's turning copy, from which nothing it fits
-     * can be reached, rather than searching the whole fleet and answering that no plan was found (OB-325).
-     *
-     * The end-to-end validation found it there: about fifteen seconds of searching, then "no plan found", naming nobody.
-     * Since round 92 autonomy does not send a train there; one placed or sent there by hand still stands there.
+     * can be reached, rather than searching the whole fleet and answering that no plan was found (OB-325).  Autonomy
+     * does not send a train there; one placed or sent there by hand still stands there.
      *
      * MUTATION: drop the first-move scan from `HomeStaging.plan` and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testReturnHomeNamesATrainThatCannotLeaveTheTurningCopy() throws Exception
@@ -435,10 +388,8 @@ public class testAMayTurnStationIsNotATerminus
     }
 
     /**
-     * Whether any copy of this square lets a train stand there without being turned.
-     *
-     * Worked out here from the Points rather than asked of the rule, so the preconditions above are a
-     * statement about the railway and not a restatement of the answer.
+     * Whether any copy of this square lets a train stand there without being turned, worked out from the Points so the
+     * preconditions state the railway, not the answer.
      */
     private static boolean aWayThroughExists(Point square)
     {
@@ -464,21 +415,15 @@ public class testAMayTurnStationIsNotATerminus
     }
 
     /**
-     * On his railway the right-click menu offers a standing train the same stations every time it is asked (Adam,
-     * 2026-10-09: "Fix B1").
+     * On his railway the right-click menu offers a standing train the same stations every time it is asked (Adam: "Fix
+     * B1").  Twelve asks of a train standing alone at BottomMainA gave twelve different menus, because the shortest
+     * routes there throw Switches 51 and 99 both ways and the search let them hide the clear ones; Why Not Moving? then
+     * blamed the conflict for a station the next opening offered.
      *
-     * The final validation asked it twelve times for a train standing alone at BottomMainA and got twelve different
-     * menus: the lower level's stations - LowerBack, LowerFront, LowerParkingOuter, ParkingTrack4 to 10 - came and went,
-     * because the shortest routes there throw Switches 51 and 99 both ways and the search let them hide the clear ones.
-     * When one was missing, Why Not Moving? blamed the conflict - "Has conflicting commands ([Switch 51 TURN, Switch 99
-     * TURN])" - for a station the next opening offered.
-     *
-     * ALONE, as the validation asked it: the other trains standing in the snapshot shut the lower level off with
-     * occupied track whichever way the search goes, so they are lifted off for the question and put back after it.
+     * ALONE, as the validation asked it: the other standing trains shut the lower level off with occupied track, so
+     * they are lifted off for the question and put back after it.
      *
      * MUTATION: key the route search on the square alone again and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheMenuOffersTheSameStationsEveryTime() throws Exception
@@ -531,7 +476,7 @@ public class testAMayTurnStationIsNotATerminus
 
             assertTrue(took < 12 * 2000, "twelve asks took " + took + " ms");
 
-            // And Why Not Moving? by hand has nothing against any of them - it used to blame the conflict
+            // And Why Not Moving? by hand has nothing against any of them
             java.util.Map<String, String> why = layout.explainDestinations(train, true);
 
             for (String lower : new String[] {"LowerBack", "LowerFront (eastbound)", "LowerFront (eastbound, reverse)",

@@ -12,9 +12,6 @@ import org.traincontrol.marklin.udp.CS2Message;
  * Each frame goes through the parsing constructor `CS2Message(byte[])`, the one the network reader uses, so what the
  * test sends is read exactly as a frame off the wire is.
  *
- * Gathered from the frames three classes built for themselves (`rawAccessoryEcho`, `accessoryPacket`,
- * `fromTheCentralStation`), FR-136 Phase 6.
- *
  * @author Adam
  */
 public final class Packets
@@ -30,8 +27,6 @@ public final class Packets
      * A sensor (s88 contact) changing state, as the station reports it.
      *
      * @param contact the contact number, as the diagram and the routes name it
-     * @param occupied whether the contact is now made
-     * @return the frame
      */
     public static CS2Message s88(int contact, boolean occupied)
     {
@@ -46,9 +41,7 @@ public final class Packets
     /**
      * The station's answer to an accessory command: the position it put the accessory in.
      *
-     * @param accessory the accessory
      * @param switched true for turned (red), false for straight (green)
-     * @return the frame
      */
     public static CS2Message accessoryEcho(MarklinAccessory accessory, boolean switched)
     {
@@ -58,9 +51,7 @@ public final class Packets
     /**
      * An accessory command on the bus that is not the station's answer, as another controller sends one.
      *
-     * @param accessory the accessory
      * @param switched true for turned (red), false for straight (green)
-     * @return the frame
      */
     public static CS2Message accessoryCommand(MarklinAccessory accessory, boolean switched)
     {
@@ -70,9 +61,7 @@ public final class Packets
     /**
      * A locomotive's speed, as the station echoes it.
      *
-     * @param locomotive the locomotive
      * @param stationSpeed the speed in the station's own units, 0 to 1000
-     * @return the frame
      */
     public static CS2Message speedEcho(MarklinLocomotive locomotive, int stationSpeed)
     {
@@ -87,10 +76,6 @@ public final class Packets
 
     /**
      * A locomotive's direction, as the station echoes it.
-     *
-     * @param locomotive the locomotive
-     * @param forward the direction
-     * @return the frame
      */
     public static CS2Message directionEcho(MarklinLocomotive locomotive, boolean forward)
     {
@@ -105,11 +90,6 @@ public final class Packets
 
     /**
      * A locomotive function turned on or off, as the station echoes it.
-     *
-     * @param locomotive the locomotive
-     * @param function the function number
-     * @param on its state
-     * @return the frame
      */
     public static CS2Message functionEcho(MarklinLocomotive locomotive, int function, boolean on)
     {
@@ -124,8 +104,6 @@ public final class Packets
 
     /**
      * The track power cut at the station (its Stop key).
-     *
-     * @return the frame
      */
     public static CS2Message powerStop()
     {
@@ -134,8 +112,6 @@ public final class Packets
 
     /**
      * The track power restored at the station (its Go key).
-     *
-     * @return the frame
      */
     public static CS2Message powerGo()
     {
@@ -161,10 +137,7 @@ public final class Packets
     /**
      * The raw frame, laid out as the station sends it, read back through the network reader's own constructor.
      *
-     * @param command the command
      * @param response whether the response bit is set, as it is on everything the station answers
-     * @param data the payload, at most eight bytes
-     * @return the parsed message
      */
     private static CS2Message frame(int command, boolean response, byte[] data)
     {

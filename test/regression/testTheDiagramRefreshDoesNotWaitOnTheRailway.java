@@ -20,56 +20,21 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * OB-192: the window froze the moment autonomy started, and the trains kept running.
+ * OB-192: the window froze while autonomy ran; the trains kept moving but nothing repainted.
  *
- * Adam, 2026-09-09: *"starting autonomous operation from the current track state, via the netbeans
- * compiled jar, makes the UI unresponsive.  Trains still run, but nothing is repainted, and controls
- * are stuck."*  And: *"I am now seeing autonomy freeze on every run, with the UI completely
- * unresponsive... Things still seem to run in the background, just not the UI."*
+ * The event thread was blocked on a lock someone else held.  `Layout.java`'s comment above `getEdges` names the
+ * deadlock; one test per half: the railway must not take the window's monitor while holding its own
+ * (`testADrivingThreadNeverWaitsForTheWindowsMonitor`), and the window must never take the railway's, nor on the event
+ * thread at all (`testTheDiagramRefreshDoesNotWaitOnTheRailway`).  The measured doors are here;
+ * `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the census of the rest.
  *
- * Trains moving with nothing repainting and no control answering is not a crash and not a stalled
- * railway - it is the EVENT THREAD blocked on a lock somebody else is holding.
- *
- * **THE TWO LEGS, WHICH IS WHY THERE ARE TWO TESTS.**  `Layout.java`'s own comment above `getEdges`
- * names this deadlock; each test claims one of its halves is gone:
- *
- * - **The railway took the WINDOW's monitor while holding its OWN.**  `configureAndLockPath` is
- *   `synchronized (this)` on the `Layout` and commands an accessory per edge inside that block, and
- *   `MarklinAccessory.setSwitched` called `TrainControlUI.repaintSwitch`, which was `synchronized` on
- *   the window.  Not any more: it only posts to the event thread, so a driving thread never
- *   waits for the window - `testADrivingThreadNeverWaitsForTheWindowsMonitor` is the claim.
- *
- * - **The window must NEVER take the RAILWAY's monitor while holding its own**, nor on the event
- *   thread at all: a dispatch holds it across a sleep per accessory.  `TrainControlUI.updateVisiblePoints`
- *   is `synchronized` on the window and is called on the event thread by `DiagramMonitorDriver` every
- *   tick of a run and by `attachAutonomyRefresh` at both ends of every path.  It reached
- *   `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout`.  AB-BA then, and the
- *   freeze Adam is describing.  `testTheDiagramRefreshDoesNotWaitOnTheRailway` is the claim that this
- *   leg is gone.
- *
- * **BOUNDED, ALWAYS.**  Neither test may leave a thread stuck: the monitor a helper takes is released
- * on a timer whatever happens, and every wait is a `Future.get(timeout)` that fails with a message
- * rather than a hang.  Producing the real deadlock would be a truer reproduction and would leave a
- * wedged event thread behind in a JVM that then never exits, which poisons every class after it.
- *
- * **THE FREE COST IS MEASURED FIRST**, so a red result is attributable.  A refresh that is slow on its
- * own would time out here for a reason that has nothing to do with a monitor, so the same refresh is
- * timed with the railway's monitor free and the assertion is made against that baseline as well as
- * against the wall clock.
+ * Bounded: a helper's monitor is released on a timer and every wait is a `Future.get(timeout)`, so a failure is a
+ * message, not a hang.  The free cost of a refresh is measured first, so a red result is attributable.
  *
  * MUTATION: put the blocking call back - have `refreshCoveredTrack` ask
  * `getAutonomySession().tilesBlockedByStandingTrains(this.model.getAutoLayout())` on the event thread
  * - and `testTheDiagramRefreshDoesNotWaitOnTheRailway` goes red, timing out with the event thread
  * parked on `Layout.edgesCoveredByStandingTrains`.
- *
- * **THE MEASURED DOORS ARE HERE; THE CENSUS IS NEXT DOOR.**  This class holds a monitor and times a
- * call, which is the only thing that can prove a door is shut - but it can only do that for the doors
- * somebody has written a test for, and this defect has arrived through seven of them in two rounds.
- * `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the other half: it reads the list of
- * `synchronized` methods out of `Layout.java` and requires every call to one of them from a
- * user-interface class to be written down with the thread it is on.  A source guard that used to live
- * in this file pinned a single method name against a rule its own failure message stated generally,
- * and reported clean about four doors; it has been deleted rather than kept beside the general one.
  *
  * @author Adam
  */
@@ -82,18 +47,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     private static Layout layout;
 
     /**
-     * How long a helper holds a monitor.  Long enough that a blocked refresh cannot finish inside the
-     * window by luck, short enough that a red run costs seconds rather than the class.
+     * How long a helper holds a monitor: longer than a refresh could finish by luck, short enough for a cheap red run.
      */
     private static final long HOLD_MS = 8000;
 
-    /**
-     * How long the event thread is given to complete one refresh while that monitor is held.
-     *
-     * Generous against the free cost measured in `@BeforeClass` and far below `HOLD_MS`, so the two
-     * outcomes are unambiguous: a refresh that does not take the railway's monitor returns in
-     * milliseconds, and one that does cannot return until the hold expires.
-     */
+    /** How long the event thread gets for one refresh while that monitor is held; far below HOLD_MS. */
     private static final long PATIENCE_MS = 3000;
 
     /** What one refresh costs with nothing held, measured before anything is locked. */
@@ -107,9 +65,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             throw new SkipException("the window and its event thread are the subject here");
         }
 
-        // THE FROZEN COPY, never the operator's own railway.  `Scenario.folderFor` is the only naming
-        // of a fixture folder that cannot spell its way out to `cs2_sample_layout`, and the sandbox is
-        // opened BEFORE `init`, which reads the layout preference (OB-111).
+        // The frozen copy, never the operator's railway; opened before `init`, which reads the layout preference.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -132,9 +88,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         assertNotNull(layout, "the snapshot did not build to a layout");
 
-        // WARMED, then measured.  The first refresh of a session pays for class loading and for the
-        // station captions being written for the first time; timing that would set a baseline nothing
-        // else ever matches.
+        // Warmed, then measured: the first refresh pays for class loading and would set a baseline nothing matches.
         refreshOnTheEventThread();
 
         freeCostMs = refreshOnTheEventThread();
@@ -157,11 +111,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
     /**
      * The event thread finishes a diagram refresh while a driving thread holds the railway's monitor.
-     *
-     * This is OB-192 stated as a property.  Every long-held acquisition of that monitor belongs to a
-     * thread that is driving a train - `configureAndLockPath` holds it across a `CONFIGURE_SLEEP` per
-     * accessory of the path - so a refresh that waits for it waits for ironwork to move, on the thread
-     * that draws the whole application.
+     * (`configureAndLockPath` holds it across a `CONFIGURE_SLEEP` per accessory.)
      */
     @Test
     public void testTheDiagramRefreshDoesNotWaitOnTheRailway() throws Exception
@@ -214,15 +164,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The other leg is gone: a driving thread commands an accessory - holding the railway's monitor, that
-     * accessory's signal lock and, inside the command, the accessory's own monitor - without waiting for
-     * the window's monitor, which another thread holds.
-     *
-     * The window can hold its own monitor and reach a protection refresh (`updateVisiblePoints` ->
-     * `reconcileFacingWhenIdle` -> a train re-stood), which waits for that signal's lock; so a command that
-     * waited for the window under that lock was a deadlock.  The command is made as `configureEdge` makes
-     * it, through `Accessory.setState` - so `MarklinAccessory.setSwitched` and its `repaintSwitch` are the
-     * real ones - setting an accessory a path on the snapshot commands to the setting it already has.
+     * A driving thread commands an accessory, holding the railway's monitor and the accessory's locks, without waiting
+     * for the window's monitor, which another thread holds.
      *
      * MUTATION: make `TrainControlUI.repaintSwitch` `synchronized` again, and this fails.
      */
@@ -248,7 +191,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
                 {
                     driverIsIn.countDown();
 
-                    // The command a dispatch or a refresh sends, to the setting the accessory already has
+                    // The command a dispatch sends, to the setting the accessory already has
                     accessory.setState(accessory.isSwitched()
                         ? Accessory.accessorySetting.RED : Accessory.accessorySetting.GREEN);
 
@@ -261,8 +204,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         try
         {
-            // HELD FOR A MOMENT ONLY, and released whatever happens - the window's monitor is what the event
-            // thread needs to draw anything.
+            // Held for a moment only, and released whatever happens.
             synchronized (ui)
             {
                 driving.start();
@@ -282,11 +224,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         }
     }
 
-    /**
-     * An accessory a path on the snapshot commands, found without creating one.
-     *
-     * @return the accessory
-     */
+    /** An accessory a path on the snapshot commands, found without creating one. */
     private static Accessory anAccessoryAPathCommands()
     {
         for (org.traincontrol.automation.Edge edge : layout.getEdges())
@@ -303,24 +241,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The Return Home button is refreshed on the event thread while a driving thread holds the
-     * railway's monitor.
+     * The Return Home button is refreshed on the event thread while a driving thread holds the railway's monitor.
      *
-     * THE SECOND DOOR, and the one the OB-192 fix left standing.  `refreshReturnHomeButton` runs on
-     * the event thread - `repaintAutoLocListLite` and `repaintAutoLocListFull` both call it from
-     * inside their `invokeLater`, which is what runs on every arrival, every departure and every
-     * placement - and it asks `Layout.triageReturnToHome`, which builds a `HomeStaging.snapshot` and
-     * so calls `Layout.getHomeStations`, `synchronized` on the `Layout`.  Same monitor, same thread,
-     * same freeze as the covered marks.
-     *
-     * **AND `isAutonomyBusy` DOES NOT COVER IT.**  That guard was believed to: it asks
-     * `Layout.isRunning`, which counts `locomotiveThreads` and so is true for a hand dispatch as well
-     * as for autonomy.  What it does not cover is every OTHER holder of that monitor with no train
-     * moving at all - `AutoLocomotiveStatus.findPaths` calls `getPossiblePaths`, which is
-     * `synchronized` and searches the whole graph, once per panel, on the `AutonomyRenderer` worker
-     * this same refresh has just submitted to.  So the event thread and that worker race for the
-     * railway's monitor on every refresh, with autonomy stopped, which is the state this fixture is
-     * in.
+     * The second door: `refreshReturnHomeButton` asks `Layout.triageReturnToHome`, which is `synchronized` on the
+     * `Layout`.  `isAutonomyBusy` does not cover it: `AutoLocomotiveStatus.findPaths` holds the monitor with nothing
+     * running, on the worker this same refresh has just submitted to.
      */
     @Test
     public void testTheReturnHomeButtonDoesNotWaitOnTheRailway() throws Exception
@@ -347,9 +272,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
         });
 
-        // AND THE ANSWER ACTUALLY LANDS.  Without this the test above is satisfied by a
-        // `refreshReturnHomeButton` that does nothing at all - "did not block" is true of a method
-        // with an empty body, and the button graying itself correctly is the whole point of it.
+        // The answer must also land: "did not block" is true of a method with an empty body.
         java.lang.reflect.Method waiting =
             TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
 
@@ -364,8 +287,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         javax.swing.JButton offered = (javax.swing.JButton) button.get(ui);
 
-        // The railway asked directly, from THIS thread - which may block, and is allowed to, because
-        // this is not the event thread.
+        // The railway asked directly, from this thread, which may block.
         final boolean somethingToDo = layout.triageReturnToHome() == null;
 
         pump();
@@ -377,12 +299,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The third door: the diagram's right-click menu asks the same question while it is being built.
-     *
-     * `HomeLocomotiveMenu.addReturnHomeItem` grays the "Return Locomotives Home" item and says why,
-     * reading the button `refreshReturnHomeButton` keeps (OB-192), and handed the setup's sentence by the
-     * menu.  A popup menu is built on the event thread by definition, so this is the same wait
-     * with a mouse button behind it rather than an arrival.
+     * The third door: the diagram's right-click menu asks the same question while it is being built, on the event
+     * thread (`HomeLocomotiveMenu.addReturnHomeItem`).
      */
     @Test
     public void testTheReturnHomeMenuDoesNotWaitOnTheRailway() throws Exception
@@ -411,16 +329,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The fourth door: the caption rule asks the railway whether autonomy can choose each station.
      *
-     * `captionIsActive` reached `Layout.isChoosableByAutonomy` - `synchronized` on the
-     * `Layout` - once per captioned square, and it is asked from three places that all run on the
-     * event thread: the grid build inside `repaintLayout`'s `invokeLater`, the overlay toggle, and
-     * `refreshCaptionVisibility`.  So switching diagram pages during a run froze the window for the
-     * remainder of somebody else's departure.  `updateVisiblePoints` was fixed for exactly this and
-     * its own comment now says the old reasoning "surveyed one of the two things this method does";
-     * the caption path is the thing it did not survey either.
-     *
-     * The answer is worked out on `CoveredTrackRenderer` now and read off a volatile field, so this
-     * costs a set lookup whoever is holding the railway.
+     * `captionIsActive` reached `Layout.isChoosableByAutonomy` once per captioned square, from three event-thread
+     * paths.  The answer is now worked out on `CoveredTrackRenderer` and read off a volatile field.
      *
      * MUTATION: put the `for (Point point : ...) if (railway.isChoosableByAutonomy(point))` loop back
      * into `captionIsActive` and this times out with the event thread parked on the railway's monitor.
@@ -455,8 +365,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             {
                 try
                 {
-                    // EVERY square, because the defect was one monitor acquisition PER CAPTION - the
-                    // three doors all walk the whole diagram, and one lucky square proves nothing.
+                    // Every square: the defect was one monitor acquisition per caption, and one lucky square proves
+                    // nothing.
                     for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
                     {
                         rule.invoke(ui, square);
@@ -477,24 +387,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The fifth door: the diagram's right-click menu is built on the event thread.
      *
-     * The menu's constructor asked `Layout.getPossiblePaths` - `synchronized`, and itself a
-     * search of the whole graph - and then `isOfferableToOperator` and `isChoosableByAutonomy` once per
-     * candidate path, all inside `showFor`'s `invokeLater`.  Right-clicking an idle train while another
-     * one was mid-dispatch parked the event thread on the railway's monitor for the length of that
-     * train's switch-throwing, which is the most ordinary gesture there is.
-     *
-     * `showFor` gathers the answers on a worker now and hands them to the constructor, so what is
-     * measured here is the constructor: it must build a menu about a square with a train on it without
-     * asking the railway anything.
-     *
-     * A TRAIN IS PLACED FIRST rather than hoped for.  The path section only exists for a square with a
-     * locomotive standing on it, so a fixture that happens to have none would measure the empty case
-     * and report clean - which is the shape of a guard that passes because it never ran.
-     *
-     * AND THE GATHERED ANSWERS ARE REAL ONES, for the same reason.  Handing the constructor a null - the
-     * "nothing to offer" case - would skip the whole path section, and a search put back INSIDE it
-     * would be invisible here.  So `gatherPathOptions` is called first, on this thread, which is
-     * exactly what `showFor`'s worker does; only the drawing is then timed on the event thread.
+     * The constructor used to ask `Layout.getPossiblePaths` (synchronized, a whole-graph search); `showFor` now
+     * gathers the answers on a worker and hands them in, so the constructor must build a menu about a square with a
+     * train on it without asking the railway anything.  A train is placed first (the path section exists only for
+     * a square with a locomotive), and `gatherPathOptions` is called first on this thread, as `showFor`'s worker does,
+     * so a search put back inside the constructor would show.
      *
      * MUTATION: move the `getPossiblePaths` call back out of `gatherPathOptions` into the constructor
      * and this times out.
@@ -514,10 +411,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         build.setAccessible(true);
 
-        // OFF THE EVENT THREAD, on this one, which is the whole arrangement being tested.
-        //
-        // The square is resolved first, as `showFor` resolves it - on the event thread, because that
-        // lookup goes through the lazy session builder.  What the worker is handed is a Point.
+        // Off the event thread, as the worker does; the square is resolved first, on the event thread, as `showFor`
+        // does.
         java.lang.reflect.Method gather = menu.getDeclaredMethod("gatherPathOptions",
             TrainControlUI.class, org.traincontrol.automation.Point.class);
 
@@ -545,24 +440,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The sixth door: the autonomy editor's "why is this train not moving" tool.
      *
-     * The last `ON THE EVENT THREAD` allowance in
-     * `testNothingOnTheEventThreadTakesTheRailwaysMonitor`.  `AutonomyEditorPanel.applyWhy` asked
-     * `Layout.explainDestinations` - `synchronized`, and a walk of the whole graph once per candidate -
-     * straight from the click that started it, and then ran `GraphReducer.findPath` once more for
-     * every station the railway offered.
-     *
-     * **IT WAS NOT A LIVE FREEZE, AND IT IS MOVED ANYWAY.**  The editor cannot be open while autonomy
-     * is running (OB-047), so no dispatch can be holding that monitor while this tool is used - but
-     * `AutoLocomotiveStatus.findPaths` can, with nothing running at all, which is the state this
-     * fixture is in and the state the held monitor below stands for.  Adam, 2026-09-09: *"I would
-     * rather take it off EDT.  It's not critical now, but we want to avoid these pitfalls."*  A rule
-     * with one standing exception is a rule with a way in.
-     *
-     * The question goes to `WhyRenderer` now and the answer is painted by an `invokeLater`, which is
-     * the shape `refreshCoveredTrack` and `refreshReturnHomeButton` already use.  What stays on the
-     * event thread is the capture: `layoutSource.get()` BUILDS a `Layout` when there is none and
-     * `getStationIndex` DERIVES the square-to-Point translation when nothing has yet, so neither may
-     * be asked for on a worker.
+     * `AutonomyEditorPanel.applyWhy` asked `Layout.explainDestinations` (synchronized, a whole-graph walk per
+     * candidate) straight from the click.  The editor cannot be open while autonomy runs (OB-047), but
+     * `AutoLocomotiveStatus.findPaths` can hold the monitor with nothing running, as this fixture does.  The question
+     * now goes to `WhyRenderer` and the answer is painted by an `invokeLater`; the capture stays on the event thread
+     * because `layoutSource.get()` and `getStationIndex` may build state.
      *
      * MUTATION: call `composeWhy` directly from `applyWhy` instead of submitting it, and this times
      * out with the event thread parked on `Layout.explainDestinations`.
@@ -572,7 +454,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
 
         final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
 
@@ -590,9 +472,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
         });
 
-        // AND THE ANSWER ACTUALLY LANDS.  Without this the test above is satisfied by an `applyWhy`
-        // that does nothing at all - "did not block" is true of a method with an empty body, and this
-        // tool being silently blank is OB-191, which is the other way it has been broken.
+        // The answer must also land: "did not block" is true of an `applyWhy` that does nothing (OB-191).
         assertTrue(awaitWhy(panel), "the why answer never landed, so nothing was ever painted from it");
 
         pump();
@@ -608,30 +488,19 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * And what it says is the railway's own answer, not a shape that happens to be there.
+     * What the tool says is the railway's own answer, not a shape that happens to be there (OB-191: it painted the
+     * paths and said nothing).
      *
-     * OB-191 was this tool painting the paths and saying nothing - *"the banner expands, but I see no
-     * text"* - so "it answered" has to mean the answer is READ BACK and checked against the railway,
-     * which is the only thing that can tell a report from an empty strip.
-     *
-     * **THE RAILWAY IS THE ORACLE, ASKED FROM THIS THREAD.**  `explainCannotStart` and
-     * `explainDestinations` are asked here, off the event thread, where blocking is allowed - and the
-     * report must agree with them about the two things it can be: a train that cannot start at all
-     * names the reason it cannot, and a train that can names either the stations it may go to or the
-     * fact that there are none.  Nothing here re-implements the panel's collapse of Points onto
-     * squares; it compares against the answers the panel was composed from.
-     *
-     * **AND THE LINES ARE THE OTHER HALF.**  A train with somewhere to go draws its routes on the
-     * diagram, and those are built on the worker now and installed by the paint - so where the
-     * reduction can find a run to a station the railway offers, `traces` must not be empty.  That is
-     * the assertion a `paintWhy` that dropped the worker's map would fail.
+     * The railway is the oracle, asked from this thread: a train that cannot start names the reason, and one that
+     * can names the stations it may go to or says there are none.  Where the reduction finds a run to an offered
+     * station, `traces` must not be empty, which a `paintWhy` that dropped the worker's map would fail.
      */
     @Test
     public void testTheWhyToolSaysWhatTheRailwaySays() throws Exception
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
 
         final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
 
@@ -655,10 +524,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         String said = whatTheEditorSays(panel);
 
-        // WHICH TRAIN THE REPORT IS ABOUT.  Every point of the square is asked, because a square is
-        // several Points and which copy holds the locomotive is the session's business, not this
-        // test's - so the report has to name one of the trains standing there, and the message says
-        // which ones those were.
+        // Every point of the square is asked, because which copy holds the locomotive is the session's business.
         java.util.List<String> standing = new java.util.ArrayList<>();
 
         for (String pointName : session.getStationIndex().pointNamesAt(occupied))
@@ -686,8 +552,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             "the report does not name any of the trains standing on " + occupied + " " + standing
             + ", so it is not about the train that was clicked.  What it says: " + said);
 
-        // THE RAILWAY'S OWN TWO ANSWERS, asked from this thread, where waiting for its monitor is
-        // allowed.
+        // The railway's own two answers, asked from this thread, where waiting for its monitor is allowed.
         org.traincontrol.base.Locomotive train = null;
 
         for (String pointName : session.getStationIndex().pointNamesAt(occupied))
@@ -726,9 +591,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         if (!somewhereToGo || session.getReducer() == null) return;
 
-        // AND THE LINES, where the reduction can draw one.  Asked of the reducer directly rather than
-        // inferred from the report: a station the running graph offers need not be reachable across
-        // the DIAGRAM, and this test may only demand a line where one can be drawn.
+        // And the lines, where the reduction can draw one; asked of the reducer directly, since a station the running
+        // graph offers need not be reachable across the diagram.
         boolean aRunExists = false;
 
         for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
@@ -751,7 +615,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         if (!aRunExists) return;
 
         java.lang.reflect.Field traces =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("traces");
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("traces");
 
         traces.setAccessible(true);
 
@@ -762,27 +626,16 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The why answer lists the stations autonomy could choose first and the ones it never will after, each
-     * by page and then by name with the train's own page first, and names the page of a station that is on
-     * another one (FR-080; MT-429).
-     *
-     * Adam: *"in the 'why not moving' view in the autonomy editor, show all stations first, then show
-     * berths (non-autonomy stations), both in alphabetical order.  If a point is on another page, show
-     * it."*  The list came in the railway's priority order - what `pickPath` walks - with the two kinds
-     * mixed and no page anywhere, on a snapshot of five pages.  And on MT-429: *"capitalize Page.  Update
-     * sorting to be by page then station name, rather than station name only, with the current page being
-     * first, then others sequentially later."*  This panel has no page of its own - it is built the way the
-     * track diagram's menu builds it - so the current page is the one the train stands on.
-     *
-     * The grouping is the railway's (`explainDestinationsGrouped`) and the names are the session's
-     * (`describeTile`); the answer is read back and checked against both.
+     * The why answer lists the stations autonomy could choose first and the ones it never will after, each by page and
+     * then by name with the train's own page first, and names the page of a station on another one (FR-080; MT-429).
+     * The grouping is the railway's (`explainDestinationsGrouped`) and the names are the session's (`describeTile`).
      */
     @Test
     public void testTheWhyAnswerListsStationsThenBerthsWithTheirPages() throws Exception
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.AutonomyEditorPanel panel = aWhyPanel();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
 
         final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
 
@@ -815,12 +668,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(train);
 
-        // Each refused station as the answer should show it, and whether it belongs with the ones autonomy
-        // could choose - true when ANY of its copies is choosable, which is how both why-windows file it.
+        // Each refused station as the answer should show it, and whether it belongs with the choosable ones (any copy).
         java.util.Map<String, Boolean> expected = new java.util.LinkedHashMap<>();
 
-        // Each shown name's place in the order: its page - the train's own first, the rest by page name -
-        // then the session's name for the square.  Keyed as the answer writes the name, escaped.
+        // Each shown name's place in the order: its page (the train's own first), then the session's name for the
+        // square.
         java.util.Map<String, String[]> rank = new java.util.HashMap<>();
 
         String elsewhere = null;
@@ -906,8 +758,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * What the why answer should call a Point: the session's name for its square, with the page when that
-     * is not the page the train stands on.
+     * What the why answer should call a Point: the session's name for its square, plus the page when it is not the
+     * train's.
      */
     private static String shownAs(String pointName, org.traincontrol.automationui.TileGraph.TileKey from)
     {
@@ -984,22 +836,17 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * An autonomy editor panel wired to this fixture's railway, built on the event thread.
-     *
-     * A null page, which is how `TrainControlUI` builds this panel for the tile menus: the square is
-     * handed straight to the tool, so there is no diagram for it to name.
-     *
-     * @return the panel
-     * @throws Exception when the event thread refuses to build it
+     * An autonomy editor panel wired to this fixture's railway, built on the event thread with a null page (as the tile
+     * menus do).
      */
-    private static org.traincontrol.gui.AutonomyEditorPanel aWhyPanel() throws Exception
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel aWhyPanel() throws Exception
     {
-        final org.traincontrol.gui.AutonomyEditorPanel[] built =
-            new org.traincontrol.gui.AutonomyEditorPanel[1];
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] built =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            built[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+            built[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, null, () -> { });
 
             built[0].setLayoutSource(() -> layout);
         });
@@ -1009,12 +856,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return built[0];
     }
 
-    /**
-     * What is drawn on a square, which the tool refuses to answer about unless it is a sensor.
-     *
-     * @param square the station's square
-     * @return the tile
-     */
+    /** What is drawn on a square, which the tool refuses to answer about unless it is a sensor. */
     private static org.traincontrol.base.LayoutDiagramComponent theSquareItself(
         org.traincontrol.automationui.TileGraph.TileKey square)
     {
@@ -1029,15 +871,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return drawn;
     }
 
-    /**
-     * The tool itself, which is private and reached from a mouse listener.
-     *
-     * @return the method
-     * @throws Exception when it is no longer there under that name
-     */
+    /** The tool itself, which is private and reached from a mouse listener. */
     private static java.lang.reflect.Method theWhyTool() throws Exception
     {
-        java.lang.reflect.Method why = org.traincontrol.gui.AutonomyEditorPanel.class
+        java.lang.reflect.Method why = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class
             .getDeclaredMethod("applyWhy", org.traincontrol.automationui.TileGraph.TileKey.class,
                 org.traincontrol.base.LayoutDiagramComponent.class);
 
@@ -1046,17 +883,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return why;
     }
 
-    /**
-     * Waits for every why ask this test has started to be worked out.
-     *
-     * @param panel the editor
-     * @return true when nothing is outstanding
-     * @throws Exception when the panel no longer offers the wait
-     */
-    private static boolean awaitWhy(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
+    /** Waits for every why ask this test has started to be worked out. */
+    private static boolean awaitWhy(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel) throws Exception
     {
         java.lang.reflect.Method waiting =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
 
         waiting.setAccessible(true);
 
@@ -1064,20 +895,14 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * What the editor's hint line says, with its mark-up left in.
-     *
-     * The panel is built here without a banner, so `say` and `sayRich` both write into the hint label
-     * - which is the fallback the panel documents for a panel mounted without one.
-     *
-     * @param panel the editor
-     * @return the text
-     * @throws Exception when the label is no longer there
+     * What the editor's hint line says, mark-up left in (the panel has no banner, so `say` and `sayRich` write to the
+     * hint label).
      */
-    private static String whatTheEditorSays(org.traincontrol.gui.AutonomyEditorPanel panel)
+    private static String whatTheEditorSays(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel)
         throws Exception
     {
         java.lang.reflect.Field label =
-            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField("hint");
 
         label.setAccessible(true);
 
@@ -1086,11 +911,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return said == null ? "" : said;
     }
 
-    /**
-     * A station square with a locomotive standing on it, placing one if the snapshot has none there.
-     *
-     * @return the square
-     */
+    /** A station square with a locomotive standing on it, placing one if the snapshot has none there. */
     private static org.traincontrol.automationui.TileGraph.TileKey squareWithATrainOnIt()
     {
         java.util.List<org.traincontrol.automationui.TileGraph.TileKey> squares =
@@ -1105,8 +926,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             if (at != null && at.getCurrentLocomotive() != null) return square;
         }
 
-        // NONE STANDING, so one is put down.  The first square whose Point is a destination, and the
-        // first locomotive the setup means to run.
+        // None standing, so one is put down: the first destination square, the first locomotive the setup means to run.
         for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
         {
             org.traincontrol.automation.Point at = ui.getAutonomyPointForTile(square);
@@ -1130,17 +950,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * Starts a daemon thread that takes the railway's monitor and keeps it, exactly as a dispatch does.
-     *
-     * `synchronized (layout)` is the same monitor every `synchronized` method of `Layout` takes, which
-     * is what `configureAndLockPath` is inside while it throws ironwork.
-     *
-     * RELEASED ON A TIMER as well as on the latch, so a test that fails part way through cannot leave
-     * the railway locked for the rest of the class.
-     *
-     * @param taken counted down once the monitor is held
-     * @param release counted down by the caller to let it go
-     * @return the running thread
+     * Starts a daemon thread that takes the railway's monitor and keeps it, as a dispatch does
+     * (`configureAndLockPath` is inside it while throwing ironwork).  It is released on a timer as well as on the
+     * latch, so a failing test cannot leave the railway locked for the rest of the class.
      */
     private static Thread holdsTheRailway(final CountDownLatch taken, final CountDownLatch release)
     {
@@ -1169,19 +981,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * Holds the railway's monitor and asserts one door of the window still answers on the event
-     * thread.
+     * Holds the railway's monitor and asserts one door of the window still answers on the event thread.
      *
-     * ONE BODY FOR EVERY DOOR, because there is one rule: nothing the event thread does may wait on
-     * the `Layout` monitor.  Written out once per door, the fourth door would be measured slightly
-     * differently from the first three, and the difference is where a real wait hides.
-     *
-     * The free cost is measured for THIS door first, so a red result is attributable - a door that is
-     * slow on its own would otherwise time out here for a reason that has nothing to do with a
-     * monitor.
-     *
-     * @param door what is being called, for the message
-     * @param job the call, made on the event thread
+     * One body for every door, because there is one rule; written out per door they would be measured slightly
+     * differently.  The free cost is measured for this door first, so a red result is attributable.
      */
     private static void whileTheRailwayIsHeld(String door, Runnable job) throws Exception
     {
@@ -1235,34 +1038,19 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         }
     }
 
-    /**
-     * Runs one diagram refresh on the event thread and says what it cost, waiting as long as it takes.
-     *
-     * @return the milliseconds it took
-     */
+    /** Runs one diagram refresh on the event thread and says what it cost, waiting as long as it takes. */
     private static long refreshOnTheEventThread() throws Exception
     {
         return onTheEventThread(() -> ui.updateVisiblePoints());
     }
 
-    /**
-     * The same, given only so long.
-     *
-     * @param patience how long to wait
-     * @return the milliseconds it took
-     * @throws TimeoutException when the event thread did not finish in time
-     */
+    /** The same, given only so long. */
     private static long refreshOnTheEventThread(long patience) throws Exception
     {
         return onTheEventThread(() -> ui.updateVisiblePoints(), patience);
     }
 
-    /**
-     * Runs anything on the event thread and says what it cost, waiting as long as it takes.
-     *
-     * @param job what to run there
-     * @return the milliseconds it took
-     */
+    /** Runs anything on the event thread and says what it cost, waiting as long as it takes. */
     private static long onTheEventThread(Runnable job) throws Exception
     {
         try
@@ -1278,15 +1066,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The same, given only so long.
-     *
-     * The wait is made from a THIRD thread rather than by this one calling `invokeAndWait`, because
-     * `invokeAndWait` has no timeout: were the event thread wedged, this test would be too.
-     *
-     * @param job what to run there
-     * @param patience how long to wait
-     * @return the milliseconds it took
-     * @throws TimeoutException when the event thread did not finish in time
+     * The same, given only so long.  The wait is made from a third thread, because `invokeAndWait` has no timeout and a
+     * wedged event thread would wedge this test too.
      */
     private static long onTheEventThread(Runnable job, long patience) throws Exception
     {
@@ -1316,9 +1097,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
             finally
             {
-                // Canceled but never waited for: the point of the timeout is that the event thread may
-                // still be stuck, and the runnable it is stuck in cannot be interrupted out of a
-                // monitor.  It unwinds by itself when the helper gives the monitor back.
+                // Canceled but never waited for: the event thread may still be stuck in a monitor it cannot be
+                // interrupted out of; it unwinds when the helper gives the monitor back.
                 refreshed.cancel(true);
             }
         }
@@ -1328,11 +1108,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         }
     }
 
-    /**
-     * Where the event thread is standing, for a failure message somebody can act on.
-     *
-     * @return its stack, or a note saying it could not be found
-     */
+    /** Where the event thread is standing, for a failure message somebody can act on. */
     private static String whereTheEventThreadIs()
     {
         for (java.util.Map.Entry<Thread, StackTraceElement[]> running

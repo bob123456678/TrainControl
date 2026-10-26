@@ -25,29 +25,29 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * A train standing with no road is drawn in orange over the switches its tail lies across (OB-348).
  *
- * Adam, 2026-10-14: *"when the tail reaches bottommainbcpre, it is not drawn over the thrown arm of the switch and 7,8,
- * even though I see orange before and after."*
+ * Adam: *"when the tail reaches bottommainbcpre, it is not drawn over the thrown arm of the switch and 7,8, even though
+ * I see orange before and after."*
  *
- * A train with no road into its platform - placed by hand, answered Not known, or re-stood - has its tail claimed up to
- * where the rails arriving by its side part (MT-477), and those claims are drawn along the road the rails agree on on
- * each square (OB-290).  The roads were asked of every edge of the railway through the square, so a switch behind the
- * platform whose other leg carries rails that never reach the platform - 7,8, whose straight leg runs from Tunnel to
- * BottomMainBCPre, and the three-way switch at 9,7 - was seen run along two roads and drawn along none.
+ * A train with no road into its platform (placed by hand, answered Not known, or re-stood) has its tail claimed up to
+ * where the rails arriving by its side part (MT-477), drawn along the road the rails agree on on each square (OB-290).
+ * The roads were asked of every edge of the railway through the square, so a switch behind the platform whose other leg
+ * carries rails that never reach the platform (7,8, and the three-way switch at 9,7) was seen run along two roads and
+ * drawn along none.
  *
- * At TunnelLeftPark on the frozen `live-snapshot`, as Adam's 02 0314-1 DDR stands there: in from the south with no road,
- * and this class's own train long enough to reach back to where the rails part.
+ * At TunnelLeftPark on the frozen `live-snapshot`, as Adam's 02 0314-1 DDR stands there: in from the south with no
+ * road, and this class's own train long enough to reach back to where the rails part.
  *
  * MUTATION: let every edge through a claimed square say which road it runs along again, as
  * `AutonomySession.drawTheTrainsThatCoverNoEdge` did, and the first claim fails at 9,7 and 7,8.
  *
- * And at Tunnel, where a rail autonomy does not drive - against a one-way arrow - runs through the other leg of the switch
- * at 11,3 behind the platform: a train placed there by hand may have come along it, so which leg is not known.
+ * And at Tunnel, where a rail autonomy does not drive (against a one-way arrow) runs through the other leg of the
+ * switch at 11,3 behind the platform: a train placed there by hand may have come along it, so which leg is not known.
  *
  * MUTATION: ask only the rails the railway drives, the ones that run over every place the train claims, and the third
  * claim fails at 11,3.
  *
- * And nothing past such a switch (Adam, 2026-10-14: "stop at unknown.  but if it's not thrown and the train
- * must pass through the thrown arm, then do draw it"): beyond it the tail may lie on either road.
+ * And nothing past such a switch (Adam: "stop at unknown.  but if it's not thrown and the train must pass through the
+ * thrown arm, then do draw it"): beyond it the tail may lie on either road.
  *
  * MUTATION: draw every claimed square the rails agree on, wherever it lies, and the third and fourth claims fail.
  *
@@ -434,14 +434,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
             + " squares left without a road, so it says nothing");
     }
 
-    /**
-     * The one road of a square that runs between the two sides given.
-     *
-     * @param square the square
-     * @param a one side
-     * @param b the other
-     * @return the road, as a set of one, or an empty set
-     */
+    /** The one road of a square that runs between the two sides given, as a set of one, or an empty set. */
     private static Set<RouteId> legBetween(TileKey square, Side a, Side b)
     {
         Set<RouteId> out = new LinkedHashSet<>();
@@ -454,11 +447,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
         return out;
     }
 
-    /**
-     * The places this class's train claims.
-     *
-     * @return the place ids
-     */
+    /** The places this class's train claims. */
     private static Set<String> claimsOfOurTrain()
     {
         Set<String> claims = new LinkedHashSet<>();
@@ -472,10 +461,8 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
     }
 
     /**
-     * The place id the reduction gives a whole square, as a switch's is.
-     *
-     * @param square the square
-     * @return the id, or null where no edge names the square as a whole
+     * The place id the reduction gives a whole square, as a switch's is; null where no edge names the square as a
+     * whole.
      */
     private static String placeOf(TileKey square)
     {
@@ -493,11 +480,8 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
     }
 
     /**
-     * Each square this class's train claims behind TunnelLeftPark, with the roads over it of the rails into the platform
-     * by the south that run over every one of its claims - which is the railway's own question (`Layout`'s walk claims
-     * what those rails share, up to where they part).
-     *
-     * @return claimed square to the roads those rails take over it
+     * Each square this class's train claims behind TunnelLeftPark, with the roads over it of the rails into the
+     * platform by the south that run over every one of its claims.
      */
     private static Map<TileKey, Set<RouteId>> roadsOfTheRailsIntoThePlatform()
     {

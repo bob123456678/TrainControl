@@ -12,16 +12,13 @@ import org.traincontrol.util.Util;
 
 /**
  * A test run reads and writes a preference node and a data folder of its own, never the ones Adam's running
- * application uses.
+ * application uses (Adam: "does my app really have to stay closed? I thought the battery got isolated earlier.").
+ * Every test JVM used the working directory's `LocDB.data` and `UIState.data` and the machine-wide preference node, and
+ * `LayoutSandbox` points that node's layout path at a sandbox for the length of a class.  `docs/tools/one.sh` and
+ * `battery.sh` now copy the two files into a folder of the run's own and name a node of its own, through two system
+ * properties; this asks the application whether it listened.
  *
- * Adam, 2026-09-23: *"does my app really have to stay closed? I thought the battery got isolated earlier."*  It had
- * not been: every test JVM used the working directory's `LocDB.data` and `UIState.data` and the machine-wide
- * preference node, and `LayoutSandbox` points that node's layout path at a sandbox for the length of a class.
- * `docs/tools/one.sh` and `battery.sh` now copy the two files into a folder of the run's own and name a node of its
- * own, through two system properties; this asks the application whether it listened.
- *
- * **Only under those runners.**  NetBeans starts its test JVMs without the properties, so there the application uses
- * what it always used, and this says so as a skip rather than passing.
+ * Only under those runners: NetBeans starts its test JVMs without the properties, so there this is a skip.
  *
  * MUTATION: have `Util.preferencesFor` ignore its property and the first claim fails; `Util.dataPath` ignore its
  * property and the second does; drop `-listener support.NoUpdateCheck` from the runner and the third does.
@@ -30,11 +27,7 @@ import org.traincontrol.util.Util;
  */
 public class testARunKeepsItsOwnState
 {
-    /**
-     * The preference node is the run's own, and what is written there does not reach the real one.
-     *
-     * @throws Exception from the preference store
-     */
+    /** The preference node is the run's own, and what is written there does not reach the real one. */
     @Test
     public void testThePreferencesAreTheRunsOwn() throws Exception
     {
@@ -65,9 +58,7 @@ public class testARunKeepsItsOwnState
         }
     }
 
-    /**
-     * The data files are read from, and written to, the run's own folder.
-     */
+    /** The data files are read from, and written to, the run's own folder. */
     @Test
     public void testTheDataFilesAreTheRunsOwn() throws Exception
     {

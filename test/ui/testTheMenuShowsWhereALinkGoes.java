@@ -9,34 +9,23 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 
 /**
  * FR-056: right-clicking a tunnel flashes the square it is joined to.
  *
- * Adam, 2026-09-02: **"when in the autonomy editor and you right click a tunnel tile, highlight its
- * pair."**
- *
- * The menu already offered to GO to the partner, and that item is the right answer for the case links
- * were written for - the two ends on different pages, where the only way to see the other one is to
- * be taken there. It is the wrong answer for the case Adam is looking at: his own tunnel pair is four
- * squares apart on `1 - Main`, and jumping to the partner moves the view away from the square he
- * right-clicked in order to ask about it.
- *
- * So the flash is deliberately limited to a partner on the page being looked at, and that limit is
- * what the third test below is for. A highlight on a page nobody is looking at is not a highlight,
- * and a build that fired one would look identical to a build that fired nothing.
+ * The menu already offered to go to the partner, which is right for ends on different pages but wrong when the pair is
+ * on the page being looked at, where jumping moves the view away from the square asked about.  So the flash is limited
+ * to a partner on the page being looked at, and the third test holds that limit: a highlight on a page nobody is
+ * looking at is indistinguishable from none.
  *
  * @author Adam
  */
 public class testTheMenuShowsWhereALinkGoes
 {
     /**
-     * Everything the panel flashed, in order.
-     *
-     * `onReveal` is the editor's own highlight - `LayoutEditor.reveal` scrolls the square into view
-     * and gives it the yellow wash - so recording what the panel asks it to flash is recording
-     * exactly what a person would see.
+     * Everything the panel flashed, in order: `onReveal` is the editor's own highlight, so this is what a person would
+     * see.
      */
     private static final class Flashes implements java.util.function.Consumer<TileKey>
     {
@@ -49,11 +38,7 @@ public class testTheMenuShowsWhereALinkGoes
         }
     }
 
-    /**
-     * A page with a tunnel at each end of it and ordinary track between them.
-     *
-     * Both on ONE page, which is Adam's case and the one the jump handles badly.
-     */
+    /** A page with a tunnel at each end of it and ordinary track between them, both on one page. */
     private static LayoutDiagram aPageWithTwoTunnels(String name) throws java.io.IOException
     {
         LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
@@ -71,22 +56,12 @@ public class testTheMenuShowsWhereALinkGoes
     }
 
     /**
-     * Bulk tools is the last thing on the menu, and nothing dangles after it (Adam, 2026-09-11).
+     * Bulk tools is the last thing on the menu, and nothing dangles after it.
      *
-     * *"Can we make 'bulk tools' be the last item in the right-click menu in the autonomy editor?  mind
-     * the separators."*
-     *
-     * Everything else on this menu is about the SQUARE that was clicked; bulk tools is about the whole
-     * setup, which is why it is a submenu at all (MT-257) and why the bottom, behind a divider, is where
-     * it belongs. In the middle it read as being about the square under the pointer.
-     *
-     * **Three claims, because "last" alone is not enough.** An item that is last on a menu whose last
-     * entry is a separator looks right to an index check and wrong to a person; and a divider directly
-     * above it is what makes it read as a group rather than as one more square action. So: it is last,
-     * what precedes it is a divider, and the menu does not end with one.
-     *
-     * `buildTileMenu` rather than a mouse gesture, for the reason `menuOn` gives above it: that method
-     * is what BOTH right-click surfaces call.
+     * Everything else on the menu is about the clicked square; bulk tools is about the whole setup, so it belongs at
+     * the bottom behind a divider (MT-257).  Three claims, since "last" alone is not enough: it is last, what precedes
+     * it is a divider, and the menu does not end with one.  `buildTileMenu` rather than a mouse gesture, for the reason
+     * `menuOn` gives.
      *
      * MUTATION: put `menu.addSeparator(); menu.add(bulkTools());` back where it was - above the caption
      * items - and the first claim fails, naming what is last instead.
@@ -132,7 +107,7 @@ public class testTheMenuShowsWhereALinkGoes
                 org.traincontrol.util.I18n.t("autosetup.ui.menuBulkTools"),
                 "the last entry is a submenu, but not that one: " + shapeOf(menu));
 
-            // AND THE SEPARATORS ARE MINDED, which is the other half of what was asked.
+            // And the separators are minded, the other half of what was asked.
             assertTrue(menu.getComponent(count - 2) instanceof javax.swing.JSeparator,
                 "nothing divides bulk tools from the square's own items, so it reads as one more of "
                 + "them: " + shapeOf(menu));
@@ -146,9 +121,7 @@ public class testTheMenuShowsWhereALinkGoes
         }
     }
 
-    /**
-     * What a menu component is, for a failure message somebody can act on.
-     */
+    /** What a menu component is, for a failure message somebody can act on. */
     private static String describe(java.awt.Component c)
     {
         if (c instanceof javax.swing.JSeparator) return "a divider";
@@ -160,9 +133,7 @@ public class testTheMenuShowsWhereALinkGoes
         return c.getClass().getSimpleName();
     }
 
-    /**
-     * The menu's entries in order.
-     */
+    /** The menu's entries in order. */
     private static String shapeOf(javax.swing.JPopupMenu menu)
     {
         StringBuilder out = new StringBuilder();
@@ -177,9 +148,7 @@ public class testTheMenuShowsWhereALinkGoes
         return out.toString();
     }
 
-    /**
-     * Removes a temporary folder and everything in it.
-     */
+    /** Removes a temporary folder and everything in it. */
     private static void deleteTree(java.io.File where)
     {
         java.io.File[] children = where.listFiles();
@@ -193,11 +162,8 @@ public class testTheMenuShowsWhereALinkGoes
     }
 
     /**
-     * Opens the menu on a square and hands back what that opening flashed.
-     *
-     * `buildTileMenu` rather than a mouse gesture, because it is the method BOTH right-click surfaces
-     * call - the editor's own diagram and the main window's - so a test that drove one of them would
-     * be silent about the other.
+     * Opens the menu on a square and hands back what that opening flashed.  `buildTileMenu` rather than a mouse
+     * gesture, because both right-click surfaces call it.
      */
     private static Flashes menuOn(AutonomySession session, String page, TileKey square)
         throws Exception
@@ -216,7 +182,7 @@ public class testTheMenuShowsWhereALinkGoes
     }
 
     /**
-     * The thing Adam asked for.
+     * The flash itself.
      *
      * MUTATION this catches: remove the `highlightPartnerOf(target)` call from `buildTileMenu`, or
      * narrow its type test to `isLink()` alone - a TUNNEL is not a LINK, and the menu's own link
@@ -255,8 +221,7 @@ public class testTheMenuShowsWhereALinkGoes
                 "right-clicking the tunnel at " + here + " flashed " + flashes.seen + " - not the "
                 + "square it is joined to, which is the whole of what was asked for");
 
-            // And the other way round, because a pairing is mutual and a one-way highlight would be
-            // half a feature that reads as a working one from whichever end was tried first.
+            // And the other way round: a pairing is mutual, and a one-way highlight would pass from one end only.
             Flashes back = menuOn(session, "main", there);
 
             assertTrue(back.seen.contains(here),
@@ -269,13 +234,7 @@ public class testTheMenuShowsWhereALinkGoes
         }
     }
 
-    /**
-     * Nothing to flash, and nothing flashed.
-     *
-     * Two squares that must stay dark: a tunnel nobody has paired, and a piece of ordinary track.
-     * Without these the test above passes for a panel that flashes something on every right-click,
-     * which would be a highlight that says nothing at all.
-     */
+    /** Nothing to flash, and nothing flashed: a tunnel nobody has paired, and ordinary track, must stay dark. */
     @Test
     public void testNothingFlashesWithoutAPairing() throws Exception
     {
@@ -314,13 +273,8 @@ public class testTheMenuShowsWhereALinkGoes
     }
 
     /**
-     * A partner on another page is NOT flashed, because it cannot be seen.
-     *
-     * This is the limit that makes the feature honest rather than the one that makes it small. The
-     * editor shows one page at a time - the field is final and the grid, the annotations and the page
-     * exclusion all follow from it - so flashing a square on a page nobody is looking at produces
-     * exactly the same screen as flashing nothing, while telling the code it did something. **Go to
-     * the partner** is still on the menu, and that is the answer for this case; it was written for it.
+     * A partner on another page is not flashed, because it cannot be seen: the editor shows one page at a time, so a
+     * flash there looks like nothing while telling the code it did something.  Go to the partner is still on the menu.
      *
      * MUTATION this catches: drop the `onThisPage(partner)` test from `highlightPartnerOf`.
      */
@@ -362,9 +316,7 @@ public class testTheMenuShowsWhereALinkGoes
         }
     }
 
-    /**
-     * A temporary directory and everything under it.
-     */
+    /** A temporary directory and everything under it. */
     private static void deleteRecursively(java.io.File file)
     {
         java.io.File[] children = file.listFiles();

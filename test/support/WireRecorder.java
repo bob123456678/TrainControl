@@ -13,43 +13,28 @@ import org.traincontrol.util.Conversion;
 /**
  * What the control station would have put on the wire, in order.
  *
- * Adam, 2026-09-08: **"in your tests for arrival, make sure you check for an emitted reversal command
- * to the tracks."**  The application's own belief about a locomotive - `goingForward()` - is the right
- * question for *was the decision taken* and the wrong one for *did anything happen*: a `_setDirection`
- * with no `exec` behind it satisfies every assertion about the model while the railway sits still.
+ * Adam: **"in your tests for arrival, make sure you check for an emitted reversal command to the tracks."**  The
+ * application's own belief about a locomotive - `goingForward()` - answers *was the decision taken* and not *did
+ * anything happen*: a `_setDirection` with no `exec` behind it satisfies every assertion about the model while the
+ * railway sits still.
  *
- * **How it can see the wire at all.**  `MarklinLocomotive.setDirection` ends in
- * `network.exec(new CS2Message(CMD_LOCO_DIRECTION, ...))`.  With no Central Station connected,
- * `MarklinControlStation.exec` takes the not-connected branch and LOGS the message it would have sent -
- * `DEBUG_LOG_NETWORK` is on by default - through `java.util.logging`.  So a handler on that logger sees
- * exactly what would have gone down the cable, and nothing in production changes to allow it.
+ * It sees the wire because `MarklinLocomotive.setDirection` ends in `network.exec(new CS2Message(CMD_LOCO_DIRECTION,
+ * ...))`, and with no Central Station connected `MarklinControlStation.exec` LOGS the message it would have sent
+ * (`DEBUG_LOG_NETWORK` is on by default) through `java.util.logging`.  A handler on that logger sees what would have
+ * gone down the cable, and nothing in production changes.  The model has to be in debug
+ * (`TestStation.simulatedInDebug()`) or the recorder hears nothing, which is why `size()` is worth asserting first.
  *
- * **The model has to be in debug**, because that branch only logs while debugging:
- * `TestStation.simulatedInDebug()`.  A recorder attached to a model built any other way hears
- * nothing, which is why `size()` is worth asserting before anything else.
+ * Marks, because the interesting window is the ARRIVAL and not the journey: dispatch sets a locomotive's direction as
+ * it departs, so a test that counts from zero cannot tell an arrival that turned the train from one that did not.
+ * `Layout.CB_PRE_ARRIVAL` fires once, on the last leg, so a mark taken there and a count taken after the run is exactly
+ * the arrival.
  *
- * **Marks, because the interesting window is the ARRIVAL and not the journey.**  Dispatch sets a
- * locomotive's direction as it departs, so every journey puts direction commands on the wire and a test
- * that counts from zero cannot tell an arrival that turned the train from one that did not.  The whole
- * point of `Layout.CB_PRE_ARRIVAL` is that it fires once, on the last leg, after the pre-arrival speed
- * reduction and before the destination's sensor - so a mark taken there and a count taken after the run
- * is exactly the arrival, and nothing else.
+ * The wire drops: `MarklinControlStation.log(String)` skips a message equal to the last, so two IDENTICAL, ADJACENT
+ * messages reach this recorder as one line and a count is a lower bound.  That does not weaken the claims that matter:
+ * a direction command carries the direction, so the two a double reversal would send are not identical, and every
+ * absolute claim is about the ARRIVAL window, where one is expected and zero is the alternative.
  *
- * **WHAT THE WIRE DROPS, and it is a lower bound rather than a count**.
- * `MarklinControlStation.log(String)` is `if (message != null && !message.equals(this.lastMessage))` -
- * two IDENTICAL, ADJACENT messages reach this recorder as one line.  That dedupe is right for a log a
- * person reads and there is nothing to fix in it, but it means a claim of "exactly one direction
- * command" would also hold if the rule emitted two of them back to back.
- *
- * It does not weaken the claims that matter.  A direction command carries the direction, so the two
- * commands a double reversal would send are not identical; and every absolute claim here is about the
- * ARRIVAL window, where one is expected and zero is the alternative.  Where a count is used as an upper
- * bound on identical commands, read it as "at least this many".
- *
- * Lifted out of `regression.testTheReversalReachesTheTracks`, which had all of this privately and could
- * therefore only make the one comparative claim it makes.
- *
- * **Every kind of command, read back** (FR-136 Phase 6): {@link #sentSince} parses each logged command into a
+ * Lifted out of `regression.testTheReversalReachesTheTracks`.  {@link #sentSince} parses each logged command into a
  * {@link Sent}, and the filters pick the speed, function, direction, accessory and system (power, stop) commands, to
  * one locomotive or accessory where a UID is given.
  *
@@ -59,18 +44,15 @@ public final class WireRecorder
 {
     /**
      * What a direction command looks like in the log, built from the constant it IS.
-     *
-     * `CS2Message.toString` prints the command as HEX - "Command: 0x5" - so a needle typed by hand
-     * reads as "nothing was sent" the moment the constant moves.  This one cannot drift from it.
+     * What a direction command looks like in the log, built from the constant it IS: `CS2Message.toString` prints the
+     * command as HEX ("Command: 0x5"), so a needle typed by hand would drift.
      */
     private static final String WIRE_DIRECTION =
         "Command: " + Conversion.intToHex(CS2Message.CMD_LOCO_DIRECTION);
 
     /**
-     * Every line the control station logged while this recorder was attached.
-     *
-     * Copy-on-write because the logging happens on the locomotive's own thread and the assertions on
-     * the test's.
+     * Every line the control station logged while this recorder was attached; copy-on-write because the logging happens
+     * on the locomotive's own thread and the assertions on the test's.
      */
     private final List<String> heard = new CopyOnWriteArrayList<>();
 
@@ -103,62 +85,41 @@ public final class WireRecorder
         this.listening.addHandler(this.handler);
     }
 
-    /**
-     * Starts listening.
-     *
-     * @return the recorder, to be closed in a teardown
-     */
+    /** Starts listening; close it in a teardown. */
     public static WireRecorder open()
     {
         return new WireRecorder();
     }
 
-    /**
-     * Stops listening.  Safe to call twice.
-     */
+    /** Stops listening.  Safe to call twice. */
     public void close()
     {
         this.listening.removeHandler(this.handler);
     }
 
-    /**
-     * Forgets everything heard so far.
-     */
+    /** Forgets everything heard so far. */
     public void clear()
     {
         this.heard.clear();
     }
 
-    /**
-     * A position in the log, to count from later.
-     *
-     * @return where the log has reached
-     */
+    /** A position in the log, to count from later. */
     public int mark()
     {
         return this.heard.size();
     }
 
     /**
-     * How many lines have been logged at all.
-     *
-     * Worth asserting non-zero before any other claim: a recorder attached to a model that is not in
-     * debug hears nothing, and every count below it would then be zero for a reason that has nothing
-     * to do with the railway.
-     *
-     * @return the number of lines heard
+     * How many lines have been logged at all.  Worth asserting non-zero before any other claim: a recorder attached to
+     * a model that is not in debug hears nothing, and every count would then be zero for a reason that has nothing to
+     * do with the railway.
      */
     public int size()
     {
         return this.heard.size();
     }
 
-    /**
-     * How many direction commands the control station has tried to send since a mark.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @return the count
-     */
+    /** How many direction commands the control station has tried to send since a mark. */
     public int directionCommandsSince(int from)
     {
         int seen = 0;
@@ -175,11 +136,7 @@ public final class WireRecorder
         return seen;
     }
 
-    /**
-     * How many direction commands have been sent since the recorder was cleared.
-     *
-     * @return the count
-     */
+    /** How many direction commands have been sent since the recorder was cleared. */
     public int directionCommands()
     {
         return directionCommandsSince(0);
@@ -204,43 +161,32 @@ public final class WireRecorder
             this.data = data;
         }
 
-        /**
-         * @return how many data bytes it carries; a question to the station carries fewer than a command does
-         */
+        /** How many data bytes it carries; a question to the station carries fewer than a command does. */
         public int length()
         {
             return this.data.length;
         }
 
-        /**
-         * @return the locomotive's or accessory's UID, the first four bytes; 0 for the whole railway
-         */
+        /** The locomotive's or accessory's UID, the first four bytes; 0 for the whole railway. */
         public int uid()
         {
             return this.data.length < 4 ? -1
                 : (this.data[0] << 24) | (this.data[1] << 16) | (this.data[2] << 8) | this.data[3];
         }
 
-        /**
-         * @return the byte after the UID: a function's number, an accessory's position, a direction, a system
-         * sub-command
-         */
+        /** The byte after the UID: a function's number, an accessory's position, a direction, a system sub-command. */
         public int fifth()
         {
             return this.data.length < 5 ? -1 : this.data[4];
         }
 
-        /**
-         * @return the byte after that: 1 for a function switched on
-         */
+        /** The byte after that: 1 for a function switched on. */
         public int sixth()
         {
             return this.data.length < 6 ? -1 : this.data[5];
         }
 
-        /**
-         * @return a speed command's speed, as the locomotive's 0 to 100 (the wire carries ten times it)
-         */
+        /** A speed command's speed, as the locomotive's 0 to 100 (the wire carries ten times it). */
         public int speed()
         {
             return this.data.length < 6 ? -1 : ((this.data[4] << 8) | this.data[5]) / 10;
@@ -262,9 +208,6 @@ public final class WireRecorder
      *
      * Only the lines it logs for a command it could not send are read: a packet handed to `receiveMessage` can be
      * logged in the same format, and is not something the program sent.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @return the commands
      */
     public List<Sent> sentSince(int from)
     {
@@ -298,11 +241,8 @@ public final class WireRecorder
     }
 
     /**
-     * The speed commands sent to one locomotive since a mark: commands, not the questions a sync asks.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @param uid the locomotive's UID (`MarklinLocomotive.getIntUID`)
-     * @return the commands, oldest first; {@link Sent#speed()} reads each one's speed
+     * The speed commands sent to one locomotive (`MarklinLocomotive.getIntUID`) since a mark: commands, not the
+     * questions a sync asks; {@link Sent#speed()} reads each one's speed.
      */
     public List<Sent> speedCommandsSince(int from, int uid)
     {
@@ -310,11 +250,8 @@ public final class WireRecorder
     }
 
     /**
-     * The function commands sent to one locomotive since a mark.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @param uid the locomotive's UID
-     * @return the commands; {@link Sent#fifth()} is the function, {@link Sent#sixth()} 1 for on
+     * The function commands sent to one locomotive since a mark; {@link Sent#fifth()} is the function, {@link
+     * Sent#sixth()} 1 for on.
      */
     public List<Sent> functionCommandsSince(int from, int uid)
     {
@@ -322,11 +259,8 @@ public final class WireRecorder
     }
 
     /**
-     * The direction commands sent to one locomotive since a mark.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @param uid the locomotive's UID
-     * @return the commands; {@link Sent#fifth()} is 1 for forward, 2 for backward
+     * The direction commands sent to one locomotive since a mark; {@link Sent#fifth()} is 1 for forward, 2 for
+     * backward.
      */
     public List<Sent> directionCommandsSince(int from, int uid)
     {
@@ -334,11 +268,8 @@ public final class WireRecorder
     }
 
     /**
-     * The commands sent since a mark to one accessory.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @param uid the accessory's UID (`MarklinAccessory.UIDfromAddress(address - 1, type)`)
-     * @return the commands; {@link Sent#fifth()} is the position, 0 for turned (red) and 1 for straight (green)
+     * The commands sent since a mark to one accessory (`MarklinAccessory.UIDfromAddress(address - 1, type)`); {@link
+     * Sent#fifth()} is the position, 0 for turned (red) and 1 for straight (green).
      */
     public List<Sent> accessoryCommandsSince(int from, int uid)
     {
@@ -346,12 +277,9 @@ public final class WireRecorder
     }
 
     /**
-     * The system commands of one kind sent since a mark, to the whole railway or to one locomotive.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @param subCommand `CS2Message.CMD_SYSSUB_STOP` (power off), `CMD_SYSSUB_GO` (power on), `CMD_SYSSUB_HALT`
-     * (every train stops) or `CMD_SYSSUB_TRAINSTOP` (one train stops)
-     * @return the commands; {@link Sent#uid()} is the locomotive's for a train stop
+     * The system commands of one kind sent since a mark, to the whole railway or to one locomotive:
+     * `CS2Message.CMD_SYSSUB_STOP` (power off), `CMD_SYSSUB_GO` (power on), `CMD_SYSSUB_HALT` (every train stops) or
+     * `CMD_SYSSUB_TRAINSTOP` (one train stops); {@link Sent#uid()} is the locomotive's for a train stop.
      */
     public List<Sent> systemCommandsSince(int from, int subCommand)
     {
@@ -387,12 +315,7 @@ public final class WireRecorder
     /** One byte of it. */
     private static final java.util.regex.Pattern BYTE = java.util.regex.Pattern.compile("0x([0-9a-fA-F]{2})");
 
-    /**
-     * What was heard since a mark, for a failure message.
-     *
-     * @param from a position returned by {@link #mark()}
-     * @return the lines, newest last
-     */
+    /** What was heard since a mark, for a failure message; the lines, newest last. */
     public List<String> since(int from)
     {
         List<String> snapshot = new java.util.ArrayList<>(this.heard);

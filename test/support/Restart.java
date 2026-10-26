@@ -26,9 +26,6 @@ import org.traincontrol.marklin.MarklinControlStation;
  *     ...
  *     restart.close();
  *
- * Written for list 2's restart rows (FR-136 Phase 6): what stands where, what is claimed, the switches and the
- * statistics, read back after the restart.
- *
  * @author Adam
  */
 public final class Restart
@@ -46,11 +43,8 @@ public final class Restart
     }
 
     /**
-     * Copies the railway to a sandbox and starts the program with its window over the copy.
-     *
-     * @param fixture the railway's folder, as `Scenario.folderFor` names one
-     * @return the running program, to be closed when the class is done with it
-     * @throws Exception if the folder cannot be copied or the program cannot start
+     * Copies the railway to a sandbox (`fixture`, as `Scenario.folderFor` names one) and starts the program with its
+     * window over the copy; the result is to be closed when the class is done with it.
      */
     public static Restart open(File fixture) throws Exception
     {
@@ -76,28 +70,19 @@ public final class Restart
         }
     }
 
-    /**
-     * @return the program running now; its window is `getGUI()`
-     */
+    /** The program running now; its window is `getGUI()`. */
     public MarklinControlStation getModel()
     {
         return model;
     }
 
-    /**
-     * @return the throwaway copy of the railway the program runs over
-     */
+    /** The throwaway copy of the railway the program runs over. */
     public File getFolder()
     {
         return sandbox.getFolder();
     }
 
-    /**
-     * Closes the program as its window's close box does, and starts it again over the same railway and data.
-     *
-     * @return the program started again
-     * @throws Exception if the close or the start fails
-     */
+    /** Closes the program as its window's close box does, and starts it again over the same railway and data. */
     public MarklinControlStation again() throws Exception
     {
         final MarklinControlStation running = model;
@@ -124,11 +109,7 @@ public final class Restart
         return model;
     }
 
-    /**
-     * Throws the window away without saving anything, and puts the layout preference back.
-     *
-     * @throws Exception from the event thread
-     */
+    /** Throws the window away without saving anything, and puts the layout preference back. */
     public void close() throws Exception
     {
         try

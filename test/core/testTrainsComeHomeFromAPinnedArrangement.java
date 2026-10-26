@@ -20,25 +20,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Five trains are displaced to a FIXED arrangement and brought home, facing the way they set off.
  *
- * The pinned half of a pair Adam asked for on 2026-09-15: *"make a pinned version and keep the current version,
- * aiming for both to be true.  normal autonomy runs should always have a solution."*
- *
- * `core.testTrainsComeHomeToTheirPlatforms` is the other half.  It lets autonomy rearrange the railway for twenty
- * seconds and then sends everybody home, so it starts from a different arrangement on every run - which is the
- * realistic question and an ambiguous verdict: it failed once and passed once on identical code during the AMW round,
+ * The pinned half of a pair: Adam, *"make a pinned version and keep the current version, aiming for both to be true.
+ * normal autonomy runs should always have a solution."*  `core.testTrainsComeHomeToTheirPlatforms` is the other half:
+ * it lets autonomy rearrange the railway for twenty seconds, so it starts from a different arrangement on every run
  * and a red from it cannot be told from chance without re-running.  This class asks the same question of an
  * arrangement that does not move, so a red here is always a regression.
  *
- * **THE ARRANGEMENT IS DERIVED, NOT TRANSCRIBED.**  Each train is displaced onto the ordinary copy of the NEXT
- * platform in the list, which is a fixed function of his frozen diagram rather than a list of copy names typed from a
- * failure message.  A square that has no copy a train may be sent to fails the fixture loudly instead of skipping,
- * for the reason the other class records: a test that absorbs its own failures reads as green while proving nothing.
+ * The arrangement is derived, not transcribed: each train is displaced onto the ordinary copy of the NEXT platform in
+ * the list, a fixed function of his frozen diagram.  A square with no copy a train may be sent to fails the fixture
+ * loudly instead of skipping.  Facing is the Point, not the square, and the turning twin of an arrival counts as that
+ * arrival, as in the other class.
  *
- * **Facing is the Point, not the square**, and the turning twin of an arrival counts as that arrival - both as the
- * other class has them, so the two make the same claim about the same railway.
- *
- * ON THE FROZEN COPY, never `cs2_sample_layout` (Adam, 2026-09-01: *"let's get the current diagram frozen in the
- * test"*).
+ * ON THE FROZEN COPY, never `cs2_sample_layout` (Adam: *"let's get the current diagram frozen in the test"*).
  *
  * @author Adam
  */
@@ -125,11 +118,7 @@ public class testTrainsComeHomeFromAPinnedArrangement
         return "PA test loc " + i;
     }
 
-    /**
-     * Everyone home from an arrangement that is the same on every run.
-     *
-     * @throws Exception from the railway
-     */
+    /** Everyone home from an arrangement that is the same on every run. */
     @Test
     public void testEveryoneComesHomeFromTheSameArrangementEveryTime() throws Exception
     {
@@ -137,25 +126,14 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
         assertEquals(STARTED_AT.size(), PLATFORMS.length, "not every train was placed, so this proves nothing");
 
-        // DISPLACED BY HAND, ONE PLATFORM LEFT FREE, AND NO MOVE LANDING ON AN OCCUPIED SQUARE.
-        //
-        // Two earlier versions of this arrangement were wrong, and both in ways worth recording:
-        //
-        //  - all five shifted onto the next platform along is a five-way cycle with NO spare square, where every home
-        //    is held by a train that must move first.  Return Home answered NO_PLAN_FOUND, which may well be right -
-        //    shunting needs somewhere to shunt to - so pinning it would have asserted something his railway cannot do;
-        //  - four shifted up the list with the fifth left at home puts the fourth train onto the fifth's platform,
-        //    and `moveLocomotive` DISPLACES whoever is there: the fifth train was pushed off the railway altogether
-        //    and the claim failed with it "nowhere".
-        //
-        // A rotation among five occupied platforms has NO collision-free order in either direction - walking up puts a
-        // train on the next one's square, walking down puts it on the previous one's, and both are still occupied
-        // because nothing has moved yet.  That is the closed cycle of the first version wearing a different hat.
-        //
-        // So one square is emptied first: train 0 goes somewhere that is nobody's home, and then trains 1 to 4 walk
-        // DOWN onto the platform below each, every target having just been vacated.  Four trains end one platform
-        // down, train 0 ends off the five altogether, the top platform is free, and no move displaces anybody - which
-        // the assertion in the loop holds, so a future edit cannot silently push a train off the railway again.
+        // Displaced by hand, one platform left free, and no move landing on an occupied square.  A rotation among five
+        // occupied platforms has NO collision-free order in either direction, and shifting all five onto the next
+        // platform is a closed cycle with no spare square (Return Home answered NO_PLAN_FOUND, which may well be right:
+        // shunting needs somewhere to shunt to).  Four shifted up with the fifth left at home puts the fourth onto the
+        // fifth's platform, and `moveLocomotive` DISPLACES whoever is there.  So train 0 goes somewhere that is
+        // nobody's home, then trains 1 to 4 walk DOWN onto the platform below each, every target having just been
+        // vacated: four end one platform down, the top platform is free, and no move displaces anybody, which the
+        // assertion in the loop holds.
         List<String> displacedTo = new ArrayList<>();
 
         Point elsewhere = aStationThatIsNobodysHome();
@@ -234,12 +212,9 @@ public class testTrainsComeHomeFromAPinnedArrangement
     }
 
     /**
-     * His trains and homes off, five of ours on the platforms, each homed where it stands.
-     *
-     * The same sequence the live class uses, and for the same reasons recorded there: his locomotives are purged so the
-     * question is about five trains rather than eight, and his home ASSIGNMENTS are cleared too - a square holds one
-     * home, and a claim on a square another home already holds is refused silently, which once left two test trains
-     * homeless and the plan free to abandon them.
+     * His trains and homes off, five of ours on the platforms, each homed where it stands: his locomotives are purged
+     * so the question is about five trains, and his home ASSIGNMENTS cleared, as a claim on a square another home holds
+     * is refused silently.
      */
     private static void place() throws Exception
     {
@@ -273,15 +248,11 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
             loc.setPreferredSpeed(35);
 
-            // AND NO LENGTH, WHICH IS DELIBERATE (Adam, 2026-09-15: *"i recommend relaxing restrictions (track/station
-            // lengths) in the layout used for the A* tests"*).
-            //
-            // Measured on this very railway: the same arrangement has no plan with three-unit trains and an eight-move
-            // plan with none, because the room rules decline to judge a train of no length.  This class is about
-            // whether the SEARCH can work out an order, so the lengths are taken out of the question rather than left
-            // to decide it - his railway's station maximums and FR-001 restrictions are empty, so length was the only
-            // restriction in play.  `core.testTheRoomRuleCensusOnTheRealLayout` and the berth classes are where the
-            // length rules are tested.
+            // And no length, deliberately (Adam: *"i recommend relaxing restrictions (track/station lengths) in the
+            // layout used for the A* tests"*): the same arrangement has no plan with three-unit trains and an
+            // eight-move plan with none, because the room rules decline to judge a train of no length.  This class is
+            // about whether the SEARCH can work out an order; the length rules are tested in
+            // `core.testTheRoomRuleCensusOnTheRealLayout` and the berth classes.
             loc.setTrainLength(0);
 
             Point home = ordinaryCopy(PLATFORMS[i]);
@@ -311,14 +282,8 @@ public class testTrainsComeHomeFromAPinnedArrangement
     }
 
     /**
-     * An ordinary station outside the five platforms, so one square can be emptied before the rotation.
-     *
-     * Taken from the layout rather than named here: a list of square names typed into a test is a photograph of
-     * somebody's diagram, and this one has to hold on his frozen copy whatever it contains.  Ordinary means what it
-     * means elsewhere in this class - a destination, active, and not a terminus - and it must be nobody's home, or
-     * emptying a square would fill another one.
-     *
-     * @return the first such station, or null when his setup has none
+     * An ordinary station outside the five platforms, so one square can be emptied before the rotation, taken from the
+     * layout rather than named: a destination, active, not a terminus, and nobody's home; null when his setup has none.
      */
     private static Point aStationThatIsNobodysHome()
     {

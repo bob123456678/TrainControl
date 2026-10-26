@@ -22,9 +22,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Place All at Their Homes (FR-115; Adam, 2026-10-09: "Place all at their homes.  Teleports locomotives to their home
- * stations, facing the correct way, and clears all other locomotives from other stations (without actually moving
- * anything)").
+ * Place All at Their Homes (FR-115; Adam: "Place all at their homes.  Teleports locomotives to their home stations,
+ * facing the correct way, and clears all other locomotives from other stations (without actually moving anything)").
  *
  * On Adam's frozen railway (`test/operator_layout`), with three locomotives of this class's own: one homed on BottomMainA
  * facing west and standing on RampDown, one homed on BottomMainC with no facing recorded and standing nowhere, and one
@@ -44,8 +43,6 @@ public class testPlaceAllAtTheirHomes
      *
      * MUTATION: leave the trains without a home where they stand, or ignore the home's facing, or leave a train out of
      * the names the rebuild is given, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testEveryTrainIsPutOnItsHomeFacingAsHomedAndTheRestTakenOff() throws Exception
@@ -166,16 +163,13 @@ public class testPlaceAllAtTheirHomes
     }
 
     /**
-     * A locomotive homed on two squares - an older or hand-edited setup, since the editor's own door refuses it - is put
-     * on ONE of them, the one the loader keeps, and counted once (FR-115).  The loader (`Layout.rebuildHomeStations`)
-     * drops the second with a warning, and a locomotive placed on both squares invalidates the whole configuration.
-     *
-     * Every pair of four stations, because which of two the loader keeps is the order its points iterate in, and one pair
-     * agreeing with a guess proves nothing.
+     * A locomotive homed on two squares - an older or hand-edited setup, since the editor's own door refuses it - is
+     * put on ONE of them, the one the loader keeps, and counted once (FR-115).  The loader
+     * (`Layout.rebuildHomeStations`) drops the second with a warning, and a locomotive placed on both squares
+     * invalidates the whole configuration.  Every pair of four stations is tried, because which of two the loader keeps
+     * is the order its points iterate in.
      *
      * MUTATION: offer the locomotive on every square it is homed on, or offer the one the loader drops, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testALocomotiveHomedTwiceIsPlacedOnceWhereTheLoaderKeepsItsHome() throws Exception

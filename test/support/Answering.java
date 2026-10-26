@@ -35,8 +35,6 @@ import javax.swing.text.JTextComponent;
  *         SwingUtilities.invokeLater(item::doClick);
  *         assertTrue(answering.awaitAsked(1, 10000));
  *     }
- *
- * Gathered from the private answerers of about ten test classes (FR-136 Phase 6).
  */
 public final class Answering implements AutoCloseable
 {
@@ -91,6 +89,7 @@ public final class Answering implements AutoCloseable
     }
 
     private final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+    private final List<PopupShape> shapes = Collections.synchronizedList(new ArrayList<>());
     private final AtomicBoolean going = new AtomicBoolean(true);
     private volatile Thread watching;
     private volatile File toChoose;
@@ -100,10 +99,8 @@ public final class Answering implements AutoCloseable
     }
 
     /**
-     * Starts answering.
-     *
-     * @param rule given each question's message, the answer to give; null presses the first button
-     * @return the answerer, to be closed
+     * Starts answering; `rule` is given each question's message and returns the answer to give (null presses the first
+     * button).
      */
     public static Answering start(final Function<String, Answer> rule)
     {
@@ -127,6 +124,7 @@ public final class Answering implements AutoCloseable
                     {
                         String message = textOf(pane.getMessage());
 
+                        answering.shapes.add(PopupShape.of(pane));
                         answering.asked.add(message);
 
                         answer(pane, rule.apply(message), answering.asked);
@@ -155,10 +153,8 @@ public final class Answering implements AutoCloseable
     }
 
     /**
-     * Picks this file in every file chooser from now on, and approves it.  Without it, a chooser is canceled.
-     *
-     * @param file the file or folder to pick; null to cancel again
-     * @return this answerer
+     * Picks this file in every file chooser from now on, and approves it; null cancels again. Without it, a chooser is
+     * canceled.
      */
     public Answering choosing(File file)
     {
@@ -175,6 +171,17 @@ public final class Answering implements AutoCloseable
         synchronized (asked)
         {
             return new ArrayList<>(asked);
+        }
+    }
+
+    /**
+     * @return how each question looked on screen, in the order asked
+     */
+    public List<PopupShape> shapes()
+    {
+        synchronized (shapes)
+        {
+            return new ArrayList<>(shapes);
         }
     }
 

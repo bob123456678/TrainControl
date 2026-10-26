@@ -32,11 +32,7 @@ public class BuildAGraph
 
     /**
      * Builds the graph: Station 1 and Station 2 both lead out through Main Track to Pre Arrival, and from there back
-     * to either station.  Pre Arrival's switch decides which.
-     *
-     * @param station the Central Station the graph belongs to
-     * @return the graph, not yet running anything
-     * @throws Exception when a point or edge cannot be added
+     * to either station.  Pre Arrival's switch decides which.  The graph is not yet running anything.
      */
     public static Layout build(MarklinControlStation station) throws Exception
     {
@@ -92,11 +88,7 @@ public class BuildAGraph
         return layout;
     }
 
-    /**
-     * @param station the Central Station the graph belongs to
-     * @return a line of text for each thing the graph answered
-     * @throws Exception when the graph cannot be built or reloaded
-     */
+    /** Builds, questions, saves and reloads the graph, and returns a line of text for each thing it answered. */
     public static List<String> run(MarklinControlStation station) throws Exception
     {
         List<String> found = new ArrayList<>();

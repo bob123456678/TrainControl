@@ -8,26 +8,15 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Every door that offers a destination asks the same question, and the "..." means the list was cut
- * short (Adam, 2026-09-12).
+ * Every door that offers a destination asks the same question, and the "..." means the list was cut short.
  *
- * Two reports, one cause.
- *
- * *"why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC (terminus,
- * train is non reversible, not a berth)?"* - because `OB-205` put that rule in
- * `Layout.isOfferableToOperator` and only the track diagram's menu asks it. The locomotive commands
- * tab lists whatever the search returns and marks what autonomy will not choose with a dash, which is
- * deliberate for a parking berth and wrong for a terminus the train cannot leave: a dash is a label,
- * not a refusal, and the row is still clickable.
- *
- * *"why is the ... below the list of options visible? shouldn't this be only shown if there are many
- * more regular destinations than can be displayed?"* - because the count behind it was taken BEFORE
- * the menu dropped anything, so it included every square the menu is never going to show. `OB-205`
- * added a whole new class of those - every ordinary terminus, whenever the train cannot reverse - so
- * for a non-reversible locomotive it fired on essentially every right-click.
- *
- * **Both are about a count or a list disagreeing with what is on screen**, which is why they are one
- * class.
+ * Two reports, one cause.  Adam: "why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC
+ * (terminus, train is non reversible, not a berth)?" - because OB-205 put that rule in `Layout.isOfferableToOperator`
+ * and only the track diagram's menu asks it; the locomotive commands tab lists whatever the search returns and marks
+ * what autonomy will not choose with a dash, which is a label, not a refusal.  And "why is the ... below the list of
+ * options visible? shouldn't this be only shown if there are many more regular destinations than can be displayed?" -
+ * because the count behind it was taken BEFORE the menu dropped anything, so for a non-reversible locomotive it fired
+ * on essentially every right-click.  Both are a count or a list disagreeing with what is on screen.
  *
  * MUTATION: take `isOfferableToOperator` out of either door and the census below names it; put the
  * pre-filter count back into the ellipsis rule and the second test fails on the case where nothing was
@@ -38,13 +27,9 @@ import support.SourceOf;
 public class testTheDestinationDoorsAgree
 {
     /**
-     * Both doors ask `isOfferableToOperator` before they offer a destination.
-     *
-     * A source census rather than a built window, which is the shape `core.testNonReversibleTrains
-     * .testEveryManualDoorHandsOverAPrompt` already uses for this question: what is being checked is
-     * that a door asks the rule at all, and the rule's own answers are tested where it lives.
-     *
-     * @throws Exception if a door cannot be read
+     * Both doors ask `isOfferableToOperator` before they offer a destination.  A source census, the shape
+     * `core.testNonReversibleTrains.testEveryManualDoorHandsOverAPrompt` uses: what is checked is that a door asks the
+     * rule at all, and the rule's own answers are tested where it lives.
      */
     @Test
     public void testEveryDoorThatOffersADestinationAsksTheRule() throws Exception
@@ -74,20 +59,12 @@ public class testTheDestinationDoorsAgree
     /**
      * The "..." appears when the list was cut short, and not merely because something was filtered.
      *
-     * **Two claims, and the second is structural on purpose.** The arithmetic below is a pin: it says
-     * what the rule computes. It cannot catch this defect on its own, because what was wrong was never
-     * the comparison - it was WHICH NUMBER the menu handed it. `PathOptions.possible` was counted
-     * before the menu dropped anything, so it included every square the menu never shows, and
-     * `possible > shown` was true whenever anything at all had been filtered.
-     *
-     * So the second claim is that no such number exists to be passed. A count taken before the filter
-     * is the defect itself, and removing it is what makes the mistake unavailable rather than merely
-     * corrected - the same reason `Layout.hoveredSquare` forgets the square it hands back.
-     *
-     * The menu is package-private, so both are reached by reflection: a test outside its package
-     * cannot name it, and building a real window to count menu items would be testing Swing.
-     *
-     * @throws Exception if the rule cannot be reached
+     * Two claims, and the second is structural on purpose.  The arithmetic is a pin; it cannot catch this defect on its
+     * own, because what was wrong was WHICH NUMBER the menu handed it: `PathOptions.possible` was counted before the
+     * menu dropped anything, so `possible > shown` was true whenever anything had been filtered.  So the second claim
+     * is that no such number exists to be passed, which makes the mistake unavailable rather than merely corrected (as
+     * `Layout.hoveredSquare` forgets the square it hands back).  The menu is package-private, so both are reached by
+     * reflection.
      */
     @Test
     public void testTheEllipsisMeansTheListWasCutShort() throws Exception
@@ -117,15 +94,10 @@ public class testTheDestinationDoorsAgree
         assertFalse((Boolean) rule.invoke(null, 0, 0, 0),
             "a menu with nothing to offer reported that its list had been cut short");
 
-        // AND THERE IS ONLY ONE PLACE THAT DRAWS IT.
-        //
-        // Adam, after the first fix: *"I still see ... for 74 407 DB at Tunnel, even though it has no
-        // valid paths"*.  A second site sat outside the rule, for the case where the train has nowhere
-        // at all to go - so the rule could be right and the symptom stay.  One site is what makes the
-        // rule the whole answer, and counting them is the only way to say that from outside the class.
-        // Counted as text rather than with a regex: the marker is punctuation and a quote, and
-        // escaping that twice - once for Java, once for the pattern - is how a guard comes to
-        // search for something it does not mean.  Over the whole program's code, comments blanked.
+        // AND THERE IS ONLY ONE PLACE THAT DRAWS IT.  Adam, after the first fix: "I still see ... for 74 407 DB at
+        // Tunnel, even though it has no valid paths": a second site sat outside the rule, for a train with nowhere to
+        // go.  Counted as text rather than with a regex, whose double escaping of punctuation and a quote is how a
+        // guard comes to search for something it does not mean; over the whole program's code, comments blanked.
         int sites = SourceOf.occurrences("new JMenuItem(\"...\")");
 
         assertEquals(sites, 1,
@@ -149,21 +121,18 @@ public class testTheDestinationDoorsAgree
     }
 
     /**
-     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons (REG4).
+     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons.
      *
      * `Layout.explainCannotStart`, `explainDestinations` and `explainDestinationsGrouped` each have a form that takes
      * `byHand`, and the one-argument form answers for autonomy.  The diagram's Why not Moving? is given the tier
-     * (Adam, OB-225: *"in manual mode, I still get reasons like ... will never be chosen in autonomy"*); the locomotive
-     * list's "No available paths" tooltip and its why-window kept the one-argument form, so on Manual they still said a
-     * train on a copy that is no station cannot be sent anywhere - while the list offered it routes.
+     * (OB-225, Adam: "in manual mode, I still get reasons like ... will never be chosen in autonomy"); the locomotive
+     * list's "No available paths" tooltip and its why-window kept the one-argument form, so on Manual they said a train
+     * on a copy that is no station cannot be sent anywhere while the list offered it routes.
      *
-     * A source census, the shape the first claim here uses: what is checked is that a door says which question it asks,
-     * and each tier's answers are tested where they live (`core.testWhyStuck`).  Every file under `gui/`, so a door
-     * added later is counted without being listed.
+     * A source census over every file under `gui/`, so a door added later is counted without being listed; each tier's
+     * answers are tested where they live (`core.testWhyStuck`).
      *
      * MUTATION: give either call in `AutoLocomotiveStatus` its one-argument form back, and this names it.
-     *
-     * @throws Exception if the sources cannot be read
      */
     @Test
     public void testEveryWhyNamesItsTier() throws Exception

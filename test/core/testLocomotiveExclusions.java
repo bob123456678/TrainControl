@@ -17,36 +17,28 @@ import org.testng.annotations.Test;
 /**
  * A locomotive excluded from a point is not sent through it, or to it.
  *
- * Adam asked for these: "make sure we have test cases for locomotive exclusions - both on points that
- * are intermediate, and stations - that paths that try to send a locomotive down those are refused."
- * There were none. `testAutoLayout` touches `excludedLocs` only where it checks that a capture keeps
- * them; nothing exercised what they DO.
+ * Adam: "make sure we have test cases for locomotive exclusions - both on points that are intermediate, and stations -
+ * that paths that try to send a locomotive down those are refused."
  *
- * THE TWO RULES ARE NOT THE SAME RULE, and a test that assumed they were would have been asserting a
- * behavior this layout deliberately does not have:
+ * The two rules are not the same rule:
+ *   - An excluded **intermediate** point cannot be TRAVERSED: `isPathClear` refuses any path whose interior includes
+ * it.
+ *   - An excluded **station** cannot be STOPPED AT: it is checked against a path's destination, and the locomotive may
+ *     still drive straight through it.
  *
- *   - An excluded **intermediate** point cannot be TRAVERSED. `isPathClear` refuses any path whose
- *     interior includes it.
- *   - An excluded **station** cannot be STOPPED AT. It is checked against a path's destination, and
- *     the locomotive may still drive straight through it.
- *
- * That asymmetry is deliberate and expensive to get wrong. The comment at `Layout.isPathClear` records
- * that blocking passage through excluded stations too was tried and reverted, because on Adam's own
- * railway it removed 45% of the reachable station pairs for two locomotives - he uses station
- * exclusions on through routes. So the third test here is the one that matters most: it pins the
- * passage that is allowed, and it is what goes red if somebody "tidies" the two rules into one.
+ * That asymmetry is deliberate: blocking passage through excluded stations too was tried and reverted (see the comment
+ * at `Layout.isPathClear`), because on Adam's own railway it removed 45% of the reachable station pairs for two
+ * locomotives; he uses station exclusions on through routes.  So the third test pins the passage that is allowed, and
+ * goes red if somebody "tidies" the two rules into one.
  */
 public class testLocomotiveExclusions
 {
     private static MarklinControlStation model;
 
     /**
-     * The sandbox, opened BEFORE the model and held for the class.
-     *
-     * init() loads whatever layout the machine's preferences point at, which on Adam's machine is his
-     * real railway - and the suite has a ratchet counting the classes that do this without a sandbox,
-     * which is how this one was caught before it ever ran on his layout. Opened first, because a
-     * sandbox after the model protects nothing.
+     * The sandbox, opened BEFORE the model and held for the class: init() loads whatever layout the machine's
+     * preferences point at, which on Adam's machine is his real railway, and a sandbox opened after the model protects
+     * nothing.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -64,9 +56,7 @@ public class testLocomotiveExclusions
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * A locomotive excluded from an intermediate point is not routed through it.
-     */
+    /** A locomotive excluded from an intermediate point is not routed through it. */
     @Test
     public void testAnExcludedIntermediatePointIsNotTraversed() throws Exception
     {
@@ -74,8 +64,7 @@ public class testLocomotiveExclusions
 
         Locomotive loc = placed(layout);
 
-        // Both ways are open to begin with, which is the precondition that makes the exclusion below
-        // mean something: without it, "no route through EX_Middle" could be true because there never
+        // Both ways are open to begin with: without it, "no route through EX_Middle" could be true because there never
         // was one.
         assertTrue(usesPoint(layout.getPossiblePaths(loc, false), "EX_Middle"),
             "the fixture does not route through EX_Middle at all, so excluding it would prove nothing");
@@ -90,13 +79,10 @@ public class testLocomotiveExclusions
     /**
      * A locomotive excluded from a station is not sent there.
      *
-     * Asked of pickPath, which is where autonomy CHOOSES, and not of getPossiblePaths. That method
-     * filters only on "is a destination" and "is something standing there" - it does not apply
-     * exclusions, and deliberately: it feeds the right-click menu, where the operator is allowed to
-     * send a train somewhere autonomy would not pick. The tiers are different on purpose.
-     *
-     * EX_Far is the only place autonomy may choose here, so refusing it means refusing everything and
-     * the assertion is a null rather than a guess about which of several routes came up.
+     * Asked of pickPath, where autonomy CHOOSES, not of getPossiblePaths, which filters only on "is a destination" and
+     * "is something standing there" and deliberately applies no exclusions: it feeds the right-click menu, where the
+     * operator may send a train somewhere autonomy would not pick.  EX_Far is the only place autonomy may choose here,
+     * so refusing it means refusing everything and the assertion is a null.
      */
     @Test
     public void testAnExcludedStationIsNotChosenAsADestination() throws Exception
@@ -115,18 +101,12 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * ...and may still drive THROUGH an excluded station, which is the half that is easy to break.
+     * ...and may still drive THROUGH an excluded station, the half that is easy to break.
      *
-     * `Layout.isPathClear` refuses an excluded INTERMEDIATE point and deliberately does not refuse an
-     * excluded station in the middle of a path. Its comment records what enforcing both cost when it
-     * was tried: 45% of the reachable station pairs for two locomotives on Adam's own railway, because
-     * he uses station exclusions on through routes.
-     *
-     * So this is not a test of a nicety. It is the guard against the two rules being merged, and it
-     * goes red the moment somebody decides the asymmetry looks like an oversight.
-     *
-     * EX_Through is a station - so the station rule is the one that applies to it - but not one
-     * autonomy may choose, so the only thing its exclusion can affect here is passage.
+     * `Layout.isPathClear` refuses an excluded INTERMEDIATE point and deliberately not an excluded station in the
+     * middle of a path (enforcing both cost 45% of the reachable station pairs on Adam's railway).  This guards against
+     * the two rules being merged.  EX_Through is a station but not one autonomy may choose, so the only thing its
+     * exclusion can affect here is passage.
      */
     @Test
     public void testAnExcludedStationMayStillBeDrivenThrough() throws Exception
@@ -149,22 +129,13 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * Excluding ONE locomotive does not shut the point to the others (A113).
+     * Excluding ONE locomotive does not shut the point to the others.
      *
-     * Every test above asks about a single locomotive, which makes "excluded" and "anybody is
-     * excluded" indistinguishable: replace `getExcludedLocs().contains(loc)` with
-     * `!getExcludedLocs().isEmpty()` at either enforcement point and all three stay green, while one
-     * operator's exclusion quietly shuts a siding to the whole fleet. That is a worse fault than the
-     * one they were written for - it is silent, it grows with the number of exclusions, and on a
-     * railway that uses station exclusions on through routes it removes reachability everywhere at
-     * once.
-     *
-     * Both enforcement points, because they are different code in different methods: passage is
-     * refused by `isPathClear`, and stopping by `pickPath`.
-     *
-     * The two halves place a DIFFERENT locomotive each time, which is the whole point - and placing
-     * the second sweeps the first off the layout, since a locomotive is in one place. The exclusion
-     * lives on the Point and names the Locomotive, so it survives that.
+     * The tests above ask about a single locomotive, which makes "excluded" and "anybody is excluded"
+     * indistinguishable: `!getExcludedLocs().isEmpty()` in place of `getExcludedLocs().contains(loc)` would stay green
+     * while one operator's exclusion quietly shut a siding to the whole fleet.  Both enforcement points are asked,
+     * passage (`isPathClear`) and stopping (`pickPath`), each placing a DIFFERENT locomotive (placing the second sweeps
+     * the first off; the exclusion lives on the Point and names the Locomotive, so it survives that).
      *
      * MUTATION this catches: `!getExcludedLocs().isEmpty()` in place of `contains(loc)`, at either
      * `isPathClear` or `canEnter`'s station rule, fails the half that guards it.
@@ -210,12 +181,14 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * A station whose list names the only locomotives allowed takes the named one and no other (FR-121; Adam, 2026-10-11:
-     * *"For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."*).  Autonomy sends the named locomotive to EX_Far, the one place it may choose here, and refuses
-     * the other.
+     * A station whose list names the only locomotives allowed takes the named one and no other (FR-121).  Adam: "For
+     * locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just
+     * flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives
+     * that get added later when that mode is on."  Autonomy sends the named locomotive to EX_Far, the one place it may
+     * choose here, and refuses the other.
      *
-     * MUTATION: read an allow-only list as a list of exclusions - in `pickPath`, or in the yield probe that mirrors it -
-     * and this fails.
+     * MUTATION: read an allow-only list as a list of exclusions - in `pickPath`, or in the yield probe that mirrors it
+     * - and this fails.
      */
     @Test
     public void testAnAllowOnlyStationTakesOnlyTheLocomotivesItNames() throws Exception
@@ -250,14 +223,14 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * And a locomotive added to the database after the list was made is kept out too, which is the point of the mode
-     * (FR-121: *"we don't want to allow new locomotives that get added later when that mode is on"*): the list is kept as
-     * chosen and read in its mode, not turned into a list of everybody else the day it was made.
+     * And a locomotive added to the database after the list was made is kept out too, which is the point of the mode:
+     * the list is kept as chosen and read in its mode, not turned into a list of everybody else the day it was made.
      *
      * THE CONTROL: the same list keeping the chosen locomotives out lets the new one in, so the last assertion is about
      * the mode and not about a new locomotive being refused everywhere.
      *
-     * MUTATION: make an allow-only list a list of exclusions of the locomotives there are when it is set, and this fails.
+     * MUTATION: make an allow-only list a list of exclusions of the locomotives there are when it is set, and this
+     * fails.
      */
     @Test
     public void testAnAllowOnlyListKeepsOutALocomotiveAddedLater() throws Exception
@@ -295,8 +268,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * On a point that is not a station an allow-only list lets only its locomotives pass, as a list of exclusions keeps
-     * its own from passing (FR-121) - the same list, read in its mode.
+     * On a point that is not a station an allow-only list lets only its locomotives pass: the same list, read in its
+     * mode.
      *
      * MUTATION: read an allow-only list as a list of exclusions where a route is checked for passage, and this fails.
      */
@@ -323,8 +296,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * And the mode survives a save: written beside the list as `excludedLocsMode: whitelist` and read back, where a list
-     * of exclusions writes no mode at all (FR-121).
+     * And the mode survives a save: written beside the list as `excludedLocsMode: whitelist` and read back, where a
+     * list of exclusions writes no mode at all.
      *
      * MUTATION: leave the mode out of the saved layout, or out of the reading, and this fails.
      */
@@ -370,10 +343,8 @@ public class testLocomotiveExclusions
     // helpers
 
     /**
-     * Start, a plain intermediate point, a station in the middle, and a station beyond it - plus a
-     * second way round that avoids the intermediate point but not the middle station.
-     *
-     * Shaped so that each test can turn exactly one thing off and see one thing change.
+     * Start, a plain intermediate point, a station in the middle, and a station beyond it, plus a second way round that
+     * avoids the intermediate point but not the middle station, so each test can turn exactly one thing off.
      */
     private static Layout twoWaysRound() throws Exception
     {
@@ -394,13 +365,12 @@ public class testLocomotiveExclusions
         layout.createPoint("EX_Middle", false, middle.getName());
         layout.createPoint("EX_Through", true, through.getName());
 
-        // A station, but not one autonomy may send a train TO.  Without this the fixture has two
-        // destinations and "was it refused" becomes "which of the two came up this time".
+        // A station, but not one autonomy may send a train TO; otherwise "was it refused" becomes "which of two came
+        // up".
         layout.getPoint("EX_Through").setAutoDestination(false);
         layout.createPoint("EX_Far", true, far.getName());
         layout.createPoint("EX_Around", false, around.getName());
 
-        // The way through the plain intermediate point
         layout.createEdge("EX_Start", "EX_Middle");
         layout.createEdge("EX_Middle", "EX_Through");
 
@@ -408,7 +378,6 @@ public class testLocomotiveExclusions
         layout.createEdge("EX_Start", "EX_Around");
         layout.createEdge("EX_Around", "EX_Through");
 
-        // everything beyond runs through the middle station
         layout.createEdge("EX_Through", "EX_Far");
 
         return layout;
@@ -454,14 +423,8 @@ public class testLocomotiveExclusions
         return false;
     }
     /**
-     * A second locomotive from the database, which is what A113 needs and nothing here had.
-     *
-     * Borrowed rather than created, like `placed`, so this class goes on owning no addresses - and
-     * asserted to be a different object, because two names that resolve to one locomotive would make
-     * the test above pass while asking one question twice.
-     *
-     * @param notThisOne the locomotive already in use
-     * @return another one
+     * A second locomotive from the database, borrowed like `placed` so this class owns no addresses, and asserted to be
+     * a different object: two names resolving to one locomotive would make the test ask one question twice.
      */
     private static Locomotive other(Locomotive notThisOne) throws Exception
     {
@@ -477,16 +440,14 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that way.
-     * The copy the builder makes for the barred side is no destination - "A station, unless a train arriving
-     * THIS way is not allowed to stop" - and read as "not a station", its list stopped them passing: with an allow-only
-     * list, every train it does not name.  A station's list says who may not STOP there (`514071ee`), so it is asked of
-     * the square, not of the copy.  The control: on a plain sensor the list is still a wall.
+     * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that
+     * way.  The copy the builder makes for the barred side is no destination ("A station, unless a train arriving THIS
+     * way is not allowed to stop"), and read as "not a station" its list stopped them passing: with an allow-only list,
+     * every train it does not name.  A station's list says who may not STOP there, so it is asked of the square, not of
+     * the copy.  The control: on a plain sensor the list is still a wall.
      *
      * MUTATION: ask the copy's own destination flag again, in `Layout.isPathClear` or in Return Home's
      * `HomeStaging.canEnter`, and this fails.
-     *
-     * @throws Exception from the build or reflection
      */
     @Test
     public void testABarredSideDoesNotTurnAStationsListIntoAWall() throws Exception
@@ -555,13 +516,10 @@ public class testLocomotiveExclusions
 
     /**
      * An old autonomy.json imported into a configuration leaves the list of a square that allows only the chosen
-     * locomotives as it is.  The file's list says who is kept OUT; gap-filled into an allow-only square with
-     * none chosen, it read as the only locomotives let in - the file's meaning turned round.  The control: a square with
-     * no mode still takes the file's list.
+     * locomotives as it is: the file's list says who is kept OUT, and gap-filled into an allow-only square with none
+     * chosen it read as the only locomotives let in.  The control: a square with no mode still takes the file's list.
      *
      * MUTATION: gap-fill the list whatever the square's mode, and this fails.
-     *
-     * @throws Exception from the build or the import
      */
     @Test
     public void testAnOldFileDoesNotFillAnAllowOnlySquaresList() throws Exception
@@ -614,13 +572,7 @@ public class testLocomotiveExclusions
     /** Where the next line's sensors start, so no two lines share one. */
     private static int rsa65Sensors = 2950;
 
-    /**
-     * A locomotive by name, made if the database has none: reversible, one unit long, with a speed.
-     *
-     * @param name its name
-     * @param address its address, if made
-     * @return the locomotive
-     */
+    /** A locomotive by name, made if the database has none: reversible, one unit long, with a speed. */
     private static Locomotive rsa65Train(String name, int address)
     {
         Locomotive l = model.getLocByName(name);
@@ -636,15 +588,9 @@ public class testLocomotiveExclusions
 
     /**
      * A line Alpha - Beta - Gamma - Delta, track between, built by the setup's own builder and handed to the model;
-     * Alpha and Delta must turn (RSA65's probe).
-     *
-     * @param tag the names' prefix
-     * @param betaStation whether Beta is a station rather than a plain sensor
-     * @param barredFromWest whether a train arriving at Beta from the west may not stop there
-     * @param mode Beta's list's mode, or null
-     * @param list the locomotives Beta's list names
-     * @return the setup
-     * @throws Exception from the build
+     * Alpha and Delta must turn.  `betaStation`: Beta is a station rather than a plain sensor; `barredFromWest`: a
+     * train arriving at Beta from the west may not stop there; `mode` and `list` are Beta's list's mode (or null) and
+     * names.
      */
     private static org.traincontrol.automationui.AutonomySession rsa65Line(String tag, boolean betaStation,
         boolean barredFromWest, String mode, String... list) throws Exception
@@ -715,13 +661,7 @@ public class testLocomotiveExclusions
         return s;
     }
 
-    /**
-     * Alpha to Gamma eastbound through a copy of Beta, from the built railway's own edges.
-     *
-     * @param rail the railway
-     * @param tag the names' prefix
-     * @return the two edges, or null
-     */
+    /** Alpha to Gamma eastbound through a copy of Beta, from the built railway's own edges; null if there is none. */
     private static List<Edge> rsa65EastThroughBeta(Layout rail, String tag)
     {
         for (Edge in : rail.getEdges())

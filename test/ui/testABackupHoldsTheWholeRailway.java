@@ -35,20 +35,19 @@ import support.Components;
 
 /**
  * File > Backup TrainControl Data writes one archive of the whole railway as it is now, and says where it is (FR-015,
- * FR-019, FR-021, MT-159).
+ * FR-019, FR-021, MT-159). Adam: *"effectively, all state."*
  *
- * Adam (FR-015): "the backup menu option should export a zip file with the locdb and uistate files, track diagram
- * files, and autonomy files - effectively, all state."
- *
- * Each claim clicks the menu item on a window over a sandboxed copy of the test layout and answers the real dialog
- * that ends the backup.  The archive is written to the run's own data folder, and each claim deletes what it made.
+ * Each claim clicks the menu item on a window over a sandboxed copy of the test layout and answers the real dialog that
+ * ends the backup. The archive is written to the run's own data folder, and each claim deletes what it made.
  *
  * MUTATIONS, each seen red: the locomotive database left out of the archive (the data claim); the routes export left
- * out (the routes claim); the layout folder stored as "config" rather than under its own name (the layout claim);
- * Show Files answered as OK (the folder claim).
+ * out (the routes claim); the layout folder stored as "config" rather than under its own name (the layout claim); Show
+ * Files answered as OK (the folder claim).
  */
 public class testABackupHoldsTheWholeRailway
 {
+    private static final String RUN_TRAIN = "Backup run train";
+
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static TrainControlUI ui;
@@ -111,11 +110,7 @@ public class testABackupHoldsTheWholeRailway
         made.clear();
     }
 
-    /**
-     * The backup says the archive's name, and the archive holds the locomotive database and the window's state.
-     *
-     * @throws Exception from the window
-     */
+    /** The backup says the archive's name, and the archive holds the locomotive database and the window's state. */
     @Test
     public void testTheBackupNamesItsArchiveAndHoldsTheData() throws Exception
     {
@@ -136,11 +131,7 @@ public class testABackupHoldsTheWholeRailway
         assertTrue(held.get(MarklinControlStation.DATA_FILE_NAME).length > 0, "the backed-up locomotive database is empty");
     }
 
-    /**
-     * The backup holds the routes as they are at the moment it is taken: a route made just before is in it.
-     *
-     * @throws Exception from the window
-     */
+    /** The backup holds the routes as they are at the moment it is taken: a route made just before is in it. */
     @Test
     public void testTheBackupHoldsTheRoutesAsTheyAreNow() throws Exception
     {
@@ -175,8 +166,6 @@ public class testABackupHoldsTheWholeRailway
     /**
      * The backup holds the layout's whole folder under the layout's own name: every page and the autonomy setup beside
      * them, each as it is on disk (FR-015, MT-159).
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheBackupHoldsTheLayoutUnderItsOwnName() throws Exception
@@ -216,10 +205,124 @@ public class testABackupHoldsTheWholeRailway
     }
 
     /**
-     * Show Files, at the end of the backup, opens the folder the archive is in (OB-311).
+     * The backup holds where a stopped run left the trains: the run is folded into the setup before the archive is
+     * written, so restoring it does not put a train back on the square it set off from while the one it stands on
+     * reads free.
+     *
+     * MUTATION: take the fold out of `backupDataMenuItemActionPerformed`, and the archive holds the setup as the run
+     * found it.
      *
      * @throws Exception from the window
      */
+    @Test
+    public void testTheBackupHoldsWhereAStoppedRunLeftTheTrains() throws Exception
+    {
+        String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, RUN_TRAIN);
+
+        try
+        {
+            File archive = backUp(Answering.press(I18n.t("ui.ok")), new ArrayList<>());
+
+            assertEquals(testRestoreFromBackup.trainOn(entriesOf(archive), sandbox.getFolder().getName(), where),
+                RUN_TRAIN, "the backup does not have " + RUN_TRAIN + " on " + where[1] + ", where the run left it");
+        }
+        finally
+        {
+            testRestoreFromBackup.takeTheTrainAway(model, RUN_TRAIN);
+        }
+    }
+
+    /**
+     * A stopped run whose fold into the setup cannot be written makes the backup incomplete, and the backup says why:
+     * the archive would otherwise hold the setup as the run found it, behind a dialog saying all is well.
+     *
+     * MUTATION: in `foldTheStoppedRun`, answer null whatever the fold did, and the backup says it is complete.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAFoldThatCannotBeWrittenLeavesTheBackupIncomplete() throws Exception
+    {
+        String[] where = testRestoreFromBackup.leaveATrainWhereARunWould(model, ui, RUN_TRAIN);
+
+        // Read-only, so the fold's write fails while the backup can still read it
+        File setup = new File(sandbox.getFolder(), "config/autonomy/configuration-" + where[0] + ".json");
+
+        try
+        {
+            assertTrue(setup.isFile() && setup.setReadOnly(), "precondition: " + setup + " could not be made read-only");
+
+            List<String> said = new ArrayList<>();
+
+            backUp(Answering.press(I18n.t("ui.ok")), said);
+
+            assertTrue(said.get(0).contains(setup.getName()), "the backup did not say that the run could not be"
+                + " written into " + setup.getName() + ": " + said);
+        }
+        finally
+        {
+            setup.setWritable(true);
+
+            testRestoreFromBackup.takeTheTrainAway(model, RUN_TRAIN);
+        }
+    }
+
+    /**
+     * Two backups in the same second are two archives: the second does not take the first one's name and write over
+     * it.
+     *
+     * MUTATION: in `writeTheBackup`, name the archive without looking for one already there, and the two are one.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTwoBackupsInOneSecondAreTwoArchives() throws Exception
+    {
+        final File folder = new File(Util.dataPath(Util.BACKUP_FOLDER)).getAbsoluteFile();
+
+        Set<String> added = new HashSet<>();
+
+        boolean sameSecond = false;
+
+        // A backup takes well under a second here; retried until both fall in one
+        for (int tries = 0; tries < 10 && !sameSecond; tries++)
+        {
+            final Set<String> before = new HashSet<>(Arrays.asList(folder.list() == null ? new String[0]
+                : folder.list()));
+
+            long started = System.currentTimeMillis() / 1000;
+
+            ui.backupData();
+            ui.backupData();
+
+            sameSecond = System.currentTimeMillis() / 1000 == started;
+
+            added.clear();
+
+            for (String name : folder.list() == null ? new String[0] : folder.list())
+            {
+                if (!before.contains(name))
+                {
+                    added.add(name);
+
+                    made.add(new File(folder, name));
+                }
+            }
+        }
+
+        if (!sameSecond) throw new SkipException("no two backups here fell in the same second");
+
+        assertEquals(added.size(), 2, "two backups in the same second did not leave two archives: " + added);
+
+        String page = sandbox.getFolder().getName() + "/config/gleisbild.cs2";
+
+        for (String name : added)
+        {
+            assertNotNull(entriesOf(new File(folder, name)).get(page), name + " is not a whole backup: it has no " + page);
+        }
+    }
+
+    /** Show Files, at the end of the backup, opens the folder the archive is in (OB-311). */
     @Test
     public void testShowFilesOpensTheBackupFolder() throws Exception
     {

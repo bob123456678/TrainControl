@@ -32,45 +32,30 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The turn a train makes at its destination reaches the setup, and reaches it the right way round.
  *
- * OB-190 / OB-189.  Adam: he sends a train to a square trains may turn at, answers
- * **"no, do not keep the direction"**, the locomotive physically turns, and the diagram goes on drawing
- * it facing the way it set off.
+ * OB-190 / OB-189.  Adam: he sends a train to a square trains may turn at, answers **"no, do not keep the direction"**,
+ * the locomotive physically turns, and the diagram goes on drawing it facing the way it set off.
  *
- * **Why nothing caught it before this class.**  `TrainControlUI.reconcileFacingWhenIdle` - the drain
- * that carries a destination turn from the railway into the setup - was reached by no executed test at
- * all.  Its rules were pinned by `testADirectionChangeIsNotSwallowed`, which reads `TrainControlUI.java`
- * as a STRING and compares offsets, so the statement it proves is present is the exact statement the
- * defect lives in.  `testTheGraphIsToldWhenARunEnds` proves the idle announcement happens and
- * `testAReversalCommandIsEmitted` proves the command reaches the track; the seam between them - what
- * the drain writes, and to which copy - had nothing running over it.
+ * `TrainControlUI.reconcileFacingWhenIdle`, the drain that carries a destination turn from the railway into the setup,
+ * was reached by no executed test: `testADirectionChangeIsNotSwallowed` reads `TrainControlUI.java` as a STRING, so the
+ * statement it proves is present is the one the defect lives in.  This class runs a real journey on Adam's own railway
+ * (sandbox copy, OB-111), turns the train at its destination the way the manual door does, drains, and asks the SETUP
+ * and the RUNNING LAYOUT what they now believe.
  *
- * So this class runs a real journey on Adam's own railway (in a sandbox copy - OB-111), turns the train
- * at its destination the way the manual door does, drains, and then asks the SETUP and the RUNNING
- * LAYOUT what they now believe.
+ * Two ways it went wrong, which are the two journeys below.  Both come from the drain pivoting on
+ * `AutonomySession.getFacing(tile)`, the setup's STORED facing for the arrival square, which
+ * behaviour/editing-while-running.md 6a declares stale at that moment (and `captureFromLayout` never clears it, so an
+ * empty square carries the last occupant's answer):
  *
- * **The two ways it went wrong, which are the two journeys below.**  Both come from the drain's pivot:
- * it flipped `AutonomySession.getFacing(tile)` - the setup's STORED facing for the arrival square -
- * which behaviour.md 6a declares stale at exactly that moment (*"a run moves trains, where they ended
- * up lives only in the running layout, and nothing writes it back to the setup when the run ends"*),
- * and `captureFromLayout` adds that the field is never cleared, so an empty square still carries the
- * last occupant's answer.
+ * 1. The turn is lost.  No stored facing means `flipFacing` returns null, and the drain removed the pending record
+ *    anyway, so no later refresh can heal it.
+ * 2. The turn is written backwards.  A stored facing that is the POST-turn side (the systematic case at a terminus)
+ * flips
+ *    to the PRE-turn side, and `moveOntoFacingCopy` stands the locomotive on the copy for the wrong facing.
  *
- * 1. **The turn is lost.**  No stored facing for the arrival square means `flipFacing` has nothing to
- *    flip: it returns null, and the drain removed the pending record anyway.  The physical train is
- *    reversed and nothing anywhere says so - and because the record is gone, no later refresh can heal
- *    it.
- * 2. **The turn is written backwards.**  A stored facing that happens to be the POST-turn side - which
- *    at a terminus is the systematic case, since that is what the last capture derived from the turning
- *    copy - flips to the PRE-turn side, and `moveOntoFacingCopy` then stands the locomotive on the
- *    copy for the wrong facing, actively moving it off one that was right.
- *
- * **What is reliable at that moment, and is what the fix pivots on.**  Behaviour.md 4: *"a train faces
- * the way it will leave; once it has been turned round the two point the same way while the carriages
- * have not moved."*  So the facing of a train that has just turned at its destination IS the side it
- * arrived by - which the arrival wrote down itself, on the square it stopped at, before turning it.
- * That is an absolute answer, it needs no record to be in sync first, and re-applying it cannot drift.
- *
- * The third test is the other half: a turn the drain could NOT write must still be owed.
+ * What is reliable at that moment is behaviour/facing.md 4: a train faces the way it will leave, and once turned round
+ * the two point the same way while the carriages have not moved.  So the facing of a train that has just turned at its
+ * destination IS the side it arrived by, which the arrival wrote down itself: an absolute answer that needs no record
+ * in sync.  The third test is the other half: a turn the drain could NOT write must still be owed.
  *
  * @author Adam
  */
@@ -88,31 +73,22 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     private static Integer trainLengthWas;
 
     /**
-     * Short enough to fit the berths this railway offers, and put back afterwards.
-     *
-     * The track-room rule judges every destination (behaviour.md 5a), and the may-reverse platform
-     * this class needs measures one unit on the run in - so the first locomotive in Adam's database,
-     * three units long, was refused all 43 routes to it before anything could be measured.  Its real
-     * length is a fact about his train and is restored in the teardown, because `init` opens his own
-     * locomotive database rather than a fresh one.
+     * Short enough for the track-room rule (behaviour/length.md 5a) at the may-reverse platform, which measures one
+     * unit on the run in; the real length is restored in the teardown, as `init` opens Adam's own locomotive database.
      */
     private static final int TRAIN_LENGTH = 1;
 
     /** How long one leg may take before it is called wedged rather than waited for. */
     private static final int LEG_TIMEOUT_SECONDS = 90;
 
-    /**
-     * The manual door's answer when the operator says "no, do not keep the direction".
-     *
-     * `asksAbout` answers about the RAILWAY and never about the answer, which is the rule
-     * `testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer` pins - so it is true everywhere
-     * and `shouldReverse` carries the decision.  Without both, `shouldReverseAt` takes the
-     * `!mayReverseAt(current) && !asksAbout(current)` exit at the plain copy and the train is never
-     * turned, which would make every assertion below an assertion about a journey that did nothing.
-     */
     /** What the fixture's locomotive said about reversing before this class changed it. */
     private static boolean reversibleWas;
 
+    /**
+     * The manual door's answer to "no, do not keep the direction": `asksAbout` is true everywhere (it answers about the
+     * railway, not the answer) and `shouldReverse` carries the decision, or `shouldReverseAt` exits at the plain copy
+     * and the train never turns.
+     */
     private static final Layout.ReversalPolicy TURN_IT_ROUND = new Layout.ReversalPolicy()
     {
         @Override
@@ -131,22 +107,14 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // BEFORE init (OB-111): the window opens whatever the layout preference names, and on Adam's
-        // machine that is his real, unrecoverable railway.  The sandbox redirects the preference at a
-        // copy.
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
-        //
-        // The SHAPE is what this class is about, and the shape is the same in both.  Where his trains
-        // are standing, how long they are and which side they came in by are not, and reading those
-        // off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert that the
-        // 2-8-4 stood at BottomMainB - it is at BottomMainA now, and that class was red for a reason
-        // that had nothing to do with any guard.  A fixture that moves while nobody is looking makes
-        // every class over it say something different every week.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): the window opens
+        // whatever the layout preference names, which on Adam's machine is his real railway.  The SHAPE is what this
+        // class is about; where his trains stand and how long they are move, and a fixture that moves makes every class
+        // over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        // showUI, because `reconcileFacingWhenIdle` is a method of the window and this class exists to
-        // RUN it.  debug on, because `Layout.setSimulate(true)` refuses outside debug mode and without
-        // it no journey below ever reaches its destination.
+        // showUI, because `reconcileFacingWhenIdle` is a method of the window; debug on, because
+        // `Layout.setSimulate(true)` refuses outside debug mode.
         model = support.TestStation.simulatedWithWindowInDebug();
         model.setNetworkCommState(false);
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -155,10 +123,9 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
 
         assertNotNull(ui, "there is no window, so the drain this class is about cannot be reached");
 
-        // THE WINDOW HAS TO HAVE FINISHED STARTING.  `init` posts `display()` to the event thread and
-        // returns without waiting for it, and everything below rebuilds the same session the start-up
-        // is still building - two threads inside one `AutonomySession.rebuild`, which is how
-        // `testTheShadingFollowsTheTrain` died with a ConcurrentModificationException on its first run.
+        // THE WINDOW HAS TO HAVE FINISHED STARTING: `init` posts `display()` to the event thread without waiting, and
+        // the start-up is still building the session that everything below rebuilds (two threads in
+        // `AutonomySession.rebuild`).
         pumpTheEventThread();
         pumpTheEventThread();
 
@@ -180,19 +147,10 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
 
         assertNotNull(train, "this fixture has no locomotive to drive");
 
-        // AND IT HAS TO BE ABLE TO TURN, or there is no turn to record (MT-368, 2026-09-13).
-        //
-        // This class asks what happens to the RECORD once the railway has turned a train: whether the
-        // setup is told, and whether a stale facing is written backwards. It is not about whether the
-        // turn happens.
-        //
-        // Since Adam's ruling that a train which cannot reverse is never turned where turning is
-        // OPTIONAL, the first locomotive in the database - `02 0314-1 DDR`, which is not reversible -
-        // can no longer be turned at BottomMainB, and `TURN_IT_ROUND` describes a state the interface
-        // cannot produce: such a train is not prompted, so nobody can answer "turn" for it.
-        //
-        // Saved and put back in the teardown, because the locomotive database is shared with the rest
-        // of the suite and this is a property of the locomotive rather than of this fixture.
+        // AND IT HAS TO BE ABLE TO TURN, or there is no turn to record (MT-368).  A train that cannot reverse is never
+        // turned where turning is OPTIONAL, so the first locomotive in the database (not reversible) could not be
+        // turned at BottomMainB and `TURN_IT_ROUND` would describe a state the interface cannot produce.  Saved and put
+        // back in the teardown, as the locomotive database is shared with the rest of the suite.
         reversibleWas = train.isReversible();
 
         train.setReversible(true);
@@ -213,12 +171,10 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         {
             if (layout != null) layout.stopLocomotives();
 
-            // PUT BACK, because `init` opens Adam's own locomotive database and the length above is
-            // this class's convenience rather than a measurement of his train.
+            // PUT BACK: `init` opens Adam's own locomotive database, and the length above is this class's convenience.
             if (train != null) train.setTrainLength(trainLengthWas == null ? 0 : trainLengthWas);
 
-            // And the reversing flag, for the same reason: this class made it true so that there
-            // would be a turn to record at all (MT-368).
+            // And the reversing flag, made true so there would be a turn to record (MT-368).
             if (train != null) train.setReversible(reversibleWas);
         }
         finally
@@ -229,9 +185,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         }
     }
 
-    /**
-     * A journey ending at the plain copy of a square trains may turn at, and what it turned into.
-     */
+    /** A journey ending at the plain copy of a square trains may turn at, and what it turned into. */
     private static final class Turn
     {
         Point start;
@@ -245,15 +199,11 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * The turn is written to the setup even when the arrival square has never recorded a facing.
      *
-     * Case 1.  A square only ever gets a `FACING` from `captureFromLayout`, which runs when the
-     * editor is opened or the program exits - so an arrival square that no train has been captured on
-     * has none, `flipFacing` has nothing to flip, and it says so by returning null.  The drain removed
-     * the pending record regardless.
+     * Case 1.  A square only gets a `FACING` from `captureFromLayout`, which runs when the editor is opened or the
+     * program exits, so an arrival square no train was captured on has none, and `flipFacing` returns null.
      *
      * MUTATION, run: pivoting the write on `getFacing(tile)` again - which is what `flipFacing` does -
      * fails this at the first assertion with `facing=null`.
-     *
-     * @throws Exception on a failure to build or run
      */
     @Test
     public void testATurnWritesTheFacingEvenWithNothingRecorded() throws Exception
@@ -280,29 +230,23 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * A stale facing does not send the turn the wrong way.
      *
-     * Case 2.  `FACING` is never cleared - *"a square with no train on it still remembers which
-     * way the last one was pointing"* - so the arrival square commonly carries the previous occupant's
-     * answer, and the squares this feature exists for are exactly the ones whose occupants legitimately
-     * alternate facing.  Where that stale value happens to be the POST-turn side, flipping it writes
-     * the PRE-turn side as though it were the correction, and `moveOntoFacingCopy` then moves the
-     * locomotive off the copy that was right.
+     * Case 2.  `FACING` is never cleared, so the arrival square commonly carries the previous occupant's answer, and
+     * these squares are exactly the ones whose occupants alternate facing.  Where that stale value is the POST-turn
+     * side, flipping it writes the PRE-turn side as the correction, and `moveOntoFacingCopy` moves the locomotive off
+     * the copy that was right.
      *
-     * The stale value is seeded BEFORE the run, not after: the window refreshes off the run's own
-     * completion announcement, so a value written afterwards can be overtaken by the drain it is meant
-     * to be read by.
+     * The stale value is seeded BEFORE the run: the window refreshes off the run's own completion announcement, so a
+     * value written afterwards can be overtaken by the drain.
      *
      * MUTATION, run: pivoting on `getFacing(tile)` fails this with the facing left on the plain copy's
      * side and the locomotive standing on the plain copy.
-     *
-     * @throws Exception on a failure to build or run
      */
     @Test
     public void testAStaleFacingDoesNotWriteTheTurnBackwards() throws Exception
     {
         Turn turn = aJourneyEndingInATurn();
 
-        // ALREADY THE POST-TURN SIDE, left behind by whoever stood here last.  At a terminus this is
-        // the systematic case rather than the unlucky one.
+        // ALREADY THE POST-TURN SIDE, left behind by whoever stood here last (the systematic case at a terminus).
         session.setFacing(turn.square, turn.arrival);
 
         drive(turn);
@@ -323,19 +267,11 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * A turn the drain could not write is still owed afterwards.
      *
-     * The other half: the drain removed the pending record whether or not anything was
-     * written, so every way of failing to write - a locomotive the running layout no longer carries, a
-     * square the setup cannot answer for - destroyed the record of a turn the railway really made. The
-     * comment above the removal said "Written, and only now forgotten", and it was false whenever the
-     * write bailed.
-     *
-     * The unwritable case is manufactured rather than waited for: a name owed a turn at a Point that
-     * does not exist is exactly the shape of "the write cannot be made", and nothing about it is
-     * special-cased.
+     * The other half: the drain removed the pending record whether or not anything was written, so every way of failing
+     * to write destroyed the record of a turn the railway really made.  The unwritable case is manufactured: a name
+     * owed a turn at a Point that does not exist is exactly the shape of "the write cannot be made".
      *
      * MUTATION, run: removing the pending entry unconditionally - the shipped behavior - fails this.
-     *
-     * @throws Exception on a reflection failure
      */
     @Test
     public void testATurnThatCouldNotBeWrittenIsNotForgotten() throws Exception
@@ -363,16 +299,12 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * A hand placement supersedes a turn the window has not written yet.
      *
-     * The record is kept until it is written, which is the test above - and a record that is kept has
-     * to be able to become wrong. Somebody putting the train down says where it is and which way round
-     * it is, and both are newer than a pending turn; applying the turn afterwards would write the side
-     * the old arrival came in by over a placement the operator chose. This is Adam's OB-183 ruling one
-     * door further on: for a train whose placement the gesture was about, the gesture is the newer
-     * answer.
+     * A kept record has to be able to become wrong: somebody putting the train down says where it is and which way
+     * round, both newer than a pending turn, and applying the turn afterwards would write over a placement the operator
+     * chose (Adam's OB-183 ruling one door further on: for a train whose placement the gesture was about, the gesture
+     * is the newer answer).
      *
      * MUTATION, run: dropping the `reversedOnArrival.remove` from `Layout.moveLocomotive` fails this.
-     *
-     * @throws Exception on a failure to build or run
      */
     @Test
     public void testAHandPlacementSupersedesAnUnwrittenTurn() throws Exception
@@ -399,18 +331,10 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * Puts one train on the railway with a journey ahead of it that ends where trains may turn.
      *
-     * SEARCHED, not named: which square is which is a fact about Adam's layout file and the property
-     * under test is not.  What the search insists on is the shape the defect needs - a square the build
-     * split into exactly two copies, a plain one and a turning one, with the journey ending at the
-     * PLAIN copy, because that is where a manual "no, do not keep the direction" leaves a train and is
-     * the one arrival the running layout does not correct for itself.
-     *
-     * Every other train is taken off first.  A railway with four trains standing about refuses paths
-     * for reasons that have nothing to do with this class, and the sandbox is a copy.
-     *
-     * @return the journey, never null - it fails rather than skipping, because a class that quietly
-     *         finds no candidate is a class that asserts nothing
-     * @throws Exception on a failure to search
+     * Searched, not named: the search insists on a square the build split into exactly two copies, a plain one and a
+     * turning one, with the journey ending at the PLAIN copy, which is where a manual "no, do not keep the direction"
+     * leaves a train and the one arrival the running layout does not correct for itself.  Every other train is taken
+     * off first.  It fails rather than skipping, since a class that quietly finds no candidate asserts nothing.
      */
     private static Turn aJourneyEndingInATurn() throws Exception
     {
@@ -436,11 +360,9 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
 
             Map<String, Side> copies = session.facingsFor(square);
 
-            // EXACTLY TWO FACINGS, so "the other one" means something - which is the state the shipped
-            // `flipFacing` needs before it will write at all, and case 2 has to reach the write.  Not
-            // two COPIES: a may-reverse square with two arrival sides builds to FOUR Points on this
-            // railway - plain and turning for each side - and they hold two distinct facings between
-            // them, because a plain copy leaves the way the turning copy for the other side does.
+            // EXACTLY TWO FACINGS, so "the other one" means something, which `flipFacing` needs before it writes at
+            // all.  Not two COPIES: a may-reverse square with two arrival sides builds to FOUR Points here, holding two
+            // facings.
             if (session.facingChoices(square).size() != 2)
             {
                 count(why, "facings=" + session.facingChoices(square).size());
@@ -465,10 +387,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
 
                 Side arrival = sideNamed(side);
 
-                // A COPY HAS TO HOLD THE POST-TURN FACING, or there is nowhere for the corrected train
-                // to stand and the move half of this could not be asserted.  And it must not be the
-                // copy the train is arriving ON, or the turn changes nothing and every assertion below
-                // would pass against a program that did nothing.
+                // A COPY HAS TO HOLD THE POST-TURN FACING, or there is nowhere for the corrected train to stand, and it
+                // must not be the copy the train is arriving ON, or the turn changes nothing.
                 if (arrival == null || !copies.containsValue(arrival)
                     || arrival == copies.get(plain.getName()))
                 {
@@ -513,12 +433,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         why.put(reason, was == null ? 1 : was + 1);
     }
 
-    /**
-     * Drives the journey with the operator's "no, do not keep the direction", and checks it turned.
-     *
-     * @param turn the journey
-     * @throws Exception on a failure to run
-     */
+    /** Drives the journey with the operator's "no, do not keep the direction", and checks it turned. */
     private static void drive(final Turn turn) throws Exception
     {
         Future<Boolean> leg = watchdog.submit(new Callable<Boolean>()
@@ -542,8 +457,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             fail("the journey never arrived, so this test never reached the turn it is about");
         }
 
-        // ON A COPY OF THE SQUARE - since round 83 already the one for its new facing: the arrival stands a turned
-        // train there itself, rather than leave it on the copy for its old heading until the drain
+        // ON A COPY OF THE SQUARE, already the one for its new facing: the arrival stands a turned train there itself.
         Point standing = standingOn(turn);
 
         assertNotNull(standing, "the train is on no copy of " + turn.square + " after the run");
@@ -553,12 +467,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             + " expectations below are about a journey that did not happen");
     }
 
-    /**
-     * The copy of the journey's square the train stands on, or null.
-     *
-     * @param turn the journey
-     * @return the copy
-     */
+    /** The copy of the journey's square the train stands on, or null. */
     private static Point standingOn(Turn turn)
     {
         for (Map.Entry<String, Side> copy : session.facingsFor(turn.square).entrySet())
@@ -572,11 +481,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         return null;
     }
 
-    /**
-     * Runs the drain the way an idle refresh does.
-     *
-     * @throws Exception on an event-thread failure
-     */
+    /** Runs the drain the way an idle refresh does. */
     private static void drain() throws Exception
     {
         ui.reconcileFacingWhenIdle();
@@ -587,16 +492,9 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /**
      * The running layout stands the turned train on the copy for its new facing, tail and all.
      *
-     * The move is the half of this that the diagram and the next dispatch read: which copy a train is
-     * on IS its direction, so a setup written correctly and a running layout left on the old copy still
-     * offers paths for the wrong heading.
-     *
-     * And the arrival side goes with it.  `Point.setLocomotive` clears `arrivedFrom` on every
-     * change of occupant - right for a different train, wrong for the same train being re-stood on a
-     * sibling copy of one square, which is what this move is.  Turning a train does not move its
-     * carriages (behaviour.md 4), so the tail is still lying the way it came in.
-     *
-     * @param turn the journey
+     * The move is the half the diagram and the next dispatch read: which copy a train is on IS its direction.  The
+     * arrival side goes with it: `Point.setLocomotive` clears `arrivedFrom` on every change of occupant, which is wrong
+     * for the same train re-stood on a sibling copy, since turning does not move the carriages (behaviour/facing.md 4).
      */
     private static void assertStandsOnTheTurningCopy(Turn turn)
     {
@@ -625,9 +523,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             + " so the track its carriages are lying across stopped being blocked for exactly the"
             + " train that turned. Turning a train does not move its tail (REV9-B1)");
 
-        // AND THE ROUTE IT DROVE.  A train that was driven here follows that route back past a
-        // junction (Adam, MT-335: "Follow its last route"), and this re-stand carried the side and not the
-        // route - so a train that turned lost it the moment the railway went idle.
+        // AND THE ROUTE IT DROVE: a train driven here follows that route back past a junction (Adam, MT-335: "Follow
+        // its last route"), and this re-stand carried the side and not the route.
         assertNotNull(standing.getArrivedAlong(),
             "the train drove here, turned, and was re-stood on the copy for its new facing WITHOUT the"
             + " route it arrived along - so its tail stops at the first junction behind it instead of"

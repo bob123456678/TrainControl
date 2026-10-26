@@ -2,22 +2,16 @@ package ui;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.AxisRuler;
+import org.traincontrol.gui.widgets.AxisRuler;
 
 /**
  * FR-057: the column and row numbers around a track diagram.
  *
- * Adam: **"coordinates are referenced in issues but not visible to the user.  add a grid around the
- * diagram"**, and **"axis labels can be printed in both autonomy editor and track diagram editor,
- * with an optional toggle"**.
- *
- * **The one thing that can be wrong here and look right is the NUMBER.** A diagram is drawn from its
- * left-most and top-most track rather than from zero, so a ruler that printed cell indices would be
- * neat, aligned, plausible, and off by the offset - which is the exact opposite of what this feature
- * exists for, since every warning names a square as `page:x,y` in the diagram's own numbering.
- *
- * So the assertions below read the digits back off a painted image rather than trusting the drawing
- * code. Painting into a `BufferedImage` needs no window, so this class runs anywhere.
+ * The one thing that can be wrong here and look right is the NUMBER.  A diagram is drawn from its left-most and
+ * top-most track rather than from zero, so a ruler that printed cell indices would be neat, aligned and off by the
+ * offset, while every warning names a square as `page:x,y` in the diagram's own numbering.  So the assertions read
+ * the digits back off a painted image rather than trusting the drawing code; painting into a `BufferedImage` needs
+ * no window.
  *
  * @author Adam
  */
@@ -29,12 +23,7 @@ public class testTheDiagramPrintsItsCoordinates
     /** The room the ruler reserves at the top and on the left, asked of the ruler's own border insets. */
     private static final int GUTTER = AxisRuler.uniform(SIZE, 0, 0, 1, 1).getBorderInsets(null).top;
 
-    /**
-     * The gutter is on the top and the left, and nowhere else.
-     *
-     * The numbers go in the space the layout manager reserves for the border, so an inset on the wrong
-     * side moves the whole diagram and the numbers land beside the wrong squares.
-     */
+    /** The gutter is on the top and the left, and nowhere else: an inset on the wrong side moves the whole diagram. */
     @Test
     public void testTheGutterIsOnTheTopAndTheLeft()
     {
@@ -52,10 +41,8 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * The numbers are the DIAGRAM's, not the cell indices.
-     *
-     * A page whose left-most track sits at x = 12 is drawn from x = 12, and this is the assertion that
-     * a ruler printing 0, 1, 2 - which is what the loop variable is - would fail.
+     * The numbers are the DIAGRAM's, not the cell indices: a page whose left-most track sits at x = 12 is drawn from
+     * x = 12, and a ruler printing 0, 1, 2 would fail this.
      *
      * MUTATION this catches: dropping `offsetX`/`offsetY` from the two `Integer.toString` calls.
      */
@@ -83,21 +70,15 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * A square too small for its number prints nothing rather than something misleading.
-     *
-     * A number wider than the square it belongs to overhangs its neighbor, and a number pointing at
-     * the wrong square is worse than a gap - this is a feature for finding a square by its coordinate.
+     * A square too small for its number prints nothing rather than something misleading (an overhang points at the
+     * wrong square).
      */
     @Test
     public void testANumberTooWideForItsSquareIsLeftOut()
     {
-        // THE READER FIRST.
-        //
-        // `digitsIn` recognizes numbers by re-rendering each candidate with a font it chooses itself
-        // and sliding the stamp over the painted ink.  If that font ever stops matching the one the
-        // ruler draws with, it recognizes NOTHING - and an assertion that nothing was drawn is then
-        // satisfied by a reader that cannot read.  A sibling two methods up would fail loudly, which
-        // is a rescue rather than a guard.
+        // THE READER FIRST: `digitsIn` re-renders each candidate with a font it chooses itself, and if that font ever
+        // stops matching the ruler's it recognizes NOTHING, which would satisfy "nothing was drawn" by a reader that
+        // cannot read.
         String big = paint(AxisRuler.uniform(30, 100, 100, 6, 6));
 
         assertFalse(digitsIn(big).isEmpty(),
@@ -113,23 +94,13 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * Every number sits over its own square, even where the squares are not a tile apart (FR-057).
+     * Every number sits over its own square, even where the squares are not a tile apart (FR-057; Adam: "the axis
+     * numbers drift and are out of alignment").  Positions worked out as `column * size` are right only while every
+     * cell is exactly one tile wide; with the gray grid on each square wears a border, the pitch is a pixel or two
+     * more, and the error is cumulative.  This gives the ruler cells thirty-one pixels apart and thirty wide and reads
+     * back where the ink landed.
      *
-     * Adam: *"the axis numbers drift and are out of alignment.  The first few are centered, but the
-     * rest aren't.  That's why it looks off by one."*
-     *
-     * **The first version worked the positions out as `column * size`**, and that is right only while
-     * every cell is exactly one tile wide.  With the gray grid switched on each square wears a line
-     * border that reserves room, so the real pitch is a pixel or two more - and the error is
-     * cumulative.  The first few numbers land over their squares; the twentieth is a whole square out.
-     *
-     * Every other test in this class used a uniform pitch, so every one of them agreed with the
-     * arithmetic that was wrong.  This one gives the ruler cells that are thirty-one pixels apart and
-     * thirty wide - which is exactly what the grid with its borders on looks like - and then reads back
-     * where the ink landed.
-     *
-     * MUTATION this catches: going back to `column * size`, or centring on the pitch rather than on
-     * the cell.
+     * MUTATION this catches: going back to `column * size`, or centring on the pitch rather than on the cell.
      */
     @Test
     public void testTheNumbersFollowTheSquaresRatherThanTheTileSize()
@@ -162,25 +133,13 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * A column keeps its number when the one cell the ruler measured is not there (OB-172).
+     * A column keeps its number when the one cell the ruler measured is not there (OB-172).  The ruler measured one
+     * cell per column (the top row) and one per row, and `paintBorder` skips on `cell == null || cell.width <= 0`, so
+     * one absent square deleted the label for the whole column.  Whether this was the mechanism Adam saw is MT-268;
+     * this closes the class of fault.
      *
-     * Adam: *"some axis labels vanish when switching between track diagram editor and autonomy
-     * editor - 1 and 3 in my case.  they reappear if the grid setting is cycled."*
-     *
-     * **The ruler was told to measure one cell per column** - `getValueAt(column, 0)`, the top row -
-     * and one per row, the left-hand column. `paintBorder` skips on `cell == null || cell.width <= 0`,
-     * so any reason that single square is absent, or has no bounds yet, deletes the label for the
-     * whole column. One square decided a number about twenty-three others.
-     *
-     * **What I could NOT establish is that this is the mechanism he saw**, and it is written down
-     * rather than glossed. His `1 - Main` page does have tiles in its top row at both columns he
-     * named, so an always-empty square is ruled out. A square whose bounds are still zero when the
-     * border first paints after an editor swap fits the symptom - including its going away when the
-     * grid setting is cycled and everything is rebuilt - but reproducing that needs the two editors in
-     * front of me. This closes the class of fault; whether it closes his is `MT-268`.
-     *
-     * MUTATION: going back to a single source per column fails the second assertion, and the first
-     * assertion is what stops that mutation passing by drawing nothing at all.
+     * MUTATION: going back to a single source per column fails the second assertion, and the first assertion is what
+     * stops that mutation passing by drawing nothing at all.
      */
     @Test
     public void testAColumnKeepsItsNumberWhenOneCellIsMissing()
@@ -190,8 +149,7 @@ public class testTheDiagramPrintsItsCoordinates
         final int gutter = 18;
         final int columns = 6;
 
-        // The top row has nothing usable at columns 1 and 3 - the two he lost - and the row under it
-        // has everything.
+        // The top row has nothing usable at columns 1 and 3, and the row under it has everything.
         java.util.function.IntFunction<java.awt.Rectangle> gappy =
             column -> (column == 1 || column == 3)
                 ? null
@@ -200,8 +158,8 @@ public class testTheDiagramPrintsItsCoordinates
         java.util.function.IntFunction<java.awt.Rectangle> whole =
             column -> new java.awt.Rectangle(gutter + column * pitch, gutter, cell, cell);
 
-        // THE CONTROL FIRST: asking only the gappy row loses exactly two numbers.  Without this, a
-        // ruler that never had the fault would satisfy the assertion below.
+        // THE CONTROL FIRST: asking only the gappy row loses exactly two numbers, so a ruler without the fault cannot
+        // pass.
         assertEquals(inkGroups(paint(new AxisRuler(0, 0, columns, 0, gappy, row -> null))).size(),
             columns - 2,
             "the fixture is wrong: one gappy row should cost exactly the two numbers whose cell is "
@@ -220,20 +178,9 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * A two-pixel spacer does not get to answer for a row that has a real cell (OB-172).
-     *
-     * **This is what the bug actually was**, found by capturing the screen with `Robot` after four
-     * attempts that rested on a probe which could not reproduce it: every earlier one painted the
-     * container into an image, which is a full repaint - the case that always worked.
-     *
-     * On Adam's own page, rows 0, 1, 3 and 11 were handed a cell **two pixels tall** against a
-     * fourteen-pixel font, so `paintBorder` skipped them as too short. Those rows have a full 30-pixel
-     * cell in another column; the first candidate simply happened to be a spacer.
-     *
-     * **"First non-empty" was the wrong rule.** A spacer is not empty - it is a real component with a
-     * real, tiny size - so the zero-check let it through and the method answered with the one
-     * candidate that could not carry a number. Every candidate describes the same row, so any of them
-     * gives the right position and only the size differs: taking the largest is free.
+     * A two-pixel spacer does not get to answer for a row that has a real cell (OB-172).  Rows were handed a cell two
+     * pixels tall against a fourteen-pixel font, so `paintBorder` skipped them; a spacer is not empty, so "first
+     * non-empty" let it through.  Every candidate describes the same row, so taking the largest is free.
      *
      * MUTATION: returning the first usable candidate instead of the largest fails this.
      */
@@ -260,12 +207,9 @@ public class testTheDiagramPrintsItsCoordinates
             "with nothing else to offer, the spacer is the honest answer");
     }
     /**
-     * A zero-sized cell falls through to the next place to look, rather than being handed on (OB-172).
-     *
-     * The half that matters for the symptom Adam actually described. An absent square is a null; a
-     * square that exists but has not been laid out yet is a `Rectangle` of no size, and `paintBorder`
-     * refuses both. `firstUsable` therefore has to refuse both too - returning an empty rectangle
-     * because it was not null would move the skip one level up and change nothing.
+     * A zero-sized cell falls through to the next place to look (OB-172).  A square that exists but has not been laid
+     * out is a `Rectangle` of no size, and `paintBorder` refuses it as it refuses null, so `firstUsable` must refuse
+     * both.
      *
      * MUTATION: testing only `found != null` fails this.
      */
@@ -290,31 +234,14 @@ public class testTheDiagramPrintsItsCoordinates
             "with nowhere usable to look this must say so, not invent a rectangle");
     }
     /**
-     * A child standing in the gutter does not rub out the number underneath it (OB-172).
+     * A child standing in the gutter does not rub out the number underneath it (OB-172).  `JComponent.paint` calls
+     * `paintBorder` and THEN `paintChildren`, so any child reaching into the gutter is drawn over the number: a
+     * `StationCaption` is 38 pixels tall and up to 55 wide against a 30-pixel cell.  `LayoutGrid.newDiagramContainer`
+     * paints the ruler again at the end of its `paint()` override, which is after background, border and children
+     * (the end of `paintChildren` did not work: Swing hands each child its own graphics there).
      *
-     * **This is what OB-172 actually was, after two wrong answers.** Adam lost axis numbers on the two
-     * pages whose columns start at zero, and they came back when the grid setting was cycled. I looked
-     * for a number being SKIPPED twice - a missing cell, then an unmeasured one - and measured his own
-     * page to settle it: every cell the ruler asks about is present and exactly 30x30, against a
-     * 14-pixel font. Not one of `paintBorder`'s three skip clauses can fire there. The numbers were
-     * never being skipped.
-     *
-     * `JComponent.paint` calls `paintBorder` and THEN `paintChildren`, so any child reaching into the
-     * eighteen pixels the ruler reserves is drawn over the number. A `StationCaption` is 38 pixels tall
-     * and up to 55 wide against a 30-pixel cell - which is why one of them takes out two rows' numbers,
-     * and why the top-left one takes the `0` off the column axis as well.
-     *
-     * `LayoutGrid.newDiagramContainer` now paints the ruler again at the end of its `paint()`
-     * override, which is unambiguously after background, border and children.
-     *
-     * It was first put at the end of `paintChildren` - the hook that already draws trains over
-     * captions - and that did not work: the override ran, the border was the ruler and the clip was
-     * the whole component, and the numbers were still rubbed out.  Swing hands each child its own
-     * graphics inside `paintChildren`.  This sentence described that first attempt for a while after
-     * it was reverted.
-     *
-     * MUTATION: removing that block fails this. The first assertion is what stops the mutation passing
-     * by painting nothing at all.
+     * MUTATION: removing that block fails this.  The first assertion is what stops the mutation passing by painting
+     * nothing at all.
      */
     @Test
     public void testAChildInTheGutterDoesNotRubOutTheNumbers() throws Exception
@@ -326,9 +253,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         container.setLayout(null);
 
-        // WHITE, so that "ink" means a number rather than the panel's own gray.  The first version of
-        // this test left the default background and counted 3024 non-white pixels in an 18x168 strip -
-        // which is every pixel of it, and told me nothing about the numbers at all.
+        // WHITE, so that "ink" means a number rather than the panel's own gray.
         container.setOpaque(true);
         container.setBackground(java.awt.Color.WHITE);
 
@@ -406,11 +331,8 @@ public class testTheDiagramPrintsItsCoordinates
             + "start at zero (OB-172)");
     }
     /**
-     * The ranges of x where the top strip has ink on it, one per number.
-     *
-     * A gap of a pixel or two inside a two-digit number would split it in two, so groups are joined
-     * across small gaps: what is being measured is which SQUARE a number sits over, not how its digits
-     * are spaced.
+     * The ranges of x where the top strip has ink, one per number; small gaps are joined, since what is measured is
+     * which SQUARE a number sits over.
      */
     private static java.util.List<int[]> inkGroups(String ink)
     {
@@ -447,10 +369,7 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * Paints a ruler onto a blank image and hands back the ink, as a string of pixel rows.
-     *
-     * Compared rather than decoded: two rulers that print different numbers cannot paint identical
-     * ink, and that is the whole of what the offset assertion needs.
+     * Paints a ruler onto a blank image and hands back the ink as a string of pixel rows, compared rather than decoded.
      */
     private static String paint(AxisRuler ruler)
     {
@@ -480,12 +399,9 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * Which numbers a painted ruler actually shows, read back off the image.
-     *
-     * Crude on purpose: the glyphs are not decoded, they are re-rendered one candidate at a time and
-     * matched by their ink. That is enough to say "15 appears somewhere on this ruler" without a font
-     * library, and it fails honestly if the drawing font ever changes - by finding nothing rather than
-     * by finding the wrong thing.
+     * Which numbers a painted ruler actually shows, read back off the image.  Crude on purpose: each candidate is
+     * re-rendered and matched by its ink, and if the drawing font ever changes it finds nothing rather than the wrong
+     * thing.
      */
     private static java.util.List<String> digitsIn(String ink)
     {
@@ -500,10 +416,8 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * Whether this number's glyphs appear in the painted ink.
-     *
-     * Rendered with the same font and size the ruler uses and slid across the image, which is the only
-     * way to ask the question without decoding what was drawn.
+     * Whether this number's glyphs appear in the painted ink, rendered with the ruler's own font and slid across the
+     * image.
      */
     private static boolean appears(String ink, String number)
     {
@@ -576,25 +490,13 @@ public class testTheDiagramPrintsItsCoordinates
         return true;
     }
     /**
-     * The diagram container tells Swing its children overlap, so a repaint goes through the parent
-     * (OB-172).
+     * The diagram container tells Swing its children overlap, so a repaint goes through the parent (OB-172).
+     * `isOptimizedDrawingEnabled` defaults to TRUE, promising that no two children overlap, so a dirty child is
+     * repainted DIRECTLY and a caption reaching into the gutter painted over the numbers with nothing to put them back.
+     * Asserted apart from the paint test above, which proves the ruler is drawn last WHEN the container paints; this
+     * proves the container is what paints.
      *
-     * Adam, on the third report of vanishing numbers: *"it must be the drawing order, because
-     * minimizing and then maximizing the window fixes it."*
-     *
-     * A full repaint goes through the container's `paint`, which redraws the ruler last and is right.
-     * An ordinary repaint did not: `isOptimizedDrawingEnabled` defaults to TRUE, promising Swing that
-     * no two children overlap, so a dirty child is repainted DIRECTLY without its parent - and a
-     * caption reaching into the gutter painted over the numbers with nothing to put them back.
-     *
-     * The promise was false. A `StationCaption` is 38 pixels tall and up to 55 wide against a
-     * 30-pixel cell, measured on Adam's own page. Overlapping is what this container is for.
-     *
-     * Asserted rather than left to the paint test above, because the two answer different questions:
-     * that one proves the ruler is drawn last WHEN the container paints, and this proves the container
-     * is what paints.
-     *
-     * MUTATION: removing the override - so the default true comes back - fails this.
+     * MUTATION: removing the override, so the default true comes back, fails this.
      */
     @Test
     public void testTheDiagramContainerSaysItsChildrenOverlap()

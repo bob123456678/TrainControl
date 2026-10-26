@@ -13,19 +13,15 @@ import javax.swing.Timer;
 import org.traincontrol.base.Route;
 
 /**
- * The turning mark beside every route that is running, on the route tab (FR-137).
+ * The turning mark beside every route that is running, on the route tab (FR-137): "in the route tab, show a spinner
+ * next to any route that is currently running, similar to the autonomy spinner."  The mark is Start's and Return Home's
+ * (`TrainControlUI.TurningArc`, FR-077, OB-309) on the same 60ms frame, asked by the list's renderer as
+ * `Route.isExecuting()`, the route's own flag, so it is true whoever started the route and gone when
+ * `MarklinRoute.execRoute` really ends.
  *
- * Adam: "in the route tab, show a spinner next to any route that is currently running, similar to the autonomy spinner.
- * 3.0.2 feature".  The mark is Start's and Return Home's (`TrainControlUI.TurningArc`, FR-077, OB-309), turned on the same
- * 60ms frame.  Whether a route has one is `Route.isExecuting()`, asked by the list's renderer as it paints the cell - the
- * route's own flag, so the mark is true for a route whoever started it (the play button, a click on the row, the diagram's
- * route tile, an s88 trigger, another route, autonomy) and gone when `MarklinRoute.execRoute` really ends, not some time
- * after the press.
- *
- * What this holds is only WHAT TO ANIMATE: the names `View.routeStarted` has announced and `View.routeFinished` has not.
- * The timer runs while any of them is still executing and stops the moment none is, so a window with nothing running
- * repaints nothing.  Every check of the routes, and every repaint, is on the event thread; the notices come from the route's
- * thread and are only posted.  Nothing here takes the railway's monitor: `Route.isExecuting` is the route's own.
+ * This holds only what to animate: the names `View.routeStarted` has announced and `View.routeFinished` has not.  The
+ * timer runs while any is executing.  Checks and repaints are on the event thread; the notices come from the route's
+ * thread and are only posted.  Nothing here takes the railway's monitor.
  */
 final class RouteRunningMarks
 {
@@ -75,11 +71,9 @@ final class RouteRunningMarks
     }
 
     /**
-     * A route has ended.  May be called from the route's thread.
-     *
-     * The name is not taken out here: `check` takes out every route that is no longer executing, on the event thread.  A
-     * route started again between this run's `stopExecuting` and this call is executing once more, and taking its name
-     * out would leave its mark drawn and still.
+     * A route has ended.  May be called from the route's thread.  The name is not taken out here: `check` does that on
+     * the event thread, since a route started again before this call is executing once more and its mark would be left
+     * still.
      *
      * @param name the route's name
      */

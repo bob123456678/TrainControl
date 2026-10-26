@@ -26,24 +26,18 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * The route list turns a mark beside every route that is running (FR-137).
+ * The route list turns a mark beside every route that is running (FR-137).  Adam: "in the route tab, show a spinner
+ * next to any route that is currently running, similar to the autonomy spinner.  3.0.2 feature".  The mark is the one
+ * Start and Return Home turn (FR-077, OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for
+ * a route whoever started it and off when the route really ends.
  *
- * Adam: "in the route tab, show a spinner next to any route that is currently running, similar to the autonomy spinner.
- * 3.0.2 feature".  The mark is the one Start and Return Home turn (FR-077, OB-309), drawn by the list's renderer from
- * `Route.isExecuting()`, so it is on for a route whoever started it - the play button, a click on the row, the diagram's
- * route tile, an s88 trigger, another route - and off when the route really ends.
- *
- * **How it is seen.**  The renderer is asked for a cell, sized and painted to a picture, and the strip left of the play
- * button is searched for the mark's gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between
- * its commands so that it runs long enough to look at.
+ * It is seen as the renderer paints a cell to a picture, the strip left of the play button searched for the mark's
+ * gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between its commands.  The list's other
+ * doors and the route editor's own are driven as the operator drives them (FR-136): Change Route ID, Delete Route,
+ * Enable and Disable Auto Execution, and the editor's Save and Cancel; each claim names the line it rests on.
  *
  * MUTATION: take the `routeStarted` notice out of `MarklinRoute.execRoute`, or the paint out of the renderer, and the
  * claims fail.
- *
- * And the list's other doors and the route editor's own, driven as the operator drives them (FR-136 Phase 6): Change
- * Route ID, Delete Route, Enable and Disable Auto Execution with the station's sensor then firing the route or not, and
- * the editor's Save over a route renamed, deleted or changed elsewhere, and its Cancel over typed work.  Each of those
- * claims names the line it rests on.
  *
  * @author Adam
  */
@@ -110,8 +104,6 @@ public class testTheRouteListShowsWhatRuns
     /**
      * A running route has the mark beside it, turning, and a route that is not running does not; when the route ends the
      * mark goes and the animation stops.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheMarkIsOnWhileARouteRunsAndOffWhenItEnds() throws Exception
@@ -154,8 +146,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * A route started by another route shows the mark too: the one that fires it can be over before the other has begun.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARouteStartedByAnotherRouteShowsTheMark() throws Exception
@@ -194,12 +184,10 @@ public class testTheRouteListShowsWhatRuns
      * (FR-140).  Adam: "when the power is off, clicking on routes in the route tab should open the editor rather than ask
      * for execution".
      *
-     * The click is posted rather than waited for, so that the question it asked before - a modal dialog - cannot hold
-     * the run; any dialog left open is closed at the end.
+     * The click is posted rather than waited for, so a modal dialog cannot hold the run; any dialog left open is
+     * closed at the end.
      *
      * MUTATION: take the power question out of `RouteListMouseClicked`, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testWithThePowerOffARowClickOpensTheRoutesEditor() throws Exception
@@ -297,15 +285,12 @@ public class testTheRouteListShowsWhatRuns
         }
     }
 
-    // THE ROUTE LIST AS THE USER DRIVES IT (FR-136 Phase 6): real clicks on the table, its right-click menu, Find Route
-    // and Bulk Enable, each answered through the real dialogs.  What each asserts is what came of it: the accessories
-    // switched and their commands on the wire, a route made, the tab and the cell shown.
+    // The route list as the user drives it (FR-136): real clicks on the table, its right-click menu, Find Route and
+    // Bulk Enable, each answered through the real dialogs.
 
     /**
      * A click on a route's play button runs it at once, with no question: its accessories switch and their commands
      * go to the railway (FR-043, MT-217).  Adam: "if play button is hit, route executes without confirming".
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testThePlayButtonRunsTheRouteWithoutAsking() throws Exception
@@ -339,8 +324,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * A click elsewhere on a route's row asks first, naming the route and its id; Yes runs it (FR-043).
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARowClickAsksAndYesRunsTheRoute() throws Exception
@@ -376,8 +359,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * The same question answered No runs nothing: no accessory switches and nothing goes to the railway.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testARowClickAnsweredNoSendsNothing() throws Exception
@@ -411,8 +392,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * The right-click menu's Execute runs the route, as the play button does.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testRightClickExecuteRunsTheRoute() throws Exception
@@ -454,8 +433,6 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The right-click menu's Duplicate Route makes a copy beside the route: a new name, an id of its own, the same
      * commands, and a cell of its own in the list.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testDuplicateRouteMakesACopyWithItsOwnId() throws Exception
@@ -487,8 +464,8 @@ public class testTheRouteListShowsWhatRuns
 
             assertTrue(waitFor(() -> cellOf(copy) != null, 30000), "the copy is not in the route list");
 
-            // ITS SYNC OVER BEFORE THE NEXT CLAIM: the sync re-reads the pages and deletes every sensor on none of them,
-            // so one left running deleted Enable Auto Execution's sensor while it was held made, and the route never ran
+            // Its sync over before the next claim: the sync deletes every sensor on no page, so one left running
+            // deleted Enable Auto Execution's sensor while it was held made
             assertTrue(waitFor(() -> !duplicating(), 60000), "Duplicate Route's worker was still going a minute on");
         }
         finally
@@ -516,8 +493,6 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Find Route, given part of a route's name that only it has, brings the route list forward and highlights that
      * route's cell (FR-044, MT-218).  Adam: "system jumps to the route page and highlights the matched cell".
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testFindRouteShowsTheRoute() throws Exception
@@ -566,8 +541,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * Find Route, given a name no route has, says so, naming what was typed.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testFindRouteSaysWhenNoRouteHasTheName() throws Exception
@@ -593,8 +566,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * Bulk Enable, given part of a name, arms exactly the routes with a sensor whose names contain it.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testBulkEnableArmsOnlyTheMatchingRoutes() throws Exception
@@ -647,8 +618,6 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).  Adam:
      * "let's support partial matching if there is no exact match as entered."
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testFindRouteAsksWhichWhenSeveralMatch() throws Exception
@@ -688,8 +657,6 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * Bulk Disable, given part of a name, disarms exactly the armed routes whose names contain it.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testBulkDisableDisarmsOnlyTheMatchingRoutes() throws Exception
@@ -742,8 +709,6 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The right-click menu's Edit Route opens the route's editor, titled with its name and id; a second Edit while it
      * is open says only one route can be edited at a time, and opens no second editor.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testEditRouteOpensOneEditorAtATime() throws Exception
@@ -804,8 +769,6 @@ public class testTheRouteListShowsWhatRuns
      * The right-click menu's Change Route ID, answered with an id no route has, gives the route that id.
      *
      * MUTATION: in `TrainControlUI.changeRouteId`, `if (newId != currentRoute.getId())` to `if (false)`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testChangeRouteIdGivesTheRouteTheTypedId() throws Exception
@@ -846,8 +809,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `TrainControlUI.changeRouteId`, `if (!this.model.changeRouteId(routeName, newId))` to
      * `if (!this.model.changeRouteId(routeName, newId) && false)`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testChangeRouteIdToATakenIdSaysSoAndKeepsTheId() throws Exception
@@ -888,8 +849,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `TrainControlUI.deleteRoute`, `this.model.deleteRouteAndItsCalls(route.getName())` to
      * `this.model.deleteRoute(route.getName())`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testDeleteRouteAnsweredYesRemovesItAndTheCommandsThatRunIt() throws Exception
@@ -934,8 +893,6 @@ public class testTheRouteListShowsWhatRuns
      * Delete Route, answered No, removes nothing.
      *
      * MUTATION: in `TrainControlUI.deleteRoute`, `if (dialogResult == JOptionPane.YES_OPTION)` to `if (true)`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testDeleteRouteAnsweredNoKeepsIt() throws Exception
@@ -974,8 +931,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
      * `writeRouteEnabledState(r, false);`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testEnableAutoExecutionLetsTheSensorFireTheRoute() throws Exception
@@ -1019,8 +974,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
      * `writeRouteEnabledState(r, true);`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testDisableAutoExecutionStopsTheSensorFiringTheRoute() throws Exception
@@ -1087,9 +1040,7 @@ public class testTheRouteListShowsWhatRuns
         return name;
     }
 
-    /**
-     * A route switching one accessory on, triggered by a sensor the station has reported clear, armed or not.
-     */
+    /** A route switching one accessory on, triggered by a sensor the station has reported clear, armed or not. */
     private static String aSensorRoute(String name, int sensor, boolean armed, int address) throws Exception
     {
         model.receiveMessage(support.Packets.s88(sensor, false));
@@ -1143,8 +1094,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `RouteEditorFrame.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
      * to `return typed;`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testSavingARouteRenamedElsewhereAsksAndYesKeepsItsNewName() throws Exception
@@ -1190,8 +1139,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `RouteEditorFrame.onSave`, after the `route.ui.confirmRouteRenamed` question, the `return;` under
      * `!= 0)` taken out.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testSavingARouteRenamedElsewhereAnsweredNoSavesNothing() throws Exception
@@ -1234,8 +1181,6 @@ public class testTheRouteListShowsWhatRuns
      * A route deleted elsewhere while its editor is open: Save asks whether to save it as a new route, and Yes does.
      *
      * MUTATION: in `RouteEditorFrame.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testSavingARouteDeletedElsewhereAsksAndYesAddsItBack() throws Exception
@@ -1276,8 +1221,6 @@ public class testTheRouteListShowsWhatRuns
      *
      * MUTATION: in `RouteEditorFrame.onSave`, `"changed".equals(moved) && JOptionPane.showOptionDialog(` to
      * `false && JOptionPane.showOptionDialog(`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testSavingARouteChangedElsewhereAnsweredNoKeepsTheOtherChange() throws Exception
@@ -1325,8 +1268,6 @@ public class testTheRouteListShowsWhatRuns
      * Cancel over a change typed into the editor asks first, and No keeps the editor and what was typed.
      *
      * MUTATION: in `RouteEditorFrame.closeIfThrowingNothingAway`, `if (answer == 0) dispose();` to `dispose();`.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testCancelOverATypedChangeAnsweredNoKeepsTheEditor() throws Exception
@@ -1487,8 +1428,8 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Brings the route list forward and sends a mouse event to a route's cell: on its play button, or on its name.
-     * Posted, so that a question the click asks cannot hold this thread.
+     * Brings the route list forward and sends a mouse event to a route's cell, posted so a question the click asks
+     * cannot hold this thread.
      */
     private static void clickTheRoute(String route, boolean onThePlayButton, final int kind, boolean popup)
         throws Exception
@@ -1563,14 +1504,12 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * A route switching these MM2 accessories on, at once, with each accessory switched off first so the route has
-     * something to change; and the power on, so that a row click asks rather than opening the editor.
+     * A route switching these MM2 accessories on at once, each switched off first so the route has something to change;
+     * the power on, so a row click asks rather than opening the editor.
      *
-     * One of this application's own, unlocked and with a local id, so Delete Route and the route editor's Save start no
-     * sync with the station (they sync only for a route the station carried, or a new one whose id it could have
-     * issued) - checked 2026-10-19 by logging every sync over this class: only Duplicate Route's ran (FR-136, issue 22).
-     * A claim moved onto a station's route would leave that sync running into the next claim, pruning its sensors, and
-     * has to wait it out as Duplicate Route's does.
+     * An application route, unlocked with a local id, so Delete Route and the editor's Save start no sync with the
+     * station (FR-136); a claim moved onto a station's route would leave that sync running into the next claim and has
+     * to wait it out as Duplicate Route's does.
      */
     private static String aQuickRoute(String name, int... addresses) throws Exception
     {
@@ -1643,9 +1582,7 @@ public class testTheRouteListShowsWhatRuns
         return false;
     }
 
-    /**
-     * A route of this many commands with half a second between them, put in the list.
-     */
+    /** A route of this many commands with half a second between them, put in the list. */
     private static String aSlowRoute(String name, int commands) throws Exception
     {
         List<RouteCommand> list = new ArrayList<>();
@@ -1690,9 +1627,7 @@ public class testTheRouteListShowsWhatRuns
         }
     }
 
-    /**
-     * The list's cell for a route, as the renderer paints it at the size a cell has.
-     */
+    /** The list's cell for a route, as the renderer paints it at the size a cell has. */
     private static BufferedImage pictureOf(final String route)
     {
         final BufferedImage[] picture = new BufferedImage[1];
@@ -1760,7 +1695,7 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Whether the strip of cell just left of the play button holds the mark's gray - which a short name never reaches.
+     * Whether the strip of cell just left of the play button holds the mark's gray, which a short name never reaches.
      */
     private static boolean markOf(String route)
     {
@@ -1799,8 +1734,8 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Whether the route exists and is armed as asked.  Bulk Enable and Bulk Disable delete a route and add it back, so for
-     * a moment it is not there at all: that moment answers false rather than throwing.
+     * Whether the route exists and is armed as asked; Bulk Enable and Disable delete and re-add a route, so for a
+     * moment that is false, not a throw.
      */
     private static boolean armed(String name, boolean enabled)
     {

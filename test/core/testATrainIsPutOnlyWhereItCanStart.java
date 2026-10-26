@@ -24,23 +24,17 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A train is stood on a copy of its square facing the way the setup records, and among those on one it can be started
  * from.
  *
- * **The copy IS the direction.**  Nothing else in the running layout says which way a train will move: the runtime never
- * commands an absolute direction, it only reverses at a turning square.  So a train stood on a copy facing the other way
- * from the way it really points is dispatched along a route locked one way while its decoder drives it the other, over
- * track nothing reserved.  The first repair did exactly that where only a copy trains may not arrive at faces the
- * recorded way - the build, the throttle's direction-follow and the Facing menu all stood the train on a copy facing the
- * other way, and the log said the direction had been followed.  Where no copy trains may arrive at faces the recorded
- * way, the train now stands on one that faces it anyway: autonomy will not start it there, and says so - that it faces
- * the way trains may not arrive at that square, and what to do: turn it round, or open that side.
+ * **The copy IS the direction.**  The runtime never commands an absolute direction, it only reverses at a turning
+ * square, so a train stood on a copy facing the other way from the way it really points is dispatched along a route
+ * locked one way while its decoder drives it the other, over track nothing reserved.  Where no copy trains may arrive
+ * at faces the recorded way, the train stands on one that faces it anyway: autonomy will not start it there, and says
+ * so - that it faces the way trains may not arrive at that square, and what to do: turn it round, or open that side.
  *
- * The original case stands: among the copies facing the recorded way, one trains may arrive at is chosen first.
- *
- * Adam, 2026-09-23, on OB-270: *"we shouldn't allow an impossible facing to be
- * saved."*  That was built into the paste.  But a facing only a barred copy holds could still reach the setup - through
- * the editor's Place door and the Place Locomotive dialog, or from any setup saved before - and the build, the Facing
- * door and the idle drain after a turn put the train on "the copy that faces X" without asking whether trains may arrive
- * at it, even where one that faces X and may be arrived at existed.  That preference is what still stands; the train is
- * never turned round to get it.
+ * Among the copies facing the recorded way, one trains may arrive at is chosen first, and the train is never turned
+ * round to get it.  Adam, on OB-270: *"we shouldn't allow an impossible facing to be saved."*  That was built into the
+ * paste, but a facing only a barred copy holds can still reach the setup (the editor's Place door, the Place Locomotive
+ * dialog, an older setup), and the build, the Facing door and the idle drain after a turn must prefer a copy trains may
+ * arrive at.
  *
  * **On the frozen railway, as he has it**: BottomMainA with arrivals from the east barred, so its westbound copy is no
  * station; BottomMainPost, which trains may turn at and which has arrivals from the north barred.
@@ -90,17 +84,15 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * The diagram's right-click **Place** keeps the train's heading as the other three placement doors do: over every
      * copy it could leave by, one trains may not arrive at included, onto the copy the paste would take - the plain one
-     * before its turning twin - and the same copy every time (Adam, 2026-09-24, OB-296: *"Yes, keep the train's
-     * heading."*).
+     * before its turning twin - and the same copy every time (Adam, OB-296: *"Yes, keep the train's heading."*).
      *
-     * On his railway BottomMainA takes no arrivals from the east, so its copy facing west is no station.  The paste, the
-     * dialog and the editor's Place stand a train facing west there on that copy (OB-284: *"for barred arrival
+     * On his railway BottomMainA takes no arrivals from the east, so its copy facing west is no station.  The paste,
+     * the dialog and the editor's Place stand a train facing west there on that copy (OB-284: *"for barred arrival
      * directions, keep the direction"*).  This door chose only among station copies, and turned it round.
      *
-     * MUTATION: choose among the station copies only, take the first copy facing the way rather than the paste's, ignore
-     * the heading at the door, or move with the form of `moveLocomotive` that refuses a barred copy - and this fails.
-     *
-     * @throws Exception from the build, the reflection or the files
+     * MUTATION: choose among the station copies only, take the first copy facing the way rather than the paste's,
+     * ignore the heading at the door, or move with the form of `moveLocomotive` that refuses a barred copy - and this
+     * fails.
      */
     @Test
     public void testTheRightClickPlaceKeepsTheTrainsHeading() throws Exception
@@ -222,11 +214,7 @@ public class testATrainIsPutOnlyWhereItCanStart
             + " (ADU-B1, ADU-C2)");
     }
 
-    /**
-     * A facing only a copy trains may not arrive at holds still stands the train on a copy facing that way.
-     *
-     * @throws Exception from the build
-     */
+    /** A facing only a copy trains may not arrive at holds still stands the train on a copy facing that way. */
     @Test
     public void testTheBuildKeepsTheFacingTheSetupRecords() throws Exception
     {
@@ -259,11 +247,9 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * A train placed with no facing recorded is stood on a copy it can be started from.
      *
-     * The build returned copy zero when the setup held no facing, and copies are emitted N, E, S, W - so at BottomMainA
-     * and BottomMainPost copy zero is the one trains may not arrive at.  A door that places a train and records no facing
-     * (several copies it could stand on, and nothing saying which way it points) is ordinary.
-     *
-     * @throws Exception from the build
+     * The build returned copy zero when the setup held no facing, and copies are emitted N, E, S, W, so at BottomMainA
+     * and BottomMainPost copy zero is the one trains may not arrive at.  A door that places a train and records no
+     * facing is ordinary.
      */
     @Test
     public void testATrainWithNoFacingIsPutWhereItCanStart() throws Exception
@@ -291,11 +277,9 @@ public class testATrainIsPutOnlyWhereItCanStart
      * A train reversed on the throttle at a square whose other facing only a barred copy holds is moved onto a copy
      * facing its new way.
      *
-     * Adam: *"a locomotive direction command WILL update the direction on the graph if it does not match"*.  The flip is a
-     * physical fact - the decoder has already reversed - so the copy has to follow it, whether or not autonomy can start
-     * the train from there.
-     *
-     * @throws Exception from the build
+     * Adam: *"a locomotive direction command WILL update the direction on the graph if it does not match"*.  The flip
+     * is a physical fact - the decoder has already reversed - so the copy has to follow it, whether or not autonomy can
+     * start the train from there.
      */
     @Test
     public void testAReversalOnTheThrottleIsFollowed() throws Exception
@@ -330,11 +314,7 @@ public class testATrainIsPutOnlyWhereItCanStart
         assertTrue(eastbound != standing, "precondition: the train did not move at all");
     }
 
-    /**
-     * And the Facing menu, which is how the operator tells the record which way the train really points.
-     *
-     * @throws Exception from the build
-     */
+    /** And the Facing menu, which is how the operator tells the record which way the train really points. */
     @Test
     public void testTheFacingMenuMovesTheTrainOntoACopyFacingThatWay() throws Exception
     {
@@ -361,11 +341,7 @@ public class testATrainIsPutOnlyWhereItCanStart
             + session.facingsFor(mainA).get(standing.getName()) + " in the model (GUI2-A1)");
     }
 
-    /**
-     * The Facing door moves a train onto a copy facing that way, one it can be started from where there is one.
-     *
-     * @throws Exception from the build
-     */
+    /** The Facing door moves a train onto a copy facing that way, one it can be started from where there is one. */
     @Test
     public void testTheFacingDoorNeverMovesATrainOntoACopyItCannotStartFrom() throws Exception
     {
@@ -448,14 +424,11 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * The throttle's direction-follow flips the way the train faces ON THE RAILWAY, whatever the setup last said.
      *
-     * `flipFacing` took "the other one" of the SETUP's facing for the square.  The setup names the heading a train set
-     * off with until a capture writes the arrival back, so after a run it is absent - and the reversal was dropped - or
-     * another train's - and the flip went the wrong way while the log said it was followed.  Either way the train was
-     * left on the copy facing the way its decoder no longer drives.
+     * `flipFacing` takes "the other one" of the RAILWAY's facing, not the SETUP's: the setup names the heading a train
+     * set off with until a capture writes the arrival back, so after a run it is absent (the reversal was dropped) or
+     * another train's (the flip went the wrong way while the log said it was followed).
      *
      * MUTATION: read the setup's facing first again and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAReversalIsFollowedWhateverTheSetupLastSaid() throws Exception
@@ -493,15 +466,11 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * A train the railway has on a copy trains may not arrive at is put back there after a rebuild.
      *
-     * After a run the setup still names the square a train set off from, and a rebuild - setting a home or a caption from
-     * the diagram asks for one - regenerates every placement from it; `putTheTrainsBack` then stands each train back
-     * where the railway had it.  It did that through `moveLocomotive`, which refuses a copy that is no station, so a
-     * train reversed onto BottomMainA's westbound copy was left where the setup had it - in the model somewhere it is
-     * not, and free to be dispatched from there.
+     * After a run the setup still names the square a train set off from, and a rebuild (setting a home or a caption
+     * from the diagram asks for one) regenerates every placement from it; `putTheTrainsBack` then stands each train
+     * back where the railway had it, through a move that must not refuse a copy that is no station.
      *
      * MUTATION: put the train back through the placement door's refusal again and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testATrainPutBackStandsWhereItStood() throws Exception
@@ -544,16 +513,14 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * A train put back after a rebuild goes onto a copy it can start from that faces its way, where the square has one.
      *
-     * The put-back may stand a train on a copy of a station trains may not arrive at - for a train that really
-     * faces a way only such a copy holds.  At a square trains may turn at, a turning copy facing the same way may be one
-     * trains may arrive at: BottomMainPost, with arrivals from the north barred, has its north-arrival copy and the
-     * south-arrival turning copy both facing south.  A train the railway had on the barred one - it stood there before the
-     * side was barred - was put back onto it, where autonomy never starts it and the sentence tells the operator to turn
-     * a train that already faces a way it can start.
+     * The put-back may stand a train on a copy of a station trains may not arrive at, for a train that really faces a
+     * way only such a copy holds.  At a square trains may turn at, a turning copy facing the same way may be one trains
+     * may arrive at: BottomMainPost, with arrivals from the north barred, has its north-arrival copy and the
+     * south-arrival turning copy both facing south.  A train the railway had on the barred one must go back onto the
+     * other, or autonomy never starts it and the sentence tells the operator to turn a train that already faces a way
+     * it can start.
      *
      * MUTATION: put the train back on the recorded copy whatever its twin, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAPutBackTakesAStartableCopyFacingItsWay() throws Exception
@@ -592,8 +559,8 @@ public class testATrainIsPutOnlyWhereItCanStart
         barred.setLocomotive(model.getLocByName(PROBE));
 
         // WHAT A RUN LEAVES: the setup names another square, so the build does not stand the train at BottomMainPost
-        // and only the put-back can.  With the setup saying BottomMainPost, the build's own choice stood it on the twin
-        // whatever the put-back did, and the claim could not fail.
+        // and only the put-back can; the setup saying BottomMainPost would let the build choose the twin, and the claim
+        // not fail.
         session.placeLocomotive(square(session, "BottomMainA"), PROBE);
 
         java.util.Map<String, String[]> where = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(running);
@@ -619,12 +586,10 @@ public class testATrainIsPutOnlyWhereItCanStart
      * A home set for a train standing on a copy trains may not arrive at saves no facing no train can come home in.
      *
      * Adam: *"we shouldn't allow an impossible facing to be saved."*  The facing of the train standing there was saved
-     * unfiltered, on the premise that a copy a train stands on is one it may arrive at - which stopped being so when a
-     * train facing the barred way was stood on the barred copy.
+     * unfiltered, assuming a copy a train stands on is one it may arrive at: not so once a train facing the barred way
+     * is stood on the barred copy.
      *
      * MUTATION: save the railway's facing unfiltered again and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAHomeIsNotSetFacingAWayNoTrainArrives() throws Exception
@@ -661,14 +626,10 @@ public class testATrainIsPutOnlyWhereItCanStart
      * A train facing the way trains may not arrive at a station is told so, by the square's name, with what to do - and
      * nothing refuses its start by hand.
      *
-     * The sentence said "It is standing on BottomMainA (westbound), which is not a station": the copy's name, a station
-     * called not one, no remedy - and the editor's Why not Moving? gave it on Manual too, where a route picked by hand
-     * may start there.  Return Home said "place it on a station first", and a paste onto the same square turns the
-     * train round.
+     * The sentence names the square, not the copy, and gives a remedy; the editor's Why not Moving? does not give it on
+     * Manual, where a route picked by hand may start there.
      *
      * MUTATION: name the copy, or refuse the start by hand, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testATrainFacingABarredWayIsToldWhy() throws Exception
@@ -750,8 +711,6 @@ public class testATrainIsPutOnlyWhereItCanStart
      * facing south is stood on the one autonomy can start.
      *
      * MUTATION: let `placementCopy` take the first copy facing that way and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testTheBuildPrefersACopyItCanStartFrom() throws Exception
@@ -773,18 +732,15 @@ public class testATrainIsPutOnlyWhereItCanStart
             + standing.getName() + " - no station - where a copy facing south that trains may arrive at exists");
     }
 
-    /** Stands the train on a copy of the square facing this way that it can start from, and says which. */
     /**
      * At a square every train must turn round at, a train facing the barred way is told to drive it off by hand or turn
-     * it round - not to open the side (Adam 2026-09-24: *"offer the other two remedies only"*).
+     * it round - not to open the side (Adam: *"offer the other two remedies only"*).
      *
      * A terminus reached from two sides is an error (MT-361), whose own remedy is to close one of them - so "open that
      * side" there sends the operator from one refusal into a loop.  BottomMainA made a compulsory turn, its east side
      * still barred: the train turned to face east stands on the barred turning copy.
      *
      * MUTATION: offer the three remedies whatever the square, and this fails.
-     *
-     * @throws Exception from the build
      */
     @Test
     public void testAtACompulsoryTurnOpeningTheSideIsNotOffered() throws Exception
@@ -830,17 +786,15 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * A placement keeps a heading a train can leave by, and turns only one it cannot (OB-284).
      *
-     * Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones.  for barred arrival
-     * directions, keep the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  At
-     * BottomMainA, arrivals from the east barred, a train facing west stands on a copy trains may not arrive at - and can
-     * leave by the west, so a paste, the editor's Place and the Place Locomotive dialog keep it facing west.  Made
-     * one-way eastward on its approach, the west copy has no way out: then the placement turns the train east, a way
-     * trains may arrive in.
+     * Adam: *"this should check for barred departure directions, not arrival ones.  for barred arrival directions, keep
+     * the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  At BottomMainA,
+     * arrivals from the east barred, a train facing west stands on a copy trains may not arrive at and can leave by the
+     * west, so a paste, the editor's Place and the Place Locomotive dialog keep it facing west.  Made one-way eastward
+     * on its approach, the west copy has no way out: then the placement turns the train east, a way trains may arrive
+     * in.
      *
-     * MUTATION: keep only headings trains may arrive in, as before, and the first half fails; keep any heading, and the
-     * second does.
-     *
-     * @throws Exception from the build
+     * MUTATION: keep only headings trains may arrive in, and the first half fails; keep any heading, and the second
+     * does.
      */
     @Test
     public void testAPlacementKeepsAHeadingItCanLeaveBy() throws Exception

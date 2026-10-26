@@ -24,24 +24,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The paths a real, hand-authored railway offers, pinned.
  *
- * Everything else about the graph is tested against fixtures built for the test - three tiles and a
- * switch, arranged to make one point.  Those catch what they were written for and nothing else, and the
- * faults this project keeps finding are the ones nobody thought to build a fixture for: a passing loop
- * that emits two edges of the same name, a station reachable from one end and not the other, a square
- * split into copies that then disagree about where they are.
+ * Everything else about the graph is tested against fixtures built for the test, which catch what they were written for
+ * and nothing else, and the faults this project keeps finding are the ones nobody built a fixture for: a passing loop
+ * that emits two edges of the same name, a station reachable from one end and not the other, a square split into copies
+ * that then disagree about where they are.
  *
- * So this suite uses ground truth instead of a fixture.  test/autonomy.json is the operator's own
- * v2.8.1 configuration - 91 points, 121 edges, 44 stations, written by hand over a long time against a
- * railway that exists.  Which stations can reach which is a FACT about it, independent of how any of
- * this code works, and it is checked in beside the file it describes.
+ * So this suite uses ground truth: test/autonomy.json is the operator's own v2.8.1 configuration (91 points, 121 edges,
+ * 44 stations), written by hand over a long time against a railway that exists.  Which stations can reach which is a
+ * FACT about it, independent of how any of this code works, checked in beside the file it describes.
  *
- * What this catches: any change that quietly adds or removes a route.  A path-finder that starts
- * refusing a move it used to allow, or allowing one it used to refuse, changes this file - and a
- * changed line here is either a bug or a deliberate decision somebody has to write down.
- *
- * What it does not catch: whether the ANSWERS are right.  They are what this code said on the day they
- * were pinned; the value is that they stop changing by accident.  A wrong answer here is a wrong answer
- * that has to be argued with rather than one that slips through.
+ * It catches any change that quietly adds or removes a route; a changed line here is either a bug or a deliberate
+ * decision somebody has to write down.  It does not catch whether the ANSWERS are right: they are what this code said
+ * on the day they were pinned, and the value is that they stop changing by accident.
  *
  * @author Adam
  */
@@ -52,9 +46,8 @@ public class testAutonomyGroundTruth
     private static String config;
 
     /**
-     * Where the expected answer lives.  Beside the configuration it describes, because the two are only
-     * meaningful together - regenerating one without the other is how a pinned file stops being ground
-     * truth and becomes a copy of the bug.
+     * Where the expected answer lives, beside the configuration it describes: regenerating one without the other is how
+     * a pinned file stops being ground truth and becomes a copy of the bug.
      */
     private static final String EXPECTED = "test/autonomy_formats/v2_8_1-station-paths.txt";
 
@@ -64,12 +57,9 @@ public class testAutonomyGroundTruth
         model = support.TestStation.simulatedInDebug();
         model.stop();
 
-        // Resolved as a classpath resource, not a CWD-relative File.  test/autonomy.json used to be
-        // opened with new File("test/autonomy.json"), which only exists when the process is launched
-        // from the project root - anywhere else, this threw a SkipException and the whole class (1,399
-        // pinned station pairs) went quietly green with nothing checked.  testAutonomySimulationSanity's
-        // loadSanityFixture() resolves its fixture the same classpath-resource way; this follows suit,
-        // and a missing resource is now a hard, loud failure instead of a silent skip.
+        // Resolved as a classpath resource, not a CWD-relative File, which only exists when the process is launched
+        // from the project root; anywhere else the class (1,399 pinned station pairs) would skip and go quietly green
+        // with nothing checked.  A missing resource is a hard, loud failure.
         URL resource = testAutonomyGroundTruth.class.getResource("/autonomy.json");
 
         assertNotNull(resource,
@@ -84,9 +74,7 @@ public class testAutonomyGroundTruth
         }
     }
 
-    /**
-     * Every station pair the graph can route between, exactly as it could when this was pinned.
-     */
+    /** Every station pair the graph can route between, exactly as it could when this was pinned. */
     @Test
     public void testTheStationPathsHaveNotChanged() throws Exception
     {
@@ -124,9 +112,8 @@ public class testAutonomyGroundTruth
     /**
      * The count on its own, so a wholesale collapse is reported as one line rather than as hundreds.
      *
-     * A graph that loses its edges fails the test above with an unreadable list; this one says what
-     * happened.  Both are wanted: the difference tells you which route, the count tells you it was not
-     * a route, it was the railway.
+     * The difference above tells you which route; the count tells you it was the railway, and is reported as one line
+     * rather than as hundreds when the graph loses its edges.
      */
     @Test
     public void testTheRailwayStillHasItsStationsAndEdges() throws Exception
@@ -147,9 +134,7 @@ public class testAutonomyGroundTruth
         assertEquals(layout.getPoints().size(), 91, "the configuration describes 91 points");
     }
 
-    /**
-     * Loads the configuration, refusing to let anything reach the track.
-     */
+    /** Loads the configuration, refusing to let anything reach the track. */
     private static Layout load() throws Exception
     {
         model.parseAuto(config);
@@ -171,10 +156,9 @@ public class testAutonomyGroundTruth
     /**
      * Which station can reach which, as sorted "from -> to" lines.
      *
-     * bfs rather than getPossiblePaths, deliberately: getPossiblePaths asks what a particular
-     * LOCOMOTIVE may do from where it is standing, which brings in occupancy, exclusions and lengths.
-     * This is a question about the railway rather than about a train, and it has to stay answerable
-     * when nothing is placed.
+     * bfs rather than getPossiblePaths, deliberately: that asks what a particular LOCOMOTIVE may do from where it is
+     * standing, which brings in occupancy, exclusions and lengths, and this question is about the railway and must stay
+     * answerable when nothing is placed.
      */
     private static List<String> reachableStationPairs() throws Exception
     {

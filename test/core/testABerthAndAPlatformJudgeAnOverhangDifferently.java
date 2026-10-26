@@ -20,44 +20,21 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A train may overhang the points at a station, and may not at a parking berth (Adam, 2026-09-12).
+ * A train may overhang the points at a station, and may not at a parking berth (Adam: "we need a clear rule to
+ * govern that this is OK, or simply make a rule that parking berths cant block any other edges, but not make that
+ * check for active stations").
  *
- * *"it would not fit just past 14,12. 14,12 would be blocked and the 6 units would be between
- * bottommainapre and bottommaina. so we need a clear rule to govern that this is OK, or simply make a
- * rule that parking berths cant block any other edges, but not make that check for active stations."*
+ * At a station autonomy may choose, a train is PASSING: it fits if it fits past the last switch, as before, or
+ * within its own approach.  At a parking berth, a train is STAYING, and a berth is not worth a road: it must foul no
+ * track that is not a way in or out of that square.  The failure this class exists to catch is the relaxation
+ * leaking: a rule that stopped asking WHICH KIND OF SQUARE it is standing at would admit the berth case along with
+ * the platform one, so the berth claims are the mutation target.
  *
- * **The two halves, and why the pair of them is the rule rather than either one.**
- *
- * At a station autonomy may choose, a train is PASSING: it fits if it fits past the last switch, as
- * before, **or** within its own approach. The second is the relaxation - on his example the approach
- * measured 6 with 3 of it past the switch, so a six-unit train stood across the points, and he ruled
- * that acceptable because the train moves on.
- *
- * At a parking berth, a train is STAYING, and a berth is not worth a road: it must foul no track that
- * is not a way in or out of that square. A train too long for TunnelLongPark lies back over
- * `BottomMainAPre -> RampDown` and `-> BottomCrossover`, which are the only roads to the lower level,
- * and that is what the berth half refuses.
- *
- * **The failure this class exists to catch is the relaxation leaking.** Both halves are about a train
- * standing on points, and a rule that stopped asking WHICH KIND OF SQUARE it is standing at would admit
- * the berth case along with the platform one. So the berth claims are not decoration; they are the
- * mutation target.
- *
- * **ON HIS MEASURED RAILWAY (refrozen 2026-09-23 from `e36df979`), not on figures set here.** Until
- * then the snapshot measured almost nothing, so this class wrote Adam's hypothetical into it - *"i didnt
- * update any layout files with this info, but this should be the example motivating the design"* - 3
- * either side of the switch at 14,12.  His own measurements do not have that shape there (the eastbound
- * approach to BottomMainA measures 5 with 4 past the switch, and BottomMainA holds 5, so no train the
- * station takes stands across those points).  They have it at Tunnel: the approach from TunnelPre
- * measures 4 with 2 past the switch, so a three- or four-unit train stands across the points of a
- * platform that holds five.  That is the platform this class asks about now, and the berth is still
- * TunnelLongPark, which measures 3 past its switch on an approach of 7.
- *
- * **One setting of his is taken off, and it is the berth's capacity.**  He gave every berth a maximum
- * equal to the room past its switch, so on his railway the capacity rule refuses an overhanging train at
- * a berth before the berth rule is asked - and a claim that the relaxation has not leaked would pass
- * with the leak in place.  The capacity rule is `Point.validateTrainLength`, asked first in
- * `whyTooLongForThisRoute`, and it is tested where it is the subject.
+ * The figures are his measured railway (the snapshot refrozen from `e36df979`), not figures set here.  The platform
+ * is Tunnel: the approach from TunnelPre measures 4 with 2 past the switch, at a platform that holds five.  The berth
+ * is TunnelLongPark, 3 past its switch on an approach of 7.  One setting of his is taken off, the berth's capacity:
+ * he gave every berth a maximum equal to the room past its switch, so `Point.validateTrainLength` (asked first in
+ * `whyTooLongForThisRoute`, and tested where it is the subject) refuses an overhang before the berth rule is asked.
  *
  * MUTATION: drop the `isAutoDestination` test so the relaxation applies everywhere, and the berth claim
  * at one unit past the room fails. Remove the relaxation and the platform claim at the approach's length
@@ -102,9 +79,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         session.open(support.LayoutSandbox.wiredPages(model));
 
-        // HIS MEASUREMENTS, AND NOT THE BERTH'S CAPACITY.  He set it equal to the room past the switch,
-        // so it refuses every overhang there first and the berth rule is never reached - see the class
-        // comment.  Nothing else is changed.
+        // HIS MEASUREMENTS, AND NOT THE BERTH'S CAPACITY: the capacity refuses every overhang first, so the berth rule
+        // would never be reached.  Nothing else is changed.
         assertEquals(session.getStationIndex().nameOf(THE_BERTH), "TunnelLongPark",
             "the square this class clears the capacity of is no longer TunnelLongPark");
 
@@ -122,9 +98,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             return;
         }
 
-        // NAMED, not searched for.  Several runs reach TunnelLongPark and BottomMainA, and only one of
-        // each is the piece of railway this class is about - picking "the longest" once got an
-        // unmeasured one and the class then asserted things about a different approach.
+        // NAMED, not searched for: several runs reach TunnelLongPark and BottomMainA, and only one of each is the piece
+        // of railway this class is about.
         toThePlatform = approachFrom("TunnelPre", "Tunnel (southbound)");
         toTheBerth = approachFrom("BottomMainA (westbound)", "TunnelLongPark");
 
@@ -157,14 +132,10 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * The geometry this class rests on, stated rather than hoped for.
-     *
-     * Every claim below is about a particular shape of railway - a platform approach measuring 4 with 2
-     * of it past the points, at a platform that holds more than the approach, and a berth with 3 past
-     * its switch on a longer approach - and if the snapshot stops producing that shape, the claims
-     * would pass or fail for reasons that have nothing to do with the rule.
-     *
-     * @throws Exception from the railway
+     * The geometry this class rests on, stated rather than hoped for: a platform approach measuring 4 with 2 past the
+     * points at a platform that holds more than the approach, and a berth with 3 past its switch on a longer approach.
+     * If the snapshot stops producing that shape the claims pass or fail for reasons that have nothing to do with the
+     * rule.
      */
     @Test
     public void testTheFixtureIsTheShapeTheRuleIsAbout() throws Exception
@@ -184,8 +155,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             + " and his measurement is 2 - a train longer than that has to stand across the points for"
             + " any of this to be the case he described");
 
-        // AND THE PLATFORM HOLDS MORE THAN ITS APPROACH, so the claim one unit past the approach is
-        // answered by the route bound rather than by the capacity he typed on the platform.
+        // AND THE PLATFORM HOLDS MORE THAN ITS APPROACH, so the claim one unit past the approach is answered by the
+        // route bound rather than by the capacity he typed on the platform.
         assertTrue(toThePlatform.getEnd().getMaxTrainLength() == null
             || toThePlatform.getEnd().getMaxTrainLength() == 0
             || toThePlatform.getEnd().getMaxTrainLength() > toThePlatform.getLength(),
@@ -215,9 +186,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             + " is asked and every berth claim below passes with the relaxation leaked");
     }
 
-    /**
-     * The class's train at the given length, for asking the capacity rule on its own.
-     */
+    /** The class's train at the given length, for asking the capacity rule on its own. */
     private static Locomotive trainOf(int units)
     {
         train.setTrainLength(units);
@@ -225,11 +194,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         return train;
     }
 
-    /**
-     * The claim: at a station autonomy may choose, a train that fits within its approach is allowed.
-     *
-     * @throws Exception from the railway
-     */
+    /** The claim: at a station autonomy may choose, a train that fits within its approach is allowed. */
     @Test
     public void testAPlatformTakesATrainAsLongAsItsWholeApproach() throws Exception
     {
@@ -247,12 +212,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * And it is bounded: a train longer than the measured route in - here the approach alone - is still refused.
-     *
-     * Without this the relaxation is "no check at all at a station", which would let a fifty-unit train
-     * stop at a platform and lie back over track nothing has measured.
-     *
-     * @throws Exception from the railway
+     * And it is bounded: a train longer than the measured route in (here the approach alone) is still refused; without
+     * this the relaxation is "no check at all at a station".
      */
     @Test
     public void testAPlatformStillRefusesATrainLongerThanItsApproach() throws Exception
@@ -267,11 +228,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             + " length may stop at a station");
     }
 
-    /**
-     * The berth half, and the mutation target: a parking berth does NOT get the relaxation.
-     *
-     * @throws Exception from the railway
-     */
+    /** The berth half, and the mutation target: a parking berth does NOT get the relaxation. */
     @Test
     public void testAParkingBerthStillRefusesAnOverhang() throws Exception
     {
@@ -287,11 +244,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             + " stations\" - the relaxation has leaked from the platforms to the berths");
     }
 
-    /**
-     * And the berth is not simply refusing everything.
-     *
-     * @throws Exception from the railway
-     */
+    /** And the berth is not simply refusing everything. */
     @Test
     public void testAParkingBerthStillTakesATrainThatFits() throws Exception
     {
@@ -307,14 +260,9 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * The berth rule asked on its own, so it is not the room rule answering for it.
-     *
-     * On this railway the two agree at TunnelLongPark - a train that fits past the switch also fouls
-     * nothing - so the claim above would pass with the berth check removed entirely. This asks the new
-     * rule directly: one unit longer than the berth, the train lies back over somebody else's road, and
-     * at the berth's own room it lies over nothing at all.
-     *
-     * @throws Exception from the railway
+     * The berth rule asked on its own, so it is not the room rule answering for it: at TunnelLongPark a train that fits
+     * past the switch also fouls nothing, so the claim above would pass with the berth check removed.  One unit longer
+     * than the berth, the train lies back over somebody else's road; at the berth's own room, over nothing.
      */
     @Test
     public void testTheBerthRuleNamesTheRoadItWouldFoul() throws Exception
@@ -341,47 +289,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * A berth whose approach nobody has measured refuses nothing.
-     *
-     * **The rule has to be able to say "I do not know"**.  The claim walk spends the train's
-     * length backwards over the approach's places and stops when it runs out; where every place
-     * measures zero it never runs out, so it claims the WHOLE approach and refuses the berth against
-     * any road sharing any part of it.  That refusal is invented: nothing has been measured, so
-     * nothing is known about whether the train would foul anything.
-     *
-     * It is the room rule's own answer at the other end of the same question - `walkStandingTrains`
-     * claims nothing on an unmeasured segment and declines to judge - and Adam's, twice: *"a stretch
-     * is only indeterminate when ALL of it is zero"* (MT-364), and the standing preference this
-     * codebase records as `guards-need-a-way-past`, that he would rather have no check than an
-     * over-strict one.
-     *
-     * **Measured on the frozen snapshot before this was written: all 41 non-station approaches are
-     * wholly unmeasured, and 26 of them refuse a three-unit train.**  His railway has three measured
-     * tiles on it, so in practice every train with a length was refused every parking berth, by hand
-     * and through Return Home.
-     *
-     * Partial measurement is still judged, which is the other half of the MT-364 ruling and is what
-     * the claim below it asserts: one measured place is enough to know something, and the walk uses
-     * what it has.
-     *
-     * @throws Exception from the railway
-     */
-    /**
-     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why.
-     *
-     * **This is the ordinary intermediate state of Mass Assign Lengths.**  The ruling gives every switch
-     * on a page one length in a step of its own, and MT-455 tells the operator to reach that prompt by
-     * skipping a piece - so switches measured with pieces still at zero is not an odd state, it is the state
-     * the tool leaves between sittings.  A berth behind such a piece then has an approach where `anyMeasured`
-     * is true on the switch alone: the walk claims every place, spends nothing on the unmeasured ones, and
-     * refuses the berth to a one-unit train as readily as to a nine-unit one.
-     *
-     * Ruled behavior on both sides and the refusing direction, so this pins it rather than changing it -
-     * Adam, on the half-measured case: *"we want clear warnings to the user if so, then it's fine."*  What
-     * was missing is that the refusal named a road and a train length and never the unmeasured piece, so the
-     * operator had nothing pointing at what to measure.
-     *
-     * @throws Exception from the fixture
+     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why.  This is the
+     * ordinary intermediate state of Mass Assign Lengths (MT-455 has the operator skip a piece): `anyMeasured` is true
+     * on the switch alone, so the walk claims every place and refuses the berth to a one-unit train as readily as to a
+     * nine-unit one.  Ruled behavior (Adam: "we want clear warnings to the user if so, then it's fine"), so this pins
+     * it; what was missing is that the refusal never named the unmeasured piece.
      */
     @Test
     public void testAMeasuredSquareBehindAnUnmeasuredPieceSaysWhyItRefuses() throws Exception
@@ -393,7 +305,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         List<Integer> was = new ArrayList<>(approach.getPlaceLengths());
 
         // AND NOTHING ON IT ANSWERED 0 (FR-136): an answered square is not counted as missing, and which of his he has
-        // answered is his working state.  This claim is about squares nobody has measured.
+        // answered is his working state.
         List<String> answered = new ArrayList<>();
 
         for (String id : approach.getPlaceIds())
@@ -455,6 +367,13 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         }
     }
 
+    /**
+     * A berth whose approach nobody has measured refuses nothing: the rule has to be able to say "I do not know".
+     * Where every place measures zero the claim walk never runs out and claims the WHOLE approach, an invented refusal
+     * (MT-364: "a stretch is only indeterminate when ALL of it is zero"; Adam would rather have no check than an
+     * over-strict one).  On the frozen snapshot all 41 non-station approaches are wholly unmeasured and 26 refused a
+     * three-unit train.  Partial measurement is still judged, which the claim above asserts.
+     */
     @Test
     public void testAnUnmeasuredApproachRefusesNothing() throws Exception
     {
@@ -472,8 +391,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         try
         {
-            // NOBODY HAS MEASURED THIS APPROACH, which is the state Adam's own railway was in for all
-            // 41 of its non-station approaches until he measured it, and every railway is in first.
+            // NOBODY HAS MEASURED THIS APPROACH, the state every railway is in first.
             List<Integer> none = new ArrayList<>();
 
             for (int i = 0; i < was.size(); i++) none.add(0);
@@ -491,16 +409,10 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
                 + " answer the room rule gives at the other end of the same question. Said: "
                 + Layout.whyABerthCannotHoldIt(justTheApproach(approach), train));
 
-            // AND ONE MEASUREMENT IS ENOUGH TO JUDGE AGAIN, which is the other half of the ruling.
-            //
-            // NOT THE LAST PLACE.  The last place is the BERTH ITSELF, and since Adam's
-            // allowance ruling the walk does not spend it - so measuring that one left the walk with
-            // nothing to spend, claiming the whole approach, and this claim passed because of the
-            // over-claim rather than because of the arithmetic it names.  It would have gone red
-            // against the repair, which is a guard arguing for the defect it guards.
-            //
-            // The place BEFORE it is track the train really does lie back over, which is what "one
-            // measurement is something to reason from" means.
+            // AND ONE MEASUREMENT IS ENOUGH TO JUDGE AGAIN, the other half of the ruling.  NOT THE LAST PLACE: that is
+            // the BERTH ITSELF, which the walk does not spend since the allowance ruling, so measuring it left the walk
+            // claiming the whole approach and the claim passed because of the over-claim.  The place BEFORE it is track
+            // the train really lies back over.
             assertTrue(none.size() >= 2,
                 "this approach carries one place, so there is no square behind the berth to measure"
                 + " and the half of the ruling below cannot be exercised here");
@@ -517,20 +429,13 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
                 + " when ALL of it is zero (Adam, MT-364); one measurement is something to reason"
                 + " from, and declining to judge here would be the over-correction");
 
-            // AND THE BERTH'S OWN MEASUREMENT IS NOT ONE OF THEM.
+            // AND THE BERTH'S OWN MEASUREMENT IS NOT ONE OF THEM.  With `size-2` measured, "has anything been
+            // measured?" is true under both the old bound and the new one; this arrangement (the LAST place measured
+            // and nothing else) is the one that moves.  The last place is the berth itself, and its measurement says
+            // how much train the station may HOLD, not track the body lies back over.
             //
-            // The arrangement above cannot tell the repair from what it replaced: with `size-2`
-            // measured, "has anything been measured?" is true under both the old bound and the new
-            // one.  This is the arrangement that moves - the LAST place measured and nothing else -
-            // and it is the one Adam's manual produces first, because it tells him to measure the
-            // station.
-            //
-            // The last place is the berth itself, and since the allowance ruling its measurement says
-            // how much train the station may HOLD, not track the body lies back over.  So there is
-            // still nothing measured behind this train and still nothing to reason from.
-            //
-            // MUTATION, run 2026-09-13: restoring `n < spans.size()` in the `anyMeasured` loop fails
-            // this and leaves the claim above passing, which is how the pair was worse than either.
+            // MUTATION: restoring `n < spans.size()` in the `anyMeasured` loop fails this and leaves the claim above
+            // passing.
             List<Integer> berthOnly = new ArrayList<>(none);
 
             berthOnly.set(berthOnly.size() - 1, 5);
@@ -551,9 +456,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         }
     }
 
-    /**
-     * The last edge on its own, which is the route as far as the square being judged.
-     */
+    /** The last edge on its own, which is the route as far as the square being judged. */
     private static List<Edge> justTheApproach(Edge approach)
     {
         return new ArrayList<>(Arrays.asList(approach));

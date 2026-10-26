@@ -16,55 +16,38 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
  * A train put down by hand on a CURVED station has its tail recorded on a side no track enters by.
  *
- * **FIXED 2026-09-08, and this class was written RED first.**
- * This one was found by reading, and a defect
- * found by reading is a claim until something executes it - so this ran against the unrepaired door
- * and failed in its own words, on exactly the two methods about the curve, while the two CONTROL
- * methods over a straight platform passed.  That split is what makes it a statement about the curve
- * rather than about this test.  `tests-red-before-green`.
+ * Found by reading, so this was written RED first: against the unrepaired door it failed in its own words on exactly
+ * the two methods about the curve, while the two CONTROL methods over a straight platform passed, which is what makes
+ * it a statement about the curve rather than about this test.
  *
- * MUTATION, 2026-09-08: put `forPlacement`'s ordinary-station branch back to `opposite(facing)` and
- * `testTheCurvedPlatformIsAnsweredWithASideTheBuildUses` and `testTheTailIsBlockedBehindTheCurvedPlatform`
- * fail again, in these words - "recorded as arriving from \"W\", and the build enters that square only
- * by [N, E]", and "blocks no rail touching the square it is standing on ... what is blocked is []".
- * The other three stay green.
+ * MUTATION: put `forPlacement`'s ordinary-station branch back to `opposite(facing)` and
+ * `testTheCurvedPlatformIsAnsweredWithASideTheBuildUses` and `testTheTailIsBlockedBehindTheCurvedPlatform` fail, in
+ * these words - "recorded as arriving from \"W\", and the build enters that square only by [N, E]", and "blocks no rail
+ * touching the square it is standing on ... what is blocked is []".  The other three stay green.
  *
- * **The defect that was.**  `ArrivalSidePrompt.forPlacement` answered an ordinary (non-may-reverse)
- * station with the compass OPPOSITE of the train's facing, on the reasoning that a train faces the way
- * it will leave and arrived from behind.  That is true on a straight and false on a curve.  OB-182 moved the offered
- * sides, the written arrival sides and the tail walk's comparison onto the BUILD's entry sides -
- * `Layout.entrySideOf` - precisely because compass and metal differ on a curve; the non-may-reverse
- * branch of `forPlacement` was not swept with them.
+ * `ArrivalSidePrompt.forPlacement` answered an ordinary (non-may-reverse) station with the compass OPPOSITE of the
+ * train's facing, which is true on a straight and false on a curve.  OB-182 moved the offered sides, the written
+ * arrival sides and the tail walk's comparison onto the BUILD's entry sides (`Layout.entrySideOf`) because compass and
+ * metal differ on a curve; this branch was not swept with them.  On `curve-into-platform`'s CurvedPlatform the build
+ * enters the square by N and by E, and `CurvedPlatform (southbound)` faces E, so the door recorded `arrivedFrom = "W"`,
+ * a side the build enters it by nowhere.  `Layout.edgesCoveredByStandingTrains` then matched no candidate on its first
+ * hop and took the `segment == null -> break` exit, so the track behind a standing train was silently left open (a
+ * 4-length train blocked `[]`).
  *
- * On `curve-into-platform`'s CurvedPlatform the build enters the square by N and by E.  The copy
- * `CurvedPlatform (southbound)` faces E, so the door recorded `arrivedFrom = "W"` - a side the build
- * enters that square by nowhere.  `Layout.edgesCoveredByStandingTrains` then matched no candidate on
- * its first hop and took the `segment == null -> break` exit, whose comment attributes that state to
- * "a stale value after an edit".  The placement door was manufacturing it every time, and the track
- * behind a standing train was silently left open.  Measured, not argued: with the door unrepaired a
- * 4-length train on that square blocked `[]`.
+ * It needed a new fixture: every other tail test ran on a straight chain of ordinary points, where the two vocabularies
+ * agree.  `test/layouts/curve-into-platform` is the shape.
  *
- * **Why it needed a new fixture.**  Every tail test in this suite ran on a straight chain of ordinary
- * points - `testATrainCoversTheTrackBehindIt` is all "E" and "W" on one row - where the two vocabularies
- * agree and the bug cannot appear.  `test/README.md` recorded that blind spot before this
- * defect walked through it.  `test/layouts/curve-into-platform` is the shape, and this is its first use.
- *
- * **The fix**, which is the one already made twice at the sibling sites: the sides are given and the
- * FACING chooses between them, rather than the compass answering on its own.  `ArrivalSidePrompt`
- * gained `arrivedFrom`, which takes the one side of the square the train is not pointing at; where
- * several are left behind it - three ways in - the documented compass assumption picks between them,
- * but only where the build really does enter by that side, and otherwise nothing is recorded at all.
- * A null arrival side narrows the tail walk; a wrong one sends it down track the train is not on.
- * `behaviour.md` §4 states the rule in those terms.
- *
- * Nothing here changed when it landed - these assertions are what correct behavior looks like, and
- * they were written before it did.
+ * The rule: the sides are given and the FACING chooses between them, rather than the compass answering on its own.
+ * `ArrivalSidePrompt.arrivedFrom` takes the one side of the square the train is not pointing at; where several are
+ * left, the documented compass assumption picks between them, but only where the build really enters by that side, and
+ * otherwise nothing is recorded.  A null arrival side narrows the tail walk; a wrong one sends it down track the train
+ * is not on (`behaviour/facing.md` 4).
  *
  * @author Adam
  */
@@ -79,11 +62,8 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     private static final int[] STRAIGHT = {5, 8};
 
     /**
-     * Every square the scenario draws, so lengths can be given to all of them in one place.
-     *
-     * Lengths are NOT in the fixture - that is the half Adam asked to be able to vary - so a test that
-     * needs measured track says so itself.  One unit each: the tail walk only needs the segments to be
-     * determinate, and equal lengths make the arithmetic in the assertions readable.
+     * Every square the scenario draws, so lengths can be given to all of them in one place.  Lengths are NOT in the
+     * fixture, which Adam wants to vary; one unit each, so the assertions' arithmetic is readable.
      */
     private static final int[][] SQUARES =
     {
@@ -123,11 +103,8 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * The fixture really is curved, and the straight one really is straight.
-     *
-     * Asserted first because everything below is a statement about a difference between two squares, and
-     * a fixture where the difference has quietly gone is a fixture where both halves pass for the wrong
-     * reason.  `assert-the-variable-not-the-control`.
+     * Asserted first because everything below is a statement about a difference between two squares, and a fixture
+     * where the difference has quietly gone passes both halves for the wrong reason.
      */
     @Test
     public void testTheFixtureHasACurvedStationAndAStraightOne() throws Exception
@@ -144,9 +121,8 @@ public class testACurvedPlatformRecordsASideTheBuildUses
             + " that the compass opposite of a facing IS one of its sides. It is now entered by "
             + sidesText(STRAIGHT));
 
-        // AND THE DOOR IS ON ITS ORDINARY-STATION BRANCH FOR BOTH, which is the branch B3 is about.
-        // A square marked "trains may turn here" would be asked about instead, and this test would be
-        // measuring a dialog rather than the assumption.
+        // AND THE DOOR IS ON ITS ORDINARY-STATION BRANCH FOR BOTH: a square marked "trains may turn here" would be
+        // asked about instead, and this test would be measuring a dialog.
         assertFalse(scenario.getSession().mayTurnTiles().contains(scenario.tile(CURVED[0], CURVED[1])),
             "the curved platform has become a may-reverse square, so the placement door would put a"
             + " question to the operator instead of assuming - which is not the branch REV9-B3 is in");
@@ -157,36 +133,28 @@ public class testACurvedPlatformRecordsASideTheBuildUses
             + " the same branch");
     }
 
-    /**
-     * THE CONTROL. On a straight platform the door answers with a side the build actually uses.
-     */
+    /** THE CONTROL. On a straight platform the door answers with a side the build actually uses. */
     @Test
     public void testTheStraightPlatformIsAnsweredWithASideTheBuildUses() throws Exception
     {
         answersWithABuildSide(STRAIGHT, "the straight platform");
     }
 
-    /**
-     * THE SUBJECT. On the curved platform it does not.
-     */
+    /** THE SUBJECT. On the curved platform it does not. */
     @Test
     public void testTheCurvedPlatformIsAnsweredWithASideTheBuildUses() throws Exception
     {
         answersWithABuildSide(CURVED, "the curved platform");
     }
 
-    /**
-     * THE CONTROL, in behavior rather than in labels: the rail behind a straight platform is blocked.
-     */
+    /** THE CONTROL, in behavior rather than in labels: the rail behind a straight platform is blocked. */
     @Test
     public void testTheTailIsBlockedBehindAStraightPlatform() throws Exception
     {
         blocksTheRailBehind(STRAIGHT, "the straight platform");
     }
 
-    /**
-     * THE SUBJECT, and the failure: nothing at all is blocked behind the curved one.
-     */
+    /** THE SUBJECT, and the failure: nothing at all is blocked behind the curved one. */
     @Test
     public void testTheTailIsBlockedBehindTheCurvedPlatform() throws Exception
     {
@@ -194,14 +162,9 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * Puts a train down on every copy of a square through the placement door and checks the answer is a
-     * side the build enters that square by.
-     *
-     * Every copy, not one: a split square has one per arrival side, the door is asked about whichever
-     * the train is standing on, and a rule that holds for one of them and not the other is the defect.
-     *
-     * @param square the platform, as x and y
-     * @param what what to call it in a failure message
+     * Puts a train down on every copy of a square through the placement door and checks the answer is a side the build
+     * enters that square by.  Every copy, not one: a split square has one per arrival side, and a rule that holds for
+     * one and not the other is the defect.
      */
     private void answersWithABuildSide(int[] square, String what) throws Exception
     {
@@ -222,8 +185,8 @@ public class testACurvedPlatformRecordsASideTheBuildUses
             assertNotNull(point, what + " has a copy called " + copy.getKey()
                 + " that the built layout does not hold");
 
-            // EXACTLY THE APPLICATION'S OWN CALL, argument for argument - TrainControlUI.java:6515.
-            // A test that assembled the arguments differently would be measuring its own arithmetic.
+            // EXACTLY THE APPLICATION'S OWN CALL, argument for argument: a test that assembled the arguments
+            // differently would be measuring its own arithmetic.
             String recorded = ArrivalSidePrompt.forPlacement(built, point, copy.getValue().name(),
                 false, null, scenario.getSession().arrivalSides(tile));
 
@@ -243,14 +206,9 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * Stands a long train on a platform, with the tail recorded exactly as the placement door would
-     * record it, and checks the rail it lies across is blocked.
-     *
-     * The behavioral half of the same rule.  A label that names a side nothing enters by is a tidy
-     * defect; this is what it COSTS - a protection that reports itself as present and does nothing.
-     *
-     * @param square the platform
-     * @param what what to call the platform in a failure message
+     * Stands a long train on a platform, with the tail recorded exactly as the placement door would record it, and
+     * checks the rail it lies across is blocked.  This is what the wrong label COSTS: a protection that reports itself
+     * as present and does nothing.
      */
     private void blocksTheRailBehind(int[] square, String what) throws Exception
     {
@@ -306,11 +264,8 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * Whether the tail walk blocked any rail that actually touches the square the train is on.
-     *
-     * Stronger than "something was blocked": a covered set that names some other part of the railway
-     * would be an answer to a different question, and the point of the walk is the metal this train is
-     * lying across.
+     * Whether the tail walk blocked any rail that actually touches the square the train is on: stronger than "something
+     * was blocked", since a covered set naming some other part of the railway would answer a different question.
      */
     private boolean coversAnEdgeAt(Layout built, Point point)
     {
@@ -325,23 +280,15 @@ public class testACurvedPlatformRecordsASideTheBuildUses
     }
 
     /**
-     * The sides the build enters a square by, printed.
-     *
-     * As text rather than as a set, because `arrivalSides` comes back in a fixed order and comparing
-     * two sets through TestNG's collection overload compares iteration order anyway - so the string is
-     * the honest form of the comparison being made.
-     *
-     * @param square a square as x and y
-     * @return the sides, e.g. "[N, E]"
+     * The sides the build enters a square by, printed, e.g. "[N, E]": as text rather than a set, because TestNG's
+     * collection overload compares iteration order anyway.
      */
     private String sidesText(int[] square)
     {
         return scenario.getSession().arrivalSides(scenario.tile(square[0], square[1])).toString();
     }
 
-    /**
-     * Takes every train off the railway, so one method's placement cannot answer the next one's.
-     */
+    /** Takes every train off the railway, so one method's placement cannot answer the next one's. */
     private void clearEveryPlatform(Layout built)
     {
         for (Point point : built.getPoints())
@@ -351,9 +298,7 @@ public class testACurvedPlatformRecordsASideTheBuildUses
         }
     }
 
-    /**
-     * @return the names of every edge covered by a standing train's tail
-     */
+    /** The names of every edge covered by a standing train's tail. */
     private Set<String> coveredNames(Layout built)
     {
         Set<String> out = new LinkedHashSet<>();

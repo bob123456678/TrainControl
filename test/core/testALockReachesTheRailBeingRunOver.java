@@ -17,55 +17,26 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A running path blocks the rail it runs over and the same rail the other way - and nothing beyond
- * that (OB-269).
+ * A running path blocks the rail it runs over and the same rail the other way, and nothing beyond that (OB-269). Adam:
+ * *"nothing should disturb the ability to go from bottominner to bottominnerotherside unless trains are crossing down,
+ * or passing through either of those stations."*
  *
- * **Adam, 2026-09-22:** *"when running auto layout, more edges (tracks) may get locked than
- * necessary.  For example, a path to tunnel from bottomsecondary should not block the path from
- * bottominner to bottominnerotherside (and vice-versa), but I see that they do.  significant bug."*
- * Asked whether the long row-3 road is real he said it is, and gave the rule: *"nothing should disturb
- * the ability to go from bottominner to bottominnerotherside unless trains are crossing down, or
- * passing through either of those stations."*
+ * `Edge.setOccupied` marks every edge in each locked edge's `lockEdges` and `isPathClear` read the flag off every edge
+ * in each CANDIDATE's `lockEdges`: each is deliberate (one list walked both ways makes a one-directional relation
+ * refuse either ordering), but together they reached two hops, so a third edge sharing rail with each of two others
+ * made those two conflict. The fix is a narrower question, not a narrower relation: `Edge.runOver` counts only the
+ * edges a path actually runs over and `isRunOver` asks it, while `occupancy` and `isLockHeld` are untouched, so a held
+ * throat's accessories stay protected (`getActiveAccs`).
  *
- * **The write and the read each reach one hop, and together they reached two.**  `Edge.setOccupied`
- * marks every edge in each locked edge's `lockEdges`; `isPathClear` read the flag off every edge in
- * each CANDIDATE's `lockEdges`.  Both are deliberate - the same list walked both ways is what makes a
- * one-directional relation refuse either ordering - and the cost was that a third edge sharing rail
- * with each of two others made those two conflict.  Measured here: the run and the hop share **not one
- * tile**, and the refusal named `12,7 -> Tunnel`, which shares eight with the run and three with the
- * hop.
+ * The reverse direction is refused on its own account, which is not optional: `GraphReducer.deriveLocks` does not pair
+ * the two directions of one rail, so the second hop was refusing it by accident. The third claim below is that control.
+ * Every train is taken off the railway first: a train parked on `BottomInnerOtherside` refuses the hop whatever the
+ * locking does.
  *
- * **The fix is a narrower question, not a narrower relation.**  `Edge.runOver` counts only the edges a
- * path actually runs over; `isRunOver` asks it; `occupancy` and `isLockHeld` are untouched, so a held
- * throat's accessories stay protected either way (`getActiveAccs`).  Both orderings of an asymmetric
- * relation still refuse - one by the write into `occupancy`, one by this read - and what is given up
- * is exactly the proxy-locked middle case.
- *
- * **And the reverse direction is refused on its own account, which is not optional.**
- * `GraphReducer.deriveLocks` deliberately does not pair the two directions of one rail, so the reverse
- * edge is in nobody's `lockEdges` and the second hop was what refused it - by accident.  The third
- * claim below is that control, and it is the one that caught the first attempt at this fix: with the
- * reach narrowed and nothing put in its place, a path over `Tunnel -> TunnelPre` was allowed while a
- * train ran `TunnelPre -> Tunnel`.
- *
- * **Every train is taken off the railway first**, and that is not tidiness: the snapshot parks
- * `75 407 DB` on `BottomInnerOtherside`, and a train standing there refuses the hop whatever the
- * locking does.  The first version of this measurement had no such step and was reading the parked
- * train.
- *
- * MUTATIONS, measured rather than asserted, and each reddens exactly the claims it should:
- *
- * - ask `isLockHeld` in the candidate scan again, and **the first claim and Adam's own list** fail -
- *   his by six pairs of seven, naming `12,7 -> Tunnel` and `TunnelLongPark -> BottomCrossover`.  The
- *   three refusal controls stay green, which is what says the narrowing is the only thing being
- *   measured.
- * - drop the reverse-rail check, and **both refusal controls** fail: the same rail the other way, and
- *   the shared-rail control, which picks that pair up too because eleven of its tiles are the run's.
- *   The first claim and the list stay green.
- * - drop the `runOver` decrement in `setUnoccupied`, and **the release claim** fails, naming the edge
- *   still reading as run over after three locks and three releases.
- * - make `TRAIN_LENGTH` 3, and **the floor under Adam's list** fails at 8 of 11, each of the three
- *   naming its refusal: too long to stop at BottomMainC or TopMainR2.
+ * MUTATIONS, each reddening exactly the claims it should: ask `isLockHeld` in the candidate scan again and the first
+ * claim and Adam's own list fail (the three refusal controls stay green); drop the reverse-rail check and both refusal
+ * controls fail; drop the `runOver` decrement in `setUnoccupied` and the release claim fails; make `TRAIN_LENGTH` 3 and
+ * the floor under Adam's list fails (too long to stop at BottomMainC or TopMainR2).
  *
  * @author Adam
  */
@@ -101,9 +72,9 @@ public class testALockReachesTheRailBeingRunOver
 
         if (layout == null) throw new AssertionError("the snapshot did not build");
 
-        // ITS OWN TRAIN, two units long, the snapshot's shortest station maximum.  The database's first locomotive
-        // (02 0314-1 DDR, three units) cannot stop at BottomMainC or TopMainR2, so three of his pairs were refused
-        // before any lock was asked about them.
+        // Its own train, two units long, the snapshot's shortest station maximum: the database's first locomotive
+        // (three units) cannot stop at BottomMainC or TopMainR2, so pairs would be refused before any lock was asked
+        // about them.
         asking = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2, "OB-269 two-unit train");
 
         asking.setTrainLength(TRAIN_LENGTH);
@@ -120,11 +91,7 @@ public class testALockReachesTheRailBeingRunOver
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The hop Adam named stays clear while a path that shares no rail with it runs.
-     *
-     * @throws Exception from the search
-     */
+    /** The hop Adam named stays clear while a path that shares no rail with it runs. */
     @Test
     public void testAPathIsNotBlockedByRailNothingIsRunningOver() throws Exception
     {
@@ -132,9 +99,8 @@ public class testALockReachesTheRailBeingRunOver
 
         List<Edge> run = theRun();
 
-        // PRECONDITION, and it is what makes the claim discriminate: these two must share no rail.
-        // If they ever come to share one, the refusal becomes correct and this would be pinning the
-        // wrong thing without saying so.
+        // PRECONDITION, what makes the claim discriminate: these two must share no rail, or the refusal becomes correct
+        // and this would pin the wrong thing.
         for (Edge r : run)
         {
             for (Edge h : hop)
@@ -169,11 +135,7 @@ public class testALockReachesTheRailBeingRunOver
         }
     }
 
-    /**
-     * A path that DOES share rail with a running one is still refused.
-     *
-     * @throws Exception from the search
-     */
+    /** A path that DOES share rail with a running one is still refused. */
     @Test
     public void testAPathThatSharesRailIsStillRefused() throws Exception
     {
@@ -185,8 +147,8 @@ public class testALockReachesTheRailBeingRunOver
         {
             if (run.contains(candidate)) continue;
 
-            // Not the reverse of a run edge - that is the next claim's business, and letting it be
-            // picked here would make the two claims test one thing.
+            // Not the reverse of a run edge: that is the next claim's business, and picking it here would make the two
+            // claims test one thing.
             boolean reverseOfTheRun = false;
 
             for (Edge r : run)
@@ -217,8 +179,8 @@ public class testALockReachesTheRailBeingRunOver
 
         try
         {
-            // THE MESSAGE NAMES THE RAIL AND THE RELATION, because "it shares rail" is not enough to
-            // act on: what matters is whether the lock relation knows they share it.
+            // The message names the rail and the relation: what matters is whether the lock relation knows they share
+            // it.
             StringBuilder why = new StringBuilder();
 
             for (Edge r : run)
@@ -248,13 +210,9 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * And the same rail the OTHER WAY is refused - the control that caught the first attempt.
-     *
-     * `deriveLocks` does not pair the two directions of one rail, so nothing in `lockEdges` says they
-     * conflict; until this fix what refused the reverse was the second hop, by accident.  A narrowing
-     * that does not replace that protection trades an over-refusal for a collision.
-     *
-     * @throws Exception from the search
+     * And the same rail the OTHER WAY is refused. `deriveLocks` does not pair the two directions of one rail, so
+     * nothing in `lockEdges` says they conflict; a narrowing that does not replace that protection trades an
+     * over-refusal for a collision.
      */
     @Test
     public void testTheSameRailTheOtherWayIsRefused() throws Exception
@@ -262,11 +220,9 @@ public class testALockReachesTheRailBeingRunOver
         Edge forward = null;
         Edge back = null;
 
-        // FOUND BY PLACE, the way the rule finds it - and the first version of this looked it up by
-        // NAME, which is why it stayed green when the rule was disabled.  The two directions of one
-        // rail run between different COPIES of the two squares, so `getEdge(end, start)` finds either
-        // nothing or a different rail; the pair this is about is the one `deriveLocks` declines to
-        // lock, and that comparison is `isSamePlaceAs`.  His own concurrency list caught the mistake.
+        // Found by place, the way the rule finds it, not by name: the two directions of one rail run between different
+        // COPIES of the two squares, so `getEdge(end, start)` finds nothing or a different rail. The pair is the one
+        // `deriveLocks` declines to lock, compared by `isSamePlaceAs`.
         for (Edge e : layout.getEdges())
         {
             if (forward != null) break;
@@ -281,14 +237,14 @@ public class testALockReachesTheRailBeingRunOver
 
                 if (!reverse.getEnd().isSamePlaceAs(e.getStart())) continue;
 
-                // NOT one the lock relation already pairs, or the claim would pass through the
-                // ordinary relation rather than through the rule being added.
+                // Not one the lock relation already pairs, or the claim would pass through the ordinary relation rather
+                // than the rule being added.
                 if (e.getLockEdges().contains(reverse)) continue;
 
                 if (reverse.getLockEdges().contains(e)) continue;
 
-                // AND THEY MUST REALLY BE ONE RAIL, which is the whole premise: two edges between the
-                // same pair of squares by different roads would make this claim about something else.
+                // And they must really be one rail, the whole premise: two edges between the same squares by different
+                // roads would make this claim about something else.
                 java.util.Set<String> common = new java.util.LinkedHashSet<>(e.getPlaceIds());
 
                 common.retainAll(reverse.getPlaceIds());
@@ -324,12 +280,8 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * And a run gives every claim back, so the next train finds the railway as it was.
-     *
-     * The counter arithmetic is where this could go wrong quietly: a claim never released leaves rail
-     * blocked for ever, and one released twice makes the NEXT train find occupied rail free.
-     *
-     * @throws Exception from the search
+     * And a run gives every claim back, so the next train finds the railway as it was: a claim never released leaves
+     * rail blocked for ever, and one released twice makes the NEXT train find occupied rail free.
      */
     @Test
     public void testARunGivesEveryClaimBack() throws Exception
@@ -361,8 +313,8 @@ public class testALockReachesTheRailBeingRunOver
             "the hop is refused after three complete runs that were all released.  Reason: "
             + Layout.getLastError());
 
-        // AND THE OTHER DIRECTION of the release, which is the worse one: a claim given back twice
-        // would let the next train onto rail a running one is on.
+        // And the other direction of the release, the worse one: a claim given back twice would let the next train onto
+        // rail a running one is on.
         for (Edge e : run) e.setOccupied();
 
         try
@@ -379,37 +331,17 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * Adam's own list of pairs that must be able to run at once (OB-269).
+     * Adam's own list of pairs that must be able to run at once (OB-269), given when he offered *"a list of allowed
+     * concurrent paths if it helps"*: while `BottomInner -> BottomInnerOtherside` (or the reverse) runs, any of
+     * `TopMainR1 -> BottomSecondary`, `TopMainR2 -> BottomSecondary`, `BottomSecondary -> BottomMainA`,
+     * `BottomSecondary -> BottomMainC`; and while `BottomMainA -> TopMainR1` runs, any of `TopMainR2 ->
+     * BottomSecondary`, `BottomInner -> BottomMainB`, `TopMainR2Pre -> TopMainR2`.
      *
-     * **His words, 2026-09-22**, given unprompted when he offered *"a list of allowed concurrent paths
-     * if it helps"*:
-     *
-     * while `BottomInner -> BottomInnerOtherside` (or the reverse) runs, any of
-     * `TopMainR1 -> BottomSecondary`, `TopMainR2 -> BottomSecondary`,
-     * `BottomSecondary -> BottomMainA`, `BottomSecondary -> BottomMainC`;
-     *
-     * and while `BottomMainA -> TopMainR1` runs, any of `TopMainR2 -> BottomSecondary`,
-     * `BottomInner -> BottomMainB`, `TopMainR2Pre -> TopMainR2`.
-     *
-     * He wrote the first of those as `BottomMainR2` and corrected it on 2026-09-23: *"There is no
-     * BottomMainR2, only TopMainR2."*  It is the same journey group one already names, asked against a
-     * different run - which is worth having, because the two runs share no rail with it for different
-     * reasons.
-     *
-     * **This is an ORACLE, not a fixture I chose**, which is the point of it: a narrowing that is right
-     * about the one hop I measured and wrong in general fails here.  Both his lists are marked *non
-     * exhaustive*, so nothing below asserts that anything ELSE is refused - the refusal side is the
-     * three controls beside this claim.
-     *
-     * **Every pair is checked and they are reported together.**  Stopping at the first would hide how
-     * much of his list a change gets wrong, and that number is the useful one.
-     *
-     * **A pair whose name this railway does not have is reported rather than skipped silently**, so a
-     * typo in the list - or a square renamed since - reads as a question and not as a pass.
-     * Nothing in either list fails to resolve now that the name above is corrected; the check stays,
-     * because a square renamed later must read as a question rather than as a pass.
-     *
-     * @throws Exception from the search
+     * This is an ORACLE, not a fixture chosen here: a narrowing right about one hop and wrong in general fails. Both
+     * his lists are marked *non exhaustive*, so nothing asserts that anything ELSE is refused; the refusal side is the
+     * three controls beside this claim. Every pair is checked and they are reported together, since how much of his
+     * list a change gets wrong is the useful number. A pair whose name this railway does not have is reported rather
+     * than skipped silently, so a renamed square reads as a question and not as a pass.
      */
     @Test
     public void testHisAllowedConcurrentPathsAreAllowed() throws Exception
@@ -448,15 +380,15 @@ public class testALockReachesTheRailBeingRunOver
             + " bottominnerotherside unless trains are crossing down, or passing through either of"
             + " those stations\"");
 
-        // A FLOOR UNDER THE PAIRS COMPARED (FR-136).  `wrong` is empty for a pair that was never compared, so a search
-        // that found no route for any of them - every pair "unresolved" - left the claim above green over nothing.  All
-        // eleven of his pairs run alongside on this railway, for a train short enough to stop at both ends.
+        // A floor under the pairs compared (FR-136): `wrong` is empty for a pair never compared, so a search that found
+        // no route for any of them left the claim above green over nothing. All eleven of his pairs run alongside on
+        // this railway for a train short enough to stop at both ends.
         assertTrue(allowedPairs.size() >= 11,
             "only " + allowedPairs.size() + " of the 11 pairs Adam says may run at once were found to, so the locking was"
             + " asked about fewer of them than it was: " + allowedPairs + ", not compared: " + unresolved);
 
-        // NOT an assertion: a name his railway does not carry is a question for him, and failing on
-        // it would stop the claim above being about the locking.
+        // Not an assertion: a name his railway does not carry is a question for him, and failing on it would stop the
+        // claim above being about the locking.
         if (!unresolved.isEmpty())
         {
             System.out.println("OB-269 oracle: these names did not resolve on this railway and were"
@@ -465,19 +397,11 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * Locks one journey and asks whether each of the others can still be made.
-     *
-     * Every combination of copies is tried for both journeys, shortest route first, because a station
-     * pair has one route per pair of copies and the copies are what encode facing - so which routes
-     * exist is the layout's own answer about which directions it allows.  The claim is satisfied by
-     * ONE combination being permitted, which is the question his list poses.
-     *
-     * @param running the journey to lock, as two station names
-     * @param others the journeys that must still be possible
-     * @param wrong filled with the ones no combination allows
-     * @param unresolved filled with the ones this railway cannot express
-     * @param allowedPairs filled with the ones some combination allows
-     * @throws Exception from the search
+     * Locks one journey and asks whether each of the others can still be made. Every combination of copies is tried for
+     * both journeys, shortest route first, because a station pair has one route per pair of copies and the copies
+     * encode facing; the claim is satisfied by ONE combination being permitted, the question his list poses. `wrong`
+     * and `unresolved` are filled with the pairs no combination allows and the ones this railway cannot express,
+     * `allowedPairs` with the ones some combination allows.
      */
     private static void check(String[] running, String[][] others, List<String> wrong,
         List<String> unresolved, List<String> allowedPairs) throws Exception
@@ -517,16 +441,15 @@ public class testALockReachesTheRailBeingRunOver
 
                     if (overlap != null)
                     {
-                        // The two journeys would use the same rail on THIS combination of copies, so
-                        // refusing is right and says nothing about the locking.  Another combination
-                        // may not share any.
+                        // The two journeys would use the same rail on THIS combination of copies, so refusing is right
+                        // and says nothing about the locking; another combination may not share any.
                         if (anOverlap == null) anOverlap = overlap;
 
                         continue;
                     }
 
-                    // Clear on its own account, or a refusal is about something else entirely - an
-                    // unmeasured berth, a barred arrival.
+                    // Clear on its own account, or a refusal is about something else entirely (an unmeasured berth, a
+                    // barred arrival).
                     if (!layout.isPathClear(other, asking, false))
                     {
                         if (refusedOnItsOwn == null)
@@ -577,9 +500,9 @@ public class testALockReachesTheRailBeingRunOver
                 continue;
             }
 
-            // NEVER COMPARED: say why.  A combination clear of the run's rail that is refused on an empty railway is
-            // about the train or the station, not the lock, and naming shared rail for it sends the reader to the
-            // wrong question.
+            // Never compared: say why. A combination clear of the run's rail that is refused on an empty railway is
+            // about the train or the station, not the lock, and naming shared rail for it sends the reader to the wrong
+            // question.
             if (!everTried && refusedOnItsOwn != null)
             {
                 unresolved.add(pair[0] + " -> " + pair[1] + " while " + running[0] + " -> " + running[1]
@@ -604,19 +527,9 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * Every route between two squares, over any combination of the copies they build to.
-     *
-     * Shortest first, because that is the road an operator means - and because a long way round is
-     * exactly what the first version of this claim tested by accident.
-     *
-     * The copies ARE the layout's statement about direction: a train on a copy may only leave by the
-     * one-way edges that copy has, so a combination with no route is a direction his layout does not
-     * allow, and is simply absent here rather than worked around.
-     *
-     * @param from the starting square's name, as he writes it
-     * @param to the destination square's name
-     * @return the routes, shortest first
-     * @throws Exception from the search
+     * Every route between two squares, over any combination of the copies they build to, shortest first (the road an
+     * operator means). The copies ARE the layout's statement about direction: a combination with no route is a
+     * direction his layout does not allow, and is simply absent here rather than worked around.
      */
     private static List<List<Edge>> routesBetween(String from, String to) throws Exception
     {
@@ -650,12 +563,7 @@ public class testALockReachesTheRailBeingRunOver
         return found;
     }
 
-    /**
-     * A Point's name without the copy suffix, so "BottomMainA (eastbound)" answers to "BottomMainA".
-     *
-     * @param name the Point's name
-     * @return the square's name
-     */
+    /** A Point's name without the copy suffix, so "BottomMainA (eastbound)" answers to "BottomMainA". */
     private static String base(String name)
     {
         int bracket = name.indexOf(" (");
@@ -704,11 +612,7 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * What rail two routes have in common, or null when they have none.
-     *
-     * @param one a route
-     * @param two another
-     * @return a description of every shared stretch, or null
+     * What rail two routes have in common, as a description of every shared stretch, or null when they have none.
      */
     private static String sharedRail(List<Edge> one, List<Edge> two)
     {

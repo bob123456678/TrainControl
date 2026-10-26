@@ -33,12 +33,11 @@ import org.traincontrol.util.I18n;
 
 /**
  * His setup, exported from the frozen copy of his railway, imported onto the one-page layout MT-380 ships - through the
- * Autonomy menu and the autonomy editor, as MT-512, MT-513 and MT-514 do it in one sitting (Adam, 2026-09-25: automated
- * tests supersede the MTs they answer).
+ * Autonomy menu and the autonomy editor, as MT-512, MT-513 and MT-514 do it in one sitting.
  *
- * The one-page layout is copied into a sandbox first.  The steps point TrainControl at the folder in the repository
- * itself, and the import then saves a setup into it - after which the shipped layout is no longer one with nothing set
- * up, and `testTheSuppliedManualTestFilesAreWhatTheySay` says so.
+ * The one-page layout is copied into a sandbox first: the steps point TrainControl at the folder in the repository
+ * itself, and the import then saves a setup into it, after which the shipped layout is no longer one with nothing set
+ * up (`testTheSuppliedManualTestFilesAreWhatTheySay` says so).
  *
  * @author Adam
  */
@@ -54,8 +53,6 @@ public class testASetupMovesToAOnePageLayout
      *
      * MUTATION: gray Import on a layout with nothing set up, warn once per page, or let the save after the import be
      * declined, and this fails.
-     *
-     * @throws Exception from the windows or the files
      */
     @Test
     public void testHisSetupGoesOntoTheOnePageLayout() throws Exception
@@ -267,7 +264,7 @@ public class testASetupMovesToAOnePageLayout
     @SuppressWarnings("unchecked")
     private static void forgetWhatWasSaid() throws Exception
     {
-        java.lang.reflect.Field said = Class.forName("org.traincontrol.gui.AutonomyReport").getDeclaredField("ALREADY_SAID");
+        java.lang.reflect.Field said = Class.forName("org.traincontrol.gui.autonomy.AutonomyReport").getDeclaredField("ALREADY_SAID");
 
         said.setAccessible(true);
 

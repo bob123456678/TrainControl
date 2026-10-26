@@ -38,7 +38,7 @@ public class testWhyStuck
     /**
      * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is.
      *
-     * Adam, on MT-434 (2026-09-15), asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
+     * Adam, on MT-434, asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
      * a hand-driven send.  `reversesAlongTheWay` is autonomy's rule - its own javadoc: *"NOT asked by isPathClear, so a
      * hand-driven move ... can still use a headshunt"* - and `firstClearOrWhyNot` still asked it by hand, so a station
      * the menu offers read as "cannot be sent" through a reversing station.
@@ -181,7 +181,7 @@ public class testWhyStuck
      *
      * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
      * route search does.  The menu itself asks one more question first - `isOfferableToOperator` - and leaves out two
-     * kinds of station: one that excludes this train (Adam, 2026-09-04: *"if it excludes the loc, don't even include it
+     * kinds of station: one that excludes this train (Adam: *"if it excludes the loc, don't even include it
      * in the list"*), and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The
      * Manual answer asked neither, so it said "may go" of stations the menu never offers - the button and the
      * explanation answering one question two ways (OB-057).
@@ -246,7 +246,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, the menu's own reason outranks being too short (Adam, 2026-09-15).
+     * By hand, the menu's own reason outranks being too short.
      *
      * A physical refusal outranks a preference (MT-262), so a standing bar is replaced by "too long for the berth"
      * where the train would not fit.  That is right for autonomy's bars and wrong for the menu's: a station the menu
@@ -483,7 +483,7 @@ public class testWhyStuck
         layout.moveLocomotive(loc.getName(), "WS9_A", false);
         layout.moveLocomotive(other.getName(), "WS9_B", false);
 
-        // Barred AND busy, which is the combination that used to answer the wrong one.
+        // Barred AND busy: the two reasons compete here.
         layout.getPoint("WS9_B").setAutoDestination(false);
 
         assertTrue(layout.destinationsBarredFromAutonomy(loc).contains("WS9_B"),
@@ -533,7 +533,7 @@ public class testWhyStuck
         final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
 
         java.lang.reflect.Method dash =
-            org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredMethod(
+            org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
                 "notChosenByAutonomy", org.traincontrol.automation.Point.class,
                 org.traincontrol.base.Locomotive.class);
 
@@ -718,7 +718,7 @@ public class testWhyStuck
 
         // The exception in the words, read from the English bundle: no placeholder carries it.
         assertTrue(java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages", java.util.Locale.ROOT)
-            .getString("autolayout.why.startReachesNoStationEitherWay").contains("unless every train turns round there"),
+            .getString("autolayout.why.startReachesNoStationEitherWay").contains("not where every train turns round"),
             "the either-way sentence sends the operator to open a side under Trains May Arrive... without GUI4-C3's"
             + " exception - at a station every train turns round at, that makes the setup refuse to load (RLU3-C1)");
     }
@@ -909,7 +909,7 @@ public class testWhyStuck
      *
      * The index maps every emitted Point back to its square and that is the answer whenever it has
      * one - but it does not always: a configuration built by a different run of the builder is not in
-     * the map, and the fallback used to be the internal name. "BottomMainA (northbound)" is not a place
+     * the map, and the fallback must not be the internal name. "BottomMainA (northbound)" is not a place
      * on anybody's railway. Adam met it in the hover that explains why a train is not moving, which is
      * the worst place for it: somebody reading that is already confused.
      *
@@ -936,5 +936,31 @@ public class testWhyStuck
         assertEquals(index.describe(new Point("Yard (upper)", false, null)), "Yard (upper)",
             "a station somebody has genuinely called this keeps its name - taking brackets off "
             + "anything that has them would rename real places to make an internal one read better");
+    }
+
+    /**
+     * The (i) a card shows when hovering explains why it is not moving is a picture that loads.
+     *
+     * `AutoLocomotiveStatus` lives in `gui.autonomy` and the picture in `gui/resources`, so its lookup is anchored on
+     * `TrainControlUI` as every other is; a path relative to its own package finds nothing, and the card loses its mark
+     * without a word.
+     *
+     * MUTATION: look it up as `AutoLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
+     *
+     * @throws Exception on a failure to reach the mark
+     */
+    @Test
+    public void testTheWhyMarkLoads() throws Exception
+    {
+        java.lang.reflect.Method markFor = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
+            "markFor", boolean.class, boolean.class);
+
+        markFor.setAccessible(true);
+
+        javax.swing.ImageIcon info = (javax.swing.ImageIcon) markFor.invoke(null, false, true);
+
+        assertNotNull(info, "a card with a reason to hover for has no (i): resources/info.gif was not found");
+        assertEquals(info.getImageLoadStatus(), java.awt.MediaTracker.COMPLETE, "the (i) did not load");
+        assertTrue(info.getIconWidth() > 0, "the (i) is empty");
     }
 }

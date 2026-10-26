@@ -22,31 +22,26 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A 2.7.4c import brings the settings across, and nothing else (MT-296).
  *
- * Adam, 2026-09-12: *"too much manual effort, make a test case for this and validate that state matches
- * by having two fixtures in the test."*
+ * Adam: "too much manual effort, make a test case for this and validate that state matches by having two fixtures in
+ * the test."  The fixtures are his own: `test/layouts/live-snapshot`, the frozen copy of his railway, and
+ * `config/autonomy_legacy/autonomy.json` inside it, the frozen copy of the 2.7.4c file the upgrade path exists for.
+ * The test imports the file into a fresh configuration and compares the result against the file itself rather than a
+ * list of expected values, so a settings key added to either format cannot quietly stop being carried.
  *
- * **The two fixtures are his own.** `test/layouts/live-snapshot` is the frozen copy of his railway, and
- * `config/autonomy_legacy/autonomy.json` inside it is the frozen copy of the 2.7.4c file the upgrade path
- * exists for. The test reads the file, imports it into a fresh configuration, and compares the result
- * against the file itself rather than against a list of expected values written down here - so a
- * settings key added to either format cannot quietly stop being carried.
+ * The four claims are the entry's own Expected: the settings come across; the three that must not come across do not; a
+ * station's capacity arrives as a capacity; and the square's track length is untouched.  The last two are one confusion
+ * with two halves: `importLegacy` wrote `points[].maxTrainLength` through `setTileLength`, so every upgrading station
+ * lost its limit and six squares gained lengths nobody had measured, and lengths are what the shortest- and
+ * longest-track routing rules are computed from.
  *
- * **The four claims are the entry's own Expected.** The settings come across; the three that must not
- * come across do not; a station's **capacity** arrives as a capacity; and the square's **track length**
- * is untouched. The last two are one confusion with two halves - `importLegacy` used to write
- * `points[].maxTrainLength` through `setTileLength`, so every upgrading station lost its limit and six
- * squares gained lengths nobody had measured, and lengths are what the shortest-track and longest-track
- * routing rules are computed from.
+ * MUTATION: guarding the settings copy out of `importLegacy` fails the first ("What arrived: []" against the file's
+ * ten); removing the `activateRoutes` exclusion fails the second; taking `maxTrainLength` out of `CARRIED_SETTINGS`
+ * fails the third; and putting the old `setTileLength(tile, maxTrainLength)` line back fails the fourth, with five
+ * squares gaining a length.
  *
- * MUTATION, all four run on 2026-09-12: guarding the settings copy out of `importLegacy` fails the
- * first ("What arrived: []" against the file's ten); removing the `activateRoutes` exclusion fails the
- * second; taking `maxTrainLength` out of `CARRIED_SETTINGS` fails the third; and putting the old
- * `setTileLength(tile, maxTrainLength)` line back fails the fourth, with five squares gaining a length.
- *
- * **On this fixture the file arrives as `skipped`, not `matched`**, because the companion store's square
- * names outlive a configuration - so a "fresh" configuration is fresh in its settings and not in its
- * names. The settings, the capacities and the lengths are all carried on the path taken either way,
- * which is why the precondition below counts both.
+ * On this fixture the file arrives as `skipped`, not `matched`, because the companion store's square names outlive a
+ * configuration, so a "fresh" configuration is fresh in its settings and not in its names; the precondition below
+ * counts both.
  *
  * @author Adam
  */
@@ -68,10 +63,9 @@ public class testALegacyImportMatchesTheFileItCameFrom
     /**
      * The keys an import must NOT carry, each excluded for its own reason in `importLegacy`.
      *
-     * The two route-activation keys do not stay inside the configuration: `parseAuto` ends in
-     * `applyAutonomyRouteActivations`, which disables every route in the live Central Station database
-     * whose id is not listed - and this very file says `activateRoutes: true` with an empty list. The
-     * timetable names points by name and all but a couple of its legs would be dropped one warning at a
+     * The two route-activation keys: `parseAuto` ends in `applyAutonomyRouteActivations`, which disables every route in
+     * the live Central Station database whose id is not listed, and this file says `activateRoutes: true` with an empty
+     * list.  The timetable names points by name and all but a couple of its legs would be dropped one warning at a
      * time, then written back permanently by the next capture.
      */
     private static final Set<String> MUST_NOT_TRAVEL = new LinkedHashSet<>(
@@ -113,14 +107,12 @@ public class testALegacyImportMatchesTheFileItCameFrom
 
         session.open(support.LayoutSandbox.wiredPages(model));
 
-        // A FRESH CONFIGURATION, which is what the entry's own steps say - "into a fresh
-        // configuration". The import gap-fills, so importing over the setup this snapshot already
-        // carries would skip every square that is already named and test nothing.
+        // A FRESH CONFIGURATION, as the entry's steps say: the import gap-fills, so importing over the setup this
+        // snapshot already carries would skip every square that is already named and test nothing.
         session.getStore().createConfiguration("Imported", null);
         session.getStore().setActiveConfiguration("Imported");
 
-        // The reduction is derived per configuration, and the import matches legacy points to squares
-        // through it - so without this it looks at the one the session opened with.
+        // The reduction is derived per configuration and the import matches legacy points to squares through it.
         session.rebuild();
 
         lengthsBefore = new LinkedHashMap<>();
@@ -132,10 +124,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
 
         AutonomySession.LegacyImport result = session.importLegacy(legacy);
 
-        // MATCHED OR SKIPPED, because a square that already has a name is still a square the file
-        // reached - and the companion store's names outlive a configuration, so on this fixture the
-        // whole file arrives as `skipped`. What would mean the file and the pages have stopped being
-        // about one railway is neither: nothing landing anywhere.
+        // MATCHED OR SKIPPED, because a square that already has a name is still a square the file reached; what would
+        // mean the file and the pages are no longer one railway is nothing landing anywhere.
         if (result.matched + result.skipped == 0)
         {
             unbuilt = "the import reached no square on this diagram, so there is nothing"
@@ -155,12 +145,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
     }
 
     /**
-     * The claim: every setting in the file that is allowed to travel arrives with the same value.
-     *
-     * Swept from the FILE rather than compared against a list written here, so this cannot fall behind
-     * a format that gains a key.
-     *
-     * @throws Exception from the store
+     * The claim: every setting in the file that is allowed to travel arrives with the same value, swept from the FILE
+     * rather than a list written here, so it cannot fall behind a format that gains a key.
      */
     @Test
     public void testEverySettingArrivesWithItsOwnValue() throws Exception
@@ -197,12 +183,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
     }
 
     /**
-     * And the three that must not travel did not.
-     *
-     * The route pair is the important one: carrying it disables every route the file does not list, on
-     * import and again on every diagram edit, and this file lists none.
-     *
-     * @throws Exception from the store
+     * And the three that must not travel did not.  The route pair is the important one: carrying it disables every
+     * route the file does not list, on import and on every diagram edit, and this file lists none.
      */
     @Test
     public void testTheThreeThatWouldDoHarmStayBehind() throws Exception
@@ -213,8 +195,7 @@ public class testALegacyImportMatchesTheFileItCameFrom
 
         for (String key : MUST_NOT_TRAVEL)
         {
-            // Only meaningful for a key the file actually carries - otherwise the assertion is about
-            // an absence nothing could have produced.
+            // Only meaningful for a key the file carries, else the assertion is about an absence nothing could produce.
             if (!legacy.has(key)) continue;
 
             assertFalse(globals.has(key),
@@ -229,11 +210,7 @@ public class testALegacyImportMatchesTheFileItCameFrom
             + " exclusion that matters most would pass with the code removed");
     }
 
-    /**
-     * A station's capacity arrives as a capacity.
-     *
-     * @throws Exception from the store
-     */
+    /** A station's capacity arrives as a capacity. */
     @Test
     public void testAStationsCapacityArrivesAsACapacity() throws Exception
     {
@@ -265,16 +242,15 @@ public class testALegacyImportMatchesTheFileItCameFrom
         {
             TileKey square = squareNamed(station.getKey());
 
-            // A legacy point whose sensor is not on this diagram lands nowhere, which the import
-            // counts and reports; it is not this test's subject.
+            // A legacy point whose sensor is not on this diagram lands nowhere, which the import counts; not the
+            // subject.
             if (square == null) continue;
 
             checked++;
 
             Object carried = session.getPointProperty(square, "maxTrainLength");
 
-            // As a NUMBER, whatever the store hands back it as: an Integer and a JSON number are the
-            // same capacity, and a test that failed on the box would be about the store's typing.
+            // As a NUMBER: an Integer and a JSON number are the same capacity.
             assertTrue(carried instanceof Number
                     && ((Number) carried).intValue() == station.getValue(),
                 station.getKey() + " came in with a maximum train length of " + carried
@@ -289,12 +265,8 @@ public class testALegacyImportMatchesTheFileItCameFrom
     }
 
     /**
-     * And the square's own track length is untouched, which is the other half of the same confusion.
-     *
-     * Lengths are what the shortest-track and longest-track routing rules are computed from, so a
-     * capacity written into one is not a harmless mislabeling.
-     *
-     * @throws Exception from the store
+     * And the square's own track length is untouched, the other half of the same confusion: lengths are what the
+     * shortest-track and longest-track routing rules are computed from.
      */
     @Test
     public void testNoSquareGainedATrackLength() throws Exception
@@ -314,9 +286,7 @@ public class testALegacyImportMatchesTheFileItCameFrom
             + " as the other is what MT-296 is about");
     }
 
-    /**
-     * The square the import gave this legacy name to, or null if it landed nowhere.
-     */
+    /** The square the import gave this legacy name to, or null if it landed nowhere. */
     private static TileKey squareNamed(String name)
     {
         if (session.getStationIndex() == null) return null;

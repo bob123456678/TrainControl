@@ -17,16 +17,16 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The end of a run gives back only the track that run still holds - whatever Atomic Routes says by then.
+ * The end of a run gives back only the track that run still holds, whatever Atomic Routes says by then.
  *
  * With Atomic Routes off, a run gives each edge back as its tail clears it, and another train may take it.  The unlock
  * at the end chose how to give track back by reading the setting AT THE END, so a run that started non-atomic and
- * finished atomic took the atomic road over edges it had already given back: it lowered the claim of the train that
- * had taken each one since, and emptied the Points that train held.  The setting can change under a run: the Atomic
- * Routes gate switches it on when a train turns out to have no length, and two of its doors - Execute Timetable and the
- * commands panel's hand dispatch - are reached while trains are running.
+ * finished atomic took the atomic road over edges it had already given back, lowering the claim of the train that had
+ * taken each one since and emptying the Points that train held.  The setting can change under a run: the Atomic Routes
+ * gate switches it on when a train turns out to have no length, and Execute Timetable and the commands panel's hand
+ * dispatch are reached while trains are running.
  *
- * **The state is set up directly**, as a finished non-atomic run leaves it: train A's path locked, its first edge given
+ * The state is set up directly, as a finished non-atomic run leaves it: train A's path locked, its first edge given
  * back early and taken by train B, the setting then switched on, and A's run unlocked.
  *
  * MUTATION: have `unlockPath` choose by the setting alone again and the claim fails.
@@ -58,11 +58,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * Train B's claim on the edge A gave back early survives A's unlock after the setting was switched on.
-     *
-     * @throws Exception from reflection or the fixture
-     */
+    /** Train B's claim on the edge A gave back early survives A's unlock after the setting was switched on. */
     @Test
     public void testAnEdgeGivenBackEarlyIsNotGivenBackAgain() throws Exception
     {
@@ -123,18 +119,14 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
     }
 
     /**
-     * An atomic run gives everything back at its end, though its tail has passed edges on the way.
+     * An atomic run gives everything back at its end, though its tail has passed edges on the way.  The set of edges a
+     * tail has cleared is kept in atomic mode too (routes read it to know which accessories behind a train may move)
+     * but nothing in it is released until the end; choosing how to unlock by whether that set was empty kept those
+     * edges, and their locks, for good, and the next leg of a Return Home plan was refused on a lock edge nobody held.
      *
-     * The set of edges a tail has cleared is kept in atomic mode too - routes read it to know which accessories behind a
-     * train may move - but nothing in it is released until the end.  The first repair chose how to unlock by whether that
-     * set was empty, so an atomic run whose tail had passed anything kept those edges, and their locks, for good: the
-     * next leg of a Return Home plan was refused on a lock edge nobody held.
-     *
-     * MUTATION: read the cleared set as what was given back - at the road choice and at the skip, as the first repair
-     * did - and this fails.  At the road choice alone the two roads differ only where another train holds an end Point
-     * of an atomic run, which the lock rules refuse, so that half has no claim (found by round 4's mutation run).
-     *
-     * @throws Exception from reflection or the fixture
+     * MUTATION: read the cleared set as what was given back - at the road choice and at the skip - and this fails.  At
+     * the road choice alone the two roads differ only where another train holds an end Point of an atomic run, which
+     * the lock rules refuse, so that half has no claim.
      */
     @Test
     public void testAnAtomicRunGivesBackEverythingItHeld() throws Exception

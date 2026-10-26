@@ -14,27 +14,19 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * A page of the track diagram, held open, so a test can look at what is actually drawn.
  *
- * **Why this exists.** Adam, 2026-09-08: *"let's make the suite able to see rendered output when
- * needed."* Nothing in the suite did, and OB-180 is what that cost. The covered-track wash was
- * computed correctly the whole time; what was broken was that nothing REPAINTED the tiles whose state
- * had changed. Every assertion available to the suite - the covered set, the model, the source -
- * answered identically with the bug present and with it fixed.
+ * Adam: "let's make the suite able to see rendered output when needed."  Nothing in the suite did, and OB-180 is what
+ * that cost: the covered-track wash was computed correctly, but nothing REPAINTED the tiles whose state had changed, so
+ * every assertion on the covered set, the model or the source answered identically with the bug present and fixed.
  *
- * **Held open, and that is the whole design.** `DiagramExport.render` already renders a page offscreen,
- * and a test built on it would still not have caught OB-180: it constructs a FRESH grid every call, and
- * a fresh label always computes its wash correctly. The defect only exists for a label that is already
- * on screen and is never told to redraw.
+ * Held open is the whole design: `DiagramExport.render` renders a page offscreen but constructs a FRESH grid every
+ * call, and a fresh label always computes its wash correctly.  The defect only exists for a label already on screen and
+ * never told to redraw.  So this builds the grid ONCE; `snapshot()` paints that same grid again, and between two
+ * snapshots a test can move a train and call the production refresh.
  *
- * So this builds the grid ONCE and keeps it. `snapshot()` paints that same grid again. Between two
- * snapshots a test can move a train and call the production refresh, and the difference between the two
- * images is exactly what an operator would have seen - or not seen.
+ * Not an editor: the grid is built with a null master, so `inEditor` is false and the viewer's rules apply, which is
+ * where the wash is drawn.
  *
- * **Not an editor.** The grid is built with a null master, so `inEditor` is false and the viewer's
- * rules apply - which is where the wash is drawn (Adam: "only the track diagram viewer").
- *
- * Needs a display: painting a component that has never been shown works offscreen, but Swing still has
- * to be there. Callers skip when `GraphicsEnvironment.isHeadless()`, the way the other rendering tests
- * in this suite do.
+ * Needs a display: callers skip when `GraphicsEnvironment.isHeadless()`, as the other rendering tests do.
  *
  * @author Adam
  */
@@ -59,9 +51,7 @@ public final class Rendered
     /**
      * Builds one page's grid and keeps it.
      *
-     * @param page the diagram page
      * @param ui the window, which the tiles ask about covered track and about images
-     * @return the held render
      * @throws Exception if Swing cannot build it
      */
     public static Rendered open(final LayoutDiagram page, final TrainControlUI ui) throws Exception
@@ -87,8 +77,6 @@ public final class Rendered
 
     /**
      * The panel the grid was built into, for a test that looks at what the grid put there.
-     *
-     * @return the host
      */
     public JPanel host()
     {
@@ -96,14 +84,8 @@ public final class Rendered
     }
 
     /**
-     * Paints the grid as it stands now.
-     *
-     * The tiles decode their images on a worker, so this waits for them to settle first - otherwise the
-     * first snapshot of a page is a picture of a grid that has not finished arriving, and a test
-     * comparing it with a later one reports a difference that is only timing.
-     *
-     * @return the image
-     * @throws Exception if Swing cannot paint it
+     * Paints the grid as it stands now.  The tiles decode their images on a worker, so this waits for them to settle
+     * first, or the first snapshot is a picture of a grid that has not finished arriving.
      */
     public BufferedImage snapshot() throws Exception
     {
@@ -153,8 +135,6 @@ public final class Rendered
 
     /**
      * Waits for the tile images to finish decoding, and for the event queue to catch up.
-     *
-     * @throws Exception if the wait is interrupted
      */
     public void settle() throws Exception
     {
@@ -186,14 +166,9 @@ public final class Rendered
     }
 
     /**
-     * The square at a grid position, as its own image.
+     * The square at a grid position, as its own image: asking about one tile rather than the page makes a rendered
+     * assertion readable ("the square behind the train got darker" rather than "4% of the page changed").
      *
-     * Asking about one tile rather than about the page is what makes a rendered assertion readable: "the
-     * square behind the train got darker" is a sentence, and "4% of the page changed" is not.
-     *
-     * @param page the whole-page image
-     * @param x the column
-     * @param y the row
      * @return the tile, or null when it falls outside the image
      */
     public static BufferedImage tile(BufferedImage page, int x, int y)
@@ -212,13 +187,10 @@ public final class Rendered
     }
 
     /**
-     * How dark a tile is, averaged over its pixels.
+     * How dark a tile is, averaged over its pixels.  The covered wash is a translucent gray, so a covered square is
+     * uniformly DARKER than the same square uncovered; mean brightness says that in one number and does not depend on
+     * which pixels the track happens to occupy.
      *
-     * The covered wash is a translucent gray laid over the tile art, so a covered square is uniformly
-     * DARKER than the same square uncovered. Mean brightness says that in one number, and it does not
-     * depend on which pixels the track happens to occupy - which a fixed sample point would.
-     *
-     * @param tile the image
      * @return 0 (black) to 255 (white), or -1 for a null image
      */
     public static double brightness(BufferedImage tile)
@@ -241,11 +213,7 @@ public final class Rendered
     }
 
     /**
-     * Whether two images are pixel-for-pixel the same.
-     *
-     * @param a one image
-     * @param b the other
-     * @return true when identical, false when either is null or they differ
+     * Whether two images are pixel-for-pixel the same: false when either is null or they differ.
      */
     public static boolean same(BufferedImage a, BufferedImage b)
     {
@@ -266,11 +234,6 @@ public final class Rendered
 
     /**
      * Writes an image out, for looking at when an assertion fails.
-     *
-     * A rendered test that fails and shows you nothing is a test you cannot act on.
-     *
-     * @param image the image
-     * @param to the file
      */
     public static void save(BufferedImage image, java.io.File to)
     {
@@ -289,22 +252,12 @@ public final class Rendered
     }
 
     /**
-     * Whether this tile is drawing the mark that says a train is lying across it (MT-309).
+     * Whether this tile is drawing the mark that says a train is lying across it (MT-309).  The mark is a line PAINTED
+     * over the icon, which is not in the object at all, so the only honest way to ask is to paint the tile and look.
      *
-     * The mark used to be the tile's ICON - a grayed copy - so "is it marked" could be asked of the
-     * object with an identity comparison.  It is a line PAINTED over the icon now, which is not in
-     * the object at all, so the only honest way to ask is to paint the tile and look.
-     *
-     * By hue rather than against `LayoutLabel.TRAIN_MARK`: the claim is that somebody looking at the
-     * square sees orange on it, and a check reading production's own constant would agree with any
-     * value that constant was changed to, gray included.
-     *
-     * `paint` and not `printAll`: both of the others begin with an isShowing() check and do nothing
-     * for a component that is not on screen, which is every component a test builds.
-     *
-     * @param tile the label
-     * @return true when the mark is on it
-     * @throws Exception if Swing cannot paint it
+     * By hue rather than against `LayoutLabel.TRAIN_MARK`: a check reading production's own constant would agree with
+     * any value it was changed to, gray included.  `paint` and not `printAll`: both of the others begin with an
+     * isShowing() check and do nothing for a component that is not on screen.
      */
     public static boolean showsTheTrainMark(final java.awt.Component tile) throws Exception
     {
@@ -344,17 +297,11 @@ public final class Rendered
     }
 
     /**
-     * Whether a pixel is the train's orange - by its HUE, an orange between 12 and 40 degrees, as saturated as a third and
-     * as bright as 110 of 255 (round 99).
-     *
-     * By hue because the line is see-through since 2026-10-09 (Adam: "can we change to the see through tail line"): over
-     * black track it is a dark orange, rgb(140,56,0), and over white a pale one, rgb(255,171,115), and the thresholds
-     * this replaced (red above 190, blue below 90) counted neither.  Red (0 degrees) and the destination's yellow (47)
-     * fall outside it; so do the grays.  One rule for every test that asks, so they cannot come to disagree about what
-     * orange is.
-     *
-     * @param rgb the pixel
-     * @return true when it is the train's orange, whatever lies under it
+     * Whether a pixel is the train's orange - by its HUE, an orange between 12 and 40 degrees, as saturated as a third
+     * and as bright as 110 of 255.  The line is see-through (Adam: "can we change to the see through tail line"): over
+     * black track it is a dark orange, rgb(140,56,0), and over white a pale one, rgb(255,171,115), which fixed
+     * thresholds counted neither.  Red (0 degrees), the destination's yellow (47) and the grays fall outside it.  One
+     * rule for every test that asks, so they cannot come to disagree about what orange is.
      */
     public static boolean isTrainOrange(int rgb)
     {
@@ -372,13 +319,8 @@ public final class Rendered
     }
 
     /**
-     * The same question asked of a picture that has already been taken (MT-309).
-     *
-     * Separate so that a test working from a whole-page snapshot - `tile(page, x, y)` - asks the same
-     * thing as one painting a single label, and there is one statement of what the mark looks like.
-     *
-     * @param image the tile
-     * @return true when there is orange on it
+     * The same question asked of a picture that has already been taken (MT-309), so a test working from a whole-page
+     * snapshot asks the same thing as one painting a single label.
      */
     public static boolean hasTheTrainMark(BufferedImage image)
     {

@@ -51,18 +51,10 @@ abstract public class Accessory
     public static final int MAX_DCC_ADDRESS = 2047;
 
     /**
-     * Whether a LOGICAL address - the number the operator types - is one this protocol has.
-     *
-     * **The maxima above are RAW, and two callers disagreed about that**.  The diagram editor
-     * converts before asking (`isValidAddress(address - 1, ...)`); the route editor passed the logical
-     * value straight in, so its accepted band was `1..MAX` where the diagram's is `1..MAX + 1` - and
-     * logical MM2 320 and logical DCC 2048 were refused in one place and taken in the other.
-     *
-     * An over-strict guard costs more here than its size suggests: Adam's standing preference is that he
-     * would rather have no check than one that refuses something legal.
-     *
-     * Stated once, here, rather than as a subtraction at each call site - which is what let the two
-     * disagree.
+     * Whether a LOGICAL address, the number the operator types, is one this protocol has.  The maxima above are RAW:
+     * the diagram editor converts before asking (`isValidAddress(address - 1, ...)`) and the route editor did not, so
+     * logical MM2 320 and DCC 2048 were refused in one place and taken in the other.  Stated once, here, because an
+     * over-strict guard costs more than it buys: Adam would rather have no check than one that refuses something legal.
      *
      * @param logical the address as the operator writes it, from 1
      * @param type MM2 or DCC

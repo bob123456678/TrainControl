@@ -21,27 +21,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * What TrainControl treats as a parking berth, now that it is two facts rather than a flag.
+ * What TrainControl treats as a parking berth, now that it is two facts rather than a flag (FR-060; Adam: "For now, we
+ * consider anything with autodestination=false and only one way in/out as a parking square.  We can revisit dedicated
+ * marking if this doesn't work out with clean logic, or if it gets too confusing to the user to manage.").
  *
- * Adam, 2026-09-13, ruling on FR-060: **"For now, we consider anything with autodestination=false and
- * only one way in/out as a parking square.  We can revisit dedicated marking if this doesn't work out
- * with clean logic, or if it gets too confusing to the user to manage."**
- *
- * FR-060 asked for a fourth designation beside `terminus` and `reversing`, and the part of it only he
- * could answer was what happens to the twenty squares on his railway already carrying
- * `autoDestination: false`. His answer makes the designation derivable, so there is nothing for him to
- * mark and nothing to migrate - and the question the entry was waiting on becomes a definition.
- *
- * **The two halves each let something through on their own**, which is why this class asserts both
- * directions rather than a count:
- *
- *   - `autoDestination` off alone would call a platform he keeps for himself a parking berth.
- *   - one way in and out alone would call a headshunt one, and a berth he has left choosable would not
- *     be one.
- *
- * **It is not the berth rule's gate**, and a claim below says so: `whyABerthCannotHoldIt` applies
- * wherever autonomy will not choose the square, which is deliberately wider. Adam's own example for
- * that rule is a three-way square this test calls "not parking".
+ * The designation is derivable, so there is nothing to mark or migrate.  Each half lets something through alone, so
+ * both directions are asserted rather than a count: `autoDestination` off alone would call a platform he keeps for
+ * himself a berth, and one way in and out alone would call a headshunt one.  It is not the berth rule's gate:
+ * `whyABerthCannotHoldIt` applies wherever autonomy will not choose the square, which is deliberately wider.
  *
  * @author Adam
  */
@@ -65,11 +52,7 @@ public class testWhatCountsAsAParkingSquare
     private static AutonomySession session;
     private static Layout layout;
 
-    /**
-     * Opens the frozen railway as it stands, measuring nothing - this is about shape, not length.
-     *
-     * @throws Exception when the railway cannot be read
-     */
+    /** Opens the frozen railway as it stands, measuring nothing: this is about shape, not length. */
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -95,18 +78,14 @@ public class testWhatCountsAsAParkingSquare
         if (layout == null) throw new AssertionError("the snapshot did not build");
     }
 
-    /**
-     * Closes the sandbox, and with it the layout preference it redirected.
-     */
+    /** Closes the sandbox, and with it the layout preference it redirected. */
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (sandbox != null) sandbox.close();
     }
 
-    /**
-     * The twelve dead-end berths on his railway answer yes.
-     */
+    /** The twelve dead-end berths on his railway answer yes. */
     @Test
     public void testADeadEndHeKeepsForHimselfIsParking()
     {
@@ -127,11 +106,8 @@ public class testWhatCountsAsAParkingSquare
     }
 
     /**
-     * And the eight with track running past them answer no.
-     *
-     * This is the half that can be got wrong quietly: counting a square's COPIES rather than the
-     * places they lead to makes a split berth look like a junction, and counting neighbors without
-     * collapsing the copies of one neighbor makes every square look like one.
+     * And the eight with track running past them answer no: counting a square's COPIES rather than the places they lead
+     * to makes a split berth look like a junction.
      */
     @Test
     public void testSomewhereWithAnotherWayOutIsNot()
@@ -153,10 +129,8 @@ public class testWhatCountsAsAParkingSquare
     }
 
     /**
-     * Both halves are load-bearing, and the railway can tell them apart.
-     *
-     * Without this the two claims above could both pass against `!isAutoDestination()` alone, or
-     * against a definition that never says yes.
+     * Both halves are load-bearing, and the railway can tell them apart; without this both claims above could pass
+     * against `!isAutoDestination()` alone.
      */
     @Test
     public void testNeitherHalfDecidesItAlone()
@@ -188,12 +162,9 @@ public class testWhatCountsAsAParkingSquare
             "no square on this railway is a parking berth at all, so the claims above are asserting"
             + " that a rule never fires");
 
-        // AND THE OTHER HALF, WHICH THIS RAILWAY CANNOT SHOW BY ITSELF.
-        //
-        // Measured 2026-09-13: every dead end on it already carries `autoDestination: false`, so
-        // there is no square to point at where the flag is what decides. The edit an operator would
-        // make is what shows it - turn autonomy's choosing back ON at a berth, and it stops being
-        // one, because it is now a station he is letting autonomy use.
+        // AND THE OTHER HALF, WHICH THIS RAILWAY CANNOT SHOW BY ITSELF: every dead end on it already carries
+        // `autoDestination: false`, so the edit an operator would make shows it: turn autonomy's choosing back ON at a
+        // berth.
         Point berth = named("ParkingTrack4");
 
         assertTrue(layout.isParkingSquare(berth),
@@ -220,12 +191,9 @@ public class testWhatCountsAsAParkingSquare
     }
 
     /**
-     * And the berth rule is deliberately wider than this.
-     *
-     * The rule Adam gave on 2026-09-12 - *"parking berths cant block any other edges"* - was measured
-     * and validated at TunnelLongPark, which has three ways in and is not a parking square by the
-     * ruling above. Gating that rule on this predicate would drop the case it was written for, so the
-     * two questions stay separate and this records why.
+     * And the berth rule is deliberately wider than this: Adam's rule "parking berths cant block any other edges" was
+     * validated at TunnelLongPark, which has three ways in and is not a parking square.  Gating it on this predicate
+     * would drop the case it was written for.
      */
     @Test
     public void testTheBerthRuleIsNotGatedOnThis()

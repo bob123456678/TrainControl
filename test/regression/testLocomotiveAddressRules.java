@@ -9,22 +9,16 @@ import support.SourceOf;
 
 /**
  * What counts as a valid locomotive address, asked once and answered in one place.
- *
- * `MarklinLocomotive.validateNewAddress` is the rule. It was also written out again, differently, in
- * the Add Locomotive dialog: three separate `if` blocks testing the UPPER bound only, with no branch
- * for MULTI_UNIT, and an `abs()` above them. So **address 0 passed the dialog** - zero is not greater
- * than any maximum - and made a locomotive the model itself would have refused.
- *
- * These tests pin the rule rather than the dialog, because the dialog now asks the rule. The pair that
- * matters is the lower bound: the drifted copy would pass every upper-bound test in this file.
+ * `MarklinLocomotive.validateNewAddress` is the rule; the Add Locomotive dialog once wrote it out again (three
+ * upper-bound-only `if` blocks, no MULTI_UNIT branch), so address 0 passed the dialog.  These tests pin the rule, which
+ * the dialog now asks; the lower bound is the pair that matters, since the drifted copy would pass every upper-bound
+ * test.
  */
 public class testLocomotiveAddressRules
 {
     /**
-     * Zero is not an address, for any decoder.
-     *
-     * This is the clause the dialog's copy left out, and the only one that was reachable: the maximum
-     * is hard to type by accident and zero is not.
+     * Zero is not an address, for any decoder: the clause the dialog's copy left out, and the only one reachable by
+     * accident.
      */
     @Test
     public void testZeroIsRefusedForEveryDecoder()
@@ -37,10 +31,8 @@ public class testLocomotiveAddressRules
     }
 
     /**
-     * And neither is a negative one.
-     *
-     * The dialog takes an absolute value before it looks, so this is about the rule rather than about
-     * that screen - but a rule that accepts -1 accepts it from every other caller too.
+     * And neither is a negative one: the dialog takes an absolute value, but a rule that accepts -1 accepts it from
+     * every other caller too.
      */
     @Test
     public void testNegativeIsRefusedForEveryDecoder()
@@ -52,9 +44,7 @@ public class testLocomotiveAddressRules
         }
     }
 
-    /**
-     * Each decoder's ceiling is its own, and one past it is refused.
-     */
+    /** Each decoder's ceiling is its own, and one past it is refused. */
     @Test
     public void testEachDecoderKeepsItsOwnCeiling()
     {
@@ -78,12 +68,8 @@ public class testLocomotiveAddressRules
     }
 
     /**
-     * Every decoder type has an answer, including any added later.
-     *
-     * `validateNewAddress` returns false in its default branch, so a new decoder type is refused
-     * everywhere rather than let through - which is the safe way round, but means a type added and not
-     * wired here would silently refuse every address. One is as much a defect as the other, and this
-     * says which one is happening.
+     * Every decoder type has an answer, including any added later: the default branch refuses, so a type added and not
+     * wired here would silently refuse every address.
      */
     @Test
     public void testEveryDecoderTypeHasAWorkingRange()
@@ -97,19 +83,11 @@ public class testLocomotiveAddressRules
     }
 
     /**
-     * The dialog asks the rule above rather than restating it.
+     * The dialog asks the rule above rather than restating it: the original defect was in `AddLocomotive`'s own copy,
+     * which no other test here calls.
      *
-     * Every test in this file pins `MarklinLocomotive.validateNewAddress` itself, and this class's own
-     * javadoc says why that is not enough: the original defect was not in the rule, it was in
-     * `AddLocomotive`'s own copy of it, three separate upper-bound-only `if` blocks with an `abs()`
-     * above them and no branch for MULTI_UNIT - and address 0 passed every one of them, since zero is
-     * not greater than any maximum. Nothing above this test would notice that copy coming back, because
-     * `grep -rn AddLocomotive test/` before this method found nothing at all: the dialog had no test of
-     * its own, only the rule it used to ignore.
-     *
-     * MUTATION this catches: replace the call this checks for with the three-`if` copy the class
-     * javadoc describes. Every test above still passes - they never call `AddLocomotive` - and address
-     * 0 is accepted again for every decoder type this dialog offers.
+     * MUTATION: replace the call this checks for with the three-`if` copy the class javadoc describes; address 0 is
+     * accepted again for every decoder type this dialog offers.
      */
     @Test
     public void testTheDialogAsksTheRuleRatherThanRestatingIt() throws Exception
@@ -132,8 +110,8 @@ public class testLocomotiveAddressRules
             "one of the three locomotive-creation calls has moved or been renamed, so the ordering "
             + "below cannot be checked");
 
-        // All three, not just the branch this run happened to take - address validation has to gate
-        // creation regardless of which decoder type was selected.
+        // All three, not just the branch this run happened to take: validation has to gate creation whichever decoder
+        // was selected.
         assertTrue(validated < mfx && validated < dcc && validated < mm2,
             "validateNewAddress is called AFTER a locomotive can already be created, which is no "
             + "refusal at all - a rejected address would be asked about only after the locomotive it "

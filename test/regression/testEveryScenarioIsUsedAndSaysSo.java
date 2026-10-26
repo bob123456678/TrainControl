@@ -17,47 +17,28 @@ import org.testng.annotations.Test;
 /**
  * The scenario library cannot rot: no orphan fixtures, and no README that lies about who uses it.
  *
- * **Two failures this guards against, and both have already happened here in other forms.**
+ * An ORPHAN FIXTURE is a checked-in railway nothing runs against: `test/` already had seven ad-hoc layout folders named
+ * for who made them, four of them the same five pages, each added for one test and outliving it.  A STALE "USED BY"
+ * LIST goes out of date first, because it changes when a DIFFERENT file changes, so it is not maintained by hand and
+ * checked by eye but compared, here, with what the test sources say.
  *
- * An ORPHAN FIXTURE is a checked-in railway nothing runs against.  `test/` already has seven ad-hoc
- * layout folders at its root, named for who made them rather than for what shape they are, and
- * `test/README.md`'s own survey found that four of them are the same five pages counted four
- * times.  Nobody set out to do that; each was added for one test and outlived it.  A fixture that no
- * test opens is a file that gets maintained, moved, renamed and argued about for nothing.
- *
- * A STALE "USED BY" LIST is the same defect as the review index that read `open` on eleven findings
- * whose bodies said `fixed` (`audit-the-bodies-not-the-index`).  A scenario's README exists to tell the
- * next author what may be relied on and what may not; the list of who relies on it is the part that
- * goes out of date first, because it changes when a DIFFERENT file changes.  So it is not maintained by
- * hand and checked by eye - it is compared, here, with what the test sources actually say.
- *
- * **The link is a name in the source, not a call.**  A test that merely writes the scenario's name in a
- * comment counts as a user, deliberately: the question being asked is "does anything in the suite refer
- * to this railway", and a class that names it in prose is a class whose author will want to know when it
- * is changed.
+ * **The link is a name in the source, not a call:** a test that writes the scenario's name in a comment counts as a
+ * user, deliberately, since its author will want to know when the railway changes.
  *
  * @author Adam
  */
 public class testEveryScenarioIsUsedAndSaysSo
 {
-    /**
-     * The heading a scenario's README lists its users under.
-     */
+    /** The heading a scenario's README lists its users under. */
     private static final String USED_BY = "## Used by";
 
     /**
-     * The heading that says which properties a test must set for itself.
-     *
-     * Required of every README because it is the half of Adam's design that a reader will otherwise
-     * assume the other way round: *"hand-authored for topology, lengths in code."*  A scenario that
-     * quietly baked a length in would be a scenario two tests could disagree about without either of
-     * them saying so.
+     * The heading that says which properties a test must set for itself.  Required of every README because it is the
+     * half of Adam's design a reader would assume the other way round: "hand-authored for topology, lengths in code."
      */
     private static final String NOT_INVARIANTS = "## Not invariants";
 
-    /**
-     * Every scenario is opened by at least one test class.
-     */
+    /** Every scenario is opened by at least one test class. */
     @Test
     public void testEveryScenarioIsUsedByATest() throws Exception
     {
@@ -82,9 +63,7 @@ public class testEveryScenarioIsUsedAndSaysSo
             + " maintained for nothing - write the test it was built for, or delete the folder.");
     }
 
-    /**
-     * Every scenario has a README, and it carries the two sections that make it useful.
-     */
+    /** Every scenario has a README, and it carries the two sections that make it useful. */
     @Test
     public void testEveryScenarioHasAReadme() throws Exception
     {
@@ -118,12 +97,9 @@ public class testEveryScenarioIsUsedAndSaysSo
     }
 
     /**
-     * And the "used by" list is the list of classes that actually name the scenario.
-     *
-     * Compared both ways.  A name in the README that no source mentions is a link that has rotted - the
-     * class was renamed, moved or deleted - and a source that names the scenario without appearing in
-     * the README is a user the next person to edit that fixture will not know about.  The second is the
-     * more expensive one, so neither is allowed to be the "harmless" direction.
+     * And the "used by" list is the list of classes that actually name the scenario, compared both ways: a name in the
+     * README that no source mentions has rotted, and a source that names the scenario without appearing in the README
+     * is a user the next editor of that fixture will not know about (the more expensive direction).
      */
     @Test
     public void testEveryReadmeNamesExactlyItsUsers() throws Exception
@@ -158,12 +134,7 @@ public class testEveryScenarioIsUsedAndSaysSo
             + wrong);
     }
 
-    /**
-     * Which test classes name each scenario.
-     *
-     * @param scenarios the scenario names
-     * @return scenario name to the fully qualified test classes that mention it
-     */
+    /** Which test classes name each scenario: scenario name to the fully qualified test classes that mention it. */
     private Map<String, Set<String>> usersByScenario(List<String> scenarios) throws Exception
     {
         Map<String, Set<String>> out = new LinkedHashMap<>();
@@ -181,11 +152,9 @@ public class testEveryScenarioIsUsedAndSaysSo
         {
             if (!folder.isDirectory()) continue;
 
-            // NOT `support`, WHICH HOLDS NO TESTS. `test/README.md`: "Not tests. Fixtures the others
-            // use." `Scenario`'s own javadoc shows a scenario being opened, which is exactly the
-            // documentation a reader wants there - and counting it as a user would make that scenario
-            // permanently non-orphan whether or not any test ever ran against it, which is the one
-            // thing the guard above exists to catch.
+            // NOT `support`, WHICH HOLDS NO TESTS (`test/README.md`): `Scenario`'s own javadoc shows a scenario being
+            // opened, and counting it would make that scenario permanently non-orphan whether or not any test ran
+            // against it.
             if (folder.getName().equals("support")) continue;
 
             File[] files = folder.listFiles();
@@ -196,9 +165,8 @@ public class testEveryScenarioIsUsedAndSaysSo
             {
                 if (!file.getName().endsWith(".java")) continue;
 
-                // NOT THIS FILE. It reads every scenario name off the filesystem and would otherwise
-                // have to be listed in every README as a user of every scenario - which would make the
-                // list above say nothing, since every entry would be there whatever happened.
+                // NOT THIS FILE: it reads every scenario name off the filesystem and would otherwise be a listed user
+                // of every scenario.
                 if (file.getName().equals(getClass().getSimpleName() + ".java")) continue;
 
                 String source = read(file);
@@ -208,8 +176,8 @@ public class testEveryScenarioIsUsedAndSaysSo
 
                 for (String scenario : scenarios)
                 {
-                    // QUOTED, so that "curve-into-platform" in a sentence is a mention and a folder
-                    // name that happens to be a substring of another word is not.
+                    // QUOTED, so a scenario name in a sentence is a mention and a folder name that is a substring of
+                    // another word is not.
                     if (source.contains("\"" + scenario + "\"")) out.get(scenario).add(qualified);
                 }
             }
@@ -219,13 +187,8 @@ public class testEveryScenarioIsUsedAndSaysSo
     }
 
     /**
-     * The class names a README lists under its "used by" heading.
-     *
-     * One per bullet, in backticks: `- `core.testSomething``. Anything else under the heading is prose
-     * and is ignored, so a note about why a class uses the scenario does not read as a class name.
-     *
-     * @param text the README
-     * @return the names listed
+     * The class names a README lists under its "used by" heading: one per bullet, in backticks; anything else under it
+     * is prose and ignored.
      */
     private Set<String> listedUnderUsedBy(String text)
     {
@@ -259,9 +222,7 @@ public class testEveryScenarioIsUsedAndSaysSo
         return out;
     }
 
-    /**
-     * @return everything in the first set that is not in the second
-     */
+    /** Everything in the first set that is not in the second. */
     private Set<String> missingFrom(Set<String> these, Set<String> those)
     {
         Set<String> out = new LinkedHashSet<>(these);
@@ -271,9 +232,7 @@ public class testEveryScenarioIsUsedAndSaysSo
         return out;
     }
 
-    /**
-     * @return the names in a stable order, so a failure message reads the same twice
-     */
+    /** The names in a stable order, so a failure message reads the same twice. */
     private List<String> sorted(Set<String> names)
     {
         List<String> out = new ArrayList<>(names);
@@ -283,9 +242,7 @@ public class testEveryScenarioIsUsedAndSaysSo
         return out;
     }
 
-    /**
-     * @return the file, as text
-     */
+    /** The file, as text. */
     private String read(File file) throws Exception
     {
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);

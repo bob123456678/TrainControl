@@ -4,21 +4,15 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
- * OB-187: the menus stopped being gray in stages as the connect finished.
+ * OB-187: the menus stopped being gray in stages as the connect finished ("the menu options ungrey at different
+ * times").
  *
- * Adam, in MT-264: *"Looks good, but when the loading finishes, the menu options ungrey at different
- * times."*
+ * `showConnecting` grays every menu on the bar and `connectingFinished` gives back exactly those, one list, one
+ * moment.  The autonomy menu is not on the bar when that walk happens: `mountAutonomyControls` adds it from
+ * `setViewListener`, during the connect, so it arrived enabled into a gray bar and came back at its own moment.
  *
- * The mechanism is that the bar is grayed BEFORE it is finished being built.  `showConnecting` walks
- * the menu bar and disables every menu on it, and `connectingFinished` gives back exactly those - one
- * list, one moment.  The autonomy menu is not on the bar when that walk happens: it is created and
- * added by `mountAutonomyControls`, from `setViewListener`, which runs during the connect the notice
- * is describing.  It arrived enabled, into a bar where everything else was gray, and so came back at
- * its own moment several seconds before the rest.
- *
- * This drives the real start-up order - gray the bar, hand the window its model - rather than calling
- * the mounting method directly, because "arrives after the walk" is the whole defect and only the
- * order can show it.
+ * This drives the real start-up order (gray the bar, hand the window its model) rather than calling the mounting
+ * method, because "arrives after the walk" is the defect and only the order can show it.
  *
  * MUTATION: take the notice's hold out of `AutonomyMenu.refreshEnabled`, or stop `ungreyTheMenus`
  * asking that menu what it should be, and this fails.
@@ -27,9 +21,7 @@ import org.testng.annotations.Test;
  */
 public class testTheMenusComeBackAtOneMoment
 {
-    /**
-     * A menu added while the notice is up is gray with the rest, and comes back with the rest.
-     */
+    /** A menu added while the notice is up is gray with the rest, and comes back with the rest. */
     @Test
     public void testAMenuMountedDuringTheConnectWaitsForTheOthers() throws Exception
     {
@@ -68,14 +60,9 @@ public class testTheMenusComeBackAtOneMoment
 
             assertTrue(before > 1, "one menu is not a menu bar");
 
-            // WHICH SLOT THE AUTONOMY HEADING IS IN, and what is sitting in it now.
-            //
-            // The menu used to be APPENDED during the connect, so "a menu arrived after the walk" was
-            // a count going up. OB-202 changed that on purpose: a placeholder holds the slot from the
-            // first frame, because the heading growing in front of the operator part-way through
-            // start-up was its own defect, and `mountAutonomyMenu` REPLACES it. The premise this test
-            // rests on is unchanged - something arrives in that slot after the bar has been grayed -
-            // so it is now read as identity rather than as a count.
+            // WHICH SLOT THE AUTONOMY HEADING IS IN, and what is sitting in it now.  A placeholder holds the slot from
+            // the first frame (OB-202) and `mountAutonomyMenu` REPLACES it, so "arrives after the walk" is read as
+            // identity rather than as a count.
             int slot = -1;
 
             for (int i = 0; i < bar.getMenuCount(); i++)
@@ -93,9 +80,7 @@ public class testTheMenusComeBackAtOneMoment
 
             javax.swing.JMenu placeholder = bar.getMenu(slot);
 
-            // THE NOTICE GOES UP.  `greyTheMenus` is what `showConnecting` does to the bar, and it is
-            // separate from it precisely so a test can do this without putting a window on somebody's
-            // screen.
+            // THE NOTICE GOES UP: `greyTheMenus` is what `showConnecting` does to the bar, without a window on screen.
             call(ui, "greyTheMenus");
 
             // AND THE CONNECT HAPPENS UNDER IT, which is where the autonomy menu is built and added.
@@ -123,9 +108,7 @@ public class testTheMenusComeBackAtOneMoment
                 + " about anything - OB-187 is about a menu that arrives after the bar has been"
                 + " greyed, and OB-202 turned that arrival from an append into a replacement");
 
-            // THE CONTROL.  A menu that ought to be off anyway would be gray here for a reason that
-            // has nothing to do with the notice, and the assertion below would pass for a build with
-            // no fix in it at all.
+            // THE CONTROL: a menu that ought to be off anyway would be gray for a reason unrelated to the notice.
             assertTrue(ui.isLayoutLoaded() && ui.canUseAutonomy(),
                 "the sandbox layout is not one autonomy can be set up for, so the autonomy menu is "
                 + "switched off by its own rule and this test cannot see the notice's hold at all");
@@ -179,21 +162,12 @@ public class testTheMenusComeBackAtOneMoment
     }
 
     /**
-     * "Combine linked pages" sits immediately after "Duplicate Current Page" (Adam, 2026-09-10).
+     * "Combine linked pages" sits immediately after "Duplicate Current Page".
      *
-     * **In the form since 3.0.3's cleanup** (`combineLinkedPagesMenuItem`, Adam's `a4dac3dd`), where it was
-     * mounted in code before and appending put it at the BOTTOM of Manage Pages: past the divider and past
-     * Delete, in the group the menu's own gaps say is about destroying a page.  Combining pages is the
-     * same kind of act as duplicating one.
-     *
-     * **Found by searching for the item rather than by index**, which is the reason `mountEditPageMenu`
-     * gives about this same menu: an index is a fact about the generated form and moves the next time
-     * somebody adds an item in the designer.  The test drives the real start-up, which is what the menu
-     * looks like to the user.
-     *
-     * **And the two adjacent claims are both needed.** "After Duplicate" alone passes for an item at the
-     * bottom of a menu whose last entry happens to be Duplicate; "not last" alone passes for an item
-     * anywhere in the middle. Together they say one position.
+     * Appending put it at the BOTTOM of Manage Pages, past Delete, in the group about destroying a page; combining
+     * pages is the same kind of act as duplicating one.  Found by searching for the item rather than by index, which
+     * moves whenever somebody adds an item in the designer.  Both adjacent claims are needed: "after Duplicate" alone
+     * passes for an item at the bottom of a menu whose last entry is Duplicate, "not last" alone for one in the middle.
      *
      * MUTATION: move `modifyLocalLayoutMenu.add(combineLinkedPagesMenuItem)` below Delete in
      * `initComponents` and this fails, naming where the item landed.
@@ -283,9 +257,7 @@ public class testTheMenusComeBackAtOneMoment
         }
     }
 
-    /**
-     * A private field of the window, by name.
-     */
+    /** A private field of the window, by name. */
     private static <T> T field(org.traincontrol.gui.TrainControlUI on, String name, Class<T> kind)
         throws Exception
     {
@@ -297,9 +269,7 @@ public class testTheMenusComeBackAtOneMoment
         return kind.cast(f.get(on));
     }
 
-    /**
-     * Where a component sits on a menu, or -1.
-     */
+    /** Where a component sits on a menu, or -1. */
     private static int indexOf(javax.swing.JMenu menu, Object what)
     {
         for (int i = 0; i < menu.getMenuComponentCount(); i++)
@@ -310,9 +280,7 @@ public class testTheMenusComeBackAtOneMoment
         return -1;
     }
 
-    /**
-     * The menu's entries in order, for a failure message somebody can act on.
-     */
+    /** The menu's entries in order, for a failure message somebody can act on. */
     private static String shapeOf(javax.swing.JMenu menu)
     {
         StringBuilder out = new StringBuilder();
@@ -331,16 +299,7 @@ public class testTheMenusComeBackAtOneMoment
         return out.toString();
     }
 
-    /**
-     * The first menu on the bar of the given kind.
-     *
-     * By type rather than by title: the menu's text is translated, so a title would make this test
-     * pass or fail on the operator's language.
-     *
-     * @param bar the menu bar to look in
-     * @param kind the class of menu wanted
-     * @return the menu, or null when the bar holds none of that kind
-     */
+    /** The first menu on the bar of the given kind: by type, because the menu's text is translated. */
     private static javax.swing.JMenu named(javax.swing.JMenuBar bar, Class<?> kind)
     {
         for (int i = 0; i < bar.getMenuCount(); i++)
@@ -351,12 +310,7 @@ public class testTheMenusComeBackAtOneMoment
         return null;
     }
 
-    /**
-     * A private no-argument method of the window, by name, on the event thread.
-     *
-     * @param on the window
-     * @param name the method to call
-     */
+    /** A private no-argument method of the window, by name, on the event thread. */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
         final java.lang.reflect.Method m =
@@ -380,17 +334,10 @@ public class testTheMenusComeBackAtOneMoment
     /**
      * Every tooltip on the menu bar is short, and one too wide for a line is wrapped (FR-112).
      *
-     * Adam, 2026-10-05: *"look for other tooltips ... in the main JMenu right click menus, that are currently overly wide or
-     * long, and make them be more concise so they don't cover up other things."*  The bar's own tooltips are set in the
-     * generated block, which nobody edits by hand, and none of them was wrapped: Path Integrity Validation's ran to two
-     * hundred characters on one line.
-     *
-     * After the connect, so the Autonomy menu - mounted then - is walked with the rest.  A hundred characters in English and
-     * a hundred and thirty in the others.
+     * The bar's tooltips are set in the generated block and none was wrapped.  After the connect, so the Autonomy menu
+     * mounted then is walked with the rest.  A hundred characters in English and a hundred and thirty in the others.
      *
      * MUTATION: take the walk out of the constructor, or put a long sentence back on any item, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheMenuBarsTooltipsAreShortAndWrapped() throws Exception
@@ -453,7 +400,10 @@ public class testTheMenusComeBackAtOneMoment
                 String said = tip.replaceAll("<[^>]*>", " ").replace("&lt;", "<").replace("&gt;", ">")
                     .replace("&amp;", "&").replaceAll("\\s+", " ").trim();
 
-                if (said.length() > limit) wrong.add("(" + said.length() + "): " + said);
+                // A Recent Layouts item's tip is its folder's path: the user's data, not wording, so only its wrap counts
+                boolean aPath = new java.io.File(said).isAbsolute();
+
+                if (said.length() > limit && !aPath) wrong.add("(" + said.length() + "): " + said);
                 else if (!tip.contains("width") && !fitsOnALine(said)) wrong.add("(unwrapped): " + said);
             }
 
@@ -499,15 +449,14 @@ public class testTheMenusComeBackAtOneMoment
     }
 
     /**
-     * Whether text fits on one tooltip line, by the editor's own rule (`AutonomyEditorPanel.fitsOnOneLine`), so the claim
-     * and the wrapping cannot disagree: a copy of it at 320 pixels went red when OB-358 made the rule measure in the
-     * screen's pixels.
+     * Whether text fits on one tooltip line, by the editor's own rule (`AutonomyEditorPanel.fitsOnOneLine`), so the
+     * claim and the wrapping cannot disagree.
      */
     private static boolean fitsOnALine(String text)
     {
         try
         {
-            java.lang.reflect.Method rule = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
+            java.lang.reflect.Method rule = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
             rule.setAccessible(true);
 
             return (Boolean) rule.invoke(null, text);

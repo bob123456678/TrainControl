@@ -7,7 +7,7 @@ import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotiveFunctionAssign;
+import org.traincontrol.gui.locomotive.LocomotiveFunctionAssign;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -15,7 +15,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * Customize Function Icons grays Apply while there is nothing to apply, and only then (FR-098).
  *
- * Adam, on MT-466, 2026-09-22: *"there is no cancel button if you go to manage locomotive -> customize function icons,
+ * Adam, on MT-466: *"there is no cancel button if you go to manage locomotive -> customize function icons,
  * only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure
  * apply is greyed out if there is nothing to apply."*  Nothing to apply is the function on show exactly as the
  * locomotive holds it: its icon, its trigger, and its custom picture.  Both directions are claimed - graying Apply while

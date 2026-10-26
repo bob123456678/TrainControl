@@ -181,11 +181,8 @@ public class testAdvancedRoutes
      * by the same person. A format that accepts one spelling of one word and not another is a format
      * nobody can learn.
      *
-     * That asymmetry sat unadjudicated for three weeks inside a bundle the sweep document declared
-     * closed: one finding filed six sub-defects and four were dispositioned.
-     *
      * **The canonical casing is what this program writes**, so no existing route changes meaning - the
-     * lower-case forms below are ones that used to fail with "unrecognised" and now work.
+     * lower-case forms below parse instead of failing with "unrecognised".
      *
      * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
      *
@@ -252,7 +249,7 @@ public class testAdvancedRoutes
 
         // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory
         // database is open, and it holds every MM2 address from 1 to 320 and every DCC address from 1
-        // to 2048, because reading one used to register it.  Adam, 2026-09-07: **"there’s no reason to
+        // to 2048.  Adam: **"there�s no reason to
         // delete an accessory, since we just track their actuations.  them being in the database
         // doesn’t otherwise harm anything."**  So those rows are not damage and nothing here is
         // cleaning them up.
@@ -778,9 +775,7 @@ public class testAdvancedRoutes
     /**
      * A name with a bracket is allowed, and survives the way routes are actually stored.
      *
-     * **This test asserted the opposite until 2026-09-04**, and its own closing sentence said what
-     * would change it: *"would mean this name could simply be allowed"*. Adam ruled exactly that -
-     * *"bracketed loc names should just be allowed"*.
+     * Adam: *"bracketed loc names should just be allowed"*.
      *
      * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a
      * line break to find the grouping, so a condition naming `SBB 460 (2)` was torn into pieces. That
@@ -964,7 +959,7 @@ public class testAdvancedRoutes
      * `deleteLoc` takes every command that drives that locomotive out of every route, through `Iterator.remove()`,
      * from the event thread - while `execRoute` is part-way along the same list on its own thread with 200 ms between
      * commands.  Both list kinds are fail-fast, so that thread died mid-route and everything after the command being
-     * sent was never sent: measured on 2026-09-19, three of eight turnouts thrown, the road left half set, and
+     * sent was never sent: in one measurement three of eight turnouts were thrown, the road left half set, and
      * nothing in the log to say so - the route reports itself finished either way.
      *
      * The model half is here; the door half - the UI refusing the delete while such a route runs - is
@@ -1060,7 +1055,7 @@ public class testAdvancedRoutes
     /**
      * A running route about to CHAIN to another one is driving what that other route drives (MT-464).
      *
-     * **What Adam did**, 2026-09-21: *"I made Route 1, that fires a loc a route that fires a loc
+     * **What Adam did**: *"I made Route 1, that fires a loc a route that fires a loc
      * function after 10000ms.  Then I tried deleting alco UP (the target loc) from the loc db browser,
      * and it went through on deleting ALCO UP."*
      *
@@ -1219,10 +1214,10 @@ public class testAdvancedRoutes
      * drives what it drove (in the sync).
      *
      * Where the station's definition of a route differs from the one held, the sync deletes the held route and adds
-     * the station's as a new object under the same id - the delete-and-add `editRoute` does, which round 115 made
-     * refuse while the route runs, because what a route is doing lives on its object.  The sync went on replacing it:
-     * the new object read idle while the old one's thread went on sending its commands, so `runningRouteDriving` lost
-     * it, and every door that refuses to edit or delete a locomotive a running route drives stood open.
+     * the station's as a new object under the same id - the delete-and-add `editRoute` does, which refuses while the
+     * route runs, because what a route is doing lives on its object.  Replacing it would leave the new object reading
+     * idle while the old one's thread goes on sending its commands, so `runningRouteDriving` would lose it, and every
+     * door that refuses to edit or delete a locomotive a running route drives would stand open.
      *
      * The sync's per-route step is asked directly, with the station's description of the same route carrying one
      * more command, because the whole sync needs a station on the network.  The flag is set as `MarklinRoute.execRoute`
@@ -1347,7 +1342,7 @@ public class testAdvancedRoutes
     /**
      * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them.
      *
-     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' commands that run it, and the delete's
+     * Adam's ruling: deleting a route removes the other routes' commands that run it, and the delete's
      * question says how many routes call it - as deleting a locomotive removes the commands that drive it.  Left behind,
      * a command naming a deleted route did nothing until somebody made a route of that name, and from then on ran it: a
      * route nobody had put into the first one.
@@ -1526,7 +1521,7 @@ public class testAdvancedRoutes
         }
     }
 
-    // Every command and trigger, run (Adam, 2026-10-08: "Add the tests.  Advise if any fail") - the gaps
+    // Every command and trigger, run (Adam: "Add the tests.  Advise if any fail") - the gaps
     // a read of the suite found: features that were only parsed or round-tripped, never run as a route
 
     /** Polls a condition every 50 ms until it holds or the time is up. */

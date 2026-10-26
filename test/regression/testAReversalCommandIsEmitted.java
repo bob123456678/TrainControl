@@ -20,20 +20,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
 
 /**
- * Answering "no, do not keep the direction" turns the train round when it gets there.
+ * Answering "no, do not keep the direction" turns the train round when it gets there (OB-189: *"add tests to confirm
+ * reversal commands are emitted."*).
  *
- * Adam, 2026-09-08, `OB-189`: *"I send EN57-203 from BottomMainA to BottomMainPost. I say No to keep
- * current direction, but it does not reverse on arrival."* And: *"add tests to confirm reversal
- * commands are emitted."*
- *
- * **Nothing in the suite watched the command.** Every reversal test up to here checked a decision -
- * `shouldReverseAt` returning true, `asksAbout` naming the right square, the prompt's polarity - and
- * the decision was reached correctly the whole time. What none of them followed was whether
- * `switchDirection()` then reached the locomotive. A chain of five correct answers ending in nothing
- * happening looks exactly like a chain with one wrong answer, from the outside.
- *
- * So these assert the DIRECTION OF THE TRAIN after the journey, which is the only thing the operator
- * can see, and they run the real `executePath` to get it.
+ * Every reversal test before this checked a decision (`shouldReverseAt` returning true, `asksAbout` naming the right
+ * square, the prompt's polarity) and none followed whether `switchDirection()` then reached the locomotive: a chain of
+ * five correct answers ending in nothing happening looks like a chain with one wrong answer. So these assert the
+ * DIRECTION OF THE TRAIN after the journey, the only thing the operator can see, running the real `executePath`.
  *
  * @author Adam
  */
@@ -50,21 +43,17 @@ public class testAReversalCommandIsEmitted
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before the model: init reads the layout preference and would otherwise open Adam's own
-        // railway (OB-111).
+        // Before the model: init reads the layout preference and would otherwise open Adam's own railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        // DEBUG ON, because setSimulate refuses outside it - and simulation is the only way the
-        // train ever arrives here.  testAutonomySimulationSanity does the
-        // same for the same reason.
+        // DEBUG ON, because setSimulate refuses outside it, and simulation is the only way the train ever arrives here.
         model = support.TestStation.simulatedInDebug();
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);
 
-        // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
-        // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
-        // fixtures give the destination one, is every claim here
+        // A train that can reverse, the one the operator is asked about: a new locomotive is not, and one that cannot
+        // is not turned where its destination has a copy it can stand on facing on (MT-368), which is every claim here.
         model.getLocByName(DRIVER).setReversible(true);
     }
 
@@ -80,12 +69,10 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * A policy that answers for one square, the way the prompt's does.
-     *
-     * Built here rather than through `ManualReversalPrompt.forJourney`, which puts a dialog on the
-     * screen. The two clauses are copied from it exactly: the answer speaks for the square it was
-     * asked about and no other, and `asksAbout` names that square so `shouldReverseAt` can tell a
-     * turn the operator has a say over from a compulsory one.
+     * A policy that answers for one square, the way the prompt's does, built here because
+     * `ManualReversalPrompt.forJourney` puts a dialog on the screen. The answer speaks for the square it was asked
+     * about and no other, and `asksAbout` names that square so `shouldReverseAt` can tell a turn the operator has a say
+     * over from a compulsory one.
      */
     private static Layout.ReversalPolicy answering(final boolean turn, final Point asked)
     {
@@ -106,12 +93,8 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * Two points and the edge between them, the destination being one trains may turn at.
-     *
-     * @param tag distinguishes this fixture's names and sensors from the others in the class
-     * @param from where the sensor addresses start
-     * @return the layout, with the driver standing at START
-     * @throws Exception on a failure to build it
+     * Two points and the edge between them, the destination being one trains may turn at; `tag` distinguishes this
+     * fixture's names and sensors, and the driver stands at START.
      */
     private static Layout railway(String tag, int from) throws Exception
     {
@@ -134,8 +117,8 @@ public class testAReversalCommandIsEmitted
 
         layout.getPoint(tag + "_START").setLocomotive(model.getLocByName(DRIVER));
 
-        // WITHOUT THIS THE TRAIN NEVER ARRIVES.  `executePath` blocks on the destination sensor,
-        // and nothing on this machine is going to trip it.
+        // Without this the train never arrives: `executePath` blocks on the destination sensor and nothing on this
+        // machine trips it.
         layout.setSimulate(true);
 
         return layout;
@@ -144,13 +127,8 @@ public class testAReversalCommandIsEmitted
     /**
      * Makes the destination a square trains MAY turn at, as the build makes one a train can stand on facing on: its
      * turning copy and a plain copy beside it, one piece of track on one sensor, the plain one reached from the same
-     * approach.  A lone turning Point is the end of a line, where a train is turned whatever is answered -
-     * kept facing on there, it stood facing back out - so on that alone "keep" could not be asked about.
-     *
-     * @param layout the railway
-     * @param tag the fixture's names
-     * @param sensor the destination's sensor
-     * @param approach the Point the last leg starts from
+     * approach. A lone turning Point is the end of a line, where a train is turned whatever is answered, so "keep"
+     * could not be asked about.
      */
     private static void withAPlainCopy(Layout layout, String tag, MarklinFeedback sensor, String approach)
         throws Exception
@@ -164,12 +142,8 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * Three points in a line, the last being one trains may turn at.
-     *
-     * @param tag distinguishes this fixture's names and sensors
-     * @param from where the sensor addresses start
-     * @return the layout, with the driver standing at START
-     * @throws Exception on a failure to build it
+     * Three points in a line, the last being one trains may turn at; `tag` distinguishes this fixture's names and
+     * sensors, and the driver stands at START.
      */
     private static Layout longerRailway(String tag, int from) throws Exception
     {
@@ -187,8 +161,8 @@ public class testAReversalCommandIsEmitted
         layout.createPoint(tag + "_MIDDLE", true, middle.getName());
         layout.createPoint(tag + "_END", true, end.getName());
 
-        // ONLY THE DESTINATION TURNS. The middle is an ordinary through square, so anything that
-        // happens there is not a reversal anybody asked for.
+        // Only the destination turns: the middle is an ordinary through square, so anything that happens there is not a
+        // reversal anybody asked for.
         layout.getPoint(tag + "_END").setReversing(true);
 
         layout.createEdge(tag + "_START", tag + "_MIDDLE");
@@ -204,17 +178,8 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * Runs one leg and insists it actually arrived.
-     *
-     * A journey that never completes would leave the direction unchanged and read as the defect this
-     * is looking for, so the timeout is a failure with its own message rather than a hang.
-     *
-     * @param layout the railway
-     * @param path the leg
-     * @param driver the train
-     * @param answered what the operator said
-     * @param which for the message
-     * @throws Exception on a failure to run it
+     * Runs one leg and insists it actually arrived: a journey that never completes would leave the direction unchanged
+     * and read as the defect being looked for, so the timeout is a failure with its own message rather than a hang.
      */
     private static void run(Layout layout, List<Edge> path, Locomotive driver,
         Layout.ReversalPolicy answered, String which) throws Exception
@@ -244,11 +209,8 @@ public class testAReversalCommandIsEmitted
     /**
      * The whole of OB-189: the answer was no, so the train is facing the other way at the end.
      *
-     * MUTATION: delete the `switchDirection()` from the arrival block in `executePathInternal` and this
-     * fails, while every existing reversal test stays green - which is the state the suite was in when
-     * Adam reported it.
-     *
-     * @throws Exception on a failure to run the journey
+     * MUTATION: delete the `switchDirection()` from the arrival block in `executePathInternal` and this fails, while
+     * every other reversal test stays green.
      */
     @Test
     public void testAnsweringNoTurnsTheTrainRound() throws Exception
@@ -278,16 +240,11 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * The control: yes keeps the direction, so the test above is not passing on a turn that always
-     * happens.
-     *
-     * Without this, a `switchDirection()` called unconditionally on every arrival would satisfy the
-     * test above completely - and turning a train nobody asked to turn is the worse of the two faults,
-     * because the operator is not expecting it.
+     * The control: yes keeps the direction, so the test above is not passing on a turn that always happens. A
+     * `switchDirection()` called unconditionally on every arrival would satisfy that test, and turning a train nobody
+     * asked to turn is the worse fault.
      *
      * MUTATION: make `shouldReverse` return true regardless of the answer and this fails.
-     *
-     * @throws Exception on a failure to run the journey
      */
     @Test
     public void testAnsweringYesLeavesTheDirectionAlone() throws Exception
@@ -314,18 +271,12 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * The same answer, on a journey of two legs - which is the shape Adam's was.
+     * The same answer, on a journey of two legs, the shape Adam's was. If a reversal is applied twice and cancels
+     * itself out, this is where it shows: the loop in `executePathInternal` offers `path.get(i).getEnd()` to the
+     * mid-path reversal branch for every edge INCLUDING THE LAST, and the arrival block below asks the same question of
+     * the same square.
      *
-     * `BottomMainA` to `BottomMainPost` is not one edge, and the single-leg test above passes, so if a
-     * reversal is being applied twice and canceling itself out, this is where it shows: the loop in
-     * `executePathInternal` offers `path.get(i).getEnd()` to the mid-path reversal branch for every
-     * edge INCLUDING THE LAST, and the arrival block below the loop then asks the same question of the
-     * same square.
-     *
-     * MUTATION: this is the test for OB-189. If it passes, the double-turn theory is wrong and the
-     * defect is elsewhere - which is worth knowing in one run rather than by argument.
-     *
-     * @throws Exception on a failure to run the journey
+     * MUTATION: none; this is OB-189's test of the double-turn theory, and a pass says the theory is wrong.
      */
     @Test
     public void testTwoLegsStillTurnTheTrainExactlyOnce() throws Exception
@@ -358,49 +309,27 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * A journey that passes a reversing square on the way to the one that was answered.
+     * A journey that passes a reversing square on the way to the one that was answered (RampDown, on the way to
+     * BottomMainPost). Measured both ways, same journey: keep direction started forward and ended BACKWARD; reverse
+     * started forward and ended FORWARD. `shouldReverseAt` treats a reversing square nobody was asked about as a
+     * compulsory turn, which is right (a turning copy leaves only by the side the train came in on), and that flip
+     * happens before the answered one, so "No" returns the train to the direction it set off in.
      *
-     * Adam, 2026-09-08, on OB-189 and which square the dialog named: *"it may have named
-     * bottommainpost, but it could have been rampdown on some of the runs."* RampDown is on the way
-     * to BottomMainPost, and it is a square trains turn at.
+     * This fixture is NOT a shape the builder emits: `AutonomyBuilder` splits a may-turn square into a plain copy for
+     * paths passing onwards and a turning copy for paths backing in, so a real journey only reaches a reversing copy
+     * when backing in there. The canceling pair of turns cannot happen on a built railway; the test is the guard that
+     * the two answers still differ, and `testTheTurnRuleDoesNotChangeTheRealRailway` holds the measurement that settled
+     * it.
      *
-     * **The answer is honored; the compulsory turn on the way is what surprises.** Measured both ways
-     * on 2026-09-08, same journey, same reversing square in the middle:
-     *
-     * - keep direction - started forward, ended BACKWARD
-     * - reverse - started forward, ended FORWARD
-     *
-     * So the destination turn fires either way. `shouldReverseAt` treats a reversing square nobody was
-     * asked about as a compulsory turn, which is right - a turning copy leaves only by the side the
-     * train came in on, and not turning would drive it off its reserved path - and that flip happens
-     * before the answered one. "No" therefore returns the train to the direction it set off in.
-     *
-     * **The answer is about how the train ARRIVES, and it reads as being about how it started.**
-     *
-     * **AND THIS FIXTURE IS NOT A SHAPE THE BUILDER EMITS.** It calls `setReversing(true)` on a square
-     * a straight path runs through. `AutonomyBuilder` splits a may-turn square into a plain copy for
-     * paths passing onwards and a turning copy for paths backing in, so a real journey only reaches a
-     * reversing copy when it is backing in there - which is Adam's rule, already implemented by the
-     * split: *"only reverse if intended at the end or when backing in somewhere per the path, don't
-     * reverse if passing onwards."*
-     *
-     * So the canceling pair of turns this shows cannot happen on a built railway, and the test earns
-     * its place as the guard that the two answers still differ rather than as a report of a defect.
-     * `testTheTurnRuleDoesNotChangeTheRealRailway` holds the measurement that settled it.
-     *
-     * MUTATION: make the middle square ordinary and this passes, which is exactly why the two-leg test
-     * above did not catch it.
-     *
-     * @throws Exception on a failure to run the journey
+     * MUTATION: make the middle square ordinary and this passes, which is why the two-leg test above did not catch it.
      */
     @Test
     public void testTheAnswerStillChangesTheOutcomeThroughAReversingSquare() throws Exception
     {
         Layout layout = longerRailway("VIA", 8420);
 
-        // THE DIFFERENCE FROM THE TEST ABOVE, and the whole of this fixture: the square in the middle
-        // is one trains turn at. Every hand-built layout in this suite is a straight chain of ordinary
-        // points, so nothing has ever run a journey through one.
+        // The difference from the test above, and the whole of this fixture: the square in the middle is one trains
+        // turn at, which no other hand-built layout in this suite has.
         layout.getPoint("VIA_MIDDLE").setReversing(true);
 
         Locomotive driver = model.getLocByName(DRIVER);
@@ -418,7 +347,7 @@ public class testAReversalCommandIsEmitted
 
         boolean afterNo = driver.goingForward();
 
-        // THE SAME JOURNEY AGAIN, the other answer, on its own railway so nothing carries over.
+        // The same journey again, the other answer, on its own railway so nothing carries over.
         Layout second = longerRailway("VIA2", 8424);
 
         second.getPoint("VIA2_MIDDLE").setReversing(true);

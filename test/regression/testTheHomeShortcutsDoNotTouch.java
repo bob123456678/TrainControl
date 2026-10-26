@@ -2,20 +2,16 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import support.SourceOf;
 
 /**
- * OB-188: the two shortcut buttons in the set-home dialog touch each other.
+ * OB-188: the two shortcut buttons in the set-home dialog touch each other: "add some spacing between the two
+ * buttons, as they currently touch."  The strip was laid out with `new FlowLayout(FlowLayout.LEFT, 0, 0)`, a
+ * horizontal gap of zero, so the two read as one wide control.
  *
- * Adam: *"add some spacing between the two buttons, as they currently touch (in the set home
- * locomotive popup)."*  The strip that carries "use current" and "use active" was laid out with
- * `new FlowLayout(FlowLayout.LEFT, 0, 0)` - a horizontal gap of zero - so the two buttons were drawn
- * edge to edge and read as one wide control with a line down the middle.
- *
- * Measured rather than read.  The defect is a distance in pixels, so the test lays the strip out and
- * asks where the buttons landed; a test that looked for a number in the source would pass for a gap
- * written into a layout nothing uses.
+ * Measured rather than read: the defect is a distance in pixels, and a test that looked for a number in the source
+ * would pass for a gap written into a layout nothing uses.
  *
  * MUTATION: put the horizontal gap in `AutonomyEditorPanel.shortcutRow` back to 0, or stack the
  * buttons instead of spacing them, and this fails.
@@ -27,12 +23,7 @@ public class testTheHomeShortcutsDoNotTouch
     /** The smallest separation that reads as two controls rather than one. */
     private static final int READS_AS_TWO = 4;
 
-    /**
-     * Lays a row out at its own preferred size and returns the horizontal space between its buttons.
-     *
-     * @param row the strip to measure, already holding exactly two buttons
-     * @return the pixels between the first button's right edge and the second button's left edge
-     */
+    /** Lays a row out at its own preferred size and returns the pixels between its two buttons. */
     private static int gapBetweenTheButtons(javax.swing.JPanel row)
     {
         row.setSize(row.getPreferredSize());
@@ -55,10 +46,8 @@ public class testTheHomeShortcutsDoNotTouch
     /**
      * Two buttons on the strip the dialog actually builds are not touching.
      *
-     * The control is the second half: the same two buttons in a zero-gap row, which is what the
-     * dialog used to build.  Without it, a measurement that always answered "far apart" - one that
-     * read the wrong components, or a layout that never ran - would pass this test for a dialog that
-     * still looks exactly as Adam described it.
+     * The control is the second half: the same two buttons in a zero-gap row, so a measurement that always answered
+     * "far apart" (the wrong components, or a layout that never ran) cannot pass.
      */
     @Test
     public void testTheTwoShortcutButtonsAreNotDrawnEdgeToEdge()
@@ -91,11 +80,8 @@ public class testTheHomeShortcutsDoNotTouch
     }
 
     /**
-     * And the dialog is built from that strip.
-     *
-     * The measurement above is about `shortcutRow`.  If `pickLocomotive` went back to making its own
-     * panel, the spacing would be correct in a method nothing calls - which is the shape this project
-     * has been caught by before: a rule that is written down and not asked.
+     * And the dialog is built from that strip: if `pickLocomotive` went back to making its own panel, the spacing
+     * would be correct in a method nothing calls.
      */
     @Test
     public void testThePickerBuildsItsShortcutStripFromThatRow() throws Exception
