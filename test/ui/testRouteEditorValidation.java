@@ -891,10 +891,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by clicking the first condition,
-     * Shift-clicking the third and pressing the indent mark once; 4's up arrow then moves it past the whole group to
-     * "4 and (1 or 2 or 3)" and its down arrow back, every line keeping its level; and outdenting the selection undoes
-     * the indent.  Every step is a mouse press on the condition table.
+     * FR-144: "1 or 2 or 3 and 4" typed flat becomes "(1 or 2 or 3) and 4" by selecting the first three conditions and
+     * pressing the indent mark once; 4's arrows then move it past the whole group and back, every line keeping its
+     * level; outdenting the selection undoes the indent.  Every step is a mouse press on the condition table.
      *
      * MUTATION: drop `ConditionTable.changeSelection`'s override, and the press collapses the selection to one line,
      * so only sensor 1 moves in.
@@ -950,9 +949,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-379, Adam's steps: "(a and b and c) or (d and e and f)", the plus adds g at the end, and g's up arrow pressed
-     * four times gives "(a and b and c and g) or (d and e and f)" with g still selected; its down arrow takes it back.
-     * Adam: "The problem is that g is swapped with c unless the user indents (which is illogical)".
+     * OB-379: "(a and b and c) or (d and e and f)", the plus adds g, and g's up arrow pressed four times gives
+     * "(a and b and c and g) or (d and e and f)" with g still selected; its down arrow takes it back.
      *
      * MUTATION: drop the edge branch of `ConditionOutline.plan`, and the fourth press gives "(a and b and g) or (c and d
      * and e and f)".
@@ -1004,8 +1002,8 @@ public class testRouteEditorValidation
     /**
      * FR-147: a right-click on a condition offers Insert Condition Above and Below and the line's own actions, each
      * enabled exactly where its mark does something; Insert puts a new condition at the line's level, joined by its
-     * level's word, and selects it; a right-click on a mark opens the menu without working the mark; and a right-click
-     * below the lines offers Add Condition.  Adam: "so we can also insert by right clicking."
+     * level's word, and selects it; a right-click on a mark opens the menu without working the mark; below the lines it
+     * offers Add Condition.
      *
      * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and Insert Condition
      * Below on 22 gives "21 or 22 and 1", flagged.
@@ -1081,7 +1079,7 @@ public class testRouteEditorValidation
 
     /**
      * Add Condition and the plus join the new condition with the word of the last condition's level, as Insert
-     * Condition Below does: "21 or 22" plus Add gives "21 or 22 or 1", not a level that disagrees with itself.
+     * Condition Below does: "21 or 22" plus Add gives "21 or 22 or 1".
      *
      * MUTATION: in `ConditionTable.addRow`, join with `Joiner.AND` always, and Add gives "21 or 22 and 1", flagged.
      */
@@ -1138,8 +1136,7 @@ public class testRouteEditorValidation
 
     /**
      * A capture into the conditions joins with the word of the last condition's level, as Add Condition does: "21 or
-     * 22" and a captured accessory gives "21 or 22 or" it, an outline Save takes, not a level that disagrees with
-     * itself.
+     * 22" plus a captured accessory is an outline Save takes.
      *
      * MUTATION: in `appendCommand`, join a captured condition with `Joiner.AND` always, and the outline is flagged.
      */
@@ -1220,10 +1217,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147, the menu's items after an insert: a condition inserted, moved to the front of the next group and outdented
-     * sits between the "or" and the group's "and", which now joins nothing and is red.  Deleting it takes that "and",
-     * not the "or": "(21 and 22) or (24 and 25)" is left as it was, not merged into "21 and 22 and 24 and 25" with
-     * nothing red to say so.
+     * FR-147: deleting a condition that was inserted, moved to the front of the next group and outdented takes the
+     * "and" that now joins nothing, not the "or": "(21 and 22) or (24 and 25)" is left as it was.
      *
      * MUTATION: in `ConditionTable.removeAt`, always take the word before a condition when it is at the condition's own
      * depth, and the "or" between the groups goes.
@@ -1271,10 +1266,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147: Insert Condition Above and Below, chosen from a right-click, put one new condition directly next to the
-     * line clicked, at its depth, in its group and joined by its level's word, and change nothing else; the new line is
-     * selected and bold in "Reads as", which reads as expected.  Covers flat "and" and "or" lists, "(a and b and
-     * c) or (d and e and f)" at a, c, d and f, a nested group's first and last lines, two levels in, and one condition.
+     * FR-147: Insert Condition Above and Below, from a right-click, put one new condition next to the line clicked, at
+     * its depth and joined by its level's word, change nothing else, and select it, bold in "Reads as"; flat lists,
+     * nested groups and one condition.
      *
      * MUTATION: in `ConditionOutline.wordOfTheLevel`, drop the walk back to the group's first line, and Insert Below on
      * the last line of "(22 or 23 or 24)" joins with "and".
@@ -1326,10 +1320,6 @@ public class testRouteEditorValidation
         insertsAsTheCasesSay(cases);
     }
 
-    /**
-     * Each case's Insert Condition, chosen from a right-click: {start, line, Above or Below, the outline after, the
-     * selected line after, how Reads as reads after}.
-     */
     private static void insertsAsTheCasesSay(final Object[][] cases) throws Exception
     {
         final org.traincontrol.gui.RouteEditorFrame frame = open();
@@ -1371,10 +1361,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-150: Insert Condition on a joining word puts one new condition at the word's own level, joined by that same
-     * word, and selects it: on the "or" of "(21 and 22) or (24 and 25)" it gives "(21 and 22) or new or (24 and 25)",
-     * on the first group's "and" "(21 and new and 22)".  Above (just before the word's right-hand side) and Below (just
-     * after its left-hand side) give the same outline, as the new line sits between two copies of the word either way.
+     * FR-150: Insert Condition on a joining word puts one new condition at the word's own level, joined by that word,
+     * and selects it: on the "or" of "(21 and 22) or (24 and 25)", "(21 and 22) or new or (24 and 25)", Above or Below.
      *
      * MUTATION: in `offerConditionMenu`, enable the two inserts on a condition line only, and they are grayed here.
      */
@@ -1405,9 +1393,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-151: after Insert Condition Above or Below, Add Condition, the plus, or an arrow, the keyboard is on the new or
-     * moved line's address cell, so a digit starts editing that cell as it does after one click on it; the action
-     * itself opens no editor.  The keyboard is put elsewhere in the window before each, as a user's may be.
+     * FR-151: after Insert Condition Above or Below, Add Condition, the plus, or an arrow, the keyboard is on the new
+     * or moved line's address cell, so a digit starts editing it as after one click; the action itself opens no editor.
      *
      * MUTATION: in `ConditionTable.pick`, select the row alone with `setRowSelectionInterval`, and a digit edits
      * nothing.
@@ -1492,8 +1479,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-151: a digit typed on a line's address replaces what the cell held, as a spreadsheet does, so 7 on a new
-     * condition makes it sensor 7; a double-click opens the cell to change part of it, and what is typed is added.
+     * FR-151: a digit typed on a line's address replaces what the cell held, as in a spreadsheet; a double-click opens
+     * the cell to change part of it.
      *
      * MUTATION: in `ConditionTable.editCellAt`, drop the `selectAll`, and the new condition becomes sensor 17.
      */
@@ -1544,7 +1531,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /** A digit as the keyboard types it: pressed, typed and released, each dispatched to one component. */
     private static void typeADigit(final java.awt.Component on, final char digit)
     {
         support.Components.onTheEventThread(() ->
@@ -1564,15 +1550,12 @@ public class testRouteEditorValidation
         support.Components.settle();
     }
 
-    /** Ends the table's edit as Enter does, keeping what was typed. */
     private static void commit(final javax.swing.JTable table)
     {
         support.Components.onTheEventThread(() -> table.isEditing() && table.getCellEditor().stopCellEditing());
     }
 
-    /**
-     * Presses 7 where the window sends the keyboard and says which cell it began editing; the edit is then canceled.
-     */
+    /** Presses 7 where the window sends the keyboard and says which cell it began editing, then cancels the edit. */
     private static String digitEdits(final org.traincontrol.gui.RouteEditorFrame frame, final javax.swing.JTable table)
     {
         asIfFocused(frame, owner -> support.Keys.press(owner, java.awt.event.KeyEvent.VK_7));
@@ -1589,8 +1572,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Keys pressed where the window sends the keyboard, as a focused window takes them.  The focus owner is answered
-     * from the window, as a test window is usually not the one the operating system has focused.
+     * Keys go where the window sends the keyboard, which answers as the focus owner (test windows are rarely focused).
      */
     private static void asIfFocused(final org.traincontrol.gui.RouteEditorFrame frame,
         final java.util.function.Consumer<java.awt.Component> keys)
@@ -1618,8 +1600,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-152: a taller window gives its extra height to the conditions, and the commands keep the height they have at
-     * the packed size, where the two sections are as tall as each other as before.
+     * FR-152: a taller window gives its extra height to the conditions; the commands keep the height they have packed.
      *
      * MUTATION: in `build`, lay the middle panel out with a plain `new GridLayout(2, 1, 0, 8)`, and the commands take
      * half of the extra height.
@@ -1684,15 +1665,14 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The titled section a table sits in: the panel round its scroll pane. */
     private static java.awt.Container section(javax.swing.JTable table)
     {
         return javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, table).getParent();
     }
 
     /**
-     * FR-153: the lines an edit changed are drawn pale, fading back to the table's white within about a second.  Move
-     * Down on the first of "21 and 22 and 23" lights the two conditions that traded places, never the 23 it left.
+     * FR-153: the lines an edit changed are drawn pale, fading back to white within about a second.  Move Down on the
+     * first of "21 and 22 and 23" lights the two conditions that traded places, never the 23.
      *
      * MUTATION: in `ConditionTable.shift`, drop the `showChanges` call, and the moved line is white at once.
      */
@@ -1745,7 +1725,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /** A line's background as the table paints its Kind cell. */
     private static java.awt.Color background(final javax.swing.JTable table, final int line)
     {
         return support.Components.onTheEventThread(() ->
@@ -1753,10 +1732,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-150: a right-click on a joining word offers both inserts (testInsertOnAWordLineJoinsByThatWord says where they
-     * go); FR-147: a right-click inside a selection of several lines keeps it, so the menu's Indent acts on them all,
-     * and Insert Below then puts one under the line clicked and selects it alone; a right-click outside the selection
-     * picks the line clicked.
+     * FR-150: a right-click on a joining word offers both inserts; FR-147: a right-click inside a selection of several
+     * lines keeps it, so the menu's Indent acts on them all and Insert Below selects the new line alone; outside the
+     * selection it picks the line clicked.
      *
      * MUTATION: in `offerConditionMenu`, select the line clicked whether or not it is already selected, and the
      * selection of three is lost.
@@ -1826,8 +1804,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147: a condition inserted into a saved route is filled in by double-clicking its address, and the insert is
-     * unsaved work, so Cancel asks before closing and the route keeps the conditions it was saved with.
+     * FR-147: an inserted condition is unsaved work: Cancel asks before closing, and the saved route keeps its
+     * conditions.
      *
      * MUTATION: in `stateSignature`, leave out the condition rows, and Cancel closes without asking.
      */
@@ -1902,10 +1880,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * "Reads as" cut to its brackets, sensors and joining words: "(#21 and #1) or #23".  The words are matched in the
-     * current language and written in English.
-     */
+    /** "Reads as" cut to brackets, sensors and joining words, in English: "(#21 and #1) or #23". */
     private static String readsLike(org.traincontrol.gui.RouteEditorFrame frame)
     {
         String and = I18n.t("route.ui.joinAnd");
@@ -1947,7 +1922,6 @@ public class testRouteEditorValidation
         support.Mouse.choose(chosen);
     }
 
-    /** "Reads as" without its markup. */
     private static String plainReading(org.traincontrol.gui.RouteEditorFrame frame)
     {
         return support.Components.onTheEventThread(() -> frame.readsAsForTest()).replaceAll("<[^>]*>", "")
@@ -1969,7 +1943,6 @@ public class testRouteEditorValidation
         return support.Components.onTheEventThread(() -> table.getSelectedRow());
     }
 
-    /** A right-click in the middle of one cell, and the menu it opened. */
     private static javax.swing.JPopupMenu rightClickCell(final javax.swing.JTable table, int line, int column)
     {
         java.awt.Rectangle cell = support.Components.onTheEventThread(() -> table.getCellRect(line, column, true));
@@ -2117,8 +2090,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-367: a command's setting dropdown, opened by a click on its cell, offers the words in the user's language and
-     * still holds the stored words.
+     * OB-367: a command's setting dropdown offers the words in the user's language and still holds the stored words.
      *
      * MUTATION: in `chooseSetting`, drop the `setRenderer` call, and the dropdown offers "straight" and "turn".
      */
@@ -2243,7 +2215,6 @@ public class testRouteEditorValidation
     private static final int OUTDENT_MARK = 3;
     private static final int NOTHING_TO_EDIT = 7;
 
-    /** The column a condition's sensor or switch number is typed into. */
     private static final int ADDRESS = 5;
 
     /** Clicks the first line and Shift-clicks the last, where a press neither edits nor moves anything. */
@@ -2253,10 +2224,7 @@ public class testRouteEditorValidation
         clickCell(table, last, NOTHING_TO_EDIT, java.awt.event.InputEvent.SHIFT_DOWN_MASK);
     }
 
-    /**
-     * A left press, release and click in the middle of one cell, as the mouse sends them, so the table's own selection
-     * handler and the marks' listener both see it.
-     */
+    /** A press, release and click in one cell's middle, as the mouse sends them. */
     private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers)
         throws Exception
     {
