@@ -1,91 +1,67 @@
 # Code review discipline
 
-How a review round is run and recorded. Every rule below exists because it was broken during the July
-2026 review; the example after each one is what it cost.
+How a review round is run and recorded.
 
-**This folder holds no reviews, and that is deliberate.** It is the convention, not the home. Two
-hundred and eight review documents were written between 26 July and 20 September 2026 and every one of
-them has been deleted - 143 on 2026-09-08 and 65 on 2026-09-21, alongside two for-Adam notes that were
-never reviews - once the catalogue was carrying
-what they found.  The five-lane review of 2026-09-23 wrote twenty more, in `docs/reviews-2026-09-23/`, over four
-rounds of fixes and validation, and they were deleted the same way in the commit that closed it; the counts below are
-of the two earlier deletions.  The validation of 2026-09-24 - OB-294 and the two days of commits before it, three
-lanes over five rounds - wrote fifteen more in `docs/reviews-2026-09-24/`, and they went the same way.  The validation of the work on Adam's answers of that night - three lanes over two rounds,
-on 2026-09-25 - opened `docs/reviews-2026-09-25/`, and the release review's rounds went into it until 2026-10-18.
-It held 101 files, and they were catalogued - 1,199 findings, each compared with the store document by document
-before the folder went - and deleted on 2026-10-19, the last kept folder: the RSA rounds 1 to 75 (`RSA.md`, then
-`RSA2.md` to `RSA75.md`), RLV6 to RLV13, RLA, RLD and RLU rounds 1 to 5 each, and BCR, BPV and E2E.  Those 101
-are counted apart from the two earlier deletions below.  **How a multi-lane review like that one is run, closed and
-reported is in [FANOUT.md](FANOUT.md)**, with the report Adam reviewed at the end of it kept as the example
-([examples/session-report-2026-09-23.html](examples/session-report-2026-09-23.html)).
+**This folder holds no reviews, and that is deliberate.** It is the convention, not the home. Two hundred and eight
+review documents were written between 26 July and 20 September 2026 and all were deleted, 143 on 2026-09-08 and 65 on
+2026-09-21, alongside two for-Adam notes that were never reviews, once the catalog carried what they found. Later
+rounds went the same way and are counted apart from those two deletions: twenty documents in
+`docs/reviews-2026-09-23/`, fifteen in `docs/reviews-2026-09-24/`, and 101 files in `docs/reviews-2026-09-25/` (RSA 1
+to 75, RLV6 to RLV13, RLA, RLD and RLU 1 to 5 each, BCR, BPV and E2E; 1,199 findings, each compared with the store
+before the folder was deleted on 2026-10-19). **How a multi-lane review is run, closed and reported is in
+[FANOUT.md](FANOUT.md)**, with an example report in
+[examples/session-report-2026-09-23.html](examples/session-report-2026-09-23.html).
 
-**Where those numbers come from**, because a validation round re-derived them and got a different total
-(VD15-R2): `git log --diff-filter=D` counts **210 files** deleted from the review folders, 145 on
-2026-09-08 and 65 on 2026-09-21 (44 in `docs/reviews/` itself and 21 in three dated folders beside it).
-The two for-Adam notes - `2026-08-19-for-adam.md` and `2026-09-03-questions-for-adam.md` - are the
-difference between 145 files and 143 reviews. Which of the rest counted as a review is a judgement no
-test can make, and `regression.testTheRecordsCountTheStore` checks only that the halves quoted here add
-up to the total quoted here, which is where the arithmetic went wrong before.
+**Where those numbers come from:** `git log --diff-filter=D` counts **210 files** deleted from the review folders,
+145 on 2026-09-08 and 65 on 2026-09-21 (44 in `docs/reviews/` itself and 21 in three dated folders beside it). The two
+for-Adam notes, `2026-08-19-for-adam.md` and `2026-09-03-questions-for-adam.md`, are the difference between 145 files
+and 143 reviews. Which of the rest counted as a review is a judgment no test can make;
+`regression.testTheRecordsCountTheStore` checks only that the halves quoted here add up to the totals quoted here.
 
 What survives a round:
 
 | | |
 |---|---|
-| every finding | the `finding` table in `docs/manual-tests/triage.db` - ref, severity, what it was about, the evidence, the commit, which source files cite it, and a `status` set deliberately |
+| every finding | the `finding` table in `docs/manual-tests/triage.db`: ref, severity, what it was about, the evidence, the commit, which source files cite it, and a `status` set deliberately |
 | the same, greppable | `docs/manual-tests/findings.tsv`, rendered from the store: `grep "^MKR-B1" docs/manual-tests/findings.tsv` |
 | the rules it settled | [../reference/behaviour.md](../reference/behaviour.md) |
 | the questions it left | the findings whose status is "Open - Adam's decision", in the same store |
 | the work it left | the Inbox, in the same store: `py -3 docs/manual-tests/triagedb.py issues` |
 | the tests it asked for | the manual tests, in the same store, tagged `MT-###`: `triagedb.py show MT-###` |
 
-Adam's ruling on MON-C11, 2026-09-08: *"update our MT triage database to catalog each review item. Now,
-no reference will ever be stale or lost, but useless prose will go away. Then everything relevant, that
-needs to be in prose, will live in behaviour.md."*  And on 2026-09-21: *"let's clean up all the stale
-code reviews in /docs/ ... I don't want more reviews living in the repo."*
+Adam: *"I don't want more reviews living in the repo"*, and *"everything relevant, that needs to be in prose, will live
+in behaviour.md."*
 
-**So a round's documents are written, catalogued and deleted in the same round, and the store hands out the
-numbers.**  The finding store is the index (`docs/manual-tests/triage.db`, and `findings.tsv` as its mirror), so a
-round never looks in a folder to see what has been used:
+**So a round's documents are written, cataloged and deleted in the same round, and the store hands out the numbers.**
+The finding store (`docs/manual-tests/triage.db`, with `findings.tsv` as its mirror) is the index; a round never looks
+in a folder to see what has been used:
 
-1. **Take the round's number from the store.**  `python docs/tools/catalog-findings.py --next RSA` prints the next
-   unused round (RSA76 once RSA75 is in).  It refuses a prefix the store has never used - a prefix is declared by
-   querying the store - unless `--new` says it is a new one.  `--check-unused RSA76-A1` refuses a ref, or a whole
-   round (`--check-unused RSA76`), that is already there, so a number is never used twice.
-2. **Write the round's record in a working folder** - the scratch area, not the repository.  Write it - a review
-   nobody can read while it is being acted on is no use.
-3. **Catalogue it:** `python docs/tools/catalog-findings.py --add <the working folder>`.  `--add <folder> --check`
-   first says what that would do and writes nothing; it exits 0 only when every finding in the folder is already in
-   the store.
-4. **Delete the folder.**  The store carries every finding.
+1. **Take the round's number from the store.** `python docs/tools/catalog-findings.py --next RSA` prints the next
+   unused round (RSA76 once RSA75 is in). It refuses a prefix the store has never used (a prefix is declared by
+   querying the store) unless `--new` says it is a new one. `--check-unused RSA76-A1` refuses a ref, or a whole round
+   (`--check-unused RSA76`), that is already there, so a number is never used twice.
+2. **Write the round's record in a working folder** in the scratch area, not the repository, and write it while the
+   round is acted on.
+3. **Catalog it:** `python docs/tools/catalog-findings.py --add <the working folder>`. `--add <folder> --check` first
+   says what that would do and writes nothing; it exits 0 only when every finding in the folder is already in the
+   store.
+4. **Delete the folder.** The store carries every finding.
 
-`--add` is authoritative for the documents in the folder and for nothing else: it adds and updates, and the only rows
-it removes are rows of a document IN the folder that the document no longer makes.  It refuses a document named as a
-deleted round's document that makes a different round, because that would remove the old round's rows.  The tool's
-full rebuild, which re-reads `docs/reviews/`, refuses to run unless the folder holds every document the store holds -
-which is never true once a round is deleted - and has no override, so no mode can rebuild the catalogue from the
-documents that remain and drop the rows of the rounds already deleted.  `regression.testTheRecordsCountTheStore` holds
-each of these.
+`--add` is authoritative for the documents in the folder and nothing else: it adds and updates, and removes only rows
+of a document IN the folder that the document no longer makes. It refuses a document named as a deleted round's
+document that makes a different round, because that would remove the old round's rows. The full rebuild, which
+re-reads `docs/reviews/`, refuses to run unless the folder holds every document the store holds (never true once a
+round is deleted) and has no override, so no mode can drop the rows of deleted rounds.
+`regression.testTheRecordsCountTheStore` holds each of these.
 
-A document that outlives its round is a document whose status table stops being maintained, and every
-audit of these has found the same thing in the same direction: rows reading "open" for work finished
-days earlier. Thirteen such rows on 2026-09-08, and on 2026-09-21 six findings whose own tables said
-Open while the code carried the fix and a comment naming it. Nothing has ever been found to read
-"fixed" when it was not.
+Findings keep their old identifiers, including early ad hoc letters that predate the A/B/C/D convention: they are
+cited from commits, comments and each other.
 
-The findings themselves keep their old identifiers. Several early documents predate the A/B/C/D
-convention below and use ad-hoc letters; their ids are cited from commits, from comments and from each
-other, and renumbering would break that for no gain.
-
-**Hands-on tests live somewhere else.** Everything that needs the real railway or a display is a manual
-test in `docs/manual-tests/triage.db`, under the rules in
-[../manual-tests/README.md](../manual-tests/README.md) - append-only, tagged `MT-###`, each entry
-carrying a disposition that says whether its last result still means anything. Nothing about the
-review process below changes: a finding is still lettered by severity and dispositioned here. What
-changed is that the TEST for a finding is written there and referenced by tag, rather than living in a
-document of its own that goes stale the moment the code moves.
-
-When a round produces work for the layout, add entries there (`triagedb.py add-test`) and put their
-tags beside the findings here.
+**Hands-on tests live elsewhere.** Anything that needs the real railway or a display is a manual test in
+`docs/manual-tests/triage.db`, under the rules in [../manual-tests/README.md](../manual-tests/README.md): append-only,
+tagged `MT-###`, each with a disposition saying whether its last result still means anything. A finding is still
+lettered by severity and dispositioned here; its TEST is written there and referenced by tag. When a round produces
+work for the layout, add entries (`triagedb.py add-test`) and put their tags beside the findings.
 
 ---
 
@@ -105,189 +81,114 @@ Three values, and no others:
 |---|---|
 | **open** | At least one finding in it is not closed, or it is a plan that has not been carried out. |
 | **closed** | Every finding has a disposition that is finished, and nothing outstanding cites it. |
-| **reopened** | It was closed and something came back - a regression, or a finding that turned out not to be fixed. Say underneath WHICH finding and why. |
+| **reopened** | It was closed and something came back: a regression, or a finding that turned out not to be fixed. Say underneath WHICH finding and why. |
 
-**A document with no status line is open.** That default is deliberate: the failure that matters is
-archiving something that still needs attention, and forgetting to write a line is far more likely than
-writing the wrong one.
+**A document with no status line is open**, because forgetting the line is likelier than writing the wrong one.
 
 ### What the status line is for, now that nothing is archived
 
-There was an `archive/` folder and a rule about moving documents into it. Both are gone: a closed
-document is catalogued and deleted, so there is nothing to move and nowhere to move it to.
+It is the one line a fix commit has to change, and it makes the end of a round checkable: a folder in which every
+document reads `closed` can be deleted; one in which any reads `open` is a round not finished. Keep it true; a
+document's status table left behind by its own fixes reads "open" for finished work.
 
-The status line still earns its place while the round is open. It is the one line a fix commit has to
-change, and it is what makes the end of a round checkable: a folder in which every document reads
-`closed` is a folder that can be deleted, and one in which any document reads `open` is a round that is
-not finished. Write it, and keep it true - the audits above are all of documents whose status tables
-were left behind by their own fixes.
-
-Nothing is renamed, ever. Identifiers are cited from commits, from comments and from other documents,
-and a document that changes name breaks those silently - which is the same rule the findings themselves
-follow.
+Nothing is renamed, ever: identifiers are cited from commits, comments and other documents, and a rename breaks those
+silently.
 
 ### Three kinds of document, not one
 
-A round produces three things, and only the first is a review:
-
-1. **Reviews** - findings with severities and dispositions. Closed when every finding is.
-2. **Plans and proposals** - a decision written down before the work. Closed when the work is done, or
-   when the plan is abandoned; say which in the status line.
-3. **Generated reports** - output from a harness, kept for a person to read. These are not documents at
-   all in the sense above: they have no findings and no dispositions, they go stale silently, and they
-   are regenerable by definition. They do not belong in this folder. Either fold the conclusion into a
-   review and delete the dump, or leave the harness to write it to a temporary directory - which is what
-   `testRouteInventory` now does.
+1. **Reviews**: findings with severities and dispositions. Closed when every finding is.
+2. **Plans and proposals**: a decision written down before the work. Closed when the work is done or the plan is
+   abandoned; say which in the status line.
+3. **Generated reports**: harness output for a person to read. No findings, no dispositions, regenerable; they do not
+   belong in this folder. Fold the conclusion into a review and delete the dump, or have the harness write to a
+   temporary directory, as `testRouteInventory` does.
 
 ### What this is not
 
-It is not a way of tidying up work nobody wants to look at. A finding is closed when it is fixed,
-withdrawn, or explicitly declined by Adam - never because it has been open a long time, and never
-because a later document covers the same area.
+Not a way of tidying up work nobody wants to look at. A finding is closed when it is fixed, withdrawn, or explicitly
+declined by Adam; never because it has been open a long time, and never because a later document covers the same area.
 
 ---
 
 ## The document
 
-**Findings are lettered A, B, C, D by severity - never by topic, phase, or reviewer.**
+**Findings are lettered A, B, C, D by severity, never by topic, phase, or reviewer.**
 
 | | |
 |---|---|
-| **A** | High. Wrong behaviour on the layout, or data silently lost. |
+| **A** | High. Wrong behavior on the layout, or data silently lost. |
 | **B** | Medium. Incorrect results, or crashes in specific configurations. |
 | **C** | Low. Cosmetic, dead code, or narrow edge cases. |
 | **D** | Not defects. Things that look wrong and are not, findings withdrawn as mistaken, and checks that came back clean. |
 
-Number within the letter (A1, A2, ...). A finding keeps its identifier for life: if its severity is
-revised, say so in its entry rather than renumbering it, because the old identifier is already
-referenced from commits, changelog notes and other reviews.
+Number within the letter (A1, A2, ...). A finding keeps its identifier for life: if its severity is revised, say so in
+its entry rather than renumbering, because the identifier is referenced from commits, changelog notes and other
+reviews.
 
-**Declare a short prefix at the top of each document, and cite other documents' findings with it.**
-Identifiers are only unique within a document, and a cycle of any size will collide. *The July 2026
-cycle produced 98 findings across six documents, in which `B1` names three unrelated things and `D1`
-another three - so "see B1" was ambiguous in exactly the place a reader needs precision. `INT-A1` and
-`FCR-B1` are not.* Keep numbering per-document; the prefix is for crossing between them.
+**Declare a short prefix at the top of each document, and cite other documents' findings with it** (`INT-A1`, not
+"see B1"): identifiers are unique only within a document. Keep numbering per document.
 
-**Do not merge documents to solve that.** Each one records a pass - its scope, its method, and what it
-missed - and merging destroys who found what and when. That is the calibration data, and it is worth
-more than the tidiness. Write an index instead.
+**Do not merge documents.** Each records a pass (its scope, its method, what it missed), and merging destroys who found
+what and when, which is the calibration data. Write an index instead.
 
-**D is not a bin for things you didn't fix.** It is for things that turned out not to be defects. An
-open C item is still a C. A withdrawn A becomes a D, with the original severity and the reason it was
-wrong both recorded - that transition is the single most useful thing in a review for calibrating how
-much to trust the rest of it.
+**D is not a bin for things you didn't fix.** An open C item is still a C. A withdrawn A becomes a D with the original
+severity and the reason it was wrong both recorded; that transition is the most useful calibration in a review.
 
-*Cost: the July cycle produced findings under A, B, C, SR, FR, P, N, M and T. Six of those letters
-carried no meaning beyond which pass or which reviewer produced them, so nothing could be sorted or
-counted by severity across documents, and the same defect class landed under different letters in
-different files.*
+**One status, one location.** A finding's disposition belongs only in the status table at the head of its section. The
+prose under a finding is a historical record of what was believed when it was written, and says so.
 
-**One status, one location.** A finding's disposition belongs in exactly one place - the status table at
-the head of its section. The prose under a finding is a historical record of what was believed when it
-was written, and says so. *Cost: that review's summary and body disagreed three times, and the reviewer
-misread his own C table as showing a dozen open items that were already fixed.*
+**Withdrawn findings stay in the record, marked withdrawn**, so a later reader can see where the reviewer was wrong.
 
-**Withdrawn findings stay in the record, marked withdrawn.** Deleting a mistake hides that the reviewer
-was wrong about it, which is exactly what a later reader needs to calibrate the rest. *Three findings
-were withdrawn in July 2026; two of them had already been "fixed" before the mistake surfaced.*
-
-**Say what version was reviewed and when.** A review header that still claims "no code was changed"
-after twenty commits is worse than no header.
+**Say what version was reviewed and when.** A header that still claims "no code was changed" after twenty commits is
+worse than none.
 
 ---
 
 ## Before calling something a finding
 
-**Verify the layer you are actually claiming about.** Read the method that enforces the rule, not the
-one that looks like it should. *Twice in one review: `Layout.createPoint` appeared to allow a
-destination with no feedback - the check is in `Point`'s constructor. And `bfs` appeared deterministic -
-the shuffle is in `getNeighbors`.*
+**Verify the layer you are actually claiming about.** Read the method that enforces the rule, not the one that looks
+like it should (the check may be in a constructor, the shuffle in a helper).
 
-This applies to library code too, and a method name is not a specification. *A fix used
-`Collection.removeIf` to delete a map key whose hash had drifted, with a comment explaining that it
-iterated rather than looking up. It does not: `removeIf` calls `Iterator.remove()`, which the
-hash-based collections implement by recomputing the hash from the key's current state - so it searched
-the wrong bucket and removed nothing, in exactly the case it was written for. The comment described the
-API's shape, not its implementation.* A related habit that caught two separate errors the same day:
-when a claim rests on a method whose name reads like another method's (`isAutonomyRunning` against
-`isAutoRunning`), open it. Both times, the delegation was the opposite of what the name suggested.
+This applies to library code too: a method name is not a specification. (`removeIf` on a hash-based collection
+recomputes the hash from the key's current state, so it cannot remove a key whose hash has drifted.) When a method's
+name reads like another's (`isAutonomyRunning` against `isAutoRunning`), open it.
 
-And the documentation is part of the method - read it before contradicting it. *`validateConfigCommand`
-was written up as a pure validator with no effect on the model, from reading its body. Its first line of
-javadoc says it creates accessories in the database if needed, and that side effect was the entire
-reason the call site existed. The author said so when the finding was raised and was told otherwise.*
+The documentation is part of the method: read the javadoc before contradicting it.
 
-**"Wrong code" is not "wrong behaviour".** Trace whether any caller can actually reach the defect before
-assigning severity. *B3, C7 and C15 were all structurally real and all unreachable: every caller already
-guarded. They are worth fixing as traps for the next caller, not worth a changelog entry.*
+**"Wrong code" is not "wrong behavior".** Trace whether any caller can reach the defect before assigning severity. An
+unreachable defect is worth fixing as a trap for the next caller, not worth a changelog entry.
 
-**Check whether the surrounding machinery already compensates.** A defect in one call can be irrelevant
-inside the loop that calls it. *The "intermittent no free paths" concern was raised from measuring a
-single `bfs` exclusion sequence; `pickPath` enumerates every route to every destination until exhausted,
-which makes the ordering irrelevant. Retracted after measuring the whole function - 2,680 invocations,
-zero spurious failures.  (Not on the railway built from the diagram, where the example no longer holds: RSA59-B1
-found the enumeration ending once one shuffled search had no route left, so a route throwing a switch both ways
-could hide a clear one and stations came and went between asks.  Round 96 keyed the search on the switch settings
-too.  The rule stands - measure the whole function - and the measurement has to be on the data the users have.)*
+**Check whether the surrounding machinery already compensates.** A defect in one call can be irrelevant inside the
+loop that calls it. Measure the whole function, on the data the users have.
 
-**Distinguish "this could happen" from "this does happen".** Where a claim depends on real data, check
-the real data. *B8 predicted an import failure on sparse function lists; 243 locomotive blocks across
-the actual fixtures have no gaps. The fix stayed as a guard, the changelog entry was withdrawn.*
+**Distinguish "this could happen" from "this does happen".** Where a claim depends on real data, check the real data.
 
 ---
 
 ## Fixing
 
-**One finding at a time, failing test first, confirmed failing before the fix.** And check it fails for
-the *right reason* - a test that fails because its own setup is wrong proves nothing.
+**One finding at a time, failing test first, confirmed failing before the fix**, and failing for the *right reason*: a
+test that fails because its own setup is wrong proves nothing.
 
-**Prove the guard actually guards.** A regression test that only sometimes catches the regression is
-worse than none, because it reads as protection. *The guard against re-applying a BFS optimisation was
-measured at 247 catches in 500 runs - a coin toss - because the neighbour shuffle sometimes hid the
-regression. It now repeats twenty times.*
+**Prove the guard actually guards.** A regression test that only sometimes catches the regression is worse than none,
+because it reads as protection. Measure how often it catches; the BFS guard repeats twenty times for that reason.
 
-**Re-read every caller before changing a signature or a semantic.** *Changing `RouteCommand.fromLine` to
-wrap unchecked exceptions was safe only because all three callers propagate `throws Exception`; one that
-caught `NumberFormatException` would have broken silently.*
+**Re-read every caller before changing a signature or a semantic.**
 
-**When you fix a call site, grep for its twins before closing the finding.** *This was the July 2026
-cycle's most repeated mistake - five times, twice while fixing an earlier instance of it. A guard added
-to `deleteRoute` and not `changeRouteId`; a re-key wired into `renameLoc` and not `changeLocAddress`; a
-sync removed from the route editor and left in `layoutEditingComplete`; a lock put on `refreshLayouts`
-and not on the method `syncWithCS2` calls; a "safe to leave unsynchronised" decision scoped to a dialog
-and then inherited by an automatic sync.* The search is one command and it is faster than the review
-pass that will otherwise find it.
+**When you fix a call site, grep for its twins before closing the finding.** The search is one command.
 
-**Prefer the smaller fix when the larger one changes behaviour.** *C17 suggested two changes. The
-container swap was pure cost; marking `visited` on enqueue would have broken the alternative-route
-search that every caller depends on. Only the first was applied, with the reason recorded at the call
-site.*
+**Prefer the smaller fix when the larger one changes behavior**, with the reason recorded at the call site.
 
-**Leave the reasoning where the next person will trip over it** - in the code, not only in the review.
-Comments cannot drift out of sync with the code the way a separate document can.
+**Leave the reasoning where the next person will trip over it**: in the code, not only in the review.
 
-**Check the shape of what you changed, not just that it still parses.** A structural check that cannot
-tell "correct" from "badly broken" is not a check. *An edit that replaced `equals` and `hashCode`
-computed its start by searching backwards for the preceding javadoc; `equals` had none, so the search
-ran past it and silently deleted two unrelated methods. Braces still balanced - deleting whole methods
-keeps them balanced - and the non-ASCII check passed too. Both "verifications" were satisfied by a file
-missing two methods. Diffing the method names against HEAD takes one command and catches it
-immediately.*
+**Check the shape of what you changed, not just that it still parses.** Balanced braces survive deleting whole
+methods; diff the method names against HEAD.
 
-**Moving work off a single thread removes an exclusion nobody wrote down.** Before making something
-asynchronous, enumerate what that thread was serialising for free. *Taking a Central Station sync off
-the EDT - correctly, it froze the UI for seconds - removed the guarantee that no repaint could run
-while the layout database was empty mid-rebuild, and that two rebuilds could not overlap. Neither had
-ever been stated, because neither was a decision: they were properties of everything happening on one
-thread. Both had to be reintroduced explicitly, one as a null check and one as a lock.*
+**Moving work off a single thread removes an exclusion nobody wrote down.** Before making something asynchronous,
+enumerate what that thread was serializing for free, and reintroduce each guarantee explicitly.
 
-**Before mutating shared state, find out who else reads it and under which lock.** Verifying the
-function you are changing is not enough; the hazard lives in its call graph. *A fix that unlinked a
-deleted locomotive from every consist did exactly the right thing to the data - and did it by mutating
-a plain LinkedHashMap that `setSpeed` iterates under the locomotive's own lock, from a UI thread that
-did not hold it. The change was correct and the concurrency was not. This is the sibling of "verify the
-layer you are actually claiming about": that one catches a missing guard above you, this one catches a
-reader beside you.*
+**Before mutating shared state, find out who else reads it and under which lock.** The hazard lives in the call graph,
+not in the function you are changing.
 
 ---
 
@@ -296,37 +197,25 @@ reader beside you.*
 Adam, 2026-09-07: **"We should make comments in the code to strive to be authoritative and
 self-contained, with the behaviour document being the documented intended functionality."**
 
-Two rules, and they divide the work between the code and
-[`behaviour.md`](../reference/behaviour.md):
+The rules divide the work between the code and [`behaviour.md`](../reference/behaviour.md):
 
-**A comment must stand on its own.** A reader who has never seen a review document must be able to
-understand, from the comment alone, what the code does and why it is that way. Write the rule out.
-Name the case that forced it. If the comment only makes sense once you have found `DR-B10` and read
-it, the comment has outsourced its job.
+**A comment must stand on its own.** A reader who has never seen a review document must understand from the comment
+alone what the code does and why. Write the rule out; name the case that forced it. If the comment only makes sense
+once you have found `DR-B10` and read it, it has outsourced its job.
 
-**A finding id is provenance, not the explanation.** Citing `(DR-B10)` after a rule that is already
-stated in full is useful - it says where the argument was had, and lets somebody dig. Citing it
-*instead of* the rule is what makes the comment depend on a document. There are a few thousand such
-citations across `src/` and `test/` - `regression.testEveryCitationResolves` walks every one of them,
-and the exact number moves with every commit, so it is not written down here (VD16-R2: the figure that
-was here, 871, had roughly doubled, and no stated command reproduced it). They should all be the first
-kind.
+**A finding id is provenance, not the explanation.** `(DR-B10)` after a rule stated in full says where the argument was
+had; citing it *instead of* the rule makes the comment depend on a document. Every citation should be the first kind.
+`regression.testEveryCitationResolves` walks every citation in `src/` and `test/`; the count moves with every commit, so
+it is not written here.
 
-**And the behaviour document is the intended functionality, not the code.** A comment says why THIS
-code is the way it is. `behaviour.md` says what the railway is supposed to do. When the two disagree,
-one of them is a bug and Adam decides which - which only works if the document is the place the
-intent lives, rather than being reconstructed from comments.
+**The behavior document is the intended functionality, not the code.** A comment says why THIS code is the way it is;
+`behaviour.md` says what the railway is supposed to do. When the two disagree, one is a bug and Adam decides which.
 
-The practical test, applied when writing rather than after: **if this file were the only thing a
-reader had, would the comment be enough?** If the answer needs a second document that is not
-`behaviour.md`, write more.
+The test, applied when writing: **if this file were the only thing a reader had, would the comment be enough?** If the
+answer needs a second document that is not `behaviour.md`, write more.
 
-This also settles a question the consolidation plan left open. Self-contained comments are what make
-retiring `docs/reviews/` cheap: the citations become a trail somebody may follow rather than a
-dependency they must.
-
-**Amended 2026-10-18: the current rule, not its history.**  Adam approved FR-136's comment rule
-(*"I approve the plan and the change to the comment rule"*; the plan is in git, its standing rules in `docs/refactoring.md`):
+**Amended 2026-10-18: the current rule, not its history.** Adam approved FR-136's comment rule (*"I approve the plan
+and the change to the comment rule"*; its standing rules are in `docs/refactoring.md`):
 
 - A comment states the **current** rule and why the code meets it.  It must make sense on its own,
   ideally in 8 lines or fewer.
@@ -339,53 +228,37 @@ dependency they must.
 
 ## Testing
 
-**Simulate the code, not your model of the code.** *A simulation "proved" two BFS implementations
-identical across 6,874 comparisons. It modelled the reviewer's mental picture, not `getNeighbors`, which
-shuffles. The real test failed immediately.*
+**Simulate the code, not your model of the code.**
 
-**Run the control experiment before concluding two things differ.** Compare the thing against itself
-first. *Current vs previous implementation: 57 disagreements. Current vs current: 62. The divergence was
-the shuffle, and the differential test that "found" it was unsound.*
+**Run the control experiment before concluding two things differ.** Compare the thing against itself first.
 
-**Randomised tests need fixed seeds and the seed in the failure message.** A failure nobody can reproduce
-gets deleted rather than fixed.
+**Randomized tests need fixed seeds and the seed in the failure message.** A failure nobody can reproduce gets deleted
+rather than fixed.
 
-**Property tests need a floor on how much they exercised.** Assert a minimum number of meaningful cases,
-or the suite can quietly degenerate into testing nothing while still passing. *Every generator-driven
-test in `testLayoutBfs` asserts one - e.g. "at least 300 pairs actually had a route".*
+**Property tests need a floor on how much they exercised.** Assert a minimum number of meaningful cases, as every
+generator-driven test in `testLayoutBfs` does ("at least 300 pairs actually had a route").
 
-**Assert only what is deterministic.** Where the code is deliberately random, assert on invariants -
-length, existence, set membership over repeats - never on one specific outcome. *Exact-route assertions
-are safe in these suites only where the shortest route is unique, and the file header says so.*
+**Assert only what is deterministic.** Where the code is deliberately random, assert invariants (length, existence, set
+membership over repeats), never one specific outcome; exact-route assertions only where the shortest route is unique,
+and the file header says so.
 
-**Assert the precondition that makes a test meaningful.** Otherwise the test can pass for reasons that
-have nothing to do with what it claims. *A test for a cleanup that had to find a drifted hash key first
-asserted that the lookup genuinely failed. That assert is the only reason it caught the fix being wrong
-- the fix used `removeIf`, which cannot remove a drifted key, and without the precondition the test
-would have passed while exercising only the cases that never needed fixing.*
+**Assert the precondition that makes a test meaningful**, or it can pass for reasons unrelated to its claim.
 
-**When a root fix lands, expect tests of the old bug to fail at their preconditions - that is
-confirmation, not regression.** *After locomotive hashing became identity-based, the test that
-manufactured a drifted hash could no longer manufacture one. Inverting it into a guard on the new
-invariant is usually better than deleting it: the scenario is gone, but the property that replaced it
-is exactly what a future author might undo.*
+**When a root fix lands, expect tests of the old bug to fail at their preconditions: that is confirmation, not
+regression.** Inverting such a test into a guard on the new invariant is usually better than deleting it.
 
 ---
 
 ## The changelog
 
-**Only defects a user could actually have hit.** Everything else is noise to a non-technical reader and
-a false claim to a technical one. *Two entries were withdrawn in July 2026 (A5, B8) once it was clear no
-real file could trigger either.*
+**Only defects a user could actually have hit.** Everything else is noise to a non-technical reader and a false claim
+to a technical one.
 
 ---
 
 ## When challenged
 
-**Verify - do not concede, and do not defend.** Both are guesses. *"MFX addresses are unique" was
-plausible and wrong; the correction came with a reason (duplicated locomotives drive one decoder) that
-was checkable, and checking it also surfaced that an earlier fix could have evicted a duplicated
-locomotive from the name map. Neither reflexive agreement nor argument would have found that.*
+**Verify; do not concede, and do not defend.** Both are guesses; check the reason given.
 
-**After a correction, re-check what else rested on the wrong assumption.** A retracted premise usually
-propped up more than one conclusion.
+**After a correction, re-check what else rested on the wrong assumption.** A retracted premise usually propped up more
+than one conclusion.
