@@ -406,6 +406,8 @@ Tab icons provided by Freepik.
 
 * v3.0.5
     - New Features
+        - Interface
+            - The Stats tab's `Usage Graph` is a new chart: show 7 days, 30 days, 90 days, a year, or everything, page back and forth, and hover a bar to see its hours and locomotives.
         - Track Diagram
             - In the layout editor's `Manage Pages` menu, `Combine Linked Pages...` now comes after `Sort Pages...`.
     - Bug Fixes

@@ -33455,3 +33455,73 @@ body:
 tail:
 | ---
 |
+
+[test MT-848]
+ordinal: 847
+anchor: mt-848
+date: 2026-10-26
+title: The new Usage Graph: ranges, paging, hover and resizing
+disposition: needs test
+from: FR-156
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-848"></a>
+| ### MT-848 - 2026-10-26 - The new Usage Graph: ranges, paging, hover and resizing
+|
+| **Disposition:** needs test
+| **From:** FR-156
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. Open the Stats tab.  The button at the bottom right now says "Usage Graph" (it said "30-day Usage Graph").  Click it.
+| 2. Look at the chart that opens: the title bar, the line above the chart, the buttons, the bars, the left axis and the
+|    dates under the bars.
+| 3. Click each range button in turn: 7 days, 30 days, 90 days, Year, All.  After each, read the line above the chart and
+|    count the bars.
+| 4. On 30 days, click Previous, then Next.  Click Previous three times, then Reset.
+| 5. Repeat Previous and Next on 7 days, 90 days and Year.  On All, look at Previous and Next.
+| 6. Hover the pointer over a tall bar, a short bar, a day with no run, and the empty space left of the first bar.  On
+|    Year and on All hover a bar too.
+| 7. Drag the window's edges to make it wider and narrower, and taller and shorter, on 30 days and on 90 days.  Make it as
+|    small as it will go.
+| 8. Close the chart with its close button.  Press the graph button twice and close both charts.
+| 9. Turn the main window's "always on top" on and off with the chart open.
+|
+| **Expected**
+|
+| - The chart opens in the application's look (the same title bar as the other windows) and wears the TrainControl icon.
+| - The line above the chart gives the period's dates (first to last day, as year-month-day), its total run time as
+|   hours:minutes, and how many locomotives ran, for example "2026-09-27 to 2026-10-26: 41:20 hours, 12 locomotives".
+| - 30 days is selected when the chart opens, with one bar a day and today on the right.  7 days and 90 days give a bar a
+|   day.  Year gives 52 bars, one a week, Monday to Sunday.  All gives one bar a month from the month of the first day any
+|   locomotive ran, or a bar a week (at least 12) while less than six months of history exist.  All starts, in the line
+|   above, at the earliest day any locomotive ran.
+| - Bars are one color, your theme's accent, round at the top (about 4 pixels) and square at the bottom.  Only horizontal
+|   gridlines appear, light against the background; no vertical lines, no border.
+| - The left axis counts whole hours (0, 1, 2 ... or 0, 2, 4 ... or by 5s and 10s for long runs), with "Hours" over it, and
+|   the tallest bar nearly fills it.
+| - Dates under the bars appear every few bars and never run into each other, at any range and any window size.  The
+|   newest bar's date is always shown.
+| - Previous moves back one whole period: 7, 30 or 90 days, or 52 weeks on Year.  The line above and the bars change.
+|   Next moves forward the same amount.  After Previous then Next you see exactly the bars you started from.  Reset goes
+|   straight back to the period ending today.
+| - Next and Reset are grayed out when the period ends today.  Previous never grays out on the day ranges.  On All, both
+|   Previous and Next are grayed out (it is one period).
+| - Hovering a bar (anywhere in its column, including a day with no run) shows a tooltip with the date (a week or month by
+|   its first and last day), the run time as hours:minutes, and the number of locomotives that ran, for example
+|   "2026-10-20: 3:25 hours, 4 locomotives".  A day with no run says "0:00 hours, 0 locomotives".  Left of the first bar
+|   and above or below the chart area there is no tooltip.  The bar under the pointer is drawn a little darker, and goes
+|   back when the pointer leaves.
+| - The chart fills the window as it is resized: bars widen and narrow with it, the axis stays on the left, and nothing is
+|   drawn outside the window.  The window cannot be made smaller than about 520 by 360.
+| - Closing the chart leaves the main window as it was.  Each press of the button opens another chart.  With "always on
+|   top" changed in the main window, an open chart follows it.
+| - If you have a multi-unit (a consist), its time is counted once with its members, as the table's totals count it.
+| - Text in every language fits its buttons (switch the language to try German, where the labels are longest).
+|
+tail:
+| ---
+|

@@ -4226,3 +4226,11 @@ kind: feature request
 what: Built on dev (b5a3fb1b): Test a path sits 6 px under the heading, the form's own gap (13 px before); claim ui.testTheToolsSitUnderTheHeading, red first
 state: fixed validated
 became: MT-847
+
+[receipt FR-156]
+seq: 528
+filed: 2026-10-26
+kind: feature request
+what: Built as UsageChart (design A) behind the Stats tab's Usage Graph button: 7, 30, 90 days, Year and All, Previous/Next/Reset, a summary line and hover tooltips; ui.testTheUsageChartShowsWhatTheLocomotivesRan. The old UsageHistogram is retired after MT-848 passes.
+state: needs test
+became: MT-848
