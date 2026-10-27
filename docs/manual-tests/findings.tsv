@@ -3659,7 +3659,7 @@ RSA82-D7	RSA82.md	Closed	Not a defect - checked as described.	No path through th
 RSA82-D8	RSA82.md	Closed	Not a defect - checked as described.	The step-one accessors and the re-keyed pin
 RSA83-C1	RSA83.md	Closed	Fixed - `a1e15d2b`: Spanish `Pagina nueva {0}`; claim testEveryLanguagesSuggestionSurvives	Add Blank Page suggests "Página nueva 1" in Spanish, which the name box's own filter strips on any keystroke
 RSA83-C2	RSA83.md	Closed	Fixed - `a1e15d2b`: the page list always sits in its scroll pane, down to three rows in a 	At 20 pages the Exclude Page box can fall off the bottom of a minimum-height editor
-RSA83-C3	RSA83.md	Open - deferred	Open - deferred: older than 3.0.5 and no worse for OB-384; asked Adam whether the main win	After Autonomy Setup with Text Labels off, the main window draws that page without its own writing
+RSA83-C3	RSA83.md	Closed	Open - deferred: older than 3.0.5 and no worse for OB-384; asked Adam whether the main win	After Autonomy Setup with Text Labels off, the main window draws that page without its own writing
 RSA83-C4	RSA83.md	Closed	Fixed - `a1e15d2b`: the three comments state the rule without the history.	Two new comments tell history
 RSA83-C5	RSA83.md	Closed	Fixed - `a1e15d2b`: getEarliestRunDay ignores days before 2018-01-01 or after today, and d	A stray early day key makes All a long run of empty months, worked out on the event thread
 RSA83-D1	RSA83.md	Closed	Not a defect - checked as described.	Delete on a selection of conditions (OB-382): checked, clean

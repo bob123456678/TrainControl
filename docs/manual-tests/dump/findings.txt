@@ -40104,10 +40104,10 @@ severity: C
 title: After Autonomy Setup with Text Labels off, the main window draws that page without its own writing
 disposition: Open - deferred: older than 3.0.5 and no worse for OB-384; asked Adam whether the main window should follow the editors'
 evidence: LayoutGrid.java:1004
-commit_id:
+commit_id: aa0223db
 cited_by:
-status: Open - deferred
-status_note: Older than 3.0.5; asked Adam whether the main window should follow the editors' Text Labels switch
+status: Closed
+status_note: Fixed in aa0223db on Adam's ruling: the main window keeps its labels; claim testTheMainWindowKeepsItsTextLabels
 
 [finding RSA83-C4 in RSA83.md]
 line: 115
