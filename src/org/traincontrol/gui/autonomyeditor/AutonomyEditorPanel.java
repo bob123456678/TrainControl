@@ -3960,6 +3960,16 @@ public class AutonomyEditorPanel extends JPanel
         showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES);
     }
 
+    /**
+     * Whether the Text Labels box opens ticked (FR-133), a stored Labels Only included: the window gives an arriving
+     * diagram this before its first drawing, so the page's own writing does not show for a moment first.
+     */
+    public static boolean rememberedTextLabels()
+    {
+        return VIEW_PREFS.getBoolean(PREF_TEXT_LABELS, false)
+            || VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS) == LEGACY_LABELS_ONLY;
+    }
+
     /** Makes the diagram's text switch agree with the remembered Text Labels box (FR-133), at open and on a click. */
     private void applyTextLabels()
     {

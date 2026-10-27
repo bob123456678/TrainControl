@@ -236,6 +236,125 @@ public class testTheToolsSitUnderTheHeading
         editor = null;
     }
 
+    /**
+     * Switching from the track diagram to Autonomy Setup with its Text Labels off never shows the page's own text, not
+     * even for the moment between the arrival's first drawing and the panel's settings, and neither does opening the
+     * editor in Autonomy Setup: the probe looks between every event.  Captions are set to Hide for the claim, so any
+     * writing on the diagram is the page's own.
+     *
+     * MUTATION: drop `takeTheSetupsTextLabels` from `arriveAt` (the switch) or from `setAutonomyMode` (the opening),
+     * and this fails.
+     */
+    @Test
+    public void testAutonomySetupNeverFlashesTheTextLabels() throws Exception
+    {
+        java.util.prefs.Preferences prefs = org.traincontrol.util.Util.preferencesFor(TrainControlUI.class);
+
+        final String captionKey = "autonomyEditorCaptionMode";
+        final String textKey = "autonomyEditorTextLabels";
+
+        final String captionWas = prefs.get(captionKey, null);
+        final String textWas = prefs.get(textKey, null);
+
+        final java.util.Set<String> own = new java.util.HashSet<>();
+
+        for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
+        {
+            if (c != null && c.getLabel() != null && !c.getLabel().trim().isEmpty()) own.add(c.getLabel());
+        }
+
+        assertTrue(!own.isEmpty(), "precondition: " + PAGE + " has no text of its own to flash");
+
+        try
+        {
+            prefs.putInt(captionKey, AutonomyEditorPanel.CAPTIONS_NONE);
+            prefs.putBoolean(textKey, false);
+
+            editor = shown(null);
+
+            final LayoutEditor on = editor;
+
+            final java.util.List<String> seen = new java.util.ArrayList<>();
+
+            final javax.swing.AbstractButton b = field(on, LayoutEditor.class, "autonomyModeButton");
+
+            SwingUtilities.invokeLater(() -> b.doClick());
+
+            // Probes queued back to back, so one runs between each event the switch posts.
+            for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+            {
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    if (on.isAutonomyMode()) seen.addAll(showingText(field(on, LayoutEditor.class, "ExtLayoutPanel"),
+                        own));
+                });
+
+                if (on.isAutonomyMode() && System.currentTimeMillis() > end - 12000) break;
+            }
+
+            assertTrue(on.isAutonomyMode(), "precondition: the Autonomy Setup button did not switch mode in 15 s");
+
+            assertTrue(seen.isEmpty(), "Autonomy Setup, with Text Labels off, showed the page's own text on the way in: "
+                + new java.util.TreeSet<>(seen));
+
+            close(editor);
+
+            editor = null;
+
+            // Opened straight into the setup over a page whose text the track diagram last showed.
+            page.setEditHideText(false);
+
+            final LayoutEditor[] opened = new LayoutEditor[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                opened[0] = new LayoutEditor(page, 30, ui, 0);
+                opened[0].render();
+                opened[0].setAutonomyMode(session);
+            });
+
+            editor = opened[0];
+
+            for (long end = System.currentTimeMillis() + 3000; System.currentTimeMillis() < end; )
+            {
+                SwingUtilities.invokeAndWait(() -> seen.addAll(showingText(field(opened[0], LayoutEditor.class,
+                    "ExtLayoutPanel"), own)));
+            }
+
+            assertTrue(opened[0].isShowing(), "precondition: the editor opened in Autonomy Setup did not show in 3 s");
+
+            assertTrue(seen.isEmpty(), "Autonomy Setup, opened with Text Labels off, showed the page's own text first: "
+                + new java.util.TreeSet<>(seen));
+
+            close(editor);
+
+            editor = null;
+        }
+        finally
+        {
+            if (captionWas == null) prefs.remove(captionKey); else prefs.put(captionKey, captionWas);
+            if (textWas == null) prefs.remove(textKey); else prefs.put(textKey, textWas);
+        }
+    }
+
+    /** The texts among `own` that a label in the panel shows on the screen. */
+    private static java.util.List<String> showingText(Container in, java.util.Set<String> own)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        for (Component c : in.getComponents())
+        {
+            if (c instanceof javax.swing.JLabel && c.isShowing() && own.contains(((javax.swing.JLabel) c).getText()))
+            {
+                out.add(((javax.swing.JLabel) c).getText());
+            }
+
+            if (c instanceof Container) out.addAll(showingText((Container) c, own));
+        }
+
+        return out;
+    }
+
     /** The page list's top in the window and its height, laid out. */
     private static int[] bounds(final LayoutEditor on) throws Exception
     {

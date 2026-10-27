@@ -1346,6 +1346,9 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else if (autonomyPanel == null)
         {
+            // Before render()'s queued drawing
+            takeTheSetupsTextLabels(this.layout);
+
             // The panel needs the running layout for Why Not Moving?, a question the setup cannot answer.
             autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), new Runnable()
             {
@@ -3155,6 +3158,17 @@ public class LayoutEditor extends PositionAwareJFrame
         toggleText();
     }
 
+    /**
+     * Gives a diagram Autonomy Setup's remembered Text Labels before it is drawn in that mode, or its own writing shows
+     * in black until the panel turns it off; the track diagram's box follows, as `toggleText` keeps it.
+     */
+    private void takeTheSetupsTextLabels(LayoutDiagram diagram)
+    {
+        diagram.setEditHideText(!AutonomyEditorPanel.rememberedTextLabels());
+
+        this.showTextCheckbox.setSelected(!diagram.getEditHideText());
+    }
+
     /** Hides the diagram's writing, idempotently (FR-061, FR-133); the captions stay (OB-272). */
     public void hideTextLabels()
     {
@@ -3941,6 +3955,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // The parts of render() about which diagram this is, not about being a window.
             layout.setEdit();
+
+            // Drawn next, before the mode is entered
+            if (session != null) takeTheSetupsTextLabels(arriving);
 
             mountSidebar();
 
