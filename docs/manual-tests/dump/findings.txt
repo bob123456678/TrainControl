@@ -40450,6 +40450,116 @@ cited_by:
 status: Closed
 status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
 
+[finding RSA85-C1 in RSA85.md]
+line: 25
+severity: C
+title: Quick Find still does nothing when the key showing is the last one left unseen (the other half of RSA84-C5)
+disposition: Fixed - `65a2d421`: the key showing counts as seen when it holds a match; testTheKeyTurnedToByHandCountsAsSeen red on de
+evidence: TrainControlUI.java:2054
+commit_id: 65a2d421
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-C2 in RSA85.md]
+line: 66
+severity: C
+title: Readme: the RSA83-C3 line names only Autonomy Setup, but the track editor's Text Labels box, the pop-outs and the saved picture changed too
+disposition: Fixed - `65a2d421`: the Readme line now says the editors' Text Labels box hides text only in the editors (main window, p
+evidence: LayoutGrid.java:1006
+commit_id: 65a2d421
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-C3 in RSA85.md]
+line: 96
+severity: C
+title: OB-383's claim's helper calls the viewport "its scroll pane's view", the very part the old measurement read
+disposition: Fixed - `65a2d421`: the javadoc says viewport and the local is `viewport`.
+evidence: testTheToolsSitUnderTheHeading.java:401
+commit_id: 65a2d421
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D1 in RSA85.md]
+line: 112
+severity: D
+title: Quick Find after `> 0`: every walk the brief asked for
+disposition: Not a defect - checked as described.
+evidence: TrainControlUI.java:2005
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D2 in RSA85.md]
+line: 142
+severity: D
+title: The page list (RSA84-C2, C3): ellipsis, rows, tooltips, selection and height, and OB-383's claim reaches its fix
+disposition: Not a defect - checked as described.
+evidence: LayoutEditor.java:4299
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D3 in RSA85.md]
+line: 170
+severity: D
+title: The stray-day claim's future-only fixture reaches the today bound (RSA84-C4)
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D4 in RSA85.md]
+line: 184
+severity: D
+title: RSA84-C1, C6 and C7: the comments, the ratchet's javadoc and pins, and the Readme lines
+disposition: Not a defect - checked as described.
+evidence: MarklinControlStation.java:1282
+commit_id: aa0223db
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D5 in RSA85.md]
+line: 203
+severity: D
+title: RSA83-C3's fix: every grid outside an editor draws its labels, and inside both editors nothing changed
+disposition: Not a defect - checked as described.
+evidence: LayoutGrid.java:727
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D6 in RSA85.md]
+line: 237
+severity: D
+title: The tracker commits agree with the fixes
+disposition: Not a defect - checked as described.
+evidence: findings.py:21
+commit_id: 898ea5ea
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
+[finding RSA85-D7 in RSA85.md]
+line: 253
+severity: D
+title: The Readme's v3.0.5 section otherwise
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 36c1a644
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B
