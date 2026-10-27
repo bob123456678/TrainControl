@@ -383,6 +383,47 @@ public class testTheKeyboardPages
     }
 
     /**
+     * A remap between two searches does not cut the round short: a key that no longer holds the locomotive is forgotten,
+     * so every key that does is visited before the round starts again (OB-386).
+     *
+     * MUTATION: delete the `this.lastResults.retainAll(results);` in `jumpToLocomotive`, and page 4 is never visited.
+     */
+    @Test
+    public void testARemapBetweenSearchesSkipsNoKey() throws Exception
+    {
+        put(1, KeyEvent.VK_A, one);
+        put(2, KeyEvent.VK_B, one);
+
+        turnTo(5);
+        choose(KeyEvent.VK_Q);
+
+        search("kp one");
+
+        assertVisited(1, KeyEvent.VK_A);
+
+        // Off page 1, and on pages 3 and 4
+        put(1, KeyEvent.VK_A, null);
+        put(3, KeyEvent.VK_C, one);
+        put(4, KeyEvent.VK_D, one);
+
+        search("");
+
+        assertVisited(2, KeyEvent.VK_B);
+
+        search("");
+
+        assertVisited(3, KeyEvent.VK_C);
+
+        search("");
+
+        assertVisited(4, KeyEvent.VK_D);
+
+        search("");
+
+        assertVisited(2, KeyEvent.VK_B);
+    }
+
+    /**
      * A name that is exactly a locomotive's is answered before one that merely contains it, whatever the page order.
      *
      * MUTATION: compare with `equals("")` in the first loop of `getAllLocButtonMappingsMap`, and the earlier page wins.

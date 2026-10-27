@@ -2032,6 +2032,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             results
         );
 
+        // Only keys that still hold a match count as seen: after a remap a stale one made the round end early and skip
+        // a key (OB-386)
+        this.lastResults.retainAll(results);
+
         // Reset and loop around if all results already found
         if (this.lastResults.size() == results.size())
         {
