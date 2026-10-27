@@ -620,6 +620,7 @@
         <test-one-class class="testMessagesStayShort"/>
         <test-one-class class="testTheRouteEditorListsWhatStopsASave"/>
         <test-one-class class="testTheToolsSitUnderTheHeading"/>
+        <test-one-class class="testTheLocomotiveUsageStats"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
