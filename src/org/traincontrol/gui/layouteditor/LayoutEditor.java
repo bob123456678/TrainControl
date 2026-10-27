@@ -3696,7 +3696,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * `settleUnsavedWork` with the question's key: a page action keeps the window, so it does not ask about a switch.
-     * @param question the message key of the question
      */
     private boolean settleUnsavedWork(String question)
     {
