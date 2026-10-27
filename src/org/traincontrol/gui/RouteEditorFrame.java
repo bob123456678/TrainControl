@@ -1951,7 +1951,10 @@ public class RouteEditorFrame extends JFrame
             menu.add(markItem(table, line, INDENT, INDENT_ROW, "route.ui.menuIndent"));
             menu.add(markItem(table, line, OUTDENT, OUTDENT_ROW, "route.ui.menuOutdent"));
             menu.addSeparator();
-            menu.add(markItem(table, line, CONDITION_DELETE, DELETE_ROW, "ui.delete"));
+            menu.add(menuItem("ui.delete", DELETE_ROW.equals(table.getValueAt(line, CONDITION_DELETE)), () ->
+            {
+                if (!locked) table.removeLines(line);
+            }));
         }
 
         menu.show(table, e.getX(), e.getY());
@@ -4161,6 +4164,72 @@ public class RouteEditorFrame extends JFrame
             if (line < 0 || line >= rows.size()) return;
 
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
+
+            cut(line, java.util.Collections.<ConditionOutline.Row>emptySet());
+
+            tidy(rows);
+
+            settle();
+            model.fireTableDataChanged();
+            showChanges(before);
+        }
+
+        /**
+         * Delete from the menu (OB-382): inside a selection of several lines, every selected line goes, conditions
+         * first, as one edit, and the line now where the first was is selected; elsewhere, `removeAt`.
+         */
+        void removeLines(int line)
+        {
+            int[] picked = getSelectedRows();
+
+            if (picked.length < 2 || !isRowSelected(line))
+            {
+                removeAt(line);
+                return;
+            }
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            java.util.Set<ConditionOutline.Row> chosen = java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<ConditionOutline.Row, Boolean>());
+
+            for (int at : picked) if (at < rows.size()) chosen.add(rows.get(at));
+
+            // Conditions first: each takes a word beside it, a selected one where it can, so fewer words are left to
+            // take their terms.
+            for (boolean words : new boolean[]{false, true})
+            {
+                for (ConditionOutline.Row row : before)
+                {
+                    int at = indexOf(row);
+
+                    if (at >= 0 && row.isJoiner() == words && chosen.contains(row)) cut(at, chosen);
+                }
+            }
+
+            tidy(rows);
+
+            settle();
+            model.fireTableDataChanged();
+
+            if (!rows.isEmpty()) pick(Math.min(picked[0], rows.size() - 1));
+
+            showChanges(before);
+        }
+
+        /** Where this very row stands, or -1: two rows can be equal. */
+        private int indexOf(ConditionOutline.Row row)
+        {
+            for (int at = 0; at < rows.size(); at++) if (rows.get(at) == row) return at;
+
+            return -1;
+        }
+
+        /**
+         * `removeAt`'s removal, without the tidy.  A condition takes a word in `chosen` beside it, rather than the one
+         * the rule picks, where the outline is flagged no more for it.
+         */
+        private void cut(int line, java.util.Set<ConditionOutline.Row> chosen)
+        {
             boolean joiner = rows.get(line).isJoiner();
 
             // Before the removal, because the term a word joins on is found by comparing depths with it.
@@ -4176,13 +4245,25 @@ public class RouteEditorFrame extends JFrame
                 // left for `tidy()`.
                 boolean wordBefore = line - 1 >= 0 && rows.get(line - 1).isJoiner();
                 boolean wordAfter = line < rows.size() && rows.get(line).isJoiner();
+                int word = -1;
 
                 if (wordBefore && wordAfter)
                 {
-                    rows.remove(rows.get(line).getDepth() > rows.get(line - 1).getDepth() ? line : line - 1);
+                    word = rows.get(line).getDepth() > rows.get(line - 1).getDepth() ? line : line - 1;
                 }
-                else if (wordBefore && rows.get(line - 1).getDepth() == depth) rows.remove(line - 1);
-                else if (wordAfter && rows.get(line).getDepth() == depth) rows.remove(line);
+                else if (wordBefore && rows.get(line - 1).getDepth() == depth) word = line - 1;
+                else if (wordAfter && rows.get(line).getDepth() == depth) word = line;
+
+                for (int other : new int[]{wordBefore ? line - 1 : -1, wordAfter ? line : -1})
+                {
+                    if (other >= 0 && other != word && chosen.contains(rows.get(other))
+                        && (word < 0 || !chosen.contains(rows.get(word))) && flaggedWithout(other) <= flaggedWithout(word))
+                    {
+                        word = other;
+                    }
+                }
+
+                if (word >= 0) rows.remove(word);
             }
             else if (line < rows.size())
             {
@@ -4197,12 +4278,18 @@ public class RouteEditorFrame extends JFrame
                     rows.remove(line);
                 }
             }
+        }
 
-            tidy();
+        /** How many lines would be flagged with this word gone, tidied; -1 removes nothing. */
+        private int flaggedWithout(int word)
+        {
+            List<ConditionOutline.Row> outline = new ArrayList<>(rows);
 
-            settle();
-            model.fireTableDataChanged();
-            showChanges(before);
+            if (word >= 0) outline.remove(word);
+
+            tidy(outline);
+
+            return ConditionOutline.problems(outline).size();
         }
 
         /**
@@ -4300,7 +4387,7 @@ public class RouteEditorFrame extends JFrame
                     rows.set(at, rows.get(at).atDepth(rows.get(at).getDepth() + by));
                 }
 
-                tidy();
+                tidy(rows);
 
                 settle();
                 model.fireTableDataChanged();
@@ -4343,7 +4430,7 @@ public class RouteEditorFrame extends JFrame
                 rows.set(at, rows.get(at).atDepth(Math.max(0, moved)));
             }
 
-            tidy();
+            tidy(rows);
 
             settle();
             model.fireTableDataChanged();
@@ -4351,8 +4438,8 @@ public class RouteEditorFrame extends JFrame
             showChanges(before);
         }
 
-        /** Pulls the outline back into a shape it can have, afterwards, rather than refusing a move. */
-        private void tidy()
+        /** Pulls an outline back into a shape it can have, afterwards, rather than refusing a move. */
+        private void tidy(List<ConditionOutline.Row> rows)
         {
             for (int at = 0; at < rows.size(); at++)
             {
