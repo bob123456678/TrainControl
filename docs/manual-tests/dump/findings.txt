@@ -40285,6 +40285,171 @@ cited_by:
 status: Closed
 status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
+[finding RSA84-C1 in RSA84.md]
+line: 23
+severity: C
+title: The history-comment ratchet is red at HEAD: `MarklinControlStation` has a dated comment line and is off the list
+disposition: Fixed - `69cf61f4`: the javadoc names December 2018, not a date; testCommentsStayLean green.
+evidence: MarklinControlStation.java:1283
+commit_id: a1e15d2b
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-C2 in RSA84.md]
+line: 47
+severity: C
+title: In its scroll pane, a long page name is cut off at the strip's edge without an ellipsis, now at every page count
+disposition: Fixed - `69cf61f4`: the page list tracks its scroll pane's width, so long names end in an ellipsis.
+evidence: LayoutEditor.java:4417
+commit_id: 69cf61f4
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-C3 in RSA84.md]
+line: 73
+severity: C
+title: OB-383's claim no longer reaches its fix: the list's own height cap is dead inside the scroll pane
+disposition: Fixed - `69cf61f4`: the dead cap and the unused parameter are gone; OB-383's claim measures the showing part, red with t
+evidence: testTheToolsSitUnderTheHeading.java:204
+commit_id: a1e15d2b
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-C4 in RSA84.md]
+line: 101
+severity: C
+title: The stray-day claim's MUTATION line names the today bound, which its fixture cannot reach
+disposition: Fixed - `69cf61f4`: the claim adds a history of one future day; red without the today bound (All starts on 2026-12-06).
+evidence: testTheUsageChartShowsWhatTheLocomotivesRan.java:526
+commit_id: 69cf61f4
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-C5 in RSA84.md]
+line: 121
+severity: C
+title: Quick Find with exactly two keys, standing on one: the first search stays where it is (older than the range)
+disposition: Fixed - `69cf61f4`, under Adam's 'fix quick find': the current key is skipped while any key is left unseen; claim testTw
+evidence: TrainControlUI.java:2053
+commit_id: dd9091c2
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-C6 in RSA84.md]
+line: 143
+severity: C
+title: Readme: FR-155 is not in the v3.0.5 section, and Quick Find goes by a shorter name than the menu's
+disposition: Fixed - `69cf61f4`: FR-155 under New Features; the line names Quick Find Locomotive and the two-key fix.
+evidence:
+commit_id: b5a3fb1b
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-C7 in RSA84.md]
+line: 166
+severity: C
+title: Two comments: OB-386's tells history, and the lean test's javadoc now misstates one marker
+disposition: Fixed - `69cf61f4`: the OB-386 comment states the rule; the ratchet's javadoc lists its markers one per item.
+evidence: TrainControlUI.java:2035
+commit_id: 69cf61f4
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D1 in RSA84.md]
+line: 183
+severity: D
+title: Quick Find after OB-386: the whole cycle walked
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D2 in RSA84.md]
+line: 214
+severity: D
+title: The bold corner dates: nothing else in the window moves
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: ba363df9
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D3 in RSA84.md]
+line: 226
+severity: D
+title: Add Blank Page's Spanish suggestion: every language survives the name box, and nothing else uses the key
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D4 in RSA84.md]
+line: 240
+severity: D
+title: The page list in its scroll pane at 2, 20, 21 and 40 pages: the same at a normal height
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D5 in RSA84.md]
+line: 264
+severity: D
+title: The run-day floor and today: no real history is cut, and midnight is harmless
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 9f08929f
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D6 in RSA84.md]
+line: 282
+severity: D
+title: RSA83-C4's three comments
+disposition: Not a defect - checked as described.
+evidence: AutonomyEditorPanel.java:592
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D7 in RSA84.md]
+line: 291
+severity: D
+title: The comment-trim pass (`03edc779`): only comments, no rule, id, MUTATION note or line of Adam's lost
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 03edc779
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
+[finding RSA84-D8 in RSA84.md]
+line: 315
+severity: D
+title: The tracker and Readme commits
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 0f05fac5
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA84.md: fixed in 69cf61f4 or checked clean
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B

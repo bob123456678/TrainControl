@@ -3676,6 +3676,21 @@ RSA83-D6	RSA83.md	Closed	Not a defect - checked as described.	The chart's calend
 RSA83-D7	RSA83.md	Closed	Not a defect - checked as described.	The multi-unit rule matches the Stats table's
 RSA83-D8	RSA83.md	Closed	Not a defect - checked as described.	The chart window: checked
 RSA83-D9	RSA83.md	Closed	Not a defect - checked as described.	Bundles: checked
+RSA84-C1	RSA84.md	Closed	Fixed - `69cf61f4`: the javadoc names December 2018, not a date; testCommentsStayLean gree	The history-comment ratchet is red at HEAD: `MarklinControlStation` has a dated comment line and is off the list
+RSA84-C2	RSA84.md	Closed	Fixed - `69cf61f4`: the page list tracks its scroll pane's width, so long names end in an 	In its scroll pane, a long page name is cut off at the strip's edge without an ellipsis, now at every page count
+RSA84-C3	RSA84.md	Closed	Fixed - `69cf61f4`: the dead cap and the unused parameter are gone; OB-383's claim measure	OB-383's claim no longer reaches its fix: the list's own height cap is dead inside the scroll pane
+RSA84-C4	RSA84.md	Closed	Fixed - `69cf61f4`: the claim adds a history of one future day; red without the today boun	The stray-day claim's MUTATION line names the today bound, which its fixture cannot reach
+RSA84-C5	RSA84.md	Closed	Fixed - `69cf61f4`, under Adam's 'fix quick find': the current key is skipped while any ke	Quick Find with exactly two keys, standing on one: the first search stays where it is (older than the range)
+RSA84-C6	RSA84.md	Closed	Fixed - `69cf61f4`: FR-155 under New Features; the line names Quick Find Locomotive and th	Readme: FR-155 is not in the v3.0.5 section, and Quick Find goes by a shorter name than the menu's
+RSA84-C7	RSA84.md	Closed	Fixed - `69cf61f4`: the OB-386 comment states the rule; the ratchet's javadoc lists its ma	Two comments: OB-386's tells history, and the lean test's javadoc now misstates one marker
+RSA84-D1	RSA84.md	Closed	Not a defect - checked as described.	Quick Find after OB-386: the whole cycle walked
+RSA84-D2	RSA84.md	Closed	Not a defect - checked as described.	The bold corner dates: nothing else in the window moves
+RSA84-D3	RSA84.md	Closed	Not a defect - checked as described.	Add Blank Page's Spanish suggestion: every language survives the name box, and nothing else uses the key
+RSA84-D4	RSA84.md	Closed	Not a defect - checked as described.	The page list in its scroll pane at 2, 20, 21 and 40 pages: the same at a normal height
+RSA84-D5	RSA84.md	Closed	Not a defect - checked as described.	The run-day floor and today: no real history is cut, and midnight is harmless
+RSA84-D6	RSA84.md	Closed	Not a defect - checked as described.	RSA83-C4's three comments
+RSA84-D7	RSA84.md	Closed	Not a defect - checked as described.	The comment-trim pass (`03edc779`): only comments, no rule, id, MUTATION note or line of Adam's lost
+RSA84-D8	RSA84.md	Closed	Not a defect - checked as described.	The tracker and Readme commits
 RSA9-B1	RSA9.md	Closed	Fixed on Adam's ruling (2026-09-30: "stop the timetable run upon encountering an invalid p	A refused timetable entry leaves its train where it stands: where that train's next entry starts where the refused one would have taken it, the run re
 RSA9-B2	RSA9.md	Closed	Fixed - what the carry of names remembers is taken as the editor opens (beginEditSession -	The editor's Cancel after a station's name moved to another station - two names swapped, or a freed name reused - rebinds the timetable's legs to the
 RSA9-C1	RSA9.md	Closed	Fixed - the undo point holds each stored leg by where it is (keyedLegsOf: a road by its sq	Ctrl+Z puts every configuration's stored legs back by position into points maps that `restorePage` has just rebuilt in another order: two trains' road
