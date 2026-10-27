@@ -25,6 +25,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveStats;
+import org.traincontrol.gui.locomotive.SegmentedControl;
 import org.traincontrol.gui.locomotive.UsageChart;
 import org.traincontrol.gui.locomotive.UsageChartPanel;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -635,7 +636,8 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
 
             LocalDate day = today.minusDays(c[0]);
 
-            assertEquals(tip(p, r.x + r.width / 2, top), figures(day.toString(), ran(day, day), c[1]),
+            assertEquals(tip(p, r.x + r.width / 2, top),
+                html(figures(day.toString(), ran(day, day), c[1]), tipLines(day, day)),
                 "the tooltip over the day " + c[0] + " back");
         }
 
@@ -674,7 +676,8 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
         Rectangle w = barBounds(chart, week);
 
         assertEquals(tip(p, w.x + w.width / 2, top),
-            figures(dates(monday, monday.plusDays(6)), ran(monday, monday.plusDays(6)), 1), "the week of " + monday);
+            html(figures(dates(monday, monday.plusDays(6)), ran(monday, monday.plusDays(6)), 1),
+                tipLines(monday, monday.plusDays(6))), "the week of " + monday);
 
         // A month of All
         pick(chart, "stats.chart.rangeAll");
@@ -685,8 +688,8 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
         Rectangle m = barBounds(chart, 0);
 
         assertEquals(tip(p, m.x + m.width / 2, top),
-            figures(dates(month.atDay(1), month.atEndOfMonth()), ran(month.atDay(1), month.atEndOfMonth()), 1),
-            "the month of " + month);
+            html(figures(dates(month.atDay(1), month.atEndOfMonth()), ran(month.atDay(1), month.atEndOfMonth()), 1),
+                tipLines(month.atDay(1), month.atEndOfMonth())), "the month of " + month);
     }
 
     /**
@@ -726,6 +729,530 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
         }
     }
 
+    // ---- the range picker, the arrows, the tooltips' locomotives, the half-hour gridlines ----
+
+    private static final String[] RANGE_NAMES = {"DAYS_7", "DAYS_30", "DAYS_90", "YEAR", "ALL"};
+
+    private static SegmentedControl ranges(UsageChart chart)
+    {
+        SegmentedControl s = Components.named(chart, "usageChart.ranges", SegmentedControl.class);
+
+        assertNotNull(s, "the chart has no range picker");
+
+        return s;
+    }
+
+    private static AbstractButton segment(UsageChart chart, int i)
+    {
+        AbstractButton b = Components.named(chart, "usageChart.range." + RANGE_NAMES[i], AbstractButton.class);
+
+        assertNotNull(b, "the range picker has no segment " + RANGE_NAMES[i]);
+
+        return b;
+    }
+
+    /** A picture of any component on the given background, as it is painted now. */
+    private static BufferedImage pictureOf(java.awt.Component c, Color background)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            BufferedImage image = new BufferedImage(c.getWidth(), c.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(background);
+            g.fillRect(0, 0, c.getWidth(), c.getHeight());
+            c.paint(g);
+            g.dispose();
+
+            return image;
+        });
+    }
+
+    /**
+     * The five ranges are one oval: the segments touch with no gap, the outline runs unbroken across them and round
+     * at both ends, a thin divider stands between neighbors, and only the chosen segment is filled with the accent,
+     * which follows a press and the arrow keys.
+     *
+     * MUTATION: in `SegmentedControl.paintChildren`, start the divider loop past the last segment (`i =
+     * getComponentCount()`), and no divider is drawn.
+     */
+    @Test(timeOut = 120000)
+    public void testTheRangesAreOneOvalWithDividersAndTheChosenOneFilled() throws Exception
+    {
+        UsageChart chart = open();
+
+        SegmentedControl control = ranges(chart);
+
+        Color background = UIManager.getColor("Panel.background");
+        Color line = Components.onTheEventThread(control::lineColor);
+        Color accent = Components.onTheEventThread(control::chosenColor);
+
+        int w = control.getWidth();
+        int h = control.getHeight();
+
+        assertTrue(h > 10 && w > 5 * 30, "the picker is " + w + " by " + h);
+
+        // One row of touching segments, as tall as the picker
+        int edge = 0;
+
+        for (int i = 0; i < 5; i++)
+        {
+            AbstractButton s = segment(chart, i);
+
+            assertEquals(s.getX(), edge, "segment " + i + " leaves a gap before it or overlaps its neighbor");
+            assertEquals(s.getHeight(), h, "segment " + i + " is not as tall as the picker");
+
+            edge += s.getWidth();
+        }
+
+        assertEquals(edge, w, "the segments do not fill the picker");
+
+        BufferedImage image = pictureOf(control, background);
+
+        // The outline: unbroken along the top and the bottom, across every divider, round at the ends
+        for (int x = h; x < w - h; x++)
+        {
+            assertTrue(distance(image.getRGB(x, 0), line) <= 12, "the outline breaks along the top at x=" + x);
+            assertTrue(distance(image.getRGB(x, h - 1), line) <= 12, "the outline breaks along the bottom at x=" + x);
+        }
+
+        assertEquals(distance(image.getRGB(0, 0), background), 0, "the top left corner is square");
+        assertEquals(distance(image.getRGB(w - 1, h - 1), background), 0, "the bottom right corner is square");
+        assertTrue(distance(image.getRGB(0, h / 2), line) <= 12, "the outline is missing at the left end");
+        assertTrue(distance(image.getRGB(w - 1, h / 2), line) <= 12, "the outline is missing at the right end");
+
+        // Dividers: a line-colored column between neighbors, near the top and the bottom, and not inside a segment
+        for (int i = 1; i < 5; i++)
+        {
+            int x = segment(chart, i).getX();
+
+            assertTrue(distance(image.getRGB(x, 4), line) <= 12 && distance(image.getRGB(x, h - 5), line) <= 12,
+                "there is no divider between segments " + (i - 1) + " and " + i);
+            assertTrue(distance(image.getRGB(x + 8, 4), line) > 12, "a divider stands inside segment " + i);
+        }
+
+        // The chosen one is filled and the others are not; the fill follows a press
+        for (int chosen : new int[] {1, 3, 0})
+        {
+            if (chosen != 1) pick(chart, RANGES[chosen]);
+
+            BufferedImage now = pictureOf(control, background);
+
+            for (int i = 0; i < 5; i++)
+            {
+                int d = distance(now.getRGB(segment(chart, i).getX() + 8, h / 2), accent);
+
+                if (i == chosen) assertTrue(d <= 12, "the chosen segment " + i + " is not filled");
+                else assertTrue(d > 60, "segment " + i + " is filled but segment " + chosen + " is the chosen one");
+            }
+        }
+
+        // The keyboard: Right on the focused segment chooses the next range
+        AbstractButton first = segment(chart, 0);
+
+        Components.onTheEventThread(() ->
+        {
+            first.requestFocusInWindow();
+            first.dispatchEvent(new java.awt.event.KeyEvent(first, java.awt.event.KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_RIGHT, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertTrue(Components.onTheEventThread(() -> segment(chart, 1).isSelected()),
+            "Right did not choose the next range");
+    }
+
+    /** The ink in a picture of a button: columns, in runs separated by at least four empty ones, as {first, last}. */
+    private static List<int[]> inkRuns(BufferedImage image, Color background)
+    {
+        List<int[]> runs = new ArrayList<>();
+
+        int[] run = null;
+        int empty = 0;
+
+        for (int x = 6; x < image.getWidth() - 6; x++)
+        {
+            boolean ink = false;
+
+            for (int y = 5; y < image.getHeight() - 5; y++)
+            {
+                if (distance(image.getRGB(x, y), background) > 40) ink = true;
+            }
+
+            if (ink)
+            {
+                if (run == null || empty >= 4) runs.add(run = new int[] {x, x});
+
+                run[1] = x;
+                empty = 0;
+            }
+            else
+            {
+                empty++;
+            }
+        }
+
+        return runs;
+    }
+
+    /** The x range of the ink in one row of an icon's picture; null when the row is clear. */
+    private static int[] inkInRow(BufferedImage image, int y)
+    {
+        int from = -1;
+        int to = -1;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            if ((image.getRGB(x, y) >>> 24) > 100)
+            {
+                if (from < 0) from = x;
+
+                to = x;
+            }
+        }
+
+        return from < 0 ? null : new int[] {from, to};
+    }
+
+    /**
+     * Previous wears a left arrow before its text and Next a right arrow after it, as icons: the buttons' text is
+     * still the bundle's words, and Reset has none.
+     *
+     * MUTATION: in `UsageChart`'s constructor, give Previous the right-pointing icon (`new Chevron(false)`), or none,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testPreviousAndNextWearArrows() throws Exception
+    {
+        UsageChart chart = open();
+
+        // Both are enabled one page back
+        press(chart, "stats.chart.previous");
+
+        AbstractButton previous = Components.named(chart, "usageChart.previous", AbstractButton.class);
+        AbstractButton next = Components.named(chart, "usageChart.next", AbstractButton.class);
+        AbstractButton reset = Components.named(chart, "usageChart.reset", AbstractButton.class);
+
+        assertEquals(previous.getText(), I18n.t("stats.chart.previous"), "Previous says something else");
+        assertEquals(next.getText(), I18n.t("stats.chart.next"), "Next says something else");
+        assertEquals(reset.getText(), I18n.t("stats.ui.reset"), "Reset says something else");
+        assertNull(reset.getIcon(), "Reset has an arrow");
+        assertNotNull(previous.getIcon(), "Previous has no arrow");
+        assertNotNull(next.getIcon(), "Next has no arrow");
+
+        Color buttonBackground = UIManager.getColor("Button.background");
+
+        // Drawn alone: the point of a left arrow is at the left, and of a right arrow at the right
+        for (AbstractButton b : new AbstractButton[] {previous, next})
+        {
+            boolean left = b == previous;
+
+            BufferedImage icon = Components.onTheEventThread(() ->
+            {
+                javax.swing.Icon i = b.getIcon();
+
+                BufferedImage image = new BufferedImage(i.getIconWidth(), i.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+                java.awt.Graphics2D g = image.createGraphics();
+
+                i.paintIcon(b, g, 0, 0);
+                g.dispose();
+
+                return image;
+            });
+
+            int[] top = inkInRow(icon, 2);
+            int[] middle = inkInRow(icon, icon.getHeight() / 2);
+
+            assertNotNull(top, (left ? "Previous" : "Next") + " arrow is not drawn");
+            assertNotNull(middle, (left ? "Previous" : "Next") + " arrow has no point");
+
+            if (left) assertTrue(middle[0] < top[0], "Previous does not point left");
+            else assertTrue(middle[1] > top[1], "Next does not point right");
+        }
+
+        // In the button: Previous's first ink is the arrow, before its text; Next's last ink is the arrow, after it
+        List<int[]> before = inkRuns(pictureOf(previous, buttonBackground), buttonBackground);
+        List<int[]> after = inkRuns(pictureOf(next, buttonBackground), buttonBackground);
+
+        int iconWidth = Components.onTheEventThread(() -> previous.getIcon().getIconWidth());
+
+        assertTrue(before.size() >= 2 && before.get(0)[1] - before.get(0)[0] + 1 <= iconWidth + 1,
+            "the arrow does not stand before Previous's text");
+
+        int[] last = after.isEmpty() ? new int[] {0, 999} : after.get(after.size() - 1);
+
+        assertTrue(after.size() >= 2 && last[1] - last[0] + 1 <= iconWidth + 1,
+            "the arrow does not stand after Next's text");
+    }
+
+    /** What the table says each of the two locomotives ran over a span, as the tooltip's lines, most run first. */
+    private String tipLines(LocalDate first, LocalDate last)
+    {
+        long[] total = new long[2];
+
+        for (int i = 0; i < rows; i++)
+        {
+            LocalDate day = today.minusDays(SEEDS[i][0]);
+
+            if (!day.isBefore(first) && !day.isAfter(last))
+            {
+                total[0] += SEEDS[i][1];
+                total[1] += SEEDS[i][2];
+            }
+        }
+
+        StringBuilder lines = new StringBuilder();
+
+        // "Chart A" before "Chart B" when they ran equally
+        int[] order = total[1] > total[0] ? new int[] {1, 0} : new int[] {0, 1};
+
+        for (int k : order)
+        {
+            if (total[k] > 0)
+            {
+                lines.append("<br>").append(I18n.f("stats.chart.topLoc", k == 0 ? "Chart A" : "Chart B", hm(total[k])));
+            }
+        }
+
+        return lines.toString();
+    }
+
+    private static String html(String first, String lines)
+    {
+        return "<html>" + first + lines + "</html>";
+    }
+
+    /** Extra locomotives that ran today, made for one test and gone after it; the last has markup in its name. */
+    private static final String[][] EXTRA = {{"Chart C", "74"}, {"Chart D", "75"}, {"Chart <E> & Co", "76"}};
+
+    private static void addExtras()
+    {
+        for (String[] e : EXTRA) model.newMM2Locomotive(e[0], Integer.parseInt(e[1]));
+    }
+
+    private static void dropExtras()
+    {
+        for (String[] e : EXTRA)
+        {
+            try { model.deleteLoc(e[0]); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A bar's tooltip is its first line and then the three locomotives that ran most in it, the most run first, each
+     * with its run time, and "and N more" for the rest; a bar with fewer lists them all and a day with no run lists
+     * none.  Five locomotives ran today: 3:00, 2:00, 1:30, 0:45 and 0:10.
+     *
+     * MUTATION: in `UsageChartPanel`, list four (`TOP_LOCOMOTIVES = 4`), or in
+     * `MarklinControlStation.getRuntimePerLocBetween`, sort the least run first, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTooltipNamesTheTopThreeLocomotivesAndHowManyMore() throws Exception
+    {
+        try
+        {
+            addExtras();
+
+            String day = today.toString();
+
+            model.getLocByName("Chart C").getHistoricalOperatingTime().put(day, 90 * M);
+            model.getLocByName("Chart D").getHistoricalOperatingTime().put(day, 45 * M);
+            model.getLocByName("Chart <E> & Co").getHistoricalOperatingTime().put(day, 3 * H);
+            locB.getHistoricalOperatingTime().put(day, 10 * M);
+
+            UsageChart chart = open();
+            UsageChartPanel p = panel(chart);
+
+            int top = Components.onTheEventThread(() -> p.plot().y + p.plot().height / 2);
+
+            Rectangle now = barBounds(chart, 29);
+
+            long total = 2 * H + 90 * M + 45 * M + 3 * H + 10 * M;
+
+            assertEquals(tip(p, now.x + now.width / 2, top),
+                html(figures(day, total, 5), "<br>" + I18n.f("stats.chart.topLoc", "Chart &lt;E&gt; &amp; Co", "3:00")
+                    + "<br>" + I18n.f("stats.chart.topLoc", "Chart A", "2:00")
+                    + "<br>" + I18n.f("stats.chart.topLoc", "Chart C", "1:30") + "<br>" + I18n.f("stats.chart.more", 2)),
+                "today's tooltip: the top three of five, and two more");
+
+            // Three or fewer: all of them and no "more"; the day 1 back is A 1:00 and B 0:30
+            Rectangle yesterday = barBounds(chart, 28);
+            LocalDate before = today.minusDays(1);
+
+            assertEquals(tip(p, yesterday.x + yesterday.width / 2, top),
+                html(figures(before.toString(), 90 * M, 2), tipLines(before, before)),
+                "yesterday's tooltip lists both locomotives and says no more");
+
+            // A day with no run: its line and no list
+            Rectangle quiet = barBounds(chart, 27);
+
+            assertEquals(tip(p, quiet.x + quiet.width / 2, top), html(figures(today.minusDays(2).toString(), 0, 0), ""),
+                "a day with no run lists locomotives");
+        }
+        finally
+        {
+            dropExtras();
+        }
+    }
+
+    /**
+     * The tooltip leaves out a multi-unit as the totals do: its member is listed once and the head not at all.
+     *
+     * MUTATION: in `MarklinControlStation.getRuntimePerLocBetween`, go through `getLocomotives()` instead of
+     * `locomotivesRunningOnTheirOwn()`, and the head is listed beside its member.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTooltipLeavesOutAMultiUnit() throws Exception
+    {
+        String day = today.toString();
+
+        head.getHistoricalOperatingTime().put(day, 5 * H);
+
+        assertEquals(head.setLinkedLocomotives(java.util.Collections.singletonMap("Chart A", 1.0)), 1,
+            "the test's multi-unit could not be made");
+
+        try
+        {
+            UsageChart chart = open();
+            UsageChartPanel p = panel(chart);
+
+            int top = Components.onTheEventThread(() -> p.plot().y + p.plot().height / 2);
+
+            Rectangle now = barBounds(chart, 29);
+
+            assertEquals(tip(p, now.x + now.width / 2, top),
+                html(figures(day, 2 * H, 1), "<br>" + I18n.f("stats.chart.topLoc", "Chart A", "2:00")),
+                "the head, with the longer run, is listed beside its member");
+        }
+        finally
+        {
+            head.unlinkLocomotive(locA);
+        }
+    }
+
+    /**
+     * A locomotive's name is shown as text: its markup characters are escaped, so a name with a tag in it does not
+     * change the tooltip's layout.
+     *
+     * MUTATION: in `UsageChartPanel.escaped`, return the text as it is, and the name goes into the tooltip raw.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTooltipEscapesALocomotivesName() throws Exception
+    {
+        try
+        {
+            addExtras();
+
+            model.getLocByName("Chart <E> & Co").getHistoricalOperatingTime().put(today.toString(), 3 * H);
+
+            UsageChart chart = open();
+            UsageChartPanel p = panel(chart);
+
+            Rectangle now = barBounds(chart, 29);
+
+            String tip = tip(p, now.x + now.width / 2, Components.onTheEventThread(() -> p.plot().y + p.plot().height / 2));
+
+            assertTrue(tip.contains("Chart &lt;E&gt; &amp; Co"), "the name is not escaped in " + tip);
+            assertFalse(tip.contains("<E>"), "the name's tag is in the tooltip as markup: " + tip);
+        }
+        finally
+        {
+            dropExtras();
+        }
+    }
+
+    /** The rows of a picture, at one column inside the plot, that are not the background: the gridlines. */
+    private static List<Integer> gridRows(BufferedImage image, Rectangle plot, Color background)
+    {
+        List<Integer> rows = new ArrayList<>();
+
+        for (int y = plot.y; y <= plot.y + plot.height; y++)
+        {
+            if (distance(image.getRGB(plot.x + 1, y), background) > 0) rows.add(y);
+        }
+
+        return rows;
+    }
+
+    /**
+     * While the tallest bar is an hour or less the hours axis tops out at 1 with a tick and a gridline at 0.5, 0.5 in
+     * the locale's decimal sign; past an hour the axis keeps whole-hour steps and draws nothing at half an hour.
+     *
+     * MUTATION: in `UsageChartPanel.tickStep`, return `axisStep` always, and the short scale has no half-hour line.
+     */
+    @Test(timeOut = 120000)
+    public void testAShortScaleHasAHalfHourGridline() throws Exception
+    {
+        String sign = String.valueOf(java.text.DecimalFormatSymbols.getInstance(I18n.getLocale()).getDecimalSeparator());
+
+        Color background = UIManager.getColor("Panel.background");
+
+        // Forty minutes, then exactly an hour: both top out at 1
+        for (long ran : new long[] {40 * M, H})
+        {
+            seed(0);
+
+            locA.getHistoricalOperatingTime().put(today.toString(), ran);
+
+            UsageChart chart = open();
+            UsageChartPanel p = panel(chart);
+
+            assertEquals((int) Components.onTheEventThread(p::axisMaxHours), 1,
+                "the axis for " + hm(ran) + " does not top out at 1");
+            assertEquals(Components.onTheEventThread(p::tickLabels), java.util.Arrays.asList("0", "0" + sign + "5", "1"),
+                "the labels of the short scale");
+
+            Rectangle plot = Components.onTheEventThread(p::plot);
+            List<Integer> lines = gridRows(picture(chart), plot, background);
+
+            assertEquals(lines.size(), 3, "the short scale has " + lines + " as gridlines");
+            assertEquals((double) lines.get(1), plot.y + plot.height / 2.0, 1.0, "the middle line is not at half an hour");
+
+            closeTheChart();
+        }
+
+        // A minute over the hour: whole hours, 0 1 2, and nothing at half an hour
+        seed(0);
+
+        locA.getHistoricalOperatingTime().put(today.toString(), H + M);
+
+        UsageChart chart = open();
+        UsageChartPanel p = panel(chart);
+
+        assertEquals(Components.onTheEventThread(p::tickLabels), java.util.Arrays.asList("0", "1", "2"),
+            "the labels of an hour and a minute");
+
+        Rectangle plot = Components.onTheEventThread(p::plot);
+        BufferedImage picture = picture(chart);
+
+        assertEquals(gridRows(picture, plot, background).size(), 3, "the scale of an hour and a minute");
+
+        int half = plot.y + plot.height - Math.round(plot.height * 0.25f);
+
+        assertEquals(distance(picture.getRGB(plot.x + 1, half), background), 0, "there is a line at half an hour");
+
+        // The seeded 30 days run to 3:30: a 4 hour scale, no half-hour line either
+        seed(SEEDS.length);
+        closeTheChart();
+
+        UsageChart thirty = open();
+        UsageChartPanel q = panel(thirty);
+
+        assertEquals(Components.onTheEventThread(q::tickLabels), java.util.Arrays.asList("0", "1", "2", "3", "4"),
+            "the labels of the 4 hour scale");
+
+        Rectangle plot4 = Components.onTheEventThread(q::plot);
+        int half4 = plot4.y + plot4.height - Math.round(plot4.height * 0.125f);
+
+        assertEquals(distance(picture(thirty).getRGB(plot4.x + 1, half4), background), 0,
+            "there is a line at half an hour on the 4 hour scale");
+    }
+
     private static String tip(UsageChartPanel p, int x, int y)
     {
         return Components.onTheEventThread(() ->

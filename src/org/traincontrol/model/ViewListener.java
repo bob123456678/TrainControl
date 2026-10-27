@@ -232,6 +232,16 @@ public interface ViewListener
     public int getLocsRunBetween(java.time.LocalDate first, java.time.LocalDate last);
 
     /**
+     * What each locomotive that ran during a span of calendar days ran, counted as {@link #getRuntimeBetween} counts.
+     *
+     * @param first the first day, inclusive
+     * @param last the last day, inclusive
+     * @return each locomotive's name and milliseconds, the most run first and by name among equals; empty when none ran
+     */
+    public java.util.List<java.util.Map.Entry<String, Long>> getRuntimePerLocBetween(java.time.LocalDate first,
+        java.time.LocalDate last);
+
+    /**
      * @return the earliest day any locomotive ran, or null when none has
      */
     public java.time.LocalDate getEarliestRunDay();

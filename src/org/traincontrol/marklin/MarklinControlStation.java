@@ -1249,6 +1249,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     @Override
+    public List<Map.Entry<String, Long>> getRuntimePerLocBetween(LocalDate first, LocalDate last)
+    {
+        List<Map.Entry<String, Long>> ran = new ArrayList<>();
+
+        for (Locomotive l : locomotivesRunningOnTheirOwn())
+        {
+            long total = 0;
+
+            for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+            {
+                total += l.getRuntimeOnDay(day.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            }
+
+            if (total > 0) ran.add(new java.util.AbstractMap.SimpleImmutableEntry<>(l.getName(), total));
+        }
+
+        ran.sort((a, b) -> a.getValue().equals(b.getValue()) ? a.getKey().compareTo(b.getKey())
+            : Long.compare(b.getValue(), a.getValue()));
+
+        return ran;
+    }
+
+    @Override
     public LocalDate getEarliestRunDay()
     {
         String earliest = null;

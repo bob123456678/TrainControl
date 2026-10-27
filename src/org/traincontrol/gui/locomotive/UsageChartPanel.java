@@ -14,10 +14,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
@@ -31,7 +33,7 @@ import org.traincontrol.util.I18n;
  */
 public class UsageChartPanel extends JComponent
 {
-    /** One bar: a span of days with the run time and the number of locomotives that ran in it. */
+    /** One bar: a span of days with the run time, the number of locomotives that ran in it, and what each ran. */
     public static final class Bar
     {
         public final LocalDate first;
@@ -40,17 +42,25 @@ public class UsageChartPanel extends JComponent
         public final int locs;
         public final String label;
 
-        public Bar(LocalDate first, LocalDate last, long millis, int locs, String label)
+        /** Each locomotive's name and run time in the span, the most run first. */
+        public final List<Map.Entry<String, Long>> ran;
+
+        public Bar(LocalDate first, LocalDate last, long millis, int locs, String label,
+            List<Map.Entry<String, Long>> ran)
         {
             this.first = first;
             this.last = last;
             this.millis = millis;
             this.locs = locs;
             this.label = label;
+            this.ran = ran;
         }
     }
 
     private static final long HOUR_MS = 3600000L;
+
+    /** Locomotives a bar's tooltip names. */
+    private static final int TOP_LOCOMOTIVES = 3;
 
     private static final int BAR_RADIUS = 4;
 
@@ -150,6 +160,26 @@ public class UsageChartPanel extends JComponent
         return axisMax;
     }
 
+    /** Hours between ticks: half an hour while the axis tops out at one hour, else the whole-hour step. */
+    private double tickStep()
+    {
+        return axisMax == 1 ? 0.5 : axisStep;
+    }
+
+    /** The labels of the hours axis, from 0 up, in the locale's number format. */
+    public List<String> tickLabels()
+    {
+        NumberFormat format = NumberFormat.getNumberInstance(I18n.getLocale());
+
+        format.setMaximumFractionDigits(1);
+
+        List<String> labels = new ArrayList<>();
+
+        for (double hours = 0; hours <= axisMax; hours += tickStep()) labels.add(format.format(hours));
+
+        return labels;
+    }
+
     /** The bar under the pointer, or -1; the whole column counts, so a bar too short to hit is still found. */
     public int barAt(Point p)
     {
@@ -187,7 +217,25 @@ public class UsageChartPanel extends JComponent
 
         Bar b = bars.get(i);
 
-        return figures(b.first, b.last, b.millis, b.locs);
+        StringBuilder html = new StringBuilder("<html>").append(escaped(figures(b.first, b.last, b.millis, b.locs)));
+
+        for (int k = 0; k < Math.min(TOP_LOCOMOTIVES, b.ran.size()); k++)
+        {
+            html.append("<br>").append(escaped(I18n.f("stats.chart.topLoc", b.ran.get(k).getKey(),
+                Conversion.convertSecondsToHMm(b.ran.get(k).getValue()))));
+        }
+
+        if (b.ran.size() > TOP_LOCOMOTIVES)
+        {
+            html.append("<br>").append(escaped(I18n.f("stats.chart.more", b.ran.size() - TOP_LOCOMOTIVES)));
+        }
+
+        return html.append("</html>").toString();
+    }
+
+    private static String escaped(String text)
+    {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void hoverOver(int i)
@@ -218,7 +266,11 @@ public class UsageChartPanel extends JComponent
     {
         FontMetrics fm = getFontMetrics(tickFont());
 
-        int left = fm.stringWidth(Integer.toString(axisMax)) + 18;
+        int widest = 0;
+
+        for (String label : tickLabels()) widest = Math.max(widest, fm.stringWidth(label));
+
+        int left = widest + 18;
         int top = fm.getHeight() + 10;
         int bottom = fm.getHeight() + 12;
         int right = 14;
@@ -290,14 +342,16 @@ public class UsageChartPanel extends JComponent
     {
         g2.setStroke(new BasicStroke(1f));
 
-        for (int hours = 0; hours <= axisMax; hours += axisStep)
+        List<String> labels = tickLabels();
+
+        for (int k = 0; k < labels.size(); k++)
         {
-            int y = plot.y + plot.height - Math.round(plot.height * hours / (float) axisMax);
+            int y = plot.y + plot.height - Math.round(plot.height * (float) (k * tickStep() / axisMax));
 
             g2.setColor(gridColor);
             g2.draw(new java.awt.geom.Line2D.Float(plot.x, y + 0.5f, plot.x + plot.width, y + 0.5f));
 
-            String tick = Integer.toString(hours);
+            String tick = labels.get(k);
 
             g2.setColor(textColor);
             g2.drawString(tick, plot.x - 8 - fm.stringWidth(tick), y + fm.getAscent() / 2 - 1);

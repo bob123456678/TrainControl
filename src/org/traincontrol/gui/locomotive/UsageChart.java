@@ -1,8 +1,15 @@
 package org.traincontrol.gui.locomotive;
 
+import com.formdev.flatlaf.util.UIScale;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.Path2D;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -12,12 +19,13 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JToggleButton;
+import javax.swing.Icon;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
@@ -101,27 +109,21 @@ public class UsageChart extends JFrame
         summary.setName("usageChart.summary");
         summary.setFont(summary.getFont().deriveFont(Font.BOLD));
 
-        JPanel ranges = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        ButtonGroup group = new ButtonGroup();
-        Range[] all = Range.values();
+        SegmentedControl ranges = new SegmentedControl();
 
-        for (int i = 0; i < all.length; i++)
+        ranges.setName("usageChart.ranges");
+
+        for (Range r : Range.values())
         {
-            final Range r = all[i];
-
-            JToggleButton pick = new JToggleButton(I18n.t(r.key), r == range);
-
-            pick.setName("usageChart.range." + r.name());
-            pick.setFocusable(false);
-            pick.putClientProperty("JButton.segmentPosition",
-                i == 0 ? "first" : i == all.length - 1 ? "last" : "middle");
-            pick.addActionListener(e -> showRange(r));
-            group.add(pick);
-            ranges.add(pick);
+            ranges.addSegment(I18n.t(r.key), "usageChart.range." + r.name(), r == range).addActionListener(e -> showRange(r));
         }
 
         previous = pagingButton("stats.chart.previous", "usageChart.previous");
         next = pagingButton("stats.chart.next", "usageChart.next");
+
+        previous.setIcon(new Chevron(true));
+        next.setIcon(new Chevron(false));
+        next.setHorizontalTextPosition(SwingConstants.LEADING);
         reset = pagingButton("stats.ui.reset", "usageChart.reset");
 
         previous.addActionListener(e -> scroll(1));
@@ -136,7 +138,10 @@ public class UsageChart extends JFrame
 
         JPanel controls = new JPanel(new BorderLayout());
 
-        controls.add(ranges, BorderLayout.WEST);
+        JPanel rangeBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+
+        rangeBox.add(ranges);
+        controls.add(rangeBox, BorderLayout.WEST);
         controls.add(paging, BorderLayout.EAST);
 
         JPanel top = new JPanel(new BorderLayout(0, 10));
@@ -167,6 +172,59 @@ public class UsageChart extends JFrame
         b.setFocusable(false);
 
         return b;
+    }
+
+    /** A small arrow, in the button's text color, for Previous (pointing left) and Next (pointing right). */
+    private static final class Chevron implements Icon
+    {
+        private final boolean left;
+
+        private Chevron(boolean left)
+        {
+            this.left = left;
+        }
+
+        @Override
+        public int getIconWidth()
+        {
+            return UIScale.scale(7);
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+            return UIScale.scale(11);
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y)
+        {
+            Graphics2D g2 = (Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                g2.setColor(c.isEnabled() ? c.getForeground() : UIManager.getColor("Button.disabledText"));
+                g2.setStroke(new BasicStroke(UIScale.scale(1.6f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                float w = getIconWidth() - UIScale.scale(2f);
+                float h = getIconHeight() - UIScale.scale(2f);
+                float tip = left ? x + UIScale.scale(1f) : x + UIScale.scale(1f) + w;
+                float back = left ? x + UIScale.scale(1f) + w : x + UIScale.scale(1f);
+
+                Path2D.Float arrow = new Path2D.Float();
+
+                arrow.moveTo(back, y + UIScale.scale(1f));
+                arrow.lineTo(tip, y + UIScale.scale(1f) + h / 2);
+                arrow.lineTo(back, y + UIScale.scale(1f) + h);
+                g2.draw(arrow);
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
     }
 
     private void showRange(Range picked)
@@ -200,7 +258,8 @@ public class UsageChart extends JFrame
         for (LocalDate[] span : spans)
         {
             bars.add(new UsageChartPanel.Bar(span[0], span[1], model.getRuntimeBetween(span[0], span[1]),
-                model.getLocsRunBetween(span[0], span[1]), labels.format(span[0])));
+                model.getLocsRunBetween(span[0], span[1]), labels.format(span[0]),
+                model.getRuntimePerLocBetween(span[0], span[1])));
         }
 
         // All starts at the earliest day anything ran, though its first bar is the whole week or month
