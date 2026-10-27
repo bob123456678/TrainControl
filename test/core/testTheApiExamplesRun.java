@@ -307,11 +307,10 @@ public class testTheApiExamplesRun
 
     /**
      * `FullAutonomyExample` (in src/, with AutomationAPI.md) sets a train off by itself: one of its two trains leaves,
-     * no faster than the preferred speed the example gives it, under its station's signal set green, and the other
-     * waits for the track the two share.  Its code is called by reflection, since its only public door is a `main`
-     * that opens a real station; the run it starts has no handle, so it is ended by retiring every Layout, which stops
-     * a journey at its next check.  The trains, accessories and sensors it names are made where the station lacks
-     * them, and the preferred speeds it writes are put back.
+     * no faster than its preferred speed, under its station's signal set green, and the other waits for the shared
+     * track.  Its code is called by reflection, as its only public door is a `main` that opens a real station; the run
+     * has no handle, so retiring every Layout ends it.  Missing trains, accessories and sensors are made, and the
+     * preferred speeds it writes are put back.
      *
      * MUTATION: in `Layout.runLocomotives`, drop `this.running = true;`, and no train sets off.
      */
