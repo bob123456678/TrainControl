@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -190,6 +191,89 @@ public class testThePageMenuEditsTheLayoutFolder
         assertEquals(tilesIn(pageFile(blank)), Collections.emptyList(), "the blank page has squares on it");
 
         assertTrue(index().contains(".name=" + blank), "the layout's index does not list the blank page");
+    }
+
+    /**
+     * Add Blank Page offers New Page 1, then the next number no page takes: a name differing only in case shares the
+     * file, so it counts as taken too.  OK on the offer adds the page under it.
+     *
+     * MUTATION: offer "" as before, or test the numbers with `layoutList.contains` in `unusedNewPageName`, and this
+     * fails.
+     */
+    @Test
+    public void testAddBlankPageOffersTheFirstFreeNewPageName() throws Exception
+    {
+        final String first = I18n.f("layout.ui.newPageName", 1);
+        final String second = I18n.f("layout.ui.newPageName", 2);
+        final String third = I18n.f("layout.ui.newPageName", 3);
+
+        onPage("1 - Main");
+
+        addBlankPage(null, first);
+
+        // Taken in another case: the next offer skips it.
+        addBlankPage(second.toUpperCase(), second);
+
+        addBlankPage(null, third);
+
+        assertTrue(model.getLayoutList().containsAll(Arrays.asList(first, second.toUpperCase(), third)),
+            "the pages added: " + model.getLayoutList());
+    }
+
+    /**
+     * Add Blank Page refuses a name another page has, or one differing from it only in case, naming that page, and the
+     * folder is left as it was.
+     *
+     * MUTATION: drop the file-sharing check (`pageUsingTheFileOf`) from `duplicateOrRenameCurrentLayout`, and this fails.
+     */
+    @Test
+    public void testAddBlankPageRefusesATakenName() throws Exception
+    {
+        final String offered = I18n.f("layout.ui.newPageName", 1);
+
+        onPage("1 - Main");
+
+        Map<String, String> before = fingerprint();
+
+        for (String taken : Arrays.asList("2 - Bottom", "2 - BOTTOM"))
+        {
+            try (Answering answering = Answering.start(message -> message.equals(offered)
+                ? Answering.type(taken) : Answering.press(I18n.t("ui.ok"))))
+            {
+                SwingUtilities.invokeLater(menuItem("ui.main.toolbar.addBlackPage")::doClick);
+
+                assertTrue(answering.awaitAsked(2, 10000), "Add Blank Page did not refuse " + taken + ": "
+                    + answering.asked());
+
+                assertEquals(answering.asked().get(1),
+                    I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", "2 - Bottom"));
+
+                Components.settle();
+            }
+        }
+
+        assertEquals(fingerprint(), before, "a refused Add Blank Page changed the layout's folder");
+    }
+
+    /** Add Blank Page, checking the name it offers, then typing `typed` over it, or OK on the offer for null. */
+    private void addBlankPage(final String typed, final String offered) throws Exception
+    {
+        final String added = typed == null ? offered : typed;
+
+        try (Answering answering = Answering.start(message -> typed == null ? null : Answering.type(typed)))
+        {
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.addBlackPage")::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Add Blank Page asked for no name");
+
+            assertEquals(answering.asked().get(0), offered, "Add Blank Page offered another name, with "
+                + model.getLayoutList());
+
+            assertTrue(Components.waitFor(() -> model.getLayoutList().contains(added), 15000), "Add Blank Page made no"
+                + " page called " + added + ": " + model.getLayoutList());
+
+            Components.settle();
+        }
     }
 
     /**

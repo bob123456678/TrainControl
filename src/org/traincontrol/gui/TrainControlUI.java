@@ -18132,7 +18132,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (from == null) showLayoutTab();
 
-        String name = promptUserForLayout(from == null ? this : from, "");
+        // Offered as New Page 1, 2 and on, the first not taken; a taken name typed instead is refused in the action.
+        String name = promptUserForLayout(from == null ? this : from,
+            org.traincontrol.automationui.LayoutPageEdit.unusedNewPageName(getModel().getLayoutList()));
 
         if (name != null)
         {

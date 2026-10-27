@@ -66,6 +66,20 @@ public class LayoutPageEdit
     }
 
     /**
+     * The first of New Page 1, New Page 2 and on, in the user's language, that no page has and whose file no page uses
+     * (`pageUsingTheFileOf`): Add Blank Page's suggested name.
+     */
+    public static String unusedNewPageName(List<String> layoutList)
+    {
+        for (int x = 1; ; x++)
+        {
+            String name = org.traincontrol.util.I18n.f("layout.ui.newPageName", x);
+
+            if (pageUsingTheFileOf(layoutList, name, null) == null) return name;
+        }
+    }
+
+    /**
      * Renames, duplicates or blanks a page, carrying its id and its autonomy setup with it.  The caller has already
      * decided that this may happen (no editor open, no trains running, the layout local, the new name not taken).
      *
