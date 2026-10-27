@@ -4088,7 +4088,7 @@ seq: 510
 filed: 2026-10-11
 kind: feature request
 what: File > Restore from Backup, with a before-restore backup and the layout folder (b51abca6)
-state: needs test
+state: fixed validated
 became: MT-829
 
 [receipt FR-145]
@@ -4224,5 +4224,5 @@ seq: 527
 filed: 2026-10-26
 kind: feature request
 what: Built on dev (b5a3fb1b): Test a path sits 6 px under the heading, the form's own gap (13 px before); claim ui.testTheToolsSitUnderTheHeading, red first
-state: needs test
+state: fixed validated
 became: MT-847
