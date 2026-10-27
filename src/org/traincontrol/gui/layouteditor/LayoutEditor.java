@@ -4129,13 +4129,6 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.add(pageMenuItem("ui.main.toolbar.renameCurrentPage", () -> parent.renamePageFromTheEditor(this)));
         menu.add(pageMenuItem("ui.main.toolbar.duplicateCurrentPage", () -> parent.duplicatePageFromTheEditor(this)));
 
-        javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
-            () -> parent.combinePagesFromTheEditor(this));
-
-        combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
-
-        menu.add(combine);
-
         // Changes nothing, so a run does not refuse it: not a `pageMenuItem`
         javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
 
@@ -4143,6 +4136,14 @@ public class LayoutEditor extends PositionAwareJFrame
         sort.addActionListener(e -> JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoSortPages")));
 
         menu.add(sort);
+        menu.addSeparator();
+
+        javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
+            () -> parent.combinePagesFromTheEditor(this));
+
+        combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
+
+        menu.add(combine);
         menu.addSeparator();
         menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
 
