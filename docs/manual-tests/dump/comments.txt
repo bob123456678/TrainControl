@@ -30167,6 +30167,17 @@ text:
 | Validated on your *Works* of 2026-10-27.
 |
 
+[comment MT-852 0]
+who: Claude
+date: 2026-10-27
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-27.**
+|
+| Superseded in part by MT-853, after your chat notes of 2026-10-27: the ranges no longer take the focus, so step 1's Tab, Space and Left/Right parts no longer apply, and the tooltip now reads the date, then locomotives and hours, a blank line, and the top three as Name (h:mm).  The rest of MT-852 stands.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24

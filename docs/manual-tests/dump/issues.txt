@@ -1430,3 +1430,23 @@ text:
 |
 | Adam: "When switching between layout and autonomy, text labels flash briefly in black on the autonomy page, before vanishing"
 |
+
+[issue OB-385]
+ordinal: 69
+inbox: no
+kind: bug
+title: Typing ( in the Stats tab's filter throws an error
+filed: 2026-10-27
+filed_at: 2026-10-27 01:34
+raised_from: JaCoCo cov2, 2026-10-26
+build: 3.0.5 dev 29355d00
+text:
+| ### OB-385 - 2026-10-27 - Typing ( in the Stats tab's filter throws an error
+|
+| **Kind:** bug  
+| **Raised from:** JaCoCo cov2, 2026-10-26  
+| **Filed:** 2026-10-27 01:34  
+| **Build:** 3.0.5 dev 29355d00
+|
+| Found by the JaCoCo follow-up test ui.testTheLocomotiveUsageStats: the filter read what is typed as a regular expression, so ( threw a PatternSyntaxException and . or + matched other characters.  Adam: "Fix the parenthese bug."
+|

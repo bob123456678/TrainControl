@@ -33699,3 +33699,39 @@ body:
 tail:
 | ---
 |
+
+[test MT-853]
+ordinal: 852
+anchor: mt-853
+date: 2026-10-27
+title: Usage Graph: no ring on the ranges, dates under the corners, minimum width, the tooltip's new layout
+disposition: needs test
+from: FR-156
+written: 2026-10-27
+reopened: no
+body:
+| <a id="mt-853"></a>
+| ### MT-853 - 2026-10-27 - Usage Graph: no ring on the ranges, dates under the corners, minimum width, the tooltip's new layout
+|
+| **Disposition:** needs test
+| **From:** FR-156
+|
+| **Written:** 2026-10-27
+|
+| **Steps**
+|
+| 1. Open the Stats tab and press `Usage Graph`.  Look at the range control at the top left, then click `7 days`, `Year` and `30 days` in turn, and press Tab a few times.
+| 2. Look at the line above the chart and at the bottom corners under the chart.  Click `Previous`, then `Year` and `All`, looking at the same three places each time.
+| 3. Hover a bar for a day when more than three locomotives ran, one when one or two ran, and one with no run.  On `Year`, hover a week.
+| 4. Drag the window's left or right edge in as far as it will go, in English and then in German (the longest labels).
+|
+| **Expected**
+|
+| - Step 1: no oval outline or focus ring appears on any range, at open, on a click or with Tab; the chosen range is filled as before.
+| - Step 2: the line above the chart gives only the totals, for example `13:20 hours, 5 locomotives`.  The period's first day sits under the chart's lower-left corner and its last day under the lower-right corner, both as year-month-day, and all three follow the range and paging.
+| - Step 3: the tooltip reads the date (a week by its two dates) on the first line, then the locomotives and hours, for example `4 locomotives, 3:55 hours`, then a blank line, then up to three locomotives as `Name (2:00)`, most-run first, and `and N more` past three.  A day with no run shows only its date and `0 locomotives, 0:00 hours`.
+| - Step 4: the window stops narrowing before `Previous` reaches the range control; there is always a gap between them and `Next` stays fully inside the window, in both languages.
+|
+tail:
+| ---
+|

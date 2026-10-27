@@ -404,7 +404,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.5
+* v3.0.5 [beta]
     - New Features
         - Autonomy
             - In the autonomy editor, `Exclude Page` and its heading now sit on the left under the `Track Diagram` and `Autonomy Setup` buttons, and are hidden while editing the track diagram.
@@ -416,8 +416,13 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - Text labels no longer flash briefly in black when the editor switches to, or opens in, `Autonomy Setup` with `Text Labels` off.
+        - Interface
+            - Typing a bracket or another symbol in the Stats tab's filter no longer causes an error; the filter finds exactly what is typed.
+            - The usage graph no longer counts a multi-unit's running time twice, once for the lead and once for its members.
         - Routes
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
+        - Track Diagram
+            - The editor's page list keeps its height when switching between `Track Diagram` and `Autonomy Setup`.
 * v3.0.4 [10/26/2026]
     - New Features
         - Interface

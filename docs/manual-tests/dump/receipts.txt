@@ -4233,7 +4233,7 @@ filed: 2026-10-26
 kind: feature request
 what: Built as UsageChart (design A) behind the Stats tab's Usage Graph button: 7, 30, 90 days, Year and All, Previous/Next/Reset, a summary line and hover tooltips; ui.testTheUsageChartShowsWhatTheLocomotivesRan. The old UsageHistogram is retired after MT-848 passes.
 state: needs test
-became: MT-852
+became: MT-852, MT-853
 
 [receipt FR-157]
 seq: 529
@@ -4266,3 +4266,11 @@ kind: bug
 what: The arriving diagram takes Autonomy Setup's remembered Text Labels before its first drawing (LayoutEditor.takeTheSetupsTextLabels, in arriveAt and when setAutonomyMode enters the mode), so neither the switch nor opening the editor in Autonomy Setup draws the page's own text first; ui.testTheToolsSitUnderTheHeading.testAutonomySetupNeverFlashesTheTextLabels probes between every event of both.
 state: needs test
 became: MT-851
+
+[receipt OB-385]
+seq: 533
+filed: 2026-10-27
+kind: bug
+what: The filter quotes what is typed (Pattern.quote), so ( narrows to nothing and . matches only a dot (e804953a). Claim ui.testTheLocomotiveUsageStats.testTheFilterTakesWhatIsTypedLiterally, red first on dev with the PatternSyntaxException.
+state: -
+became: -
