@@ -40,12 +40,12 @@ import org.testng.annotations.Test;
  *
  * The history markers, each measured against the whole of `src/` and kept only where most of its matches were history:
  * <ul>
- * <li>a date `20\d\d-\d\d-\d\d` (also covers "(Adam, 2026-...)" and "until 2026-..."): 392 lines, all attributions or "as
- * of" stories.</li>
- * <li>"(Adam, 20" and "until \d": 176 and 2 lines, all dated; kept for the day a date is written another way.</li>
- * <li>"used to be", or "used to" after it, this, that, they, there, here, which, who, and, but, else: 119 lines, nearly
- * all "it used to do X".  A bare "used to" is NOT counted: "a socket used to send" and "is used to" state a role.</li>
- * <li>"Round N" / "round N" and "review round": 15 lines, all review or build rounds.</li>
+ * <li>a date written year-month-day (also covers an Adam attribution and "until" before a date): 392 lines, all
+ * attributions or "as of" stories.</li> <li>an Adam attribution that opens with the year, and "until" before a digit:
+ * 176 and 2 lines, all dated; kept for the day a date is written another way.</li> <li>"used" and "to" after be, it,
+ * this, that, they, there, here, which, who, and, but or else: 119 lines, nearly all "it once did X".  A bare "used"
+ * "to" is NOT counted: "a socket used to send" and "is used to" state a role.</li> <li>"Round" or "round" before a
+ * number, and the review-round phrase: 15 lines, all review or build rounds.</li>
  * <li>"found by" only before a reviewer, review, sweep, rendering, audit or a review id: 6 lines, all
  * how a bug was found.  A bare "found by" is not counted: "found by the square" states how a lookup works.</li>
  * </ul>
@@ -74,7 +74,7 @@ public class testCommentsStayLean
     };
 
     /** Comment lines carrying a history marker, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int HISTORY_ALLOWED = 31;
+    private static final int HISTORY_ALLOWED = 22;
 
     /** WHICH files carry them, so that a swap between files fails and names both.  Files at zero are not listed. */
     private static final String[] HISTORY_BY_FILE = {
@@ -88,27 +88,26 @@ public class testCommentsStayLean
         "src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java (1)",
         "src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java (1)",
         "src/org/traincontrol/gui/LayoutLabel.java (1)",
-        "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (5)",
+        "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (4)",
         "src/org/traincontrol/gui/locomotive/RightClickFunctionMenu.java (1)",
-        "src/org/traincontrol/marklin/MarklinControlStation.java (4)",
-        "src/org/traincontrol/marklin/file/CS2File.java (6)",
+        "src/org/traincontrol/marklin/file/CS2File.java (2)",
         "src/org/traincontrol/marklin/udp/NetworkProxy.java (1)",
     };
 
     /** Runs of more than 15 `//` lines plus non-javadoc block comments over 15 lines, as they stand.  Never raise it. */
-    private static final int LONG_BLOCKS_ALLOWED = 13;
+    private static final int LONG_BLOCKS_ALLOWED = 7;
 
     /** WHICH files carry them.  Files at zero are not listed. */
     private static final String[] LONG_BLOCKS_BY_FILE = {
         "src/org/traincontrol/automationui/AutonomyBuilder.java (1)",
         "src/org/traincontrol/automationui/GraphReducer.java (1)",
-        "src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java (2)",
+        "src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java (1)",
         "src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java (3)",
-        "src/org/traincontrol/marklin/file/CS2File.java (6)",
+        "src/org/traincontrol/marklin/file/CS2File.java (1)",
     };
 
     /** The same two counts in `test/`, pinned apart from `src/` so a trim in one cannot pay for growth in the other. */
-    private static final int TEST_HISTORY_ALLOWED = 53;
+    private static final int TEST_HISTORY_ALLOWED = 48;
 
     private static final String[] TEST_HISTORY_BY_FILE = {
         "test/core/testAPastedTrainKeepsItsDirection.java (4)",
@@ -135,7 +134,6 @@ public class testCommentsStayLean
         "test/core/testRoutes.java (1)",
         "test/core/testTheAutoTierScopeMatchesTheRuntime.java (1)",
         "test/core/testTheLengthGuardsOnTheRealLayout.java (2)",
-        "test/regression/testCommentsStayLean.java (5)",
         "test/regression/testEditorSurfaceRules.java (1)",
         "test/regression/testTheCheckerAgreesWithTheBuild.java (1)",
         "test/ui/testADirectionChangeIsNotSwallowed.java (1)",

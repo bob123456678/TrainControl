@@ -148,7 +148,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * One method rather than a suffix pasted on at each place that shows a version, so the log line and
      * the window title cannot drift.
      *
-     * @return "3.0.0", or "3.0.0 (build 2026-09-05 18:40)" before a release
+     * @return "3.0.0", or "3.0.0 (build yyyy-MM-dd HH:mm)" before a release
      */
     public static String versionForDisplay()
     {
@@ -2552,9 +2552,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Adam: "the route page should not have to sync with the cs2 after edits/deletions for routes >=
      * ID 1000."
      *
-     * **It says what an id could collide with, not where a route came from.**  Routes made here before
-     * 2025-02-01 have ids below 1000 - most of Adam's do - and the station never carried them.  Whether
-     * it carried a route is the route's lock, which only the sync's import sets (MT-467).
+     * **It says what an id could collide with, not where a route came from.**  Routes made here before February 2025
+     * have ids below 1000 - most of Adam's do - and the station never carried them.  Whether it carried a route is the
+     * route's lock, which only the sync's import sets (MT-467).
      *
      * @param id the route id in question
      * @return true when no sync could tell us anything about it
@@ -4730,9 +4730,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return added;
         }
 
-        // AND SAID: an imported route arrives disarmed, and saying so is what stops a restored backup
-        // from first being noticed when a train runs through a sensor that used to set a road.  The door shows
-        // the same sentence.
+        // AND SAID: an imported route arrives disarmed, and saying so is what stops a restored backup from first being
+        // noticed when a train runs through a sensor that once set a road.  The door shows the same sentence.
         this.logf(IMPORTED_ROUTES_NOTICE, added, I18n.t("ui.main.bulkEnable"),
             I18n.t("route.ui.menuEnableAutoExecution"));
 
@@ -5251,11 +5250,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     // Counted down whatever happened (OB-077).
                     //
-                    // The only countDown used to be the last statement of setViewListener, so anything that stopped it
-                    // reaching that line (a RuntimeException or an Error, or the catch above logging, sleeping and
-                    // returning) would leave the latch at one, and the wait below has no timeout: the application would
-                    // hang for ever with no window and nothing on screen to say why.  Throwable rather than IOException
-                    // for the same reason.
+                    // Anything that stops setViewListener before its last statement (a RuntimeException or an Error, or
+                    // the catch above logging, sleeping and returning) would leave the latch at one, and the wait below
+                    // has no timeout: the application would hang for ever with no window and nothing on screen to say
+                    // why.  Throwable rather than IOException for the same reason.
                     //
                     // Counting down after a FAILED build is deliberate.  It hands control back to a caller that logs
                     // and exits - see the `built` flag above and the check after await().
