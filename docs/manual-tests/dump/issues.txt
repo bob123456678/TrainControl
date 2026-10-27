@@ -817,7 +817,7 @@ text:
 
 [issue FR-157]
 ordinal: 65
-inbox: yes
+inbox: no
 kind: feature request
 title: Exclude Page and its heading under the editor's mode buttons, hidden in Layout
 filed: 2026-10-26
@@ -837,7 +837,7 @@ text:
 
 [issue FR-158]
 ordinal: 67
-inbox: yes
+inbox: no
 kind: feature request
 title: Add Blank Page suggests New Page x, the first number not taken
 filed: 2026-10-26
@@ -1393,7 +1393,7 @@ text:
 
 [issue OB-383]
 ordinal: 66
-inbox: yes
+inbox: no
 kind: bug
 title: The editor's page list changes height between Track Diagram and Autonomy Setup
 filed: 2026-10-26
@@ -1409,4 +1409,24 @@ text:
 | **Build:** 3.0.5 dev 37e52358
 |
 | Adam: "make sure the height of the page list doesn't jump between layout editor and autonomy editor mode".  Measured on the frozen railway's 6 pages: 327 px, then 304 in Autonomy Setup, then 335 back, for 144 px of rows.
+|
+
+[issue OB-384]
+ordinal: 68
+inbox: yes
+kind: bug
+title: Text labels flash in black when the editor enters Autonomy Setup
+filed: 2026-10-27
+filed_at: 2026-10-27 00:14
+raised_from: chat 2026-10-27
+build: 3.0.5 dev 350e7799
+text:
+| ### OB-384 - 2026-10-27 - Text labels flash in black when the editor enters Autonomy Setup
+|
+| **Kind:** bug  
+| **Raised from:** chat 2026-10-27  
+| **Filed:** 2026-10-27 00:14  
+| **Build:** 3.0.5 dev 350e7799
+|
+| Adam: "When switching between layout and autonomy, text labels flash briefly in black on the autonomy page, before vanishing"
 |

@@ -30066,6 +30066,19 @@ text:
 | Validated on your *Works* of 2026-10-26.
 |
 
+[comment MT-848 0]
+who: Adam
+date: 2026-10-27
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-27 (triage).** Works, with notes.
+|
+| The core functionality works, but the day buttons look weird, they should be part of a single oval separated by a divider (probably use flatlaf for this).  Also, add left and right arrows on the previous and next buttons, and improve the hover tooltips so they actually show the top locomotives, as planned.  I'd also like to have some sort of basic grid at 0.5 if the range is 0 to 1 hours on the x axis.
+|
+| *Run against commit 350e7799, in Dansk - build\classes, compiled 27 Oct 00:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
 [comment MT-849 0]
 who: Claude
 date: 2026-10-26
@@ -30088,6 +30101,28 @@ text:
 | Also check OB-383 here: at steps 3 and 6 the page list at the top left keeps the same height and place in both modes, as tall as its pages, with the spare room below it.
 |
 
+[comment MT-849 2]
+who: Adam
+date: 2026-10-27
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-27 (triage).** Works.
+|
+| *Run against commit 350e7799, in Dansk - build\classes, compiled 27 Oct 00:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-849 3]
+who: Claude
+date: 2026-10-27
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-27.**
+|
+| Validated on your *Works* of 2026-10-27; it covers FR-157 and OB-383.
+|
+
 [comment MT-850 0]
 who: Claude
 date: 2026-10-26
@@ -30097,6 +30132,28 @@ text:
 | **Claude, 2026-10-26.**
 |
 | Correction to step 2's expected result: the name is not selected; as in Rename Current Page, the cursor sits at its end, so select it first to type a different name.
+|
+
+[comment MT-850 1]
+who: Adam
+date: 2026-10-27
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-27 (triage).** Works.
+|
+| *Run against commit 350e7799, in Dansk - build\classes, compiled 27 Oct 00:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-850 2]
+who: Claude
+date: 2026-10-27
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-27.**
+|
+| Validated on your *Works* of 2026-10-27.
 |
 
 [comment OB-331 0]

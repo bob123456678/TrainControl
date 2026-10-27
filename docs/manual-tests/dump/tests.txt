@@ -33531,7 +33531,7 @@ ordinal: 848
 anchor: mt-849
 date: 2026-10-26
 title: Exclude Page sits under the editor's mode buttons, in Autonomy Setup only
-disposition: needs test
+disposition: fixed validated
 from: FR-157
 written: 2026-10-26
 reopened: no
@@ -33539,7 +33539,7 @@ body:
 | <a id="mt-849"></a>
 | ### MT-849 - 2026-10-26 - Exclude Page sits under the editor's mode buttons, in Autonomy Setup only
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-157
 |
 | **Written:** 2026-10-26
@@ -33571,7 +33571,7 @@ ordinal: 849
 anchor: mt-850
 date: 2026-10-26
 title: Add Blank Page offers New Page x and refuses a taken name
-disposition: needs test
+disposition: fixed validated
 from: FR-158
 written: 2026-10-26
 reopened: no
@@ -33579,7 +33579,7 @@ body:
 | <a id="mt-850"></a>
 | ### MT-850 - 2026-10-26 - Add Blank Page offers New Page x and refuses a taken name
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-158
 |
 | **Written:** 2026-10-26
@@ -33599,6 +33599,41 @@ body:
 | - Step 3: the box says `New Page 2`; the number is the first one no page has, whatever the capitals.
 | - Steps 4 and 5: a message says a page with that name already exists, naming it, and no page is added.
 | - Step 6: the box offers `New Page 1` again, as that name is free.
+|
+tail:
+| ---
+|
+
+[test MT-851]
+ordinal: 850
+anchor: mt-851
+date: 2026-10-27
+title: No text-label flash on entering Autonomy Setup
+disposition: needs test
+from: OB-384
+written: 2026-10-27
+reopened: no
+body:
+| <a id="mt-851"></a>
+| ### MT-851 - 2026-10-27 - No text-label flash on entering Autonomy Setup
+|
+| **Disposition:** needs test
+| **From:** OB-384
+|
+| **Written:** 2026-10-27
+|
+| **Steps**
+|
+| 1. Open the track diagram editor on a page that has text labels of its own (route buttons or written notes), with `Text Labels` ticked so they show.
+| 2. Click `Autonomy Setup`, watching the diagram.  Its `Text Labels` box should be unticked; if it is ticked, untick it, go back to `Track Diagram`, and click `Autonomy Setup` again.
+| 3. Switch back and forth a few times, and move to another page with text while in `Autonomy Setup`.
+| 4. Close the editor, then open the autonomy editor straight from the main window on that page.
+| 5. In `Autonomy Setup`, tick `Text Labels`, switch to `Track Diagram` and back.
+|
+| **Expected**
+|
+| - Steps 2 to 4: the page's own text never appears, not even for a moment, while `Autonomy Setup`'s `Text Labels` is unticked.
+| - Step 5: with it ticked, the text shows in `Autonomy Setup` at once, and the track diagram shows or hides its text as its own `Text Labels` box says.
 |
 tail:
 | ---
