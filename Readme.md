@@ -425,7 +425,7 @@ Tab icons provided by Freepik.
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
         - Track Diagram
             - The editor's page list keeps its height when switching between `Track Diagram` and `Autonomy Setup`.
-            - The editors' `Text Labels` box now hides text only in the editors: the main window, pop-out diagrams and `Save Diagram as a Picture...` always show a page's text labels.
+            - The editors' `Text Labels` box now hides text only in the editors: the main window, pop-up windows and `Save Diagram as a Picture...` always show a page's text labels.
 * v3.0.4 [10/26/2026]
     - New Features
         - Interface

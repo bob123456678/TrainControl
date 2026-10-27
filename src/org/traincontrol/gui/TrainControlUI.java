@@ -2036,9 +2036,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // (OB-386)
         this.lastResults.retainAll(results);
 
-        // The key showing counts as seen when it holds a match, so a search from it, or from a key turned to by hand,
-        // moves on to another one
-        LocomotiveKeyboardMapping here = new LocomotiveKeyboardMapping(this.locMappingNumber, this.currentButton);
+        // The chosen key counts as seen when it holds a match, so a search from it, or from a key chosen by hand, moves
+        // on to another one.  Its page is the one it was chosen on, which need not be the page in view.
+        LocomotiveKeyboardMapping here =
+            new LocomotiveKeyboardMapping(this.currentButtonlocMappingNumber, this.currentButton);
 
         if (results.contains(here)) this.lastResults.add(here);
 
@@ -2056,7 +2057,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.lastResults.add(e);
                 
                 // Exclude current button
-                if (this.locMappingNumber == e.getPage() && this.currentButton.equals(e.getButton())
+                if (this.currentButtonlocMappingNumber == e.getPage() && this.currentButton.equals(e.getButton())
                         && results.size() - this.lastResults.size() > 0)
                 {
                     continue;

@@ -419,10 +419,40 @@ public class testTheKeyboardPages
     }
 
     /**
+     * The chosen key is the one on the page it was chosen on: with the locomotive on A of two pages, turning to the
+     * other page without choosing a key and searching again goes to that page's A, not back to the chosen one.
+     *
+     * MUTATION: in `jumpToLocomotive`, take the chosen key's page from `locMappingNumber`, for `here` and in the skip
+     * both, and the search goes back to A of page 1.
+     */
+    @Test
+    public void testTheSameLetterOnAnotherPageIsTheOtherKey() throws Exception
+    {
+        put(1, KeyEvent.VK_A, one);
+        put(2, KeyEvent.VK_A, one);
+
+        turnTo(5);
+        choose(KeyEvent.VK_Q);
+
+        search("kp one");
+
+        assertVisited(1, KeyEvent.VK_A);
+
+        turnTo(2);
+
+        search("");
+
+        assertTrue(Components.waitFor(() -> (Integer) field0("currentButtonlocMappingNumber") == 2, WAIT),
+            "the search went back to A of page " + field0("currentButtonlocMappingNumber") + ", not to A of page 2");
+
+        assertVisited(2, KeyEvent.VK_A);
+    }
+
+    /**
      * Turned to by hand, the last key not yet seen counts as seen: the search goes on to the other one rather than
      * staying.
      *
-     * MUTATION: in `jumpToLocomotive`, drop the lines that count the key showing as seen, and the search stays on B.
+     * MUTATION: in `jumpToLocomotive`, drop the lines that count the chosen key as seen, and the search stays on B.
      */
     @Test
     public void testTheKeyTurnedToByHandCountsAsSeen() throws Exception
