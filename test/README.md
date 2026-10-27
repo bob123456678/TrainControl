@@ -55,7 +55,7 @@ a stop.
 ## Running them
 
 **The gate is `docs/tools/battery.sh`, not `ant test`.**  `ant test` runs everything except `testAutoDetect` (which
-probes the network for a real Central Station), one class per JVM; use it (or the scratchpad runners below) for a fast
+probes the network for a real Central Station), one class per JVM; use it (or the runners below) for a fast
 loop on the classes you are changing.  It is weaker in two ways: a class that skips every test (a `SkipException`, or
 a `@BeforeClass` failure) reads as green, where `battery.sh` classifies "0 passed, N skipped" separately and fails on
 it; and `battery.sh` fingerprints `cs2_sample_layout` before and after the run and shouts if anything wrote to it.
@@ -64,10 +64,8 @@ Both set `-Dtraincontrol.anyReceivePort=true`, which lets tests share a machine 
 `-D` on the fork).  What `ant test` cannot be given is `-Xmx` and the skipped-class rule; `build.xml` says why at the
 property.
 
-While iterating, the scratchpad holds two runners that run classes in their own JVMs and print one line each: a full
-one and a fast one that excludes the slow classes.  The fast one is an **exclusion** list on purpose, so a new test is
-picked up automatically.  Time a new class before assuming it is fast; anything over about ten seconds belongs on
-that list.
+While iterating, `docs/tools/one.sh` runs the classes you name, each in its own JVM, and `battery.sh` with
+`TC_CLASSES` runs a chosen set in lanes; CLAUDE.md ("Working efficiently") has the commands.
 
 **A one-off probe opens `support.LayoutSandbox` before it builds a model or a window**, exactly as a test does, or it
 is run through `one.sh` where the fingerprint can see it.  There is no third safe option: the layout path is a

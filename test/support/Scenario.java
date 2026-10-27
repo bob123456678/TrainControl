@@ -14,9 +14,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  * A named railway of a known SHAPE, opened in one call (Adam: "a folder in the test folder to house many different
  * scenarios, each linked to a test case", "hand-authored for topology, lengths in code").
  *
- * The gap it closes is named in `test/README.md`: every hand-built fixture was a straight chain of two or three
- * ordinary points, and the tests with realistic geometry got it from the operator's live railway, whose ground
- * truth moves as he operates it.  A scenario is real CS2 files, checked in, hand-authored for one shape, and frozen.
+ * It gives a test realistic geometry without the operator's live railway, whose ground truth moves as he operates
+ * it.  A scenario is real CS2 files, checked in, hand-authored for one shape, and frozen.
  *
  * The TOPOLOGY, the station names and the s88 addresses are authored in the files and a test may rely on them (each
  * scenario's `README.md` states which).  Lengths, train placements and locomotive properties are deliberately NOT in
