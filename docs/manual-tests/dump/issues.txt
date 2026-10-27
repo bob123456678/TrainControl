@@ -1470,3 +1470,23 @@ text:
 |
 | Found by the JaCoCo follow-up test ui.testTheKeyboardPages: Quick Find remembers the keys it has shown for a search; a key that no longer held the locomotive after a remap still counted, so the round ended early and a key holding it was never visited.  Adam: "fix quick find"
 |
+
+[issue OB-387]
+ordinal: 71
+inbox: yes
+kind: bug
+title: Test: Name Everything's taken-name claim is intermittent
+filed: 2026-10-27
+filed_at: 2026-10-27 03:41
+raised_from: the 3.0.5 final battery
+build: 898ea5ea
+text:
+| ### OB-387 - 2026-10-27 - Test: Name Everything's taken-name claim is intermittent
+|
+| **Kind:** bug  
+| **Raised from:** the 3.0.5 final battery  
+| **Filed:** 2026-10-27 03:41  
+| **Build:** 898ea5ea
+|
+| ui.testTheLengthPromptHasTheKeyboard.testNameEverythingRefusesATakenName fails about one run in two or three: the taken name is typed into Name Everything and no refusal appears (only the prompt is showing). The class failed in 1 of 3 runs on 00d32d3d (3.0.4) as well as on dev 898ea5ea, so 3.0.5 did not cause it. Suspect the fixture: the taken name is picked from getNamedTiles in no fixed order, and the walk's first square may not be the one the test expects. Product behavior unknown until the cause is found.
+|
