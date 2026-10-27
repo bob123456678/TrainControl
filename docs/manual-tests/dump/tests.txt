@@ -33094,7 +33094,7 @@ ordinal: 838
 anchor: mt-839
 date: 2026-10-25
 title: Recent Layouts numbers its items
-disposition: needs test
+disposition: fixed validated
 from: FR-148
 written: 2026-10-25
 reopened: no
@@ -33102,7 +33102,7 @@ body:
 | <a id="mt-839"></a>
 | ### MT-839 - 2026-10-25 - Recent Layouts numbers its items
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-148
 |
 | **Written:** 2026-10-25
@@ -33168,7 +33168,7 @@ ordinal: 840
 anchor: mt-841
 date: 2026-10-26
 title: Route editor: Insert Condition from a joining word inserts at that word (FR-150)
-disposition: needs test
+disposition: fixed validated
 from: FR-150
 written: 2026-10-26
 reopened: no
@@ -33176,7 +33176,7 @@ body:
 | <a id="mt-841"></a>
 | ### MT-841 - 2026-10-26 - Route editor: Insert Condition from a joining word inserts at that word (FR-150)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-150
 |
 | **Written:** 2026-10-26
@@ -33216,7 +33216,7 @@ ordinal: 841
 anchor: mt-842
 date: 2026-10-26
 title: Route editor: a new or moved condition is ready to type into (FR-151)
-disposition: needs test
+disposition: fixed validated
 from: FR-151
 written: 2026-10-26
 reopened: no
@@ -33224,7 +33224,7 @@ body:
 | <a id="mt-842"></a>
 | ### MT-842 - 2026-10-26 - Route editor: a new or moved condition is ready to type into (FR-151)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-151
 |
 | **Written:** 2026-10-26
@@ -33265,7 +33265,7 @@ ordinal: 842
 anchor: mt-843
 date: 2026-10-26
 title: Route editor: a taller window gives the conditions the room (FR-152)
-disposition: needs test
+disposition: fixed validated
 from: FR-152
 written: 2026-10-26
 reopened: no
@@ -33273,7 +33273,7 @@ body:
 | <a id="mt-843"></a>
 | ### MT-843 - 2026-10-26 - Route editor: a taller window gives the conditions the room (FR-152)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-152
 |
 | **Written:** 2026-10-26
@@ -33306,7 +33306,7 @@ ordinal: 843
 anchor: mt-844
 date: 2026-10-26
 title: Route editor: an edit shows which condition lines it changed (FR-153)
-disposition: needs test
+disposition: fixed validated
 from: FR-153
 written: 2026-10-26
 reopened: no
@@ -33314,7 +33314,7 @@ body:
 | <a id="mt-844"></a>
 | ### MT-844 - 2026-10-26 - Route editor: an edit shows which condition lines it changed (FR-153)
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-153
 |
 | **Written:** 2026-10-26

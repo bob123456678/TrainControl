@@ -755,6 +755,26 @@ text:
 | Adam, on the route editor's conditions: "It may also be beneficial to more clearly animate/show what is changing, or make this condition window scale vertically as the window is maximized, for more space."
 |
 
+[issue FR-154]
+ordinal: 62
+inbox: yes
+kind: feature request
+title: Layout editor: Combine after Sort in the Manage Pages menu, with a separator above it
+filed: 2026-10-26
+filed_at: 2026-10-26 20:14
+raised_from: MT-840
+build: 056bd0ae
+text:
+| ### FR-154 - 2026-10-26 - Layout editor: Combine after Sort in the Manage Pages menu, with a separator above it
+|
+| **Kind:** feature request  
+| **Raised from:** MT-840  
+| **Filed:** 2026-10-26 20:14  
+| **Build:** 056bd0ae
+|
+| Adam, on MT-840: "Put combine after sort, with a separator above combine."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -1269,4 +1289,24 @@ text:
 | **Build:** commit 680a8ef5
 |
 | Found while checking the conditions' right-click menu (Adam: "make sure the right-click menus for inserting route conditions work correctly"). In (21 and 22) or (24 and 25), a condition outdented to the front of the second group and then deleted took the "or", leaving 21 and 22 and 24 and 25 with nothing shown red. Insert worked correctly in every case checked.
+|
+
+[issue OB-382]
+ordinal: 61
+inbox: yes
+kind: bug
+title: Route editor: Delete on several selected conditions removes only one
+filed: 2026-10-26
+filed_at: 2026-10-26 20:14
+raised_from: MT-838
+build: 056bd0ae
+text:
+| ### OB-382 - 2026-10-26 - Route editor: Delete on several selected conditions removes only one
+|
+| **Kind:** bug  
+| **Raised from:** MT-838  
+| **Filed:** 2026-10-26 20:14  
+| **Build:** 056bd0ae
+|
+| Adam, on MT-838: "Works, but the "delete" option when multi-selecting only applies to one item, not all."
 |
