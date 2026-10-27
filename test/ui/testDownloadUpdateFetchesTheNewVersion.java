@@ -83,8 +83,7 @@ public class testDownloadUpdateFetchesTheNewVersion
         {
             requests.incrementAndGet();
 
-            // As GitHub answers a release download (OB-380): 406 unless the request accepts a binary file, so Java's
-            // default Accept header is refused
+            // As GitHub answers a release download (OB-380): 406 unless the request accepts a binary file.
             String accept = String.valueOf(exchange.getRequestHeaders().getFirst("Accept"));
 
             int answer = status == 200 && !accept.contains("application/octet-stream") ? 406 : status;
@@ -209,8 +208,7 @@ public class testDownloadUpdateFetchesTheNewVersion
 
     /**
      * Download fetches the new version to the place the notice names, and asks for that folder to be shown; the menu
-     * item is back to itself afterwards.  The server refuses a download that does not accept a binary file, as GitHub
-     * does (OB-380).
+     * item is back to itself afterwards.
      *
      * MUTATION: drop the Accept header from `Util.downloadFile`, and the download fails with 406.
      */
