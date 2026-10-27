@@ -4321,8 +4321,9 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         });
 
+        // As tall as its rows: the strip's spare room goes below, so the list keeps its height in either mode.
         pageList.setMaximumSize(
-            new java.awt.Dimension(SIDEBAR_WIDTH - 14, Short.MAX_VALUE));
+            new java.awt.Dimension(SIDEBAR_WIDTH - 14, pageList.getPreferredSize().height));
 
         return pageList;
     }

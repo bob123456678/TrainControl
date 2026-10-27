@@ -201,6 +201,80 @@ public class testTheToolsSitUnderTheHeading
         editor = null;
     }
 
+    /**
+     * The page list keeps its height and place when the editor switches between the track diagram and Autonomy Setup,
+     * both ways, by the mode buttons: the strip's spare room goes below it, not into it.
+     *
+     * MUTATION: drop the page list's height cap in `buildPageControl` (back to `Short.MAX_VALUE`), and this fails.
+     */
+    @Test
+    public void testThePageListKeepsItsHeightAcrossModes() throws Exception
+    {
+        editor = shown(null);
+
+        final int[] track = bounds(editor);
+
+        switchTo(editor, "autonomyModeButton", true);
+
+        final int[] autonomy = bounds(editor);
+
+        switchTo(editor, "trackModeButton", false);
+
+        final int[] back = bounds(editor);
+
+        System.out.println("Page list (top, height): track diagram " + track[0] + ", " + track[1] + "; Autonomy Setup "
+            + autonomy[0] + ", " + autonomy[1] + "; track diagram again " + back[0] + ", " + back[1]);
+
+        assertTrue(autonomy[1] == track[1] && back[1] == track[1], "the page list's height jumps between modes: "
+            + track[1] + " px in the track diagram, " + autonomy[1] + " px in Autonomy Setup, " + back[1] + " px back");
+
+        assertTrue(autonomy[0] == track[0] && back[0] == track[0], "the page list moves between modes: top at "
+            + track[0] + ", " + autonomy[0] + ", " + back[0]);
+
+        close(editor);
+
+        editor = null;
+    }
+
+    /** The page list's top in the window and its height, laid out. */
+    private static int[] bounds(final LayoutEditor on) throws Exception
+    {
+        final int[] out = new int[2];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            on.validate();
+
+            Component list = field(on, LayoutEditor.class, "pageList");
+
+            assertTrue(list.isShowing(), "precondition: the page list is not on the screen");
+
+            out[0] = SwingUtilities.convertPoint(list.getParent(), list.getLocation(), on.getContentPane()).y;
+            out[1] = list.getHeight();
+        });
+
+        return out;
+    }
+
+    /** Presses a mode button, as a click does, and waits for the mode to change. */
+    private static void switchTo(final LayoutEditor on, String button, boolean autonomy) throws Exception
+    {
+        final javax.swing.AbstractButton b = field(on, LayoutEditor.class, button);
+
+        SwingUtilities.invokeLater(() -> b.doClick());
+
+        for (long end = System.currentTimeMillis() + 15000; on.isAutonomyMode() != autonomy
+            && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(50);
+        }
+
+        SwingUtilities.invokeAndWait(() -> { });
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(on.isAutonomyMode() == autonomy, "precondition: " + button + " did not switch mode in 15 s");
+    }
+
     /** Every label on the screen in the window that reads the text. */
     private static java.util.List<Component> showingLabels(Container in, String text)
     {
