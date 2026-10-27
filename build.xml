@@ -619,6 +619,7 @@
         <test-one-class class="testTheLayoutEditorManagesPages"/>
         <test-one-class class="testMessagesStayShort"/>
         <test-one-class class="testTheRouteEditorListsWhatStopsASave"/>
+        <test-one-class class="testTheToolsSitUnderTheHeading"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
