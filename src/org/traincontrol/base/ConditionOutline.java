@@ -536,9 +536,8 @@ public final class ConditionOutline
 
     /**
      * The lines of `after` an edit changed from `before` (FR-153): those outside the longest run the two share, a word
-     * counting for more than a condition so that two conditions that traded places show rather than a word between
-     * them.  Where nothing in `after` is new, as after a delete, the first line that differs, or the last where the end
-     * went.
+     * counting for more than a condition so that two traded conditions show rather than a word between them.  With
+     * nothing new, as after a delete, the first line that differs, or the last where the end went.
      *
      * @return line indices into `after`; empty where the two are the same
      */
