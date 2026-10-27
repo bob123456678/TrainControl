@@ -53,7 +53,7 @@ public class testTheApiExamplesRun
 
     /**
      * Public methods of Layout, Edge, Locomotive and MarklinControlStation that nothing in the program calls and that
-     * are kept for the people who write against the API (the list is in docs/refactor-3.0.3.md section 3).  Each must
+     * are kept for the people who write against the API (the list is in docs/refactoring.md, "Dead code").  Each must
      * be shown in an example, by the name of the method followed by an opening bracket.
      */
     private static final String[] KEPT_FOR_THE_API =
