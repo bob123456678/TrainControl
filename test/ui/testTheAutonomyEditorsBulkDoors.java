@@ -468,38 +468,48 @@ public class testTheAutonomyEditorsBulkDoors
     /** A sandboxed copy of a scenario with the window's setup open, and the editor on the main page where asked. */
     private static void open(String scenario, boolean withEditor) throws Exception
     {
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor(scenario));
-
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new CountDownLatch(1));
-
-        session = ui.getAutonomySession();
-
-        assertTrue(session != null && session.getStore().getActiveConfiguration() != null,
-            "precondition: " + scenario + " opened with no autonomy configuration");
-
-        if ("live-snapshot".equals(scenario)) shutTwoStraights();
-
-        if (!withEditor) return;
-
-        final LayoutDiagram page = model.getLayout(PAGE);
-
-        assertNotNull(page, "precondition: no page " + PAGE);
-
-        editor = Components.onTheEventThread(() ->
+        // Inside a try, so a failure part way through puts the layout preference back (OB-111).
+        try
         {
-            LayoutEditor built = new LayoutEditor(page, 30, ui, 0);
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor(scenario));
 
-            built.render();
-            built.setAutonomyMode(session);
+            model = support.TestStation.simulatedInDebug();
 
-            return built;
-        });
+            SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
-        Components.settle();
+            ui.setViewListener(model, new CountDownLatch(1));
+
+            session = ui.getAutonomySession();
+
+            assertTrue(session != null && session.getStore().getActiveConfiguration() != null,
+                "precondition: " + scenario + " opened with no autonomy configuration");
+
+            if ("live-snapshot".equals(scenario)) shutTwoStraights();
+
+            if (!withEditor) return;
+
+            final LayoutDiagram page = model.getLayout(PAGE);
+
+            assertNotNull(page, "precondition: no page " + PAGE);
+
+            editor = Components.onTheEventThread(() ->
+            {
+                LayoutEditor built = new LayoutEditor(page, 30, ui, 0);
+
+                built.render();
+                built.setAutonomyMode(session);
+
+                return built;
+            });
+
+            Components.settle();
+        }
+        catch (Throwable failed)
+        {
+            close();
+
+            throw failed;
+        }
     }
 
     private static void close() throws Exception

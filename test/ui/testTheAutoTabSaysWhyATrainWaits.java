@@ -671,24 +671,34 @@ public class testTheAutoTabSaysWhyATrainWaits
     /** The sandboxed railway, with its own window, in simulation and with no Central Station. */
     private static void open(String scenario) throws Exception
     {
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor(scenario));
+        // Inside a try, so a failure part way through puts the layout preference back (OB-111).
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor(scenario));
 
-        if ("live-snapshot".equals(scenario)) sandbox.withNoTrains();
+            if ("live-snapshot".equals(scenario)) sandbox.withNoTrains();
 
-        model = support.TestStation.simulatedWithWindowInDebug();
+            model = support.TestStation.simulatedWithWindowInDebug();
 
-        model.setNetworkCommState(false);
+            model.setNetworkCommState(false);
 
-        ui = (TrainControlUI) model.getGUI();
+            ui = (TrainControlUI) model.getGUI();
 
-        assertNotNull(ui, "there is no window");
+            assertNotNull(ui, "there is no window");
 
-        assertTrue(Components.waitFor(() -> ui.getAutonomySession() != null && model.getAutoLayoutIfLoaded() != null,
-            PATIENCE_MS), "the window built no railway");
+            assertTrue(Components.waitFor(() -> ui.getAutonomySession() != null && model.getAutoLayoutIfLoaded() != null,
+                PATIENCE_MS), "the window built no railway");
 
-        session = ui.getAutonomySession();
+            session = ui.getAutonomySession();
 
-        nextAddress = 3401;
+            nextAddress = 3401;
+        }
+        catch (Throwable failed)
+        {
+            close();
+
+            throw failed;
+        }
     }
 
     private static void close() throws Exception
