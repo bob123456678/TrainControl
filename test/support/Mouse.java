@@ -123,10 +123,8 @@ public final class Mouse
     }
 
     /**
-     * A right click at one point of the component, such as a table's cell, and the pop-up menu it opened.
-     *
-     * @param millis how long to wait for the menu
-     * @return the menu on screen, or null when none opened in time
+     * A right click at one point of the component, such as a table's cell; answers the pop-up menu it opened within
+     * `millis`, or null when none did.
      */
     public static JPopupMenu rightClickAt(Component on, Point at, long millis)
     {
