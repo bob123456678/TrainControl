@@ -1211,6 +1211,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return own;
     }
 
+    /** The history's keys for each day from `first` to `last`, formatted once for every locomotive to look up. */
+    private static List<String> dayKeys(LocalDate first, LocalDate last)
+    {
+        List<String> keys = new ArrayList<>();
+
+        for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+        {
+            keys.add(day.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
+
+        return keys;
+    }
+
     @Override
     public long getRuntimeBetween(LocalDate first, LocalDate last)
     {
@@ -1218,10 +1231,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         long total = 0;
 
-        for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+        for (String key : dayKeys(first, last))
         {
-            String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
-
             for (Locomotive l : own) total += l.getRuntimeOnDay(key);
         }
 
@@ -1235,10 +1246,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         Set<Locomotive> ran = new HashSet<>();
 
-        for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+        for (String key : dayKeys(first, last))
         {
-            String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
-
             for (Locomotive l : own)
             {
                 if (l.getRuntimeOnDay(key) > 0) ran.add(l);
@@ -1253,14 +1262,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         List<Map.Entry<String, Long>> ran = new ArrayList<>();
 
+        List<String> keys = dayKeys(first, last);
+
         for (Locomotive l : locomotivesRunningOnTheirOwn())
         {
             long total = 0;
 
-            for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
-            {
-                total += l.getRuntimeOnDay(day.format(DateTimeFormatter.ISO_LOCAL_DATE));
-            }
+            for (String key : keys) total += l.getRuntimeOnDay(key);
 
             if (total > 0) ran.add(new java.util.AbstractMap.SimpleImmutableEntry<>(l.getName(), total));
         }
@@ -1271,17 +1279,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return ran;
     }
 
+    /**
+     * No run is older than TrainControl (its first commit is 2018-12-11): an earlier day, or one after today, was written
+     * by a PC whose clock was not set, and would start the chart's All range decades back.
+     */
+    private static final String FIRST_POSSIBLE_RUN_DAY = "2018-01-01";
+
     @Override
     public LocalDate getEarliestRunDay()
     {
         String earliest = null;
+        String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         for (Locomotive l : locomotivesRunningOnTheirOwn())
         {
             for (Map.Entry<String, Long> day : l.getHistoricalOperatingTime().entrySet())
             {
+                String key = day.getKey();
+
                 // yyyy-MM-dd sorts as text in date order
-                if (day.getValue() > 0 && (earliest == null || day.getKey().compareTo(earliest) < 0))
+                if (day.getValue() > 0 && key.length() == 10 && key.compareTo(FIRST_POSSIBLE_RUN_DAY) >= 0
+                    && key.compareTo(today) <= 0 && (earliest == null || key.compareTo(earliest) < 0))
                 {
                     earliest = day.getKey();
                 }

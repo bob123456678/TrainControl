@@ -67,7 +67,8 @@ public class LayoutPageEdit
 
     /**
      * The first of New Page 1, New Page 2 and on, in the user's language, that no page has and whose file no page uses
-     * (`pageUsingTheFileOf`): Add Blank Page's suggested name.
+     * (`pageUsingTheFileOf`): Add Blank Page's suggested name.  Plain letters, as the name box keeps only those
+     * (`TrainControlUI.validateLayoutName`).
      */
     public static String unusedNewPageName(List<String> layoutList)
     {

@@ -589,7 +589,7 @@ public class AutonomyEditorPanel extends JPanel
 
         fillWidth(testButton, whyButton, oneWayButton, nameAll);
 
-        // Flush under the heading; the 1 px moves below it, so the gap to the next row stays.
+        // Flush under the heading, with 1 px below it for the gap to the next row.
         JPanel first = row(testButton);
         ((FlowLayout) first.getLayout()).setVgap(0);
         first.setBorder(BorderFactory.createEmptyBorder(0, 0, 1, 0));

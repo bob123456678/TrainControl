@@ -21,8 +21,7 @@ import javax.swing.plaf.basic.BasicGraphicsUtils;
 /**
  * Toggle buttons drawn as one rounded outline with a thin divider between segments, the chosen segment filled with the
  * theme's accent.  FlatLaf 3.7.2 has no segmented buttons, so the outline, dividers and fills are painted here, every
- * color asked of the look and feel at paint time.  Not focusable, as the window's other buttons are not: the first
- * segment took the focus at open and wore a ring.
+ * color asked of the look and feel at paint time.  Not focusable, as the window's other buttons are not.
  */
 public class SegmentedControl extends JPanel
 {

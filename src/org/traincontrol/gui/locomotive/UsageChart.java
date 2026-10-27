@@ -37,9 +37,8 @@ import org.traincontrol.util.I18n;
 public class UsageChart extends JFrame
 {
     // The application's look and feel, before this class can be instantiated.  A static block, not the constructor's
-    // first line: `JFrame`'s constructor creates the root pane with whatever look and feel is installed then, so a
-    // cold-built window (a test's) got `MetalRootPaneUI` and an operating-system title bar.  Headless-guarded because a
-    // static initializer that throws leaves the class unusable for the process.
+    // first line: `JFrame`'s constructor creates the root pane with whatever look and feel is installed then.
+    // Headless-guarded because a static initializer that throws leaves the class unusable for the process.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();

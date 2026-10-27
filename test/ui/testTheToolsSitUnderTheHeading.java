@@ -237,6 +237,49 @@ public class testTheToolsSitUnderTheHeading
     }
 
     /**
+     * In a strip too short for every row of the page list and the controls under it, the list gives up rows down to
+     * three, and Exclude Page stays wholly inside the strip.
+     *
+     * MUTATION: in `scrollable`, return the list unwrapped at 20 pages or fewer, as before, and this fails.
+     */
+    @Test
+    public void testAShortStripKeepsExcludePageInside() throws Exception
+    {
+        editor = shown(session);
+
+        final LayoutEditor on = editor;
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JComponent sidebar = field(on, LayoutEditor.class, "sidebar");
+            Component list = field(on, LayoutEditor.class, "pageList");
+            Component box = on.getAutonomyPanel().getExcludePage();
+
+            int rows = list.getPreferredSize().height;
+
+            assertTrue(rows > 4 * 24, "precondition: the page list has only " + rows + " px of rows, too few to give any up");
+
+            // Every part at its full height, less all but three of the list's rows.
+            int height = sidebar.getLayout().preferredLayoutSize(sidebar).height - (rows - 3 * 24);
+
+            sidebar.setSize(sidebar.getWidth(), height);
+            sidebar.doLayout();
+
+            int bottom = SwingUtilities.convertPoint(box.getParent(), 0, box.getY() + box.getHeight(), sidebar).y;
+            int inside = height - sidebar.getInsets().bottom;
+
+            on.getContentPane().revalidate();
+
+            assertTrue(bottom <= inside, "in a " + height + " px strip, Exclude Page ends at " + bottom
+                + " px, below the strip's " + inside + " px");
+        });
+
+        close(editor);
+
+        editor = null;
+    }
+
+    /**
      * Switching from the track diagram to Autonomy Setup with its Text Labels off never shows the page's own text, not
      * even for the moment between the arrival's first drawing and the panel's settings, and neither does opening the
      * editor in Autonomy Setup: the probe looks between every event.  Captions are set to Hide for the claim, so any

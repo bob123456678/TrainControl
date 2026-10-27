@@ -524,6 +524,30 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
     }
 
     /**
+     * A day written by a PC whose clock was not set (before TrainControl existed, or after today) does not move where
+     * All starts: it runs from the earliest real day.
+     *
+     * MUTATION: drop the `FIRST_POSSIBLE_RUN_DAY` or the today bound from `getEarliestRunDay`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAStrayDayDoesNotMoveWhereAllStarts() throws Exception
+    {
+        seed(4);
+
+        locA.getHistoricalOperatingTime().put("2000-01-01", 60000L);
+        locB.getHistoricalOperatingTime().put(today.plusDays(40).toString(), 60000L);
+
+        UsageChart chart = open();
+
+        pick(chart, "stats.chart.rangeAll");
+
+        assertTrue(bars(chart).get(0).first.isAfter(today.minusYears(1)), "All starts at "
+            + bars(chart).get(0).first + ", years before the real history, from a stray day");
+        assertEquals(periodText(chart), period(today.minusDays(10), today, ran(today.minusDays(10), today), 2),
+            "All does not run from the earliest real day");
+    }
+
+    /**
      * Previous goes back one whole period of the range and Next returns to the very same bars; Next is gray at today,
      * and Reset returns there; All has no periods to scroll.
      *

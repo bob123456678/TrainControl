@@ -221,6 +221,51 @@ public class testThePageMenuEditsTheLayoutFolder
     }
 
     /**
+     * In every language, the suggestion is a name the box itself lets stand: its filter changes nothing on a key, at
+     * New Page 1 or New Page 1000.
+     *
+     * MUTATION: give `messages_es.properties` back `Página nueva {0}`, and this fails.
+     */
+    @Test
+    public void testEveryLanguagesSuggestionSurvivesTheNameBox() throws Exception
+    {
+        java.util.Locale was = I18n.getLocale();
+
+        List<String> changed = new ArrayList<>();
+
+        try
+        {
+            for (String language : new String[] {"en", "da", "de", "es", "fr", "it", "nl", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(language));
+
+                List<String> taken = new ArrayList<>();
+
+                for (int x = 1; x < 1000; x++) taken.add(I18n.f("layout.ui.newPageName", x));
+
+                for (List<String> pages : Arrays.asList(new ArrayList<String>(), taken))
+                {
+                    String offered = org.traincontrol.automationui.LayoutPageEdit.unusedNewPageName(pages);
+
+                    javax.swing.JTextField box = new javax.swing.JTextField(offered);
+
+                    TrainControlUI.validateLayoutName(new java.awt.event.KeyEvent(box,
+                        java.awt.event.KeyEvent.KEY_RELEASED, 0, 0, java.awt.event.KeyEvent.VK_END,
+                        java.awt.event.KeyEvent.CHAR_UNDEFINED));
+
+                    if (!box.getText().equals(offered)) changed.add(language + ": " + offered + " -> " + box.getText());
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(was);
+        }
+
+        assertTrue(changed.isEmpty(), "the name box rewrites the suggestion on the first key: " + changed);
+    }
+
+    /**
      * Add Blank Page refuses a name another page has, or one differing from it only in case, naming that page, and the
      * folder is left as it was.
      *

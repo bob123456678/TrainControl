@@ -4410,11 +4410,12 @@ public class LayoutEditor extends PositionAwareJFrame
         return tab;
     }
 
-    /** The page list, scrolling when the strip cannot show them all; borderless, with no horizontal bar. */
+    /**
+     * The page list, borderless with no horizontal bar: as tall as its rows up to `SIDEBAR_TABS_BEFORE_SCROLLING`, and
+     * shorter, scrolling, when the window is too short for it and the controls under it.
+     */
     private javax.swing.JComponent scrollable(javax.swing.JComponent column, int pages)
     {
-        if (pages <= SIDEBAR_TABS_BEFORE_SCROLLING) return column;
-
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(column,
             javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -4426,10 +4427,11 @@ public class LayoutEditor extends PositionAwareJFrame
         scroll.getVerticalScrollBar().setUnitIncrement(24);
 
         // 24, as pageList.setFixedCellHeight, so whole rows show.
-        int height = SIDEBAR_TABS_BEFORE_SCROLLING * 24;
+        int height = Math.min(column.getPreferredSize().height, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
 
         scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
         scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
+        scroll.setMinimumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, Math.min(height, 3 * 24)));
 
         return scroll;
     }
