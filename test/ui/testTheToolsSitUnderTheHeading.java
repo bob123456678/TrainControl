@@ -19,7 +19,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * The autonomy editor's Test a Path button sits right under the window's heading, with only the form's own gap between
  * (Adam: *just remove the gap between the label and the "test path" "why isn't it moving" buttons in the autonomy
- * editor.*).
+ * editor.*), and Page Settings sits under the mode buttons in Autonomy Setup only.
  *
  * Measured in shown editor windows on the frozen railway, never `cs2_sample_layout` (OB-111).
  *
@@ -128,6 +128,101 @@ public class testTheToolsSitUnderTheHeading
             + " heading, more than the form's own " + autonomy[0] + " px gap (the ordinary editor's first palette piece"
             + " sits " + palette[1] + " px under its heading).  Adam: *just remove the gap between the label and the"
             + " \"test path\" \"why isn't it moving\" buttons in the autonomy editor.*");
+    }
+
+    /**
+     * The Page Settings heading and its Exclude Page box sit in the side strip below the Layout and Autonomy Setup
+     * buttons, in that order, and neither shows in Layout mode, opened there or switched to with its button.
+     *
+     * MUTATION: in `showPageSettings`, add the heading and show the panel in either mode, or leave out
+     * `pageSettings.add(exclude)`, and this fails.
+     */
+    @Test
+    public void testPageSettingsSitUnderTheModeButtonsInAutonomySetupOnly() throws Exception
+    {
+        final String heading = org.traincontrol.util.I18n.t("autosetup.ui.labelPageSettings");
+
+        editor = shown(null);
+
+        SwingUtilities.invokeAndWait(() -> assertTrue(showingLabels(editor, heading).isEmpty(),
+            "Layout mode shows a Page Settings heading"));
+
+        close(editor);
+
+        editor = shown(session);
+
+        final LayoutEditor autonomyEditor = editor;
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            Component box = autonomyEditor.getAutonomyPanel().getExcludePage();
+            Component sidebar = field(autonomyEditor, LayoutEditor.class, "sidebar");
+            Component modeButton = field(autonomyEditor, LayoutEditor.class, "autonomyModeButton");
+
+            assertTrue(box.isShowing(), "Autonomy Setup does not show Exclude Page");
+
+            assertTrue(SwingUtilities.isDescendingFrom(box, (Container) sidebar),
+                "Exclude Page is not in the side strip with the mode buttons");
+
+            java.util.List<Component> labels = showingLabels(autonomyEditor, heading);
+
+            assertTrue(labels.size() == 1, "Autonomy Setup shows " + labels.size() + " Page Settings headings, not one");
+
+            int buttonBottom = top(modeButton) + modeButton.getHeight();
+            int headingTop = top(labels.get(0));
+            int headingBottom = headingTop + labels.get(0).getHeight();
+
+            assertTrue(headingTop >= buttonBottom, "the Page Settings heading (top " + headingTop
+                + ") is not below the Autonomy Setup button (bottom " + buttonBottom + ")");
+
+            assertTrue(top(box) >= headingBottom, "Exclude Page (top " + top(box)
+                + ") is not below its heading (bottom " + headingBottom + ")");
+        });
+
+        // Back to Layout by its own button: the setup is unchanged, so nothing is asked.
+        final javax.swing.AbstractButton toLayout = field(editor, LayoutEditor.class, "trackModeButton");
+
+        SwingUtilities.invokeLater(() -> toLayout.doClick());
+
+        for (long end = System.currentTimeMillis() + 15000; editor.isAutonomyMode() && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(50);
+        }
+
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(!editor.isAutonomyMode(), "precondition: the Layout button did not leave Autonomy Setup in 15 s");
+
+        SwingUtilities.invokeAndWait(() -> assertTrue(showingLabels(autonomyEditor, heading).isEmpty(),
+            "Page Settings still shows after switching to Layout"));
+
+        close(editor);
+
+        editor = null;
+    }
+
+    /** Every label on the screen in the window that reads the text. */
+    private static java.util.List<Component> showingLabels(Container in, String text)
+    {
+        java.util.List<Component> out = new java.util.ArrayList<>();
+
+        for (Component c : in.getComponents())
+        {
+            if (c instanceof javax.swing.JLabel && c.isShowing() && text.equals(((javax.swing.JLabel) c).getText()))
+            {
+                out.add(c);
+            }
+
+            if (c instanceof Container) out.addAll(showingLabels((Container) c, text));
+        }
+
+        return out;
+    }
+
+    /** A component's top, in screen pixels, so two in different panels compare. */
+    private static int top(Component c)
+    {
+        return c.getLocationOnScreen().y;
     }
 
     /** An editor on the page, shown and laid out: the ordinary one for a null session. */

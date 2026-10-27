@@ -604,16 +604,7 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeManual));
 
         // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
-        // (MT-098).
-
-        // And a heading for what follows (OB-217).
-        JLabel pageSettings = new JLabel(I18n.t("autosetup.ui.labelPageSettings"));
-
-        pageSettings.setFont(AutonomyViewerPanel.FONT_GROUP);
-        pageSettings.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
-
-        panel.add(row(pageSettings));
-        panel.add(row(excludePage));
+        // (MT-098).  Exclude Page is the window's to mount, under its mode buttons (`getExcludePage`).
 
         // The toggles only redraw; they live in the window's Toggle visibility box.  Restored first, before anything
         // listens, as setting a combo box fires a redraw of a half-built panel.
@@ -6570,6 +6561,12 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowTextLabels()
     {
         return control(showText);
+    }
+
+    /** @return the Exclude Page box, for the window to mount under its Page Settings heading, below the mode buttons */
+    public JCheckBox getExcludePage()
+    {
+        return excludePage;
     }
 
     /** @return whether this editor's diagram draws its trains (FR-119) */

@@ -1644,6 +1644,8 @@ public class LayoutEditor extends PositionAwareJFrame
         this.newComponents.revalidate();
         this.newComponents.repaint();
 
+        showPageSettings();
+
         refreshAutonomyAnnotations();
 
         // And the pointer says whether a drag picks
@@ -4225,6 +4227,14 @@ public class LayoutEditor extends PositionAwareJFrame
         sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
         sidebar.add(buildModeControl());
 
+        pageSettings = new javax.swing.JPanel();
+        pageSettings.setLayout(new javax.swing.BoxLayout(pageSettings, javax.swing.BoxLayout.Y_AXIS));
+        pageSettings.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        sidebar.add(pageSettings);
+
+        showPageSettings();
+
         sidebar.add(javax.swing.Box.createVerticalGlue());
 
         // One width, whatever the names: the buttons truncate, with the whole name in a tooltip.
@@ -4458,10 +4468,41 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
+    /**
+     * Page Settings and the autonomy panel's Exclude Page box, under the mode buttons; shown in Autonomy Setup only, so
+     * Layout mode has neither.
+     */
+    private void showPageSettings()
+    {
+        if (pageSettings == null) return;
+
+        pageSettings.removeAll();
+
+        if (autonomyPanel != null)
+        {
+            pageSettings.add(javax.swing.Box.createVerticalStrut(12));
+            pageSettings.add(heading(I18n.t("autosetup.ui.labelPageSettings")));
+
+            javax.swing.JCheckBox exclude = autonomyPanel.getExcludePage();
+
+            exclude.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+            pageSettings.add(exclude);
+        }
+
+        pageSettings.setVisible(autonomyPanel != null);
+
+        pageSettings.revalidate();
+        pageSettings.repaint();
+    }
+
     /** The panel the form built, which the sidebar wraps. */
     private java.awt.Container formPane;
 
     private javax.swing.JPanel sidebar;
+
+    /** Under the mode buttons: Autonomy Setup's Page Settings (`showPageSettings`). */
+    private javax.swing.JPanel pageSettings;
 
     private javax.swing.JList<String> pageList;
 
