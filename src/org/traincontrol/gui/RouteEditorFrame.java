@@ -951,7 +951,7 @@ public class RouteEditorFrame extends JFrame
     /** For a line that says something the rest of its level does not agree with. */
     private static final java.awt.Color WRONG = new java.awt.Color(190, 30, 30);
 
-    /** A pale yellow for the lines an edit changed (FR-153), apart from the selection's blue and WRONG's red. */
+    /** Pale yellow for the lines an edit changed (FR-153). */
     private static final java.awt.Color CHANGED_LINE = new java.awt.Color(255, 236, 140);
 
     /** Says how the two halves of this window fit together. */
@@ -1523,11 +1523,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * An expression in words, for the reading under the conditions.
-     *
-     * @param node the expression
-     * @param chosen the conditions selected in the table, drawn in bold (FR-147)
-     * @return what it says
+     * An expression in words, for the reading under the conditions; the chosen conditions are drawn in bold (FR-147).
      */
     private String describe(NodeExpression node, java.util.Set<RouteCommand> chosen)
     {
@@ -1925,7 +1921,7 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * The right-click menu on the conditions (FR-147): inserting beside a line, and the line's marks in words, each
-     * enabled exactly when its mark is drawn and doing what a press on it does.  Below the lines, Add Condition.
+     * enabled exactly when its mark is drawn.  Below the lines, Add Condition.
      */
     private void offerConditionMenu(java.awt.event.MouseEvent e)
     {
@@ -1961,7 +1957,6 @@ public class RouteEditorFrame extends JFrame
         menu.show(table, e.getX(), e.getY());
     }
 
-    /** A menu item standing for the mark in one cell. */
     private javax.swing.JMenuItem markItem(final ConditionTable table, final int line, final int column, String mark,
         String key)
     {
@@ -3989,7 +3984,6 @@ public class RouteEditorFrame extends JFrame
             return super.getCellEditor(line, column);
         }
 
-        /** Add Condition and the plus: a new condition, appended as `append` does, and selected. */
         void addRow()
         {
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
@@ -4004,9 +3998,8 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Adds a condition with the word that joins it to what is already there, both lines at once, at the last
-         * condition's level and joined by that level's word, as Insert Condition Below joins one: Add Condition, the
-         * plus and a capture.
+         * Adds a condition and the word joining it to what is there, at the last condition's level and by that level's
+         * word, as Insert Condition Below does: Add Condition, the plus and a capture.
          */
         void append(RouteCommand condition)
         {
@@ -4022,17 +4015,12 @@ public class RouteEditorFrame extends JFrame
             rows.add(ConditionOutline.Row.condition(depth, condition));
         }
 
-        /** What a new condition asks until it is filled in. */
         private RouteCommand freshCondition()
         {
             return RouteCommand.RouteCommandFeedback(1, true);
         }
 
-        /**
-         * A new condition above or below a line (FR-147) as `ConditionOutline.inserted` places it.
-         *
-         * @param by -1 for above, 1 for below
-         */
+        /** A new condition above or below a line (FR-147) as `ConditionOutline.inserted` places it; by is -1 or 1. */
         void insertBeside(int line, int by)
         {
             if (line < 0 || line >= rows.size()) return;
@@ -4059,7 +4047,6 @@ public class RouteEditorFrame extends JFrame
             }
         }
 
-        /** The column a condition's sensor or switch number is typed into. */
         private static final int ADDRESS = 5;
 
         /**
