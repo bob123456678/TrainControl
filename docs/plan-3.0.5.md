@@ -20,6 +20,10 @@ later on", then "actually, add C10 and a validator iteration on it to today's li
    (81.5% on 2026-10-19), branches 74.4% (70.2%); TrainControlUI 82.3% of its lines.  Report outside the repository.
 5. Worktree cleanup.  Done: 130 clean scratch worktrees removed, their branches kept; five with uncommitted edits left.
 
+6. Compaction (Adam: "Do 1 and 2 plus the comment pass"): the finished 3.0.3 and 3.0.4 records retired to git, their
+   standing rules in `docs/refactoring.md`; CLAUDE.md, FANOUT.md, test/README.md and the reviews and manual-tests
+   READMEs compacted; the comments written since the last pass trimmed (19 of 21 files).
+
 ## Later
 
 Running the window tests inside Windows Sandbox (Adam: "We can do the sandbox idea for the next release").
