@@ -33565,3 +33565,41 @@ body:
 tail:
 | ---
 |
+
+[test MT-850]
+ordinal: 849
+anchor: mt-850
+date: 2026-10-26
+title: Add Blank Page offers New Page x and refuses a taken name
+disposition: needs test
+from: FR-158
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-850"></a>
+| ### MT-850 - 2026-10-26 - Add Blank Page offers New Page x and refuses a taken name
+|
+| **Disposition:** needs test
+| **From:** FR-158
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. On a local layout, open `Add Blank Page` (from the Layouts menu, or `Manage Pages` in the track diagram editor).
+| 2. Look at the name already in the box, and press OK.
+| 3. Open `Add Blank Page` again and look at the name; press OK.
+| 4. Open `Add Blank Page`, type over the name with the name of a page you already have, and press OK.
+| 5. Do it again with that page's name in different capitals (for example all capitals).
+| 6. Delete the first page you added, then open `Add Blank Page` once more.
+|
+| **Expected**
+|
+| - Step 2: the box says `New Page 1` (in your language), selected for typing, and a blank page of that name is added.
+| - Step 3: the box says `New Page 2`; the number is the first one no page has, whatever the capitals.
+| - Steps 4 and 5: a message says a page with that name already exists, naming it, and no page is added.
+| - Step 6: the box offers `New Page 1` again, as that name is free.
+|
+tail:
+| ---
+|

@@ -412,6 +412,7 @@ Tab icons provided by Freepik.
             - The Stats tab's `Usage Graph` is a new chart: show 7 days, 30 days, 90 days, a year, or everything, page back and forth, and hover a bar to see its hours and locomotives.
         - Track Diagram
             - In the layout editor's `Manage Pages` menu, `Combine Linked Pages...` now comes after `Sort Pages...`.
+            - `Add Blank Page` suggests a name, `New Page 1` or the next number not already taken.
     - Bug Fixes
         - Routes
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.

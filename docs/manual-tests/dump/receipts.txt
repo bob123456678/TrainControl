@@ -4250,3 +4250,11 @@ kind: bug
 what: The page list is capped at its rows' height (LayoutEditor.buildPageControl), so the strip's spare room goes below it; ui.testTheToolsSitUnderTheHeading.testThePageListKeepsItsHeightAcrossModes. Checked by hand in MT-849's steps 3 and 6.
 state: needs test
 became: MT-849
+
+[receipt FR-158]
+seq: 531
+filed: 2026-10-26
+kind: feature request
+what: Add Blank Page's prompt is prefilled with LayoutPageEdit.unusedNewPageName (New Page 1, 2 and on, the first whose file no page uses, in the user's language); a taken name, in any case, was already refused by duplicateOrRenameCurrentLayout and is now pinned for Add Blank Page; ui.testThePageMenuEditsTheLayoutFolder.testAddBlankPageOffersTheFirstFreeNewPageName and testAddBlankPageRefusesATakenName.
+state: needs test
+became: MT-850

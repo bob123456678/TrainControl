@@ -30088,6 +30088,17 @@ text:
 | Also check OB-383 here: at steps 3 and 6 the page list at the top left keeps the same height and place in both modes, as tall as its pages, with the spare room below it.
 |
 
+[comment MT-850 0]
+who: Claude
+date: 2026-10-26
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-26.**
+|
+| Correction to step 2's expected result: the name is not selected; as in Rename Current Page, the cursor sits at its end, so select it first to type a different name.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24
