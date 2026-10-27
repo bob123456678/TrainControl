@@ -622,6 +622,7 @@
         <test-one-class class="testTheToolsSitUnderTheHeading"/>
         <test-one-class class="testTheLocomotiveUsageStats"/>
         <test-one-class class="testTheKeyboardPages"/>
+        <test-one-class class="testTheFunctionButtonMenu"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
