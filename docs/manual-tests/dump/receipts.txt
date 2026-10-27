@@ -4233,7 +4233,7 @@ filed: 2026-10-26
 kind: feature request
 what: Built as UsageChart (design A) behind the Stats tab's Usage Graph button: 7, 30, 90 days, Year and All, Previous/Next/Reset, a summary line and hover tooltips; ui.testTheUsageChartShowsWhatTheLocomotivesRan. The old UsageHistogram is retired after MT-848 passes.
 state: needs test
-became: MT-848
+became: MT-852
 
 [receipt FR-157]
 seq: 529

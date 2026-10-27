@@ -30079,6 +30079,17 @@ text:
 | *Run against commit 350e7799, in Dansk - build\classes, compiled 27 Oct 00:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-848 1]
+who: Claude
+date: 2026-10-27
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-27.**
+|
+| Validated on your *Works, with notes* of 2026-10-27; the notes are built as 7fc36d45 (the range picker as one oval with dividers, arrows on Previous and Next, the top three locomotives and "and N more" in the tooltips, half-hour gridlines on a scale up to one hour) and tested by MT-852.  The old graph is retired in fb1f868d.
+|
+
 [comment MT-849 0]
 who: Claude
 date: 2026-10-26

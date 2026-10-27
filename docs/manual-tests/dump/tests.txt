@@ -33461,7 +33461,7 @@ ordinal: 847
 anchor: mt-848
 date: 2026-10-26
 title: The new Usage Graph: ranges, paging, hover and resizing
-disposition: needs test
+disposition: fixed validated
 from: FR-156
 written: 2026-10-26
 reopened: no
@@ -33469,7 +33469,7 @@ body:
 | <a id="mt-848"></a>
 | ### MT-848 - 2026-10-26 - The new Usage Graph: ranges, paging, hover and resizing
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-156
 |
 | **Written:** 2026-10-26
@@ -33634,6 +33634,67 @@ body:
 |
 | - Steps 2 to 4: the page's own text never appears, not even for a moment, while `Autonomy Setup`'s `Text Labels` is unticked.
 | - Step 5: with it ticked, the text shows in `Autonomy Setup` at once, and the track diagram shows or hides its text as its own `Text Labels` box says.
+|
+tail:
+| ---
+|
+
+[test MT-852]
+ordinal: 851
+anchor: mt-852
+date: 2026-10-27
+title: Usage Graph notes: one oval range picker, arrows, top locomotives in tooltips, half-hour gridlines
+disposition: needs test
+from: FR-156
+written: 2026-10-27
+reopened: no
+body:
+| <a id="mt-852"></a>
+| ### MT-852 - 2026-10-27 - Usage Graph notes: one oval range picker, arrows, top locomotives in tooltips, half-hour gridlines
+|
+| **Disposition:** needs test
+| **From:** FR-156
+|
+| **Written:** 2026-10-27
+|
+| **Steps**
+|
+| Setup: start TrainControl on your layout (the one with run history), open the Stats tab and press `Usage Graph`.
+|
+| 1. The range picker.  Look at the row of 7 days, 30 days, 90 days, Year and All at the top left.
+|    - It is one rounded outline with a thin divider between each pair of segments, no gaps, and the chosen segment
+|      (30 days at first) is filled with the accent color.
+|    - Click 7 days, then Year, then All.  The fill moves to the one you clicked and the bars change as before.
+|    - Click 30 days, press Tab until a segment other than the filled one has a thin ring inside it, then press Space: that
+|      segment is chosen.  With a segment focused, press the Right and Left arrow keys: the choice moves to the next and
+|      previous range.
+|    - Hover a segment that is not chosen: its shade changes slightly, as a button's does.
+| 2. The arrows.  Previous has a left-pointing arrow before its text and Next has a right-pointing arrow after its text.
+|    Reset has none.  At first Next and its arrow are grayed out; press Previous once and Next and its arrow turn to
+|    normal color.  Switch the application's language (for instance to German): the words are as they were, with the
+|    arrows still there.
+| 3. The tooltips.  On the 30 days range, hover:
+|    - A bar for a day when two or more locomotives ran: the first line is the date, hours and locomotive count as before,
+|      then up to three lines `Name: h:mm`, the locomotive that ran most first.
+|    - A bar for a day when more than three locomotives ran: the three lines, then `and N more`, with N the number left
+|      out.
+|    - A day with no run: only `0:00 hours, 0 locomotives`, and no list.
+|    - Switch to Year and All and hover a week and a month: the lines are that week's or month's totals per locomotive.
+|    - A multi-unit, or a locomotive linked to others, is never listed (its members are).
+|    - A locomotive whose name has a `<` or `&` in it shows the name as typed.
+| 4. The half-hour gridlines.  Pick a range where no bar is above one hour (for instance 7 days on a quiet week; or hover
+|    after a day when you ran one locomotive for under an hour): the hours axis has 0, 0.5 and 1, with a gridline at each.
+|    Pick a range with a bar above one hour: the axis has whole-hour steps only (0, 1, 2 ...) and no line at 0.5.
+|
+| **Expected**
+|
+| 1. One oval, dividers, no gaps; the chosen segment filled and following clicks, Space and the Left and Right keys; the
+|    chart follows each choice.
+| 2. Left arrow on Previous, right arrow on Next, none on Reset; the button words are unchanged in every language.
+| 3. Tooltips show the top three locomotives with their run times, `and N more` past three, nothing for a day with no
+|    run, week and month totals on Year and All, no multi-unit, names shown as typed.
+| 4. A scale up to one hour is labeled 0, 0.5, 1 (the decimal sign follows the language) with gridlines at each; a longer
+|    scale keeps its whole-hour ticks.
 |
 tail:
 | ---
