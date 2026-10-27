@@ -797,7 +797,7 @@ text:
 
 [issue FR-156]
 ordinal: 64
-inbox: yes
+inbox: no
 kind: feature request
 title: A prettier statistics chart with hover, more ranges and paging
 filed: 2026-10-26
@@ -1413,7 +1413,7 @@ text:
 
 [issue OB-384]
 ordinal: 68
-inbox: yes
+inbox: no
 kind: bug
 title: Text labels flash in black when the editor enters Autonomy Setup
 filed: 2026-10-27
@@ -1449,4 +1449,24 @@ text:
 | **Build:** 3.0.5 dev 29355d00
 |
 | Found by the JaCoCo follow-up test ui.testTheLocomotiveUsageStats: the filter read what is typed as a regular expression, so ( threw a PatternSyntaxException and . or + matched other characters.  Adam: "Fix the parenthese bug."
+|
+
+[issue OB-386]
+ordinal: 70
+inbox: no
+kind: bug
+title: Quick Find skips a key after a remap between searches
+filed: 2026-10-27
+filed_at: 2026-10-27 01:52
+raised_from: JaCoCo cov2, 2026-10-26
+build: 3.0.5 dev 488d413f
+text:
+| ### OB-386 - 2026-10-27 - Quick Find skips a key after a remap between searches
+|
+| **Kind:** bug  
+| **Raised from:** JaCoCo cov2, 2026-10-26  
+| **Filed:** 2026-10-27 01:52  
+| **Build:** 3.0.5 dev 488d413f
+|
+| Found by the JaCoCo follow-up test ui.testTheKeyboardPages: Quick Find remembers the keys it has shown for a search; a key that no longer held the locomotive after a remap still counted, so the round ended early and a key holding it was never visited.  Adam: "fix quick find"
 |
