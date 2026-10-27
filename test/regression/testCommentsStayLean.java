@@ -41,11 +41,13 @@ import org.testng.annotations.Test;
  * The history markers, each measured against the whole of `src/` and kept only where most of its matches were history:
  * <ul>
  * <li>a date written year-month-day (also covers an Adam attribution and "until" before a date): 392 lines, all
- * attributions or "as of" stories.</li> <li>an Adam attribution that opens with the year, and "until" before a digit:
- * 176 and 2 lines, all dated; kept for the day a date is written another way.</li> <li>"used" and "to" after be, it,
- * this, that, they, there, here, which, who, and, but or else: 119 lines, nearly all "it once did X".  A bare "used"
- * "to" is NOT counted: "a socket used to send" and "is used to" state a role.</li> <li>"Round" or "round" before a
- * number, and the review-round phrase: 15 lines, all review or build rounds.</li>
+ * attributions or "as of" stories.</li>
+ * <li>an Adam attribution that opens with the year, and "until" before a digit: 176 and 2 lines, all dated; kept for the
+ * day a date is written another way.</li>
+ * <li>"used" and "to" followed by "be", or after it, this, that, they, there, here, which, who, and, but or else: 119
+ * lines, nearly all "it once did X".  A bare "used" "to" is NOT counted: "a socket used to send" and "is used to" state
+ * a role.</li>
+ * <li>"Round" or "round" before a number, and the review-round phrase: 15 lines, all review or build rounds.</li>
  * <li>"found by" only before a reviewer, review, sweep, rendering, audit or a review id: 6 lines, all
  * how a bug was found.  A bare "found by" is not counted: "found by the square" states how a lookup works.</li>
  * </ul>

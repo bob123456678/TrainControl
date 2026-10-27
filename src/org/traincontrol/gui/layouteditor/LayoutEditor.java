@@ -4237,7 +4237,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (offersPages)
         {
             sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
-            sidebar.add(scrollable(buildPageControl(pages), pages.size()));
+            sidebar.add(scrollable(buildPageControl(pages)));
             sidebar.add(javax.swing.Box.createVerticalStrut(12));
         }
 
@@ -4295,7 +4295,15 @@ public class LayoutEditor extends PositionAwareJFrame
     private javax.swing.JComponent buildPageControl(java.util.List<String> pages)
     {
         // A list (OB-004): rows read as pages, buttons as things to press.
-        pageList = new javax.swing.JList<>(pages.toArray(new String[0]));
+        // As wide as the strip, so a long name ends in "..." rather than at its edge.
+        pageList = new javax.swing.JList<String>(pages.toArray(new String[0]))
+        {
+            @Override
+            public boolean getScrollableTracksViewportWidth()
+            {
+                return true;
+            }
+        };
 
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         pageList.setSelectedValue(layout.getName(), true);
@@ -4337,10 +4345,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 leaveFor(page, isAutonomyMode());
             }
         });
-
-        // As tall as its rows: the strip's spare room goes below, so the list keeps its height in either mode.
-        pageList.setMaximumSize(
-            new java.awt.Dimension(SIDEBAR_WIDTH - 14, pageList.getPreferredSize().height));
 
         return pageList;
     }
@@ -4412,9 +4416,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The page list, borderless with no horizontal bar: as tall as its rows up to `SIDEBAR_TABS_BEFORE_SCROLLING`, and
-     * shorter, scrolling, when the window is too short for it and the controls under it.
+     * shorter, scrolling, when the window is too short for it and the controls under it.  No taller in either mode
+     * (OB-383): the strip's spare room goes below it.
      */
-    private javax.swing.JComponent scrollable(javax.swing.JComponent column, int pages)
+    private javax.swing.JComponent scrollable(javax.swing.JComponent column)
     {
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(column,
             javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,

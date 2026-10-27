@@ -2032,8 +2032,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             results
         );
 
-        // Only keys that still hold a match count as seen: after a remap a stale one made the round end early and skip
-        // a key (OB-386)
+        // Only keys that still hold a match count as seen, so a remap between searches cannot end the round early
+        // (OB-386)
         this.lastResults.retainAll(results);
 
         // Reset and loop around if all results already found
@@ -2051,7 +2051,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
                 // Exclude current button
                 if (this.locMappingNumber == e.getPage() && this.currentButton.equals(e.getButton())
-                        && results.size() - this.lastResults.size() > 1)
+                        && results.size() - this.lastResults.size() > 0)
                 {
                     continue;
                 }

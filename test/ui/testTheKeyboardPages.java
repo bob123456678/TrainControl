@@ -383,6 +383,29 @@ public class testTheKeyboardPages
     }
 
     /**
+     * With the locomotive on exactly two keys and the first search made from one of them, it goes to the other.
+     *
+     * MUTATION: in `jumpToLocomotive`, skip the current key only while `> 1` keys are left unseen, and the search stays put.
+     */
+    @Test
+    public void testTwoKeysTheFirstSearchGoesToTheOther() throws Exception
+    {
+        put(1, KeyEvent.VK_A, one);
+        put(2, KeyEvent.VK_B, one);
+
+        turnTo(1);
+        choose(KeyEvent.VK_A);
+
+        search("kp one");
+
+        assertVisited(2, KeyEvent.VK_B);
+
+        search("");
+
+        assertVisited(1, KeyEvent.VK_A);
+    }
+
+    /**
      * A remap between two searches does not cut the round short: a key that no longer holds the locomotive is forgotten,
      * so every key that does is visited before the round starts again (OB-386).
      *

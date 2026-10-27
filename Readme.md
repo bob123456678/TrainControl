@@ -408,6 +408,7 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - In the autonomy editor, `Exclude Page` and its heading now sit on the left under the `Track Diagram` and `Autonomy Setup` buttons, and are hidden while editing the track diagram.
+            - In the autonomy editor, `Test a Path` and `Why not Moving?` now sit right under the heading, with no gap.
         - Interface
             - The Stats tab's `Usage Graph` is a new chart: show 7 days, 30 days, 90 days, a year, or everything, page back and forth, and hover a bar to see its hours and most-run locomotives.
         - Track Diagram
@@ -419,7 +420,7 @@ Tab icons provided by Freepik.
         - Interface
             - Typing a bracket or another symbol in the Stats tab's filter no longer causes an error; the filter finds exactly what is typed.
             - The usage graph no longer counts a multi-unit's running time twice, once for the lead and once for its members.
-            - `Quick Find` no longer skips a locomotive's key, or visits an old one, after the keys were remapped between two searches for the same name.
+            - `Quick Find Locomotive` no longer skips a locomotive's key, or visits an old one, after the keys were remapped between two searches for the same name, and it now moves to the other key when a locomotive is on exactly two keys.
         - Routes
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
         - Track Diagram

@@ -545,6 +545,18 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
             + bars(chart).get(0).first + ", years before the real history, from a stray day");
         assertEquals(periodText(chart), period(today.minusDays(10), today, ran(today.minusDays(10), today), 2),
             "All does not run from the earliest real day");
+
+        // A history of one future day only: All must not start after it ends.
+        seed(0);
+        locA.getHistoricalOperatingTime().put(today.plusDays(40).toString(), 60000L);
+
+        pick(chart, "stats.chart.rangeYear");
+        pick(chart, "stats.chart.rangeAll");
+
+        String first = periodText(chart).split(" \\| ")[0];
+
+        assertTrue(!LocalDate.parse(first).isAfter(today), "with only a future day, All starts on " + first
+            + ", after today");
     }
 
     /**

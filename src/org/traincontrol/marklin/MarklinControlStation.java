@@ -1280,8 +1280,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * No run is older than TrainControl (its first commit is 2018-12-11): an earlier day, or one after today, was written
-     * by a PC whose clock was not set, and would start the chart's All range decades back.
+     * No run is older than TrainControl, whose first commit was in December 2018: an earlier day, or one after today, was
+     * written by a PC whose clock was not set, and would start the chart's All range decades back.
      */
     private static final String FIRST_POSSIBLE_RUN_DAY = "2018-01-01";
 

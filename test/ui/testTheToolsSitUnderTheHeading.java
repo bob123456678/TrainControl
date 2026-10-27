@@ -205,7 +205,7 @@ public class testTheToolsSitUnderTheHeading
      * The page list keeps its height and place when the editor switches between the track diagram and Autonomy Setup,
      * both ways, by the mode buttons: the strip's spare room goes below it, not into it.
      *
-     * MUTATION: drop the page list's height cap in `buildPageControl` (back to `Short.MAX_VALUE`), and this fails.
+     * MUTATION: drop the scroll pane's `setMaximumSize` in `scrollable`, and this fails.
      */
     @Test
     public void testThePageListKeepsItsHeightAcrossModes() throws Exception
@@ -398,7 +398,7 @@ public class testTheToolsSitUnderTheHeading
         return out;
     }
 
-    /** The page list's top in the window and its height, laid out. */
+    /** The top in the window and the height of the page list's showing part (its scroll pane's view), laid out. */
     private static int[] bounds(final LayoutEditor on) throws Exception
     {
         final int[] out = new int[2];
@@ -411,8 +411,10 @@ public class testTheToolsSitUnderTheHeading
 
             assertTrue(list.isShowing(), "precondition: the page list is not on the screen");
 
-            out[0] = SwingUtilities.convertPoint(list.getParent(), list.getLocation(), on.getContentPane()).y;
-            out[1] = list.getHeight();
+            Component view = list.getParent();
+
+            out[0] = SwingUtilities.convertPoint(view.getParent(), view.getLocation(), on.getContentPane()).y;
+            out[1] = view.getHeight();
         });
 
         return out;
