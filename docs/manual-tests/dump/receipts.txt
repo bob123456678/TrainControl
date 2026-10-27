@@ -4152,7 +4152,7 @@ seq: 518
 filed: 2026-10-25
 kind: bug
 what: Fixed on dev (37e47a20): a deleted condition between two words takes the deeper word; claim ui.testRouteEditorValidation.testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups, red first
-state: needs test
+state: fixed validated
 became: MT-838
 
 [receipt FR-148]
@@ -4168,7 +4168,7 @@ seq: 520
 filed: 2026-10-25
 kind: feature request
 what: Built on dev (9e09b53e, 5d0cd419): Sort Pages... in the editor's Manage Pages menu says how to change the order, and changes nothing; claims in ui.testTheLayoutEditorManagesPages, red first
-state: needs test
+state: fixed validated
 became: MT-840
 
 [receipt FR-150]
@@ -4202,3 +4202,19 @@ kind: feature request
 what: Built on dev (9f4954b0): the lines an insert, add, move, indent, outdent or delete changed light pale yellow and fade in about a second; claims in ui.testRouteEditorValidation, red first
 state: fixed validated
 became: MT-844
+
+[receipt OB-382]
+seq: 525
+filed: 2026-10-26
+kind: bug
+what: Fixed on dev (34ac9848): Delete in the conditions' right-click menu removes every selected line as one edit; claims in ui.testRouteEditorValidation, red first
+state: needs test
+became: MT-845
+
+[receipt FR-154]
+seq: 526
+filed: 2026-10-26
+kind: feature request
+what: Built on dev (0b84c27f): the editor's Manage Pages menu lists Combine Linked Pages... after Sort Pages..., below a separator; claim in ui.testTheLayoutEditorManagesPages, red first
+state: needs test
+became: MT-846

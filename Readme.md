@@ -405,6 +405,12 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.5
+    - New Features
+        - Track Diagram
+            - In the layout editor's `Manage Pages` menu, `Combine Linked Pages...` now comes after `Sort Pages...`.
+    - Bug Fixes
+        - Routes
+            - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
 * v3.0.4 [10/26/2026]
     - New Features
         - Interface

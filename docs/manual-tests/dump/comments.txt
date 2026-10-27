@@ -29833,6 +29833,17 @@ text:
 | *Run against commit 056bd0ae, in Dansk - build\classes, compiled 26 Oct 20:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
+[comment MT-838 1]
+who: Claude
+date: 2026-10-26
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-26.**
+|
+| Validated on your *Works, with notes* of 2026-10-26; the note is built as OB-382 and tested by MT-845.
+|
+
 [comment MT-839 0]
 who: Adam
 date: 2026-10-26
@@ -29866,6 +29877,17 @@ text:
 | Put combine after sort, with a separator above combine.
 |
 | *Run against commit 056bd0ae, in Dansk - build\classes, compiled 26 Oct 20:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-840 1]
+who: Claude
+date: 2026-10-26
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-26.**
+|
+| Validated on your *Works, with notes* of 2026-10-26; the note is built as FR-154 and tested by MT-846.
 |
 
 [comment MT-841 0]

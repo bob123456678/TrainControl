@@ -33056,7 +33056,7 @@ ordinal: 837
 anchor: mt-838
 date: 2026-10-25
 title: Route editor: deleting an outdented condition keeps the word between the groups
-disposition: needs test
+disposition: fixed validated
 from: OB-381
 written: 2026-10-25
 reopened: no
@@ -33064,7 +33064,7 @@ body:
 | <a id="mt-838"></a>
 | ### MT-838 - 2026-10-25 - Route editor: deleting an outdented condition keeps the word between the groups
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-381
 |
 | **Written:** 2026-10-25
@@ -33129,7 +33129,7 @@ ordinal: 839
 anchor: mt-840
 date: 2026-10-25
 title: Manage Pages has a Sort Pages... item that says how to change the page order
-disposition: needs test
+disposition: fixed validated
 from: FR-149
 written: 2026-10-25
 reopened: no
@@ -33137,7 +33137,7 @@ body:
 | <a id="mt-840"></a>
 | ### MT-840 - 2026-10-25 - Manage Pages has a Sort Pages... item that says how to change the page order
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-149
 |
 | **Written:** 2026-10-25
@@ -33343,6 +33343,79 @@ body:
 |   white.
 | - Nothing opens, no sound plays, and the selection, typing and Save work as before while a line is lit.
 | - Step 8 lights nothing: only insert, add, move, indent, outdent and delete do.
+|
+tail:
+| ---
+|
+
+[test MT-845]
+ordinal: 844
+anchor: mt-845
+date: 2026-10-26
+title: Route editor: Delete in the right-click menu removes every selected condition line
+disposition: needs test
+from: OB-382
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-845"></a>
+| ### MT-845 - 2026-10-26 - Route editor: Delete in the right-click menu removes every selected condition line
+|
+| **Disposition:** needs test
+| **From:** OB-382
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. On the `Routes` tab press `Add Route`, name the route "Delete many", and add one command.
+| 2. Add conditions S88 1, 2, 3 and 4 with the plus, and change every word between them to "or".
+| 3. Click S88 2 and Shift-click S88 3, so S88 2, the "or" under it and S88 3 are selected.  Right-click that "or" and choose `Delete`.
+| 4. Add S88 5 and S88 6 with the plus.  Change the word between S88 1 and S88 4 to "and", and the word between S88 5 and S88 6 to "and".  Click S88 1, Shift-click S88 4, right-click and choose `Indent`; do the same for S88 5 to S88 6.  "Reads as" says (S88 #1 on and S88 #4 on) or (S88 #5 on and S88 #6 on).
+| 5. Click S88 4 and Shift-click S88 5, so S88 4, the "or" and S88 5 are selected.  Right-click S88 4 and choose `Delete`.
+| 6. Click S88 1 and Shift-click S88 6, then click the trash mark at the end of the S88 6 line.
+| 7. Add S88 2 and S88 3 with the plus.  Change the word between S88 1 and S88 2 to "or" and the one between S88 2 and S88 3 to "and", then select S88 2 to S88 3 and choose `Indent`, so "Reads as" says S88 #1 on or (S88 #2 on and S88 #3 on).  Click the "or", Shift-click S88 2, right-click S88 2 and choose `Delete`.
+| 8. Close with `Cancel` and discard the route.
+|
+| **Expected**
+|
+| - After step 3, the conditions read S88 #1 on or S88 #4 on: all three selected lines went in one go, the changed lines lit up once, and S88 4, now where S88 2 was, is selected.
+| - After step 5, "Reads as" says (S88 #1 on and S88 #6 on): the three selected lines across the two groups are gone, the two groups have become one, and nothing is red.
+| - After step 6, only S88 6 and the "and" joining it are gone, leaving S88 #1 on: the trash mark acts on its own line, whatever was selected.
+| - After step 7, only S88 #1 on is left.  The selected "or" takes the condition it joins on, as a word deleted on its own always does, so S88 3 goes too although it was not selected; keeping it would leave a word in the wrong place, shown red.  If you would rather keep S88 3, say so in your notes.
+|
+tail:
+| ---
+|
+
+[test MT-846]
+ordinal: 845
+anchor: mt-846
+date: 2026-10-26
+title: Manage Pages lists Combine Linked Pages... after Sort Pages..., below a separator
+disposition: needs test
+from: FR-154
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-846"></a>
+| ### MT-846 - 2026-10-26 - Manage Pages lists Combine Linked Pages... after Sort Pages..., below a separator
+|
+| **Disposition:** needs test
+| **From:** FR-154
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. Open a local layout with at least two pages.  Choose `Layouts` > `Manage Pages...`.
+| 2. Look at the editor's `Manage Pages` menu from top to bottom.
+| 3. Choose `Sort Pages...`, read the message and press OK.
+|
+| **Expected**
+|
+| - Step 2: the menu reads Add Blank Page, Rename Current Page, Duplicate Current Page, Sort Pages..., then a separator, then Combine Linked Pages..., then a separator, then Delete Current Page.
+| - Step 3: Sort Pages... still shows its message about renaming pages to change their order, and changes nothing.
 |
 tail:
 | ---
