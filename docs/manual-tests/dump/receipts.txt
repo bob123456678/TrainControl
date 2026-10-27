@@ -4232,7 +4232,7 @@ seq: 528
 filed: 2026-10-26
 kind: feature request
 what: Built as UsageChart (design A) behind the Stats tab's Usage Graph button: 7, 30, 90 days, Year and All, Previous/Next/Reset, a summary line and hover tooltips; ui.testTheUsageChartShowsWhatTheLocomotivesRan. The old UsageHistogram is retired after MT-848 passes.
-state: needs test
+state: fixed validated
 became: MT-852, MT-853
 
 [receipt FR-157]
@@ -4264,7 +4264,7 @@ seq: 532
 filed: 2026-10-27
 kind: bug
 what: The arriving diagram takes Autonomy Setup's remembered Text Labels before its first drawing (LayoutEditor.takeTheSetupsTextLabels, in arriveAt and when setAutonomyMode enters the mode), so neither the switch nor opening the editor in Autonomy Setup draws the page's own text first; ui.testTheToolsSitUnderTheHeading.testAutonomySetupNeverFlashesTheTextLabels probes between every event of both.
-state: needs test
+state: fixed validated
 became: MT-851
 
 [receipt OB-385]
@@ -4272,5 +4272,13 @@ seq: 533
 filed: 2026-10-27
 kind: bug
 what: The filter quotes what is typed (Pattern.quote), so ( narrows to nothing and . matches only a dot (e804953a). Claim ui.testTheLocomotiveUsageStats.testTheFilterTakesWhatIsTypedLiterally, red first on dev with the PatternSyntaxException.
+state: -
+became: -
+
+[receipt OB-386]
+seq: 534
+filed: 2026-10-27
+kind: fix
+what: Quick Find cuts the kept keys to the new search's before comparing (63ed640a); claim testTheKeyboardPages.testARemapBetweenSearchesSkipsNoKey, red on dev
 state: -
 became: -

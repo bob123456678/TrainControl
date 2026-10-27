@@ -419,6 +419,7 @@ Tab icons provided by Freepik.
         - Interface
             - Typing a bracket or another symbol in the Stats tab's filter no longer causes an error; the filter finds exactly what is typed.
             - The usage graph no longer counts a multi-unit's running time twice, once for the lead and once for its members.
+            - `Quick Find` no longer skips a locomotive's key, or visits an old one, after the keys were remapped between two searches for the same name.
         - Routes
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
         - Track Diagram

@@ -33609,7 +33609,7 @@ ordinal: 850
 anchor: mt-851
 date: 2026-10-27
 title: No text-label flash on entering Autonomy Setup
-disposition: needs test
+disposition: fixed validated
 from: OB-384
 written: 2026-10-27
 reopened: no
@@ -33617,7 +33617,7 @@ body:
 | <a id="mt-851"></a>
 | ### MT-851 - 2026-10-27 - No text-label flash on entering Autonomy Setup
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-384
 |
 | **Written:** 2026-10-27
@@ -33644,7 +33644,7 @@ ordinal: 851
 anchor: mt-852
 date: 2026-10-27
 title: Usage Graph notes: one oval range picker, arrows, top locomotives in tooltips, half-hour gridlines
-disposition: needs test
+disposition: fixed validated
 from: FR-156
 written: 2026-10-27
 reopened: no
@@ -33652,7 +33652,7 @@ body:
 | <a id="mt-852"></a>
 | ### MT-852 - 2026-10-27 - Usage Graph notes: one oval range picker, arrows, top locomotives in tooltips, half-hour gridlines
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-156
 |
 | **Written:** 2026-10-27
@@ -33705,7 +33705,7 @@ ordinal: 852
 anchor: mt-853
 date: 2026-10-27
 title: Usage Graph: no ring on the ranges, dates under the corners, minimum width, the tooltip's new layout
-disposition: needs test
+disposition: fixed validated
 from: FR-156
 written: 2026-10-27
 reopened: no
@@ -33713,7 +33713,7 @@ body:
 | <a id="mt-853"></a>
 | ### MT-853 - 2026-10-27 - Usage Graph: no ring on the ranges, dates under the corners, minimum width, the tooltip's new layout
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-156
 |
 | **Written:** 2026-10-27
