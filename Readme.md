@@ -417,6 +417,7 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - Text labels no longer flash briefly in black when the editor switches to, or opens in, `Autonomy Setup` with `Text Labels` off.
+            - The main window keeps a page's text labels after the page was viewed in `Autonomy Setup` with `Text Labels` off.
         - Interface
             - Typing a bracket or another symbol in the Stats tab's filter no longer causes an error; the filter finds exactly what is typed.
             - The usage graph no longer counts a multi-unit's running time twice, once for the lead and once for its members.

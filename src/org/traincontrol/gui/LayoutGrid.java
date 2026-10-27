@@ -996,13 +996,14 @@ public class LayoutGrid
                     if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
                     // Whether this label is drawn at all (OB-272).  In the autonomy editor a caption follows the
-                    // caption dropdown and the user's own writing the text switch (FR-133); elsewhere one switch
-                    // decides both.
+                    // caption dropdown and the user's own writing the text switch (FR-133); in the track editor one
+                    // switch decides both.  The switch is the editors' own: the main window and a popup draw every
+                    // label, though the diagram they share carries it.
                     final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
                         ? ((LayoutEditor) master).getAutonomyPanel() : null;
 
                     final boolean drawn = captioned != null && autonomyEditor && captionPanel != null
-                        ? captionPanel.isDrawingCaptions() : !layout.getEditHideText();
+                        ? captionPanel.isDrawingCaptions() : !inEditor || !layout.getEditHideText();
 
                     // Autonomy station caption, live.  An excluded page is already gone by here: `hidesStationCaptions`
                     // decides once, earlier, and nulls `captioned`, so asking again would be dead code.  The user's OWN
