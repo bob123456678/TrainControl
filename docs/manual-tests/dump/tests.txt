@@ -33353,7 +33353,7 @@ ordinal: 844
 anchor: mt-845
 date: 2026-10-26
 title: Route editor: Delete in the right-click menu removes every selected condition line
-disposition: needs test
+disposition: fixed validated
 from: OB-382
 written: 2026-10-26
 reopened: no
@@ -33361,7 +33361,7 @@ body:
 | <a id="mt-845"></a>
 | ### MT-845 - 2026-10-26 - Route editor: Delete in the right-click menu removes every selected condition line
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-382
 |
 | **Written:** 2026-10-26
@@ -33393,7 +33393,7 @@ ordinal: 845
 anchor: mt-846
 date: 2026-10-26
 title: Manage Pages lists Combine Linked Pages... after Sort Pages..., below a separator
-disposition: needs test
+disposition: fixed validated
 from: FR-154
 written: 2026-10-26
 reopened: no
@@ -33401,7 +33401,7 @@ body:
 | <a id="mt-846"></a>
 | ### MT-846 - 2026-10-26 - Manage Pages lists Combine Linked Pages... after Sort Pages..., below a separator
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** FR-154
 |
 | **Written:** 2026-10-26
