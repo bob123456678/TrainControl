@@ -398,10 +398,9 @@ public class testRestoreFromBackup
 
     /**
      * The backup taken before a restore holds where a stopped run left the trains, so undoing the restore does not put
-     * a train back on the square it set off from while the one it stands on reads free.
+     * a train back on the square it set off from.
      *
-     * MUTATION: take `captureRunningLayout()` out of `restoreFromBackup`, and the backup holds the setup as the run
-     * found it.
+     * MUTATION: take `captureRunningLayout()` out of `restoreFromBackup`, and the backup holds the pre-run setup.
      */
     @Test
     public void testTheBackupBeforeARestoreHoldsWhereTheRunLeftTheTrains() throws Exception
@@ -498,11 +497,9 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Checking an archive's locomotive database logs nothing of a database being loaded, readable or broken: the
-     * archive is only inspected.
+     * Checking an archive's locomotive database logs no load, readable or broken: the archive is only inspected.
      *
-     * MUTATION: in `Archive.readsAsALocomotiveDatabase`, read the staged file with `station.restoreState`, and the log
-     * says a database was loaded.
+     * MUTATION: in `Archive.readsAsALocomotiveDatabase`, call `station.restoreState`, and a load is logged.
      */
     @Test
     public void testCheckingAnArchiveLogsNoDatabaseLoad() throws Exception
@@ -761,8 +758,7 @@ public class testRestoreFromBackup
      * A layout whose `config` is a link is restored through the link: `config` is still the link afterwards, and the
      * folder it points at holds the backup's files.
      *
-     * MUTATION: in `Archive.writeLayout`, `deleteTree` the linked `config` as any other, and the restore replaces the
-     * link with a folder of its own.
+     * MUTATION: in `Archive.writeLayout`, `deleteTree` the linked `config` as any other, and the link becomes a folder.
      */
     @Test
     public void testALinkedConfigFolderIsRestoredThroughTheLink() throws Exception
