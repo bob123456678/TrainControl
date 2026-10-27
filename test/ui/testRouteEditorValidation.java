@@ -1262,6 +1262,123 @@ public class testRouteEditorValidation
     }
 
     /**
+     * OB-382: Delete from the right-click menu inside a selection of several lines removes every selected line, words
+     * and all, and selects the line now where the first one was; outside the selection, and from a line's own trash
+     * mark, it removes that one line.
+     *
+     * MUTATION: in `offerConditionMenu`, build Delete with `markItem` again, and only the line clicked goes.
+     */
+    @Test
+    public void testDeleteFromTheMenuRemovesEverySelectedLine() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22 0OR 0:23 0OR 0:24"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            selectLines(table, 2, 4);
+            rightClickAndChoose(table, 3, "ui.delete");
+
+            assertEquals(levels(frame), " 0:21 0OR 0:24",
+                "Delete on the word inside the selection 22, or, 23 should remove all three");
+            assertEquals(java.util.Arrays.toString(support.Components.onTheEventThread(() -> table.getSelectedRows())),
+                "[2]", "the line now where 22 was is selected");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 1:21 1OR 1:22 0AND 0:23 0AND 0:24")));
+
+            selectLines(table, 0, 2);
+            rightClickAndChoose(table, 0, "ui.delete");
+
+            assertEquals(levels(frame), " 0:23 0AND 0:24",
+                "deleting the whole group (21 or 22) should leave 23 and 24; Reads as: " + plainReading(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:21 0OR 0:22 0OR 0:23 0OR 0:24")));
+
+            selectLines(table, 0, 2);
+            rightClickAndChoose(table, 4, "ui.delete");
+
+            assertEquals(levels(frame), " 0:21 0OR 0:22 0OR 0:24",
+                "Delete on a line outside the selection removes that line alone");
+
+            selectLines(table, 0, 2);
+            clickCell(table, 4, DELETE_MARK, 0);
+
+            assertEquals(levels(frame), " 0:21 0OR 0:22",
+                "a line's own trash mark removes that line alone, whatever was selected");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-382: a selection across a group boundary, "22, or, 24" of "(21 and 22) or (24 and 25)", leaves "(21 and 25)":
+     * each condition takes a selected word beside it where that flags nothing.  A selected word left over takes its
+     * term, as one deleted alone does (OB-240): "or, 22" of "21 or (22 and 23)" leaves 21.
+     *
+     * MUTATION: in `ConditionTable.cut`, drop the preference for a selected word, and the first selection leaves 21
+     * alone.
+     */
+    @Test
+    public void testDeletingASelectionAcrossAGroupBoundaryLeavesAValidOutline() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            selectLines(table, 2, 4);
+            rightClickAndChoose(table, 2, "ui.delete");
+
+            assertEquals(levels(frame), " 1:21 1AND 1:25",
+                "deleting 22, or, 24 should leave (21 and 25); Reads as: " + plainReading(frame));
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the delete left is flagged: " + levels(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:21 0OR 1:22 1AND 1:23")));
+
+            selectLines(table, 1, 2);
+            rightClickAndChoose(table, 2, "ui.delete");
+
+            assertEquals(levels(frame), " 0:21",
+                "deleting or, 22 of 21 or (22 and 23) should take the or's term with it; Reads as: "
+                + plainReading(frame));
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    /**
      * FR-147: Insert Condition Above and Below, from a right-click, put one new condition next to the line clicked, at
      * its depth and joined by its level's word, change nothing else, and select it, bold in "Reads as"; flat lists,
      * nested groups and one condition.
@@ -2204,6 +2321,7 @@ public class testRouteEditorValidation
     private static final int INDENT_MARK = 2;
     private static final int OUTDENT_MARK = 3;
     private static final int NOTHING_TO_EDIT = 7;
+    private static final int DELETE_MARK = 8;
 
     private static final int ADDRESS = 5;
 

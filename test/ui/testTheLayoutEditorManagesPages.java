@@ -1106,6 +1106,48 @@ public class testTheLayoutEditorManagesPages
         sortPagesSaysToRenameAndChangesNothing(true);
     }
 
+    /**
+     * FR-154: the Manage Pages menu lists Sort Pages... before Combine Linked Pages..., with a separator directly above
+     * Combine; the rest of the menu is as it was.
+     *
+     * MUTATION: in `mountPageMenu`, add Combine before Sort again, and the order is wrong.
+     */
+    @Test
+    public void testCombineComesAfterSortBelowASeparator() throws Exception
+    {
+        Watched editor = editPage("1 - Main", false);
+
+        javax.swing.JMenu menu = Components.find(editor.window, javax.swing.JMenu.class,
+            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+
+        assertNotNull(menu, "the layout editor has no Manage Pages menu");
+
+        String[] keys = {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
+            "ui.main.toolbar.duplicateCurrentPage", "ui.main.toolbar.sortPages", "layout.ui.menuCombineLinkedPages",
+            "ui.main.toolbar.deleteCurrentPage"};
+
+        List<String> items = Components.onTheEventThread(() ->
+        {
+            List<String> out = new ArrayList<>();
+
+            for (java.awt.Component part : menu.getMenuComponents())
+            {
+                String named = part instanceof javax.swing.JSeparator ? "|"
+                    : part instanceof javax.swing.JMenuItem ? ((javax.swing.JMenuItem) part).getText() : part.toString();
+
+                for (String key : keys) if (I18n.t(key).equals(named)) named = key;
+
+                out.add(named);
+            }
+
+            return out;
+        });
+
+        assertEquals(String.join(" ", items), "ui.main.toolbar.addBlackPage ui.main.toolbar.renameCurrentPage"
+            + " ui.main.toolbar.duplicateCurrentPage ui.main.toolbar.sortPages | layout.ui.menuCombineLinkedPages"
+            + " | ui.main.toolbar.deleteCurrentPage", "the Manage Pages menu's items, | for a separator");
+    }
+
     private void sortPagesSaysToRenameAndChangesNothing(boolean routeRuns) throws Exception
     {
         final String page = "2 - Bottom";
