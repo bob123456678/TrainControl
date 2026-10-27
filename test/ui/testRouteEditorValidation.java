@@ -952,8 +952,7 @@ public class testRouteEditorValidation
      * OB-379: "(a and b and c) or (d and e and f)", the plus adds g, and g's up arrow pressed four times gives
      * "(a and b and c and g) or (d and e and f)" with g still selected; its down arrow takes it back.
      *
-     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and the fourth press gives "(a and b and g) or (c and d
-     * and e and f)".
+     * MUTATION: drop the edge branch of `ConditionOutline.plan`, and g is swapped with c.
      */
     @Test
     public void testAConditionAddedAtTheEndMovesUpIntoTheGroupAbove() throws Exception
@@ -1001,12 +1000,11 @@ public class testRouteEditorValidation
 
     /**
      * FR-147: a right-click on a condition offers Insert Condition Above and Below and the line's own actions, each
-     * enabled exactly where its mark does something; Insert puts a new condition at the line's level, joined by its
-     * level's word, and selects it; a right-click on a mark opens the menu without working the mark; below the lines it
-     * offers Add Condition.
+     * enabled exactly where its mark does something; Insert joins a new condition at the line's level by its word and
+     * selects it; a right-click on a mark works no mark; below the lines it offers Add Condition.
      *
-     * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and Insert Condition
-     * Below on 22 gives "21 or 22 and 1", flagged.
+     * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and "21 or 22 and 1"
+     * is flagged.
      */
     @Test
     public void testARightClickInsertsAConditionAndOffersTheLinesActions() throws Exception
@@ -1078,8 +1076,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Add Condition and the plus join the new condition with the word of the last condition's level, as Insert
-     * Condition Below does: "21 or 22" plus Add gives "21 or 22 or 1".
+     * Add Condition and the plus join the new condition with the last condition's level word, as Insert Below does.
      *
      * MUTATION: in `ConditionTable.addRow`, join with `Joiner.AND` always, and Add gives "21 or 22 and 1", flagged.
      */
@@ -1135,8 +1132,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A capture into the conditions joins with the word of the last condition's level, as Add Condition does: "21 or
-     * 22" plus a captured accessory is an outline Save takes.
+     * A capture into the conditions joins with the last condition's level word, as Add Condition does.
      *
      * MUTATION: in `appendCommand`, join a captured condition with `Joiner.AND` always, and the outline is flagged.
      */
@@ -1171,8 +1167,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147, what an edit changed: after a move, an indent, an outdent or the plus, the condition that changed is
-     * selected and "Reads as" shows it in bold, where it now sits in the sentence.
+     * FR-147, what an edit changed: after a move, indent, outdent or the plus, the changed condition is selected and
+     * bold in "Reads as".
      *
      * MUTATION: in `describe`, drop the bold round a chosen condition, and no condition is bold.
      */
@@ -1220,8 +1216,8 @@ public class testRouteEditorValidation
      * FR-147: deleting a condition that was inserted, moved to the front of the next group and outdented takes the
      * "and" that now joins nothing, not the "or": "(21 and 22) or (24 and 25)" is left as it was.
      *
-     * MUTATION: in `ConditionTable.removeAt`, always take the word before a condition when it is at the condition's own
-     * depth, and the "or" between the groups goes.
+     * MUTATION: in `ConditionTable.removeAt`, always take the word before a condition at its own depth, and the "or"
+     * goes.
      */
     @Test
     public void testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups() throws Exception
@@ -1270,8 +1266,8 @@ public class testRouteEditorValidation
      * its depth and joined by its level's word, change nothing else, and select it, bold in "Reads as"; flat lists,
      * nested groups and one condition.
      *
-     * MUTATION: in `ConditionOutline.wordOfTheLevel`, drop the walk back to the group's first line, and Insert Below on
-     * the last line of "(22 or 23 or 24)" joins with "and".
+     * MUTATION: in `ConditionOutline.wordOfTheLevel`, drop the walk back to the group's first line, and Below joins
+     * "and".
      */
     @Test
     public void testInsertConditionPutsOneNextToTheLineClicked() throws Exception
@@ -1571,9 +1567,7 @@ public class testRouteEditorValidation
         });
     }
 
-    /**
-     * Keys go where the window sends the keyboard, which answers as the focus owner (test windows are rarely focused).
-     */
+    /** Keys go where the window sends the keyboard; it answers as focus owner, as a test window rarely is one. */
     private static void asIfFocused(final org.traincontrol.gui.RouteEditorFrame frame,
         final java.util.function.Consumer<java.awt.Component> keys)
     {
@@ -1602,8 +1596,8 @@ public class testRouteEditorValidation
     /**
      * FR-152: a taller window gives its extra height to the conditions; the commands keep the height they have packed.
      *
-     * MUTATION: in `build`, lay the middle panel out with a plain `new GridLayout(2, 1, 0, 8)`, and the commands take
-     * half of the extra height.
+     * MUTATION: in `build`, lay the middle panel out with a plain `new GridLayout(2, 1, 0, 8)`, and the extra is
+     * halved.
      */
     @Test
     public void testATallerWindowGivesTheConditionsTheRoom() throws Exception
@@ -1732,12 +1726,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-150: a right-click on a joining word offers both inserts; FR-147: a right-click inside a selection of several
-     * lines keeps it, so the menu's Indent acts on them all and Insert Below selects the new line alone; outside the
-     * selection it picks the line clicked.
+     * FR-150: a right-click on a joining word offers both inserts.  FR-147: inside a selection it keeps the selection
+     * (Indent acts on all, Insert Below selects the new line alone); outside it picks the line clicked.
      *
-     * MUTATION: in `offerConditionMenu`, select the line clicked whether or not it is already selected, and the
-     * selection of three is lost.
+     * MUTATION: in `offerConditionMenu`, always select the line clicked, and the selection of three is lost.
      */
     @Test
     public void testInsertFromAWordLineOrASelection() throws Exception
@@ -1804,8 +1796,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147: an inserted condition is unsaved work: Cancel asks before closing, and the saved route keeps its
-     * conditions.
+     * FR-147: an inserted condition is unsaved work: Cancel asks first, and the saved route keeps its conditions.
      *
      * MUTATION: in `stateSignature`, leave out the condition rows, and Cancel closes without asking.
      */
@@ -2164,8 +2155,7 @@ public class testRouteEditorValidation
     /**
      * OB-367: a direction condition reads in the user's language in "Reads as".
      *
-     * MUTATION: in `shortly`, give the direction its stored word instead of `settingLabel`'s, and Reads as says
-     * "backward".
+     * MUTATION: in `shortly`, give the direction its stored word, and Reads as says "backward".
      */
     @Test
     public void testADirectionReadsInTheUsersLanguage() throws Exception
