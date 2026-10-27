@@ -92,7 +92,7 @@ Drawn from what went wrong here, and from a study of 80 builders' transcripts (2
   `sed -i` a Java file.  Git normalizes line endings on commit (`core.autocrlf`) and Edit keeps them: don't check them
   by hand.
 - A worktree you were given is clean and on the right commit: start work, don't re-check it.
-- Answer your own questions from the repository first: this file, the brief, `docs/refactor-3.0.3.md`,
+- Answer your own questions from the repository first: this file, the brief, `docs/refactoring.md`,
   `docs/reference/behaviour.md` (the index of the area files in `docs/reference/behaviour/`), `triagedb.py show <id>`.
   Ask only for a decision that is Adam's.
 - Report what changed, the evidence (red, green, the Total lines), and what is left.  No screenshots unless asked.
