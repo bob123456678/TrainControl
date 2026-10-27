@@ -84,7 +84,6 @@ public class WindowsNotOnTop implements ISuiteListener
     /** Longer than the start-up raise's two tries. */
     private static final long STUCK_MS = 1500;
 
-    /** A daemon that turns back, on the event thread, any window on top for `STUCK_MS`. */
     private static void keepWindowsOffTop()
     {
         Thread watching = new Thread(() ->
