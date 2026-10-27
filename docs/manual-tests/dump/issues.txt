@@ -815,6 +815,26 @@ text:
 | Adam: "Can we also prettify the statistics chart and/or make it support hover effects, more dimensions, etc.?  Right now, it's quite basic."  He chose design A, "with a way to scroll between periods preserved", built as its own class to swap in, and the old one retired.
 |
 
+[issue FR-157]
+ordinal: 65
+inbox: yes
+kind: feature request
+title: Exclude Page and its heading under the editor's mode buttons, hidden in Layout
+filed: 2026-10-26
+filed_at: 2026-10-26 23:23
+raised_from: chat 2026-10-26
+build: 3.0.5 dev faba1576
+text:
+| ### FR-157 - 2026-10-26 - Exclude Page and its heading under the editor's mode buttons, hidden in Layout
+|
+| **Kind:** feature request  
+| **Raised from:** chat 2026-10-26  
+| **Filed:** 2026-10-26 23:23  
+| **Build:** 3.0.5 dev faba1576
+|
+| Adam: "In the autonomy editor, move the exclude page checkbox and heading below the radio buttons that let you switch between autonomy and layout, and make sure they are hidden in the layout mode."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes

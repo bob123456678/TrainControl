@@ -406,6 +406,8 @@ Tab icons provided by Freepik.
 
 * v3.0.5
     - New Features
+        - Autonomy
+            - In the autonomy editor, `Exclude Page` and its heading now sit on the left under the `Track Diagram` and `Autonomy Setup` buttons, and are hidden while editing the track diagram.
         - Interface
             - The Stats tab's `Usage Graph` is a new chart: show 7 days, 30 days, 90 days, a year, or everything, page back and forth, and hover a bar to see its hours and locomotives.
         - Track Diagram

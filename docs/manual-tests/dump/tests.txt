@@ -33525,3 +33525,43 @@ body:
 tail:
 | ---
 |
+
+[test MT-849]
+ordinal: 848
+anchor: mt-849
+date: 2026-10-26
+title: Exclude Page sits under the editor's mode buttons, in Autonomy Setup only
+disposition: needs test
+from: FR-157
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-849"></a>
+| ### MT-849 - 2026-10-26 - Exclude Page sits under the editor's mode buttons, in Autonomy Setup only
+|
+| **Disposition:** needs test
+| **From:** FR-157
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. Open the track diagram editor on a page of your railway, in `Layout` mode.
+| 2. Look at the strip down the left side, under `Layout` and `Autonomy Setup`.
+| 3. Click `Autonomy Setup`.
+| 4. Look at the left strip again, and at the tool column beside the diagram.
+| 5. Tick `Exclude Page`, then untick it.
+| 6. Click `Layout`, then `Autonomy Setup` again, and move to another page with the page list.
+| 7. Close the editor, and open the autonomy editor straight from the main window.
+|
+| **Expected**
+|
+| - In `Layout` mode there is no `Page Settings` heading and no `Exclude Page` box anywhere in the window.
+| - In `Autonomy Setup`, the left strip shows a `Page Settings` heading right below the `Autonomy Setup` button, with `Exclude Page` under it, in the same blue heading style as `Mode` above.
+| - The tool column beside the diagram no longer has `Page Settings` or `Exclude Page` at its bottom.
+| - Ticking `Exclude Page` grays the page as before, and unticking puts it back; both wait for Save, as before.
+| - Switching to `Layout` hides both again; switching back, or to another page, shows them, ticked for an excluded page.
+|
+tail:
+| ---
+|
