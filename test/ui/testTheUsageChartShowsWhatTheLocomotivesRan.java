@@ -583,7 +583,7 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
 
     /**
      * The line above the chart says the period's run time and how many locomotives ran, and its first and last days sit
-     * under the chart's lower-left and lower-right corners, for each range and for an earlier period.
+     * under the chart's lower-left and lower-right corners, in bold, for each range and for an earlier period.
      *
      * MUTATION: in `UsageChart.refresh`, total the summary from the bars' locomotive counts (a locomotive that ran on
      * two days counted twice), give it the wrong last day, or put the dates back in the line, and this fails.
@@ -609,6 +609,7 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
             Point right = SwingUtilities.convertPoint(lastDay.getParent(), lastDay.getLocation(), chart.getContentPane());
 
             assertTrue(firstDay.isShowing() && lastDay.isShowing(), "the dates under the chart are not shown");
+            assertTrue(firstDay.getFont().isBold() && lastDay.getFont().isBold(), "the dates under the chart are not bold");
             assertTrue(left.y >= plot.y + plot.height && right.y >= plot.y + plot.height,
                 "the dates are not below the chart");
             assertEquals(left.x, plot.x, "the first day is not at the chart's left edge");

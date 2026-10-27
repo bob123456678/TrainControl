@@ -122,6 +122,8 @@ public class UsageChart extends JFrame
         summary.setFont(summary.getFont().deriveFont(Font.BOLD));
         firstDay.setName("usageChart.firstDay");
         lastDay.setName("usageChart.lastDay");
+        firstDay.setFont(firstDay.getFont().deriveFont(Font.BOLD));
+        lastDay.setFont(lastDay.getFont().deriveFont(Font.BOLD));
 
         SegmentedControl ranges = new SegmentedControl();
 
