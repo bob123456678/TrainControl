@@ -339,7 +339,6 @@ public final class RestoreAction
                 && readsAsAList(content, ((MarklinControlStation) model)::databaseReader);
         }
 
-        /** Opens serialized bytes for reading. */
         private interface Reader
         {
             ObjectInputStream open(InputStream in) throws IOException;
@@ -358,8 +357,8 @@ public final class RestoreAction
         }
 
         /**
-         * Whether `config` holds exactly the archived layout's files, byte for byte, and no link below it.  A `config`
-         * that is itself a link (a shared folder) is followed, as `writeLayout` writes through it.
+         * Whether `config` holds exactly the archived layout's files, byte for byte, and no link below it; a `config`
+         * that is itself a link is followed, as `writeLayout` writes through it.
          */
         boolean isHeldBy(File config)
         {
@@ -413,8 +412,8 @@ public final class RestoreAction
         }
 
         /**
-         * The layout's `config` emptied and written again, so a file added since the backup does not stay.  A `config`
-         * that is itself a link (a shared folder) is written through, so the layout stays linked to it.
+         * The layout's `config` emptied and written again, so a file added since the backup does not stay; a `config`
+         * that is itself a link is written through.
          */
         void writeLayout(File to) throws IOException
         {
