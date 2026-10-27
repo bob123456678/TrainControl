@@ -144,7 +144,7 @@ import org.traincontrol.gui.locomotive.LocomotiveStats;
 import org.traincontrol.gui.locomotive.RightClickFunctionMenu;
 import org.traincontrol.gui.locomotive.RightClickMenuListener;
 import org.traincontrol.gui.locomotive.RightClickPageMenu;
-import org.traincontrol.gui.locomotive.UsageHistogram;
+import org.traincontrol.gui.locomotive.UsageChart;
 import org.traincontrol.gui.widgets.About;
 import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
@@ -4048,7 +4048,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (window == this || !window.isDisplayable()) continue;
 
             if (window instanceof LayoutPopupUI || window instanceof RouteEditorFrame || window instanceof AddLocomotive
-                || window instanceof LocomotiveSelector || window instanceof UsageHistogram)
+                || window instanceof LocomotiveSelector || window instanceof UsageChart)
             {
                 if (window.isAlwaysOnTop() != onTop) window.setAlwaysOnTop(onTop);
             }

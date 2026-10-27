@@ -517,7 +517,7 @@ public class LocomotiveStats extends javax.swing.JPanel
         
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            new UsageHistogram(this.tcui);
+            new UsageChart(this.tcui).setVisible(true);
         });
     }//GEN-LAST:event_viewUsageGraphActionPerformed
 
