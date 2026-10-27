@@ -1084,8 +1084,8 @@ public class testTheLayoutEditorManagesPages
 
     /**
      * Sort Pages... in the Manage Pages menu says once, over the editor, that pages are listed in the order of their
-     * names and that renaming changes it (FR-149), and changes nothing: the pages, the folder, the window and its
-     * unsaved work, and the page the main window shows are as they were.
+     * names and that renaming changes it (FR-149), and changes nothing: pages, folder, window, unsaved work, shown
+     * page.
      *
      * MUTATION: leave Sort Pages... out of `mountPageMenu`, and the menu has no such item.
      */
@@ -1096,8 +1096,7 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
-     * Sort Pages... is not refused while a route runs, as it changes nothing: it says the same sentence and no
-     * refusal.
+     * Sort Pages... is not refused while a route runs, as it changes nothing.
      *
      * MUTATION: build Sort Pages... with `pageMenuItem`, and the run refuses it.
      */
