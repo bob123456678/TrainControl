@@ -211,7 +211,9 @@ public class LocomotiveStats extends javax.swing.JPanel
         }
         else
         {
-            ((TableRowSorter<TableModel>) statsTable.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text));
+            // Quoted: what is typed is text to find, so a ( or . in a name is that character, not a pattern (OB-385)
+            ((TableRowSorter<TableModel>) statsTable.getRowSorter()).setRowFilter(
+                RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(text)));
         }
     }
     

@@ -369,6 +369,37 @@ public class testTheLocomotiveUsageStats
     }
 
     /**
+     * What is typed is found as text, not read as a pattern: a ( narrows to nothing instead of throwing, and a . matches
+     * only a dot (OB-385).
+     *
+     * MUTATION: drop the `Pattern.quote` from `filterTable` in `LocomotiveStats`, and the ( throws, leaving the rows
+     * as they were.
+     */
+    @Test
+    public void testTheFilterTakesWhatIsTypedLiterally() throws Exception
+    {
+        JTable table = table();
+
+        JTextField filter = (JTextField) field(stats, "filterField");
+
+        type(filter, "stats");
+
+        assertEquals((int) Components.onTheEventThread(table::getRowCount), NAMES.length, "precondition: \"stats\" does"
+            + " not show the test's locomotives");
+
+        type(filter, "stats (");
+
+        assertEquals((int) Components.onTheEventThread(table::getRowCount), 0, "\"stats (\" did not narrow to nothing");
+
+        type(filter, "stats.alpha");
+
+        assertEquals((int) Components.onTheEventThread(table::getRowCount), 0, "\"stats.alpha\" matched a name with a"
+            + " space where the dot is");
+
+        type(filter, "  ");
+    }
+
+    /**
      * The usage graph button opens a chart window of its own, which closes without touching the statistics tab.
      *
      * MUTATION: empty `viewUsageGraphActionPerformed` in `LocomotiveStats`, and no window opens.
