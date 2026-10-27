@@ -40080,210 +40080,210 @@ status_note: A D finding: checked and clean (3.0.5 validation round 1, RSA82)
 line: 28
 severity: C
 title: Add Blank Page suggests "Página nueva 1" in Spanish, which the name box's own filter strips on any keystroke
-disposition: -
+disposition: Fixed - `a1e15d2b`: Spanish `Pagina nueva {0}`; claim testEveryLanguagesSuggestionSurvivesTheNameBox, red on dev (es: Pg
 evidence: LayoutPageEdit.java:72
-commit_id:
+commit_id: a1e15d2b
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-C2 in RSA83.md]
 line: 59
 severity: C
 title: At 20 pages the Exclude Page box can fall off the bottom of a minimum-height editor
-disposition: -
+disposition: Fixed - `a1e15d2b`: the page list always sits in its scroll pane, down to three rows in a short strip; claim testAShortS
 evidence: LayoutEditor.java:4414
-commit_id:
+commit_id: a1e15d2b
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-C3 in RSA83.md]
 line: 83
 severity: C
 title: After Autonomy Setup with Text Labels off, the main window draws that page without its own writing
-disposition: -
+disposition: Open - deferred: older than 3.0.5 and no worse for OB-384; asked Adam whether the main window should follow the editors'
 evidence: LayoutGrid.java:1004
 commit_id:
 cited_by:
-status:
-status_note:
+status: Open - deferred
+status_note: Older than 3.0.5; asked Adam whether the main window should follow the editors' Text Labels switch
 
 [finding RSA83-C4 in RSA83.md]
 line: 115
 severity: C
 title: Two new comments tell history
-disposition: -
+disposition: Fixed - `a1e15d2b`: the three comments state the rule without the history.
 evidence: UsageChart.java:39
-commit_id:
+commit_id: a1e15d2b
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-C5 in RSA83.md]
 line: 132
 severity: C
 title: A stray early day key makes All a long run of empty months, worked out on the event thread
-disposition: -
+disposition: Fixed - `a1e15d2b`: getEarliestRunDay ignores days before 2018-01-01 or after today, and day keys are formatted once per
 evidence: MarklinControlStation.java:1274
-commit_id:
+commit_id: a1e15d2b
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D1 in RSA83.md]
 line: 159
 severity: D
 title: Delete on a selection of conditions (OB-382): checked, clean
-disposition: -
+disposition: Not a defect - checked as described.
 evidence: RouteEditorFrame.java:4181
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D10 in RSA83.md]
 line: 283
 severity: D
 title: The Stats filter (OB-385), and other typed text made into a pattern: none left
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D11 in RSA83.md]
 line: 294
 severity: D
 title: Icons beside the data files: the same folder for a real user, both ways
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D12 in RSA83.md]
 line: 306
 severity: D
 title: FR-154 and FR-155: nothing finds the moved controls by position
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D13 in RSA83.md]
 line: 316
 severity: D
 title: Comment trims: no code touched
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D14 in RSA83.md]
 line: 327
 severity: D
 title: The new and changed tests: checked where read
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D2 in RSA83.md]
 line: 177
 severity: D
 title: The Exclude Page box in the side strip (FR-157): no stale box, no click on a hidden panel
-disposition: -
+disposition: Not a defect - checked as described.
 evidence: LayoutEditor.java:4493
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D3 in RSA83.md]
 line: 194
 severity: D
 title: OB-384's two early settings of the text switch: in step, and never saved
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D4 in RSA83.md]
 line: 207
 severity: D
 title: The page list's height cap (OB-383): checked across 2 to 20 and past 20 pages
-disposition: -
+disposition: Not a defect - checked as described.
 evidence: LayoutEditor.java:4342
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D5 in RSA83.md]
 line: 219
 severity: D
 title: The usage chart's reads while trains run: safe, as the old histogram's were
-disposition: -
+disposition: Not a defect - checked as described.
 evidence: Locomotive.java:144
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D6 in RSA83.md]
 line: 233
 severity: D
 title: The chart's calendar: checked
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D7 in RSA83.md]
 line: 247
 severity: D
 title: The multi-unit rule matches the Stats table's
-disposition: -
+disposition: Not a defect - checked as described.
 evidence: LocomotiveStats.java:140
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D8 in RSA83.md]
 line: 259
 severity: D
 title: The chart window: checked
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA83-D9 in RSA83.md]
 line: 272
 severity: D
 title: Bundles: checked
-disposition: -
+disposition: Not a defect - checked as described.
 evidence:
 commit_id:
 cited_by:
-status:
-status_note:
+status: Closed
+status_note: Dispositioned in RSA83.md: fixed in a1e15d2b or checked clean
 
 [finding RSA9-B1 in RSA9.md]
 line: 27
