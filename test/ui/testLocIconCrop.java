@@ -53,7 +53,7 @@ public class testLocIconCrop
             write(source, "not really a jpeg");
 
             // A crop of OURS is the only kind that carries a note: `cropSourceOf` asks isLocIconFile first. A name of
-            // its own, because tc_loc_icons is the REAL folder and a fixed name races any other run.
+            // its own, so no other run can collide with it.
             File ours = org.traincontrol.util.Util.getLocIconFile(
                 "fr032_test_" + java.util.UUID.randomUUID() + ".png");
 
@@ -767,7 +767,7 @@ public class testLocIconCrop
             assertFalse(org.traincontrol.util.Util.isLocIconFile(kept.toURI().toString()), "the Central Station's picture"
                 + " is kept among the crops, where replacing the crop would delete it: " + kept);
 
-            assertTrue(kept.getCanonicalPath().startsWith(new File(org.traincontrol.util.Util.LOC_ICON_FOLDER)
+            assertTrue(kept.getCanonicalPath().startsWith(org.traincontrol.util.Util.locIconFolder()
                 .getCanonicalPath()), "the Central Station's picture is kept outside the application's icon folder: "
                 + kept);
 

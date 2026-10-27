@@ -444,7 +444,7 @@ public final class RestoreAction
             if (windowState != null) atomically(Util.dataPath(TrainControlUI.DATA_FILE_NAME), windowState);
             if (autonomyFile != null) atomically(TrainControlUI.AUTONOMY_FILE_NAME, autonomyFile);
 
-            File iconFolder = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
+            File iconFolder = Util.locIconFolder().getAbsoluteFile();
 
             for (Map.Entry<String, byte[]> icon : icons.entrySet()) write(new File(iconFolder, icon.getKey()), icon.getValue());
         }

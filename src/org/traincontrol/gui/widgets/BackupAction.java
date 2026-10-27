@@ -219,7 +219,7 @@ public final class BackupAction
             // The cropped locomotive icons: `LocDB.data` records each locomotive's `localImageURL`, which for a crop
             // names a file in `tc_loc_icons`, so a restore without the folder pointed at files it lacked.  Only if it
             // exists.
-            File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
+            File icons = Util.locIconFolder().getAbsoluteFile();
 
             if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
 

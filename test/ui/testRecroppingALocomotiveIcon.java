@@ -175,9 +175,11 @@ public class testRecroppingALocomotiveIcon
     /**
      * Zoomed in and moved to the blue half of the photograph, OK keeps that part: the icon is the blue half, the file
      * is the icon's size, the note beside it names the photograph, and the picture on screen is the new crop.  The
-     * photograph itself is the operator's and stays.
+     * photograph itself is the operator's and stays.  The crop is kept beside the run's own data files, never in the
+     * working directory, where it would land among the operator's real icons.
      *
      * MUTATION: in `CropPanel.panBy`, move the center the other way (`this.centerX += dx / scale`), and this fails.
+     * MUTATION: in `Util.locIconFolder`, return `new File(LOC_ICON_FOLDER)`, and this fails.
      */
     @Test
     public void testTheCropTheOperatorChoseIsTheOneKept() throws Exception
@@ -197,6 +199,11 @@ public class testRecroppingALocomotiveIcon
         String url = loc.getLocalImageURL();
 
         assertTrue(Util.isLocIconFile(url), "the crop was not kept among the application's own icons: " + url);
+
+        String data = System.getProperty(Util.DATA_DIR_PROPERTY);
+
+        assertTrue(data != null && new File(new java.net.URI(url)).getCanonicalPath().startsWith(
+            new File(data).getCanonicalPath()), "the crop was kept outside the run's own data folder: " + url);
 
         BufferedImage kept = ImageIO.read(new File(new java.net.URI(url)));
 
@@ -571,7 +578,7 @@ public class testRecroppingALocomotiveIcon
     {
         List<String> found = new ArrayList<>();
 
-        File[] files = new File(Util.LOC_ICON_FOLDER).listFiles();
+        File[] files = Util.locIconFolder().listFiles();
 
         if (files != null)
         {

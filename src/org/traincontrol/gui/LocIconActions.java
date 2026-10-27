@@ -804,7 +804,7 @@ final class LocIconActions
 
             if (picture == null) return null;
 
-            File folder = new File(Util.LOC_ICON_FOLDER, TrainControlUI.CENTRAL_STATION_PICTURES);
+            File folder = new File(Util.locIconFolder(), TrainControlUI.CENTRAL_STATION_PICTURES);
 
             if (!folder.isDirectory() && !folder.mkdirs()) return null;
 
