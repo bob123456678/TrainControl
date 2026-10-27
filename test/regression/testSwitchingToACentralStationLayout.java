@@ -672,8 +672,8 @@ public class testSwitchingToACentralStationLayout
         // placed before a safety check hides it.  Every SAFETY assertion comes first and the numbers that merely record
         // where we are come after.  Raise the count when a class that builds a window and opens its sandbox first is
         // added.
-        assertEquals(checked, 71,
-            checked + " test classes were found to build a window, not the 71 there were when this "
+        assertEquals(checked, 72,
+            checked + " test classes were found to build a window, not the 72 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

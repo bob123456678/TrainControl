@@ -181,3 +181,4 @@ not fix it. Name the square.
 - `core.testTestAPathStartsWhereTheFindingsDo`
 - `ui.testTheToolsSitUnderTheHeading`
 - `ui.testTheAutoTabSaysWhyATrainWaits`
+- `ui.testTheAutonomyEditorsBulkDoors`
