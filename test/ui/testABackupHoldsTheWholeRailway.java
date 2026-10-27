@@ -205,14 +205,11 @@ public class testABackupHoldsTheWholeRailway
     }
 
     /**
-     * The backup holds where a stopped run left the trains: the run is folded into the setup before the archive is
-     * written, so restoring it does not put a train back on the square it set off from while the one it stands on
-     * reads free.
+     * The backup holds where a stopped run left the trains, so restoring it does not put a train back on the square
+     * it set off from while the one it stands on reads free.
      *
      * MUTATION: take the fold out of `backupDataMenuItemActionPerformed`, and the archive holds the setup as the run
      * found it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheBackupHoldsWhereAStoppedRunLeftTheTrains() throws Exception
@@ -233,12 +230,9 @@ public class testABackupHoldsTheWholeRailway
     }
 
     /**
-     * A stopped run whose fold into the setup cannot be written makes the backup incomplete, and the backup says why:
-     * the archive would otherwise hold the setup as the run found it, behind a dialog saying all is well.
+     * A stopped run whose fold into the setup cannot be written makes the backup incomplete, and the backup says why.
      *
      * MUTATION: in `foldTheStoppedRun`, answer null whatever the fold did, and the backup says it is complete.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAFoldThatCannotBeWrittenLeavesTheBackupIncomplete() throws Exception
@@ -268,12 +262,9 @@ public class testABackupHoldsTheWholeRailway
     }
 
     /**
-     * Two backups in the same second are two archives: the second does not take the first one's name and write over
-     * it.
+     * Two backups in the same second are two archives: the second does not take the first one's name.
      *
      * MUTATION: in `writeTheBackup`, name the archive without looking for one already there, and the two are one.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTwoBackupsInOneSecondAreTwoArchives() throws Exception
