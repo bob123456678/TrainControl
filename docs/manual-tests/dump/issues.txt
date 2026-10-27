@@ -775,6 +775,26 @@ text:
 | Adam, on MT-840: "Put combine after sort, with a separator above combine."
 |
 
+[issue FR-155]
+ordinal: 63
+inbox: yes
+kind: feature request
+title: Autonomy editor: no gap between the heading and the Test a path and Why not Moving? buttons
+filed: 2026-10-26
+filed_at: 2026-10-26 21:11
+raised_from: the triage API
+build: 5f8ab30a
+text:
+| ### FR-155 - 2026-10-26 - Autonomy editor: no gap between the heading and the Test a path and Why not Moving? buttons
+|
+| **Kind:** feature request  
+| **Raised from:** the triage API  
+| **Filed:** 2026-10-26 21:11  
+| **Build:** 5f8ab30a
+|
+| Adam, 2026-10-26: "just remove the gap between the label and the "test path" "why isn't it moving" buttons in the autonomy editor."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes

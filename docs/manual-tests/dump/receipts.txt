@@ -4218,3 +4218,11 @@ kind: feature request
 what: Built on dev (0b84c27f): the editor's Manage Pages menu lists Combine Linked Pages... after Sort Pages..., below a separator; claim in ui.testTheLayoutEditorManagesPages, red first
 state: fixed validated
 became: MT-846
+
+[receipt FR-155]
+seq: 527
+filed: 2026-10-26
+kind: feature request
+what: Built on dev (b5a3fb1b): Test a path sits 6 px under the heading, the form's own gap (13 px before); claim ui.testTheToolsSitUnderTheHeading, red first
+state: needs test
+became: MT-847

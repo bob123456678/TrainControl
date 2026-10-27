@@ -33420,3 +33420,38 @@ body:
 tail:
 | ---
 |
+
+[test MT-847]
+ordinal: 846
+anchor: mt-847
+date: 2026-10-26
+title: The autonomy editor's Test a path button sits right under the heading
+disposition: needs test
+from: FR-155
+written: 2026-10-26
+reopened: no
+body:
+| <a id="mt-847"></a>
+| ### MT-847 - 2026-10-26 - The autonomy editor's Test a path button sits right under the heading
+|
+| **Disposition:** needs test
+| **From:** FR-155
+|
+| **Written:** 2026-10-26
+|
+| **Steps**
+|
+| 1. Start TrainControl on your railway with an autonomy configuration loaded.
+| 2. Choose `Autonomy` > `Edit Autonomy on Page` and pick a page.
+| 3. Look at the top of the left column: the blue heading, then the `Test a path` and `Why not Moving?` buttons.
+| 4. Close it, press `Edit` on the Track Diagram tab, and look at the heading above the palette of track pieces.
+|
+| **Expected**
+|
+| - `Test a path` starts directly under the blue heading, with no more space between them than between the ordinary editor's heading and its first track piece.
+| - The space between `Test a path`, `Why not Moving?` and the rows below them is as it was.
+| - The space under the column's last row, above the toggles, is as it was.
+|
+tail:
+| ---
+|
