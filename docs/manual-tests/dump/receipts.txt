@@ -4242,3 +4242,11 @@ kind: feature request
 what: LayoutEditor.showPageSettings mounts the Page Settings heading and the autonomy panel's Exclude Page box in the side strip under the mode buttons, in Autonomy Setup only; ui.testTheToolsSitUnderTheHeading.testPageSettingsSitUnderTheModeButtonsInAutonomySetupOnly.
 state: needs test
 became: MT-849
+
+[receipt OB-383]
+seq: 530
+filed: 2026-10-26
+kind: bug
+what: The page list is capped at its rows' height (LayoutEditor.buildPageControl), so the strip's spare room goes below it; ui.testTheToolsSitUnderTheHeading.testThePageListKeepsItsHeightAcrossModes. Checked by hand in MT-849's steps 3 and 6.
+state: needs test
+became: MT-849

@@ -1370,3 +1370,23 @@ text:
 |
 | Adam, on MT-838: "Works, but the "delete" option when multi-selecting only applies to one item, not all."
 |
+
+[issue OB-383]
+ordinal: 66
+inbox: yes
+kind: bug
+title: The editor's page list changes height between Track Diagram and Autonomy Setup
+filed: 2026-10-26
+filed_at: 2026-10-26 23:37
+raised_from: chat 2026-10-26
+build: 3.0.5 dev 37e52358
+text:
+| ### OB-383 - 2026-10-26 - The editor's page list changes height between Track Diagram and Autonomy Setup
+|
+| **Kind:** bug  
+| **Raised from:** chat 2026-10-26  
+| **Filed:** 2026-10-26 23:37  
+| **Build:** 3.0.5 dev 37e52358
+|
+| Adam: "make sure the height of the page list doesn't jump between layout editor and autonomy editor mode".  Measured on the frozen railway's 6 pages: 327 px, then 304 in Autonomy Setup, then 335 back, for 144 px of rows.
+|

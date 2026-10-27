@@ -30077,6 +30077,17 @@ text:
 | The mode buttons read `Track Diagram` and `Autonomy Setup`: where the steps say `Layout`, it is the `Track Diagram` button and mode.
 |
 
+[comment MT-849 1]
+who: Claude
+date: 2026-10-26
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-26.**
+|
+| Also check OB-383 here: at steps 3 and 6 the page list at the top left keeps the same height and place in both modes, as tall as its pages, with the spare room below it.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24
