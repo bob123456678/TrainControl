@@ -8,23 +8,21 @@ import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.Shape;
-import java.awt.event.ActionEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.RoundRectangle2D;
-import javax.swing.AbstractAction;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
-import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
 
 /**
  * Toggle buttons drawn as one rounded outline with a thin divider between segments, the chosen segment filled with the
  * theme's accent.  FlatLaf 3.7.2 has no segmented buttons, so the outline, dividers and fills are painted here, every
- * color asked of the look and feel at paint time.  Left and Right move the choice from a focused segment.
+ * color asked of the look and feel at paint time.  Not focusable, as the window's other buttons are not: the first
+ * segment took the focus at open and wore a ring.
  */
 public class SegmentedControl extends JPanel
 {
@@ -51,44 +49,12 @@ public class SegmentedControl extends JPanel
 
         segment.setName(name);
         segment.setSelected(chosen);
-
-        for (int[] key : new int[][] {{java.awt.event.KeyEvent.VK_LEFT, -1}, {java.awt.event.KeyEvent.VK_RIGHT, 1}})
-        {
-            String action = "segment." + key[1];
-
-            segment.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key[0], 0), action);
-            segment.getActionMap().put(action, new AbstractAction()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    int to = indexOf(segment) + key[1];
-
-                    if (to >= 0 && to < getComponentCount())
-                    {
-                        JToggleButton neighbor = (JToggleButton) getComponent(to);
-
-                        neighbor.doClick(0);
-                        neighbor.requestFocusInWindow();
-                    }
-                }
-            });
-        }
+        segment.setFocusable(false);
 
         group.add(segment);
         add(segment);
 
         return segment;
-    }
-
-    private int indexOf(Segment segment)
-    {
-        for (int i = 0; i < getComponentCount(); i++)
-        {
-            if (getComponent(i) == segment) return i;
-        }
-
-        return -1;
     }
 
     /** The oval all the segments sit in, as wide and tall as the control, with the outline's half pixel left out. */
@@ -198,22 +164,13 @@ public class SegmentedControl extends JPanel
                 g2.setColor(fill);
                 g2.fillRect(0, 0, getWidth(), getHeight());
 
-                g2.setColor(isSelected() ? readableOn(fill) : themeColor(getForeground(), "Button.foreground"));
+                g2.setColor(isSelected() ? inkOn(fill) : themeColor(getForeground(), "Button.foreground"));
                 g2.setFont(getFont());
 
                 FontMetrics fm = g2.getFontMetrics();
 
                 BasicGraphicsUtils.drawStringUnderlineCharAt(g2, getText(), -1, (getWidth() - fm.stringWidth(getText())) / 2,
                     (getHeight() - fm.getHeight()) / 2 + fm.getAscent());
-
-                // The chosen segment is where the arrow keys leave the focus, and is plain enough already
-                if (isFocusOwner() && !isSelected())
-                {
-                    g2.setClip(null);
-                    g2.setColor(themeColor(Color.BLUE, "Component.focusColor"));
-                    g2.draw(new RoundRectangle2D.Double(2.5, 2.5, getWidth() - 5, getHeight() - 5, getHeight() - 5,
-                        getHeight() - 5));
-                }
             }
             finally
             {
@@ -223,7 +180,7 @@ public class SegmentedControl extends JPanel
     }
 
     /** Black or white, whichever reads on this color. */
-    private static Color readableOn(Color c)
+    private static Color inkOn(Color c)
     {
         double luminance = (0.299 * c.getRed() + 0.587 * c.getGreen() + 0.114 * c.getBlue()) / 255;
 

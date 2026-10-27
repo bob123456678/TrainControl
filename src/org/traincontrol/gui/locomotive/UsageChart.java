@@ -65,6 +65,13 @@ public class UsageChart extends JFrame
         }
     }
 
+    private static final int MIN_WIDTH = 520;
+
+    private static final int MIN_HEIGHT = 360;
+
+    /** The least room between the ranges and the paging buttons at the window's narrowest. */
+    private static final int MIN_CONTROLS_GAP = 24;
+
     /** Weeks in a Year period. */
     private static final int YEAR_WEEKS = 52;
 
@@ -79,6 +86,11 @@ public class UsageChart extends JFrame
     private final UsageChartPanel chart = new UsageChartPanel();
 
     private final JLabel summary = new JLabel();
+
+    /** The period's first and last day, under the chart's lower-left and lower-right corners. */
+    private final JLabel firstDay = new JLabel();
+
+    private final JLabel lastDay = new JLabel();
 
     private final JButton previous;
 
@@ -108,6 +120,8 @@ public class UsageChart extends JFrame
         chart.setName("usageChart.panel");
         summary.setName("usageChart.summary");
         summary.setFont(summary.getFont().deriveFont(Font.BOLD));
+        firstDay.setName("usageChart.firstDay");
+        lastDay.setName("usageChart.lastDay");
 
         SegmentedControl ranges = new SegmentedControl();
 
@@ -153,13 +167,24 @@ public class UsageChart extends JFrame
         JPanel content = new JPanel(new BorderLayout());
 
         content.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        JPanel period = new JPanel(new BorderLayout());
+
+        period.add(firstDay, BorderLayout.WEST);
+        period.add(lastDay, BorderLayout.EAST);
+
         content.add(top, BorderLayout.NORTH);
         content.add(chart, BorderLayout.CENTER);
+        content.add(period, BorderLayout.SOUTH);
 
         setContentPane(content);
         refresh();
         pack();
-        setMinimumSize(new java.awt.Dimension(520, 360));
+
+        // Never narrower than the ranges and the paging buttons side by side with a gap, in this language and look.
+        int controlsWidth = controls.getPreferredSize().width + MIN_CONTROLS_GAP
+            + content.getInsets().left + content.getInsets().right + getInsets().left + getInsets().right;
+
+        setMinimumSize(new java.awt.Dimension(Math.max(MIN_WIDTH, controlsWidth), MIN_HEIGHT));
         setAlwaysOnTop(tcui.isAlwaysOnTop());
         setLocationRelativeTo(tcui);
     }
@@ -266,8 +291,9 @@ public class UsageChart extends JFrame
         LocalDate first = range == Range.ALL && earliest != null ? earliest : spans.get(0)[0];
         LocalDate last = spans.get(spans.size() - 1)[1];
 
-        summary.setText(UsageChartPanel.figures(first, last, model.getRuntimeBetween(first, last),
-            model.getLocsRunBetween(first, last)));
+        summary.setText(UsageChartPanel.totals(model.getRuntimeBetween(first, last), model.getLocsRunBetween(first, last)));
+        firstDay.setText(first.toString());
+        lastDay.setText(last.toString());
 
         boolean paged = range != Range.ALL;
 

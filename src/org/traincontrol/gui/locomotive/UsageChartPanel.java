@@ -135,12 +135,10 @@ public class UsageChartPanel extends JComponent
         repaint();
     }
 
-    /** The span's figures as one line: the dates, the run time and how many locomotives ran. */
-    public static String figures(LocalDate first, LocalDate last, long millis, int locs)
+    /** The run time and how many locomotives ran, without the dates: the line above the chart, whose dates sit below it. */
+    public static String totals(long millis, int locs)
     {
-        String dates = first.equals(last) ? first.toString() : I18n.f("stats.chart.dates", first.toString(), last.toString());
-
-        return I18n.f("stats.chart.figures", dates, Conversion.convertSecondsToHMm(millis), locs,
+        return I18n.f("stats.chart.totals", Conversion.convertSecondsToHMm(millis), locs,
             locs == 1 ? I18n.t("stats.ui.labelLocomotiveSingular") : I18n.t("stats.ui.labelLocomotivePlural"));
     }
 
@@ -217,7 +215,15 @@ public class UsageChartPanel extends JComponent
 
         Bar b = bars.get(i);
 
-        StringBuilder html = new StringBuilder("<html>").append(escaped(figures(b.first, b.last, b.millis, b.locs)));
+        String dates = b.first.equals(b.last)
+            ? b.first.toString() : I18n.f("stats.chart.dates", b.first.toString(), b.last.toString());
+
+        // The date, how many ran and for how long, then a blank line and the most-run locomotives (Adam's layout)
+        StringBuilder html = new StringBuilder("<html>").append(escaped(dates)).append("<br>")
+            .append(escaped(I18n.f("stats.chart.tipTotals", Conversion.convertSecondsToHMm(b.millis), b.locs,
+                b.locs == 1 ? I18n.t("stats.ui.labelLocomotiveSingular") : I18n.t("stats.ui.labelLocomotivePlural"))));
+
+        if (!b.ran.isEmpty()) html.append("<br>");
 
         for (int k = 0; k < Math.min(TOP_LOCOMOTIVES, b.ran.size()); k++)
         {
