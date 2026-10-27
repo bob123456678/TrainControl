@@ -211,6 +211,30 @@ public interface ViewListener
     public TreeMap<String, Long> getDailyRuntimeStats(int days, long offset);
     public TreeMap<String, Integer> getDailyCountStats(int days, long offset);
     public int getTotalLocStats(int days, long offset);
+
+    /**
+     * Cumulative locomotive runtime over a span of calendar days.  Multi-units, and locomotives linked to others, are
+     * left out as the Stats table leaves them out: their members record the same time.
+     *
+     * @param first the first day, inclusive
+     * @param last the last day, inclusive; may be today or earlier
+     * @return milliseconds, 0 when the span is empty
+     */
+    public long getRuntimeBetween(java.time.LocalDate first, java.time.LocalDate last);
+
+    /**
+     * How many different locomotives ran during a span of calendar days.
+     *
+     * @param first the first day, inclusive
+     * @param last the last day, inclusive
+     * @return the count, 0 when the span is empty
+     */
+    public int getLocsRunBetween(java.time.LocalDate first, java.time.LocalDate last);
+
+    /**
+     * @return the earliest day any locomotive ran, or null when none has
+     */
+    public java.time.LocalDate getEarliestRunDay();
     public Locomotive isLocLinkedToOthers(Locomotive l);
     public void waitForPowerState(boolean state) throws InterruptedException;
 

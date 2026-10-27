@@ -1194,6 +1194,86 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         return locs.size();
     }
+
+    /**
+     * The locomotives whose run time counts on its own: a multi-unit, or a locomotive linked to others, records a run
+     * of its own while its members record theirs, so the Stats table leaves it out of its totals and so does the chart.
+     */
+    private List<Locomotive> locomotivesRunningOnTheirOwn()
+    {
+        List<Locomotive> own = new ArrayList<>();
+
+        for (Locomotive l : this.getLocomotives())
+        {
+            if (l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT && !l.hasLinkedLocomotives()) own.add(l);
+        }
+
+        return own;
+    }
+
+    @Override
+    public long getRuntimeBetween(LocalDate first, LocalDate last)
+    {
+        List<Locomotive> own = locomotivesRunningOnTheirOwn();
+
+        long total = 0;
+
+        for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+        {
+            String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+            for (Locomotive l : own) total += l.getRuntimeOnDay(key);
+        }
+
+        return total;
+    }
+
+    @Override
+    public int getLocsRunBetween(LocalDate first, LocalDate last)
+    {
+        List<Locomotive> own = locomotivesRunningOnTheirOwn();
+
+        Set<Locomotive> ran = new HashSet<>();
+
+        for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+        {
+            String key = day.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+            for (Locomotive l : own)
+            {
+                if (l.getRuntimeOnDay(key) > 0) ran.add(l);
+            }
+        }
+
+        return ran.size();
+    }
+
+    @Override
+    public LocalDate getEarliestRunDay()
+    {
+        String earliest = null;
+
+        for (Locomotive l : locomotivesRunningOnTheirOwn())
+        {
+            for (Map.Entry<String, Long> day : l.getHistoricalOperatingTime().entrySet())
+            {
+                // yyyy-MM-dd sorts as text in date order
+                if (day.getValue() > 0 && (earliest == null || day.getKey().compareTo(earliest) < 0))
+                {
+                    earliest = day.getKey();
+                }
+            }
+        }
+
+        try
+        {
+            return earliest == null ? null : LocalDate.parse(earliest);
+        }
+        catch (java.time.format.DateTimeParseException e)
+        {
+            return null;
+        }
+    }
     
     /**
      * Checks the CS data and identifies locomotives with the same address that have a different name in TC
