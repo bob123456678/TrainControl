@@ -29634,6 +29634,17 @@ text:
 | Validated on your *Works* of 2026-10-25.
 |
 
+[comment MT-829 0]
+who: Adam
+date: 2026-10-26
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-26 (triage).** Works.
+|
+| *Run against commit 8ad8f736, in Dansk - build\classes, compiled 26 Oct 21:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
 [comment MT-830 0]
 who: Adam
 date: 2026-10-25
@@ -30020,6 +30031,17 @@ text:
 | **Claude, 2026-10-26.**
 |
 | Validated on your *Works* of 2026-10-26.
+|
+
+[comment MT-847 0]
+who: Adam
+date: 2026-10-26
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-26 (triage).** Works.
+|
+| *Run against commit 8ad8f736, in Dansk - build\classes, compiled 26 Oct 21:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 |
 
 [comment OB-331 0]
