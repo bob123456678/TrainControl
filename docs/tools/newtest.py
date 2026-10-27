@@ -9,7 +9,7 @@ Run it from the project root once the class file exists under test/.  Three thin
   1. build.xml: a <test-one-class class="..."/> line after the last one (regression.testEveryTestIsInTheBattery).
   2. The window census in regression.testSwitchingToACentralStationLayout: the number of test classes that build a
      TrainControlUI is recounted the way that test counts it; when it differs, the pin and its message are set to the
-     recount and a dated comment line names the class.
+     recount (no comment line: a dated one is history, which regression.testCommentsStayLean refuses).
   3. "## Used by" in test/layouts/<scenario>/README.md for each scenario the class names in quotes
      (regression.testEveryScenarioIsUsedAndSaysSo).
 
@@ -18,7 +18,6 @@ inside its try (testEverySandboxIsOpenedInsideATry), and a class that builds a m
 `--root DIR` works on another checkout (a scratch copy).  Exit 0 when nothing is left to do or the change was written, 1
 when a dry run found work, 2 on a usage error.
 """
-import datetime
 import os
 import re
 import sys
@@ -110,18 +109,8 @@ def plan_census(root, qualified, source):
     if int(pin.group(1)) == count:
         return None, "census: already %d" % count
     builds = bool(WINDOW_BUILT.search(code_only(source)))
-    eol = eol_of(text)
-    start = text.rfind("\n", 0, pin.start()) + 1
-    indent = re.match(r"[ \t]*", text[start:]).group(0)
-    comment = ""
-    if builds:
-        sandbox = " which opens a sandbox first." if SANDBOX_OPENED.search(code_only(source)) else " which opens NO sandbox."
-        comment = "%s// %d on %s: %s,%s%s" % (indent, count, datetime.date.today().isoformat(), qualified,
-                                              sandbox, eol)
     fixed = text[:pin.start(1)] + str(count) + text[pin.end(1):pin.start(3)] + str(count) + text[pin.end(3):]
-    fixed = fixed[:start] + comment + fixed[start:]
-    what = "census: window count %s -> %d in %s%s" % (pin.group(1), count, CENSUS_TEST,
-                                                      " (with a comment line naming the class)" if comment else
+    what = "census: window count %s -> %d in %s%s" % (pin.group(1), count, CENSUS_TEST, "" if builds else
                                                       " (this class builds no window; the count moved for another)")
     return (path, fixed), what
 
