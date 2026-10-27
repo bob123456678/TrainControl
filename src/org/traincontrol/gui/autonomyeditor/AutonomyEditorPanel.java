@@ -466,8 +466,9 @@ public class AutonomyEditorPanel extends JPanel
         this.onChanged = onChanged;
 
         setLayout(new BorderLayout(4, 4));
-        // No inset either side, to stay in step with the heading and buttons that run edge to edge.
-        setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        // No inset either side, to stay in step with the heading and buttons that run edge to edge; none on top, as the
+        // form's gap under the heading is the only one there.
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
 
         JPanel tools = buildTools();
 
@@ -588,7 +589,12 @@ public class AutonomyEditorPanel extends JPanel
 
         fillWidth(testButton, whyButton, oneWayButton, nameAll);
 
-        panel.add(row(testButton));
+        // Flush under the heading; the 1 px moves below it, so the gap to the next row stays.
+        JPanel first = row(testButton);
+        ((FlowLayout) first.getLayout()).setVgap(0);
+        first.setBorder(BorderFactory.createEmptyBorder(0, 0, 1, 0));
+
+        panel.add(first);
 
         panel.add(row(whyButton));
 
