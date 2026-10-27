@@ -398,7 +398,7 @@ public class testTheToolsSitUnderTheHeading
         return out;
     }
 
-    /** The top in the window and the height of the page list's showing part (its scroll pane's view), laid out. */
+    /** The top in the window and the height of the page list's showing part (its scroll pane's viewport), laid out. */
     private static int[] bounds(final LayoutEditor on) throws Exception
     {
         final int[] out = new int[2];
@@ -411,10 +411,10 @@ public class testTheToolsSitUnderTheHeading
 
             assertTrue(list.isShowing(), "precondition: the page list is not on the screen");
 
-            Component view = list.getParent();
+            Component viewport = list.getParent();
 
-            out[0] = SwingUtilities.convertPoint(view.getParent(), view.getLocation(), on.getContentPane()).y;
-            out[1] = view.getHeight();
+            out[0] = SwingUtilities.convertPoint(viewport.getParent(), viewport.getLocation(), on.getContentPane()).y;
+            out[1] = viewport.getHeight();
         });
 
         return out;

@@ -2036,6 +2036,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // (OB-386)
         this.lastResults.retainAll(results);
 
+        // The key showing counts as seen when it holds a match, so a search from it, or from a key turned to by hand,
+        // moves on to another one
+        LocomotiveKeyboardMapping here = new LocomotiveKeyboardMapping(this.locMappingNumber, this.currentButton);
+
+        if (results.contains(here)) this.lastResults.add(here);
+
         // Reset and loop around if all results already found
         if (this.lastResults.size() == results.size())
         {

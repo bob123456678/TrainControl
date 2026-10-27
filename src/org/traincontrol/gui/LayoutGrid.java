@@ -997,8 +997,8 @@ public class LayoutGrid
 
                     // Whether this label is drawn at all (OB-272).  In the autonomy editor a caption follows the
                     // caption dropdown and the user's own writing the text switch (FR-133); in the track editor one
-                    // switch decides both.  The switch is the editors' own: the main window and a popup draw every
-                    // label, though the diagram they share carries it.
+                    // switch decides both.  The switch is the editors' own: the main window, a popup and an exported
+                    // picture draw every label, though the diagram they share carries it.
                     final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
                         ? ((LayoutEditor) master).getAutonomyPanel() : null;
 

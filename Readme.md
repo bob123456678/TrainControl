@@ -408,7 +408,7 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - In the autonomy editor, `Exclude Page` and its heading now sit on the left under the `Track Diagram` and `Autonomy Setup` buttons, and are hidden while editing the track diagram.
-            - In the autonomy editor, `Test a Path` and `Why not Moving?` now sit right under the heading, with no gap.
+            - In the autonomy editor, `Test a path` and `Why not Moving?` now sit right under the heading, with no gap.
         - Interface
             - The Stats tab's `Usage Graph` is a new chart: show 7 days, 30 days, 90 days, a year, or everything, page back and forth, and hover a bar to see its hours and most-run locomotives.
         - Track Diagram
@@ -417,15 +417,15 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - Text labels no longer flash briefly in black when the editor switches to, or opens in, `Autonomy Setup` with `Text Labels` off.
-            - The main window keeps a page's text labels after the page was viewed in `Autonomy Setup` with `Text Labels` off.
         - Interface
             - Typing a bracket or another symbol in the Stats tab's filter no longer causes an error; the filter finds exactly what is typed.
             - The usage graph no longer counts a multi-unit's running time twice, once for the lead and once for its members.
-            - `Quick Find Locomotive` no longer skips a locomotive's key, or visits an old one, after the keys were remapped between two searches for the same name, and it now moves to the other key when a locomotive is on exactly two keys.
+            - `Quick Find Locomotive` no longer skips a locomotive's key, or visits an old one, after the keys were remapped between two searches for the same name, and it no longer stays on the key showing when the locomotive is on another key too.
         - Routes
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
         - Track Diagram
             - The editor's page list keeps its height when switching between `Track Diagram` and `Autonomy Setup`.
+            - The editors' `Text Labels` box now hides text only in the editors: the main window, pop-out diagrams and `Save Diagram as a Picture...` always show a page's text labels.
 * v3.0.4 [10/26/2026]
     - New Features
         - Interface

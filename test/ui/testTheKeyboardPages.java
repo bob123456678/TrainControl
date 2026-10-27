@@ -383,9 +383,11 @@ public class testTheKeyboardPages
     }
 
     /**
-     * With the locomotive on exactly two keys and the first search made from one of them, it goes to the other.
+     * With the locomotive on exactly two keys and the first search made from one of them, it goes to the other; and so
+     * does a search from one of them once both were seen, when the round starts over.
      *
-     * MUTATION: in `jumpToLocomotive`, skip the current key only while `> 1` keys are left unseen, and the search stays put.
+     * MUTATION: in `jumpToLocomotive`, skip the current key only while `> 1` keys are left unseen, and the last search
+     * stays put.
      */
     @Test
     public void testTwoKeysTheFirstSearchGoesToTheOther() throws Exception
@@ -399,6 +401,44 @@ public class testTheKeyboardPages
         search("kp one");
 
         assertVisited(2, KeyEvent.VK_B);
+
+        search("");
+
+        assertVisited(1, KeyEvent.VK_A);
+
+        search("");
+
+        assertVisited(2, KeyEvent.VK_B);
+
+        turnTo(1);
+        choose(KeyEvent.VK_A);
+
+        search("");
+
+        assertVisited(2, KeyEvent.VK_B);
+    }
+
+    /**
+     * Turned to by hand, the last key not yet seen counts as seen: the search goes on to the other one rather than
+     * staying.
+     *
+     * MUTATION: in `jumpToLocomotive`, drop the lines that count the key showing as seen, and the search stays on B.
+     */
+    @Test
+    public void testTheKeyTurnedToByHandCountsAsSeen() throws Exception
+    {
+        put(1, KeyEvent.VK_A, one);
+        put(2, KeyEvent.VK_B, one);
+
+        turnTo(5);
+        choose(KeyEvent.VK_Q);
+
+        search("kp one");
+
+        assertVisited(1, KeyEvent.VK_A);
+
+        turnTo(2);
+        choose(KeyEvent.VK_B);
 
         search("");
 
