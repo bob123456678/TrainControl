@@ -40560,6 +40560,83 @@ cited_by:
 status: Closed
 status_note: Dispositioned in RSA85.md: fixed in 65a2d421 or checked clean
 
+[finding RSA86-C1 in RSA86.md]
+line: 22
+severity: C
+title: Quick Find takes the key showing from the page in view, not the chosen key's page, so with the same letter on two pages a repeat goes back to the key 
+disposition: Fixed - `72d8e2cb`: the chosen key's page comes from currentButtonlocMappingNumber, for `here` and the skip; testTheSame
+evidence: TrainControlUI.java:2041
+commit_id: 72d8e2cb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
+[finding RSA86-C2 in RSA86.md]
+line: 79
+severity: C
+title: Readme: "pop-out diagrams" is not what the app or the rest of the Readme calls those windows
+disposition: Fixed - `72d8e2cb`: the line says pop-up windows.
+evidence: Readme.md:428
+commit_id: 72d8e2cb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
+[finding RSA86-D1 in RSA86.md]
+line: 94
+severity: D
+title: Quick Find at HEAD: every walk the brief asked for, apart from RSA86-C1
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
+[finding RSA86-D2 in RSA86.md]
+line: 137
+severity: D
+title: The two claims' MUTATION notes turn them red, and the other Quick Find claims hold
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
+[finding RSA86-D3 in RSA86.md]
+line: 158
+severity: D
+title: The Readme's v3.0.5 section otherwise
+disposition: Not a defect - checked as described.
+evidence: Readme.md:410
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
+[finding RSA86-D4 in RSA86.md]
+line: 173
+severity: D
+title: The two comments
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
+[finding RSA86-D5 in RSA86.md]
+line: 190
+severity: D
+title: The tracker commit `393b17e8` agrees with RSA85
+disposition: Not a defect - checked as described.
+evidence: findings.py:21
+commit_id: 393b17e8
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B
