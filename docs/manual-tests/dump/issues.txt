@@ -1490,3 +1490,23 @@ text:
 |
 | ui.testTheLengthPromptHasTheKeyboard.testNameEverythingRefusesATakenName fails about one run in two or three: the taken name is typed into Name Everything and no refusal appears (only the prompt is showing). The class failed in 1 of 3 runs on 00d32d3d (3.0.4) as well as on dev 898ea5ea, so 3.0.5 did not cause it. Suspect the fixture: the taken name is picked from getNamedTiles in no fixed order, and the walk's first square may not be the one the test expects. Product behavior unknown until the cause is found.
 |
+
+[issue OB-388]
+ordinal: 72
+inbox: yes
+kind: bug
+title: Test: the Auto tab's start-while-running claim is intermittent under load
+filed: 2026-10-29
+filed_at: 2026-10-29 01:34
+raised_from: the 3.0.5 release gate battery
+build: 65c008a8
+text:
+| ### OB-388 - 2026-10-29 - Test: the Auto tab's start-while-running claim is intermittent under load
+|
+| **Kind:** bug  
+| **Raised from:** the 3.0.5 release gate battery  
+| **Filed:** 2026-10-29 01:34  
+| **Build:** 65c008a8
+|
+| ui.testTheAutoTabSaysWhyATrainWaits.testWhileAutonomyRunsTheCardOffersNoExplanation failed twice with "autonomy did not start" (its 30 s wait after pressing Start): once in the 3.0.5 release gate battery and once in a solo rerun, both while other test classes were running beside it. It passed 15 of 15 runs with nothing else running. The class is new in 3.0.5, so 3.0.4 has no baseline. Suspect the test: it presses Start with doClick, which does nothing while the button is still disabled, and never waits for the button to be enabled. The log of a failing run was not kept; the next step is to reproduce under load with the log saved and see whether Start was pressed while disabled or refused.
+|
