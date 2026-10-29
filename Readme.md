@@ -404,7 +404,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.5 [beta]
+* v3.0.5 [10/29/2026]
     - New Features
         - Autonomy
             - In the autonomy editor, `Exclude Page` and its heading now sit on the left under the `Track Diagram` and `Autonomy Setup` buttons, and are hidden while editing the track diagram.
