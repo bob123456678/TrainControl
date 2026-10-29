@@ -179,3 +179,6 @@ not fix it. Name the square.
 - `ui.testTheAutonomyEditorsQuestionsChangeTheSetup`
 - `ui.testStartingAutonomyFromTheWindow`
 - `core.testTestAPathStartsWhereTheFindingsDo`
+- `ui.testTheToolsSitUnderTheHeading`
+- `ui.testTheAutoTabSaysWhyATrainWaits`
+- `ui.testTheAutonomyEditorsBulkDoors`

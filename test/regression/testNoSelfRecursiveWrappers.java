@@ -138,6 +138,10 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "editorWindows", "src/org/traincontrol/gui/EditorWindows.java", "EditorWindows", WINDOW,
             "TrainControlUI", "ui." },
+        { "autonomyLifecycle", "src/org/traincontrol/gui/AutonomyLifecycle.java", "AutonomyLifecycle", WINDOW,
+            "TrainControlUI", "ui." },
+        { "diagramLocGestures", "src/org/traincontrol/gui/DiagramLocGestures.java", "DiagramLocGestures", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**

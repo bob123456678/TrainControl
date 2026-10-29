@@ -82,7 +82,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.0.4";
+    public static final String RAW_VERSION = "3.0.5";
 
     /**
      * Whether this is a build on the way to a release rather than a release.
@@ -148,7 +148,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * One method rather than a suffix pasted on at each place that shows a version, so the log line and
      * the window title cannot drift.
      *
-     * @return "3.0.0", or "3.0.0 (build 2026-09-05 18:40)" before a release
+     * @return "3.0.0", or "3.0.0 (build yyyy-MM-dd HH:mm)" before a release
      */
     public static String versionForDisplay()
     {
@@ -1193,6 +1193,127 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         return locs.size();
+    }
+
+    /**
+     * The locomotives whose run time counts on its own: a multi-unit, or a locomotive linked to others, records a run
+     * of its own while its members record theirs, so the Stats table leaves it out of its totals and so does the chart.
+     */
+    private List<Locomotive> locomotivesRunningOnTheirOwn()
+    {
+        List<Locomotive> own = new ArrayList<>();
+
+        for (Locomotive l : this.getLocomotives())
+        {
+            if (l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT && !l.hasLinkedLocomotives()) own.add(l);
+        }
+
+        return own;
+    }
+
+    /** The history's keys for each day from `first` to `last`, formatted once for every locomotive to look up. */
+    private static List<String> dayKeys(LocalDate first, LocalDate last)
+    {
+        List<String> keys = new ArrayList<>();
+
+        for (LocalDate day = first; day != null && last != null && !day.isAfter(last); day = day.plusDays(1))
+        {
+            keys.add(day.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
+
+        return keys;
+    }
+
+    @Override
+    public long getRuntimeBetween(LocalDate first, LocalDate last)
+    {
+        List<Locomotive> own = locomotivesRunningOnTheirOwn();
+
+        long total = 0;
+
+        for (String key : dayKeys(first, last))
+        {
+            for (Locomotive l : own) total += l.getRuntimeOnDay(key);
+        }
+
+        return total;
+    }
+
+    @Override
+    public int getLocsRunBetween(LocalDate first, LocalDate last)
+    {
+        List<Locomotive> own = locomotivesRunningOnTheirOwn();
+
+        Set<Locomotive> ran = new HashSet<>();
+
+        for (String key : dayKeys(first, last))
+        {
+            for (Locomotive l : own)
+            {
+                if (l.getRuntimeOnDay(key) > 0) ran.add(l);
+            }
+        }
+
+        return ran.size();
+    }
+
+    @Override
+    public List<Map.Entry<String, Long>> getRuntimePerLocBetween(LocalDate first, LocalDate last)
+    {
+        List<Map.Entry<String, Long>> ran = new ArrayList<>();
+
+        List<String> keys = dayKeys(first, last);
+
+        for (Locomotive l : locomotivesRunningOnTheirOwn())
+        {
+            long total = 0;
+
+            for (String key : keys) total += l.getRuntimeOnDay(key);
+
+            if (total > 0) ran.add(new java.util.AbstractMap.SimpleImmutableEntry<>(l.getName(), total));
+        }
+
+        ran.sort((a, b) -> a.getValue().equals(b.getValue()) ? a.getKey().compareTo(b.getKey())
+            : Long.compare(b.getValue(), a.getValue()));
+
+        return ran;
+    }
+
+    /**
+     * No run is older than TrainControl, whose first commit was in December 2018: an earlier day, or one after today, was
+     * written by a PC whose clock was not set, and would start the chart's All range decades back.
+     */
+    private static final String FIRST_POSSIBLE_RUN_DAY = "2018-01-01";
+
+    @Override
+    public LocalDate getEarliestRunDay()
+    {
+        String earliest = null;
+        String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        for (Locomotive l : locomotivesRunningOnTheirOwn())
+        {
+            for (Map.Entry<String, Long> day : l.getHistoricalOperatingTime().entrySet())
+            {
+                String key = day.getKey();
+
+                // yyyy-MM-dd sorts as text in date order
+                if (day.getValue() > 0 && key.length() == 10 && key.compareTo(FIRST_POSSIBLE_RUN_DAY) >= 0
+                    && key.compareTo(today) <= 0 && (earliest == null || key.compareTo(earliest) < 0))
+                {
+                    earliest = day.getKey();
+                }
+            }
+        }
+
+        try
+        {
+            return earliest == null ? null : LocalDate.parse(earliest);
+        }
+        catch (java.time.format.DateTimeParseException e)
+        {
+            return null;
+        }
     }
     
     /**
@@ -2431,9 +2552,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Adam: "the route page should not have to sync with the cs2 after edits/deletions for routes >=
      * ID 1000."
      *
-     * **It says what an id could collide with, not where a route came from.**  Routes made here before
-     * 2025-02-01 have ids below 1000 - most of Adam's do - and the station never carried them.  Whether
-     * it carried a route is the route's lock, which only the sync's import sets (MT-467).
+     * **It says what an id could collide with, not where a route came from.**  Routes made here before February 2025
+     * have ids below 1000 - most of Adam's do - and the station never carried them.  Whether it carried a route is the
+     * route's lock, which only the sync's import sets (MT-467).
      *
      * @param id the route id in question
      * @return true when no sync could tell us anything about it
@@ -4609,9 +4730,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return added;
         }
 
-        // AND SAID: an imported route arrives disarmed, and saying so is what stops a restored backup
-        // from first being noticed when a train runs through a sensor that used to set a road.  The door shows
-        // the same sentence.
+        // AND SAID: an imported route arrives disarmed, and saying so is what stops a restored backup from first being
+        // noticed when a train runs through a sensor that once set a road.  The door shows the same sentence.
         this.logf(IMPORTED_ROUTES_NOTICE, added, I18n.t("ui.main.bulkEnable"),
             I18n.t("route.ui.menuEnableAutoExecution"));
 
@@ -5130,11 +5250,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     // Counted down whatever happened (OB-077).
                     //
-                    // The only countDown used to be the last statement of setViewListener, so anything that stopped it
-                    // reaching that line (a RuntimeException or an Error, or the catch above logging, sleeping and
-                    // returning) would leave the latch at one, and the wait below has no timeout: the application would
-                    // hang for ever with no window and nothing on screen to say why.  Throwable rather than IOException
-                    // for the same reason.
+                    // Anything that stops setViewListener before its last statement (a RuntimeException or an Error, or
+                    // the catch above logging, sleeping and returning) would leave the latch at one, and the wait below
+                    // has no timeout: the application would hang for ever with no window and nothing on screen to say
+                    // why.  Throwable rather than IOException for the same reason.
                     //
                     // Counting down after a FAILED build is deliberate.  It hands control back to a caller that logs
                     // and exits - see the `built` flag above and the check after await().

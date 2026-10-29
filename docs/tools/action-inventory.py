@@ -78,7 +78,8 @@ FREQUENCY AND SIZE (for ranking the gaps)
          reflection.
   rank   gaps ("none" and "by-handler" only) by freq, then "none" before "by-handler", then lines; shortcuts that
          differ only in their key (F1..F24) rank once, as a family.
-  Tier 1 the five TrainControlUI clusters docs/refactor-3.0.3.md section 2 extracts first (CLUSTERS): a row belongs
+  Tier 1 the five TrainControlUI clusters the 3.0.3 plan's section 2 extracted first (CLUSTERS; the plan is in git:
+         git show c7166fe9:docs/refactor-3.0.3.md): a row belongs
          to one when its handler calls a cluster member, directly, through a thin handler or two calls deep; a
          dialog belongs to its door's cluster.
 

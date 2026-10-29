@@ -144,9 +144,9 @@ public class testFindRoute
             "mountFindRoute is never called, so the menu item is built and never mounted");
 
         // The file holding the field is the point: the question is where in it the field stands.
-        String ui = SourceOf.fileDeclaring("private javax.swing.JMenuItem findRouteMenuItem;");
+        String ui = SourceOf.fileDeclaring("    javax.swing.JMenuItem findRouteMenuItem;");
 
-        int declared = ui.indexOf("private javax.swing.JMenuItem findRouteMenuItem;");
+        int declared = ui.indexOf("    javax.swing.JMenuItem findRouteMenuItem;");
 
         assertTrue(declared > 0, "findRouteMenuItem is no longer declared where this test can see it");
 

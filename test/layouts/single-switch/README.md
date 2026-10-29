@@ -66,3 +66,5 @@ It also produces something else the suite has never had by hand: **a split squar
 - `ui.testADiagramClickAsksFirst` - the turnout clicked on the diagram with the power off, and a signal added in the
   sandbox copy protecting MainPlatform
 - `core.testARunLeavesItsStateBehind` - a simulated run and a Return Home over the switch, read afterwards (FR-136)
+- `ui.testTheAutoTabSaysWhyATrainWaits`
+- `ui.testTheAutonomyEditorsBulkDoors`

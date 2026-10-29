@@ -197,9 +197,8 @@ public class testRecentLayouts
     }
 
     /**
-     * Each item reads its place in the list, "1. ", "2. " and so on, then what it showed before: the folder's name, or
-     * its whole path when two listed folders share a name (FR-148).  What an item opens is still the folder its
-     * tooltip names.
+     * Each item reads its place in the list ("1. ", "2. ") then what it showed before: the folder's name, or its whole
+     * path when two listed folders share a name (FR-148).  What an item opens is still the folder its tooltip names.
      *
      * MUTATION: drop the number from the item's text in `refreshRecentLayouts`, and the items read as before.
      */

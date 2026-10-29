@@ -6,7 +6,7 @@ An extraction must move only the members it planned to move, and must not change
 records, per class, the member lines `javap -p` prints (every member, private ones included) or `javap -public`
 prints (the API), sorted so that a member moving within a class is not a difference, and compares two such records.
 
-How the phases use it (docs/refactor-3.0.3.md, section 5):
+How the phases use it (docs/refactoring.md, "Proving behavior is unchanged"):
   - Phases 3-5, before an extraction step:
         python docs/tools/javap-members.py build --out <scratch>/before-classes
         python docs/tools/javap-members.py snapshot --classes <scratch>/before-classes --out before-p.txt

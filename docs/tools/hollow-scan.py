@@ -7,7 +7,8 @@ Adam (2026-10-19): "a sweep for tests that look like they are testing something 
 
 A static scan of test/ that flags CANDIDATES, one shape per rule.  It runs nothing and proves nothing: each
 candidate is read, and a real one is proved by mutating the production code it is about and watching the claim stay
-green (docs/refactor-3.0.3.md, 1b).  Run it from anywhere; the project root defaults to the folder two above this file.
+green (the 3.0.3 plan, 1b: git show c7166fe9:docs/refactor-3.0.3.md).  Run it from anywhere; the project root
+defaults to the folder two above this file.
 
     python docs/tools/hollow-scan.py                  every candidate, grouped by file
     python docs/tools/hollow-scan.py --summary        counts per shape, confidence and folder

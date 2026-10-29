@@ -479,7 +479,7 @@ public class testConditionOutline
     /**
      * OB-379: "(1 and 2 and 3) or (7 and 4 and 5 and 6)" with 7 moved up is "(1 and 2 and 3 and 7) or (4 and 5 and 6)":
      * at its group's edge a condition joins the group past the shallower word, at that group's near end and by its
-     * word, and moving it down goes back.  Adam: "The problem is that g is swapped with c".
+     * word, and moving it down goes back.
      *
      * MUTATION: drop the edge branch of `ConditionOutline.plan`, and 7 trades places with 3.
      */
@@ -522,8 +522,8 @@ public class testConditionOutline
     }
 
     /**
-     * OB-379: with no group at a condition's level across its group's edge, there is no arrow that way: outdenting is
-     * how a condition leaves a group.  "1 and (2 or 3)": 2 does not trade places with 1.
+     * OB-379: with no group at a condition's level across its group's edge, there is no arrow that way: "1 and (2 or
+     * 3)", 2 does not trade places with 1.
      *
      * MUTATION: in `plan`, fall through to the trade where `intoTheNextGroup` finds no group, and 2 trades with 1.
      */
@@ -549,10 +549,8 @@ public class testConditionOutline
     }
 
     /**
-     * OB-379, over generated outlines: from any outline that reads, every move offered leaves one that reads (no word
-     * joining nothing, side by side with another or at an end), keeps every condition, lands on the one moved, and
-     * leaves every OTHER condition among the same companions at its level.  A trade across a group's edge moves a
-     * second condition into another group, which the last check catches.
+     * OB-379, over generated outlines: from any outline that reads, every move offered leaves one that reads, keeps
+     * every condition, lands on the one moved, and leaves every OTHER condition among the same companions at its level.
      *
      * MUTATION: drop the edge branch of `ConditionOutline.plan`, and condition 4 of the first outline trades with 3.
      */
@@ -562,7 +560,7 @@ public class testConditionOutline
         java.util.Random random = new java.util.Random(379);
         List<List<ConditionOutline.Row>> outlines = new ArrayList<>();
 
-        // Adam's: "(a and b and c) or (d and e and f)" with g added at the end
+        // "(a and b and c) or (d and e and f)" with g added at the end
         outlines.add(outline(
             condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
             joining(1, ConditionOutline.Joiner.AND), condition(1, 3), joining(0, ConditionOutline.Joiner.OR),
@@ -653,7 +651,6 @@ public class testConditionOutline
         return out;
     }
 
-    /** A random condition with this many sensors, numbered on from `next`. */
     private static NodeExpression tree(java.util.Random random, int sensors, int[] next)
     {
         if (sensors == 1) return sensor(next[0]++);

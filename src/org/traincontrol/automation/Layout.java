@@ -1589,7 +1589,6 @@ public class Layout
     /**
      * Whether full autonomy is running: the railway choosing its own destinations.  Not isAutoRunning, which a
      * timetable (Return Home included) also sets; behaviour/tiers-and-choice.md 1 puts a timetable with manual.
-     * Nothing asks it today.
      *
      * @return true while autonomy is dispatching and no timetable is
      */
@@ -2550,9 +2549,8 @@ public class Layout
         // A square held back while another has a train standing on it (FR-001), for every square the route arrives at
         // (OB-295; Adam: "It means trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock
         // on the other specified station(s).").  The route half is lock edges (Edge.isLockHeld).  Two restrictions set
-        // against each other hold both trains until one is cleared (behaviour/tiers-and-choice.md 1).  In every tier;
-        // HomeStaging applies it too, against the occupancy its plan has reached (auditAgainstRuntime proves they
-        // agree).
+        // against each other hold both trains until one is cleared (behaviour/tiers-and-choice.md 1), in every tier;
+        // HomeStaging applies it against its plan's occupancy (auditAgainstRuntime proves they agree).
         {
             // The train leaving the watched point is exempt (Adam: "The condition should not apply to trains leaving -
             // only departing."), or the one move that clears the condition would be forbidden.  The window that

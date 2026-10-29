@@ -287,7 +287,7 @@ public class testBusyDialogInteraction
         final int[] result = {-1};
         final AtomicBoolean syncOnEDT = new AtomicBoolean(true);
 
-        // `model` is init()'d from the operator's own, real LocDB (test/README.md), so it is never empty, and it is
+        // `model` is init()'d from a full locomotive database, so it is never empty, and it is
         // shared across every test in this class: "the fixture's name is here" would be vacuously true whenever a
         // sibling ran first.  Removing one of the fixture's own locomotives first gives a known-absent name for the
         // sync below to bring back, in memory only (nothing here calls saveState).

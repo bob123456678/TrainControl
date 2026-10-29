@@ -220,6 +220,12 @@ public class Util
         return kept;
     }
 
+    /** The folder cropped locomotive icons live in: beside the data files, so a test run's stays its own. */
+    public static File locIconFolder()
+    {
+        return new File(dataPath(LOC_ICON_FOLDER));
+    }
+
     /**
      * Returns the file a cropped locomotive icon should be written to, creating {@link #LOC_ICON_FOLDER} if needed.
      * Unlike getBackupPath there is no fall back to the working directory: an icon among the application's own data
@@ -230,7 +236,7 @@ public class Util
      */
     public static File getLocIconFile(String fileName)
     {
-        File dir = new File(LOC_ICON_FOLDER);
+        File dir = locIconFolder();
 
         if (dir.isDirectory() || dir.mkdirs())
         {
@@ -255,7 +261,7 @@ public class Util
         {
             File file = new File(new URI(url));
 
-            File dir = new File(LOC_ICON_FOLDER).getCanonicalFile();
+            File dir = locIconFolder().getCanonicalFile();
 
             // Canonical, and the parent rather than the path: a name that walks out of the folder ("..") cannot pass.
             File parent = file.getCanonicalFile().getParentFile();

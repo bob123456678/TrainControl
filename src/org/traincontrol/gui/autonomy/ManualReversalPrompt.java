@@ -221,7 +221,7 @@ public final class ManualReversalPrompt
             {
                 if (at == null) return false;
 
-                // THE `at.isReversing()` CLAUSE THAT USED TO BE HERE PROMPTED ON
+                // NO `at.isReversing()` CLAUSE HERE: IT WOULD PROMPT ON
                 // COMPULSORY TURNS, AND DECLINING ONE DRIVES A TRAIN OFF ITS PATH.
                 //
                 // For a must-reverse square `AutonomyBuilder` emits ONLY turning copies and flags

@@ -13,7 +13,7 @@ the given source files this lists:
   4. every catch of NoSuchFieldException/NoSuchMethodException within a few lines after the name is used - the sites
      that may swallow a moved member and pass.
 
-How the phases use it (docs/refactor-3.0.3.md, sections 2 and 5):
+How the phases use it (docs/refactoring.md):
   - Phase 0: run on TrainControlUI (and the other giants) for the inventory of what the tests reach by name.
   - Phases 3-5, before an extraction: `--save before.json` on the class being split.
   - After it, on the same tree: `--compare before.json`.  It prints every member whose declaring file changed and

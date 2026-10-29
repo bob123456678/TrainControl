@@ -11,7 +11,7 @@ Two checks, between a base revision and a head (a revision, or the working tree)
      down a file by removing comment lines is no difference.  Identical bytecode is no behaviour change by
      construction.
 
-How the phases use it (docs/refactor-3.0.3.md, section 5):
+How the phases use it (docs/refactoring.md, "Proving behavior is unchanged"):
   - Phase 2 (comment trim): every commit is checked before it is kept, e.g.
         python docs/tools/comment-strip-compare.py --base HEAD~1 --head HEAD --scratch C:/scratch/csc
     then only the bookkeeping classes are run (javadoc, citation, records count, message key); a battery per phase.

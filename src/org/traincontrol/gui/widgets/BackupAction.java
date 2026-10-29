@@ -76,8 +76,8 @@ public final class BackupAction
     }
 
     /**
-     * The archive's file, `-2`, `-3` added while a backup made in the same second has the name, so none is written
-     * over.  Its callers hold `oneBackupAtATime`, so no other backup takes the name between the check and the write.
+     * The archive's file, `-2`, `-3` added while a backup made in the same second has the name.  Callers hold
+     * `oneBackupAtATime`, so no other backup takes the name between the check and the write.
      */
     private static File freeArchiveName(String prefix)
     {
@@ -121,8 +121,8 @@ public final class BackupAction
         {
             // Written LIVE first, so the archive holds the state as it is now.  WITHOUT the session capture: that would
             // commit whatever was open in the autonomy editor from a thread that is not the event thread, and the
-            // editor's Cancel could not undo it (discardEdits re-reads the file just written).  Its callers fold the
-            // stopped run first, on the event thread.
+            // editor's Cancel could not undo it (discardEdits re-reads the file just written).  Callers fold the run
+            // first.
             this.ui.saveState(false, false);
             this.ui.getModel().saveState(false);
 
@@ -219,7 +219,7 @@ public final class BackupAction
             // The cropped locomotive icons: `LocDB.data` records each locomotive's `localImageURL`, which for a crop
             // names a file in `tc_loc_icons`, so a restore without the folder pointed at files it lacked.  Only if it
             // exists.
-            File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
+            File icons = Util.locIconFolder().getAbsoluteFile();
 
             if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
 
@@ -287,7 +287,6 @@ public final class BackupAction
      * Folds where a stopped run left the trains into the setup, so a backup holds it (`TrainControlUI.foldForABackup`).
      * On the event thread.
      *
-     * @param ui the window whose setup is folded
      * @return why the fold could not be written, for the backup to name as a part it could not save; null otherwise
      */
     public static String foldTheStoppedRun(TrainControlUI ui)

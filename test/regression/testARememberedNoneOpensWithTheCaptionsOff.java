@@ -63,6 +63,9 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     private static List<String> ownUnderNamedFirst;
     private static List<String> ownUnderNone;
 
+    /** The page's own writing in a main-window grid built after the None opening, with the editors' switch still off */
+    private static int ownInTheViewerAfterSetup;
+
     /** A remembered 4, the old Labels Only (FR-133): what it drew, and how the controls came up */
     private static List<String> withOldLabelsOnly;
     private static List<String> ownUnderOldLabelsOnly;
@@ -180,6 +183,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         withNone = openWith(AutonomyEditorPanel.CAPTIONS_NONE);
         ownUnderNone = lastOwn;
         hiddenAfterNone = page.getEditHideText();
+        ownInTheViewerAfterSetup = ownInTheViewer();
 
         namedAgain = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS);
         hiddenAfterNamedAgain = page.getEditHideText();
@@ -404,6 +408,62 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         assertEquals(movableUnderNamedFirst.size(), namedFirst.size(),
             "under Station Names only " + movableUnderNamedFirst.size() + " of " + namedFirst.size()
             + " captions can be picked up - the drag is asking the text switch, which OB-272 turned off here");
+    }
+
+    /**
+     * The main window keeps the page's own writing after Autonomy Setup with Text Labels off: the setup's switch is on
+     * the diagram the main window also draws, and it is the editors' alone.  The control is the same grid with the
+     * switch on.
+     *
+     * MUTATION: drop `!inEditor ||` from the `drawn` test in `LayoutGrid`, and the main window draws none of it.
+     */
+    @Test
+    public void testTheMainWindowKeepsItsTextLabels() throws Exception
+    {
+        assertTrue(hiddenAfterNone, "precondition: the None opening left the editors' text switch on");
+
+        final boolean was = page.getEditHideText();
+        final int withTheSwitchOn;
+
+        try
+        {
+            page.setEditHideText(false);
+
+            withTheSwitchOn = ownInTheViewer();
+        }
+        finally
+        {
+            page.setEditHideText(was);
+        }
+
+        assertTrue(withTheSwitchOn > 0, "precondition: the main window draws no writing of the page's own on " + PAGE);
+
+        assertEquals(ownInTheViewerAfterSetup, withTheSwitchOn,
+            "after Autonomy Setup with Text Labels off, the main window drew " + ownInTheViewerAfterSetup + " of the "
+            + withTheSwitchOn + " text labels on " + PAGE);
+    }
+
+    /** Builds the page as the main window does (owned by a plain panel, not an editor) and counts its own writing. */
+    private static int ownInTheViewer() throws Exception
+    {
+        final javax.swing.JPanel host = new javax.swing.JPanel();
+        final org.traincontrol.gui.LayoutGrid[] built = new org.traincontrol.gui.LayoutGrid[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            built[0] = new org.traincontrol.gui.LayoutGrid(page, 30, host, new javax.swing.JPanel(), false, ui));
+
+        settle();
+
+        final List<String> own = new ArrayList<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            collect(host, new ArrayList<>(), own, new ArrayList<>());
+
+            built[0].discard();
+        });
+
+        return own.size();
     }
 
     private static void pressControlLFiveTimes() throws Exception

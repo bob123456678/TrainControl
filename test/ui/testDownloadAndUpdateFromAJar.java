@@ -506,12 +506,10 @@ public class testDownloadAndUpdateFromAJar
     }
 
     /**
-     * The update's backup holds where a stopped run left the trains: the run is folded into the setup before the
-     * archive is written.  The exit is held by a dialog of the user's while a run is started, so it stops there.
+     * The update's backup holds where a stopped run left the trains.  The exit is held by a dialog of the user's while
+     * a run is started, so it stops there.
      *
      * MUTATION: take the fold out of `installTheDownload`, and the archive holds the setup as the run found it.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheBackupHoldsWhereAStoppedRunLeftTheTrains() throws Exception
@@ -580,11 +578,9 @@ public class testDownloadAndUpdateFromAJar
 
     /**
      * A stopped run whose fold into the setup cannot be written stops the update as an incomplete backup does, and the
-     * reason names the file: the archive would otherwise hold the setup as the run found it.
+     * reason names the file.
      *
      * MUTATION: in `installTheDownload`, ignore what `foldTheStoppedRun` answers, and the update goes on to its exit.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAFoldThatCannotBeWrittenStopsTheUpdate() throws Exception
@@ -639,13 +635,11 @@ public class testDownloadAndUpdateFromAJar
     /**
      * Download & Update's fold, reaching the event thread between an autonomy editor's Save and the rebuild that Save
      * posts, does not fold the railway from before the edit over the saved setup: a train the editor took off stays
-     * off.  The edit and Save are one event, made once the update has posted its fold, so the edit's own rebuild has not
-     * run either.  The exit is held by a dialog of the user's while a run is started, so it stops there.
+     * off.  The edit and Save are one event, made once the update has posted its fold.  The exit is held by a dialog of
+     * the user's while a run is started, so it stops there.
      *
-     * MUTATION: in `foldTheStoppedRun`, skip only while an editor window is open, and the archive and the setup have the
-     * train back.
-     *
-     * @throws Exception from the window
+     * MUTATION: in `foldTheStoppedRun`, skip only while an editor window is open, and the archive and the setup have
+     * the train back.
      */
     @Test
     public void testTheUpdatesFoldDoesNotUndoAnEditorsSave() throws Exception

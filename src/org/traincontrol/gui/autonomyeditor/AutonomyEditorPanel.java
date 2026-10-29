@@ -466,8 +466,9 @@ public class AutonomyEditorPanel extends JPanel
         this.onChanged = onChanged;
 
         setLayout(new BorderLayout(4, 4));
-        // No inset either side, to stay in step with the heading and buttons that run edge to edge.
-        setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        // No inset either side, to stay in step with the heading and buttons that run edge to edge; none on top, as the
+        // form's gap under the heading is the only one there.
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
 
         JPanel tools = buildTools();
 
@@ -588,7 +589,12 @@ public class AutonomyEditorPanel extends JPanel
 
         fillWidth(testButton, whyButton, oneWayButton, nameAll);
 
-        panel.add(row(testButton));
+        // Flush under the heading, with 1 px below it for the gap to the next row.
+        JPanel first = row(testButton);
+        ((FlowLayout) first.getLayout()).setVgap(0);
+        first.setBorder(BorderFactory.createEmptyBorder(0, 0, 1, 0));
+
+        panel.add(first);
 
         panel.add(row(whyButton));
 
@@ -598,16 +604,7 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(row(pathTypeManual));
 
         // One-Way Run and Name Everything are in Bulk Tools (OB-217); the disarm path still un-presses One-Way Run
-        // (MT-098).
-
-        // And a heading for what follows (OB-217).
-        JLabel pageSettings = new JLabel(I18n.t("autosetup.ui.labelPageSettings"));
-
-        pageSettings.setFont(AutonomyViewerPanel.FONT_GROUP);
-        pageSettings.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
-
-        panel.add(row(pageSettings));
-        panel.add(row(excludePage));
+        // (MT-098).  Exclude Page is the window's to mount, under its mode buttons (`getExcludePage`).
 
         // The toggles only redraw; they live in the window's Toggle visibility box.  Restored first, before anything
         // listens, as setting a combo box fires a redraw of a half-built panel.
@@ -3963,6 +3960,16 @@ public class AutonomyEditorPanel extends JPanel
         showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES);
     }
 
+    /**
+     * Whether the Text Labels box opens ticked (FR-133), a stored Labels Only included: the window gives an arriving
+     * diagram this before its first drawing, so the page's own writing does not show for a moment first.
+     */
+    public static boolean rememberedTextLabels()
+    {
+        return VIEW_PREFS.getBoolean(PREF_TEXT_LABELS, false)
+            || VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS) == LEGACY_LABELS_ONLY;
+    }
+
     /** Makes the diagram's text switch agree with the remembered Text Labels box (FR-133), at open and on a click. */
     private void applyTextLabels()
     {
@@ -6564,6 +6571,12 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowTextLabels()
     {
         return control(showText);
+    }
+
+    /** @return the Exclude Page box, for the window to mount under its Page Settings heading, below the mode buttons */
+    public JCheckBox getExcludePage()
+    {
+        return excludePage;
     }
 
     /** @return whether this editor's diagram draws its trains (FR-119) */

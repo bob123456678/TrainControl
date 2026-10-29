@@ -291,17 +291,15 @@ public final class ConditionOutline
      *
      * Not by moving the LINE: the joining words are lines of their own, so lifting a condition one line puts it next to
      * the word above rather than past it, and a word with nothing on one side is thrown away when the outline is
-     * straightened ("A and B" with B moved up came back as "A B", a change to when the route fires).  So within a level
-     * the two conditions trade places and every word and level stays where it was: "A and (B or C)" with C moved up is
-     * "A and (C or B)".
+     * straightened.  So within a level the two conditions trade places and every word and level stays where it was:
+     * "A and (B or C)" with C moved up is "A and (C or B)".
      *
      * A condition whose neighbor at its own level is a whole group moves past the group instead (FR-144): "(A or B or
      * C) and D" with D moved up is "D and (A or B or C)", every line keeping its level.
      *
      * A condition at the edge of its group, where the word beside it is shallower, crosses into the neighboring group
-     * at its own level (OB-379): "(A and B) or (C and D)" with C moved up is "(A and B and C) or (D)", joined by that
-     * group's word, and the group it left loses it and one word.  With no group at its level across the edge it does
-     * not move: outdenting is how a condition leaves a group.
+     * at its own level (OB-379): "(A and B) or (C and D)" with C moved up is "(A and B and C) or (D)".  With no group
+     * at its level across the edge it does not move: outdenting is how a condition leaves a group.
      *
      * @param by -1 for up, 1 for down
      * @return a new list in the new order, or a copy unchanged where there is nowhere to go
@@ -315,19 +313,13 @@ public final class ConditionOutline
         return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
     }
 
-    /**
-     * Whether a move that way changes anything.  The editor draws the arrow only then: an arrow that does nothing reads
-     * as the feature being broken.
-     */
+    /** Whether a move that way changes anything; the editor draws the arrow only then. */
     public static boolean canMove(List<Row> rows, int line, int by)
     {
         return plan(rows, line, by) != null;
     }
 
-    /**
-     * Where the condition a move takes ends up, so the editor can keep it selected: its line after moved(), or the line
-     * itself.
-     */
+    /** Where the condition a move takes ends up, so the editor can keep it selected. */
     public static int landing(List<Row> rows, int line, int by)
     {
         Move move = plan(rows, line, by);
@@ -409,9 +401,8 @@ public final class ConditionOutline
     }
 
     /**
-     * A condition at its group's edge joins the group past the shallower word beside it, at that group's near end.  The
-     * word it leaves with is its own level's; a condition alone at its level leaves with the deeper of the two words
-     * round it, as that is the one left joining nothing.
+     * A condition at its group's edge joins the group past the shallower word beside it, at that group's near end,
+     * leaving with its own level's word; a condition alone at its level leaves with the deeper of the two words.
      */
     private static Move intoTheNextGroup(List<Row> rows, int line, int by)
     {
@@ -486,10 +477,8 @@ public final class ConditionOutline
     }
 
     /**
-     * The outline with a new condition above or below a line, at that line's level and joined by its level's word (AND
-     * where the level has none yet), as the editor's Insert Condition makes one (FR-147).  On a word line it goes at
-     * the word's own level, joined by that word (FR-150); above and below then agree, the new condition sitting between
-     * two copies of the word.
+     * The outline with a new condition above or below a line, at that line's level and joined by its level's word
+     * (FR-147).  On a word line it goes at the word's own level, joined by that word (FR-150), above and below alike.
      *
      * @param by -1 for above, 1 for below
      * @return a new list, or a copy unchanged where the line is not in the outline
@@ -527,12 +516,8 @@ public final class ConditionOutline
     }
 
     /**
-     * The first word at a line's own level in the group it is in, which `whatIsWrong` takes as the one meant; AND
-     * where the level has none yet.  A new condition at that level is joined by it.
-     *
-     * @param rows the outline
-     * @param line a line in it
-     * @return the level's word
+     * The first word at a line's own level in its group, which `whatIsWrong` takes as the one meant; AND where the
+     * level has none yet.
      */
     public static Joiner wordOfTheLevel(List<Row> rows, int line)
     {
@@ -550,13 +535,10 @@ public final class ConditionOutline
     }
 
     /**
-     * The lines of `after` an edit changed from `before`, for the editor to show them (FR-153): those outside the
-     * longest run of lines the two share, a word counting for more than a condition so that two conditions that traded
-     * places are shown rather than a word between them.  Where nothing in `after` is new, as after a delete, the first
-     * line that is not the one `before` had there, or the last line where the end was removed.
+     * The lines of `after` an edit changed from `before` (FR-153): those outside the longest run the two share, a word
+     * counting for more than a condition so that two traded conditions show rather than a word between them.  With
+     * nothing new, as after a delete, the first line that differs, or the last where the end went.
      *
-     * @param before the outline before the edit
-     * @param after the outline after it
      * @return line indices into `after`; empty where the two are the same
      */
     public static Set<Integer> changed(List<Row> before, List<Row> after)

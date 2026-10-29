@@ -898,8 +898,7 @@ public class testNoSetupEditWhileARouteRuns
             doors.put("Autonomy: Delete Everything", new Object[] {refusal, (Runnable) () -> invoke(deleteEverything,
                 autonomyMenu, session)});
             doors.put("Autonomy: a page's tick", new Object[] {refusal, (Runnable) tick::doClick});
-            // The Layouts menu's items, clicked in the menu as it was opened at rest: opened during the run it grays
-            // them, so a click reaches their doors only when the run began with the menu open.
+            // The Layouts menu's items, clicked in the menu as opened at rest: during a run it grays them.
             final javax.swing.JMenu layouts = layoutsMenu(ui);
 
             // Duplicate, Combine and Delete sit in the Manage Pages submenu FR-146 hid, so these clicks reach no door
@@ -2621,7 +2620,6 @@ public class testNoSetupEditWhileARouteRuns
         "layout.ui.menuCombineLinkedPages", "ui.main.toolbar.deleteCurrentPage"
     };
 
-    /** The window's Layouts menu, from its menu bar. */
     private static javax.swing.JMenu layoutsMenu(final TrainControlUI ui)
     {
         javax.swing.JMenu found = support.Components.onTheEventThread(() ->

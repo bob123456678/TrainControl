@@ -1084,8 +1084,8 @@ public class testTheLayoutEditorManagesPages
 
     /**
      * Sort Pages... in the Manage Pages menu says once, over the editor, that pages are listed in the order of their
-     * names and that renaming changes it (FR-149), and changes nothing: the pages, the folder, the window and its
-     * unsaved work, and the page the main window shows are as they were.
+     * names and that renaming changes it (FR-149), and changes nothing: pages, folder, window, unsaved work, shown
+     * page.
      *
      * MUTATION: leave Sort Pages... out of `mountPageMenu`, and the menu has no such item.
      */
@@ -1096,8 +1096,7 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
-     * Sort Pages... is not refused while a route runs, as it changes nothing: it says the same sentence and no
-     * refusal.
+     * Sort Pages... is not refused while a route runs, as it changes nothing.
      *
      * MUTATION: build Sort Pages... with `pageMenuItem`, and the run refuses it.
      */
@@ -1105,6 +1104,48 @@ public class testTheLayoutEditorManagesPages
     public void testSortPagesIsNotRefusedWhileARouteRuns() throws Exception
     {
         sortPagesSaysToRenameAndChangesNothing(true);
+    }
+
+    /**
+     * FR-154: the Manage Pages menu lists Sort Pages... before Combine Linked Pages..., with a separator directly above
+     * Combine; the rest of the menu is as it was.
+     *
+     * MUTATION: in `mountPageMenu`, add Combine before Sort again, and the order is wrong.
+     */
+    @Test
+    public void testCombineComesAfterSortBelowASeparator() throws Exception
+    {
+        Watched editor = editPage("1 - Main", false);
+
+        javax.swing.JMenu menu = Components.find(editor.window, javax.swing.JMenu.class,
+            m -> I18n.t("ui.main.toolbar.modifyLayout").equals(m.getText()));
+
+        assertNotNull(menu, "the layout editor has no Manage Pages menu");
+
+        String[] keys = {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
+            "ui.main.toolbar.duplicateCurrentPage", "ui.main.toolbar.sortPages", "layout.ui.menuCombineLinkedPages",
+            "ui.main.toolbar.deleteCurrentPage"};
+
+        List<String> items = Components.onTheEventThread(() ->
+        {
+            List<String> out = new ArrayList<>();
+
+            for (java.awt.Component part : menu.getMenuComponents())
+            {
+                String named = part instanceof javax.swing.JSeparator ? "|"
+                    : part instanceof javax.swing.JMenuItem ? ((javax.swing.JMenuItem) part).getText() : part.toString();
+
+                for (String key : keys) if (I18n.t(key).equals(named)) named = key;
+
+                out.add(named);
+            }
+
+            return out;
+        });
+
+        assertEquals(String.join(" ", items), "ui.main.toolbar.addBlackPage ui.main.toolbar.renameCurrentPage"
+            + " ui.main.toolbar.duplicateCurrentPage ui.main.toolbar.sortPages | layout.ui.menuCombineLinkedPages"
+            + " | ui.main.toolbar.deleteCurrentPage", "the Manage Pages menu's items, | for a separator");
     }
 
     private void sortPagesSaysToRenameAndChangesNothing(boolean routeRuns) throws Exception

@@ -113,7 +113,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             start.setAccessible(true);
 
-            answeringYes(() ->
+            final List<String> answered = answeringYes(() ->
             {
                 try
                 {
@@ -166,9 +166,14 @@ public class testTheAutoTabWaitsForTheTrains
 
             until = System.currentTimeMillis() + 5000;
 
-            while (!said.contains(nothing) && System.currentTimeMillis() < until) Thread.sleep(100);
+            // Start's own answerer may close the message before the watcher above begins, so both lists count
+            while (!said.contains(nothing) && !answered.contains(nothing) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(100);
+            }
 
-            assertTrue(said.contains(nothing), "a Start that started nothing said nothing - only the log said why: " + said);
+            assertTrue(said.contains(nothing) || answered.contains(nothing), "a Start that started nothing said nothing"
+                + " - only the log said why: " + said + " " + answered);
         }
         finally
         {

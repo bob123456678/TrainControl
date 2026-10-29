@@ -312,8 +312,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Layout is standing by.  Show the list.
             else
             {                
-                // Already searched, if somebody did it off the EDT; searching here is the fallback for callers with no
-                // worker.
+                // Already searched, if somebody did it off the EDT; this is the fallback for callers with no worker.
                 //
                 // haveFound means "the caller has an answer, do not search".  It is NOT the same as
                 // "the caller called findPaths": findPaths returns null when it did not search - the

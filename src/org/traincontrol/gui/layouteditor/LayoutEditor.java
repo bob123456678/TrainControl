@@ -1346,6 +1346,9 @@ public class LayoutEditor extends PositionAwareJFrame
         }
         else if (autonomyPanel == null)
         {
+            // Before render()'s queued drawing
+            takeTheSetupsTextLabels(this.layout);
+
             // The panel needs the running layout for Why Not Moving?, a question the setup cannot answer.
             autonomyPanel = new AutonomyEditorPanel(session, layout.getName(), new Runnable()
             {
@@ -1643,6 +1646,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.newComponents.revalidate();
         this.newComponents.repaint();
+
+        showPageSettings();
 
         refreshAutonomyAnnotations();
 
@@ -3153,6 +3158,17 @@ public class LayoutEditor extends PositionAwareJFrame
         toggleText();
     }
 
+    /**
+     * Gives a diagram Autonomy Setup's remembered Text Labels before it is drawn in that mode, or its own writing shows
+     * in black until the panel turns it off; the track diagram's box follows, as `toggleText` keeps it.
+     */
+    private void takeTheSetupsTextLabels(LayoutDiagram diagram)
+    {
+        diagram.setEditHideText(!AutonomyEditorPanel.rememberedTextLabels());
+
+        this.showTextCheckbox.setSelected(!diagram.getEditHideText());
+    }
+
     /** Hides the diagram's writing, idempotently (FR-061, FR-133); the captions stay (OB-272). */
     public void hideTextLabels()
     {
@@ -3696,7 +3712,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * `settleUnsavedWork` with the question's key: a page action keeps the window, so it does not ask about a switch.
-     * @param question the message key of the question
      */
     private boolean settleUnsavedWork(String question)
     {
@@ -3941,6 +3956,9 @@ public class LayoutEditor extends PositionAwareJFrame
             // The parts of render() about which diagram this is, not about being a window.
             layout.setEdit();
 
+            // Drawn next, before the mode is entered
+            if (session != null) takeTheSetupsTextLabels(arriving);
+
             mountSidebar();
 
             drawGrid();
@@ -4130,13 +4148,6 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.add(pageMenuItem("ui.main.toolbar.renameCurrentPage", () -> parent.renamePageFromTheEditor(this)));
         menu.add(pageMenuItem("ui.main.toolbar.duplicateCurrentPage", () -> parent.duplicatePageFromTheEditor(this)));
 
-        javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
-            () -> parent.combinePagesFromTheEditor(this));
-
-        combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
-
-        menu.add(combine);
-
         // Changes nothing, so a run does not refuse it: not a `pageMenuItem`
         javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
 
@@ -4144,6 +4155,14 @@ public class LayoutEditor extends PositionAwareJFrame
         sort.addActionListener(e -> JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoSortPages")));
 
         menu.add(sort);
+        menu.addSeparator();
+
+        javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
+            () -> parent.combinePagesFromTheEditor(this));
+
+        combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
+
+        menu.add(combine);
         menu.addSeparator();
         menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
 
@@ -4218,12 +4237,20 @@ public class LayoutEditor extends PositionAwareJFrame
         if (offersPages)
         {
             sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
-            sidebar.add(scrollable(buildPageControl(pages), pages.size()));
+            sidebar.add(scrollable(buildPageControl(pages)));
             sidebar.add(javax.swing.Box.createVerticalStrut(12));
         }
 
         sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
         sidebar.add(buildModeControl());
+
+        pageSettings = new javax.swing.JPanel();
+        pageSettings.setLayout(new javax.swing.BoxLayout(pageSettings, javax.swing.BoxLayout.Y_AXIS));
+        pageSettings.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        sidebar.add(pageSettings);
+
+        showPageSettings();
 
         sidebar.add(javax.swing.Box.createVerticalGlue());
 
@@ -4268,7 +4295,15 @@ public class LayoutEditor extends PositionAwareJFrame
     private javax.swing.JComponent buildPageControl(java.util.List<String> pages)
     {
         // A list (OB-004): rows read as pages, buttons as things to press.
-        pageList = new javax.swing.JList<>(pages.toArray(new String[0]));
+        // As wide as the strip, so a long name ends in "..." rather than at its edge.
+        pageList = new javax.swing.JList<String>(pages.toArray(new String[0]))
+        {
+            @Override
+            public boolean getScrollableTracksViewportWidth()
+            {
+                return true;
+            }
+        };
 
         pageList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         pageList.setSelectedValue(layout.getName(), true);
@@ -4310,9 +4345,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 leaveFor(page, isAutonomyMode());
             }
         });
-
-        pageList.setMaximumSize(
-            new java.awt.Dimension(SIDEBAR_WIDTH - 14, Short.MAX_VALUE));
 
         return pageList;
     }
@@ -4382,11 +4414,13 @@ public class LayoutEditor extends PositionAwareJFrame
         return tab;
     }
 
-    /** The page list, scrolling when the strip cannot show them all; borderless, with no horizontal bar. */
-    private javax.swing.JComponent scrollable(javax.swing.JComponent column, int pages)
+    /**
+     * The page list, borderless with no horizontal bar: as tall as its rows up to `SIDEBAR_TABS_BEFORE_SCROLLING`, and
+     * shorter, scrolling, when the window is too short for it and the controls under it.  No taller in either mode
+     * (OB-383): the strip's spare room goes below it.
+     */
+    private javax.swing.JComponent scrollable(javax.swing.JComponent column)
     {
-        if (pages <= SIDEBAR_TABS_BEFORE_SCROLLING) return column;
-
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(column,
             javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -4398,10 +4432,11 @@ public class LayoutEditor extends PositionAwareJFrame
         scroll.getVerticalScrollBar().setUnitIncrement(24);
 
         // 24, as pageList.setFixedCellHeight, so whole rows show.
-        int height = SIDEBAR_TABS_BEFORE_SCROLLING * 24;
+        int height = Math.min(column.getPreferredSize().height, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
 
         scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
         scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
+        scroll.setMinimumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, Math.min(height, 3 * 24)));
 
         return scroll;
     }
@@ -4458,10 +4493,41 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
+    /**
+     * Page Settings and the autonomy panel's Exclude Page box, under the mode buttons; shown in Autonomy Setup only, so
+     * Layout mode has neither.
+     */
+    private void showPageSettings()
+    {
+        if (pageSettings == null) return;
+
+        pageSettings.removeAll();
+
+        if (autonomyPanel != null)
+        {
+            pageSettings.add(javax.swing.Box.createVerticalStrut(12));
+            pageSettings.add(heading(I18n.t("autosetup.ui.labelPageSettings")));
+
+            javax.swing.JCheckBox exclude = autonomyPanel.getExcludePage();
+
+            exclude.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+            pageSettings.add(exclude);
+        }
+
+        pageSettings.setVisible(autonomyPanel != null);
+
+        pageSettings.revalidate();
+        pageSettings.repaint();
+    }
+
     /** The panel the form built, which the sidebar wraps. */
     private java.awt.Container formPane;
 
     private javax.swing.JPanel sidebar;
+
+    /** Under the mode buttons: Autonomy Setup's Page Settings (`showPageSettings`). */
+    private javax.swing.JPanel pageSettings;
 
     private javax.swing.JList<String> pageList;
 

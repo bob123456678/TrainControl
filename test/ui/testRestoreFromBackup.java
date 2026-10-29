@@ -397,14 +397,10 @@ public class testRestoreFromBackup
     }
 
     /**
-     * The backup taken before a restore holds where a stopped run left the trains: the run is folded into the setup
-     * before that backup is written, so undoing the restore does not put a train back on the square it set off from
-     * while the one it stands on reads free.
+     * The backup taken before a restore holds where a stopped run left the trains, so undoing the restore does not put
+     * a train back on the square it set off from.
      *
-     * MUTATION: take `captureRunningLayout()` out of `restoreFromBackup`, and the backup holds the setup as the run
-     * found it.
-     *
-     * @throws Exception from the window
+     * MUTATION: take `captureRunningLayout()` out of `restoreFromBackup`, and the backup holds the pre-run setup.
      */
     @Test
     public void testTheBackupBeforeARestoreHoldsWhereTheRunLeftTheTrains() throws Exception
@@ -424,8 +420,8 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Leaves a new train where a stopped run would: the active configuration loaded, and the train standing on a free
-     * station of the railway at rest that the setup does not name it on.  Answers {the configuration, the square}.
+     * Leaves a new train where a stopped run would, on a free station the setup does not name it on; answers {the
+     * configuration, the square}.
      */
     static String[] leaveATrainWhereARunWould(MarklinControlStation model, TrainControlUI ui, String train)
         throws Exception
@@ -501,13 +497,9 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Checking an archive's locomotive database logs nothing of a database being loaded, for a readable one or a
-     * broken one: the archive is only inspected, and the live database is not read again.
+     * Checking an archive's locomotive database logs no load, readable or broken: the archive is only inspected.
      *
-     * MUTATION: in `Archive.readsAsALocomotiveDatabase`, read the staged file with `station.restoreState`, and the log
-     * says a database was loaded.
-     *
-     * @throws Exception from the window
+     * MUTATION: in `Archive.readsAsALocomotiveDatabase`, call `station.restoreState`, and a load is logged.
      */
     @Test
     public void testCheckingAnArchiveLogsNoDatabaseLoad() throws Exception
@@ -567,11 +559,9 @@ public class testRestoreFromBackup
 
     /**
      * Restoring the backup taken before a restore that moved TrainControl to another layout's folder takes it back to
-     * the folder it left, which still holds that layout, not to a copy of it beside the data files.
+     * the folder it left, not to a copy of it beside the data files.
      *
      * MUTATION: in `layoutDestination`, ignore the folder the archive names, and the undo ends on a new folder.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testUndoingARestoreReturnsToTheLayoutFolderItLeft() throws Exception
@@ -607,7 +597,6 @@ public class testRestoreFromBackup
 
             File undo = newBeforeRestore();
 
-            // TrainControl started again, on the folder the restore left it on
             SwingUtilities.invokeAndWait(ui::dispose);
 
             model.stop();
@@ -644,12 +633,10 @@ public class testRestoreFromBackup
     }
 
     /**
-     * The same undo returns to a layout folder whose `config` is a link (a shared folder linked in), not to a copy of
-     * it beside the data files: the link is followed when the folder is checked for the archived layout.
+     * The same undo returns to a layout folder whose `config` is a link, the link followed when the folder is checked
+     * for the archived layout.
      *
      * MUTATION: in `Archive.isHeldBy`, walk `config` without following it, and the undo ends on a new folder.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testUndoingARestoreReturnsToALayoutWhoseConfigIsALink() throws Exception
@@ -717,7 +704,6 @@ public class testRestoreFromBackup
             Util.deleteTree(folder.toFile(), 0);
             Util.deleteTree(other, 0);
 
-            // Where the undo would have put a copy; never the sandbox itself
             for (String name : new String[] {layout, layout + "-restored"})
             {
                 File copy = new File(Util.dataPath(name)).getAbsoluteFile();
@@ -730,12 +716,9 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Emptying the layout's folder for a restore deletes a folder link in it, not what the link points at: the files
-     * of a shared folder linked into the layout are still there afterwards.
+     * Emptying the layout's folder for a restore deletes a folder link in it, not what the link points at.
      *
      * MUTATION: in `Util.deleteTree`, descend into a link as into a folder, and the shared folder's file is deleted.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testEmptyingTheLayoutDeletesALinkNotWhatItPointsAt() throws Exception
@@ -772,13 +755,10 @@ public class testRestoreFromBackup
     }
 
     /**
-     * A layout whose `config` is itself a link (a shared folder linked in) is restored through the link: `config` is
-     * still the link afterwards, and the folder it points at holds the backup's files, a file added since gone.
+     * A layout whose `config` is a link is restored through the link: `config` is still the link afterwards, and the
+     * folder it points at holds the backup's files.
      *
-     * MUTATION: in `Archive.writeLayout`, `deleteTree` the linked `config` as any other, and the restore replaces the
-     * link with a folder of its own.
-     *
-     * @throws Exception from the window
+     * MUTATION: in `Archive.writeLayout`, `deleteTree` the linked `config` as any other, and the link becomes a folder.
      */
     @Test
     public void testALinkedConfigFolderIsRestoredThroughTheLink() throws Exception
@@ -823,8 +803,8 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Copies the sandbox's `config` into a new folder and makes `config` a link to it.  Skips, with `config` untouched,
-     * where no folder link can be made.  Answers the linked folder, for `unlinkTheConfig`.
+     * Makes the sandbox's `config` a link to a copy of itself; skips, `config` untouched, where no folder link can be
+     * made.  Answers the linked folder, for `unlinkTheConfig`.
      */
     private static Path linkTheConfig() throws Exception
     {
@@ -864,8 +844,8 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Gives the sandbox a real `config` again, copied from `shared`, unless it already is a folder holding
-     * `gleisbild.cs2`; only then deletes `shared`, which may be the only copy.  The class's later claims all open it.
+     * Gives the sandbox a real `config` again, unless it already is a folder holding `gleisbild.cs2`; only then deletes
+     * `shared`, which may be the only copy.
      */
     private static void unlinkTheConfig(Path shared) throws Exception
     {
@@ -885,7 +865,6 @@ public class testRestoreFromBackup
         }
     }
 
-    /** Copies a folder's files and folders into another, made where missing. */
     private static void copyTree(Path from, Path to) throws Exception
     {
         try (java.util.stream.Stream<Path> walk = Files.walk(from))
