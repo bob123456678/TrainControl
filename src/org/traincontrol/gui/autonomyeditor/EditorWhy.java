@@ -1,6 +1,7 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import org.traincontrol.automationui.AutonomyChecks;
+import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.SettledQuestion;
 import org.traincontrol.util.I18n;
@@ -57,9 +58,10 @@ final class EditorWhy extends SettledQuestion
 
         if (standing == null)
         {
-            // Nothing drawn and nothing cleared (a null trace map): the three answers that are not about a train leave
-            // the diagram alone.
-            return new AutonomyEditorPanel.WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false, null);
+            // Empty, so the previous train's lines and marks go: they answered a question about another square.
+            return new AutonomyEditorPanel.WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false,
+                new java.util.HashMap<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>(),
+                java.util.Collections.<TileKey, ToolMark>emptyMap());
         }
 
         // The lines this answer draws, installed by the paint.  Empty rather than null from here on: an answer about a
@@ -67,13 +69,19 @@ final class EditorWhy extends SettledQuestion
         java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
             drawn = new java.util.LinkedHashMap<>();
 
+        // The train's square and the stations, marked by the answer (FR-159)
+        java.util.Map<TileKey, ToolMark> marks = new java.util.HashMap<>();
+
+        marks.put(tile, ToolMark.PICKED);
+
         // For the tier asked: by hand, only what stops a route of any kind.
         String cannotStart = layout.explainCannotStart(standing, byHand);
 
         if (cannotStart != null)
         {
             return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyCannotStart",
-                AutonomyEditorPanel.escape(standing.getName()), AutonomyEditorPanel.escape(cannotStart)) + unsavedWarning(), true, drawn);
+                AutonomyEditorPanel.escape(standing.getName()), AutonomyEditorPanel.escape(cannotStart)) + unsavedWarning(), true, drawn,
+                marks);
         }
 
         // The reasons and which autonomy would never choose, taken under one lock so a station cannot be printed under
@@ -106,6 +114,7 @@ final class EditorWhy extends SettledQuestion
         };
 
         java.util.Set<String> available = new java.util.TreeSet<>(byPageThenName);
+        java.util.Set<TileKey> traced = new java.util.HashSet<>();
         java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
         java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
@@ -134,15 +143,26 @@ final class EditorWhy extends SettledQuestion
 
             if (elsewhere) station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
 
+            // By square, not by the name shown, which two unnamed squares on one sensor share
+            if (where != null)
+            {
+                settle(marks, where, entry.getValue() == null
+                    ? ToolMark.CAN_GO
+                    : grouped.getBarred().contains(entry.getKey())
+                        ? ToolMark.NEVER
+                        : ToolMark.NOT_NOW);
+            }
+
             sortKey.put(station, new String[] {
                 where == null || where.getPage() == null ? "2" : elsewhere ? "1" + where.getPage() : "0", nameOnly });
 
             if (entry.getValue() == null)
             {
-                if (!available.add(station)) continue;
+                available.add(station);
 
-                // Drawn, so "where can it go" is read off the track rather than out of a list
-                if (where != null && setup.reducer != null)
+                // Drawn, so "where can it go" is read off the track rather than out of a list; once a square, as a
+                // square's copies are several points, and each of two squares that read alike.
+                if (where != null && traced.add(where) && setup.reducer != null)
                 {
                     // And the closed squares, so this tool and the findings panel walk one railway.
                     editor.trace(drawn, setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred,
@@ -195,7 +215,30 @@ final class EditorWhy extends SettledQuestion
         }
 
         return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyReport", AutonomyEditorPanel.escape(standing.getName()),
-            going, detail + unsavedWarning()), true, drawn);
+            going, colours(marks.values()) + detail + unsavedWarning()), true, drawn, marks);
+    }
+
+    /**
+     * Marks a square with the best of its copies' answers, as the answer files a station: can go, else not now, else
+     * never, in `ToolMark`'s order, where the train's own square's PICKED comes first and so keeps its blue.
+     */
+    private static void settle(java.util.Map<TileKey, ToolMark> marks, TileKey square, ToolMark mark)
+    {
+        ToolMark had = marks.get(square);
+
+        if (had == null || mark.ordinal() < had.ordinal()) marks.put(square, mark);
+    }
+
+    /** What the stations' colors mean, naming only the colors drawn, on the line under where it can go. */
+    private static String colours(java.util.Collection<ToolMark> drawn)
+    {
+        java.util.List<String> said = new java.util.ArrayList<>();
+
+        if (drawn.contains(ToolMark.CAN_GO)) said.add(I18n.t("autosetup.ui.whyColourGreen"));
+        if (drawn.contains(ToolMark.NOT_NOW)) said.add(I18n.t("autosetup.ui.whyColourGray"));
+        if (drawn.contains(ToolMark.NEVER)) said.add(I18n.t("autosetup.ui.whyColourPurple"));
+
+        return said.isEmpty() ? "" : "<br>" + AutonomyEditorPanel.escape(String.join("  ", said));
     }
 
     /**

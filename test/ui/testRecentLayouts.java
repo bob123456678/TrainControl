@@ -197,8 +197,8 @@ public class testRecentLayouts
     }
 
     /**
-     * Each item reads its place in the list ("1. ", "2. ") then what it showed before: the folder's name, or its whole
-     * path when two listed folders share a name (FR-148).  What an item opens is still the folder its tooltip names.
+     * Each item reads its place in the list ("1. ", "2. ", FR-148) then its label (OB-390).  What an item opens is still
+     * the folder its tooltip names.
      *
      * MUTATION: drop the number from the item's text in `refreshRecentLayouts`, and the items read as before.
      */
@@ -213,13 +213,121 @@ public class testRecentLayouts
         record(lone.getAbsolutePath(), x.getAbsolutePath(), y.getAbsolutePath(), other.getAbsolutePath(),
             sandbox.getFolder().getAbsolutePath(), new File(second.toFile(), "last").getAbsolutePath());
 
-        assertEquals(listed(JMenuItem::getText), Arrays.asList("1. lone", "2. " + x.getAbsolutePath(),
-            "3. " + y.getAbsolutePath(), "4. other", "5. last"), "Recent Layouts does not number its items in the"
-            + " order shown, over the name or the whole path");
+        String apart = "\u2026" + File.separator;
+
+        assertEquals(listed(JMenuItem::getText), Arrays.asList("1. lone", "2. " + apart + "x" + File.separator + "same",
+            "3. " + apart + "y" + File.separator + "same", "4. other", "5. last"), "Recent Layouts does not number its"
+            + " items in the order shown, over the name or the folders that tell two of one name apart");
 
         assertEquals(shown(), Arrays.asList(lone.getAbsolutePath(), x.getAbsolutePath(), y.getAbsolutePath(),
             other.getAbsolutePath(), new File(second.toFile(), "last").getAbsolutePath()),
             "numbering changed what the items open or their order");
+    }
+
+    /**
+     * A long path never makes the menu wide (OB-390, "full paths can make the window extremely wide, manage this"): two
+     * folders of one name deep under long folders, and one long name, each read no more than `RECENT_LABEL_MOST`
+     * characters after the number, the long name cut in the middle with its end kept, and their tooltips hold the whole
+     * path.
+     *
+     * MUTATION: return the whole path in `LayoutMenus.recentLabel` where two folders share a name, or skip the cut past
+     * `RECENT_LABEL_MOST`, and this fails.
+     */
+    @Test
+    public void testALongPathIsShortened() throws Exception
+    {
+        String deep = "a-folder-with-a-long-name-for-the-menu" + File.separator + "and-another-long-one-below-it";
+
+        File x = new File(second.toFile(), deep + File.separator + "first" + File.separator + "same");
+        File y = new File(second.toFile(), deep + File.separator + "second" + File.separator + "same");
+        File long_ = new File(second.toFile(), "a-layout-folder-whose-own-name-is-far-longer-than-fifty-characters");
+
+        record(x.getAbsolutePath(), y.getAbsolutePath(), long_.getAbsolutePath(), sandbox.getFolder().getAbsolutePath());
+
+        List<String> texts = listed(JMenuItem::getText);
+        List<String> tips = listed(JMenuItem::getToolTipText);
+
+        assertEquals(texts.size(), 3, "precondition: Recent Layouts does not list the three folders: " + texts);
+
+        // LayoutMenus.RECENT_LABEL_MOST, which the package keeps to itself
+        int most = 50;
+
+        for (int i = 0; i < texts.size(); i++)
+        {
+            String label = texts.get(i).substring((i + 1 + ". ").length());
+
+            assertTrue(label.length() <= most, "item " + (i + 1) + " reads " + label.length() + " characters, more than"
+                + " " + most + ": " + label);
+        }
+
+        assertEquals(texts.get(0), "1. \u2026" + File.separator + "first" + File.separator + "same", "the first of two"
+            + " folders of one name does not read the one folder that tells them apart");
+
+        assertEquals(texts.get(1), "2. \u2026" + File.separator + "second" + File.separator + "same", "the second of"
+            + " two folders of one name does not read the one folder that tells them apart");
+
+        assertTrue(texts.get(2).endsWith("than-fifty-characters") && texts.get(2).contains("\u2026"), "a long name is"
+            + " not cut in the middle with its end kept: " + texts.get(2));
+
+        for (int i = 0; i < tips.size(); i++)
+        {
+            String whole = new File[] {x, y, long_}[i].getAbsolutePath();
+
+            assertTrue(String.valueOf(tips.get(i)).replaceAll("<[^>]*>", "").replace("&nbsp;", " ")
+                .replaceAll("\\s+", "").contains(whole.replaceAll("\\s+", "")), "item " + (i + 1) + "'s tooltip does"
+                + " not hold the whole path " + whole + ": " + tips.get(i));
+        }
+    }
+
+    /**
+     * Two dated copies of one long-named folder still read apart once cut to 50 characters (OB-390): the cut keeps the
+     * folder that differs.
+     *
+     * MUTATION: skip the head's run past the first difference in `LayoutMenus.cut`, and this fails.
+     */
+    @Test
+    public void testTwoLongCopiesStayApart() throws Exception
+    {
+        String name = "Basement railway CS3 layout files";
+
+        File x = new File(second.toFile(), "Backup 2026-10-01" + File.separator + name);
+        File y = new File(second.toFile(), "Backup 2026-10-08" + File.separator + name);
+
+        record(x.getAbsolutePath(), y.getAbsolutePath(), sandbox.getFolder().getAbsolutePath());
+
+        List<String> texts = listed(JMenuItem::getText);
+
+        assertEquals(texts.size(), 2, "precondition: Recent Layouts does not list the two copies: " + texts);
+
+        assertTrue(texts.get(0).length() - "1. ".length() <= 50 && texts.get(0).endsWith("layout files"),
+            "the first copy is not cut to 50 characters with its end kept: " + texts.get(0));
+
+        assertFalse(texts.get(0).substring(3).equals(texts.get(1).substring(3)), "the two copies read the same: "
+            + texts);
+    }
+
+    /**
+     * Two copies whose folders differ only past where a cut could keep them are left whole, not cut alike (OB-390).
+     *
+     * MUTATION: return the cut label whatever it reads like in `LayoutMenus.recentLabel`, and this fails.
+     */
+    @Test
+    public void testCopiesThatDifferLateAreLeftWhole() throws Exception
+    {
+        File x = new File(second.toFile(), "Basement railway CS3 layout files 2026-10-01" + File.separator + "TrainControl");
+        File y = new File(second.toFile(), "Basement railway CS3 layout files 2026-10-08" + File.separator + "TrainControl");
+
+        record(x.getAbsolutePath(), y.getAbsolutePath(), sandbox.getFolder().getAbsolutePath());
+
+        List<String> texts = listed(JMenuItem::getText);
+
+        assertEquals(texts.size(), 2, "precondition: Recent Layouts does not list the two copies: " + texts);
+
+        assertEquals(texts.get(0), "1. \u2026" + File.separator + x.getParentFile().getName() + File.separator
+            + "TrainControl", "the first copy is not left whole");
+
+        assertEquals(texts.get(1), "2. \u2026" + File.separator + y.getParentFile().getName() + File.separator
+            + "TrainControl", "the second copy is not left whole");
     }
 
     /**

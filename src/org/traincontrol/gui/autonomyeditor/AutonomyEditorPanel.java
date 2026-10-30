@@ -291,6 +291,10 @@ public class AutonomyEditorPanel extends JPanel
     /** The squares it highlights, worked out once per refresh; null until asked. */
     private java.util.Set<TileKey> unmeasuredSquares = null;
 
+    /** Why not Moving?'s answer on the stations and the train's square (FR-159), installed with its lines. */
+    private final java.util.Map<TileKey, org.traincontrol.automationui.TileAnnotation.ToolMark> whyMarks =
+        new java.util.HashMap<>();
+
     /** The keys `LayoutEditor` binds to this panel's actions, as their tooltips name them (OB-214). */
     public static final String SHORTCUT_HOME = "Control+H";
 
@@ -815,6 +819,10 @@ public class AutonomyEditorPanel extends JPanel
         tailPicks.clear();
         highlightedSignals.clear();
         traces.clear();
+        whyMarks.clear();
+
+        // An answer still on its way is to a question no longer asked
+        whyAsked.incrementAndGet();
 
         if (testButton != null) testButton.setSelected(false);
         if (whyButton != null) whyButton.setSelected(false);
@@ -871,6 +879,10 @@ public class AutonomyEditorPanel extends JPanel
         lastTestFrom = null;
         lastTestTo = null;
         lastWhyTile = null;
+        whyMarks.clear();
+
+        // An answer still on its way is to a question no longer asked
+        whyAsked.incrementAndGet();
         traces.clear();
         oneWayFrom = null;
         signalFor = null;
@@ -4166,9 +4178,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether Why Not Moving waits for its click and this square has a train to ask about, outlined (FR-102): the
-     * railway's train where there is one, else the setup's.
-     * @return whether to outline it
+     * Whether Why Not Moving waits for its click and this square has a train to ask about (FR-102): the railway's
+     * train where there is one, else the setup's.
+     * @return whether it can be clicked
      */
     private boolean whyWaitsOn(TileKey tile)
     {
@@ -4958,6 +4970,12 @@ public class AutonomyEditorPanel extends JPanel
             traces.putAll(answer.drawn);
         }
 
+        if (answer.marks != null)
+        {
+            whyMarks.clear();
+            whyMarks.putAll(answer.marks);
+        }
+
         if (answer.rich) sayRich(hint, answer.message);
         else say(hint, answer.message);
 
@@ -5015,16 +5033,27 @@ public class AutonomyEditorPanel extends JPanel
 
         private final boolean rich;
 
-        /** The lines to lay on the diagram, or null to leave what is drawn (an answer not about a train). */
+        /** The lines to lay on the diagram, or null to leave what is drawn. */
         private final java.util.Map<TileKey,
             java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn;
+
+        /** The marks for the train's square and the stations (FR-159), or null to leave what is marked. */
+        private final java.util.Map<TileKey, org.traincontrol.automationui.TileAnnotation.ToolMark> marks;
 
         WhyAnswer(String message, boolean rich, java.util.Map<TileKey,
             java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn)
         {
+            this(message, rich, drawn, null);
+        }
+
+        WhyAnswer(String message, boolean rich, java.util.Map<TileKey,
+            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn,
+            java.util.Map<TileKey, org.traincontrol.automationui.TileAnnotation.ToolMark> marks)
+        {
             this.message = message;
             this.rich = rich;
             this.drawn = drawn;
+            this.marks = marks;
         }
     }
 
@@ -5424,7 +5453,6 @@ public class AutonomyEditorPanel extends JPanel
             if (stored > 0) length = stored;
         }
 
-        // Only the square a test waits on, and a paired signal being acted on, borrow the outline.
         boolean outlined = isOutlined(tile);
 
         // Shaded from the same answer as above, not `isDimmed`; an empty square never.
@@ -5458,7 +5486,40 @@ public class AutonomyEditorPanel extends JPanel
             if (unmeasuredSquares.contains(tile)) annotation.needsALength();
         }
 
+        org.traincontrol.automationui.TileAnnotation.ToolMark mark = toolMark(tile);
+
+        if (mark != null) annotation.markedByATool(mark);
+
         return annotation;
+    }
+
+    /**
+     * The armed tool's mark on a square (FR-159): what can be clicked, then Why not Moving?'s answer once it has one.
+     * @return the mark, or null
+     */
+    private org.traincontrol.automationui.TileAnnotation.ToolMark toolMark(TileKey tile)
+    {
+        if (tool == Tool.TEST)
+        {
+            if (tile.equals(testFrom)) return org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED;
+
+            boolean station = session.getReducer() != null && session.getReducer().getPoints().containsKey(tile)
+                && session.getStore().isStation(tile);
+
+            return station ? org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE : null;
+        }
+
+        if (tool == Tool.WHY)
+        {
+            if (lastWhyTile == null)
+            {
+                return whyWaitsOn(tile) ? org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE : null;
+            }
+
+            return whyMarks.get(tile);
+        }
+
+        return null;
     }
 
     /** Whether this square is a paired link: an unpaired one draws no door, and has its own finding. */
@@ -6230,14 +6291,12 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a square is drawn outlined: the selection, a finding's squares, a path test's first end, a menu's
-     * signals, or the square a test waits on.
+     * Whether a square is drawn outlined: the selection, a finding's squares or a menu's signals.
      * @return whether it is outlined
      */
     public boolean isOutlined(TileKey tile)
     {
-        return selection.contains(tile) || noticeOutline.contains(tile) || tile.equals(testFrom)
-            || highlightedSignals.contains(tile) || whyWaitsOn(tile);
+        return selection.contains(tile) || noticeOutline.contains(tile) || highlightedSignals.contains(tile);
     }
 
     void outlineAndReveal(java.util.Collection<TileKey> squares)

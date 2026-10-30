@@ -2,10 +2,8 @@ package org.traincontrol.gui;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.swing.JOptionPane;
 import org.traincontrol.gui.autonomy.DiagramExport;
@@ -741,7 +739,7 @@ final class LayoutMenus
         refreshRecentLayouts();
     }
 
-    /** The open layout is not listed; a name two folders share is shown as the whole path. */
+    /** The open layout is not listed; each item reads `recentLabel`. */
     private void refreshRecentLayouts()
     {
         if (recentLayoutsMenu == null) return;
@@ -752,18 +750,11 @@ final class LayoutMenus
 
         shown = shown.subList(0, Math.min(shown.size(), TrainControlUI.RECENT_LAYOUTS_SHOWN));
 
-        Map<String, Integer> named = new HashMap<>();
-
-        for (String path : shown) named.merge(new File(path).getName(), 1, Integer::sum);
-
         int number = 0;
 
         for (final String path : shown)
         {
-            String name = new File(path).getName();
-
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(++number + ". "
-                + (named.get(name) > 1 || name.isEmpty() ? path : name));
+            javax.swing.JMenuItem item = new javax.swing.JMenuItem(++number + ". " + recentLabel(path, shown));
 
             item.setToolTipText(AutonomyEditorPanel.wrappedIfLong(path));
 
@@ -773,6 +764,111 @@ final class LayoutMenus
         }
 
         recentLayoutsMenu.setEnabled(!shown.isEmpty());
+    }
+
+    /** The most characters an item's label takes, unless a cut would read like another item's (OB-390). */
+    private static final int RECENT_LABEL_MOST = 50;
+
+    /**
+     * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many of
+     * its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.  Cut in
+     * the middle past `RECENT_LABEL_MOST`, the head running past where it first differs from another item's, and not cut
+     * at all where the cut would still read like another item's.
+     * @param path the folder
+     * @param shown every folder listed with it
+     * @return the label
+     */
+    static String recentLabel(String path, List<String> shown)
+    {
+        String label = uncutLabel(path, shown);
+
+        List<String> others = new ArrayList<>();
+
+        for (String other : shown)
+        {
+            if (!other.equals(path)) others.add(uncutLabel(other, shown));
+        }
+
+        String cut = cut(label, others);
+
+        for (String other : others)
+        {
+            List<String> theirOthers = new ArrayList<>(others);
+
+            theirOthers.remove(other);
+            theirOthers.add(label);
+
+            if (cut(other, theirOthers).equals(cut)) return label;
+        }
+
+        return cut;
+    }
+
+    /** A label cut in the middle past `RECENT_LABEL_MOST`, its head past where it first differs from any of these. */
+    private static String cut(String label, List<String> others)
+    {
+        if (label.length() <= RECENT_LABEL_MOST) return label;
+
+        int head = RECENT_LABEL_MOST / 3;
+
+        for (String other : others)
+        {
+            int differs = 0;
+
+            while (differs < Math.min(label.length(), other.length())
+                && label.charAt(differs) == other.charAt(differs))
+            {
+                differs++;
+            }
+
+            head = Math.max(head, Math.min(differs + 1, RECENT_LABEL_MOST - 1 - RECENT_LABEL_MOST / 5));
+        }
+
+        return label.substring(0, head) + "\u2026"
+            + label.substring(label.length() - (RECENT_LABEL_MOST - head - 1));
+    }
+
+    /** The folder's name, or as many of its last folders as tell it from another listed folder of that name. */
+    private static String uncutLabel(String path, List<String> shown)
+    {
+        List<String> mine = folders(path);
+
+        int needed = 1;
+
+        for (String other : shown)
+        {
+            List<String> theirs = folders(other);
+
+            if (other.equals(path) || !theirs.get(theirs.size() - 1).equals(mine.get(mine.size() - 1))) continue;
+
+            // One more folder than the two have in common at the end
+            int same = 0;
+
+            while (same < Math.min(mine.size(), theirs.size())
+                && mine.get(mine.size() - 1 - same).equals(theirs.get(theirs.size() - 1 - same)))
+            {
+                same++;
+            }
+
+            needed = Math.max(needed, same + 1);
+        }
+
+        return needed >= mine.size() ? path
+            : (needed > 1 ? "\u2026" + File.separator : "")
+                + String.join(File.separator, mine.subList(mine.size() - needed, mine.size()));
+    }
+
+    /** A path's folders from its root down, the root as written (C:\ or /), so none is empty. */
+    private static List<String> folders(String path)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (File at = new File(path).getAbsoluteFile(); at != null; at = at.getParentFile())
+        {
+            out.add(0, at.getName().isEmpty() ? at.getPath() : at.getName());
+        }
+
+        return out;
     }
 
     /** Open Layout's rules, without its chooser; a folder that has gone is said once and taken off the list. */

@@ -18,12 +18,14 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -3388,11 +3390,16 @@ public class testTheImportDoorReadsAnOldFile
 
                 SwingUtilities.invokeAndWait(() -> test.doClick());
 
-                assertFalse(panel.isOutlined(station), "precondition: " + station + " is outlined before it is clicked");
+                // The start is marked in the stronger blue (FR-159)
+                assertNotEquals(markOf(panel, station),
+                    ToolMark.PICKED, "precondition: " + station
+                    + " is marked as the start before it is clicked");
 
                 clickOn(on[0], at[0]);
 
-                assertTrue(panel.isOutlined(station), "a click on the train standing at " + station + ", where "
+                assertEquals(markOf(panel, station),
+                    ToolMark.PICKED, "a click on the train standing at "
+                    + station + ", where "
                     + on[0].getClass().getSimpleName() + " is on top, did not start Test a Path there (OB-354)");
 
                 final javax.swing.JToggleButton why = (javax.swing.JToggleButton) panelPart(panel, "whyButton");
@@ -3445,6 +3452,17 @@ public class testTheImportDoorReadsAnOldFile
         }
 
         for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** How the editor marks a square for its tools, asked on the event thread. */
+    private static ToolMark markOf(
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey tile) throws Exception
+    {
+        final ToolMark[] out = new ToolMark[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = panel.annotationFor(tile).getToolMark());
+
+        return out[0];
     }
 
     /** A private field of the editor's panel, by name. */

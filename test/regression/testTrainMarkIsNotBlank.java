@@ -67,6 +67,73 @@ public class testTrainMarkIsNotBlank
         assertFalse(ignored.withTrain().isBlank(), "an ignored square with a train is still drawn");
     }
 
+    /**
+     * A tool's mark on a square (FR-159) is drawn when it is all there is, and each mark is told apart from the
+     * others and from none, as `LayoutLabel` asks `equals` whether a redraw is needed.
+     *
+     * MUTATION: leave `toolMark` out of `TileAnnotation.isBlank`, or out of `equals`, or its border out of
+     * `paintArrowsAgain`, and this fails.
+     */
+    @Test
+    public void testAToolMarkIsDrawn()
+    {
+        for (TileAnnotation.ToolMark mark : TileAnnotation.ToolMark.values())
+        {
+            TileAnnotation marked = plain().markedByATool(mark);
+
+            assertFalse(marked.isBlank(), "a square marked " + mark + " and nothing else was treated as blank");
+
+            assertNotEquals(marked, plain(), "a square marked " + mark + " equals an unmarked one, so it is never"
+                + " redrawn");
+
+            for (TileAnnotation.ToolMark other : TileAnnotation.ToolMark.values())
+            {
+                if (other != mark)
+                {
+                    assertNotEquals(marked, plain().markedByATool(other), mark + " equals " + other);
+                }
+            }
+
+            java.awt.image.BufferedImage tile = new java.awt.image.BufferedImage(30, 30,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = tile.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, 30, 30);
+
+            marked.paint(g, 30, 30);
+
+            g.dispose();
+
+            int inked = 0;
+
+            for (int x = 0; x < 30; x++)
+            {
+                for (int y = 0; y < 30; y++)
+                {
+                    if ((tile.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inked++;
+                }
+            }
+
+            assertTrue(inked > 0, "a square marked " + mark + " painted nothing");
+
+            // And over a neighbor's curved station spilling onto it
+            tile = new java.awt.image.BufferedImage(30, 30, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            g = tile.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, 30, 30);
+
+            marked.paintArrowsAgain(g, 30, 30);
+
+            g.dispose();
+
+            assertTrue(tile.getRGB(1, 15) != java.awt.Color.WHITE.getRGB(), "a square marked " + mark + " has no border"
+                + " drawn back over a neighbor's spill");
+        }
+    }
+
     /** An annotation with nothing on it at all. */
     private TileAnnotation plain()
     {
