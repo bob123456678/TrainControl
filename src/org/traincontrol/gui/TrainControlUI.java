@@ -15563,7 +15563,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_EditFunction
 
     private void locIconMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locIconMouseReleased
-        if (SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
+        // With the power off only, as the picture's tools
+        if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools())
         {
             this.setLocIcon(this.activeLoc);
         }
@@ -19330,12 +19331,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             && !l.getCentralStationImageURL().isEmpty();
     }
 
-    /** Fits the tools to the power (MT-591): while on, sets the turn-it-off tooltip before the pointer arrives. */
+    /**
+     * Fits the tools to the power (MT-591), before the pointer arrives: the picture says to turn the power off while it
+     * is on, and that a right-click changes the icon once it is off.
+     */
     private void fitTheIconTools()
     {
         if (iconWrench == null) return;
 
-        locIcon.setToolTipText(powerIsOn() ? I18n.t("loc.ui.tooltip.powerOffToManageIcon") : null);
+        locIcon.setToolTipText(powerIsOn() ? I18n.t("loc.ui.tooltip.powerOffToManageIcon")
+            : activeLoc != null ? I18n.t("ui.main.tooltip.locIcon") : null);
 
         iconWrench.setIcon(WRENCH);
         iconWrench.setToolTipText(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
