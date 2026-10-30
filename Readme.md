@@ -404,7 +404,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.6
+* v3.0.6 [10/30/2026]
     - New Features
         - Autonomy
             - In the autonomy editor, what you can click is marked in blue while `Test a path` or `Why not Moving?` is on: the stations for `Test a path`, the squares with a train for `Why not Moving?`, and what you clicked in a stronger blue instead of an orange outline.
