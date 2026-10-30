@@ -772,7 +772,7 @@ final class LayoutMenus
     /**
      * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many of
      * its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.  Cut in
-     * the middle past `RECENT_LABEL_MOST`, keeping the end, which is what tells it apart.
+     * the middle past `RECENT_LABEL_MOST`, keeping the end and the first of those folders, which is the one that differs.
      * @param path the folder
      * @param shown every folder listed with it
      * @return the label
@@ -807,7 +807,10 @@ final class LayoutMenus
 
         if (label.length() <= RECENT_LABEL_MOST) return label;
 
-        int head = RECENT_LABEL_MOST / 3;
+        String apart = needed > 1 && needed < mine.size()
+            ? "\u2026" + File.separator + mine.get(mine.size() - needed) : "";
+
+        int head = Math.min(Math.max(apart.length(), RECENT_LABEL_MOST / 3), RECENT_LABEL_MOST - 1 - RECENT_LABEL_MOST / 5);
 
         return label.substring(0, head) + "\u2026"
             + label.substring(label.length() - (RECENT_LABEL_MOST - head - 1));

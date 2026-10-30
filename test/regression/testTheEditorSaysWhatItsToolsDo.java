@@ -112,7 +112,7 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * With Why Not Moving armed and nothing drawn yet, the squares with trains are marked in blue (FR-102, FR-159).
+     * With Why Not Moving armed and nothing drawn yet, the squares with trains are marked in blue (FR-102).
      *
      * MUTATION: outline nothing while the tool waits, or every station.
      */
@@ -121,7 +121,7 @@ public class testTheEditorSaysWhatItsToolsDo
     {
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        assertNull(panel.annotationFor(WITH_A_TRAIN).getToolMark(), "precondition: the train's square is marked before"
+        assertNull(markOf(panel, WITH_A_TRAIN), "precondition: the train's square is marked before"
             + " the tool is armed");
 
         java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
@@ -134,11 +134,11 @@ public class testTheEditorSaysWhatItsToolsDo
 
         assertTrue(why.isSelected(), "precondition: Why Not Moving did not arm");
 
-        assertEquals(panel.annotationFor(WITH_A_TRAIN).getToolMark(), org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE, "Why Not Moving is waiting for a click and"
-            + " the square with a train on it is not marked in blue - Adam, FR-102: \"highlight stations w/ trains on the editor diagram so"
-            + " it's clear what the user can click on\"");
+        assertEquals(markOf(panel, WITH_A_TRAIN), org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE,
+            "Why Not Moving is waiting for a click and the square with a train on it is not marked in blue - Adam,"
+            + " FR-102: \"highlight stations w/ trains on the editor diagram so it's clear what the user can click on\"");
 
-        assertNull(panel.annotationFor(EMPTY).getToolMark(), "a station with no train on it is marked, and there is"
+        assertNull(markOf(panel, EMPTY), "a station with no train on it is marked, and there is"
             + " nothing there to ask about");
     }
 
@@ -200,10 +200,10 @@ public class testTheEditorSaysWhatItsToolsDo
 
             javax.swing.SwingUtilities.invokeAndWait(() -> why.doClick());
 
-            assertEquals(panel.annotationFor(EMPTY).getToolMark(), org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE, "a railway is running"
+            assertEquals(markOf(panel, EMPTY), org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE, "a railway is running"
                 + " with a train at 1,1 and Why Not Moving does not mark it - it read the setup, which has none there");
 
-            assertNull(panel.annotationFor(WITH_A_TRAIN).getToolMark(), "a railway is running with no train at 3,1 and"
+            assertNull(markOf(panel, WITH_A_TRAIN), "a railway is running with no train at 3,1 and"
                 + " Why Not Moving marks it - it read the setup's placement, not the railway");
 
             // AND ONCE A SQUARE IS CLICKED, THE OUTLINES GO: a second train on the railway at 3,1 is outlined while the
@@ -247,6 +247,16 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /** The menu item with this text, anywhere in the menu. */
+    /** How the editor marks a square for its tools, asked on the event thread. */
+    private static org.traincontrol.automationui.TileAnnotation.ToolMark markOf(final AutonomyEditorPanel panel, final TileKey tile) throws Exception
+    {
+        final org.traincontrol.automationui.TileAnnotation.ToolMark[] out = new org.traincontrol.automationui.TileAnnotation.ToolMark[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> out[0] = panel.annotationFor(tile).getToolMark());
+
+        return out[0];
+    }
+
     private static javax.swing.JMenuItem find(java.awt.Container container, String text)
     {
         for (java.awt.Component c : container instanceof javax.swing.JMenu

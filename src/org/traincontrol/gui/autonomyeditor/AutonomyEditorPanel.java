@@ -876,6 +876,9 @@ public class AutonomyEditorPanel extends JPanel
         lastTestTo = null;
         lastWhyTile = null;
         whyMarks.clear();
+
+        // An answer still on its way is to a question no longer asked
+        whyAsked.incrementAndGet();
         traces.clear();
         oneWayFrom = null;
         signalFor = null;
@@ -4171,9 +4174,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether Why Not Moving waits for its click and this square has a train to ask about, marked in blue (FR-102,
-     * FR-159): the railway's train where there is one, else the setup's.
-     * @return whether to mark it
+     * Whether Why Not Moving waits for its click and this square has a train to ask about (FR-102): the railway's
+     * train where there is one, else the setup's.
+     * @return whether it can be clicked
      */
     private boolean whyWaitsOn(TileKey tile)
     {

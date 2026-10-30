@@ -197,9 +197,8 @@ public class testRecentLayouts
     }
 
     /**
-     * Each item reads its place in the list ("1. ", "2. ") then the folder's name, or where two listed folders share it,
-     * as many of its last folders as tell them apart (FR-148, OB-390).  What an item opens is still the folder its
-     * tooltip names.
+     * Each item reads its place in the list ("1. ", "2. ", FR-148) then its label (OB-390).  What an item opens is still
+     * the folder its tooltip names.
      *
      * MUTATION: drop the number from the item's text in `refreshRecentLayouts`, and the items read as before.
      */
@@ -228,8 +227,8 @@ public class testRecentLayouts
     /**
      * A long path never makes the menu wide (OB-390, "full paths can make the window extremely wide, manage this"): two
      * folders of one name deep under long folders, and one long name, each read no more than `RECENT_LABEL_MOST`
-     * characters after the number, cut in the middle so the end that tells them apart stays, and their tooltips hold the
-     * whole path.
+     * characters after the number, the long name cut in the middle with its end kept, and their tooltips hold the whole
+     * path.
      *
      * MUTATION: return the whole path in `LayoutMenus.recentLabel` where two folders share a name, or skip the cut past
      * `RECENT_LABEL_MOST`, and this fails.
@@ -278,6 +277,32 @@ public class testRecentLayouts
                 .replaceAll("\\s+", "").contains(whole.replaceAll("\\s+", "")), "item " + (i + 1) + "'s tooltip does"
                 + " not hold the whole path " + whole + ": " + tips.get(i));
         }
+    }
+
+    /**
+     * Two dated copies of one long-named folder still read apart once cut (OB-390): the cut keeps the folder that
+     * differs.
+     *
+     * MUTATION: cut at `RECENT_LABEL_MOST / 3` whatever the label in `LayoutMenus.recentLabel`, and this fails.
+     */
+    @Test
+    public void testTwoLongCopiesStayApart() throws Exception
+    {
+        String name = "Basement railway CS3 layout files";
+
+        File x = new File(second.toFile(), "Backup 2026-10-01" + File.separator + name);
+        File y = new File(second.toFile(), "Backup 2026-10-08" + File.separator + name);
+
+        record(x.getAbsolutePath(), y.getAbsolutePath(), sandbox.getFolder().getAbsolutePath());
+
+        List<String> texts = listed(JMenuItem::getText);
+
+        assertEquals(texts.size(), 2, "precondition: Recent Layouts does not list the two copies: " + texts);
+
+        assertTrue(texts.get(0).length() - "1. ".length() <= 50 && texts.get(0).endsWith("layout files"), "precondition: the"
+            + " first copy is not cut with its end kept: " + texts.get(0));
+
+        assertFalse(texts.get(0).substring(3).equals(texts.get(1).substring(3)), "the two copies read the same: " + texts);
     }
 
     /**

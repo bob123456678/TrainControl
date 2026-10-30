@@ -412,7 +412,7 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - In the autonomy editor, a message across the bottom of the diagram no longer hides the diagram's last row: scroll down to see the row above the message.
-            - On the track diagram, the banner's `Load this configuration` button is now bold, like the `Fix it` and `Start` buttons.
+            - On the track diagram, the banner's `Load this configuration` and `Fix it` buttons are now bold, like the `Start` button.
         - Interface
             - `Layouts` > `Recent Layouts` no longer shows long folder paths that make the menu very wide: two folders with the same name show only the folders that tell them apart, a long name is shortened in the middle, and the full path is in the tooltip.
 * v3.0.5 [10/29/2026]

@@ -3390,13 +3390,13 @@ public class testTheImportDoorReadsAnOldFile
                 SwingUtilities.invokeAndWait(() -> test.doClick());
 
                 // The start is marked in the stronger blue (FR-159)
-                assertNotEquals(panel.annotationFor(station).getToolMark(),
+                assertNotEquals(markOf(panel, station),
                     org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED, "precondition: " + station
                     + " is marked as the start before it is clicked");
 
                 clickOn(on[0], at[0]);
 
-                assertEquals(panel.annotationFor(station).getToolMark(),
+                assertEquals(markOf(panel, station),
                     org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED, "a click on the train standing at "
                     + station + ", where "
                     + on[0].getClass().getSimpleName() + " is on top, did not start Test a Path there (OB-354)");
@@ -3454,6 +3454,17 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /** A private field of the editor's panel, by name. */
+    /** How the editor marks a square for its tools, asked on the event thread. */
+    private static org.traincontrol.automationui.TileAnnotation.ToolMark markOf(
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey tile) throws Exception
+    {
+        final org.traincontrol.automationui.TileAnnotation.ToolMark[] out = new org.traincontrol.automationui.TileAnnotation.ToolMark[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = panel.annotationFor(tile).getToolMark());
+
+        return out[0];
+    }
+
     private static Object panelPart(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, String name) throws Exception
     {
         java.lang.reflect.Field field = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredField(name);

@@ -1983,7 +1983,9 @@ public class TileAnnotation
 
             paintArrivals(a, width, height);
 
-            // AND ITS OUTLINE, which its own paint draws over everything on it: the spill broke it
+            // AND ITS OUTLINES, which its own paint draws over everything on it: the spill broke them
+            if (toolMark != null) paintToolBorder(a, width, height);
+
             if (selected)
             {
                 a.setStroke(new BasicStroke(2f));

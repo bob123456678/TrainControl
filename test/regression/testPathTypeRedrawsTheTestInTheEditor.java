@@ -258,8 +258,12 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * now, and purple, on Auto alone, where autonomy will never choose it, with a line saying so (FR-159; Adam, MT-854:
      * "The station highlighting in green/purple should happen in "why not moving"").
      *
-     * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, or mark the never-chosen stations NOT_NOW in
-     * `EditorWhy.composeWhy`, and this fails.
+     * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
+     * marks off.
+     *
+     * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, mark the never-chosen stations NOT_NOW or none
+     * NOT_NOW in `EditorWhy.composeWhy`, leave the marks in `clearGesture`, or give the no-train answer no marks, and
+     * this fails.
      */
     @Test
     public void testWhyNotMovingMarksTheStationsByItsAnswer() throws Exception
@@ -321,8 +325,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertTrue(marked(panel, TileAnnotation.ToolMark.NEVER) > 0, "on Auto, no station autonomy will never"
                 + " choose is marked purple: " + onAuto);
 
-            assertTrue(onAuto.contains(org.traincontrol.util.I18n.t("autosetup.ui.whyColourPurple")), "on Auto, the"
-                + " answer does not say what purple means: " + onAuto);
+            // The other trains standing in the snapshot hold stations it cannot go to right now
+            assertTrue(marked(panel, TileAnnotation.ToolMark.NOT_NOW) > 0, "on Auto, no station it cannot go to right"
+                + " now is marked gray: " + onAuto);
+
+            coloursSaid(panel, onAuto, "on Auto");
 
             final javax.swing.AbstractButton manual = (javax.swing.AbstractButton) field(panel, "pathTypeManual");
 
@@ -338,10 +345,34 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertEquals(marked(panel, TileAnnotation.ToolMark.CAN_GO), placesItCanGo(onManual), "on Manual, the"
                 + " stations marked green are not the stations the answer says it can go to: " + onManual);
 
+            coloursSaid(panel, onManual, "on Manual");
+
             SwingUtilities.invokeAndWait(why::doClick);
             settle();
 
             assertNull(mark(panel, standing), "putting Why not Moving? down left the train's square marked");
+
+            assertEquals(markedAtAll(panel), 0, "putting Why not Moving? down kept the answer's marks");
+
+            SwingUtilities.invokeAndWait(why::doClick);
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(standing,
+                page.getComponent(standing.getX(), standing.getY()), false));
+
+            answered(panel);
+
+            assertTrue(markedAtAll(panel) > 0, "precondition: asked again, the answer marks nothing");
+
+            final TileKey free = aStationWithNoTrain();
+
+            assertNotNull(free, "precondition: every station square of " + PAGE + " has a train");
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(free, page.getComponent(free.getX(), free.getY()),
+                false));
+
+            answered(panel);
+
+            assertEquals(markedAtAll(panel), 0, "asked about " + free + ", where no train stands, the previous train's"
+                + " marks stay: " + shown(panel));
         }
         finally
         {
@@ -383,6 +414,43 @@ public class testPathTypeRedrawsTheTestInTheEditor
         });
 
         return count[0];
+    }
+
+    /** The answer names each color exactly where it marks a station in it. */
+    private static void coloursSaid(AutonomyEditorPanel panel, String answer, String when) throws Exception
+    {
+        String[][] colours = {{"CAN_GO", "autosetup.ui.whyColourGreen"}, {"NOT_NOW", "autosetup.ui.whyColourGray"},
+            {"NEVER", "autosetup.ui.whyColourPurple"}};
+
+        for (String[] colour : colours)
+        {
+            boolean drawn = marked(panel, TileAnnotation.ToolMark.valueOf(colour[0])) > 0;
+
+            assertEquals(answer.contains(org.traincontrol.util.I18n.t(colour[1])), drawn, when + ", the answer "
+                + (drawn ? "does not say" : "says") + " what " + colour[0] + " means: " + answer);
+        }
+    }
+
+    /** How many squares the Why answer marks at all. */
+    private static int markedAtAll(AutonomyEditorPanel panel) throws Exception
+    {
+        int all = 0;
+
+        for (TileAnnotation.ToolMark which : TileAnnotation.ToolMark.values()) all += marked(panel, which);
+
+        return all;
+    }
+
+    /** A station square of the page with no train on it, or null. */
+    private static TileKey aStationWithNoTrain()
+    {
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (PAGE.equals(tile.getPage()) && session.getStore().isStation(tile)
+                && session.getLocomotiveNameAt(tile) == null) return tile;
+        }
+
+        return null;
     }
 
     /** How the editor marks a square for its tools, asked on the event thread. */
