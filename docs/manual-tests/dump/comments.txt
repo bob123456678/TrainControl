@@ -30347,6 +30347,39 @@ text:
 | Given in chat, recorded by Claude: close out the tests related to the bold button and the features worked today, as "working".
 |
 
+[comment MT-859 0]
+who: Adam
+date: 2026-10-30
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-30 (triage).** Works.
+|
+| *Run against commit 0604afe9, in English - build\classes, compiled 30 Oct 02:14 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-859 1]
+who: Claude
+date: 2026-10-30
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-30.**
+|
+| Since these steps were written (RSA89-C3, on your ruling): until the station reports its power, the icons over the picture and its right-click take the power as on only where Options > Startup turns it on.  With start-up leaving the power alone or turning it off, they are available until the station says the power is on.
+|
+
+[comment MT-859 2]
+who: Claude
+date: 2026-10-30
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-30.**
+|
+| Correction to the note above: the menu is `Preferences` > `Startup`, where `Power On` is the choice that turns it on at start-up.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24

@@ -280,10 +280,10 @@ public class testRecentLayouts
     }
 
     /**
-     * Two dated copies of one long-named folder still read apart once cut (OB-390): the cut keeps the folder that
-     * differs.
+     * Two dated copies of one long-named folder still read apart once cut to 50 characters (OB-390): the cut keeps the
+     * folder that differs.
      *
-     * MUTATION: cut at `RECENT_LABEL_MOST / 3` whatever the label in `LayoutMenus.recentLabel`, and this fails.
+     * MUTATION: skip the head's run past the first difference in `LayoutMenus.cut`, and this fails.
      */
     @Test
     public void testTwoLongCopiesStayApart() throws Exception
@@ -300,10 +300,34 @@ public class testRecentLayouts
         assertEquals(texts.size(), 2, "precondition: Recent Layouts does not list the two copies: " + texts);
 
         assertTrue(texts.get(0).length() - "1. ".length() <= 50 && texts.get(0).endsWith("layout files"),
-            "precondition: the first copy is not cut with its end kept: " + texts.get(0));
+            "the first copy is not cut to 50 characters with its end kept: " + texts.get(0));
 
         assertFalse(texts.get(0).substring(3).equals(texts.get(1).substring(3)), "the two copies read the same: "
             + texts);
+    }
+
+    /**
+     * Two copies whose folders differ only past where a cut could keep them are left whole, not cut alike (OB-390).
+     *
+     * MUTATION: return the cut label whatever it reads like in `LayoutMenus.recentLabel`, and this fails.
+     */
+    @Test
+    public void testCopiesThatDifferLateAreLeftWhole() throws Exception
+    {
+        File x = new File(second.toFile(), "Basement railway CS3 layout files 2026-10-01" + File.separator + "TrainControl");
+        File y = new File(second.toFile(), "Basement railway CS3 layout files 2026-10-08" + File.separator + "TrainControl");
+
+        record(x.getAbsolutePath(), y.getAbsolutePath(), sandbox.getFolder().getAbsolutePath());
+
+        List<String> texts = listed(JMenuItem::getText);
+
+        assertEquals(texts.size(), 2, "precondition: Recent Layouts does not list the two copies: " + texts);
+
+        assertEquals(texts.get(0), "1. \u2026" + File.separator + x.getParentFile().getName() + File.separator
+            + "TrainControl", "the first copy is not left whole");
+
+        assertEquals(texts.get(1), "2. \u2026" + File.separator + y.getParentFile().getName() + File.separator
+            + "TrainControl", "the second copy is not left whole");
     }
 
     /**

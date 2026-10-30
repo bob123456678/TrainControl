@@ -4319,6 +4319,6 @@ became: MT-858
 seq: 539
 filed: 2026-10-30
 kind: bug
-what: TrainControlUI.locIconMouseReleased asks offersTheIconTools, as the wrench and crop mark do; fitTheIconTools sets ui.main.tooltip.locIcon with the power off over a locomotive (57b744bc). Claim ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff, red under its MUTATION note.
+what: TrainControlUI.locIconMouseReleased asks offersTheIconTools, as the wrench and crop mark do; fitTheIconTools sets ui.main.tooltip.locIcon with the power off over a locomotive, none with no locomotive (57b744bc, RSA89 fixes). Until the station reports, the power counts as on only where start-up turns it on (powerHeard). Claims ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff and testTheIconToolsFollowTheStartUpPowerUntilTheStationSays, red under their MUTATION notes.
 state: -
 became: MT-859

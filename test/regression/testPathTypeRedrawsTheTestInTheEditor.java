@@ -259,11 +259,12 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * "The station highlighting in green/purple should happen in "why not moving"").
      *
      * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
-     * marks off, and an answer that lands after the tool was put down and armed again marks nothing.
+     * marks off (and asking about a square with no train, the lines), and an answer that lands after the tool was put
+     * down and armed again, or after a right-click let go of the tool, marks nothing.
      *
      * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, mark the never-chosen stations NOT_NOW or none
-     * NOT_NOW in `EditorWhy.composeWhy`, leave the marks or `whyAsked` alone in `clearGesture`, or give the no-train
-     * answer no marks, and this fails.
+     * NOT_NOW in `EditorWhy.composeWhy`, leave the marks or `whyAsked` alone in `clearGesture`, leave `whyAsked` alone
+     * in `cancelPendingGesture`, or give the no-train answer no marks or no lines, and this fails.
      */
     @Test
     public void testWhyNotMovingMarksTheStationsByItsAnswer() throws Exception
@@ -374,6 +375,13 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertEquals(markedAtAll(panel), 0, "asked about " + free + ", where no train stands, the previous train's"
                 + " marks stay: " + shown(panel));
 
+            final java.util.Map<?, ?> lines = (java.util.Map<?, ?>) field(panel, "traces");
+            final int[] drawn = new int[1];
+
+            SwingUtilities.invokeAndWait(() -> drawn[0] = lines.size());
+
+            assertEquals(drawn[0], 0, "asked about " + free + ", where no train stands, the previous train's lines stay");
+
             // Asked, then the tool put down and armed again before the answer can paint: it lands on the event thread
             SwingUtilities.invokeAndWait(() ->
             {
@@ -385,6 +393,30 @@ public class testPathTypeRedrawsTheTestInTheEditor
             answered(panel);
 
             assertEquals(markedAtAll(panel), 0, "an answer asked before the tool was put down and armed again marked the"
+                + " stations");
+
+            // And let go by a right-click's menu before the answer can paint
+            final java.lang.reflect.Method cancel = AutonomyEditorPanel.class.getDeclaredMethod("cancelPendingGesture");
+
+            cancel.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                panel.tileClicked(standing, page.getComponent(standing.getX(), standing.getY()), false);
+
+                try
+                {
+                    cancel.invoke(panel);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new AssertionError(e);
+                }
+            });
+
+            answered(panel);
+
+            assertEquals(markedAtAll(panel), 0, "an answer asked before a right-click let go of the tool marked the"
                 + " stations");
         }
         finally

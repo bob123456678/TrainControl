@@ -40945,6 +40945,116 @@ cited_by:
 status: Closed
 status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
 
+[finding RSA89-C1 in RSA89.md]
+line: 11
+severity: C
+title: Four of RSA88's fixes have no claim that fails without them
+disposition: Fixed - claims added: testRecentLayouts.testCopiesThatDifferLateAreLeftWhole (left whole), the Why claim's right-click c
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-C2 in RSA89.md]
+line: 31
+severity: C
+title: `testASquareTakesTheBestOfItsCopies`: "overwrite PICKED" survives, because the guard it names is redundant
+disposition: Fixed - `0604afe9`: the PICKED guard removed as redundant; the claim's MUTATION moves PICKED after the answers in ToolMa
+evidence:
+commit_id: 0604afe9
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-C3 in RSA89.md]
+line: 42
+severity: C
+title: At start-up the picture refuses a right-click and says to turn the power off, even when the station's power is already off
+disposition: Fixed on Adam's ruling ("If we know the power is on (preference to sent power on when startup), hide the icons. Otherwis
+evidence:
+commit_id: 57b744bc
+cited_by: testLocIconCrop.java
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-C4 in RSA89.md]
+line: 57
+severity: C
+title: The picture's tooltip is refit on power changes and hover, but not when the locomotive goes, and with the power on it ignores whether there is a locom
+disposition: Fixed - the picture's tooltip is refit when the locomotive is let go, and says nothing with no locomotive whatever the p
+evidence:
+commit_id: 57b744bc
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-C5 in RSA89.md]
+line: 73
+severity: C
+title: Comments and words the range left behind
+disposition: Fixed - the RECENT_LABEL_MOST and WhyAnswer.drawn javadocs, the FR-104 claim's javadoc, and German says Icon in both too
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-D1 in RSA89.md]
+line: 85
+severity: D
+title: `recentLabel`: two items cannot read the same, the check is symmetric, the length is bounded except when left whole, and the cost is small
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-D2 in RSA89.md]
+line: 97
+severity: D
+title: `cancelPendingGesture`'s clear and bump: every caller abandons the question
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-D3 in RSA89.md]
+line: 104
+severity: D
+title: `EditorWhy`: the empty `drawn` clears only Why's own lines; `traced`; the import
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-D4 in RSA89.md]
+line: 113
+severity: D
+title: The picture's other entrances, the bundles and the Readme
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
+[finding RSA89-D5 in RSA89.md]
+line: 123
+severity: D
+title: The changed tests check what they say
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA89.md: fixed in the RSA89 fixes commit or checked clean
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B

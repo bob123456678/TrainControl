@@ -33917,7 +33917,7 @@ title: The locomotive picture's right-click and tooltip follow the power
 disposition: needs test
 from: OB-392
 written: 2026-10-30
-reopened: no
+reopened: yes
 body:
 | <a id="mt-859"></a>
 | ### MT-859 - 2026-10-30 - The locomotive picture's right-click and tooltip follow the power

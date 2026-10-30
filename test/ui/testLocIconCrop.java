@@ -597,7 +597,7 @@ public class testLocIconCrop
 
     /**
      * The picture's tool is a wrench in its upper left that chooses the icon, and the pointer over it is the plain one
-     * (FR-104); the right-click still opens the same chooser.
+     * (FR-104); with the power off the right-click still opens the same chooser.
      *
      * MUTATION: leave the hand on the picture, or wire the wrench to nothing, and this fails.
      */
@@ -1094,14 +1094,129 @@ public class testLocIconCrop
     }
 
     /**
+     * Before the station has said, the picture's tools take the power as on only where start-up turns it on (RSA89-C3;
+     * Adam: "If we know the power is on (preference to sent power on when startup), hide the icons.  Otherwise leave as
+     * is.").  The model takes the power as on until it hears.
+     *
+     * MUTATION: take the model's power as known in `TrainControlUI.powerIsOn`, or ignore the start-up choice, and this
+     * fails.
+     */
+    @Test
+    public void testTheIconToolsFollowTheStartUpPowerUntilTheStationSays() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        java.lang.reflect.Field power = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        try
+        {
+            // OPENED INSIDE THE TRY (OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStation.simulated();
+
+            ui = windowOver(model);
+
+            final TrainControlUI window = ui;
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+            active.set(ui, new org.traincontrol.marklin.MarklinLocomotive(model, 88,
+                org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "RSA89 start-up"));
+
+            java.lang.reflect.Method offers = TrainControlUI.class.getDeclaredMethod("offersTheIconTools");
+
+            offers.setAccessible(true);
+
+            java.lang.reflect.Field heard = TrainControlUI.class.getDeclaredField("powerHeard");
+
+            heard.setAccessible(true);
+
+            final javax.swing.JRadioButtonMenuItem on = field(ui, "powerOnStartup", javax.swing.JRadioButtonMenuItem.class);
+            final javax.swing.JRadioButtonMenuItem unchanged = field(ui, "powerNoChangeStartup",
+                javax.swing.JRadioButtonMenuItem.class);
+
+            final javax.swing.JRadioButtonMenuItem off = field(ui, "powerOffStartup", javax.swing.JRadioButtonMenuItem.class);
+
+            final javax.swing.JRadioButtonMenuItem was = on.isSelected() ? on : off.isSelected() ? off : unchanged;
+
+            try
+            {
+                // AS AT START-UP: the model's default, nothing heard
+                power.set(model, true);
+                heard.set(ui, false);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> unchanged.setSelected(true));
+
+                final boolean[] offered = new boolean[2];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        offered[0] = (Boolean) offers.invoke(window);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new AssertionError(e);
+                    }
+                });
+
+                assertTrue(offered[0], "with start-up leaving the power alone and nothing heard, the picture's tools are"
+                    + " hidden as if the power were known to be on");
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> on.setSelected(true));
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        offered[1] = (Boolean) offers.invoke(window);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new AssertionError(e);
+                    }
+                });
+
+                assertFalse(offered[1], "with start-up turning the power on, the picture's tools are offered");
+            }
+            finally
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> was.setSelected(true));
+
+                heard.set(ui, true);
+            }
+        }
+        finally
+        {
+            if (model != null) power.set(model, true);
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * The picture's tools, and a right-click on the picture, wait for the power to be off; the picture says to turn it
      * off while it is on, and to right-click once it is off (MT-591; Adam: "when right clicking the locomotive image in
      * the main UI, only make this open the file chooser if the power is off, similar to the overlay icons.  update the
      * tooltip to match the status").  Told through the window's own door for a change of power, so it follows the power
      * as it changes.  The chooser is answered with a picture that cannot be read, so its refusal says the chooser opened.
      *
-     * MUTATION: offer the tools whatever the power, say nothing while it is on, or open the chooser on a right-click
-     * whatever the power in `locIconMouseReleased`, and this fails.
+     * MUTATION: offer the tools whatever the power, say nothing while it is on, open the chooser on a right-click
+     * whatever the power in `locIconMouseReleased`, or leave the tooltip when `renderActiveLoc` lets the locomotive go,
+     * and this fails.
      */
     @Test
     public void testTheIconToolsWaitForThePowerOff() throws Exception
@@ -1186,6 +1301,15 @@ public class testLocIconCrop
                 assertTrue(answering.awaitAsked(1, 10000), "a right-click on the picture did not open the file chooser"
                     + " with the power off");
             }
+
+            // AND THE LOCOMOTIVE LET GO, with nothing left to right-click
+            active.set(ui, null);
+
+            ui.repaintLoc();
+
+            settle();
+
+            assertNull(picture.getToolTipText(), "with no locomotive, the picture still says to right-click it");
         }
         finally
         {

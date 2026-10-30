@@ -5033,7 +5033,7 @@ public class AutonomyEditorPanel extends JPanel
 
         private final boolean rich;
 
-        /** The lines to lay on the diagram, or null to leave what is drawn (an answer not about a train). */
+        /** The lines to lay on the diagram, or null to leave what is drawn. */
         private final java.util.Map<TileKey,
             java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn;
 

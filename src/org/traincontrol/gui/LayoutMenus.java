@@ -766,7 +766,7 @@ final class LayoutMenus
         recentLayoutsMenu.setEnabled(!shown.isEmpty());
     }
 
-    /** The most characters an item's label takes; its tooltip holds the whole path (OB-390). */
+    /** The most characters an item's label takes, unless a cut would read like another item's (OB-390). */
     private static final int RECENT_LABEL_MOST = 50;
 
     /**

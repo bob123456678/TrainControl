@@ -6516,6 +6516,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void updatePowerState()
     {
         // On the EDT: called from the message thread, and setEnabled off it gives an occasionally wrong button.
+        powerHeard = true;
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (this.model.getPowerState())
@@ -7658,9 +7660,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         locIcon.setIcon(null);
                         locIcon.setText("");
 
-                        // The mark belongs to the picture that was there; with no icon there is nothing to re-crop
-                        // (FR-032).
-                        if (cropOverlay != null) cropOverlay.setVisible(false);
+                        // The tools and the tooltip belong to the picture that was there; with no icon there is
+                        // nothing to re-crop (FR-032) or right-click.
+                        showCropOverlay();
 
                         this.ActiveLocLabel.setText(
                             I18n.t("loc.ui.labelNoLocomotiveClickHere")
@@ -19319,10 +19321,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return activeLoc != null && !powerIsOn();
     }
 
+    /**
+     * Whether the power is known to be on, for the picture's tools.  Until the station says, only where start-up turned
+     * it on (Adam: "If we know the power is on (preference to sent power on when startup), hide the icons.  Otherwise
+     * leave as is."): the model takes it as on before it hears.
+     */
     private boolean powerIsOn()
     {
-        return this.model != null && this.model.getPowerState();
+        return this.model != null && this.model.getPowerState() && (powerHeard || this.powerOnStartup.isSelected());
     }
+
+    /** Whether the station has said whether the power is on, since start-up. */
+    private volatile boolean powerHeard = false;
 
     /** Whether a revert stands beside the wrench (MT-591): a Central Station picture with a local one over it. */
     private static boolean revertsInstead(Locomotive l)
@@ -19332,15 +19342,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Fits the tools to the power (MT-591), before the pointer arrives: the picture says to turn the power off while it
-     * is on, and that a right-click changes the icon once it is off.
+     * Fits the tools to the power (MT-591), before the pointer arrives: over a locomotive, the picture says to turn the
+     * power off while it is on, and that a right-click changes the icon once it is off.
      */
     private void fitTheIconTools()
     {
         if (iconWrench == null) return;
 
-        locIcon.setToolTipText(powerIsOn() ? I18n.t("loc.ui.tooltip.powerOffToManageIcon")
-            : activeLoc != null ? I18n.t("ui.main.tooltip.locIcon") : null);
+        locIcon.setToolTipText(activeLoc == null ? null : powerIsOn() ? I18n.t("loc.ui.tooltip.powerOffToManageIcon")
+            : I18n.t("ui.main.tooltip.locIcon"));
 
         iconWrench.setIcon(WRENCH);
         iconWrench.setToolTipText(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
