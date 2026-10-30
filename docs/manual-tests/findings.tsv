@@ -3708,6 +3708,34 @@ RSA86-D2	RSA86.md	Closed	Not a defect - checked as described.	The two claims' MU
 RSA86-D3	RSA86.md	Closed	Not a defect - checked as described.	The Readme's v3.0.5 section otherwise
 RSA86-D4	RSA86.md	Closed	Not a defect - checked as described.	The two comments
 RSA86-D5	RSA86.md	Closed	Not a defect - checked as described.	The tracker commit `393b17e8` agrees with RSA85
+RSA87-C1	RSA87.md	Closed	Fixed - `b9acc3fb`: the cut keeps the first folder of a lengthened label whole, up to 39 c	Recent Layouts: the middle cut can remove the very folder that tells two items apart
+RSA87-C2	RSA87.md	Closed	Fixed - `b9acc3fb`: clearGesture bumps whyAsked, and the no-train answer carries empty mar	Why not Moving?'s marks can stay up for an answer that is no longer the one on screen
+RSA87-C3	RSA87.md	Closed	Fixed - `b9acc3fb`: each square settles the best of its copies' answers (EditorWhy.settle)	The station colors are keyed by the station's displayed name, so two squares of one name share one mark
+RSA87-C4	RSA87.md	Closed	Fixed - `b9acc3fb`: paintArrowsAgain draws the tool border back; testTrainMarkIsNotBlank.t	A neighbor station's curve spill covers a marked square's border, and only the selection outline is drawn back
+RSA87-C5	RSA87.md	Closed	Fixed - `b9acc3fb`: both claims read the marks through a markOf helper on the event thread	Two edited claims ask `annotationFor` off the event thread of a live editor
+RSA87-C6	RSA87.md	Closed	Fixed - `b9acc3fb`: the Why claim asserts gray, the color line against the marks, the clea	The Why claim leaves gray, the precedence and the clear on put-down unasserted
+RSA87-C7	RSA87.md	Closed	Fixed - `b9acc3fb`: Er and Die after the colon.	German legend lines start a full sentence after the colon in lower case
+RSA87-C8	RSA87.md	Closed	Fixed - `b9acc3fb`: one id per rule, the two javadocs corrected, the long line wrapped; th	Comments: two ids for one rule, two inaccurate claims, one over-long line
+RSA87-D1	RSA87.md	Closed	Not a defect - checked as described.	When a mark is cleared, and which thread touches it
+RSA87-D2	RSA87.md	Closed	Not a defect - checked as described.	Removing the orange outline from `isOutlined` breaks no other caller
+RSA87-D3	RSA87.md	Closed	Not a defect - checked as described.	Painting order, sizes and redraw equality
+RSA87-D4	RSA87.md	Closed	Not a defect - checked as described.	OB-389: the notice's room tracks the notice, without a loop
+RSA87-D5	RSA87.md	Closed	Not a defect - checked as described.	OB-390: the rest of the walk
+RSA87-D6	RSA87.md	Closed	Not a defect - checked as described.	OB-391: the banner's button is bold on every path
+RSA87-D7	RSA87.md	Closed	Not a defect - checked as described.	Readme v3.0.6 and bundles
+RSA87-D8	RSA87.md	Closed	Not a defect - checked as described.	The new tests check what they say, and leave Adam's data alone
+RSA88-C1	RSA88.md	Closed	Fixed - `918a5c12`: the head runs past where the label first differs from another item's, 	Recent Layouts: two items can still read the same, in two shapes the fix does not reach
+RSA88-C2	RSA88.md	Closed	Fixed - `918a5c12`: cancelPendingGesture clears the marks and bumps whyAsked.	`cancelPendingGesture` still lets an answer in flight paint, the same staleness C2 fixed in `clearGesture`
+RSA88-C3	RSA88.md	Closed	Fixed - `918a5c12`: the no-train answer carries empty lines and marks; the comment says so	The no-train answer takes the marks off but leaves the previous train's lines, and its comment says it leaves the diagram alone
+RSA88-C4	RSA88.md	Closed	Fixed - `918a5c12`: the Why claim asks, puts the tool down and arms it again in one event-	Two of the fixes have no claim that fails without them
+RSA88-C5	RSA88.md	Closed	Fixed - `918a5c12`: both helpers moved above the javadocs they had split.	The new `markOf` helpers were inserted between a javadoc and its method, leaving two orphaned javadocs
+RSA88-C6	RSA88.md	Closed	Fixed - `918a5c12`: each available square is traced once (a set of squares), not each name	Two available squares of one displayed name: the second is green with no line, and "can go to N" counts them once
+RSA88-D1	RSA88.md	Closed	Not a defect - checked as described.	`recentLabel`: length, throws, the RSA87 example, whole paths and a one-folder difference at the root
+RSA88-D2	RSA88.md	Closed	Not a defect - checked as described.	`clearGesture`'s bump: who calls it, and what it could drop
+RSA88-D3	RSA88.md	Closed	Not a defect - checked as described.	`settle` agrees with `fileUnderStation` and the text; Manual has no purple; the legend follows the marks
+RSA88-D4	RSA88.md	Closed	Not a defect - checked as described.	`paintArrowsAgain`: order and clipping
+RSA88-D5	RSA88.md	Closed	Not a defect - checked as described.	The edited tests check what they say
+RSA88-D6	RSA88.md	Closed	Not a defect - checked as described.	German lines, comments and the Readme
 RSA9-B1	RSA9.md	Closed	Fixed on Adam's ruling (2026-09-30: "stop the timetable run upon encountering an invalid p	A refused timetable entry leaves its train where it stands: where that train's next entry starts where the refused one would have taken it, the run re
 RSA9-B2	RSA9.md	Closed	Fixed - what the carry of names remembers is taken as the editor opens (beginEditSession -	The editor's Cancel after a station's name moved to another station - two names swapped, or a freed name reused - rebinds the timetable's legs to the
 RSA9-C1	RSA9.md	Closed	Fixed - the undo point holds each stored leg by where it is (keyedLegsOf: a road by its sq	Ctrl+Z puts every configuration's stored legs back by position into points maps that `restorePage` has just rebuilt in another order: two trains' road

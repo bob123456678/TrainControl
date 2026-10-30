@@ -220,13 +220,13 @@ final class EditorWhy extends SettledQuestion
 
     /**
      * Marks a square with the best of its copies' answers, as the answer files a station: can go, else not now, else
-     * never, in `ToolMark`'s order.  The train's own square keeps its blue.
+     * never, in `ToolMark`'s order, where the train's own square's PICKED comes first and so keeps its blue.
      */
     private static void settle(java.util.Map<TileKey, ToolMark> marks, TileKey square, ToolMark mark)
     {
         ToolMark had = marks.get(square);
 
-        if (had == null || (had != ToolMark.PICKED && mark.ordinal() < had.ordinal())) marks.put(square, mark);
+        if (had == null || mark.ordinal() < had.ordinal()) marks.put(square, mark);
     }
 
     /** What the stations' colors mean, naming only the colors drawn, on the line under where it can go. */

@@ -415,6 +415,7 @@ Tab icons provided by Freepik.
             - On the track diagram, the banner's `Load this configuration` and `Fix it` buttons are now bold, like the `Start` button.
         - Interface
             - `Layouts` > `Recent Layouts` no longer shows long folder paths that make the menu very wide: two folders with the same name show only the folders that tell them apart, a long name is shortened in the middle, and the full path is in the tooltip.
+            - Right-clicking the locomotive's picture in the main window opens the icon file chooser only while the power is off, like the icons over the picture, and its tooltip says which.
 * v3.0.5 [10/29/2026]
     - New Features
         - Autonomy

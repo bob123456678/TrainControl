@@ -40637,6 +40637,314 @@ cited_by:
 status: Closed
 status_note: Dispositioned in RSA86.md: fixed in 72d8e2cb or checked clean
 
+[finding RSA87-C1 in RSA87.md]
+line: 22
+severity: C
+title: Recent Layouts: the middle cut can remove the very folder that tells two items apart
+disposition: Fixed - `b9acc3fb`: the cut keeps the first folder of a lengthened label whole, up to 39 characters; testRecentLayouts.t
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C2 in RSA87.md]
+line: 53
+severity: C
+title: Why not Moving?'s marks can stay up for an answer that is no longer the one on screen
+disposition: Fixed - `b9acc3fb`: clearGesture bumps whyAsked, and the no-train answer carries empty marks; the Why claim asserts both
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C3 in RSA87.md]
+line: 85
+severity: C
+title: The station colors are keyed by the station's displayed name, so two squares of one name share one mark
+disposition: Fixed - `b9acc3fb`: each square settles the best of its copies' answers (EditorWhy.settle), and the color line names onl
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C4 in RSA87.md]
+line: 112
+severity: C
+title: A neighbor station's curve spill covers a marked square's border, and only the selection outline is drawn back
+disposition: Fixed - `b9acc3fb`: paintArrowsAgain draws the tool border back; testTrainMarkIsNotBlank.testAToolMarkIsDrawn red withou
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C5 in RSA87.md]
+line: 130
+severity: C
+title: Two edited claims ask `annotationFor` off the event thread of a live editor
+disposition: Fixed - `b9acc3fb`: both claims read the marks through a markOf helper on the event thread.
+evidence:
+commit_id: f9fc2860
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C6 in RSA87.md]
+line: 149
+severity: C
+title: The Why claim leaves gray, the precedence and the clear on put-down unasserted
+disposition: Fixed - `b9acc3fb`: the Why claim asserts gray, the color line against the marks, the clear on put-down and the no-train
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C7 in RSA87.md]
+line: 170
+severity: C
+title: German legend lines start a full sentence after the colon in lower case
+disposition: Fixed - `b9acc3fb`: Er and Die after the colon.
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-C8 in RSA87.md]
+line: 182
+severity: C
+title: Comments: two ids for one rule, two inaccurate claims, one over-long line
+disposition: Fixed - `b9acc3fb`: one id per rule, the two javadocs corrected, the long line wrapped; the Readme names the banner's Fi
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D1 in RSA87.md]
+line: 199
+severity: D
+title: When a mark is cleared, and which thread touches it
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D2 in RSA87.md]
+line: 215
+severity: D
+title: Removing the orange outline from `isOutlined` breaks no other caller
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D3 in RSA87.md]
+line: 225
+severity: D
+title: Painting order, sizes and redraw equality
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D4 in RSA87.md]
+line: 242
+severity: D
+title: OB-389: the notice's room tracks the notice, without a loop
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D5 in RSA87.md]
+line: 262
+severity: D
+title: OB-390: the rest of the walk
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D6 in RSA87.md]
+line: 279
+severity: D
+title: OB-391: the banner's button is bold on every path
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D7 in RSA87.md]
+line: 293
+severity: D
+title: Readme v3.0.6 and bundles
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA87-D8 in RSA87.md]
+line: 307
+severity: D
+title: The new tests check what they say, and leave Adam's data alone
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA87.md: fixed in b9acc3fb or checked clean
+
+[finding RSA88-C1 in RSA88.md]
+line: 11
+severity: C
+title: Recent Layouts: two items can still read the same, in two shapes the fix does not reach
+disposition: Fixed - `918a5c12`: the head runs past where the label first differs from another item's, and a label whose cut would st
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-C2 in RSA88.md]
+line: 38
+severity: C
+title: `cancelPendingGesture` still lets an answer in flight paint, the same staleness C2 fixed in `clearGesture`
+disposition: Fixed - `918a5c12`: cancelPendingGesture clears the marks and bumps whyAsked.
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-C3 in RSA88.md]
+line: 51
+severity: C
+title: The no-train answer takes the marks off but leaves the previous train's lines, and its comment says it leaves the diagram alone
+disposition: Fixed - `918a5c12`: the no-train answer carries empty lines and marks; the comment says so.
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-C4 in RSA88.md]
+line: 70
+severity: C
+title: Two of the fixes have no claim that fails without them
+disposition: Fixed - `918a5c12`: the Why claim asks, puts the tool down and arms it again in one event-thread task, and testASquareTa
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-C5 in RSA88.md]
+line: 81
+severity: C
+title: The new `markOf` helpers were inserted between a javadoc and its method, leaving two orphaned javadocs
+disposition: Fixed - `918a5c12`: both helpers moved above the javadocs they had split.
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-C6 in RSA88.md]
+line: 92
+severity: C
+title: Two available squares of one displayed name: the second is green with no line, and "can go to N" counts them once
+disposition: Fixed - `918a5c12`: each available square is traced once (a set of squares), not each name.
+evidence:
+commit_id: 918a5c12
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-D1 in RSA88.md]
+line: 103
+severity: D
+title: `recentLabel`: length, throws, the RSA87 example, whole paths and a one-folder difference at the root
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-D2 in RSA88.md]
+line: 114
+severity: D
+title: `clearGesture`'s bump: who calls it, and what it could drop
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-D3 in RSA88.md]
+line: 126
+severity: D
+title: `settle` agrees with `fileUnderStation` and the text; Manual has no purple; the legend follows the marks
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-D4 in RSA88.md]
+line: 138
+severity: D
+title: `paintArrowsAgain`: order and clipping
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-D5 in RSA88.md]
+line: 145
+severity: D
+title: The edited tests check what they say
+disposition: Not a defect - checked as described.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
+[finding RSA88-D6 in RSA88.md]
+line: 159
+severity: D
+title: German lines, comments and the Readme
+disposition: Not a defect - checked as described.
+evidence:
+commit_id: b9acc3fb
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA88.md: fixed in 918a5c12 or checked clean
+
 [finding RSA9-B1 in RSA9.md]
 line: 27
 severity: B

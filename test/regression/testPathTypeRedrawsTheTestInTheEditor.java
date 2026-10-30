@@ -433,7 +433,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * A square takes the best of its copies' answers whatever their order: can go over not now over never, and the
      * train's own square keeps its blue (FR-159).
      *
-     * MUTATION: let a later answer replace an earlier one in `EditorWhy.settle`, or overwrite PICKED, and this fails.
+     * MUTATION: let a later answer replace an earlier one in `EditorWhy.settle`, or move PICKED after the answers in
+     * `TileAnnotation.ToolMark`, and this fails.
      */
     @Test
     public void testASquareTakesTheBestOfItsCopies() throws Exception

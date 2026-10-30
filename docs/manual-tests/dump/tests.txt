@@ -33908,3 +33908,36 @@ body:
 tail:
 | ---
 |
+
+[test MT-859]
+ordinal: 858
+anchor: mt-859
+date: 2026-10-30
+title: The locomotive picture's right-click and tooltip follow the power
+disposition: needs test
+from: OB-392
+written: 2026-10-30
+reopened: no
+body:
+| <a id="mt-859"></a>
+| ### MT-859 - 2026-10-30 - The locomotive picture's right-click and tooltip follow the power
+|
+| **Disposition:** needs test
+| **From:** OB-392
+|
+| **Written:** 2026-10-30
+|
+| **Steps**
+|
+| 1. Start TrainControl connected to your Central Station (or in simulation), with a locomotive on the main window so its picture shows.
+| 2. Turn the power on.  Hover over the locomotive's picture, then right-click it.
+| 3. Turn the power off.  Hover over the picture again, then right-click it.
+|
+| **Expected**
+|
+| - Step 2: the tooltip says `Turn the power off to manage the icon.`  The right-click does nothing: no file chooser opens.  The wrench and crop icons do not appear.
+| - Step 3: the tooltip says `Right-click to change icon`.  The right-click opens the file chooser, as the wrench does.  Cancel it.
+|
+tail:
+| ---
+|

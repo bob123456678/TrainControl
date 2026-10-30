@@ -1610,3 +1610,23 @@ text:
 |
 | On the track diagram, the strip's Fix it (shown in place of Start when the setup has errors) was set in Start's bold 12-point font, while the banner's Load this configuration button above it reads in the display's plain control font. Adam 2026-10-29: "also make sure the font on the \"fix errors\" buttons is the same as the load autonomy button in the banner at the top of the track diagram"
 |
+
+[issue OB-392]
+ordinal: 78
+inbox: yes
+kind: bug
+title: The locomotive picture opens the icon chooser on a right-click while the power is on
+filed: 2026-10-30
+filed_at: 2026-10-30 02:12
+raised_from: Adam, in chat
+build: 3.0.6
+text:
+| ### OB-392 - 2026-10-30 - The locomotive picture opens the icon chooser on a right-click while the power is on
+|
+| **Kind:** bug  
+| **Raised from:** Adam, in chat  
+| **Filed:** 2026-10-30 02:12  
+| **Build:** 3.0.6
+|
+| Adam, 2026-10-30, in chat: "when right clicking the locomotive image in the main UI, only make this open the file chooser if the power is off, similar to the overlay icons.  update the tooltip to match the status"
+|
