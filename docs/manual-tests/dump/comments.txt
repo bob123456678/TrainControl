@@ -29355,6 +29355,28 @@ text:
 | Validated: the failure was built as OB-375 and the column change, which passed as MT-823 and MT-826.
 |
 
+[comment MT-806 0]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-29 (triage).** Works.
+|
+| *Run against commit c1ebd17b, in English - build\classes, compiled 29 Oct 21:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-807 0]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-29 (triage).** Works.
+|
+| *Run against commit c1ebd17b, in English - build\classes, compiled 29 Oct 21:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
 [comment MT-809 0]
 who: Adam
 date: 2026-10-25
@@ -30209,6 +30231,120 @@ text:
 | **Claude, 2026-10-27.**
 |
 | Validated on Adam's words, 2026-10-27: "The chart looks good, just bold the dates in the corners. You can close out the chart MTs with that done." The bold corner dates are built in ba363df9 (claim testTheUsageChartShowsWhatTheLocomotivesRan.testTheSummaryLineHoldsThePeriodsTotals, red on dev).
+|
+
+[comment MT-854 0]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-29 (triage).** Works, with notes.
+|
+| The station highlighting in green/purple should happen in "why not moving", not test a path.  
+|
+| I like the blue initial selection more than the orange, so use this in test a path and why not moving during the selection phase.
+|
+| *Run against commit c1ebd17b, in English - build\classes, compiled 29 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-854 1]
+who: Claude
+date: 2026-10-29
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-29.**
+|
+| Reworked on Adam's notes ("The station highlighting in green/purple should happen in \"why not moving\", not test a path."  "I like the blue initial selection more than the orange, so use this in test a path and why not moving during the selection phase."): Test a path now marks only in blue, the start in a stronger blue instead of the orange outline; Why not Moving? marks the squares with a train in blue while it waits and colors the stations by its answer.  MT-856 tests the new behavior.
+|
+
+[comment MT-855 0]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-29 (triage).** Works.
+|
+| *Run against commit c1ebd17b, in English - build\classes, compiled 29 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-855 1]
+who: Claude
+date: 2026-10-29
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-29.**
+|
+| Validated on Adam's verdict, 2026-10-29: "Works."
+|
+
+[comment MT-856 0]
+who: Claude
+date: 2026-10-29
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-29.**
+|
+| **Claude, 2026-10-29.** Validated on your word in chat, as the triage app list was not working for you: "all your new tests pass".
+|
+
+[comment MT-856 1]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-29 (triage).** Works.
+|
+| Given in chat, recorded by Claude: close out the tests related to the bold button and the features worked today, as "working".
+|
+
+[comment MT-857 0]
+who: Claude
+date: 2026-10-29
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-29.**
+|
+| **Claude, 2026-10-29.** Validated on your word in chat, as the triage app list was not working for you: "all your new tests pass".
+|
+
+[comment MT-857 1]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-29 (triage).** Works.
+|
+| Given in chat, recorded by Claude: close out the tests related to the bold button and the features worked today, as "working".
+|
+
+[comment MT-858 0]
+who: Claude
+date: 2026-10-29
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-29.**
+|
+| **Claude, 2026-10-29.** Validated on your word in chat, as the triage app list was not working for you: "all your new tests pass". Since these steps were written, the banner's Load this configuration button is bold too, like Fix it and Start (Adam: "Load this configuration still doesn't appear to be bold").
+|
+
+[comment MT-858 1]
+who: Adam
+date: 2026-10-29
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-29 (triage).** Works.
+|
+| Given in chat, recorded by Claude: close out the tests related to the bold button and the features worked today, as "working".
 |
 
 [comment OB-331 0]

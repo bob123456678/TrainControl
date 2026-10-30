@@ -522,7 +522,8 @@ public class testWhereHisTrainsMayBeSent
             {
                 org.traincontrol.automationui.TileAnnotation annotation = panel.annotationFor(tile);
 
-                outlined[0] = annotation != null && annotation.isSelected();
+                // Marked in blue (FR-159)
+                outlined[0] = annotation != null && annotation.getToolMark() == org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE;
             });
 
             if (outlined[0] != withTrains.contains(tile)) wrong.add(tile + (outlined[0] ? " outlined" : " not outlined"));

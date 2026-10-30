@@ -347,8 +347,8 @@ public class AutonomyOverlayToggle extends JPanel
 
     /**
      * Sizes another button exactly as the Start button in this strip is sized, so the Load button in the banner above
-     * and the Start that replaces it look the same: same font, height (`BUTTON_HEIGHT`, OB-313) and insets.
-     * Re-applied whenever the text changes, since the preferred width follows the label.
+     * and the Start that replaces it look the same: same font (Start's bold even before Start is bound, OB-391), height
+     * (`BUTTON_HEIGHT`, OB-313) and insets.  Re-applied whenever the text changes, since the preferred width follows the label.
      *
      * @param button
      */
@@ -356,7 +356,7 @@ public class AutonomyOverlayToggle extends JPanel
     {
         if (button == null) return;
 
-        button.setFont(start != null ? start.getFont() : show.getFont());
+        button.setFont(start != null ? start.getFont() : AutonomyViewerPanel.FONT_BOLD);
         button.setMargin(BUTTON_MARGIN);
 
         // Cleared first: asking a component its preferred size after setting one reads back what was set

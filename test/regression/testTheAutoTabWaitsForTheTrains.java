@@ -1549,6 +1549,81 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
+     * The banner's Load is in Start's bold, like the strip's Fix it, even when it is styled before Start is bound, as
+     * the no-setup banner's is (OB-391; Adam: "make sure the font on the "fix errors" buttons is the same as the load
+     * autonomy button in the banner at the top of the track diagram").  A strip with no window, its Start in the
+     * window's own font.
+     *
+     * MUTATION: style the banner's button in `show.getFont()` before Start is bound in `styleAsRunButton`, and this
+     * fails.
+     */
+    @Test
+    public void testTheFixItButtonsAreInTheBannersFont() throws Exception
+    {
+        final java.awt.Font[] fonts = new java.awt.Font[3];
+        final String[] said = new String[2];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            org.traincontrol.gui.AutonomyOverlayToggle strip = new org.traincontrol.gui.AutonomyOverlayToggle(null);
+
+            // Styled first, as at start-up, before a layout binds Start
+            javax.swing.JButton load = new javax.swing.JButton(I18n.t("autosetup.ui.btnLoadConfiguration"));
+            strip.styleAsRunButton(load);
+
+            javax.swing.JButton start = new javax.swing.JButton("Start");
+            start.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+
+            // Nothing running, so Stop is grayed and the strip stands in for Start
+            javax.swing.JButton stop = new javax.swing.JButton("Stop");
+            stop.setEnabled(false);
+
+            strip.setLoaded(true);
+            strip.bindRunButtons(start, stop);
+
+            javax.swing.JButton run = runOf(strip);
+
+            fonts[2] = run.getFont();
+            said[1] = run.getText();
+
+            strip.setFindings(1, 0, 1, 0, null);
+
+            fonts[0] = load.getFont();
+            fonts[1] = run.getFont();
+            said[0] = run.getText();
+        });
+
+        assertEquals(said[0], I18n.t("autosetup.ui.btnFixSetup"), "precondition: with an error the strip does not offer"
+            + " Fix it");
+
+        assertEquals(fonts[0], new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12), "the banner's button, styled"
+            + " before Start was bound, is not in Start's bold: " + fonts[0]);
+
+        assertEquals(fonts[1], fonts[0], "the strip's Fix it is set in " + fonts[1] + ", the banner's button in "
+            + fonts[0]);
+
+        assertEquals(fonts[2], new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12), "the strip's " + said[1] + " no"
+            + " longer takes Start's own font");
+    }
+
+    /** The strip's own button, the one that stands in for Start, Stop or Fix it. */
+    private static javax.swing.JButton runOf(org.traincontrol.gui.AutonomyOverlayToggle strip)
+    {
+        try
+        {
+            java.lang.reflect.Field run = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("run");
+
+            run.setAccessible(true);
+
+            return (javax.swing.JButton) run.get(strip);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError(e);
+        }
+    }
+
+    /**
      * The turning mark turns about its own center (MT-650).
      *
      * Adam: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*

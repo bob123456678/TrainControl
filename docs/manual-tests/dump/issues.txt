@@ -855,6 +855,46 @@ text:
 | Adam: "When adding a new page, prefill its name with "new page x" and increment x until the name is unique.  make sure we are rejecting dupe page names"
 |
 
+[issue FR-159]
+ordinal: 73
+inbox: no
+kind: feature request
+title: Test a path highlights the stations where the train can stop
+filed: 2026-10-29
+filed_at: 2026-10-29 18:01
+raised_from: Adam, 2026-10-29
+build: c1ebd17b
+text:
+| ### FR-159 - 2026-10-29 - Test a path highlights the stations where the train can stop
+|
+| **Kind:** feature request  
+| **Raised from:** Adam, 2026-10-29  
+| **Filed:** 2026-10-29 18:01  
+| **Build:** c1ebd17b
+|
+| In the autonomy editor, Test a path should highlight on the diagram every station where the chosen train can stop. Today the only way to tell is to read the result text. Adam 2026-10-29: "highlight any station where the train can stop.  right now, you can't tell unless you read the text."
+|
+
+[issue FR-160]
+ordinal: 75
+inbox: yes
+kind: feature request
+title: for 3.1.0: drag a locomotive from station to station in the autonomy editor
+filed: 2026-10-29
+filed_at: 2026-10-29 18:54
+raised_from: Adam, 2026-10-29
+build: c1ebd17b
+text:
+| ### FR-160 - 2026-10-29 - for 3.1.0: drag a locomotive from station to station in the autonomy editor
+|
+| **Kind:** feature request  
+| **Raised from:** Adam, 2026-10-29  
+| **Filed:** 2026-10-29 18:54  
+| **Build:** c1ebd17b
+|
+| In the autonomy editor, drag a locomotive drawn on the diagram from one station to another to relocate it, equivalent to a copy and paste. Adam 2026-10-29: "drag and drop locomotives in the autonomy editor to relocate them (from station to station, equivalent to a copy and paste)."
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes
@@ -1509,4 +1549,64 @@ text:
 | **Build:** 65c008a8
 |
 | ui.testTheAutoTabSaysWhyATrainWaits.testWhileAutonomyRunsTheCardOffersNoExplanation failed twice with "autonomy did not start" (its 30 s wait after pressing Start): once in the 3.0.5 release gate battery and once in a solo rerun, both while other test classes were running beside it. It passed 15 of 15 runs with nothing else running. The class is new in 3.0.5, so 3.0.4 has no baseline. Suspect the test: it presses Start with doClick, which does nothing while the button is still disabled, and never waits for the button to be enabled. The log of a failing run was not kept; the next step is to reproduce under load with the log saved and see whether Start was pressed while disabled or refused.
+|
+
+[issue OB-389]
+ordinal: 74
+inbox: no
+kind: bug
+title: The autonomy editor's message panel covers the diagram's last row
+filed: 2026-10-29
+filed_at: 2026-10-29 18:01
+raised_from: Adam, 2026-10-29
+build: c1ebd17b
+text:
+| ### OB-389 - 2026-10-29 - The autonomy editor's message panel covers the diagram's last row
+|
+| **Kind:** bug  
+| **Raised from:** Adam, 2026-10-29  
+| **Filed:** 2026-10-29 18:01  
+| **Build:** c1ebd17b
+|
+| In the autonomy editor, scrolled to the bottom of the diagram, the message panel that slides in over the diagram covers the last rows and the diagram cannot scroll past it. Adam 2026-10-29: "when it is open, add the same height of scrollable are to the diagram so the user can both see the full message and the last row of the track diagram."
+|
+
+[issue OB-390]
+ordinal: 76
+inbox: no
+kind: bug
+title: manage the length of layout paths
+filed: 2026-10-29
+filed_at: 2026-10-29 19:40
+raised_from: noticed while testing - not from a particular test
+build: commit c1ebd17b, in Dansk - build\classes, compiled 29 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### OB-390 - 2026-10-29 - manage the length of layout paths
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-29 19:40  
+| **Build:** commit c1ebd17b, in Dansk - build\classes, compiled 29 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| in the list of recent layouts, full paths can make the window extremely wide, manage this
+|
+
+[issue OB-391]
+ordinal: 77
+inbox: no
+kind: bug
+title: The Fix it buttons are not in the banner's Load button's font
+filed: 2026-10-29
+filed_at: 2026-10-29 21:23
+raised_from: Adam, 2026-10-29
+build: c1ebd17b
+text:
+| ### OB-391 - 2026-10-29 - The Fix it buttons are not in the banner's Load button's font
+|
+| **Kind:** bug  
+| **Raised from:** Adam, 2026-10-29  
+| **Filed:** 2026-10-29 21:23  
+| **Build:** c1ebd17b
+|
+| On the track diagram, the strip's Fix it (shown in place of Start when the setup has errors) was set in Start's bold 12-point font, while the banner's Load this configuration button above it reads in the display's plain control font. Adam 2026-10-29: "also make sure the font on the \"fix errors\" buttons is the same as the load autonomy button in the banner at the top of the track diagram"
 |

@@ -33735,3 +33735,176 @@ body:
 tail:
 | ---
 |
+
+[test MT-854]
+ordinal: 853
+anchor: mt-854
+date: 2026-10-29
+title: Test a path marks the stations: blue to start, then green, purple or gray from the start
+disposition: superseded
+from: FR-159
+written: 2026-10-29
+reopened: no
+body:
+| <a id="mt-854"></a>
+| ### MT-854 - 2026-10-29 - Test a path marks the stations: blue to start, then green, purple or gray from the start
+|
+| **Disposition:** superseded
+| **From:** FR-159
+|
+| **Written:** 2026-10-29
+|
+| **Steps**
+|
+| 1. Open the autonomy editor on a page with several stations, `Path Type` on `Auto`, and press `Test a path`.  Read the message at the bottom of the diagram.
+| 2. Click a station a train could start from.  Read the message again, and look at the other stations.
+| 3. Switch `Path Type` to `Manual`, then back to `Auto`.
+| 4. Click a green station.
+| 5. Click another station to start a second test, then press `Test a path` again to put the tool down.
+|
+| **Expected**
+|
+| - Step 1: every station on the page has a blue box; plain sensors have none.  The message says to click the sensor a train would start from and that stations are marked in blue.
+| - Step 2: the start keeps its orange outline.  Each other station is green where a train from the start can stop, purple where it can stop only on a hand-driven run (a station autonomy is told to leave alone), and gray dashed where it cannot get to.  The message names the three colors.
+| - Step 3: on `Manual` the purple stations turn green and the message no longer mentions purple; back on `Auto` they are purple again.
+| - Step 4: the route is drawn in yellow and amber as before, and the colored boxes stay as they were.
+| - Step 5: the boxes change to match the new start; with the tool down, no station has a box.
+|
+tail:
+| ---
+|
+
+[test MT-855]
+ordinal: 854
+anchor: mt-855
+date: 2026-10-29
+title: The autonomy editor's message no longer covers the diagram's last row
+disposition: fixed validated
+from: OB-389
+written: 2026-10-29
+reopened: no
+body:
+| <a id="mt-855"></a>
+| ### MT-855 - 2026-10-29 - The autonomy editor's message no longer covers the diagram's last row
+|
+| **Disposition:** fixed validated
+| **From:** OB-389
+|
+| **Written:** 2026-10-29
+|
+| **Steps**
+|
+| 1. Open the autonomy editor on a page taller than the window, so the diagram scrolls, and scroll to the bottom.
+| 2. Press `Test a path` and click a sensor, so a message shows across the bottom of the diagram, then scroll down as far as it goes.
+| 3. Close the message with its X, and scroll down as far as it goes again.
+|
+| **Expected**
+|
+| - Step 2: the diagram scrolls a little further than before, so its last row sits above the message, and the whole message can be read.
+| - Step 3: the extra room is gone: the diagram ends just below its last row, as before the message.
+|
+tail:
+| ---
+|
+
+[test MT-856]
+ordinal: 855
+anchor: mt-856
+date: 2026-10-29
+title: Blue for what can be clicked in Test a path and Why not Moving?; the Why answer colors the stations
+disposition: fixed validated
+from: FR-159
+written: 2026-10-29
+reopened: no
+body:
+| <a id="mt-856"></a>
+| ### MT-856 - 2026-10-29 - Blue for what can be clicked in Test a path and Why not Moving?; the Why answer colors the stations
+|
+| **Disposition:** fixed validated
+| **From:** FR-159
+|
+| **Written:** 2026-10-29
+|
+| **Steps**
+|
+| 1. Open the autonomy editor on a page with several stations and at least one train, `Path Type` on `Auto`, and press `Test a path`.  Read the message at the bottom of the diagram.
+| 2. Click a station to start from, then another to reach.
+| 3. Press `Why not Moving?`.  Read the message.
+| 4. Click a square with a train on it and wait for the answer.  Read its last line.
+| 5. Switch `Path Type` to `Manual`, then press `Why not Moving?` again to put it down.
+|
+| **Expected**
+|
+| - Step 1: every station on the page has a blue box; plain sensors have none, and no square has an orange outline.  The message says stations are marked in blue.
+| - Step 2: after the first click the start is a stronger blue, with no orange outline; the other stations stay light blue, none green, purple or gray.  After the second click the route is drawn as before and every station is light blue again, ready for the next start.
+| - Step 3: the squares with a train have blue boxes, with no orange outline, and the message says so.
+| - Step 4: the train's square is the stronger blue.  The stations are green where the answer says it can go, gray dashed where it cannot right now, and purple where autonomy will never choose them.  The answer's last line says what the colors drawn mean.
+| - Step 5: on `Manual` no station is purple, and the green ones are the stations the answer says it can go to.  With the tool down, no square has a box.
+|
+tail:
+| ---
+|
+
+[test MT-857]
+ordinal: 856
+anchor: mt-857
+date: 2026-10-29
+title: Recent Layouts: long paths shortened, names shared by two folders told apart
+disposition: fixed validated
+from: OB-390
+written: 2026-10-29
+reopened: no
+body:
+| <a id="mt-857"></a>
+| ### MT-857 - 2026-10-29 - Recent Layouts: long paths shortened, names shared by two folders told apart
+|
+| **Disposition:** fixed validated
+| **From:** OB-390
+|
+| **Written:** 2026-10-29
+|
+| **Steps**
+|
+| 1. Open two layout folders that have the same name but sit in different places (for example two copies called `config`, one under a long folder path), then a third layout, so both are on the list.
+| 2. Open a layout whose folder name is very long, then open another layout.
+| 3. Open `Layouts` > `Recent Layouts`, and hover each item.
+|
+| **Expected**
+|
+| - Step 3: the menu stays narrow.  The two folders of one name read as an ellipsis followed by the folder that tells them apart and the name, for example `...\first\config` and `...\second\config`, not their full paths.  The long name is shortened in the middle with an ellipsis and keeps its end.  No item reads more than 50 characters after its number, and each tooltip shows the full path.  Clicking an item opens that layout as before.
+|
+tail:
+| ---
+|
+
+[test MT-858]
+ordinal: 857
+anchor: mt-858
+date: 2026-10-29
+title: The Fix it button uses the banner button font
+disposition: fixed validated
+from: OB-391
+written: 2026-10-29
+reopened: no
+body:
+| <a id="mt-858"></a>
+| ### MT-858 - 2026-10-29 - The Fix it button uses the banner button font
+|
+| **Disposition:** fixed validated
+| **From:** OB-391
+|
+| **Written:** 2026-10-29
+|
+| **Steps**
+|
+| 1. With autonomy not loaded, look at the banner across the top of the track diagram and its `Load this configuration` button.
+| 2. Load a configuration whose setup has errors (or add one in the autonomy editor and save), so the strip on the track diagram offers `Fix it` where `Start Autonomous Operation` would be.
+| 3. Compare the lettering of `Fix it` with the banner's button from step 1; then fix the error so `Start Autonomous Operation` comes back.
+|
+| **Expected**
+|
+| - Step 3: `Fix it` is in the same font, size and weight as the banner's `Load this configuration` button.  `Start Autonomous Operation` keeps its own font, as before.
+|
+tail:
+| ---
+|

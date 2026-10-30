@@ -1320,6 +1320,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
             autonomyBanner = null;
 
+            sizeTheDiagram();
+
             // The Addresses box back where the form had it
             if (autonomyVisibility != null && formPane.getLayout() instanceof javax.swing.GroupLayout)
             {
@@ -1607,6 +1609,28 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 // The notices float over the diagram, which keeps its size (OB-366)
                 stack.add(autonomyBanner.floatOver(this.jScrollPane1), BorderLayout.CENTER);
+
+                // Its height below the diagram, for as long as it shows
+                autonomyBanner.addComponentListener(new java.awt.event.ComponentAdapter()
+                {
+                    @Override
+                    public void componentResized(java.awt.event.ComponentEvent e)
+                    {
+                        sizeTheDiagram();
+                    }
+
+                    @Override
+                    public void componentShown(java.awt.event.ComponentEvent e)
+                    {
+                        sizeTheDiagram();
+                    }
+
+                    @Override
+                    public void componentHidden(java.awt.event.ComponentEvent e)
+                    {
+                        sizeTheDiagram();
+                    }
+                });
 
                 javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
                 foot.setOpaque(false);
@@ -3350,10 +3374,29 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
+     * Sizes the panel the grid sits in: a row of slack below and a column beside, plus the layout's gaps, else a
+     * scrollbar pushes the last row out of sight and a too-wide CENTER row sits at a negative x no scroll reaches.  And
+     * the notice's height below that while one floats over the diagram, so the last row can be scrolled clear of it
+     * (OB-389).
+     */
+    private void sizeTheDiagram()
+    {
+        if (grid == null) return;
+
+        int notice = autonomyBanner != null && autonomyBanner.isVisible() ? autonomyBanner.getHeight() : 0;
+
+        this.ExtLayoutPanel.setPreferredSize(new Dimension(
+            grid.maxWidth + 2 * DIAGRAM_GAP + DIAGRAM_SLACK_COLUMNS * size,
+            grid.maxHeight + size + 2 * DIAGRAM_GAP + notice));
+
+        this.ExtLayoutPanel.revalidate();
+    }
+
+    /**
      * Refreshes the layout
      */
     synchronized private void drawGrid()
-    {        
+    {
         // Ensures the grid is a minimum size.  This will automatically initialize the grid if the track diagram is blank
         if (this.layout.getSx() < DEFAULT_NEW_SIZE_COLS || this.layout.getSy() < DEFAULT_NEW_SIZE_ROWS)
         {
@@ -3374,11 +3417,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // A new panel, so it is told whether a drag picks
             this.showWhetherADragPicks();
 
-            // A row of slack below and a column beside, plus the layout's gaps: else a scrollbar pushes the last row
-            // out of sight, and a too-wide CENTER row sits at a negative x no scroll reaches.
-            this.ExtLayoutPanel.setPreferredSize(new Dimension(
-                grid.maxWidth + 2 * DIAGRAM_GAP + DIAGRAM_SLACK_COLUMNS * size,
-                grid.maxHeight + size + 2 * DIAGRAM_GAP));
+            sizeTheDiagram();
 
             grid.getContainer().revalidate();
             this.ExtLayoutPanel.revalidate();

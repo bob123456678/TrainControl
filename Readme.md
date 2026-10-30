@@ -405,6 +405,16 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.6
+    - New Features
+        - Autonomy
+            - In the autonomy editor, what you can click is marked in blue while `Test a path` or `Why not Moving?` is on: the stations for `Test a path`, the squares with a train for `Why not Moving?`, and what you clicked in a stronger blue instead of an orange outline.
+            - `Why not Moving?` colors the stations by its answer: green where the train can go now, gray where it cannot right now, and purple where autonomy will never choose it.
+    - Bug Fixes
+        - Autonomy
+            - In the autonomy editor, a message across the bottom of the diagram no longer hides the diagram's last row: scroll down to see the row above the message.
+            - On the track diagram, the banner's `Load this configuration` button is now bold, like the `Fix it` and `Start` buttons.
+        - Interface
+            - `Layouts` > `Recent Layouts` no longer shows long folder paths that make the menu very wide: two folders with the same name show only the folders that tell them apart, a long name is shortened in the middle, and the full path is in the tooltip.
 * v3.0.5 [10/29/2026]
     - New Features
         - Autonomy

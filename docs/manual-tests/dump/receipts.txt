@@ -4282,3 +4282,35 @@ kind: fix
 what: Quick Find cuts the kept keys to the new search's before comparing (63ed640a); claim testTheKeyboardPages.testARemapBetweenSearchesSkipsNoKey, red on dev
 state: -
 became: -
+
+[receipt FR-159]
+seq: 535
+filed: 2026-10-29
+kind: feature
+what: Reworked on MT-854's notes: one blue mark for what can be clicked (TileAnnotation.ToolMark CLICKABLE, PICKED in place of the orange outline) in Test a path and Why not Moving?; the Why answer colors the stations (CAN_GO green, NOT_NOW gray dashed, NEVER purple, from EditorWhy.composeWhy's groups) with a line naming the colors. Claims regression.testPathTypeRedrawsTheTestInTheEditor.testTestAPathMarksTheStationsInBlue and .testWhyNotMovingMarksTheStationsByItsAnswer, regression.testTrainMarkIsNotBlank, each red under its MUTATION notes.
+state: fixed validated
+became: MT-856
+
+[receipt OB-389]
+seq: 536
+filed: 2026-10-29
+kind: bug
+what: The editor's diagram panel grows by the notice's height while the notice shows (LayoutEditor.sizeTheDiagram, on the band's shown, hidden and resized events). Claim regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers.testTheLastRowScrollsClearOfANotice, red on dev.
+state: fixed validated
+became: MT-855
+
+[receipt OB-390]
+seq: 537
+filed: 2026-10-29
+kind: bug
+what: Each Recent Layouts item reads LayoutMenus.recentLabel: the folder name, or where another listed folder shares it, an ellipsis and as many last folders as tell them apart; cut in the middle past 50 characters, the tooltip keeping the whole path. Claim ui.testRecentLayouts.testALongPathIsShortened, red under its two MUTATION notes; testEachItemIsNumberedInTheOrderShown now expects the short form.
+state: fixed validated
+became: MT-857
+
+[receipt OB-391]
+seq: 538
+filed: 2026-10-29
+kind: bug
+what: AutonomyOverlayToggle.styleAsRunButton gives the banner button Start's bold (AutonomyViewerPanel.FONT_BOLD) even before Start is bound, as the no-setup banner's Load is styled first; the strip's Fix it keeps Start's own. Claim regression.testTheAutoTabWaitsForTheTrains.testTheFixItButtonsAreInTheBannersFont, red under its MUTATION note.
+state: fixed validated
+became: MT-858

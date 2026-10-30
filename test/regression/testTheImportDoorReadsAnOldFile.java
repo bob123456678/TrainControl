@@ -18,6 +18,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -3388,11 +3389,16 @@ public class testTheImportDoorReadsAnOldFile
 
                 SwingUtilities.invokeAndWait(() -> test.doClick());
 
-                assertFalse(panel.isOutlined(station), "precondition: " + station + " is outlined before it is clicked");
+                // The start is marked in the stronger blue (FR-159)
+                assertNotEquals(panel.annotationFor(station).getToolMark(),
+                    org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED, "precondition: " + station
+                    + " is marked as the start before it is clicked");
 
                 clickOn(on[0], at[0]);
 
-                assertTrue(panel.isOutlined(station), "a click on the train standing at " + station + ", where "
+                assertEquals(panel.annotationFor(station).getToolMark(),
+                    org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED, "a click on the train standing at "
+                    + station + ", where "
                     + on[0].getClass().getSimpleName() + " is on top, did not start Test a Path there (OB-354)");
 
                 final javax.swing.JToggleButton why = (javax.swing.JToggleButton) panelPart(panel, "whyButton");

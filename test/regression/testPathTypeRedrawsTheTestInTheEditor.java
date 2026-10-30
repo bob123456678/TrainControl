@@ -7,6 +7,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
@@ -171,6 +172,227 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             session.restoreSetup(asFound);
         }
+    }
+
+    /**
+     * Test a Path marks in blue what can be clicked: every station once it is armed, the start in a stronger blue once
+     * clicked, and every station again with the answer, when the next click starts a new test; nothing once the tool is
+     * put down (FR-159; Adam, MT-854: "I like the blue initial selection more than the orange, so use this in test a
+     * path and why not moving during the selection phase").  No station takes Why not Moving?'s colors here ("The
+     * station highlighting in green/purple should happen in "why not moving", not test a path").
+     *
+     * MUTATION: drop the `annotation.markedByATool` call in `AutonomyEditorPanel.annotationFor`, or mark `testFrom`
+     * CLICKABLE in `toolMark`, and this fails.
+     */
+    @Test
+    public void testTestAPathMarksTheStationsInBlue() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(PAGE);
+
+        TileKey[] pair = aConnectedPairOfStations();
+
+        assertNotNull(pair, "precondition: no two stations on " + PAGE + " with a route between them");
+
+        final TileKey from = pair[0];
+        final TileKey to = pair[1];
+
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                built[0] = new LayoutEditor(page, 30, ui, 0);
+                built[0].render();
+                built[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
+            final javax.swing.AbstractButton test = (javax.swing.AbstractButton) field(panel, "testButton");
+
+            assertNull(mark(panel, to), "precondition: a station is marked before Test a Path is pressed");
+
+            SwingUtilities.invokeAndWait(test::doClick);
+            settle();
+
+            everyStationIs(panel, null, "armed, with no start chosen");
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(from, page.getComponent(from.getX(), from.getY()),
+                false));
+            settle();
+
+            assertEquals(mark(panel, from), TileAnnotation.ToolMark.PICKED, "the start is not marked as the square"
+                + " clicked");
+
+            assertFalse(panel.isOutlined(from), "the start is still outlined in orange");
+
+            everyStationIs(panel, from, "with the start chosen");
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(to, page.getComponent(to.getX(), to.getY()), false));
+            settle();
+
+            everyStationIs(panel, null, "with the answer shown, when the next click starts a new test,");
+
+            SwingUtilities.invokeAndWait(test::doClick);
+            settle();
+
+            assertNull(mark(panel, to), "putting Test a Path down left the station marked");
+            assertNull(mark(panel, from), "putting Test a Path down left the start marked");
+        }
+        finally
+        {
+            if (built[0] != null)
+            {
+                final LayoutEditor closing = built[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+        }
+    }
+
+    /**
+     * Why not Moving? marks in blue the squares with a train while it waits, then, with its answer, the train's square
+     * in a stronger blue and each station in the answer's colors: green where it can go now, gray where it cannot right
+     * now, and purple, on Auto alone, where autonomy will never choose it, with a line saying so (FR-159; Adam, MT-854:
+     * "The station highlighting in green/purple should happen in "why not moving"").
+     *
+     * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, or mark the never-chosen stations NOT_NOW in
+     * `EditorWhy.composeWhy`, and this fails.
+     */
+    @Test
+    public void testWhyNotMovingMarksTheStationsByItsAnswer() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(PAGE);
+
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        org.traincontrol.base.Locomotive train = null;
+        Integer lengthWas = null;
+
+        try
+        {
+            // The editor first: opening it builds the railway the trains stand on, which this claim run alone has not.
+            SwingUtilities.invokeAndWait(() ->
+            {
+                built[0] = new LayoutEditor(page, 30, ui, 0);
+                built[0].render();
+                built[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final TileKey standing = aSquareATrainStandsOn();
+
+            assertNotNull(standing, "precondition: no train stands on a station square of " + PAGE);
+
+            // No length while it is asked, as in testWhyNotMovingFollowsPathType: a long one fits nowhere.
+            train = trainOn(standing);
+            lengthWas = train == null ? null : train.getTrainLength();
+
+            if (train != null) train.setTrainLength(0);
+
+            final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
+            final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field(panel, "whyButton");
+
+            SwingUtilities.invokeAndWait(why::doClick);
+            settle();
+
+            assertEquals(mark(panel, standing), TileAnnotation.ToolMark.CLICKABLE, "while Why not Moving? waits, the"
+                + " square with a train is not marked in blue");
+
+            assertFalse(panel.isOutlined(standing), "while Why not Moving? waits, the square with a train is still"
+                + " outlined in orange");
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(standing,
+                page.getComponent(standing.getX(), standing.getY()), false));
+
+            answered(panel);
+
+            assertEquals(mark(panel, standing), TileAnnotation.ToolMark.PICKED, "the train asked about is not marked as"
+                + " the square clicked");
+
+            String onAuto = shown(panel);
+
+            assertEquals(marked(panel, TileAnnotation.ToolMark.CAN_GO), placesItCanGo(onAuto), "the stations marked"
+                + " green are not the stations the answer says it can go to: " + onAuto);
+
+            assertTrue(marked(panel, TileAnnotation.ToolMark.NEVER) > 0, "on Auto, no station autonomy will never"
+                + " choose is marked purple: " + onAuto);
+
+            assertTrue(onAuto.contains(org.traincontrol.util.I18n.t("autosetup.ui.whyColourPurple")), "on Auto, the"
+                + " answer does not say what purple means: " + onAuto);
+
+            final javax.swing.AbstractButton manual = (javax.swing.AbstractButton) field(panel, "pathTypeManual");
+
+            SwingUtilities.invokeAndWait(manual::doClick);
+
+            answered(panel);
+
+            String onManual = shown(panel);
+
+            assertEquals(marked(panel, TileAnnotation.ToolMark.NEVER), 0, "on Manual, a station is marked as one"
+                + " autonomy will never choose: " + onManual);
+
+            assertEquals(marked(panel, TileAnnotation.ToolMark.CAN_GO), placesItCanGo(onManual), "on Manual, the"
+                + " stations marked green are not the stations the answer says it can go to: " + onManual);
+
+            SwingUtilities.invokeAndWait(why::doClick);
+            settle();
+
+            assertNull(mark(panel, standing), "putting Why not Moving? down left the train's square marked");
+        }
+        finally
+        {
+            if (train != null) train.setTrainLength(lengthWas == null ? 0 : lengthWas);
+
+            if (built[0] != null)
+            {
+                final LayoutEditor closing = built[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+        }
+    }
+
+    /** Every station on the page marked CLICKABLE but the one picked, and nothing else marked. */
+    private static void everyStationIs(AutonomyEditorPanel panel, TileKey picked, String when) throws Exception
+    {
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (!PAGE.equals(tile.getPage()) || tile.equals(picked)) continue;
+
+            assertEquals(mark(panel, tile), session.getStore().isStation(tile) ? TileAnnotation.ToolMark.CLICKABLE
+                : null, when + ", " + describe(panel, tile) + " is marked wrongly");
+        }
+    }
+
+    /** How many squares the Why answer gives this mark, on any page. */
+    @SuppressWarnings("unchecked")
+    private static int marked(AutonomyEditorPanel panel, TileAnnotation.ToolMark which) throws Exception
+    {
+        final java.util.Map<TileKey, TileAnnotation.ToolMark> marks =
+            (java.util.Map<TileKey, TileAnnotation.ToolMark>) field(panel, "whyMarks");
+
+        final int[] count = new int[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (TileAnnotation.ToolMark mark : marks.values()) if (mark == which) count[0]++;
+        });
+
+        return count[0];
+    }
+
+    /** How the editor marks a square for its tools, asked on the event thread. */
+    private static TileAnnotation.ToolMark mark(final AutonomyEditorPanel panel, final TileKey tile) throws Exception
+    {
+        final TileAnnotation.ToolMark[] out = new TileAnnotation.ToolMark[1];
+
+        SwingUtilities.invokeAndWait(() -> out[0] = panel.annotationFor(tile).getToolMark());
+
+        return out[0];
     }
 
     /**

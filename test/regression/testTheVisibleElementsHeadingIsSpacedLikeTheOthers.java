@@ -448,6 +448,65 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
     }
 
+    /**
+     * Scrolled to the bottom with a notice showing, the diagram's last row lies above the notice, not under it: the
+     * diagram gains the notice's height below while the notice shows, and loses it when it goes (OB-389; Adam: "add
+     * the same height of scrollable are to the diagram so the user can both see the full message and the last row of
+     * the track diagram").
+     *
+     * MUTATION: leave the notice's height out of `LayoutEditor.sizeTheDiagram`, and this fails.
+     */
+    @Test
+    public void testTheLastRowScrollsClearOfANotice() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final org.traincontrol.gui.autonomy.AutonomyBanner notices = notices(editor);
+            final javax.swing.JViewport diagram = diagram(editor);
+            final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) field(editor, "grid");
+
+            final int[] quiet = new int[1];
+
+            SwingUtilities.invokeAndWait(() -> quiet[0] = diagram.getView().getPreferredSize().height);
+
+            say(editor, notices, lines(3));
+
+            SwingUtilities.invokeAndWait(() -> diagram.setViewPosition(new java.awt.Point(diagram.getViewPosition().x,
+                Math.max(0, diagram.getViewSize().height - diagram.getExtentSize().height))));
+
+            settle(editor);
+
+            java.awt.Rectangle band = onScreen(notices);
+            java.awt.Rectangle rows = onScreen(grid.getContainer());
+
+            int lastRow = rows.y + grid.maxHeight;
+
+            java.awt.Rectangle shown = onScreen(diagram);
+
+            assertTrue(lastRow > shown.y && lastRow <= shown.y + shown.height, "precondition: scrolled to the bottom,"
+                + " the diagram's last row is not on screen; the rows end at " + lastRow + ", the diagram shows " + shown
+                + ", the rows are " + rows);
+
+            assertTrue(lastRow <= band.y, "scrolled to the bottom, the diagram's last row ends at " + lastRow
+                + ", under the notice, which starts at " + band.y + " (OB-389)");
+
+            dismiss(editor, notices);
+            settle(editor);
+
+            final int[] after = new int[1];
+
+            SwingUtilities.invokeAndWait(() -> after[0] = diagram.getView().getPreferredSize().height);
+
+            assertEquals(after[0], quiet[0], "the diagram kept the notice's height after the notice went (OB-389)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
     /** An autonomy editor, on screen and settled. */
     private static LayoutEditor autonomyEditor() throws Exception
     {

@@ -555,6 +555,88 @@ public class TileAnnotation
 
     private boolean unmeasured = false;
 
+    /**
+     * How Test a Path and Why not Moving? mark a square (FR-159): blue on what can be clicked, a stronger blue on what
+     * was, and Why not Moving?'s answer on the stations.
+     */
+    public static enum ToolMark
+    {
+        /** Can be clicked: a station for Test a Path, a square with a train for Why not Moving?. */
+        CLICKABLE,
+
+        /** The square clicked: Test a Path's start, or the train Why not Moving? answers for. */
+        PICKED,
+
+        /** The train can go here now. */
+        CAN_GO,
+
+        /** The train cannot be sent here right now. */
+        NOT_NOW,
+
+        /** Autonomy will never choose this station for the train. */
+        NEVER
+    }
+
+    /** Marks this square for a tool; carried through `isBlank`, `equals` and `hashCode` as `needsALength` is. */
+    public TileAnnotation markedByATool(ToolMark mark)
+    {
+        this.toolMark = mark;
+
+        return this;
+    }
+
+    private ToolMark toolMark = null;
+
+    /** How a tool marks this square, or null. */
+    public ToolMark getToolMark()
+    {
+        return toolMark;
+    }
+
+    private static final Color MARK_BLUE = new Color(25, 118, 210);
+    private static final Color MARK_GREEN = new Color(34, 150, 60);
+    private static final Color MARK_GRAY = new Color(120, 120, 120);
+    private static final float MARK_FILL_ALPHA = 0.24f;
+    private static final float PICKED_FILL_ALPHA = 0.5f;
+
+    /** The mark's wash, under the badge so the station's icon stays sharp; none on a square it cannot go to now. */
+    private void paintToolFill(Graphics2D g, int width, int height)
+    {
+        if (toolMark == ToolMark.NOT_NOW) return;
+
+        java.awt.Composite before = g.getComposite();
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,
+            toolMark == ToolMark.PICKED ? PICKED_FILL_ALPHA : MARK_FILL_ALPHA));
+        g.setColor(markColour());
+        g.fillRoundRect(1, 1, width - 2, height - 2, width / 4, height / 4);
+
+        g.setComposite(before);
+    }
+
+    /** The mark's border, over everything but a selection's: dashed where it cannot go now, wider where clicked. */
+    private void paintToolBorder(Graphics2D g, int width, int height)
+    {
+        float wide = Math.max(1.5f, Math.min(width, height) / 15f) * (toolMark == ToolMark.PICKED ? 1.6f : 1f);
+
+        g.setStroke(toolMark == ToolMark.NOT_NOW
+            ? new BasicStroke(wide, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[] {wide * 2, wide * 2}, 0f)
+            : new BasicStroke(wide));
+        g.setColor(markColour());
+        g.drawRoundRect(1, 1, width - 3, height - 3, width / 4, height / 4);
+    }
+
+    private Color markColour()
+    {
+        switch (toolMark)
+        {
+            case CLICKABLE: case PICKED: return MARK_BLUE;
+            case CAN_GO: return MARK_GREEN;
+            case NEVER: return TRACE_MANUAL;
+            default: return MARK_GRAY;
+        }
+    }
+
     /** Whether this square is marked as needing a length. */
     public boolean isUnmeasured()
     {
@@ -630,7 +712,7 @@ public class TileAnnotation
         // `editing` is deliberately NOT here, unlike in equals and hashCode: on its own it paints nothing (it only
         // says what color a badge is), so an annotation carrying it and nothing else is still blank.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !stationless
-            && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured;
+            && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured && toolMark == null;
     }
 
     public List<Trace> getTraces()
@@ -714,6 +796,8 @@ public class TileAnnotation
             // UNDER the arrows and badge, so the highlight says "measure this" without hiding the track or the square.
             if (unmeasured) paintUnmeasured(g, width, height);
 
+            if (toolMark != null) paintToolFill(g, width, height);
+
             // THE BADGE UNDER THE ARROWS (MT-710): an arrow says where a train may go, which the icon cannot, and
             // FR-118's icons run nearly the width of the square where the arrows are.  `paintBadgeOverRun` draws it
             // again over them.
@@ -731,6 +815,8 @@ public class TileAnnotation
 
             // Last, on top of everything: a tested path is a transient answer to a question just asked.
             paintTraces(g, width, height);
+
+            if (toolMark != null) paintToolBorder(g, width, height);
 
             if (selected)
             {
@@ -2361,6 +2447,7 @@ public class TileAnnotation
             && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
+            && toolMark == other.toolMark
             && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
@@ -2374,7 +2461,7 @@ public class TileAnnotation
             + traces.hashCode() * 3
             + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
             + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768) + (stationless ? 131072 : 0)
-            + arrivals.hashCode() * 7;
+            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144);
     }
 
     @Override
@@ -2383,6 +2470,7 @@ public class TileAnnotation
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
             + (badge == null ? "" : " " + badge)
             + (arrivals.isEmpty() ? "" : " " + arrivals)
-            + (ignored ? " ignored" : "") + (stationless ? " no station" : "");
+            + (ignored ? " ignored" : "") + (stationless ? " no station" : "")
+            + (toolMark == null ? "" : " " + toolMark);
     }
 }
