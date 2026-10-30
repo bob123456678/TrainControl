@@ -14,6 +14,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
@@ -134,7 +135,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
         assertTrue(why.isSelected(), "precondition: Why Not Moving did not arm");
 
-        assertEquals(markOf(panel, WITH_A_TRAIN), org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE,
+        assertEquals(markOf(panel, WITH_A_TRAIN), ToolMark.CLICKABLE,
             "Why Not Moving is waiting for a click and the square with a train on it is not marked in blue - Adam,"
             + " FR-102: \"highlight stations w/ trains on the editor diagram so it's clear what the user can click on\"");
 
@@ -200,7 +201,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
             javax.swing.SwingUtilities.invokeAndWait(() -> why.doClick());
 
-            assertEquals(markOf(panel, EMPTY), org.traincontrol.automationui.TileAnnotation.ToolMark.CLICKABLE, "a railway is running"
+            assertEquals(markOf(panel, EMPTY), ToolMark.CLICKABLE, "a railway is running"
                 + " with a train at 1,1 and Why Not Moving does not mark it - it read the setup, which has none there");
 
             assertNull(markOf(panel, WITH_A_TRAIN), "a railway is running with no train at 3,1 and"
@@ -246,17 +247,17 @@ public class testTheEditorSaysWhatItsToolsDo
         }
     }
 
-    /** The menu item with this text, anywhere in the menu. */
     /** How the editor marks a square for its tools, asked on the event thread. */
-    private static org.traincontrol.automationui.TileAnnotation.ToolMark markOf(final AutonomyEditorPanel panel, final TileKey tile) throws Exception
+    private static ToolMark markOf(final AutonomyEditorPanel panel, final TileKey tile) throws Exception
     {
-        final org.traincontrol.automationui.TileAnnotation.ToolMark[] out = new org.traincontrol.automationui.TileAnnotation.ToolMark[1];
+        final ToolMark[] out = new ToolMark[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() -> out[0] = panel.annotationFor(tile).getToolMark());
 
         return out[0];
     }
 
+    /** The menu item with this text, anywhere in the menu. */
     private static javax.swing.JMenuItem find(java.awt.Container container, String text)
     {
         for (java.awt.Component c : container instanceof javax.swing.JMenu

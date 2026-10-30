@@ -299,10 +299,11 @@ public class testRecentLayouts
 
         assertEquals(texts.size(), 2, "precondition: Recent Layouts does not list the two copies: " + texts);
 
-        assertTrue(texts.get(0).length() - "1. ".length() <= 50 && texts.get(0).endsWith("layout files"), "precondition: the"
-            + " first copy is not cut with its end kept: " + texts.get(0));
+        assertTrue(texts.get(0).length() - "1. ".length() <= 50 && texts.get(0).endsWith("layout files"),
+            "precondition: the first copy is not cut with its end kept: " + texts.get(0));
 
-        assertFalse(texts.get(0).substring(3).equals(texts.get(1).substring(3)), "the two copies read the same: " + texts);
+        assertFalse(texts.get(0).substring(3).equals(texts.get(1).substring(3)), "the two copies read the same: "
+            + texts);
     }
 
     /**

@@ -819,6 +819,10 @@ public class AutonomyEditorPanel extends JPanel
         tailPicks.clear();
         highlightedSignals.clear();
         traces.clear();
+        whyMarks.clear();
+
+        // An answer still on its way is to a question no longer asked
+        whyAsked.incrementAndGet();
 
         if (testButton != null) testButton.setSelected(false);
         if (whyButton != null) whyButton.setSelected(false);

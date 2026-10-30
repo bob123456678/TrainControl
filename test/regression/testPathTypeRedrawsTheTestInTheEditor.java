@@ -259,11 +259,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * "The station highlighting in green/purple should happen in "why not moving"").
      *
      * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
-     * marks off.
+     * marks off, and an answer that lands after the tool was put down and armed again marks nothing.
      *
      * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, mark the never-chosen stations NOT_NOW or none
-     * NOT_NOW in `EditorWhy.composeWhy`, leave the marks in `clearGesture`, or give the no-train answer no marks, and
-     * this fails.
+     * NOT_NOW in `EditorWhy.composeWhy`, leave the marks or `whyAsked` alone in `clearGesture`, or give the no-train
+     * answer no marks, and this fails.
      */
     @Test
     public void testWhyNotMovingMarksTheStationsByItsAnswer() throws Exception
@@ -373,6 +373,19 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             assertEquals(markedAtAll(panel), 0, "asked about " + free + ", where no train stands, the previous train's"
                 + " marks stay: " + shown(panel));
+
+            // Asked, then the tool put down and armed again before the answer can paint: it lands on the event thread
+            SwingUtilities.invokeAndWait(() ->
+            {
+                panel.tileClicked(standing, page.getComponent(standing.getX(), standing.getY()), false);
+                why.doClick();
+                why.doClick();
+            });
+
+            answered(panel);
+
+            assertEquals(markedAtAll(panel), 0, "an answer asked before the tool was put down and armed again marked the"
+                + " stations");
         }
         finally
         {
@@ -414,6 +427,50 @@ public class testPathTypeRedrawsTheTestInTheEditor
         });
 
         return count[0];
+    }
+
+    /**
+     * A square takes the best of its copies' answers whatever their order: can go over not now over never, and the
+     * train's own square keeps its blue (FR-159).
+     *
+     * MUTATION: let a later answer replace an earlier one in `EditorWhy.settle`, or overwrite PICKED, and this fails.
+     */
+    @Test
+    public void testASquareTakesTheBestOfItsCopies() throws Exception
+    {
+        java.lang.reflect.Method settle = Class.forName("org.traincontrol.gui.autonomyeditor.EditorWhy")
+            .getDeclaredMethod("settle", java.util.Map.class, TileKey.class, TileAnnotation.ToolMark.class);
+
+        settle.setAccessible(true);
+
+        TileAnnotation.ToolMark[][] orders = {
+            {TileAnnotation.ToolMark.NEVER, TileAnnotation.ToolMark.CAN_GO, TileAnnotation.ToolMark.NOT_NOW},
+            {TileAnnotation.ToolMark.CAN_GO, TileAnnotation.ToolMark.NOT_NOW, TileAnnotation.ToolMark.NEVER},
+            {TileAnnotation.ToolMark.NOT_NOW, TileAnnotation.ToolMark.NEVER}};
+
+        TileAnnotation.ToolMark[] best = {TileAnnotation.ToolMark.CAN_GO, TileAnnotation.ToolMark.CAN_GO,
+            TileAnnotation.ToolMark.NOT_NOW};
+
+        TileKey square = new TileKey(PAGE, 1, 1);
+
+        for (int i = 0; i < orders.length; i++)
+        {
+            java.util.Map<TileKey, TileAnnotation.ToolMark> marks = new java.util.HashMap<>();
+
+            for (TileAnnotation.ToolMark answer : orders[i]) settle.invoke(null, marks, square, answer);
+
+            assertEquals(marks.get(square), best[i], "copies answering " + java.util.Arrays.toString(orders[i])
+                + " leave the square marked " + marks.get(square));
+        }
+
+        java.util.Map<TileKey, TileAnnotation.ToolMark> marks = new java.util.HashMap<>();
+
+        marks.put(square, TileAnnotation.ToolMark.PICKED);
+
+        settle.invoke(null, marks, square, TileAnnotation.ToolMark.CAN_GO);
+
+        assertEquals(marks.get(square), TileAnnotation.ToolMark.PICKED, "a station's answer took the train's own"
+            + " square's blue");
     }
 
     /** The answer names each color exactly where it marks a station in it. */

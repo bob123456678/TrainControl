@@ -772,12 +772,64 @@ final class LayoutMenus
     /**
      * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many of
      * its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.  Cut in
-     * the middle past `RECENT_LABEL_MOST`, keeping the end and the first of those folders, which is the one that differs.
+     * the middle past `RECENT_LABEL_MOST`, the head running past where it first differs from another item's, and not cut
+     * at all where the cut would still read like another item's.
      * @param path the folder
      * @param shown every folder listed with it
      * @return the label
      */
     static String recentLabel(String path, List<String> shown)
+    {
+        String label = uncutLabel(path, shown);
+
+        List<String> others = new ArrayList<>();
+
+        for (String other : shown)
+        {
+            if (!other.equals(path)) others.add(uncutLabel(other, shown));
+        }
+
+        String cut = cut(label, others);
+
+        for (String other : others)
+        {
+            List<String> theirOthers = new ArrayList<>(others);
+
+            theirOthers.remove(other);
+            theirOthers.add(label);
+
+            if (cut(other, theirOthers).equals(cut)) return label;
+        }
+
+        return cut;
+    }
+
+    /** A label cut in the middle past `RECENT_LABEL_MOST`, its head past where it first differs from any of these. */
+    private static String cut(String label, List<String> others)
+    {
+        if (label.length() <= RECENT_LABEL_MOST) return label;
+
+        int head = RECENT_LABEL_MOST / 3;
+
+        for (String other : others)
+        {
+            int differs = 0;
+
+            while (differs < Math.min(label.length(), other.length())
+                && label.charAt(differs) == other.charAt(differs))
+            {
+                differs++;
+            }
+
+            head = Math.max(head, Math.min(differs + 1, RECENT_LABEL_MOST - 1 - RECENT_LABEL_MOST / 5));
+        }
+
+        return label.substring(0, head) + "\u2026"
+            + label.substring(label.length() - (RECENT_LABEL_MOST - head - 1));
+    }
+
+    /** The folder's name, or as many of its last folders as tell it from another listed folder of that name. */
+    private static String uncutLabel(String path, List<String> shown)
     {
         List<String> mine = folders(path);
 
@@ -801,19 +853,9 @@ final class LayoutMenus
             needed = Math.max(needed, same + 1);
         }
 
-        String label = needed >= mine.size() ? path
+        return needed >= mine.size() ? path
             : (needed > 1 ? "\u2026" + File.separator : "")
                 + String.join(File.separator, mine.subList(mine.size() - needed, mine.size()));
-
-        if (label.length() <= RECENT_LABEL_MOST) return label;
-
-        String apart = needed > 1 && needed < mine.size()
-            ? "\u2026" + File.separator + mine.get(mine.size() - needed) : "";
-
-        int head = Math.min(Math.max(apart.length(), RECENT_LABEL_MOST / 3), RECENT_LABEL_MOST - 1 - RECENT_LABEL_MOST / 5);
-
-        return label.substring(0, head) + "\u2026"
-            + label.substring(label.length() - (RECENT_LABEL_MOST - head - 1));
     }
 
     /** A path's folders from its root down, the root as written (C:\ or /), so none is empty. */
