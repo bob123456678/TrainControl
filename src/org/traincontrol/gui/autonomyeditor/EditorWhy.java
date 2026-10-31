@@ -92,7 +92,10 @@ final class EditorWhy extends SettledQuestion
 
         // Where the train could be sent by hand right now: a barred station's own reason is its bar, which says nothing
         // of whether a route would take it there (an intermediate terminus, a length that does not fit).
-        java.util.Map<String, String> sendable = byHand ? reasons : layout.explainDestinations(standing, true);
+        org.traincontrol.automation.Layout.Destinations byHandToo = byHand ? grouped
+            : layout.explainDestinationsGrouped(standing, true);
+
+        java.util.Map<String, String> sendable = byHandToo.getReasons();
 
         // Stations first, then berths, each alphabetical (FR-080: *"show all stations first, then show berths
         // (non-autonomy stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups
@@ -118,17 +121,12 @@ final class EditorWhy extends SettledQuestion
         };
 
         java.util.Set<String> available = new java.util.TreeSet<>(byPageThenName);
-        java.util.Set<TileKey> traced = new java.util.HashSet<>();
         java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
         java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
-        // From the event thread's copies, never from the session: this runs on WhyRenderer.
-        java.util.Set<TileKey> mustTurn = setup.mustTurn;
-        java.util.Set<TileKey> mayTurn = setup.mayTurn;
-
-        // The red arrows, so the routes drawn here are routes a train would be offered (OB-120): a run into a station
-        // that refuses arrivals from that side answers wrongly, in the direction that wastes the most time.
-        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred = setup.barred;
+        // The route each colored square may be drawn by, per color: the router's own, to the first of its copies
+        java.util.Map<ToolMark, java.util.Map<TileKey, java.util.List<org.traincontrol.automation.Edge>>> routeTo =
+            new java.util.EnumMap<>(ToolMark.class);
 
         // Collapsed to stations, as the locomotive panel's tooltip does: the reasons are keyed by the running graph's
         // Points and a square is several, so a derived-graph station would appear three times under names the user
@@ -151,12 +149,24 @@ final class EditorWhy extends SettledQuestion
             // could be sent by hand; one it cannot be is gray like any other (OB-394).
             if (where != null)
             {
-                settle(marks, where, entry.getValue() == null
+                ToolMark mark = entry.getValue() == null
                     ? ToolMark.CAN_GO
                     : grouped.getBarred().contains(entry.getKey()) && sendable.containsKey(entry.getKey())
                         && sendable.get(entry.getKey()) == null
                         ? ToolMark.NEVER
-                        : ToolMark.NOT_NOW);
+                        : ToolMark.NOT_NOW;
+
+                settle(marks, where, mark);
+
+                // Green by autonomy's route, purple by the one a hand send would take
+                java.util.List<org.traincontrol.automation.Edge> route = mark == ToolMark.CAN_GO
+                    ? grouped.getRoutes().get(entry.getKey())
+                    : mark == ToolMark.NEVER ? byHandToo.getRoutes().get(entry.getKey()) : null;
+
+                if (route != null)
+                {
+                    routeTo.computeIfAbsent(mark, m -> new java.util.HashMap<>()).putIfAbsent(where, route);
+                }
             }
 
             sortKey.put(station, new String[] {
@@ -165,15 +175,6 @@ final class EditorWhy extends SettledQuestion
             if (entry.getValue() == null)
             {
                 available.add(station);
-
-                // Drawn, so "where can it go" is read off the track rather than out of a list; once a square, as a
-                // square's copies are several points, and each of two squares that read alike.
-                if (where != null && traced.add(where) && setup.reducer != null)
-                {
-                    // And the closed squares, so this tool and the findings panel walk one railway.
-                    editor.trace(drawn, setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred,
-                        setup.shut), tile, true, where);
-                }
             }
             else
             {
@@ -186,6 +187,22 @@ final class EditorWhy extends SettledQuestion
         // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told
         // from "there were no stations to refuse it", which need opposite things done.  So when nothing was considered,
         // say what the setup holds.
+        // Drawn, so "where can it go" is read off the track rather than out of a list: green first, so track a purple
+        // route shares with a green one stays the green one's.
+        for (ToolMark color : new ToolMark[] {ToolMark.CAN_GO, ToolMark.NEVER})
+        {
+            for (java.util.Map.Entry<TileKey, ToolMark> square : marks.entrySet())
+            {
+                java.util.Map<TileKey, java.util.List<org.traincontrol.automation.Edge>> byColor = routeTo.get(color);
+
+                if (square.getValue() == color && byColor != null && byColor.get(square.getKey()) != null)
+                {
+                    drawRoute(drawn, byColor.get(square.getKey()), setup.edgesByName, square.getKey(),
+                        color == ToolMark.NEVER);
+                }
+            }
+        }
+
         String going = available.isEmpty()
             ? I18n.t("autosetup.ui.whyNowhere")
             : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(join(new java.util.ArrayList<>(available))));
@@ -222,6 +239,79 @@ final class EditorWhy extends SettledQuestion
 
         return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyReport", AutonomyEditorPanel.escape(standing.getName()),
             going, colours(marks.values()) + detail + unsavedWarning()), true, drawn, marks);
+    }
+
+    /**
+     * Lays the router's route on the diagram, each stretch of track once (OB-394): where another route already runs
+     * through a square the same way this one's line adds nothing, and a line that only ends in a square another runs
+     * through is already shown arriving.  Nothing where the route crosses an edge the drawing does not know.
+     */
+    private void drawRoute(
+        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn,
+        java.util.List<org.traincontrol.automation.Edge> route,
+        java.util.Map<String, org.traincontrol.automationui.GraphReducer.ReducedEdge> edgesByName, TileKey to,
+        boolean purple)
+    {
+        java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automation.Edge edge : route)
+        {
+            org.traincontrol.automationui.GraphReducer.ReducedEdge reduced = edgesByName.get(edge.getName());
+
+            if (reduced == null) return;
+
+            run.add(reduced);
+        }
+
+        if (run.isEmpty()) return;
+
+        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> one =
+            new java.util.LinkedHashMap<>();
+
+        editor.trace(one, run, run.get(0).getStart(), true, to, purple);
+
+        for (java.util.Map.Entry<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> square
+            : one.entrySet())
+        {
+            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here =
+                drawn.computeIfAbsent(square.getKey(), k -> new java.util.ArrayList<>());
+
+            for (org.traincontrol.automationui.TileAnnotation.Trace line : square.getValue())
+            {
+                // A stub this new line runs through is dropped in its favor
+                if (line.getFrom() != null && line.getTo() != null)
+                {
+                    here.removeIf(old -> (old.getFrom() == null || old.getTo() == null) && touches(line, old));
+                }
+
+                if (!alreadyDrawn(here, line)) here.add(line);
+            }
+        }
+    }
+
+    /** Whether a square's lines already show this one: the same two sides either way round, or a stub of one. */
+    private static boolean alreadyDrawn(java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here,
+        org.traincontrol.automationui.TileAnnotation.Trace line)
+    {
+        for (org.traincontrol.automationui.TileAnnotation.Trace old : here)
+        {
+            boolean same = (old.getFrom() == line.getFrom() && old.getTo() == line.getTo())
+                || (old.getFrom() == line.getTo() && old.getTo() == line.getFrom());
+
+            boolean stubOfIt = (line.getFrom() == null || line.getTo() == null) && touches(old, line);
+
+            if (same || stubOfIt) return true;
+        }
+
+        return false;
+    }
+
+    /** Whether two lines in one square share a side. */
+    private static boolean touches(org.traincontrol.automationui.TileAnnotation.Trace a,
+        org.traincontrol.automationui.TileAnnotation.Trace b)
+    {
+        return (a.getFrom() != null && (a.getFrom() == b.getFrom() || a.getFrom() == b.getTo()))
+            || (a.getTo() != null && (a.getTo() == b.getFrom() || a.getTo() == b.getTo()));
     }
 
     /**

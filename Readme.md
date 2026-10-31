@@ -412,7 +412,7 @@ Tab icons provided by Freepik.
             - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with a tooltip, items whose name says what they do have none, and a few tooltips are shorter and clearer.
     - Bug Fixes
         - Autonomy
-            - `Why not Moving?` no longer colors a station purple when no track leads there from the train: it is gray, like any other station the train cannot reach.
+            - `Why not Moving?` colors a station purple only when the train could be sent there by hand; one it cannot be sent to is gray. Its lines now follow the routes the train would actually take, including a purple line to each purple station, and no stretch of track is drawn twice.
 * v3.0.6 [10/30/2026]
     - New Features
         - Autonomy

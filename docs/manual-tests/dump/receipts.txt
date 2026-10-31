@@ -4335,7 +4335,7 @@ became: MT-860
 seq: 541
 filed: 2026-10-31
 kind: bug
-what: EditorWhy.composeWhy marks a never-chosen station NEVER only where Layout.explainDestinations(train, true) has no reason, i.e. it could be sent by hand right now; anything else is NOT_NOW (track alone was not enough: an intermediate terminus, a length that does not fit). Claim regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingMarksTheStationsByItsAnswer, red under both the track-only and the no-check mutations.
+what: EditorWhy.composeWhy marks a never-chosen station NEVER only where Layout's by-hand reasons have none (it could be sent there by hand); anything else is NOT_NOW. Its lines are the router's own routes (Layout.Destinations.getRoutes, the path explainDestinations accepted), autonomy's to green stations and the by-hand one in purple to purple ones, mapped through AutonomyBuilder.edgesByName; EditorWhy.drawRoute keeps each stretch of track once. Claims regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingMarksTheStationsByItsAnswer and testWhyNotMovingAgreesWithTheRoutesOffered (colors and lines checked against Layout.getPossiblePaths for every train, both tiers; also passed on a copy of cs2_sample_layout), red under each MUTATION note.
 state: -
 became: MT-864
 

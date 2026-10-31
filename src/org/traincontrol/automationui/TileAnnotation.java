@@ -399,6 +399,18 @@ public class TileAnnotation
         {
             return (forward ? "->" : "<-") + from + ":" + to + (manualOnly ? " (manual only)" : "");
         }
+
+        /** @return the side the line comes in by, or null where it starts in this square */
+        public Side getFrom()
+        {
+            return from;
+        }
+
+        /** @return the side the line leaves by, or null where it ends in this square */
+        public Side getTo()
+        {
+            return to;
+        }
     }
 
     /**

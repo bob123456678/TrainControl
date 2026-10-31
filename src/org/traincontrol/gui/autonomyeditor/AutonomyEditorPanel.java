@@ -4874,7 +4874,7 @@ public class AutonomyEditorPanel extends JPanel
         // Captured on the event thread, which owns the setup.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
-        // And the setup's turning, arrival and closed-square collections, live and edited on this thread, as copies.
+        // And the edge names the routes are drawn by, from the setup this thread edits.
         final WhySetup setup = new WhySetup(session);
 
         // The tier (MT-434), read here, and the square remembered so Path Type can ask again.
@@ -4984,35 +4984,16 @@ public class AutonomyEditorPanel extends JPanel
         return whyAnswers.awaitSettled(millis);
     }
 
-    /**
-     * The setup's turning, arrival and closed-square answers for one why ask, copied on the event thread for the
-     * worker; the reduction by reference, as a rebuild replaces it whole.
-     */
+    /** What a why ask needs of the setup, read on the event thread for the worker. */
     static final class WhySetup
     {
-        /** The squares where a run must turn round. */
-        final java.util.Set<TileKey> mustTurn;
+        /** The running railway's edge names to the reduced edges they were built from, to draw the router's routes. */
+        final java.util.Map<String, org.traincontrol.automationui.GraphReducer.ReducedEdge> edgesByName;
 
-        /** The squares where a run may turn round, less the ones where it must. */
-        final java.util.Set<TileKey> mayTurn;
-
-        /** The sides each station refuses arrivals by. */
-        final java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred;
-
-        /** The squares switched off. */
-        final java.util.Set<TileKey> shut;
-
-        /** The reduction the routes are walked on, or null when there is none. */
-        final org.traincontrol.automationui.GraphReducer reducer;
-
-    /** Reads all five from the session, on the event thread. */
         private WhySetup(AutonomySession session)
         {
-            this.mustTurn = session.mandatoryTurnTiles();
-            this.mayTurn = session.mayTurnTiles();
-            this.barred = session.barredArrivals();
-            this.shut = session.shutTiles();
-            this.reducer = session.getReducer();
+            this.edgesByName = session.getReducer() == null ? java.util.Collections.emptyMap()
+                : session.builder(null).edgesByName();
         }
     }
 
@@ -5221,12 +5202,18 @@ public class AutonomyEditorPanel extends JPanel
         java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
         TileKey from, boolean forward, TileKey to)
     {
-        if (run == null) return;
-
         // Asked once for the whole leg, as a color on its last square alone could be off the page.
         // `manualOnlyStations`, not `stationsAutonomyWillNotChoose`: a shut square is no manual-only point.
-        final boolean manualOnly = to != null && session != null
-            && session.manualOnlyStations().contains(to);
+        trace(into, run, from, forward, to, to != null && session != null && session.manualOnlyStations().contains(to));
+    }
+
+    /** The same, in the color asked for: Why not Moving? knows which stations autonomy will never choose this train. */
+    void trace(java.util.Map<TileKey,
+        java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> into,
+        java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run,
+        TileKey from, boolean forward, TileKey to, boolean manualOnly)
+    {
+        if (run == null) return;
 
         // The squares in order: each edge carries the track between its Points, which go back between them.
         java.util.List<TileKey> seq = new java.util.ArrayList<>();

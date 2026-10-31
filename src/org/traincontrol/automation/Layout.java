@@ -4396,7 +4396,14 @@ public class Layout
      */
     synchronized public Destinations explainDestinationsGrouped(Locomotive loc)
     {
-        return new Destinations(explainDestinations(loc), destinationsBarredFromAutonomy(loc));
+        java.util.Map<String, List<Edge>> routes = new java.util.HashMap<>();
+
+        Destinations out = new Destinations(explainDestinations(loc, false, routes),
+            destinationsBarredFromAutonomy(loc));
+
+        out.routes.putAll(routes);
+
+        return out;
     }
 
     /**
@@ -4411,7 +4418,14 @@ public class Layout
     {
         if (!byHand) return explainDestinationsGrouped(loc);
 
-        return new Destinations(explainDestinations(loc, true), new java.util.LinkedHashSet<String>());
+        java.util.Map<String, List<Edge>> routes = new java.util.HashMap<>();
+
+        Destinations out = new Destinations(explainDestinations(loc, true, routes),
+            new java.util.LinkedHashSet<String>());
+
+        out.routes.putAll(routes);
+
+        return out;
     }
 
     /**
@@ -4471,6 +4485,17 @@ public class Layout
                 if (!choosable.containsKey(station)) choosable.put(station, reasons.get(point));
             }
         }
+
+        /**
+         * @return point name to the route the train would take there, for each point it may go to: the one the
+         *         reason was decided on, so a drawing of it is the route the train would run
+         */
+        public java.util.Map<String, List<Edge>> getRoutes()
+        {
+            return routes;
+        }
+
+        private final java.util.Map<String, List<Edge>> routes = new java.util.HashMap<>();
     }
 
     /**
@@ -4666,6 +4691,13 @@ public class Layout
      */
     synchronized public java.util.Map<String, String> explainDestinations(Locomotive loc, boolean byHand)
     {
+        return explainDestinations(loc, byHand, null);
+    }
+
+    /** The same, also filling `routes`, when given, with the route each available point was found by. */
+    private java.util.Map<String, String> explainDestinations(Locomotive loc, boolean byHand,
+        java.util.Map<String, List<Edge>> routes)
+    {
         java.util.Map<String, String> out = new java.util.LinkedHashMap<>();
 
         if (loc == null) return out;
@@ -4704,7 +4736,11 @@ public class Layout
                 // Past the filter, so the question becomes whether any route is clear.  Every
                 // alternative is tried, exactly as pickPath does, because the first one being blocked
                 // says nothing about the second.
-                reason = firstClearOrWhyNot(loc, start, end, byHand);
+                List<List<Edge>> accepted = new LinkedList<>();
+
+                reason = firstClearOrWhyNot(loc, start, end, byHand, accepted);
+
+                if (reason == null && routes != null && !accepted.isEmpty()) routes.put(end.getName(), accepted.get(0));
             }
             else
             {
@@ -4794,14 +4830,16 @@ public class Layout
         return layoutExplanations.whyNoRouteFitsTo(loc, start, end);
     }
     /**
-     * Null when some route from start to end is clear, and otherwise why the last one was not.
+     * Null when some route from start to end is clear, that route added to `accepted`, and otherwise why the last one
+     * was not.
      *
      * The reason comes from isPathClear itself, through lastError, which it sets whether or not it is
      * logging.  Enumerating the alternatives matters: a layout with a train parked across one way
      * round is the ordinary case, and reporting that first blocked route as though it were the only
      * one would tell the user their railway is broken when it is merely busy.
      */
-    private String firstClearOrWhyNot(Locomotive loc, Point start, Point end, boolean byHand)
+    private String firstClearOrWhyNot(Locomotive loc, Point start, Point end, boolean byHand,
+        List<List<Edge>> accepted)
     {
         List<Edge> path;
         List<List<Edge>> seenPaths = new LinkedList<>();
@@ -4827,7 +4865,12 @@ public class Layout
 
                 // lastError is static and written by every train's pickPath, so the wording read below may belong to
                 // another train's candidate; the decision comes from isPathClear's return value.
-                if (this.isPathClear(path, loc, false, byHand)) return null;
+                if (this.isPathClear(path, loc, false, byHand))
+                {
+                    accepted.add(path);
+
+                    return null;
+                }
 
                 // FR-001 asked directly, not read from the static: while autonomy runs the wording below would call a
                 // permanent hold "blocked while running".  The same rule isPathClear refuses on, in every tier
