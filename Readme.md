@@ -405,6 +405,14 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.7
+    - New Features
+        - Autonomy
+            - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
+        - Interface
+            - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with a tooltip, items whose name says what they do have none, and a few tooltips are shorter and clearer.
+    - Bug Fixes
+        - Autonomy
+            - `Why not Moving?` no longer colors a station purple when no track leads there from the train: it is gray, like any other station the train cannot reach.
 * v3.0.6 [10/30/2026]
     - New Features
         - Autonomy

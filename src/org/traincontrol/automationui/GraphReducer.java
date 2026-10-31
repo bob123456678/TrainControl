@@ -843,27 +843,16 @@ public class GraphReducer
      */
     private int roomAfterTheLastSwitch(List<TileStep> path, TileKey end)
     {
-        // THE TOTAL, NOT AN ALL-OR-NOTHING (Adam, 2026-09-06).
+        // THE TOTAL, NOT AN ALL-OR-NOTHING.
         //
-        // **"You need to measure total distance between points, not validate that every edge has a
-        // length > 0.  It is only indeterminate if the entire logical segment has length 0."**
+        // **"You need to measure total distance between points, not validate that every edge has a length > 0.  It is
+        // only indeterminate if the entire logical segment has length 0."**
         //
-        // This kept a `measured` flag that any single unmeasured tile cleared, and then threw away
-        // every unit it had counted: `return measured ? room : -1`.  On his railway the run into
-        // BottomMainPost is twelve tiles with one of them measured at 1, so the answer was -1 -
-        // "bounded but unmeasured" - and `measuredRoomAtTheEndOf` declined to judge, which let a
-        // four-unit train into one unit of room.  The measured tile was right there and was discarded
-        // for the company it kept.
-        //
-        // Unmeasured tiles now contribute nothing, which is the same doctrine as the protrusion walk
-        // and the berth rule: only positive lengths are determinate.  A stretch where NOTHING is
-        // measured still answers -1, because that is genuinely no information rather than a small
-        // number.
-        //
-        // This UNDER-states the room by however much is unmeasured, and that is the safe direction:
-        // it refuses a train that might have fitted rather than admitting one that does not.  The
-        // editor already names the unmeasured tiles - `unmeasuredAfterTheLastSwitch`, just below - so
-        // the way to a bigger number is to measure them.
+        // Unmeasured tiles contribute nothing (only positive lengths are determinate, as in the protrusion walk and the
+        // berth rule); a stretch where NOTHING is measured still answers -1, which is genuinely no information.  This
+        // UNDER-states the room by however much is unmeasured, the safe direction: it refuses a train that might have
+        // fitted rather than admitting one that does not.  The editor names the unmeasured tiles
+        // (`unmeasuredAfterTheLastSwitch`, just below).
         int atTheEnd = authored.getTileLength(end);
 
         int room = Math.max(0, atTheEnd);

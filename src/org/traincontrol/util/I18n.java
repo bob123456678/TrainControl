@@ -76,26 +76,19 @@ public final class I18n
 
     /**
      * Fetch a formatted string with placeholders.
-     * Example: messages.properties -> log.userLogin=User {0} logged in.
-     * Usage: I18n.f("log.userLogin", username);
+     * Example: messages.properties -> log.userLogin=User {0} logged in.  Usage: I18n.f("log.userLogin", username);
      *
-     * Whole numbers are passed through as text rather than as numbers.  MessageFormat sends a bare
-     * {0} to the locale's NumberFormat, which groups: a feedback UID of 1001 rendered as "1,001" on
-     * the track diagram, and as "1.001" or "1 001" for anyone running a European locale.  Every
-     * whole number this application puts in a message is an identifier or a count - an accessory
-     * address, an s88 UID, a route id, a delay in milliseconds - and none of them are grouped
-     * anywhere else in the UI.
+     * Whole numbers are passed through as text, not numbers: MessageFormat sends a bare {0} to the locale's
+     * NumberFormat, which groups (a feedback UID of 1001 rendered as "1,001"), and none of the identifiers and counts
+     * this application formats are grouped anywhere else in the UI.  Only integral types; a float or double still goes
+     * to NumberFormat.
      *
-     * Only integral types.  A float or double still goes to NumberFormat, which is right for a
-     * measured value: it keeps the locale's decimal separator and does not expose binary rounding
-     * the way Double.toString does.  Nothing passes one today.
-     *
-     * This relies on no message asking for a format of its own - a {0,number} placeholder handed a
-     * String throws.  testMessageBundles.testNoPlaceholderAsksForItsOwnFormat holds that line.
+     * Relies on no message asking for a format of its own ({0,number} handed a String throws);
+     * testMessageBundles.testNoPlaceholderAsksForItsOwnFormat holds that line.
      *
      * @param key
      * @param args
-     * @return 
+     * @return
      */
     public static String f(String key, Object... args)
     {

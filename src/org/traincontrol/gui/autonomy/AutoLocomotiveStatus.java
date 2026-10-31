@@ -218,17 +218,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // Ensure consistent state
             this.pauseButton.setSelected(locomotive.isAutonomyPaused());
                      
-            // Assigned to this locomotive - the same question the graph outlines a station on, and
-            // deliberately not getHomeStation.
-            //
-            // getHomeStation answers with the positional fallback as well: with no assignments at all,
-            // every placed locomotive's home is wherever it stood when the graph loaded, so the badge
-            // went teal for all of them while the graph outlined nothing.  Worse, assigning one
-            // locomotive a home elsewhere makes rebuildHomeStations refuse the fallback claims that
-            // collide with it, so the number of teal badges changed for locomotives nobody had touched.
-            //
-            // Reading the point the locomotive is standing on answers only what was actually assigned,
-            // matches the graph exactly, and takes no lock - this runs on the EDT.
+            // Assigned to this locomotive, the same question the graph outlines a station on, and deliberately not
+            // getHomeStation: that answers with the positional fallback too, so with no assignments every placed
+            // locomotive would get a teal badge while the graph outlined nothing, and assigning one locomotive a home
+            // elsewhere would change the badges of locomotives nobody touched.  Reading the point the locomotive stands
+            // on answers only what was assigned, matches the graph exactly, and takes no lock (this runs on the EDT).
             final Point at = layout.getLocomotiveLocation(locomotive);
             // Identity: see the note in HomeStaging on why the name comparison this replaced kept
             // compiling and always answered false.
@@ -314,18 +308,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             {                
                 // Already searched, if somebody did it off the EDT; this is the fallback for callers with no worker.
                 //
-                // haveFound means "the caller has an answer, do not search".  It is NOT the same as
-                // "the caller called findPaths": findPaths returns null when it did not search - the
-                // layout was running, or the locomotive is not on the graph - and a null stamped as an
-                // answer reads here as "searched, found nothing", which prints "no available paths".
-                //
-                // That is a race at the end of a run, and it latches.  findPaths bails because the
-                // layout is running; by the time the drawing runnable reaches the event thread the run
-                // has ended, so this branch is taken, and nothing repaints the list again to correct
-                // it.  The callers now pass haveFound = (answer != null) for exactly that reason.
-                //
-                // The deferred build is the other side of it: that one has no answer AND does not want
-                // one yet, which is haveFound with a null found, and it must not search.
+                // haveFound means "the caller has an answer, do not search".  It is NOT "the caller called findPaths",
+                // which returns null when it did not search (layout running, locomotive not on the graph): a null
+                // stamped as an answer reads as "searched, found nothing", prints "no available paths" and latches,
+                // since nothing repaints after the run ends.  The deferred build has no answer AND wants none yet, so
+                // it is haveFound with a null found and must not search.
                 // true -> Only include unique starts/end pairs
                 List<List<Edge>> answer = haveFound ? found
                     : withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
@@ -346,17 +333,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // With the info mark, because a tooltip nobody knows about explains nothing.
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
 
-                    // And WHY, on hover.  A FLAG here, and the reasons worked out when the pointer
-                    // stops on the label - see the mouse listener in the constructor.
-                    //
-                    // Computing them here was a mistake, and an expensive one.  updateState runs on the
-                    // event thread, once per panel; explainDestinations walks every candidate route to
-                    // every station and takes the Layout's monitor to do it.  So placing a locomotive
-                    // or loading a configuration - which rebuilds every panel with its search
-                    // deliberately DEFERRED, leaving each one in exactly this branch - did that whole
-                    // enumeration once per panel on the event thread, before the worker it had been
-                    // deferred to even started.  That is the freeze this file's own comments say must
-                    // never happen, reintroduced by the feature meant to explain it.
+                    // And WHY, on hover: a FLAG here, with the reasons worked out when the pointer stops on the label
+                    // (see the mouse listener in the constructor).  Computing them here walks every candidate route to
+                    // every station under the Layout's monitor (explainDestinations), once per panel on the event
+                    // thread, and loading a configuration rebuilds every panel in this deferred branch.
                     this.noPathsNow = true;
                     this.locStation.setText("@" +  stationName(layout.getLocomotiveLocation(locomotive))
                         + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
@@ -603,21 +583,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }// </editor-fold>//GEN-END:initComponents
 
     /**
-     * Why this locomotive has nowhere to go, as a tooltip.
-     *
-     * Built here rather than in the panel's text, because it is a list and the line it hangs off is one
-     * line - and because a user who is not asking should not have to read it.
-     *
-     * Station names, not Point names: the reasons come back keyed by the running graph's Points, and a
-     * square is several of those, so the same reason would otherwise appear three times under names
-     * the user never chose.  Only the first reason per station is kept, which is the one that would
-     * have stopped it.
+     * Why this locomotive has nowhere to go, as a tooltip: a list, so kept out of the panel's text, where a user who is
+     * not asking would have to read it.  Keyed by station name, not Point (a square is several Points); only the first
+     * reason per station is kept, the one that would have stopped it.
      */
-    /**
-     * Whether this panel is currently showing "no available paths", and so has something to explain.
-     *
-     * Written on the event thread by updateState and read there by the hover listener.
-     */
+    /** Whether this panel shows "no available paths" and so has something to explain (event thread only). */
     private boolean noPathsNow;
 
     /**
@@ -925,15 +895,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * What to call a Point when a person is reading it.
-     *
-     * The built graph names the copies of a square apart - "Tunnel (northbound)" - so a running log
-     * can say which one a train is on.  That is a name for the model.  Somebody watching their
-     * railway did not create a northbound Tunnel and a southbound one; they created a station, and
-     * being shown the internals invites them to wonder which is the real one.
-     *
-     * @param point a Point of the running graph
-     * @return the station name a reader would recognize
+     * What to call a Point when a person is reading it: the station name, not the model's copy name such as "Tunnel
+     * (northbound)", since the user created a station and not two.
      */
     private String stationName(org.traincontrol.automation.Point point)
     {
@@ -944,19 +907,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Drops the paths that end where the train already is.
-     *
-     * A square is several Points, so "somewhere else" and "a different Point" stopped meaning the
-     * same thing: a train at BottomMainB was offered BottomMainB, the copy facing the other way.
-     * That is not a destination, it is the platform under its own wheels, and it appeared in the
-     * list a user picks from.
-     *
-     * Filtered here rather than in the layout, which cannot tell: its only candidate key is the
-     * sensor, and a station and its approach guard share one while being genuinely two places.  What
-     * makes two Points one place is the square they were built from, and only the setup knows that.
-     *
-     * @param paths what the layout offered
-     * @return the ones that actually go somewhere
+     * Drops the paths that end where the train already is.  A square is several Points, so a train at BottomMainB would
+     * be offered BottomMainB, the copy facing the other way.  Filtered here rather than in the layout because the
+     * layout's only candidate key is the sensor, which a station and its approach guard share while being two places;
+     * only the setup knows which Points were built from one square.
      */
     private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
     {
@@ -1044,24 +998,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private void locAvailPathsMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseMoved
         
-        // Show a tooltip with the path
-        /*JList list = (JList) evt.getSource();
-
-        int index = list.locationToIndex(evt.getPoint());
-                
-        if (index < this.paths.size() && index >= 0)
-        {
-            List<String> strings = new LinkedList<>();
-            this.paths.get(index).forEach((e) -> {
-                strings.add(e.toString());
-            });
-            
-            list.setToolTipText("<html>" + String.join("<br>", strings) + "</html>");
-        }
-        else
-        {
-            list.setToolTipText("");
-        }*/      
     }//GEN-LAST:event_locAvailPathsMouseMoved
 
     private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed

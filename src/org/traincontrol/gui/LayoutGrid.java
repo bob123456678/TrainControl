@@ -772,8 +772,7 @@ public class LayoutGrid
         width = width + 1;
         height = height + 1;
 
-        // Create layout                      
-        // JPanel container; // no longer needed - included as class field for caching
+        // Create layout
         
         // Not emptied yet: that would leave the panel blank for the whole build; the old diagram stays up until the
         // swap below.

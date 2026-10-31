@@ -143,12 +143,15 @@ final class EditorWhy extends SettledQuestion
 
             if (elsewhere) station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
 
-            // By square, not by the name shown, which two unnamed squares on one sensor share
+            // By square, not by the name shown, which two unnamed squares on one sensor share.  Purple only where the
+            // train could get to: a barred station is never routed to, so its reason does not say whether track leads
+            // there, and one it cannot reach is gray like any other (OB-394).
             if (where != null)
             {
                 settle(marks, where, entry.getValue() == null
                     ? ToolMark.CAN_GO
-                    : grouped.getBarred().contains(entry.getKey())
+                    : grouped.getBarred().contains(entry.getKey()) && (setup.reducer == null
+                        || setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred, setup.shut) != null)
                         ? ToolMark.NEVER
                         : ToolMark.NOT_NOW);
             }
@@ -220,7 +223,7 @@ final class EditorWhy extends SettledQuestion
 
     /**
      * Marks a square with the best of its copies' answers, as the answer files a station: can go, else not now, else
-     * never, in `ToolMark`'s order, where the train's own square's PICKED comes first and so keeps its blue.
+     * never, in `ToolMark`'s order, where the train's own square's PICKED comes first and so keeps its outline.
      */
     private static void settle(java.util.Map<TileKey, ToolMark> marks, TileKey square, ToolMark mark)
     {

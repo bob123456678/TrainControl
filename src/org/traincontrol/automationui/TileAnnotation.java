@@ -556,8 +556,8 @@ public class TileAnnotation
     private boolean unmeasured = false;
 
     /**
-     * How Test a Path and Why not Moving? mark a square (FR-159): blue on what can be clicked, a stronger blue on what
-     * was, and Why not Moving?'s answer on the stations.
+     * How Test a Path and Why not Moving? mark a square (FR-159): the selection's orange outline on what can be clicked,
+     * blue on what was (OB-395), and Why not Moving?'s answer on the stations.
      */
     public static enum ToolMark
     {
@@ -597,27 +597,40 @@ public class TileAnnotation
     private static final Color MARK_GREEN = new Color(34, 150, 60);
     private static final Color MARK_GRAY = new Color(120, 120, 120);
     private static final float MARK_FILL_ALPHA = 0.24f;
-    private static final float PICKED_FILL_ALPHA = 0.5f;
 
-    /** The mark's wash, under the badge so the station's icon stays sharp; none on a square it cannot go to now. */
+    /** The mark's wash, under the badge so its icon stays sharp; none where it cannot go now or is clickable. */
     private void paintToolFill(Graphics2D g, int width, int height)
     {
-        if (toolMark == ToolMark.NOT_NOW) return;
+        if (toolMark == ToolMark.NOT_NOW || toolMark == ToolMark.CLICKABLE) return;
 
         java.awt.Composite before = g.getComposite();
 
-        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER,
-            toolMark == ToolMark.PICKED ? PICKED_FILL_ALPHA : MARK_FILL_ALPHA));
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, MARK_FILL_ALPHA));
         g.setColor(markColour());
         g.fillRoundRect(1, 1, width - 2, height - 2, width / 4, height / 4);
 
         g.setComposite(before);
     }
 
-    /** The mark's border, over everything but a selection's: dashed where it cannot go now, wider where clicked. */
+    /**
+     * The mark's border, over everything but a selection's: dashed where it cannot go now; where it can be clicked, the
+     * selection's orange outline at the square's edge (OB-395).
+     */
     private void paintToolBorder(Graphics2D g, int width, int height)
     {
-        float wide = Math.max(1.5f, Math.min(width, height) / 15f) * (toolMark == ToolMark.PICKED ? 1.6f : 1f);
+        if (toolMark == ToolMark.CLICKABLE)
+        {
+            // Thicker than a selection's, a tenth of the square, so it reads at a glance across the diagram
+            float thick = Math.max(3f, Math.min(width, height) / 10f);
+
+            g.setStroke(new BasicStroke(thick));
+            g.setColor(SELECTED);
+            g.draw(new java.awt.geom.Rectangle2D.Float(thick / 2, thick / 2, width - thick, height - thick));
+
+            return;
+        }
+
+        float wide = Math.max(1.5f, Math.min(width, height) / 15f);
 
         g.setStroke(toolMark == ToolMark.NOT_NOW
             ? new BasicStroke(wide, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[] {wide * 2, wide * 2}, 0f)
@@ -626,11 +639,27 @@ public class TileAnnotation
         g.drawRoundRect(1, 1, width - 3, height - 3, width / 4, height / 4);
     }
 
+    /** The tool's border, then the selection's outline over it. */
+    private void paintOutlines(Graphics2D g, int width, int height)
+    {
+        if (toolMark != null) paintToolBorder(g, width, height);
+
+        if (selected) paintSelectionOutline(g, width, height);
+    }
+
+    private static void paintSelectionOutline(Graphics2D g, int width, int height)
+    {
+        g.setStroke(new BasicStroke(2f));
+        g.setColor(SELECTED);
+        g.drawRect(1, 1, width - 3, height - 3);
+    }
+
     private Color markColour()
     {
         switch (toolMark)
         {
-            case CLICKABLE: case PICKED: return MARK_BLUE;
+            case CLICKABLE: return SELECTED;
+            case PICKED: return MARK_BLUE;
             case CAN_GO: return MARK_GREEN;
             case NEVER: return TRACE_MANUAL;
             default: return MARK_GRAY;
@@ -816,14 +845,7 @@ public class TileAnnotation
             // Last, on top of everything: a tested path is a transient answer to a question just asked.
             paintTraces(g, width, height);
 
-            if (toolMark != null) paintToolBorder(g, width, height);
-
-            if (selected)
-            {
-                g.setStroke(new BasicStroke(2f));
-                g.setColor(SELECTED);
-                g.drawRect(1, 1, width - 3, height - 3);
-            }
+            paintOutlines(g, width, height);
         }
         finally
         {
@@ -1984,14 +2006,7 @@ public class TileAnnotation
             paintArrivals(a, width, height);
 
             // AND ITS OUTLINES, which its own paint draws over everything on it: the spill broke them
-            if (toolMark != null) paintToolBorder(a, width, height);
-
-            if (selected)
-            {
-                a.setStroke(new BasicStroke(2f));
-                a.setColor(SELECTED);
-                a.drawRect(1, 1, width - 3, height - 3);
-            }
+            paintOutlines(a, width, height);
         }
         finally
         {

@@ -72,15 +72,10 @@ public abstract class NodeExpression implements Serializable
     public abstract JSONObject toJSON() throws Exception;
 
     /**
-     * Wraps every bare cross-operator LEFT child in a group, recursively.
-     *
-     * The text parser applies stacked operators LIFO, so text-origin trees are right-nested and
-     * their left children are always leaves or groups - this is a no-op for everything users author
-     * as text, which is what keeps the editor round trip byte-identical (testExpressions pins it).
-     * Two doors can build the unreachable shape: hand-written structural JSON, and the locomotive
-     * database, which Java-serializes condition trees and restores them without a parse.  Rendered
-     * bare, such a tree changes meaning on the next editor round trip ("a AND b OR c" reparses
-     * right-nested); grouped, the serializer emits the parentheses that preserve it.  Idempotent,
+     * Wraps every bare cross-operator LEFT child in a group, recursively.  The text parser applies stacked operators
+     * LIFO, so text-origin trees are right-nested and this is a no-op for them (testExpressions pins that).  Bare left
+     * children come only from hand-written structural JSON and from the locomotive database, which restores serialized
+     * trees without a parse; rendered bare, "a AND b OR c" would reparse right-nested and change meaning.  Idempotent,
      * and null-safe because routes without conditions carry null.
      */
     public static NodeExpression normalize(NodeExpression expr)
@@ -170,12 +165,9 @@ public abstract class NodeExpression implements Serializable
 
             if (command.isAccessory())
             {
-                // Resolved by name, which carries the command's own protocol.  This used to pass
-                // getAccessoryType() - "Switch" or "Signal" - into determineAccessoryDecoderType, which
-                // could not parse it and silently fell back to MM2, so a DCC accessory was looked up
-                // under the wrong protocol.  Going through getAccessoryByName also means this display
-                // path no longer invents an accessory when the address is unused, the way
-                // getAccessoryByAddress does.  Either type resolves, since they are one decoder.
+                // Resolved by name, which carries the command's own protocol (getAccessoryType() is "Switch" or
+                // "Signal", not a decoder type).  Unlike getAccessoryByAddress it does not invent an accessory when the
+                // address is unused.  Either type resolves, since they are one decoder.
                 acc = network.getAccessoryByName(
                     Accessory.accessoryTypeToPrettyString(Accessory.accessoryType.SWITCH) + " "
                     + command.getAddress()

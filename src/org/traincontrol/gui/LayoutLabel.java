@@ -77,15 +77,10 @@ public final class LayoutLabel extends JLabel
     });
 
     /**
-     * Runs one diagram switching action off the event thread.
-     *
-     * execute rather than submit: submit captures whatever the action throws into a Future, and there is no Future
-     * kept here to read it back from, so an escaping exception would disappear with no sign of it anywhere.  With
-     * execute it reaches the default handler and prints, as it does on the event thread.
-     *
-     * Separate and public so the dispatch can be tested on its own: what has to hold is that the
-     * action does not run on the event thread, that two of them never overlap, and that an exception
-     * escaping one stays visible.
+     * Runs one diagram switching action off the event thread, one at a time.  execute rather than submit: submit
+     * captures whatever the action throws into a Future nobody reads, so an escaping exception would vanish; with
+     * execute it reaches the default handler and prints.  Public so the dispatch can be tested: the action must not run
+     * on the event thread, two of them never overlap, and an exception escaping one stays visible.
      *
      * @param action the switching work, including any sleeps it needs
      */
@@ -472,16 +467,13 @@ public final class LayoutLabel extends JLabel
 
                                     lastClicked = System.currentTimeMillis();
 
-                                    // Everything below this point blocks, so none of it belongs on the
-                                    // event thread.  A three-way sleeps between its two drives - that gap
-                                    // is what keeps the turnout out of the both-diverging combination -
-                                    // and turning the power on waits a further second for the track to
-                                    // come up.  Run here, those sleeps froze the whole UI, including the
-                                    // repaint of the drive that had already moved.
+                                    // Everything below blocks, so none of it belongs on the event thread: a three-way
+                                    // sleeps between its two drives (that gap keeps the turnout out of the
+                                    // both-diverging combination) and turning the power on waits a further second for
+                                    // the track to come up.
                                     //
-                                    // The sends and the gap between them stay together on one worker.  The
-                                    // dialogs above have already been answered, on the thread they belong
-                                    // on.
+                                    // The sends and the gap between them stay together on one worker; the dialogs above
+                                    // are already answered.
                                     final boolean powerOn = powerOnFirst;
                                     final boolean warnedAboutProtection = askedAboutProtection;
 
@@ -848,10 +840,7 @@ public final class LayoutLabel extends JLabel
                             // no yellow.
                             endAccessoryHighlight();
 
-                            // Both of these run on the EDT: this block already does, and a Swing Timer
-                            // fires there too.  The overlay and the restore used to be applied from a
-                            // raw thread, mutating a Swing component off the EDT - the one place in this
-                            // class that did not marshal its work.
+                            // Both run on the EDT: this block does, and a Swing Timer fires there too.
                             this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
 
                             final javax.swing.Timer[] mine = new javax.swing.Timer[1];

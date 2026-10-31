@@ -13301,7 +13301,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locomotiveMenu.add(jSeparator6);
 
         exportLocsToCSVMenuItem.setText(bundle.getString("ui.main.toolbar.exportToCSV")); // NOI18N
-        exportLocsToCSVMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.exportToCSV")); // NOI18N
         exportLocsToCSVMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 exportLocsToCSVMenuItemActionPerformed(evt);
@@ -13329,7 +13328,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(jSeparator5);
 
         chooseLocalDataFolderMenuItem.setText(bundle.getString("ui.main.toolbar.openLayout")); // NOI18N
-        chooseLocalDataFolderMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.openLayout")); // NOI18N
         chooseLocalDataFolderMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 chooseLocalDataFolderMenuItemActionPerformed(evt);
@@ -13385,7 +13383,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(modifyLocalLayoutMenu);
 
         initializeLocalLayoutMenuItem.setText(bundle.getString("ui.main.toolbar.createLayout")); // NOI18N
-        initializeLocalLayoutMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.createLayout")); // NOI18N
         initializeLocalLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 initializeLocalLayoutMenuItemActionPerformed(evt);
@@ -13395,7 +13392,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(jSeparator24);
 
         popUpAllMenuItem.setText(bundle.getString("ui.main.allLayouts")); // NOI18N
-        popUpAllMenuItem.setToolTipText(bundle.getString("ui.main.tooltip.openAllLayouts")); // NOI18N
         popUpAllMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 popUpAllMenuItemActionPerformed(evt);
@@ -13414,7 +13410,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         layoutMenu.add(switchCSLayoutMenuItem);
 
         downloadCSLayoutMenuItem.setText(bundle.getString("ui.main.toolbar.downloadCSLayout")); // NOI18N
-        downloadCSLayoutMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.downloadCSLayout")); // NOI18N
+        downloadCSLayoutMenuItem.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("ui.main.toolbar.tooltip.downloadCSLayout")));
         downloadCSLayoutMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 downloadCSLayoutMenuItemActionPerformed(evt);
@@ -13438,7 +13434,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         routesMenu.setText(bundle.getString("ui.main.toolbar.routes")); // NOI18N
 
         exportRoutesMenuItem.setText(bundle.getString("ui.main.toolbar.export")); // NOI18N
-        exportRoutesMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.routeExport")); // NOI18N
         exportRoutesMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 exportRoutesMenuItemActionPerformed(evt);
@@ -13524,7 +13519,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         buttonGroup3.add(keyboardQwertyMenuItem);
         keyboardQwertyMenuItem.setSelected(true);
         keyboardQwertyMenuItem.setText(bundle.getString("ui.main.toolbar.qwertyKeyboard")); // NOI18N
-        keyboardQwertyMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.selKeyboardType")); // NOI18N
         keyboardQwertyMenuItem.setActionCommand("0");
         keyboardQwertyMenuItem.setName("0"); // NOI18N
         keyboardQwertyMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -13536,7 +13530,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         buttonGroup3.add(keyboardQwertzMenuItem);
         keyboardQwertzMenuItem.setText(bundle.getString("ui.main.toolbar.qwertzKeyboard")); // NOI18N
-        keyboardQwertzMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.selKeyboardType")); // NOI18N
         keyboardQwertzMenuItem.setActionCommand("1");
         keyboardQwertzMenuItem.setName("1"); // NOI18N
         keyboardQwertzMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -13548,7 +13541,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         buttonGroup3.add(keyboardAzertyMenuItem);
         keyboardAzertyMenuItem.setText(bundle.getString("ui.main.toolbar.azertyKeyboard")); // NOI18N
-        keyboardAzertyMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.selKeyboardType")); // NOI18N
         keyboardAzertyMenuItem.setActionCommand("2");
         keyboardAzertyMenuItem.setName("2"); // NOI18N
         keyboardAzertyMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -13593,7 +13585,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         AutoLoadAutonomyMenuItem.setSelected(true);
         AutoLoadAutonomyMenuItem.setText(bundle.getString("ui.main.toolbar.loadAutonomy")); // NOI18N
-        AutoLoadAutonomyMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.loadAutonomy")); // NOI18N
         AutoLoadAutonomyMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AutoLoadAutonomyMenuItemActionPerformed(evt);
@@ -13647,7 +13638,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         helpMenu.setText(bundle.getString("ui.main.toolbar.help")); // NOI18N
 
         viewReleasesMenuItem.setText(bundle.getString("ui.main.viewReleases")); // NOI18N
-        viewReleasesMenuItem.setToolTipText(bundle.getString("ui.main.tooltip.viewReleases")); // NOI18N
         viewReleasesMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 viewReleasesMenuItemActionPerformed(evt);
@@ -16237,7 +16227,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void layoutRefreshCompleteInternal()
     {
-        // Store previously selected page
         int oldIndex = this.LayoutList.getSelectedIndex();
 
         // Update list of pages

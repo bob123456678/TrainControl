@@ -123,14 +123,8 @@ public class Conversion
     }
     
     /**
-     * The numeric prefix of one dotted version component, so a suffixed release name cannot break
-     * the comparison.
-     *
-     * The update check feeds this everything after the first "v" of the GitHub release NAME, and the
-     * current beta is literally named "... v2.8.0 (Beta)" - so the last component arrives as
-     * "0 (Beta)".  Integer.parseInt threw, the update thread's catch-all blamed the network, and one
-     * stable release published with a suffix would have stopped every installed copy from ever
-     * announcing updates again.  A component with no leading digits counts as 0.
+     * The numeric prefix of one dotted version component, so a suffixed release name ("0 (Beta)" from "v2.8.0 (Beta)")
+     * cannot make Integer.parseInt throw and silence update announcements.  No leading digits counts as 0.
      */
     private static int parseVersionComponent(String component)
     {

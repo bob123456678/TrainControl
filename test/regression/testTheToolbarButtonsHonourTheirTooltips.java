@@ -305,19 +305,19 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
         try
         {
-            Field field = TrainControlUI.class.getDeclaredField("initializeLocalLayoutMenuItem");
+            Field field = TrainControlUI.class.getDeclaredField("modifyLocalLayoutMenu");
 
             field.setAccessible(true);
 
             javax.swing.JMenuItem create = (javax.swing.JMenuItem) field.get(up.ui);
 
-            assertEquals(create.getText(), I18n.t("ui.main.toolbar.createLayout"),
-                "precondition: the item found is not Create New Layout");
+            assertEquals(create.getText(), I18n.t("ui.main.toolbar.modifyLayout"),
+                "precondition: the item found is not Manage Pages");
 
-            String sentence = I18n.t("ui.main.toolbar.tooltip.createLayout");
+            String sentence = I18n.t("ui.main.toolbar.tooltip.modifyLayout");
 
             assertEquals(tooltipSize(create.getToolTipText()).width, tooltipSize(sentence).width,
-                "the tooltip on Create New Layout is drawn " + tooltipSize(create.getToolTipText()).width
+                "the tooltip on Manage Pages is drawn " + tooltipSize(create.getToolTipText()).width
                 + "px wide for a sentence that is " + tooltipSize(sentence).width + "px on one line, so the"
                 + " box has room to spare at its end: " + create.getToolTipText());
 

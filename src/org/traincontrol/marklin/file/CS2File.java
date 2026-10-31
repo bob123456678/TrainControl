@@ -259,18 +259,14 @@ public final class CS2File
     /**
      * Makes a page name safe to use as a local filename.
      *
-     * Page names come out of the Central Station index and are free text: a name carrying a path
-     * separator or a character the filesystem forbids used to be joined straight onto the layouts
-     * folder.  On download that made the write land outside the folder - or fail outright, part way
-     * through, leaving a half-written layout the next sync reads as authoritative.
+     * Page names are free text from the Central Station index; one carrying a path separator or a forbidden character
+     * made a download land outside the layouts folder or fail part way, leaving a half-written layout the next sync
+     * reads as authoritative.
      *
-     * Applied on BOTH sides on purpose.  The local read locates a page by the name in the index, so
-     * sanitizing only the write would produce a file the reader then could not find.  The remote read
-     * keeps sanitizeURL, which answers a different question - what is legal in a url - and is why the
-     * download half of this was the only one ever guarded.
-     *
-     * Only characters that are actually unusable are replaced, so ordinary names with spaces, dashes
-     * and accented letters are returned untouched and existing local layouts load exactly as before.
+     * Applied on BOTH sides on purpose: the local read locates a page by the name in the index, so sanitizing only the
+     * write would produce a file the reader could not find.  The remote read keeps sanitizeURL, which answers a
+     * different question (what is legal in a url).  Only unusable characters are replaced, so ordinary names load
+     * unchanged.
      *
      * @param name
      * @return
@@ -430,10 +426,8 @@ public final class CS2File
      */
     public static List<Map<String, String> > parseFile(BufferedReader in) throws Exception
     {
-        // try-with-resources, matching parseJSONArray and parseJSONObject alongside.  The close used to
-        // be the last statement of the body, so any parse failure left the reader - and with it an HTTP
-        // connection, or a file handle when a local layout folder is configured - open until the
-        // garbage collector got to it.
+        // try-with-resources, matching parseJSONArray and parseJSONObject alongside: any parse failure still closes the
+        // reader, and with it an HTTP connection or a file handle.
         try (BufferedReader reader = in)
         {
             return parseFileContents(reader);
@@ -727,16 +721,12 @@ public final class CS2File
      */
     public List<MarklinRoute> parseRoutesCS3() throws Exception
     {
-        // Determine which locomotive DB version is active (v260+ or older 250).  Probed once, up front,
-        // and the version passed explicitly below: the no-argument getCS3LocDBUrl() probes again, so this
-        // used to ask the Central Station twice per import.  Doing it before anything is opened also
-        // means a failed probe cannot strand a reader.
+        // Which locomotive DB version is active (v260+ or older 250), probed once up front and passed explicitly (the
+        // no-argument getCS3LocDBUrl() probes again); a failed probe here cannot strand a reader.
         boolean is260 = isCS3Version260OrAbove();
 
-        // All three in one try-with-resources.  Each holds an HTTP connection to the Central Station, and
-        // an exception after the first was opened - a refused fetch, or a malformed response from any of
-        // them - used to leak every reader opened up to that point.  parseJSONArray/parseJSONObject close
-        // them too, which is harmless: BufferedReader.close is a no-op once already closed.
+        // All three in one try-with-resources, so an exception after the first is opened leaks none of them
+        // (parseJSONArray/parseJSONObject close them too, harmlessly).
         try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
              BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
              BufferedReader locBR   = fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)))
@@ -1368,14 +1358,12 @@ public final class CS2File
                                 }
 
                                 // Which command the item's own "sekunde" pause belongs on: the LAST one this item
-                                // emits.  It used to be found by searching the route for the address, and
-                                // that search returns at the first match - so for a three-way at stellung
-                                // 1, 2 or 3, where the pair is emitted address-then-address+1, the pause
-                                // landed *between* the two drives instead of after them, and overwrote
-                                // the gap that holds them apart.
+                                // emits.  For a three-way at stellung 1, 2 or 3 the pair is emitted
+                                // address-then-address+1, and a pause placed between the two drives would overwrite the
+                                // gap that holds them apart.
                                 //
-                                // Null when a stellung emits nothing, which also stops the address search
-                                // logging a missing key for it.
+                                // Null when a stellung emits nothing, which also stops the address search logging a
+                                // missing key for it.
                                 RouteCommand lastForItem = null;
 
                                 // stellung 0 - key not included

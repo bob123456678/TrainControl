@@ -175,11 +175,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
     }
 
     /**
-     * Test a Path marks in blue what can be clicked: every station once it is armed, the start in a stronger blue once
+     * Test a Path outlines in orange what can be clicked: every station once it is armed, the start in blue once
      * clicked, and every station again with the answer, when the next click starts a new test; nothing once the tool is
-     * put down (FR-159; Adam, MT-854: "I like the blue initial selection more than the orange, so use this in test a
-     * path and why not moving during the selection phase").  No station takes Why not Moving?'s colors here ("The
-     * station highlighting in green/purple should happen in "why not moving", not test a path").
+     * put down (FR-159; OB-395, Adam: "I want them to be orange when I click and then they can become blue post
+     * click").  No station takes Why not Moving?'s colors here (MT-854: "The station highlighting in green/purple
+     * should happen in "why not moving", not test a path").
      *
      * MUTATION: drop the `annotation.markedByATool` call in `AutonomyEditorPanel.annotationFor`, or mark `testFrom`
      * CLICKABLE in `toolMark`, and this fails.
@@ -226,7 +226,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertEquals(mark(panel, from), TileAnnotation.ToolMark.PICKED, "the start is not marked as the square"
                 + " clicked");
 
-            assertFalse(panel.isOutlined(from), "the start is still outlined in orange");
+            assertFalse(panel.isOutlined(from), "the start still has the selection's outline");
 
             everyStationIs(panel, from, "with the start chosen");
 
@@ -253,10 +253,10 @@ public class testPathTypeRedrawsTheTestInTheEditor
     }
 
     /**
-     * Why not Moving? marks in blue the squares with a train while it waits, then, with its answer, the train's square
-     * in a stronger blue and each station in the answer's colors: green where it can go now, gray where it cannot right
-     * now, and purple, on Auto alone, where autonomy will never choose it, with a line saying so (FR-159; Adam, MT-854:
-     * "The station highlighting in green/purple should happen in "why not moving"").
+     * Why not Moving? outlines in orange the squares with a train while it waits, then, with its answer, the train's
+     * square in blue and each station in the answer's colors: green where it can go now, gray where it cannot right
+     * now, and purple, on Auto alone, where autonomy will never choose it but track leads there (OB-394), with a line
+     * saying so (FR-159; Adam, MT-854: "The station highlighting in green/purple should happen in "why not moving"").
      *
      * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
      * marks off (and asking about a square with no train, the lines), and an answer that lands after the tool was put
@@ -264,7 +264,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
      *
      * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, mark the never-chosen stations NOT_NOW or none
      * NOT_NOW in `EditorWhy.composeWhy`, leave the marks or `whyAsked` alone in `clearGesture`, leave `whyAsked` alone
-     * in `cancelPendingGesture`, or give the no-train answer no marks or no lines, and this fails.
+     * in `cancelPendingGesture`, give the no-train answer no marks or no lines, or mark a never-chosen station purple
+     * without asking whether track leads there, and this fails.
      */
     @Test
     public void testWhyNotMovingMarksTheStationsByItsAnswer() throws Exception
@@ -305,10 +306,10 @@ public class testPathTypeRedrawsTheTestInTheEditor
             settle();
 
             assertEquals(mark(panel, standing), TileAnnotation.ToolMark.CLICKABLE, "while Why not Moving? waits, the"
-                + " square with a train is not marked in blue");
+                + " square with a train is not marked as one to click");
 
-            assertFalse(panel.isOutlined(standing), "while Why not Moving? waits, the square with a train is still"
-                + " outlined in orange");
+            assertFalse(panel.isOutlined(standing), "while Why not Moving? waits, the square with a train still has"
+                + " the selection's outline");
 
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(standing,
                 page.getComponent(standing.getX(), standing.getY()), false));
@@ -325,6 +326,13 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             assertTrue(marked(panel, TileAnnotation.ToolMark.NEVER) > 0, "on Auto, no station autonomy will never"
                 + " choose is marked purple: " + onAuto);
+
+            for (TileKey never : markedAs(panel, TileAnnotation.ToolMark.NEVER))
+            {
+                assertNotNull(session.getReducer().findPath(standing, never, session.mayTurnTiles(),
+                    session.mandatoryTurnTiles(), session.barredArrivals(), session.shutTiles()), "on Auto, " + never
+                    + " is marked purple, though no track leads there from the train: " + onAuto);
+            }
 
             // The other trains standing in the snapshot hold stations it cannot go to right now
             assertTrue(marked(panel, TileAnnotation.ToolMark.NOT_NOW) > 0, "on Auto, no station it cannot go to right"
@@ -463,7 +471,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
     /**
      * A square takes the best of its copies' answers whatever their order: can go over not now over never, and the
-     * train's own square keeps its blue (FR-159).
+     * train's own square keeps its mark (FR-159).
      *
      * MUTATION: let a later answer replace an earlier one in `EditorWhy.settle`, or move PICKED after the answers in
      * `TileAnnotation.ToolMark`, and this fails.
@@ -522,6 +530,27 @@ public class testPathTypeRedrawsTheTestInTheEditor
     }
 
     /** How many squares the Why answer marks at all. */
+    /** The squares the answer marks this way, read on the event thread. */
+    @SuppressWarnings("unchecked")
+    private static java.util.List<TileKey> markedAs(AutonomyEditorPanel panel, TileAnnotation.ToolMark which)
+        throws Exception
+    {
+        final java.util.Map<TileKey, TileAnnotation.ToolMark> marks =
+            (java.util.Map<TileKey, TileAnnotation.ToolMark>) field(panel, "whyMarks");
+
+        final java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.util.Map.Entry<TileKey, TileAnnotation.ToolMark> e : marks.entrySet())
+            {
+                if (e.getValue() == which) out.add(e.getKey());
+            }
+        });
+
+        return out;
+    }
+
     private static int markedAtAll(AutonomyEditorPanel panel) throws Exception
     {
         int all = 0;

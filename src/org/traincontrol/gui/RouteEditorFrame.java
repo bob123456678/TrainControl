@@ -118,16 +118,9 @@ public class RouteEditorFrame extends JFrame
     private final JCheckBox captureBox = new JCheckBox(I18n.t("route.ui.frameCapture"));
 
     /**
-     * Where a captured accessory goes: the command list, or the conditions.
-     *
-     * Asked rather than guessed.  Capturing into conditions is genuinely useful - "run this route when
-     * these points are already set the way I have just set them" is otherwise a lot of addresses typed
-     * by hand - but it is not what capture has always meant, and a capture that quietly wrote to the
-     * wrong table would be worse than one that did nothing.
-     *
-     * s88 is deliberately absent.  A feedback condition is the commonest kind there is, and it is also
-     * the one that would fill the table with noise: a layout with trains on it reports sensors
-     * constantly, and none of those reports is the user saying anything.
+     * Where a captured accessory goes: the command list, or the conditions.  Asked rather than guessed, since a capture
+     * that quietly wrote to the wrong table would be worse than one that did nothing.  s88 is deliberately absent: a
+     * layout with trains on it reports sensors constantly, so feedback would fill the table with noise.
      */
     private final JComboBox<String> captureTarget = new JComboBox<>();
 

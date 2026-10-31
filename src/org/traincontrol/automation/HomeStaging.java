@@ -23,28 +23,22 @@ import org.traincontrol.base.Locomotive;
 /**
  * Plans the moves that put every locomotive back on its home station.
  *
- * Home is where a locomotive was when it first appeared on the graph - see Layout.claimHome.  A
- * locomotive with no home is a *free agent*: it may be moved out of the way but never has to end
- * anywhere in particular, and it doubles as the spare capacity that lets a blocked arrangement unwind.
+ * Home is where a locomotive was when it first appeared on the graph (Layout.claimHome).  A locomotive with no home is
+ * a *free agent*: it may be moved out of the way but never has to end anywhere in particular, and it is the spare
+ * capacity that lets a blocked arrangement unwind.
  *
- * <b>This is a rearrangement problem, not a routing one.</b>  A station holds one locomotive, so a
- * train cannot go home while another sits there, and that one may need to move through the station the
- * first is leaving.  It is pebble motion on a graph: deciding feasibility is polynomial, finding the
- * shortest solution is NP-hard, and the shortest solution is worth nothing here - staging happens once,
- * before a session, and nobody counts the moves.
+ * <b>This is a rearrangement problem, not a routing one.</b>  A station holds one locomotive, so a train cannot go home
+ * while another sits there, and that one may need to move through the station the first is leaving.  It is pebble
+ * motion on a graph: feasibility is polynomial, the shortest solution is NP-hard, and nobody counts the moves here.
  *
- * <b>Nothing here touches the live layout.</b>  snapshot() copies the occupancy and the planner works
- * on that copy, because the question "could this locomotive move there *after* three other moves" has
- * no answer on live state.  In particular it does NOT call Layout.isPathClear, which consults real s88
- * feedback, isAutoRunning() and maxActiveTrains - none of which can be evaluated for a hypothetical
- * future.  The shadow rule is simpler and exact for a layout at rest: a locomotive at rest occupies
- * exactly its own station's sensor, so a point is passable iff its s88 is not one an occupied station
- * reports.  Occupancy is keyed by <b>sensor address, not by point</b>: nothing stops two points sharing
- * an s88, and it is the sensor that isPathClear interrogates.
+ * <b>Nothing here touches the live layout.</b>  snapshot() copies the occupancy and the planner works on that copy.  It
+ * does NOT call Layout.isPathClear, which consults real s88 feedback, isAutoRunning() and maxActiveTrains, none of
+ * which can be evaluated for a hypothetical future.  For a layout at rest a locomotive occupies exactly its own
+ * station's sensor, so a point is passable iff its s88 is not one an occupied station reports.  Occupancy is keyed by
+ * <b>sensor address, not by point</b>: two points may share an s88, and the sensor is what isPathClear interrogates.
  *
- * Plans are sequential - one train at a time - which is what keeps edge locks, activeLocomotives and
- * maxActiveTrains out of the model entirely: in every state the planner considers, nothing is moving.
- * The runtime may still overlap the moves it is given, provided it respects their order.
+ * Plans are sequential, one train at a time, so edge locks, activeLocomotives and maxActiveTrains stay out of the
+ * model.  The runtime may overlap the moves it is given, provided it respects their order.
  *
  * @author Adam
  */
@@ -84,8 +78,7 @@ public final class HomeStaging
      */
     private java.util.function.LongSupplier clock = System::currentTimeMillis;
 
-    /** Expansions allowed per route search.  A point may now be revisited under different accessory
-     *  settings, so the search is no longer bounded by the number of points. */
+    /** Expansions allowed per route search.  A point can be revisited under different accessory settings. */
     private static final int ROUTE_SEARCH_LIMIT = 20000;
 
     private final Layout layout;
@@ -982,16 +975,12 @@ public final class HomeStaging
     // The shadow rules
 
     /**
-     * A route from one station to another that is clear in this hypothetical state, or null.
+     * A route from one station to another that is clear in this hypothetical state, or null.  Breadth-first, so it is
+     * the shortest clear one.
      *
-     * Searches over the points that can actually be entered given who is standing where, rather than
-     * enumerating a few routes computed without regard to occupancy and then filtering them.  Those are
-     * different questions, and the difference is not academic: on a layout with loops the shortest
-     * handful of routes between two stations tend to share the same busy stretch of track, so all of
-     * them can be blocked while a longer clear one exists.  Answering the wrong question made the
-     * planner report that a locomotive could not get home when it plainly could.
-     *
-     * Breadth-first, so the route returned is the shortest clear one.
+     * Searches the points that can actually be entered given who is standing where, rather than filtering a few routes
+     * computed without regard to occupancy: on a layout with loops the shortest few routes share the same busy stretch
+     * and can all be blocked while a longer clear one exists.
      */
     private List<Edge> firstClearRoute(Map<Point, Locomotive> state, Set<String> blocked, Locomotive loc,
         Point from, Point to)
@@ -1242,12 +1231,8 @@ public final class HomeStaging
     }
 
     /**
-     * Whether this point has already been reached under commands that leave at least as much freedom.
-     *
-     * Arriving somewhere is no longer enough to dismiss a later arrival, because the settings committed
-     * on the way decide what may still be done.  A previous arrival only makes this one redundant if it
-     * committed to nothing that this one has not also committed to - then anything reachable from here
-     * was reachable from there.
+     * Whether this point was already reached under commands that leave at least as much freedom: an earlier arrival
+     * makes this one redundant only if it committed to nothing this one has not also committed to.
      */
     static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
         String p, Map<String, Accessory.accessorySetting> commands)

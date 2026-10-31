@@ -41,27 +41,22 @@ public class MarklinRoute extends Route
     // Floor under any delay a command carries; public so the editor can raise a smaller typed value to it.
     public static final int DEFAULT_SLEEP_MS = 150;
 
-    // What a route command's delay must be for the *next* command to land THREEWAY_DELAY_MS later -
-    // the gap the track diagram already leaves between a three-way's two commands.  execRoute sleeps
-    // SLEEP_INTERVAL plus the command's own delay, hence the subtraction.
+    // The route-command delay that makes the *next* command land THREEWAY_DELAY_MS later, the gap the track diagram
+    // leaves between a three-way's two commands: execRoute sleeps SLEEP_INTERVAL plus the command's own delay, hence
+    // the subtraction.
     //
-    // Used by the two builders that can space a pair: the CS3 route importer and the route editor's
-    // wizard.  Two others cannot.  The CS2 flat-file importer has no way to tell a three-way from a
-    // plain turnout - parseMags keeps only SWITCH or SIGNAL, discarding the "dreiwegweiche" the file
-    // states - and command capture records what the diagram sent, carrying no delay of its own.
-    // Without it a pair fires DEFAULT_SLEEP_MS apart, inside the margin the diagram path was tuned to.
+    // Used by the CS3 route importer and the route editor's wizard.  The CS2 flat-file importer cannot tell a three-way
+    // from a plain turnout (parseMags keeps only SWITCH or SIGNAL) and command capture carries no delay, so their pairs
+    // fire DEFAULT_SLEEP_MS apart.
     //
-    // Has to exceed DEFAULT_SLEEP_MS to have any effect: execRoute honors a command's own delay
-    // only when it is the larger of the two.  It does, with room to spare - but lowering
-    // THREEWAY_DELAY_MS far enough would make this silently inert rather than merely shorter.
+    // Has to exceed DEFAULT_SLEEP_MS: execRoute honors a command's own delay only when it is the larger of the two, so
+    // lowering THREEWAY_DELAY_MS far enough would make this silently inert.
     public static final int THREEWAY_ROUTE_DELAY_MS =
         (int) (MarklinAccessory.THREEWAY_DELAY_MS - MarklinControlStation.SLEEP_INTERVAL);
     
     // State for routes with S88 trigger
-    // volatile: the monitor thread started below loops on this field, while enable() and disable() are
-    // called from the EDT.  Without it that thread has no guarantee of ever observing a disable, and
-    // deleteRoute depends on exactly that to retire the monitor of a route being edited or removed -
-    // an unretired monitor keeps firing the old command list on a route the UI can no longer reach.
+    // volatile: the monitor thread loops on this field while enable() and disable() run on the EDT; without it a
+    // disable may never be seen, and deleteRoute relies on it to retire the monitor of an edited or removed route.
     private volatile boolean enabled;
     private s88Triggers triggerType;
     private int s88;

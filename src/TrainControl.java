@@ -5,15 +5,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 public class TrainControl
 {        
     /**
-     * Main method, parses command line arguments and initializes the GUI /
-     * client
-     * 
-     * Ensures that informative error messages are printed in the event that an
-     * error occurs
-     * 
+     * Parses the command line arguments and initializes the GUI and client, printing an informative error if that
+     * fails.
+     *
      * Usage: TrainControl.java [IP [debug [simulate connection]]]
-     * 
-     * @param args, command line arguments
+     *
+     * @param args command line arguments
      */
     public static void main(String[] args)
     {            

@@ -7056,22 +7056,15 @@ public class AutonomySession
     /**
      * Which way a train put down on a square should end up pointing.
      *
-     * Adam: **"pasted locomotives pasted on the succeeding/preceding station to a given station on the same
-     * line face into the station and away from that station, respectively"**, and **"for terminuses, they must reverse on
-     * paste"**.
-     *
-     * Both halves of the first sentence are one rule: the heading survives, so putting a train down must not turn it.
-     *
-     * A terminus holds one heading, so a train put down there takes it.
-     *
-     * The heading is read before the move and handed in: the landing copy's side is not the train's (see `landedOn`).
+     * Adam: **"pasted locomotives pasted on the succeeding/preceding station to a given station on the same line face
+     * into the station and away from that station, respectively"**, and **"for terminuses, they must reverse on
+     * paste"**.  The first is one rule: the heading survives, so putting a train down must not turn it.  A terminus
+     * holds one heading, so a train put down there takes it.
      *
      * @param held every copy the landing square builds to, by name, with the side each one faces
-     * @param keep the heading the train had before it was moved, or null when that is not known
-     * @param landedOn the copy the running layout chose - accepted and deliberately NOT used, because
-     *        `StationIndex.speakerAt` says that on an empty square "any copy will do", so it is copy 0
-     *        and evidence of nothing.  Recording it was a bug.  Kept in the signature so that a
-     *        caller reaching for it finds this sentence rather than the idea
+     * @param keep the heading the train had before it was moved (read beforehand), or null when not known
+     * @param landedOn the copy the running layout chose; deliberately NOT used, because on an empty square any copy
+     *        will do (`StationIndex.speakerAt`), so it is copy 0 and evidence of nothing
      * @return the side to record, or null to record nothing
      */
     public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)
@@ -7152,14 +7145,9 @@ public class AutonomySession
     }
 
     /**
-     * Where to find the running layout, when there is one.
-     *
-     * A supplier rather than a reference, because the layout is rebuilt - `parseAuto` replaces the
-     * object - and a field captured once would go stale at the first rebuild and then quietly move
-     * trains on a graph nobody is looking at.
-     *
-     * Null until the window sets it, which is right for every headless use: a session opened by a
-     * test or a migration has no railway to move anything on.
+     * Where to find the running layout, if any.  A supplier because `parseAuto` replaces the layout object, so a field
+     * captured once would go stale and quietly move trains on a graph nobody is looking at.  Null until the window sets
+     * it, as in every headless use.
      */
     private java.util.function.Supplier<org.traincontrol.automation.Layout> runningLayout;
 

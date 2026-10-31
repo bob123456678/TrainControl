@@ -21,19 +21,10 @@ public class Point
     /**
      * The side a train standing here came IN by, which is where its tail lies.
      *
-     * Adam, 2026-09-07: **"we need to track an arrivedFrom property... that would capture where the
-     * physical tail of the train is."**
-     *
-     * **Facing cannot answer this, which is why it is a property of its own.**  A train faces the way
-     * it will leave; its tail is behind it, and "behind" is not recoverable from the heading once the
-     * train has been turned round.  He turned the 2-8-4 at BottomMainB to face east having arrived
-     * from the west, and at that moment facing and tail point the SAME way - so a walk that infers the
-     * tail from the heading looks up the wrong track and the switch it is fouling stays open.
-     *
-     * A compass side rather than an edge, because an edge is directional and a tail is not: the train
-     * lies across that rail whichever way the graph says traffic runs.
-     *
-     * Null when nothing has said - a train nobody has placed or run.
+     * Facing cannot answer this: a train faces the way it will leave, and once turned round (arrived from the west,
+     * turned to face east) its tail points the same way it faces, so inferring the tail from the heading finds the
+     * wrong track.  A compass side rather than an edge, because an edge is directional and a tail is not.  Null when
+     * nothing has said.
      */
     private String arrivedFrom;
 
@@ -119,10 +110,8 @@ public class Point
             );
         }
 
-        // Fail where the mistake is made.  toJSON does Integer.valueOf(s88), so a non-numeric
-        // value accepted here used to explode at save time as an unchecked NumberFormatException,
-        // far from the call that caused it.  createPoint validates that the feedback exists, but
-        // this constructor is public and validated nothing.
+        // Fail where the mistake is made: toJSON does Integer.valueOf(s88), so a non-numeric value must be refused
+        // here, in a public constructor, rather than at save time far from the cause.
         if (s88 != null)
         {
             try
@@ -304,11 +293,8 @@ public class Point
     }
 
     /**
-     * Removes a locomotive from the exclusion set, if it is in it.
-     *
-     * A plain removal is safe: MarklinLocomotive hashes by identity, so a locomotive's hash cannot
-     * move while it sits in this set.  That was not always true - see the hash-identity note on
-     * MarklinLocomotive.hashCode.
+     * Removes a locomotive from the exclusion set, if it is in it.  A plain removal is safe because MarklinLocomotive
+     * hashes by identity, so its hash cannot move while it sits in this set.
      *
      * @param l the locomotive to stop excluding
      * @return true if it was excluded and no longer is

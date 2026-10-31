@@ -33941,3 +33941,135 @@ body:
 tail:
 | ---
 |
+
+[test MT-860]
+ordinal: 859
+anchor: mt-860
+date: 2026-10-31
+title: Menus show tooltips only where they help
+disposition: needs test
+from: OB-393
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-860"></a>
+| ### MT-860 - 2026-10-31 - Menus show tooltips only where they help
+|
+| **Disposition:** needs test
+| **From:** OB-393
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Open `Layouts` and hover over `Recent Layouts`, `Edit Layout Page` and `Manage Pages`, then over `Open Layout...`, `Create New Layout`, `Pop-up all Layout Pages` and `Download Central Station Layout Files`.
+| 2. With a configuration loaded, open `Autonomy` and hover over `Edit Autonomy on Page`, then open `Pages with Autonomy Enabled...` and hover over a page.
+| 3. In the autonomy editor, right-click a square and hover over `Bulk Tools`.  In the layout editor, select a square, right-click it, and hover over `Selection` and then `Deselect All` inside it.
+| 4. Open `Preferences` and hover over the keyboard types, `Show Locomotive Pages as Tabs`, and `Startup` > `Load Autonomy`.  Open `Locomotives` > `Export to CSV`, `Routes` > `Export` and `Help` > `View Releases` and hover over each.
+|
+| **Expected**
+|
+| - No tooltip on `Recent Layouts`, `Edit Layout Page`, `Edit Autonomy on Page`, `Pages with Autonomy Enabled...`, `Bulk Tools` or `Selection`; each item inside them still shows its own.
+| - `Manage Pages` says `Add, rename, or delete pages.`  A page under `Pages with Autonomy Enabled...` says `Sets whether this page is part of the autonomy configuration.`
+| - `Download Central Station Layout Files` says `Copies the Central Station's layout to this computer, to customize it or run autonomy.` over two lines.
+| - `Deselect All` says `Escape lets go.  Shift-click picks a square out; shift-drag picks a box.`  `Show Locomotive Pages as Tabs` says `Hides the arrow buttons.`
+| - `Open Layout...`, `Create New Layout`, `Pop-up all Layout Pages`, the keyboard types, `Load Autonomy`, `Export to CSV`, `Routes` > `Export` and `View Releases` show no tooltip.
+|
+tail:
+| ---
+|
+
+[test MT-861]
+ordinal: 860
+anchor: mt-861
+date: 2026-10-31
+title: Why not Moving? colors purple only stations the train can reach
+disposition: needs test
+from: OB-394
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-861"></a>
+| ### MT-861 - 2026-10-31 - Why not Moving? colors purple only stations the train can reach
+|
+| **Disposition:** needs test
+| **From:** OB-394
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Open the autonomy editor on a page with a train on a station, set `Path Type` to `Auto`, and turn on `Why not Moving?`.
+| 2. Click the train.
+|
+| **Expected**
+|
+| - A station marked purple is one the train could drive to that autonomy will never choose.  A station no track leads to from the train (for example one behind a one-way run or a closed side) is gray, not purple, even if autonomy would never choose it.
+|
+tail:
+| ---
+|
+
+[test MT-862]
+ordinal: 861
+anchor: mt-862
+date: 2026-10-31
+title: The square clicked with Test a path or Why not Moving? is outlined in orange
+disposition: superseded
+from: OB-395
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-862"></a>
+| ### MT-862 - 2026-10-31 - The square clicked with Test a path or Why not Moving? is outlined in orange
+|
+| **Disposition:** superseded
+| **From:** OB-395
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Open the autonomy editor and turn on `Test a path`.  Click a station.
+| 2. Turn `Test a path` off, turn on `Why not Moving?`, and click a square with a train.
+|
+| **Expected**
+|
+| - While each tool waits for a click, the squares you can click are marked in blue.
+| - The square you clicked is outlined in orange at its edge, with no blue on it, and stands out from the blue station marker.
+|
+tail:
+| ---
+|
+
+[test MT-863]
+ordinal: 862
+anchor: mt-863
+date: 2026-10-31
+title: Orange marks what to click, blue what was clicked, in Test a path and Why not Moving?
+disposition: needs test
+from: OB-395
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-863"></a>
+| ### MT-863 - 2026-10-31 - Orange marks what to click, blue what was clicked, in Test a path and Why not Moving?
+|
+| **Disposition:** needs test
+| **From:** OB-395
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Open the autonomy editor and turn on `Test a path`.  Click a station.
+| 2. Turn `Test a path` off, turn on `Why not Moving?`, and click a square with a train.
+|
+| **Expected**
+|
+| - While each tool waits for a click, the squares you can click are outlined in orange at their edge, with no wash.
+| - The square you clicked turns blue: a light blue wash and a thin blue frame.
+|
+tail:
+| ---
+|

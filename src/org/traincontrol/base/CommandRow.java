@@ -173,14 +173,9 @@ public final class CommandRow
     }
 
     /**
-     * A setting this kind will accept, for when a row changes from one kind to another.
-     *
-     * The vocabularies do not overlap: an accessory is turn or straight, a feedback is on or off, a
-     * direction is forward or backward.  So changing a row's kind has to change its setting too, or
-     * the rebuilt command is refused and the change appears not to have happened.
-     *
-     * The FIRST of each pair, which is also the un-thrown, un-triggered, forward state - the one a
-     * user is least likely to be surprised by finding there.
+     * A setting this kind will accept, for when a row changes kind.  The vocabularies do not overlap (turn/straight,
+     * on/off, forward/backward), so the setting has to change too or the rebuilt command is refused.  The FIRST of each
+     * pair is used: the un-thrown, un-triggered, forward state.
      */
     public static String defaultSettingFor(Kind kind)
     {
@@ -469,14 +464,8 @@ public final class CommandRow
     /**
      * True for the first word, false for the second, and a refusal for anything else.
      *
-     * The setting column is typed rather than chosen, and the old reading was
-     * `"backward".equalsIgnoreCase(setting) ? BACKWARD : FORWARD` - so a user who typed "backwards",
-     * or "back", or mis-hit a key, got FORWARD. Silently, with the table still showing what they had
-     * typed, and the locomotive running the other way when the route fired.
-     *
-     * That is precisely the failure RouteCommand.fromLine was hardened against, in a class whose whole
-     * purpose is to take the syntax risk away. An address typo is already refused with a dialog naming
-     * the row; a direction typo has to be refused the same way rather than quietly guessed.
+     * The setting column is typed rather than chosen, so a direction typo such as "backwards" must be refused (as
+     * RouteCommand.fromLine does) rather than quietly read as FORWARD with the table still showing what the user typed.
      *
      * @throws IllegalArgumentException when the text is neither
      */

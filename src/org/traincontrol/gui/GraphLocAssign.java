@@ -50,18 +50,12 @@ public class GraphLocAssign extends javax.swing.JPanel
     public static final String NONE_LABEL = "---";
 
     /**
-     * What the menu item that opens this dialog should be called for a given point.
+     * What the menu item that opens this dialog should be called for a given point.  The dialog both places and edits a
+     * locomotive, so the wording is all that separates them: an empty station must not read "Edit Locomotive".  Here
+     * rather than in the menus because two of them open this panel and must agree.
      *
-     * The dialog does two jobs, and the menu used to name only one of them: on an empty station it
-     * offers to "Edit Locomotive" when there is nothing there to edit, which reads as though something
-     * is already assigned.  Placing and editing are the same dialog, so the wording is the only thing
-     * that separates them.
-     *
-     * Here rather than in the menus because two of them open this panel, and a label chosen twice is a
-     * label that ends up different in one of them.
-     *
-     * @param p
-     * @return
+     * @param p the point the menu was opened on
+     * @return the menu text
      */
     public static String menuLabelFor(Point p)
     {

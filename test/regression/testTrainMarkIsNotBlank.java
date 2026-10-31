@@ -134,6 +134,50 @@ public class testTrainMarkIsNotBlank
         }
     }
 
+    /**
+     * What a tool can click is outlined in the selection's orange at its edge, thicker than a selection, with no wash,
+     * and the square clicked turns blue (OB-395).
+     *
+     * MUTATION: draw CLICKABLE with the blue frame or the selection's 2-pixel outline in
+     * `TileAnnotation.paintToolBorder`, give it a wash in `paintToolFill`, or give PICKED no blue in `markColour`, and
+     * this fails.
+     */
+    @Test
+    public void testTheClickableSquaresAreOrangeAndTheClickedOneBlue()
+    {
+        java.awt.image.BufferedImage clickable = painted(TileAnnotation.ToolMark.CLICKABLE);
+
+        assertEquals(clickable.getRGB(1, 15) & 0xFFFFFF, 0xFF8C00, "a square that can be clicked is not outlined in"
+            + " orange at its edge");
+
+        assertEquals(clickable.getRGB(2, 15) & 0xFFFFFF, 0xFF8C00,
+            "the orange outline is no thicker than a selection's");
+
+        assertEquals(clickable.getRGB(15, 15) & 0xFFFFFF, 0xFFFFFF, "a square that can be clicked is washed over");
+
+        java.awt.Color middle = new java.awt.Color(painted(TileAnnotation.ToolMark.PICKED).getRGB(15, 15));
+
+        assertTrue(middle.getBlue() > middle.getRed() + 20, "the square clicked is not washed in blue: " + middle);
+    }
+
+    /** A 30-pixel white square painted with nothing but this mark. */
+    private java.awt.image.BufferedImage painted(TileAnnotation.ToolMark mark)
+    {
+        java.awt.image.BufferedImage tile = new java.awt.image.BufferedImage(30, 30,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = tile.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, 30, 30);
+
+        plain().markedByATool(mark).paint(g, 30, 30);
+
+        g.dispose();
+
+        return tile;
+    }
+
     /** An annotation with nothing on it at all. */
     private TileAnnotation plain()
     {

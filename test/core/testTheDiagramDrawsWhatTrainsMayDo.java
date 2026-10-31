@@ -107,7 +107,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         assertTrue(shown.contains(reason), "a short tooltip lost its text: " + shown);
 
-        String sentence = org.traincontrol.util.I18n.t("autosetup.ui.tooltipEditAutonomy");
+        String sentence = org.traincontrol.util.I18n.t("autosetup.ui.tooltipNeedsLoaded");
 
         String longer = String.valueOf(wrapped.invoke(null, sentence + "  " + sentence + "  " + sentence));
 

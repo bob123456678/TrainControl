@@ -614,16 +614,11 @@ public class RouteCommand implements java.io.Serializable
      * @return 
      */
     /**
-     * Whether a locomotive name can survive this class's text format.  A command is written as "prefix,name,value" and
-     * read back by splitting on commas, so a name carrying one comes back as a different locomotive at a different
-     * speed; that is all this refuses.  Brackets are allowed ("bracketed loc names should just be allowed"): conditions
-     * are no longer stored as text, so `NodeExpression`'s bracket rewriting cannot tear them.  The text form survives
-     * in `toTextRepresentation` for the CSV export and the read-only display, where a bracketed name reads oddly but
-     * nothing parses it back.
-     *
-     * The rule lives here, next to the format, because several doors must agree.  The route editor and the two rename
-     * dialogs ask; `AddLocomotive` and the Central Station sync do not, which with only the comma refused costs less
-     * than closing them would.  A null name is reported usable.
+     * Whether a locomotive name can survive this class's text format: a command is written as "prefix,name,value" and
+     * read back by splitting on commas, so a name carrying one comes back as a different locomotive; that is all this
+     * refuses.  Brackets are allowed ("bracketed loc names should just be allowed"), since conditions are no longer
+     * stored as text.  The rule lives next to the format because several doors must agree: the route editor and the two
+     * rename dialogs ask; `AddLocomotive` and the Central Station sync do not.  A null name is reported usable.
      *
      * @param name
      * @return false when a route could not store this name
@@ -717,18 +712,12 @@ public class RouteCommand implements java.io.Serializable
     }
     
     /**
-     * Parses a simple string representation of the route (equivalent to Route.toCSV)
+     * Parses a simple string representation of the route (equivalent to Route.toCSV).
      *
-     * Any malformed line is reported as a checked Exception carrying the friendly error.invalidLine
-     * message, which is what the callers - the route editor, the autonomy edge parser and
-     * NodeExpression.parseLine - are written to expect and display.
-     *
-     * The parsing below splits user-entered text on commas and calls Integer.parseInt on the pieces,
-     * so a truncated line ("locdir,MyLoc") or a non-numeric address ("Switch abc,turn") surfaced as
-     * ArrayIndexOutOfBoundsException or NumberFormatException.  Those are unchecked, so they bypassed
-     * the error.invalidLine message this method takes care to produce in its other branches and
-     * escaped to callers as a raw stack trace.  Converting them here covers every branch at once,
-     * including any added later.
+     * Any malformed line is reported as a checked Exception carrying the friendly error.invalidLine message, which is
+     * what callers (the route editor, the autonomy edge parser and NodeExpression.parseLine) expect and display.  The
+     * unchecked ArrayIndexOutOfBounds/NumberFormatException that splitting and parsing user text can raise are
+     * converted here, which covers every branch including any added later.
      *
      * @param line
      * @param extractAccessoryType
@@ -802,9 +791,8 @@ public class RouteCommand implements java.io.Serializable
             String name = parts[1].trim();
             String directionStr = parts[2].trim();
 
-            // Only the two real directions parse.  Everything else used to fall through to BACKWARD -
-            // "forwards", "fwd", any typo reversed the locomotive without a word of complaint, while
-            // every other malformed field in this parser produces the friendly invalid-line error.
+            // Only the two real directions parse; anything else (a typo, "forwards") gets the friendly invalid-line
+            // error rather than silently reversing the locomotive.
             Locomotive.locDirection direction;
 
             if ("forward".equals(directionStr.toLowerCase()))
@@ -904,9 +892,7 @@ public class RouteCommand implements java.io.Serializable
             try
             {
                 int address = Math.abs(Integer.parseInt(line.split(",")[0].trim()));
-                // Trimmed like every other state token in this parser: "Feedback 3, 1" - one space
-                // after the comma - used to parse as state CLEAR, silently, and a condition then
-                // waited for the opposite sensor edge.
+                // Trimmed like every other state token in this parser, so "Feedback 3, 1" does not parse as CLEAR.
                 boolean state = "1".equals(line.split(",")[1].trim());
                 
                 return RouteCommand.RouteCommandFeedback(address, state);

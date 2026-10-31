@@ -1630,3 +1630,63 @@ text:
 |
 | Adam, 2026-10-30, in chat: "when right clicking the locomotive image in the main UI, only make this open the file chooser if the power is off, similar to the overlay icons.  update the tooltip to match the status"
 |
+
+[issue OB-393]
+ordinal: 79
+inbox: yes
+kind: bug
+title: Menu tooltips cover submenus and repeat what obvious items say
+filed: 2026-10-31
+filed_at: 2026-10-31 03:06
+raised_from: Adam, in chat
+build: 3.0.7
+text:
+| ### OB-393 - 2026-10-31 - Menu tooltips cover submenus and repeat what obvious items say
+|
+| **Kind:** bug  
+| **Raised from:** Adam, in chat  
+| **Filed:** 2026-10-31 03:06  
+| **Build:** 3.0.7
+|
+| Adam, 2026-10-31, in chat: "Tooltips on self explanatory JMenus and right-click menus that have a submenu, or are obvious and have no hotkey, like Layouts -> Recently Layouts, Edit Layout Page, and Manage Pages, and Edit Autonomy of Page and Pages with Autonomy Enabled are disruptive to UX."
+|
+
+[issue OB-394]
+ordinal: 80
+inbox: yes
+kind: bug
+title: Why not Moving? marks stations purple that the train cannot reach
+filed: 2026-10-31
+filed_at: 2026-10-31 03:06
+raised_from: Adam, in chat
+build: 3.0.7
+text:
+| ### OB-394 - 2026-10-31 - Why not Moving? marks stations purple that the train cannot reach
+|
+| **Kind:** bug  
+| **Raised from:** Adam, in chat  
+| **Filed:** 2026-10-31 03:06  
+| **Build:** 3.0.7
+|
+| Adam, 2026-10-31, in chat: "In \"why not moving\", some stations that can't be reached are still highlighted in magenta."
+|
+
+[issue OB-395]
+ordinal: 81
+inbox: yes
+kind: bug
+title: The square clicked with Test a Path or Why not Moving? is less clear in blue than the old orange
+filed: 2026-10-31
+filed_at: 2026-10-31 03:06
+raised_from: Adam, in chat
+build: 3.0.7
+text:
+| ### OB-395 - 2026-10-31 - The square clicked with Test a Path or Why not Moving? is less clear in blue than the old orange
+|
+| **Kind:** bug  
+| **Raised from:** Adam, in chat  
+| **Filed:** 2026-10-31 03:06  
+| **Build:** 3.0.7
+|
+| Adam, 2026-10-31, in chat: "the initial selection is yellow (as it was before) was clearer than the new blue, because the blue is too far inset on the tile"; of the options rendered, "Go with A" (the orange outline at the square's edge, blue kept for what can be clicked).
+|

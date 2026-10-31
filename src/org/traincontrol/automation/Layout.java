@@ -213,14 +213,9 @@ public class Layout
     }
 
     /**
-     * How many distinct SENSORS a route crosses.
-     *
-     * By block where a Point has one, since that is the builder's name for "the several copies of one
-     * square", and by the Point's own identity otherwise - a hand-built graph has no blocks and its
-     * Points already are one square each.
-     *
-     * The destination is not counted, for the same reason stationsOn does not count it: it would add
-     * one to every candidate and change no ordering.
+     * How many distinct SENSORS a route crosses: by block where a Point has one (the several copies of one square),
+     * else by the Point itself.  The destination is not counted, as in stationsOn, since it would add one to every
+     * candidate.
      */
     private int sensorsOn(List<Edge> path)
     {
@@ -849,21 +844,13 @@ public class Layout
     }
 
     /**
-     * Records where a locomotive belongs, the first time it is placed on this graph.
+     * Records where a locomotive belongs, the first time it is placed on this graph.  First claim wins and a station
+     * can be claimed only once, so the map stays injective: two locomotives never want one station, which would make
+     * returning home unsatisfiable.  A locomotive placed on a claimed station gets no home and becomes a free agent,
+     * which the staging planner may move anywhere free and which supplies the spare capacity that breaks cyclic
+     * dependencies.
      *
-     * First claim wins, and a station can be claimed only once, so the map stays injective - two
-     * locomotives can never want the same station, which would make returning home unsatisfiable by
-     * construction.
-     *
-     * A locomotive placed on an already-claimed station therefore gets no home. That is deliberate:
-     * it becomes a free agent, which the staging planner may move anywhere free but never has to place
-     * exactly. Free agents are also the spare capacity that lets a planner break a cyclic dependency.
-     *
-     * Called when the graph is loaded and when a locomotive is placed by hand - never on arrival at
-     * the end of a path, which is a locomotive moving, not appearing.
-     *
-     * @param l
-     * @param p
+     * Called when the graph is loaded and when a locomotive is placed by hand, never on arrival at the end of a path.
      */
     private void claimHome(Locomotive l, Point p)
     {
@@ -3477,13 +3464,10 @@ public class Layout
     }
 
     /**
-     * Waits (up to PATH_VALIDATION_MS * (accessories on the path + 1), so longer paths get proportionally
-     * more time) for every accessory on the path to reach its CS-confirmed commanded state.  Waits on
-     * Accessory.actuationConfirmedMonitor (which MarklinAccessory notifies on each confirmed actuation)
-     * rather than busy-polling, and returns as soon as all are confirmed - the full timeout only elapses
-     * when an accessory never confirms.  Must be called WITHOUT holding the Layout monitor so concurrent
-     * path checks are not blocked.
-     * @param path
+     * Waits up to PATH_VALIDATION_MS * (accessories on the path + 1) for every accessory on the path to reach its
+     * CS-confirmed commanded state, on Accessory.actuationConfirmedMonitor rather than polling.  Must be called WITHOUT
+     * holding the Layout monitor so concurrent path checks are not blocked.
+     *
      * @return true if all accessories on the path are confirmed at their commanded state
      */
     private boolean validatePathActuation(List<Edge> path)
@@ -3562,15 +3546,10 @@ public class Layout
     }
 
     /**
-     * Handles a path whose accessories could not be confirmed: stops the locomotive and releases the locks
-     * it just acquired (leaving it at its start point), and logs the problem.  Power is deliberately left
-     * on so other locomotives keep running unaffected; this locomotive simply does not depart, and the
-     * released edges become available for whoever claims (and reconfigures) them next - including this loco
-     * when autonomy re-attempts the path.  A UI alert (naming the locomotive and the unconfirmed
-     * accessories) is only shown once failures reach PATH_VALIDATION_ALERT_THRESHOLD, so a one-off does not
-     * alarm the user.
-     * @param path
-     * @param loc
+     * Stops the locomotive and releases the locks it just acquired (leaving it at its start point) when a path's
+     * accessories could not be confirmed.  Power stays on so other locomotives keep running; the released edges go to
+     * whoever claims them next, including this loco on a retry.  The UI alert naming the unconfirmed accessories
+     * appears only once failures reach PATH_VALIDATION_ALERT_THRESHOLD, so a one-off does not alarm the user.
      */
     private void handleMisconfiguredPath(List<Edge> path, Locomotive loc)
     {
@@ -3682,14 +3661,12 @@ public class Layout
     }
 
     /**
-     * Marks all the edges in a path as unoccupied,
-     * unlocking it so that other trains may pass
+     * Marks all the edges in a path as unoccupied, unlocking it so that other trains may pass
      * @param path
      * @param loc
-     * @return edges whose own occupancy flag was left alone because another locomotive has since
-     *         claimed their end point.  Informational only - their lock edges are still released, and
-     *         the flag itself either belongs to that other locomotive now or was already cleared by
-     *         executePath's early unlock, so there is nothing for the caller to act on.
+     * @return edges whose own occupancy flag was left alone because another locomotive has since claimed their end
+     *        point.  Informational only: their lock edges are still released, so there is nothing for the caller to act
+     *        on.
      */
     synchronized public List<Edge> unlockPath(List<Edge> path, Locomotive loc)
     {
@@ -4666,16 +4643,10 @@ public class Layout
     }
 
     /**
-     * Every station this locomotive might be sent to, and why each one is or is not available.
-     *
-     * The answer to "I pressed start and nothing happened": pickPath and isPathClear (logging off) discard their
-     * reasons.
-     *
-     * The same questions in the same order, keeping the answers; the second stage calls isPathClear itself, so it never
-     * disagrees with the running layout.
-     *
-     * Non-stations are left out entirely rather than listed as "not a station", because on a real
-     * layout they are most of the graph and a list of two hundred of them answers nothing.
+     * Every station this locomotive might be sent to, and why each one is or is not available: the answer to "I pressed
+     * start and nothing happened", since pickPath and isPathClear (logging off) discard their reasons.  It asks the
+     * same questions in the same order, and the second stage calls isPathClear itself, so it never disagrees with the
+     * running layout.  Non-stations are left out, because on a real layout they are most of the graph.
      *
      * @param loc the locomotive
      * @return station name to reason, in priority order, with a null value where the train could go
@@ -8206,16 +8177,11 @@ public class Layout
     }
 
     /**
-     * Works out whether every locomotive can be sent back to its home station, and how.
+     * Works out whether every locomotive can be sent back to its home station, and how.  Read-only: nothing is moved or
+     * loaded.  The outcome distinguishes "nothing to do", "impossible" and "no plan found".  Meaningful only with the
+     * layout at rest, since a train in motion has no position.
      *
-     * Read-only: nothing is moved, nothing is loaded.  Ask this to decide whether to offer the action,
-     * and what to say when it cannot be offered - the outcome distinguishes "nothing to do" from
-     * "impossible" from "no plan found", which are three different things to tell a user.
-     *
-     * Meaningful only with the layout at rest; the plan is built against current positions and a train
-     * in motion has none.
-     *
-     * @return
+     * @return the plan, whose outcome says which of the three cases applies
      */
     public HomeStaging.Plan planReturnToHome()
     {
@@ -8263,14 +8229,12 @@ public class Layout
     }
 
     /**
-     * Whether a feedback sensor is reporting occupied right now.
+     * Whether a feedback sensor is reporting occupied right now.  The staging planner needs the real sensor rather than
+     * a deduction from who is standing where: in simulation the feedback is pulsed and clears behind a train, so a
+     * stationary locomotive does not hold its sensor.
      *
-     * Exposed for the staging planner, which must read the real sensor rather than deduce it from who
-     * is standing where: in simulation the feedback is pulsed and clears again behind a train, so a
-     * stationary locomotive does not hold its sensor at all.
-     *
-     * @param s88
-     * @return
+     * @param s88 the sensor address
+     * @return true if it is occupied
      */
     public boolean isFeedbackOccupied(String s88)
     {
@@ -8310,18 +8274,13 @@ public class Layout
     /**
      * Plans the return home and, if one exists, loads it into the timetable ready to execute.
      *
-     * <b>This replaces the current timetable.</b>  Save it first if it matters - a captured or
-     * hand-built timetable is persisted in the autonomy file, so overwriting it and then saving loses
-     * it for good.
+     * <b>This replaces the current timetable.</b>  Save it first if it matters: a captured or hand-built timetable is
+     * persisted in the autonomy file, so overwriting it and then saving loses it for good.
      *
-     * The moves are emitted in the order the planner produced, each with no delay, so the existing
-     * timetable machinery does the rest: executeTimetable dispatches entry i+1 once entry i has
-     * started, and its retry loop holds a move back while the train ahead is still on the path it
-     * needs.  That is what turns a sequential plan into as much parallelism as the layout allows,
-     * without a scheduler - and it is why the order matters and must not be rearranged.
-     *
-     * Capture is not touched here: addTimetableEntry keeps the moves out of the timetable while timetableExecuting is
-     * set.
+     * The moves are emitted in the planner's order with no delay, and that order must not be rearranged:
+     * executeTimetable dispatches entry i+1 once entry i has started and holds a move back while the train ahead is
+     * still on the path it needs, which turns a sequential plan into as much parallelism as the layout allows.  Capture
+     * is not touched: addTimetableEntry keeps the moves out of the timetable while timetableExecuting is set.
      *
      * @return the plan, whether or not it could be loaded - check isPossible()
      */
@@ -9813,8 +9772,7 @@ public class Layout
 
         for (String s : locomotives)
         {
-            // Skip names that no longer resolve to a locomotive (deleted/renamed since the config was saved).
-            // A null here would be a latent bug regardless: it also NPEs when checkForSlowerLoc iterates the run list.
+            // Skip names that no longer resolve (deleted or renamed): a null would NPE in checkForSlowerLoc.
             Locomotive loc = control.getLocByName(s);
 
             if (loc != null)

@@ -4322,3 +4322,27 @@ kind: bug
 what: TrainControlUI.locIconMouseReleased asks offersTheIconTools, as the wrench and crop mark do; fitTheIconTools sets ui.main.tooltip.locIcon with the power off over a locomotive, none with no locomotive (57b744bc, RSA89 fixes). Until the station reports, the power counts as on only where start-up turns it on (powerHeard). Claims ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff and testTheIconToolsFollowTheStartUpPowerUntilTheStationSays, red under their MUTATION notes.
 state: -
 became: MT-859
+
+[receipt OB-393]
+seq: 540
+filed: 2026-10-31
+kind: bug
+what: Adam's decisions T1-T28 on the tooltip review page, applied: submenu tooltips removed (Recent Layouts, Edit Layout Page, Edit Autonomy on Page and Pages with Autonomy Enabled when enabled, Bulk Tools, Selection), obvious main-bar items' tooltips removed, Manage Pages, Download Central Station Layout Files (wrapped by AutonomyEditorPanel.wrapped), Which Ways In Are Open and Show Locomotive Pages as Tabs reworded, the page checkboxes and Deselect All given tooltips; 14 keys deleted from all 8 bundles. Guards green: core.testMessagesStayShort, regression.testTheMenusComeBackAtOneMoment, core.testMessageBundles, regression.testEveryMessageKeyIsAskedFor.
+state: -
+became: MT-860
+
+[receipt OB-394]
+seq: 541
+filed: 2026-10-31
+kind: bug
+what: EditorWhy.composeWhy marks a never-chosen station NEVER only where GraphReducer.findPath finds track from the train; one it cannot reach is NOT_NOW. Claim regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingMarksTheStationsByItsAnswer, red under its MUTATION note on 1 - Main:2,5.
+state: -
+became: MT-861
+
+[receipt OB-395]
+seq: 542
+filed: 2026-10-31
+kind: bug
+what: TileAnnotation: CLICKABLE draws the selection's orange outline (paintSelectionOutline) and no wash; PICKED the blue wash and thin frame. Claim regression.testTrainMarkIsNotBlank.testTheClickableSquaresAreOrangeAndTheClickedOneBlue, red under each of its MUTATION notes.
+state: -
+became: MT-863

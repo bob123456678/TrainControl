@@ -30380,6 +30380,17 @@ text:
 | Correction to the note above: the menu is `Preferences` > `Startup`, where `Power On` is the choice that turns it on at start-up.
 |
 
+[comment MT-862 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Replaced by MT-863 before it was run: Adam reversed the colors the same day ("I want them to be orange when I click and then they can become blue post click (inverse of current behavior)"). Skip this one.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24
@@ -30389,4 +30400,15 @@ text:
 | **Claude, 2026-10-24.**
 |
 | DD-B9 is done in 3.0.3 (c7e0ca6b, MT-810): the editor's reach findings read the built railway.  DD-A1, DD-C1, DD-C6, DD-C7 and DD-C8 stay here for 3.1.0.
+|
+
+[comment OB-395 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Adam, 2026-10-31, after option A was built: "I want them to be orange when I click and then they can become blue post click (inverse of current behavior)". Built that way: CLICKABLE draws the selection's orange outline with no wash, PICKED the blue wash and thin frame.
 |

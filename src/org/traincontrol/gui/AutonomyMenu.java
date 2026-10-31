@@ -422,10 +422,10 @@ public class AutonomyMenu extends JMenu
             boolean pagesAvailable = edit.getItemCount() > 0;
 
             edit.setEnabled(editRefusal == null && pagesAvailable);
-            edit.setToolTipText(AutonomyEditorPanel.wrapped(
-                editRefusal != null ? I18n.t(editRefusal)
-                : !pagesAvailable ? I18n.t("autosetup.ui.tooltipNeedsLoaded")
-                : I18n.t("autosetup.ui.tooltipEditAutonomy")));
+            String editReason = editRefusal != null ? I18n.t(editRefusal)
+                : !pagesAvailable ? I18n.t("autosetup.ui.tooltipNeedsLoaded") : null;
+
+            edit.setToolTipText(editReason == null ? null : AutonomyEditorPanel.wrapped(editReason));
             add(edit);
 
             // Directly under the editor, because it answers the question the editor list raises: a page left out does
@@ -433,8 +433,7 @@ public class AutonomyMenu extends JMenu
             JMenu pages = pagesMenu(session);
             lastPagesMenu = pages;
             pages.setEnabled(chosen);
-            pages.setToolTipText(AutonomyEditorPanel.wrapped(chosen ? I18n.t("autosetup.ui.promptExcludePage")
-                : I18n.t("autosetup.ui.tooltipNeedsLoaded")));
+            pages.setToolTipText(chosen ? null : AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded")));
             add(pages);
         }
 
@@ -676,6 +675,8 @@ public class AutonomyMenu extends JMenu
             boolean used = !session.getStore().getExcludedPages().contains(name);
 
             final JCheckBoxMenuItem box = new JCheckBoxMenuItem(name, used);
+
+            box.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipPageInConfiguration")));
 
             box.addActionListener(e ->
             {

@@ -394,9 +394,6 @@ final class LayoutMenus
 
         ui.editPageMenu = new javax.swing.JMenu(I18n.t("layout.ui.menuEditLayoutPage"));
 
-        ui.editPageMenu.setToolTipText(
-            AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipEditLayoutPage")));
-
         List<String> pages = ui.getModel() == null ? new ArrayList<>() : ui.getModel().getLayoutList();
 
         for (final String page : pages)
@@ -728,8 +725,6 @@ final class LayoutMenus
         if (ui.layoutMenu() == null || recentLayoutsMenu != null) return;
 
         recentLayoutsMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.recentLayouts"));
-
-        recentLayoutsMenu.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.recentLayouts")));
 
         int open = indexOnLayoutMenu(ui.chooseLocalDataFolderMenuItem());
 

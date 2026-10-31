@@ -1129,8 +1129,6 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JMenu bulk = new javax.swing.JMenu(I18n.t("autosetup.ui.menuBulkTools"));
 
-        bulk.setToolTipText(wrapped(I18n.t("autosetup.ui.hintBulkTools")));
-
         // One-Way Run and Name Everything in the autonomy editor only (OB-217): the track diagram's menus have no page.
         if (page != null)
         {
@@ -2377,19 +2375,12 @@ public class AutonomyEditorPanel extends JPanel
         this.runningLayout = source;
     }
     /**
-     * Where the tail of the train standing here lies - the "arrived from" side.
-     *
-     * Adam: **"expose this property in the right-click menu advanced settings, both for the autonomy editor and track
-     * diagram viewer."**
-     *
-     * Built once, here, for both surfaces (`TrainControlUI.buildAutonomyTileMenu`).
-     *
-     * The sides offered are the railway's (`ArrivalSidePrompt.sidesOf`).
-     *
-     * Null when no train is standing here.
+     * The "arrived from" submenu: where the tail of the train standing here lies, built once for both the autonomy
+     * editor and the track diagram viewer (`TrainControlUI.buildAutonomyTileMenu`), offering the railway's sides
+     * (`ArrivalSidePrompt.sidesOf`).
      *
      * @param target the square
-     * @return the menu, or null when there is nothing to offer
+     * @return the menu, or null when no train is standing here
      */
     public javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
     {

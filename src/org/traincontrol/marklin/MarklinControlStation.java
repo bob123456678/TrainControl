@@ -1425,28 +1425,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Orders rename proposals so each one is applied only once its target name is free, and drops any
-     * that form a cycle.
+     * Orders rename proposals so each one is applied only once its target name is free, and drops any that form a
+     * cycle.
      *
-     * The ambiguity refusals above are about ONE address; across addresses the proposals still interact
-     * through the names.  Sources are unique and Central Station names are unique, so this list is a
-     * partial injective mapping, and such a mapping can contain cycles.
+     * Sources and Central Station names are unique, so the list is a partial injective mapping and can contain cycles.
+     * The consumer applies entries one at a time, deleting whatever already holds a target name, so the order is
+     * load-bearing:
      *
-     * The consumer applies the list one entry at a time against a database each entry mutates, deleting
-     * whatever already holds a target name so that renameLoc's "target must be free" guard can pass, so
-     * the order is load-bearing:
+     * - A CHAIN (the Central Station renamed X to C and the old C to D) is safe only if "C to D" comes first, which
+     *   frees the name; the other order destroys the middle locomotive.
+     * - A SWAP (X and C exchange names) is safe in NO order: either entry deletes the locomotive the other was about to
+     *   rescue.  Unwinding needs a temporary name this flow cannot offer, so the cycle is refused.
      *
-     *  - A CHAIN (the Central Station renamed X to C and the old C to D) is safe in one order and
-     *    destroys the middle locomotive in the other.  Emitting "C to D" first frees the name.
-     *  - A SWAP (X and C exchange names) is safe in NO order: either entry deletes the locomotive the
-     *    other was about to rescue.  Unwinding it needs a temporary name, which this flow has no way to
-     *    offer, so the cycle is refused.
-     *
-     * After this, a deletion in the consumer can only be a name held by something with no pending
-     * rename of its own.
-     *
-     * @param proposals
-     * @return
+     * Afterwards a deletion in the consumer can only hit a name held by something with no pending rename of its own.
      */
     private List<String[]> orderRenameProposals(List<String[]> proposals)
     {
@@ -2747,14 +2738,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Fetches an accessory by name, falling back to the same address under the other accessory type.
      *
-     * A signal and a switch are the same physical decoder - the type only selects how TrainControl
-     * displays it - and the database is keyed by address and protocol, so "Signal 5" and "Switch 5"
-     * are one entry.  Only one of those two names is registered, though: whichever the accessory was
-     * created as.  Without this fallback a route or autonomy edge naming the other one does not
-     * resolve, and that accessory is then silently never commanded.
-     *
-     * Only the type prefix is swapped, so the address and any protocol suffix still have to match
-     * exactly and the name map stays authoritative.  Never creates anything.
+     * A signal and a switch are one physical decoder and the database is keyed by address and protocol, but only the
+     * name the accessory was created as is registered; without the fallback a route or autonomy edge naming the other
+     * one silently never commands it.  Only the type prefix is swapped, so address and protocol suffix still have to
+     * match exactly.  Never creates anything.
      * @param name
      * @return
      */

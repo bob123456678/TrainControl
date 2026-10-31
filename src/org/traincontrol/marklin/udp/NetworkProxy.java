@@ -169,8 +169,7 @@ public class NetworkProxy
     	// Transmit
         try
         {
-            // Checked before sending, not after: send() throws on a closed socket, so the reopen below
-            // used to be unreachable and transmission stayed broken for the rest of the session
+            // Checked before sending: send() throws on a closed socket, so a reopen after it would never run.
             if (this.socket.isClosed())
             {
                 this.socket = openReceiveSocket();
@@ -232,11 +231,9 @@ public class NetworkProxy
 
             try
             {
-                // Receive packets as they come in.  A failure must not end this loop: one transient
-                // error used to terminate the thread for the rest of the session, leaving TrainControl
-                // able to transmit but deaf - no feedback, no accessory echoes, no power state changes,
-                // and path integrity validation failing every path.  The only condition we stop for is
-                // the socket being closed, which is the loop test below.
+                // Receive packets as they come in.  A failure must not end this loop: one error would leave
+                // TrainControl able to transmit but deaf (no feedback, echoes or power state, and path validation
+                // failing).  Only a closed socket stops it.
                 while (!socket.isClosed())
                 {
                     try

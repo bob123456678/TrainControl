@@ -1094,7 +1094,7 @@ public class testLocIconCrop
     }
 
     /**
-     * Before the station has said, the picture's tools take the power as on only where start-up turns it on (RSA89-C3;
+     * Before the station has said, the picture's tools take the power as on only where start-up turns it on (OB-392;
      * Adam: "If we know the power is on (preference to sent power on when startup), hide the icons.  Otherwise leave as
      * is.").  The model takes the power as on until it hears.
      *

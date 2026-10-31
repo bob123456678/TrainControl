@@ -14,28 +14,23 @@ import org.traincontrol.util.I18n;
 /**
  * Where the tail of a hand-placed train lies.
  *
- * Adam, 2026-09-07: **"outside of running autonomy/manual commands, if trains are placed/pasted by the
- * user on a 'can reverse' station, ask the user in the popup where the tail of the train is (where it
- * arrived from).  Otherwise, assume 'arrived from' to be the opposite of their facing on normal
- * stations, and if the station is a terminus, there is only one forced option."**
+ * Adam: **"outside of running autonomy/manual commands, if trains are placed/pasted by the user on a 'can reverse'
+ * station, ask the user in the popup where the tail of the train is (where it arrived from).  Otherwise, assume
+ * 'arrived from' to be the opposite of their facing on normal stations, and if the station is a terminus, there is only
+ * one forced option."**
  *
- * **Three cases, and only one of them is a question.**  Autonomy writes this itself as a train arrives,
- * because the arrival knows.  A train put down by hand has no arrival, so it has to be worked out:
+ * Autonomy writes this itself as a train arrives; a train put down by hand has no arrival, so it is worked out, and
+ * only one of three cases is a question:
  *
- * - **A terminus** has one way in, so there is nothing to ask.  Whatever the train is doing, it came
- *   from the only direction that exists.
- * - **An ordinary station** is answered by the heading: a train faces the way it will leave and arrived
- *   from behind, so the tail is on the side it is not pointing at.  The side it names is one of the square's OWN,
- *   never a compass point the railway does not have there (see `arrivedFrom`).
- * - **A may-reverse station** is where that assumption stops holding, and it is the reason this class
- *   exists.  Turning round is what those squares are FOR, so a train standing on one is as likely to
- *   have backed in as to have driven in, and the two put its tail on opposite sides.  Guessing there
- *   would block one switch while leaving the one it is actually fouling open, which is worse than
- *   blocking nothing: it reports a protection that is not there.
+ * - **A terminus** has one way in, so there is nothing to ask.
+ * - **An ordinary station** is answered by the heading: the tail is on the side the train is not pointing at, one of
+ *   the square's OWN sides (see `arrivedFrom`).
+ * - **A may-reverse station** is where that assumption stops holding: a train there is as likely to have backed in as
+ *   driven in, and the two put its tail on opposite sides.  Guessing would block one switch while leaving the one it
+ *   fouls open, reporting a protection that is not there.
  *
- * The sides offered are the ones the railway actually has, not the four compass points.  A question
- * whose answer is "north" about a square with no track to the north teaches the operator that the
- * setting does nothing.
+ * The sides offered are the ones the railway actually has: a question about a compass point with no track teaches the
+ * operator that the setting does nothing.
  */
 public class ArrivalSidePrompt
 {
@@ -244,19 +239,9 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * Puts the question to the operator.
-     *
-     * `showOptionDialog` rather than `showInputDialog`, for the reason every dialog in this
-     * application uses it: the buttons of the input dialogs follow the SYSTEM language, so a German
-     * operator gets "OK" and "Abbrechen" mixed into an English window or the other way about.
-     *
-     * A dismissed dialog answers null - nothing is recorded, and nothing is blocked.  That is the
-     * answer that claims least: a tail nobody has placed blocks no track, which is the state the
-     * railway was in before the question was asked.
-     *
-     * @param parent what to center on
-     * @param at the point
-     * @param sides the sides that actually have track
+     * Puts the question to the operator.  `showOptionDialog` rather than `showInputDialog`, as in every dialog here,
+     * because the input dialogs' buttons follow the SYSTEM language.  A dismissed dialog answers null, the answer that
+     * claims least: a tail nobody has placed blocks no track.
      * @return the chosen side, or null when dismissed
      */
     private static String ask(Component parent, Point at, List<String> sides)
