@@ -90,6 +90,10 @@ final class EditorWhy extends SettledQuestion
 
         java.util.Map<String, String> reasons = grouped.getReasons();
 
+        // Where the train could be sent by hand right now: a barred station's own reason is its bar, which says nothing
+        // of whether a route would take it there (an intermediate terminus, a length that does not fit).
+        java.util.Map<String, String> sendable = byHand ? reasons : layout.explainDestinations(standing, true);
+
         // Stations first, then berths, each alphabetical (FR-080: *"show all stations first, then show berths
         // (non-autonomy stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups
         // its window (a station with any copy autonomy could choose is filed with the choosable ones).  And by page
@@ -143,15 +147,14 @@ final class EditorWhy extends SettledQuestion
 
             if (elsewhere) station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
 
-            // By square, not by the name shown, which two unnamed squares on one sensor share.  Purple only where the
-            // train could get to: a barred station is never routed to, so its reason does not say whether track leads
-            // there, and one it cannot reach is gray like any other (OB-394).
+            // By square, not by the name shown, which two unnamed squares on one sensor share.  Purple only where it
+            // could be sent by hand; one it cannot be is gray like any other (OB-394).
             if (where != null)
             {
                 settle(marks, where, entry.getValue() == null
                     ? ToolMark.CAN_GO
-                    : grouped.getBarred().contains(entry.getKey()) && (setup.reducer == null
-                        || setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred, setup.shut) != null)
+                    : grouped.getBarred().contains(entry.getKey()) && sendable.containsKey(entry.getKey())
+                        && sendable.get(entry.getKey()) == null
                         ? ToolMark.NEVER
                         : ToolMark.NOT_NOW);
             }

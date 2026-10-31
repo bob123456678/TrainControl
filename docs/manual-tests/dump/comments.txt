@@ -30380,6 +30380,28 @@ text:
 | Correction to the note above: the menu is `Preferences` > `Startup`, where `Power On` is the choice that turns it on at start-up.
 |
 
+[comment MT-861 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| The check asked only whether track leads there.  The Tunnel parkings are reached only through an intermediate terminus and TopMainR0Park is too short for the 2-8-4, so neither can be sent there by hand.  Purple now asks the by-hand router; retest as MT-864.
+|
+
+[comment MT-861 1]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Does not work
+text:
+| **Adam, 2026-10-31 (triage).** Does not work.
+|
+| MT failed.  When testing why not moving from the loc at BottomSecondary, the Tunnel parkings and TopMainR0 are still highlighted, despite no line being drawn to them. This is in the cs2_sample_layout current state
+|
+
 [comment MT-862 0]
 who: Claude
 date: 2026-10-31

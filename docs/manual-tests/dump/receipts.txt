@@ -4335,9 +4335,9 @@ became: MT-860
 seq: 541
 filed: 2026-10-31
 kind: bug
-what: EditorWhy.composeWhy marks a never-chosen station NEVER only where GraphReducer.findPath finds track from the train; one it cannot reach is NOT_NOW. Claim regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingMarksTheStationsByItsAnswer, red under its MUTATION note on 1 - Main:2,5.
+what: EditorWhy.composeWhy marks a never-chosen station NEVER only where Layout.explainDestinations(train, true) has no reason, i.e. it could be sent by hand right now; anything else is NOT_NOW (track alone was not enough: an intermediate terminus, a length that does not fit). Claim regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingMarksTheStationsByItsAnswer, red under both the track-only and the no-check mutations.
 state: -
-became: MT-861
+became: MT-864
 
 [receipt OB-395]
 seq: 542

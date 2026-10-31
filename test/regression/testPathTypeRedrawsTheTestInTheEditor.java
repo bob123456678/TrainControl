@@ -255,8 +255,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /**
      * Why not Moving? outlines in orange the squares with a train while it waits, then, with its answer, the train's
      * square in blue and each station in the answer's colors: green where it can go now, gray where it cannot right
-     * now, and purple, on Auto alone, where autonomy will never choose it but track leads there (OB-394), with a line
-     * saying so (FR-159; Adam, MT-854: "The station highlighting in green/purple should happen in "why not moving"").
+     * now, and purple, on Auto alone, where autonomy will never choose it but it could be sent by hand (OB-394), with a
+     * line saying so (FR-159; Adam, MT-854: "The station highlighting in green/purple should happen in "why not moving"").
      *
      * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
      * marks off (and asking about a square with no train, the lines), and an answer that lands after the tool was put
@@ -265,7 +265,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * MUTATION: install no marks in `AutonomyEditorPanel.paintWhy`, mark the never-chosen stations NOT_NOW or none
      * NOT_NOW in `EditorWhy.composeWhy`, leave the marks or `whyAsked` alone in `clearGesture`, leave `whyAsked` alone
      * in `cancelPendingGesture`, give the no-train answer no marks or no lines, or mark a never-chosen station purple
-     * without asking whether track leads there, and this fails.
+     * without asking whether it could be sent there by hand, and this fails.
      */
     @Test
     public void testWhyNotMovingMarksTheStationsByItsAnswer() throws Exception
@@ -327,11 +327,22 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertTrue(marked(panel, TileAnnotation.ToolMark.NEVER) > 0, "on Auto, no station autonomy will never"
                 + " choose is marked purple: " + onAuto);
 
+            java.util.Map<String, String> byHand = model.getAutoLayout().explainDestinations(train, true);
+
+            assertTrue(byHand.values().stream().anyMatch(java.util.Objects::nonNull), "precondition: every station can be"
+                + " reached by hand, so nothing tells purple from gray");
+
             for (TileKey never : markedAs(panel, TileAnnotation.ToolMark.NEVER))
             {
-                assertNotNull(session.getReducer().findPath(standing, never, session.mayTurnTiles(),
-                    session.mandatoryTurnTiles(), session.barredArrivals(), session.shutTiles()), "on Auto, " + never
-                    + " is marked purple, though no track leads there from the train: " + onAuto);
+                boolean sendable = false;
+
+                for (String point : session.getStationIndex().pointNamesAt(never))
+                {
+                    sendable |= byHand.containsKey(point) && byHand.get(point) == null;
+                }
+
+                assertTrue(sendable, "on Auto, " + never + " is marked purple, though the train could not be sent"
+                    + " there by hand: " + byHand);
             }
 
             // The other trains standing in the snapshot hold stations it cannot go to right now

@@ -33984,7 +33984,7 @@ ordinal: 860
 anchor: mt-861
 date: 2026-10-31
 title: Why not Moving? colors purple only stations the train can reach
-disposition: needs test
+disposition: superseded
 from: OB-394
 written: 2026-10-31
 reopened: no
@@ -33992,7 +33992,7 @@ body:
 | <a id="mt-861"></a>
 | ### MT-861 - 2026-10-31 - Why not Moving? colors purple only stations the train can reach
 |
-| **Disposition:** needs test
+| **Disposition:** superseded
 | **From:** OB-394
 |
 | **Written:** 2026-10-31
@@ -34069,6 +34069,39 @@ body:
 |
 | - While each tool waits for a click, the squares you can click are outlined in orange at their edge, with no wash.
 | - The square you clicked turns blue: a light blue wash and a thin blue frame.
+|
+tail:
+| ---
+|
+
+[test MT-864]
+ordinal: 863
+anchor: mt-864
+date: 2026-10-31
+title: Why not Moving? colors purple only stations the train could be sent to by hand
+disposition: needs test
+from: OB-394
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-864"></a>
+| ### MT-864 - 2026-10-31 - Why not Moving? colors purple only stations the train could be sent to by hand
+|
+| **Disposition:** needs test
+| **From:** OB-394
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. In `cs2_sample_layout` as it stands, open the autonomy editor with the 2-8-4 3505 SP at BottomSecondary, set `Path Type` to `Auto`, and turn on `Why not Moving?`.
+| 2. Click the 2-8-4 at BottomSecondary.
+| 3. Switch `Path Type` to `Manual` and look at where lines are drawn.
+|
+| **Expected**
+|
+| - On `Auto`, the Tunnel parkings and TopMainR0Park are gray, not purple.
+| - Every purple station (here LowerParkingOuter and ParkingTrack5) is one the train could be sent to by hand: on `Manual` it turns green and a line is drawn to it.
 |
 tail:
 | ---
