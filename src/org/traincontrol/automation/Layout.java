@@ -4736,7 +4736,7 @@ public class Layout
                 // Past the filter, so the question becomes whether any route is clear.  Every
                 // alternative is tried, exactly as pickPath does, because the first one being blocked
                 // says nothing about the second.
-                List<List<Edge>> accepted = new LinkedList<>();
+                List<List<Edge>> accepted = routes == null ? null : new LinkedList<>();
 
                 reason = firstClearOrWhyNot(loc, start, end, byHand, accepted);
 
@@ -4830,8 +4830,9 @@ public class Layout
         return layoutExplanations.whyNoRouteFitsTo(loc, start, end);
     }
     /**
-     * Null when some route from start to end is clear, that route added to `accepted`, and otherwise why the last one
-     * was not.
+     * Null when some route from start to end is clear, and otherwise why the last one was not.  Where `accepted` is
+     * given, the route taken goes into it: the first clear one by hand, and on autonomy's tier the one `pickPath` would
+     * run under the current Routing Logic.
      *
      * The reason comes from isPathClear itself, through lastError, which it sets whether or not it is
      * logging.  Enumerating the alternatives matters: a layout with a train parked across one way
@@ -4867,7 +4868,7 @@ public class Layout
                 // another train's candidate; the decision comes from isPathClear's return value.
                 if (this.isPathClear(path, loc, false, byHand))
                 {
-                    accepted.add(path);
+                    if (accepted != null) accepted.add(byHand ? path : rankedFrom(path, loc, start, end, seenPaths));
 
                     return null;
                 }
@@ -4930,6 +4931,36 @@ public class Layout
         }
 
         return why == null ? I18n.t("autolayout.why.noRoute") : why;
+    }
+
+    /**
+     * The route `pickPath` would run to this end, given the first clear one: that one under a random Routing Logic,
+     * otherwise the cheapest clear alternative by `costOf`, the first on a tie, as `pickPath` keeps it.
+     */
+    private List<Edge> rankedFrom(List<Edge> first, Locomotive loc, Point start, Point end, List<List<Edge>> seenPaths)
+        throws Exception
+    {
+        if (this.pathPreference == PathPreference.RANDOM || this.pathPreference == PathPreference.RANDOM_ANY_STATION)
+        {
+            return first;
+        }
+
+        List<Edge> best = first;
+        int bestCost = this.costOf(first);
+        List<Edge> path;
+
+        while ((path = this.bfs(start, end, seenPaths)) != null)
+        {
+            seenPaths.add(path);
+
+            if (!this.reversesAlongTheWay(path) && this.isPathClear(path, loc, false) && this.costOf(path) < bestCost)
+            {
+                bestCost = this.costOf(path);
+                best = path;
+            }
+        }
+
+        return best;
     }
 
     /**

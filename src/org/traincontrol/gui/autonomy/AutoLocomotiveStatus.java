@@ -582,11 +582,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         );
     }// </editor-fold>//GEN-END:initComponents
 
-    /**
-     * Why this locomotive has nowhere to go, as a tooltip: a list, so kept out of the panel's text, where a user who is
-     * not asking would have to read it.  Keyed by station name, not Point (a square is several Points); only the first
-     * reason per station is kept, the one that would have stopped it.
-     */
     /** Whether this panel shows "no available paths" and so has something to explain (event thread only). */
     private boolean noPathsNow;
 
@@ -822,6 +817,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         });
     }
 
+    /**
+     * Why this locomotive has nowhere to go, as a tooltip: a list, so kept out of the panel's text, where a user who is
+     * not asking would have to read it.  Keyed by station name, not Point (a square is several Points); only the first
+     * reason per station is kept, the one that would have stopped it.
+     */
     private String whyNotToolTip()
     {
         if (layout == null || locomotive == null) return null;

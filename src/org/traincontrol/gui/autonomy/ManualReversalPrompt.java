@@ -116,8 +116,8 @@ public final class ManualReversalPrompt
                 // route requires.
                 //
                 // WHICH SQUARES THE OPERATOR HAS A SAY OVER, not which ones the answer acts on.  Folding the answer in
-                // (`turn && asking.asksAbout(at)`) makes "keep direction" turn every may-reverse turning copy look
-                // compulsory, so the train turns against the operator's no.
+                // (`turn && asking.asksAbout(at)`) would make every may-reverse turning copy look compulsory after
+                // "keep direction", so the train would turn against the operator's no.
                 return at == asked && asking.asksAbout(at);
             }
         };

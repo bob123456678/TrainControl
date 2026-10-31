@@ -3758,6 +3758,22 @@ RSA9-D3	RSA9.md	Closed	Checked - clean, apart from RSA9-C1 (the roads put back b
 RSA9-D4	RSA9.md	Closed	Checked - clean.	The rounds' claims, and two of round 25's mutations re-run
 RSA9-D5	RSA9.md	Closed	Checked - clean.	The Pages dialog deleted
 RSA9-D6	RSA9.md	Closed	Checked - clean, apart from RSA9-C2's note on Import.	What RSA8 did not reach, by reading: the autonomy editor's Cancel (RSA7's note), and the other readers of a round 23-24 configuration
+RSA90-C1	RSA90.md	Closed	Fixed - EditorWhy.markCopy/finishMarks: a barred copy no hand send reaches is held back, s	Why not Moving?: a barred station that only one of its copies can be sent to by hand reads gray, not purple
+RSA90-C10	RSA90.md	Closed	Fixed - Adam's T1-T28 decisions, as he pasted them, added as a comment on OB-393, with the	OB-393: Adam's per-item decisions T1-T28 are not in the tracker
+RSA90-C2	RSA90.md	Closed	Fixed - EditorWhy.addLine: a stub of the other color keeps its half and the line adds only	A purple route through a green station takes over that station's own line, in purple
+RSA90-C3	RSA90.md	Closed	Fixed - Layout.rankedFrom: under a ranked Routing Logic the recorded route is the cheapest	The green line is the first clear route, not autonomy's pick under a ranked Routing Logic
+RSA90-C4	RSA90.md	Closed	Fixed in part - the WhySetup is kept between asks and forgotten on every edit, where unmea	The lines depend on the setup's edge names matching the running railway, and the mapping is rebuilt on the event thread for every ask
+RSA90-C5	RSA90.md	Closed	Fixed - the legend: Purple "autonomy will never choose it, but you can send it there yours	The color legend no longer says what purple and gray mean
+RSA90-C6	RSA90.md	Closed	Fixed (second and third points) - toolMark keeps both ends of a tested path PICKED while t	OB-395's thick orange: it hides a finding's outline, and after a Test a Path answer it is back on every station, over the route
+RSA90-C7	RSA90.md	Closed	Fixed - poweredOnAtStartUp captures the Startup choice where start-up calls go(); powerIsO	The picture's tools read the Startup preference as it is now, not what start-up did, and no claim covers hearing the station
+RSA90-C8	RSA90.md	Closed	Fixed - the route claim's square rule and line color as C1 and C2 say; the tooltip-width c	Test strength: the route claim shares the square rule and checks no color; the tooltip-width claim reads a hidden menu
+RSA90-C9	RSA90.md	Closed	Fixed - AutoLocomotiveStatus's tooltip javadoc moved onto whyNotToolTip (testJavadocsAreAt	Comments left wrong or dangling by the range
+RSA90-D1	RSA90.md	Closed	Noted.	RSA89's fixes: every disposition is true, `powerHeard` is set on every report path, and its reads are safe
+RSA90-D2	RSA90.md	Closed	Noted.	`explainDestinations`: the same reasons, the route it decided on, and the two asks agree per color
+RSA90-D3	RSA90.md	Closed	Noted.	`drawRoute`'s once-only rule: no doubled or nudged lines; stubs on curves; what the old `findPath` drawing did
+RSA90-D4	RSA90.md	Closed	Noted.	OB-393 in code, form and bundles
+RSA90-D5	RSA90.md	Closed	Noted.	The comment trims: 34 blocks sampled, no live rule or warning lost except as C9 lists
+RSA90-D6	RSA90.md	Closed	Noted.	The new claims and the Readme
 RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open	the reversal-room rule's `continue` is defeated by the route search's own dominance pruning
 RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open	the staging audit has no exemption for the planner's non-station-origin rule
 RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open	`connected` carries a pre-stop reversal credit through a terminus stop

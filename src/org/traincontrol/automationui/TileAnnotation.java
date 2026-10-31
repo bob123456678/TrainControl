@@ -568,8 +568,8 @@ public class TileAnnotation
     private boolean unmeasured = false;
 
     /**
-     * How Test a Path and Why not Moving? mark a square (FR-159): the selection's orange outline on what can be clicked,
-     * blue on what was (OB-395), and Why not Moving?'s answer on the stations.
+     * How Test a Path and Why not Moving? mark a square (FR-159): a thick orange band on what can be clicked, blue on
+     * what was (OB-395), and Why not Moving?'s answer on the stations.
      */
     public static enum ToolMark
     {
@@ -625,8 +625,8 @@ public class TileAnnotation
     }
 
     /**
-     * The mark's border, over everything but a selection's: dashed where it cannot go now; where it can be clicked, the
-     * selection's orange outline at the square's edge (OB-395).
+     * The mark's border, over everything but a selection's: dashed where it cannot go now; where it can be clicked, a
+     * band in the selection's orange at the square's edge (OB-395), under a tested route's line.
      */
     private void paintToolBorder(Graphics2D g, int width, int height)
     {
@@ -651,10 +651,10 @@ public class TileAnnotation
         g.drawRoundRect(1, 1, width - 3, height - 3, width / 4, height / 4);
     }
 
-    /** The tool's border, then the selection's outline over it. */
+    /** The tool's border, then the selection's outline over it; the clickable band went under the lines. */
     private void paintOutlines(Graphics2D g, int width, int height)
     {
-        if (toolMark != null) paintToolBorder(g, width, height);
+        if (toolMark != null && toolMark != ToolMark.CLICKABLE) paintToolBorder(g, width, height);
 
         if (selected) paintSelectionOutline(g, width, height);
     }
@@ -853,6 +853,8 @@ public class TileAnnotation
             if (occupied) paintTrainMark(g, width, height);
 
             if (length >= 0) paintLength(g, width, height);
+
+            if (toolMark == ToolMark.CLICKABLE) paintToolBorder(g, width, height);
 
             // Last, on top of everything: a tested path is a transient answer to a question just asked.
             paintTraces(g, width, height);
@@ -2018,6 +2020,8 @@ public class TileAnnotation
             paintArrivals(a, width, height);
 
             // AND ITS OUTLINES, which its own paint draws over everything on it: the spill broke them
+            if (toolMark == ToolMark.CLICKABLE) paintToolBorder(a, width, height);
+
             paintOutlines(a, width, height);
         }
         finally

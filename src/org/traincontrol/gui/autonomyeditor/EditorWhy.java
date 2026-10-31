@@ -32,7 +32,7 @@ final class EditorWhy extends SettledQuestion
      *
      * @param layout the railway
      * @param index the square-to-Point translation
-     * @param setup what the setup says about turning, arrivals and closed squares, read on the event thread
+     * @param setup the edge names the routes are drawn by, read on the event thread
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
@@ -128,6 +128,8 @@ final class EditorWhy extends SettledQuestion
         java.util.Map<ToolMark, java.util.Map<TileKey, java.util.List<org.traincontrol.automation.Edge>>> routeTo =
             new java.util.EnumMap<>(ToolMark.class);
 
+        java.util.Set<TileKey> outOfReach = new java.util.HashSet<>();
+
         // Collapsed to stations, as the locomotive panel's tooltip does: the reasons are keyed by the running graph's
         // Points and a square is several, so a derived-graph station would appear three times under names the user
         // never chose.
@@ -156,7 +158,7 @@ final class EditorWhy extends SettledQuestion
                         ? ToolMark.NEVER
                         : ToolMark.NOT_NOW;
 
-                settle(marks, where, mark);
+                markCopy(marks, outOfReach, where, mark, grouped.getBarred().contains(entry.getKey()));
 
                 // Green by autonomy's route, purple by the one a hand send would take
                 java.util.List<org.traincontrol.automation.Edge> route = mark == ToolMark.CAN_GO
@@ -184,9 +186,8 @@ final class EditorWhy extends SettledQuestion
             }
         }
 
-        // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told
-        // from "there were no stations to refuse it", which need opposite things done.  So when nothing was considered,
-        // say what the setup holds.
+        finishMarks(marks, outOfReach);
+
         // Drawn, so "where can it go" is read off the track rather than out of a list: green first, so track a purple
         // route shares with a green one stays the green one's.
         for (ToolMark color : new ToolMark[] {ToolMark.CAN_GO, ToolMark.NEVER})
@@ -203,6 +204,9 @@ final class EditorWhy extends SettledQuestion
             }
         }
 
+        // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told
+        // from "there were no stations to refuse it", which need opposite things done.  So when nothing was considered,
+        // say what the setup holds.
         String going = available.isEmpty()
             ? I18n.t("autosetup.ui.whyNowhere")
             : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(join(new java.util.ArrayList<>(available))));
@@ -276,16 +280,41 @@ final class EditorWhy extends SettledQuestion
             java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here =
                 drawn.computeIfAbsent(square.getKey(), k -> new java.util.ArrayList<>());
 
-            for (org.traincontrol.automationui.TileAnnotation.Trace line : square.getValue())
-            {
-                // A stub this new line runs through is dropped in its favor
-                if (line.getFrom() != null && line.getTo() != null)
-                {
-                    here.removeIf(old -> (old.getFrom() == null || old.getTo() == null) && touches(line, old));
-                }
+            for (org.traincontrol.automationui.TileAnnotation.Trace line : square.getValue()) addLine(here, line);
+        }
+    }
 
-                if (!alreadyDrawn(here, line)) here.add(line);
-            }
+    /**
+     * One route's line added to a square's, each stretch once: a stub it runs through gives way to it where both are
+     * one color; one of the other color keeps its half, and this line adds only the other half (OB-394).
+     */
+    static void addLine(java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here,
+        org.traincontrol.automationui.TileAnnotation.Trace line)
+    {
+        if (alreadyDrawn(here, line)) return;
+
+        org.traincontrol.automationui.TileAnnotation.Trace stub = null;
+
+        for (org.traincontrol.automationui.TileAnnotation.Trace old : here)
+        {
+            if ((old.getFrom() == null || old.getTo() == null) && touches(line, old)) stub = old;
+        }
+
+        if (stub == null || line.getFrom() == null || line.getTo() == null)
+        {
+            here.add(line);
+        }
+        else if (stub.isManualOnly() == line.isManualOnly())
+        {
+            here.remove(stub);
+            here.add(line);
+        }
+        else
+        {
+            org.traincontrol.automationui.TilePorts.Side taken = stub.getFrom() != null ? stub.getFrom() : stub.getTo();
+
+            here.add(new org.traincontrol.automationui.TileAnnotation.Trace(null,
+                line.getFrom() == taken ? line.getTo() : line.getFrom(), true, line.isManualOnly()));
         }
     }
 
@@ -323,6 +352,23 @@ final class EditorWhy extends SettledQuestion
         ToolMark had = marks.get(square);
 
         if (had == null || mark.ordinal() < had.ordinal()) marks.put(square, mark);
+    }
+
+    /**
+     * One copy's mark on its square, green over gray over purple; a copy autonomy never chooses that a hand send cannot
+     * reach either is held back, so it does not gray a square another copy can be sent to (OB-394).
+     */
+    static void markCopy(java.util.Map<TileKey, ToolMark> marks, java.util.Set<TileKey> outOfReach, TileKey square,
+        ToolMark mark, boolean barred)
+    {
+        if (mark == ToolMark.NOT_NOW && barred) outOfReach.add(square);
+        else settle(marks, square, mark);
+    }
+
+    /** The held-back squares no copy said more of, gray. */
+    static void finishMarks(java.util.Map<TileKey, ToolMark> marks, java.util.Set<TileKey> outOfReach)
+    {
+        for (TileKey square : outOfReach) marks.putIfAbsent(square, ToolMark.NOT_NOW);
     }
 
     /** What the stations' colors mean, naming only the colors drawn, on the line under where it can go. */

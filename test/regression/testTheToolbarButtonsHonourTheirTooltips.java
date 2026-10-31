@@ -305,13 +305,14 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
         try
         {
-            Field field = TrainControlUI.class.getDeclaredField("modifyLocalLayoutMenu");
+            // The item shown: the Manage Pages menu behind it is hidden
+            Field field = TrainControlUI.class.getDeclaredField("managePagesItem");
 
             field.setAccessible(true);
 
             javax.swing.JMenuItem create = (javax.swing.JMenuItem) field.get(up.ui);
 
-            assertEquals(create.getText(), I18n.t("ui.main.toolbar.modifyLayout"),
+            assertTrue(create != null && create.getText().equals(I18n.t("ui.main.toolbar.managePages")),
                 "precondition: the item found is not Manage Pages");
 
             String sentence = I18n.t("ui.main.toolbar.tooltip.modifyLayout");

@@ -42,7 +42,7 @@ public class testJavadocsAreAttached
     /**
      * What was there when this test was written. Lower it whenever some are fixed; never raise it.
      */
-    private static final int ALLOWED = 12;
+    private static final int ALLOWED = 11;
 
     /**
      * WHICH files carry the orphans, not just how many.
@@ -57,7 +57,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "base" + File.separator + "RouteCommand.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "autonomy" + File.separator + "AutoLocomotiveStatus.java (2)",
+            + "gui" + File.separator + "autonomy" + File.separator + "AutoLocomotiveStatus.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "autonomy" + File.separator + "DiagramTileRegistry.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator

@@ -4874,8 +4874,10 @@ public class AutonomyEditorPanel extends JPanel
         // Captured on the event thread, which owns the setup.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
-        // And the edge names the routes are drawn by, from the setup this thread edits.
-        final WhySetup setup = new WhySetup(session);
+        // And the edge names the routes are drawn by, from the setup this thread edits: kept until the next edit.
+        if (whySetup == null || whySetup.reducer != session.getReducer()) whySetup = new WhySetup(session);
+
+        final WhySetup setup = whySetup;
 
         // The tier (MT-434), read here, and the square remembered so Path Type can ask again.
         final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
@@ -4908,7 +4910,7 @@ public class AutonomyEditorPanel extends JPanel
      * @param asked which ask this is, so a stale answer can be discarded
      * @param layout the railway, captured on the event thread
      * @param index the square-to-Point translation, captured with it
-     * @param setup the setup's turn squares, barred sides, closed squares and reduction, captured with it
+     * @param setup the edge names the routes are drawn by, captured with it
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual
      */
@@ -4987,15 +4989,25 @@ public class AutonomyEditorPanel extends JPanel
     /** What a why ask needs of the setup, read on the event thread for the worker. */
     static final class WhySetup
     {
-        /** The running railway's edge names to the reduced edges they were built from, to draw the router's routes. */
+        /**
+         * The setup's edge names to the reduced edges they were built from, to draw the router's routes: the running
+         * railway's own once an edit's rebuild has run.
+         */
         final java.util.Map<String, org.traincontrol.automationui.GraphReducer.ReducedEdge> edgesByName;
+
+        /** The reduction they were read from. */
+        final org.traincontrol.automationui.GraphReducer reducer;
 
         private WhySetup(AutonomySession session)
         {
-            this.edgesByName = session.getReducer() == null ? java.util.Collections.emptyMap()
+            this.reducer = session.getReducer();
+            this.edgesByName = reducer == null ? java.util.Collections.emptyMap()
                 : session.builder(null).edgesByName();
         }
     }
+
+    /** The last ask's, forgotten with every edit as `unmeasuredSquares` is: a full builder is not cheap. */
+    private WhySetup whySetup = null;
 
     /** What one why ask worked out, a message and lines to draw: finished before the event thread sees it. */
     static final class WhyAnswer
@@ -5479,7 +5491,11 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tool == Tool.TEST)
         {
-            if (tile.equals(testFrom)) return org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED;
+            // Both ends stay blue while their answer shows (OB-395)
+            boolean picked = testFrom != null ? tile.equals(testFrom)
+                : tile.equals(lastTestFrom) || tile.equals(lastTestTo);
+
+            if (picked) return org.traincontrol.automationui.TileAnnotation.ToolMark.PICKED;
 
             boolean station = session.getReducer() != null && session.getReducer().getPoints().containsKey(tile)
                 && session.getStore().isStation(tile);
@@ -5774,6 +5790,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         // The wash depends on directions (MT-455): a closed run is no longer unmeasured track.
         unmeasuredSquares = null;
+        whySetup = null;
 
         if (onAnnotationsChanged == null)
         {
@@ -5796,6 +5813,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         // Forgotten here too: Control+E arrives without refresh().
         unmeasuredSquares = null;
+        whySetup = null;
 
         if (onDiagramChanged != null) onDiagramChanged.run();
 
@@ -5835,6 +5853,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // Forgotten, worked out again only when asked with the display on.
         unmeasuredSquares = null;
+        whySetup = null;
         runLeaders = session.runLeaders();
 
         // The box says what the setup says.

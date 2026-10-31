@@ -41187,6 +41187,182 @@ cited_by:
 status: Closed
 status_note: A D finding: checked and clean (3.0.0 release review, round 22 (the release validator, ninth round), 2026-09-25).
 
+[finding RSA90-C1 in RSA90.md]
+line: 11
+severity: C
+title: Why not Moving?: a barred station that only one of its copies can be sent to by hand reads gray, not purple
+disposition: Fixed - EditorWhy.markCopy/finishMarks: a barred copy no hand send reaches is held back, so the square is purple when an
+evidence:
+commit_id: 95441a55
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C10 in RSA90.md]
+line: 131
+severity: C
+title: OB-393: Adam's per-item decisions T1-T28 are not in the tracker
+disposition: Fixed - Adam's T1-T28 decisions, as he pasted them, added as a comment on OB-393, with the two choices he made when aske
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C2 in RSA90.md]
+line: 28
+severity: C
+title: A purple route through a green station takes over that station's own line, in purple
+disposition: Fixed - EditorWhy.addLine: a stub of the other color keeps its half and the line adds only the other half; a same-color 
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C3 in RSA90.md]
+line: 43
+severity: C
+title: The green line is the first clear route, not autonomy's pick under a ranked Routing Logic
+disposition: Fixed - Layout.rankedFrom: under a ranked Routing Logic the recorded route is the cheapest clear, non-reversing alternat
+evidence:
+commit_id: 7f61bc17
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C4 in RSA90.md]
+line: 57
+severity: C
+title: The lines depend on the setup's edge names matching the running railway, and the mapping is rebuilt on the event thread for every ask
+disposition: Fixed in part - the WhySetup is kept between asks and forgotten on every edit, where unmeasuredSquares is (and when the 
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C5 in RSA90.md]
+line: 70
+severity: C
+title: The color legend no longer says what purple and gray mean
+disposition: Fixed - the legend: Purple "autonomy will never choose it, but you can send it there yourself.", Gray "it cannot go ther
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C6 in RSA90.md]
+line: 81
+severity: C
+title: OB-395's thick orange: it hides a finding's outline, and after a Test a Path answer it is back on every station, over the route
+disposition: Fixed (second and third points) - toolMark keeps both ends of a tested path PICKED while the answer shows (claim testTes
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C7 in RSA90.md]
+line: 95
+severity: C
+title: The picture's tools read the Startup preference as it is now, not what start-up did, and no claim covers hearing the station
+disposition: Fixed - poweredOnAtStartUp captures the Startup choice where start-up calls go(); powerIsOn reads it, not the radio. The
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C8 in RSA90.md]
+line: 107
+severity: C
+title: Test strength: the route claim shares the square rule and checks no color; the tooltip-width claim reads a hidden menu
+disposition: Fixed - the route claim's square rule and line color as C1 and C2 say; the tooltip-width claim measures managePagesItem,
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-C9 in RSA90.md]
+line: 117
+severity: C
+title: Comments left wrong or dangling by the range
+disposition: Fixed - AutoLocomotiveStatus's tooltip javadoc moved onto whyNotToolTip (testJavadocsAreAttached ALLOWED lowered 12 to 1
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-D1 in RSA90.md]
+line: 138
+severity: D
+title: RSA89's fixes: every disposition is true, `powerHeard` is set on every report path, and its reads are safe
+disposition: Noted.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-D2 in RSA90.md]
+line: 147
+severity: D
+title: `explainDestinations`: the same reasons, the route it decided on, and the two asks agree per color
+disposition: Noted.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-D3 in RSA90.md]
+line: 156
+severity: D
+title: `drawRoute`'s once-only rule: no doubled or nudged lines; stubs on curves; what the old `findPath` drawing did
+disposition: Noted.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-D4 in RSA90.md]
+line: 165
+severity: D
+title: OB-393 in code, form and bundles
+disposition: Noted.
+evidence:
+commit_id:
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-D5 in RSA90.md]
+line: 172
+severity: D
+title: The comment trims: 34 blocks sampled, no live rule or warning lost except as C9 lists
+disposition: Noted.
+evidence:
+commit_id: 95441a55
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
+[finding RSA90-D6 in RSA90.md]
+line: 179
+severity: D
+title: The new claims and the Readme
+disposition: Noted.
+evidence:
+commit_id: 57b744bc
+cited_by:
+status: Closed
+status_note: Dispositioned in RSA90.md: fixed in the RSA90 fixes commit, accepted with reasons, or checked clean
+
 [finding RT3-B1 in 2026-09-02-autonomy-routing-review.md]
 line: 48
 severity: B

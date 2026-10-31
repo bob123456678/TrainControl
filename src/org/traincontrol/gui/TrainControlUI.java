@@ -5502,6 +5502,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setMinimumSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
         setPreferredSize(new java.awt.Dimension(this.getSize().width, this.getSize().height));
         
+        // What start-up did, not the preference as later changed: the picture's tools read it (powerIsOn)
+        poweredOnAtStartUp = this.powerOnStartup.isSelected();
+
         if (this.powerOnStartup.isSelected())
         {
             go();
@@ -19317,11 +19320,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private boolean powerIsOn()
     {
-        return this.model != null && this.model.getPowerState() && (powerHeard || this.powerOnStartup.isSelected());
+        return this.model != null && this.model.getPowerState() && (powerHeard || poweredOnAtStartUp);
     }
 
     /** Whether the station has said whether the power is on, since start-up. */
     private volatile boolean powerHeard = false;
+
+    /** Whether start-up sent Power On, by Preferences > Startup as it stood then. */
+    private volatile boolean poweredOnAtStartUp = false;
 
     /** Whether a revert stands beside the wrench (MT-591): a Central Station picture with a local one over it. */
     private static boolean revertsInstead(Locomotive l)

@@ -103,7 +103,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             deselect.setEnabled(!edit.getSelection().isEmpty());
             selectionMenu.add(deselect);
 
-
             // Only reachable on a grid square - the palette has no row to speak of
             boolean onDiagram = edit.getGridX(label) >= 0 && edit.getGridY(label) >= 0;
 
@@ -143,9 +142,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             deleteSelected.setToolTipText("Delete");
             deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
-
-            // One "Deselect All" only (the same action as the removed "Clear Selection"): it sits with the three ways
-            // to select, where a user undoing a selection looks first.
 
             add(selectionMenu);
 

@@ -4343,6 +4343,6 @@ became: MT-864
 seq: 542
 filed: 2026-10-31
 kind: bug
-what: TileAnnotation: CLICKABLE draws the selection's orange outline (paintSelectionOutline) and no wash; PICKED the blue wash and thin frame. Claim regression.testTrainMarkIsNotBlank.testTheClickableSquaresAreOrangeAndTheClickedOneBlue, red under each of its MUTATION notes.
+what: TileAnnotation: CLICKABLE draws a thick band in the selection's orange at the square's edge (paintToolBorder), under a tested route's line, and no wash; PICKED the blue wash and thin frame, on both ends of a tested path while its answer shows. Claims regression.testTrainMarkIsNotBlank.testTheClickableSquaresAreOrangeAndTheClickedOneBlue and regression.testPathTypeRedrawsTheTestInTheEditor.testTestAPathMarksTheStationsInBlue.
 state: -
 became: MT-863

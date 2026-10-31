@@ -30424,6 +30424,17 @@ text:
 | DD-B9 is done in 3.0.3 (c7e0ca6b, MT-810): the editor's reach findings read the built railway.  DD-A1, DD-C1, DD-C6, DD-C7 and DD-C8 stay here for 3.1.0.
 |
 
+[comment OB-393 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Adam's per-item decisions on the tooltip review page, as he pasted them on 2026-10-31: "T1: approve, T2: approve, T3: edit -> Add, rename, or delete pages, T4: approve, T5: edit -> Put the tooltip on the submenu and say "Sets whether this page is part of the autonomy configuration", T6: approve, T7: reject, T8: edit -> Change "may arrive by" to "may arrive from". Keep passing through is not affected., T9: reject, T10: approve, T11: approve, T12: reject, T13: approve, T14: approve, T15: approve, T16: reject, T17: edit -> Copy the Central Station’s layout to the local filesystem so you can customize it or run autonomy.  (make sure you add a line break), T18: approve, T19: reject, T20: reject, T21: approve, T22: approve, T23: reject, T24: approve, T25: reject, T26: reject, T27: approve, T28: reject". Asked after, he chose a shorter T17 that the app wraps, and T10's tooltip on Deselect All.
+|
+
 [comment OB-395 0]
 who: Claude
 date: 2026-10-31

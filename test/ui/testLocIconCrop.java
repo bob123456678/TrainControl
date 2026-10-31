@@ -1094,12 +1094,13 @@ public class testLocIconCrop
     }
 
     /**
-     * Before the station has said, the picture's tools take the power as on only where start-up turns it on (OB-392;
+     * Before the station has said, the picture's tools take the power as on only where start-up turned it on (OB-392;
      * Adam: "If we know the power is on (preference to sent power on when startup), hide the icons.  Otherwise leave as
-     * is.").  The model takes the power as on until it hears.
+     * is."), whatever the Startup preference says since; once it has said, by what it said.  The model takes the power
+     * as on until it hears.
      *
-     * MUTATION: take the model's power as known in `TrainControlUI.powerIsOn`, or ignore the start-up choice, and this
-     * fails.
+     * MUTATION: take the model's power as known in `TrainControlUI.powerIsOn`, read the Startup preference there
+     * instead of what start-up did, or leave out `powerHeard = true` in `updatePowerState`, and this fails.
      */
     @Test
     public void testTheIconToolsFollowTheStartUpPowerUntilTheStationSays() throws Exception
@@ -1136,8 +1137,10 @@ public class testLocIconCrop
             offers.setAccessible(true);
 
             java.lang.reflect.Field heard = TrainControlUI.class.getDeclaredField("powerHeard");
+            java.lang.reflect.Field atStartUp = TrainControlUI.class.getDeclaredField("poweredOnAtStartUp");
 
             heard.setAccessible(true);
+            atStartUp.setAccessible(true);
 
             final javax.swing.JRadioButtonMenuItem on = field(ui, "powerOnStartup", javax.swing.JRadioButtonMenuItem.class);
             final javax.swing.JRadioButtonMenuItem unchanged = field(ui, "powerNoChangeStartup",
@@ -1146,53 +1149,63 @@ public class testLocIconCrop
             final javax.swing.JRadioButtonMenuItem off = field(ui, "powerOffStartup", javax.swing.JRadioButtonMenuItem.class);
 
             final javax.swing.JRadioButtonMenuItem was = on.isSelected() ? on : off.isSelected() ? off : unchanged;
+            final boolean startedOn = atStartUp.getBoolean(ui);
+
+            java.util.concurrent.Callable<Boolean> offered = () ->
+            {
+                final boolean[] out = new boolean[1];
+
+                for (int pass = 0; pass < 4; pass++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        out[0] = (Boolean) offers.invoke(window);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new AssertionError(e);
+                    }
+                });
+
+                return out[0];
+            };
 
             try
             {
-                // AS AT START-UP: the model's default, nothing heard
+                // AS AT START-UP, which left the power alone: the model's default, nothing heard, and the preference
+                // changed to Power On since
                 power.set(model, true);
                 heard.set(ui, false);
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> unchanged.setSelected(true));
-
-                final boolean[] offered = new boolean[2];
-
-                javax.swing.SwingUtilities.invokeAndWait(() ->
-                {
-                    try
-                    {
-                        offered[0] = (Boolean) offers.invoke(window);
-                    }
-                    catch (ReflectiveOperationException e)
-                    {
-                        throw new AssertionError(e);
-                    }
-                });
-
-                assertTrue(offered[0], "with start-up leaving the power alone and nothing heard, the picture's tools are"
-                    + " hidden as if the power were known to be on");
+                atStartUp.set(ui, false);
 
                 javax.swing.SwingUtilities.invokeAndWait(() -> on.setSelected(true));
 
-                javax.swing.SwingUtilities.invokeAndWait(() ->
-                {
-                    try
-                    {
-                        offered[1] = (Boolean) offers.invoke(window);
-                    }
-                    catch (ReflectiveOperationException e)
-                    {
-                        throw new AssertionError(e);
-                    }
-                });
+                assertTrue(offered.call(), "with start-up leaving the power alone and nothing heard, the picture's"
+                    + " tools are hidden as if the power were known to be on, as the preference now says Power On");
 
-                assertFalse(offered[1], "with start-up turning the power on, the picture's tools are offered");
+                // Start-up that turned it on, the preference changed to leave it alone since
+                atStartUp.set(ui, true);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> unchanged.setSelected(true));
+
+                assertFalse(offered.call(), "with start-up turning the power on, the picture's tools are offered,"
+                    + " because the preference no longer says Power On");
+
+                // And the station saying the power is on, start-up having left it alone
+                atStartUp.set(ui, false);
+
+                window.updatePowerState();
+
+                assertFalse(offered.call(), "with the station saying the power is on, the picture's tools are offered");
             }
             finally
             {
                 javax.swing.SwingUtilities.invokeAndWait(() -> was.setSelected(true));
 
                 heard.set(ui, true);
+                atStartUp.set(ui, startedOn);
             }
         }
         finally

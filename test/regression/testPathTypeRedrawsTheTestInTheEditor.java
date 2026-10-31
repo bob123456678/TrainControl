@@ -176,13 +176,13 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
     /**
      * Test a Path outlines in orange what can be clicked: every station once it is armed, the start in blue once
-     * clicked, and every station again with the answer, when the next click starts a new test; nothing once the tool is
-     * put down (FR-159; OB-395, Adam: "I want them to be orange when I click and then they can become blue post
-     * click").  No station takes Why not Moving?'s colors here (MT-854: "The station highlighting in green/purple
-     * should happen in "why not moving", not test a path").
+     * clicked, and with the answer both ends in blue and every other station orange, when the next click starts a new
+     * test; nothing once the tool is put down (FR-159; OB-395, Adam: "I want them to be orange when I click and then
+     * they can become blue post click").  No station takes Why not Moving?'s colors here (MT-854: "The station
+     * highlighting in green/purple should happen in "why not moving", not test a path").
      *
-     * MUTATION: drop the `annotation.markedByATool` call in `AutonomyEditorPanel.annotationFor`, or mark `testFrom`
-     * CLICKABLE in `toolMark`, and this fails.
+     * MUTATION: drop the `annotation.markedByATool` call in `AutonomyEditorPanel.annotationFor`, mark `testFrom`
+     * CLICKABLE in `toolMark`, or forget the last test's ends there, and this fails.
      */
     @Test
     public void testTestAPathMarksTheStationsInBlue() throws Exception
@@ -217,7 +217,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             SwingUtilities.invokeAndWait(test::doClick);
             settle();
 
-            everyStationIs(panel, null, "armed, with no start chosen");
+            everyStationIs(panel, null, null, "armed, with no start chosen");
 
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(from, page.getComponent(from.getX(), from.getY()),
                 false));
@@ -228,12 +228,17 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             assertFalse(panel.isOutlined(from), "the start still has the selection's outline");
 
-            everyStationIs(panel, from, "with the start chosen");
+            everyStationIs(panel, from, null, "with the start chosen");
 
             SwingUtilities.invokeAndWait(() -> panel.tileClicked(to, page.getComponent(to.getX(), to.getY()), false));
             settle();
 
-            everyStationIs(panel, null, "with the answer shown, when the next click starts a new test,");
+            assertEquals(mark(panel, from), TileAnnotation.ToolMark.PICKED, "with the answer shown, the start is not"
+                + " marked as clicked");
+            assertEquals(mark(panel, to), TileAnnotation.ToolMark.PICKED, "with the answer shown, the end is not"
+                + " marked as clicked");
+
+            everyStationIs(panel, from, to, "with the answer shown, when the next click starts a new test,");
 
             SwingUtilities.invokeAndWait(test::doClick);
             settle();
@@ -437,14 +442,17 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * For every train on the page and both tiers, Why not Moving?'s colors and lines agree with the routes the track
      * diagram's own menu offers (`Layout.getPossiblePaths`), worked out here without the answer's reasons (OB-394).
      *
-     * A station is green where a route reaches it that its tier accepts (on Auto, one autonomy may choose that does not
-     * turn on the way), purple on Auto where only a person could send the train there, gray otherwise; a square takes
-     * green over gray over purple from its copies.  Every green and purple square has a line ending at it, its route's
-     * stations all carry the line, and no square draws one stretch of track twice.
+     * A square is green where a route its tier accepts reaches one of its copies (on Auto, one autonomy may choose
+     * that does not turn on the way); on Auto, gray where autonomy could choose a copy, else purple where a person
+     * could send the train to one; gray otherwise.  Every green and purple square has a line ending at it, a green
+     * one's not drawn as a hand send, its route's stations all carry the line, and no square draws one stretch of track
+     * twice.  Under a ranked Routing Logic the route is autonomy's pick, the cheapest.
      *
      * MUTATION: mark a never-chosen station purple without asking whether it could be sent there by hand in
-     * `EditorWhy.composeWhy`, draw no purple routes there, stop a route one edge short in `EditorWhy.drawRoute`, or add
-     * every line there without asking `alreadyDrawn`, and this fails.
+     * `EditorWhy.composeWhy`, draw no purple routes there, stop a route one edge short in `EditorWhy.drawRoute`, add
+     * every line without asking `alreadyDrawn` in `EditorWhy.addLine`, or take the first clear route in
+     * `Layout.rankedFrom`, and this fails.  The shapes the snapshot lacks are claimed by
+     * `testAWhySquareTakesAllItsCopiesAndAGreenLineStays`.
      */
     @Test
     public void testWhyNotMovingAgreesWithTheRoutesOffered() throws Exception
@@ -530,7 +538,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
                     String when = train.getName() + " at " + at.getName() + (onAuto ? ", on Auto" : ", on Manual");
 
-                    java.util.Map<TileKey, TileAnnotation.ToolMark> expected = new java.util.HashMap<>();
+                    // Each square's copies, then the square's color from all of them
+                    java.util.Set<TileKey> squares = new java.util.LinkedHashSet<>();
+                    java.util.Set<TileKey> anyGreen = new java.util.HashSet<>();
+                    java.util.Set<TileKey> anyChoosable = new java.util.HashSet<>();
+                    java.util.Set<TileKey> anyByHand = new java.util.HashSet<>();
 
                     for (org.traincontrol.automation.Point end : layout.getPoints())
                     {
@@ -540,16 +552,20 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
                         if (at.getBlock() != null && at.getBlock().equals(end.getBlock())) continue;
 
-                        boolean green = (onAuto ? byAutonomy : byHand).contains(end.getName());
-                        boolean isPurple = onAuto && !green && barred.contains(end.getName())
-                            && byHand.contains(end.getName());
+                        squares.add(square);
 
-                        TileAnnotation.ToolMark mark = green ? TileAnnotation.ToolMark.CAN_GO
-                            : isPurple ? TileAnnotation.ToolMark.NEVER : TileAnnotation.ToolMark.NOT_NOW;
+                        if ((onAuto ? byAutonomy : byHand).contains(end.getName())) anyGreen.add(square);
+                        if (!barred.contains(end.getName())) anyChoosable.add(square);
+                        if (byHand.contains(end.getName())) anyByHand.add(square);
+                    }
 
-                        TileAnnotation.ToolMark had = expected.get(square);
+                    java.util.Map<TileKey, TileAnnotation.ToolMark> expected = new java.util.HashMap<>();
 
-                        if (had == null || mark.ordinal() < had.ordinal()) expected.put(square, mark);
+                    for (TileKey square : squares)
+                    {
+                        expected.put(square, anyGreen.contains(square) ? TileAnnotation.ToolMark.CAN_GO
+                            : onAuto && !anyChoosable.contains(square) && anyByHand.contains(square)
+                                ? TileAnnotation.ToolMark.NEVER : TileAnnotation.ToolMark.NOT_NOW);
                     }
 
                     final java.util.Map<TileKey, TileAnnotation.ToolMark> shownMarks = new java.util.HashMap<>();
@@ -586,6 +602,15 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
                         assertTrue(lines.containsKey(e.getKey()), when + ", no line reaches " + describe(panel,
                             e.getKey()));
+
+                        if (e.getValue() != TileAnnotation.ToolMark.CAN_GO) continue;
+
+                        boolean ownLine = false;
+
+                        for (TileAnnotation.Trace line : lines.get(e.getKey())) ownLine |= !line.isManualOnly();
+
+                        assertTrue(ownLine, when + ", " + describe(panel, e.getKey()) + " is reached only by a hand"
+                            + " send's line: " + lines.get(e.getKey()));
                     }
 
                     // Each colored square's line follows a route the menu offers to one of its copies, through every
@@ -648,6 +673,61 @@ public class testPathTypeRedrawsTheTestInTheEditor
             assertTrue(gray > 0, "precondition: no train has a station it cannot go to");
 
             SwingUtilities.invokeAndWait((wasAuto ? auto : manual)::doClick);
+
+            // UNDER A RANKED ROUTING LOGIC the route drawn is the one autonomy would run: fewest stations on the way
+            org.traincontrol.automation.Layout.PathPreference preferenceWas = layout.getPathPreference();
+            int ranked = 0;
+
+            try
+            {
+                layout.setPathPreference(org.traincontrol.automation.Layout.PathPreference.FEWEST_STATIONS);
+
+                for (org.traincontrol.automation.Point at : layout.getPoints())
+                {
+                    final org.traincontrol.base.Locomotive train = at.getCurrentLocomotive();
+
+                    if (train == null) continue;
+
+                    java.util.Set<String> barred = layout.destinationsBarredFromAutonomy(train);
+                    java.util.Map<String, Integer> fewest = new java.util.HashMap<>();
+                    java.util.Map<String, Integer> most = new java.util.HashMap<>();
+
+                    for (java.util.List<org.traincontrol.automation.Edge> route : layout.getPossiblePaths(train, false))
+                    {
+                        org.traincontrol.automation.Point end = route.get(route.size() - 1).getEnd();
+
+                        if (barred.contains(end.getName()) || !layout.isOfferableToOperator(end, train)
+                            || (Boolean) turns.invoke(layout, route) || !layout.isPathClear(route, train, false))
+                        {
+                            continue;
+                        }
+
+                        fewest.merge(end.getName(), stationsOn(route), Math::min);
+                        most.merge(end.getName(), stationsOn(route), Math::max);
+                    }
+
+                    java.util.Map<String, java.util.List<org.traincontrol.automation.Edge>> drawnBy =
+                        layout.explainDestinationsGrouped(train).getRoutes();
+
+                    for (java.util.Map.Entry<String, Integer> end : fewest.entrySet())
+                    {
+                        java.util.List<org.traincontrol.automation.Edge> route = drawnBy.get(end.getKey());
+
+                        assertTrue(route != null, train.getName() + " at " + at.getName() + " has no route to "
+                            + end.getKey() + ", which autonomy could choose");
+                        assertEquals(stationsOn(route), (int) end.getValue(), train.getName() + " at " + at.getName()
+                            + ": the route to " + end.getKey() + " is not the one with the fewest stations on the way");
+
+                        if (!most.get(end.getKey()).equals(end.getValue())) ranked++;
+                    }
+                }
+            }
+            finally
+            {
+                layout.setPathPreference(preferenceWas);
+            }
+
+            assertTrue(ranked > 0, "precondition: no station has two clear routes with different stations on the way");
         }
         finally
         {
@@ -658,6 +738,101 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 SwingUtilities.invokeAndWait(() -> closing.dispose());
             }
         }
+    }
+
+    /**
+     * The two shapes the snapshot does not hold, built here (OB-394): a square autonomy never chooses whose near copy a
+     * hand send reaches and whose far one nothing reaches is purple, in either order, and gray where a copy autonomy
+     * could choose says so; a purple route through a green station keeps that station's own line, adding only its
+     * other half.
+     *
+     * MUTATION: settle every copy in `EditorWhy.markCopy`, or let a purple line replace any stub in
+     * `EditorWhy.addLine`, and this fails.
+     */
+    @Test
+    public void testAWhySquareTakesAllItsCopiesAndAGreenLineStays() throws Exception
+    {
+        Class<?> why = Class.forName("org.traincontrol.gui.autonomyeditor.EditorWhy");
+
+        java.lang.reflect.Method markCopy = why.getDeclaredMethod("markCopy", java.util.Map.class, java.util.Set.class,
+            TileKey.class, TileAnnotation.ToolMark.class, boolean.class);
+        java.lang.reflect.Method finishMarks = why.getDeclaredMethod("finishMarks", java.util.Map.class,
+            java.util.Set.class);
+        java.lang.reflect.Method addLine = why.getDeclaredMethod("addLine", java.util.List.class,
+            TileAnnotation.Trace.class);
+
+        markCopy.setAccessible(true);
+        finishMarks.setAccessible(true);
+        addLine.setAccessible(true);
+
+        TileKey square = new TileKey("Main", 4, 4);
+
+        TileAnnotation.ToolMark[][] copies = {
+            {TileAnnotation.ToolMark.NEVER, TileAnnotation.ToolMark.NOT_NOW},
+            {TileAnnotation.ToolMark.NOT_NOW, TileAnnotation.ToolMark.NEVER}};
+
+        for (TileAnnotation.ToolMark[] order : copies)
+        {
+            java.util.Map<TileKey, TileAnnotation.ToolMark> marks = new java.util.HashMap<>();
+            java.util.Set<TileKey> outOfReach = new java.util.HashSet<>();
+
+            for (TileAnnotation.ToolMark copy : order) markCopy.invoke(null, marks, outOfReach, square, copy, true);
+
+            finishMarks.invoke(null, marks, outOfReach);
+
+            assertEquals(marks.get(square), TileAnnotation.ToolMark.NEVER, "a barred square a hand send reaches by one"
+                + " copy, " + java.util.Arrays.toString(order) + ", is not purple");
+        }
+
+        java.util.Map<TileKey, TileAnnotation.ToolMark> marks = new java.util.HashMap<>();
+        java.util.Set<TileKey> outOfReach = new java.util.HashSet<>();
+
+        markCopy.invoke(null, marks, outOfReach, square, TileAnnotation.ToolMark.NEVER, true);
+        markCopy.invoke(null, marks, outOfReach, square, TileAnnotation.ToolMark.NOT_NOW, false);
+        markCopy.invoke(null, marks, outOfReach, new TileKey("Main", 5, 4), TileAnnotation.ToolMark.NOT_NOW, true);
+
+        finishMarks.invoke(null, marks, outOfReach);
+
+        assertEquals(marks.get(square), TileAnnotation.ToolMark.NOT_NOW, "a square with a copy autonomy could choose"
+            + " is not gray");
+        assertEquals(marks.get(new TileKey("Main", 5, 4)), TileAnnotation.ToolMark.NOT_NOW, "a barred square nothing"
+            + " reaches is not gray");
+
+        // The green station's own line ends here from the west; a purple route runs on through to the east
+        java.util.List<TileAnnotation.Trace> here = new java.util.ArrayList<>();
+
+        addLine.invoke(null, here, new TileAnnotation.Trace(org.traincontrol.automationui.TilePorts.Side.W, null, true,
+            false));
+        addLine.invoke(null, here, new TileAnnotation.Trace(org.traincontrol.automationui.TilePorts.Side.W,
+            org.traincontrol.automationui.TilePorts.Side.E, true, true));
+
+        boolean ownLine = false;
+
+        for (TileAnnotation.Trace line : here) ownLine |= !line.isManualOnly();
+
+        assertTrue(ownLine, "a purple route through a green station took over its line: " + here);
+        assertEquals(here.size(), 2, "the purple route did not add its half beyond the station: " + here);
+
+        for (int i = 0; i < here.size(); i++)
+        {
+            for (int j = i + 1; j < here.size(); j++)
+            {
+                assertFalse(sameStretch(here.get(i), here.get(j)), "one stretch is drawn twice: " + here);
+            }
+        }
+    }
+
+    /** The stations a route passes on its way, not counting where it ends. */
+    private static int stationsOn(java.util.List<org.traincontrol.automation.Edge> route)
+    {
+        int stations = 0;
+
+        for (int i = 0; i < route.size() - 1; i++)
+        {
+            if (route.get(i).getEnd().isDestination()) stations++;
+        }
+
+        return stations;
     }
 
     /** Whether two lines in one square draw the same track: the same sides either way round, or one ends on it. */
@@ -682,12 +857,13 @@ public class testPathTypeRedrawsTheTestInTheEditor
         return side == through.getFrom() || side == through.getTo();
     }
 
-    /** Every station on the page marked CLICKABLE but the one picked, and nothing else marked. */
-    private static void everyStationIs(AutonomyEditorPanel panel, TileKey picked, String when) throws Exception
+    /** Every station on the page marked CLICKABLE but the ones picked, and nothing else marked. */
+    private static void everyStationIs(AutonomyEditorPanel panel, TileKey picked, TileKey alsoPicked, String when)
+        throws Exception
     {
         for (TileKey tile : session.getReducer().getPoints().keySet())
         {
-            if (!PAGE.equals(tile.getPage()) || tile.equals(picked)) continue;
+            if (!PAGE.equals(tile.getPage()) || tile.equals(picked) || tile.equals(alsoPicked)) continue;
 
             assertEquals(mark(panel, tile), session.getStore().isStation(tile) ? TileAnnotation.ToolMark.CLICKABLE
                 : null, when + ", " + describe(panel, tile) + " is marked wrongly");
