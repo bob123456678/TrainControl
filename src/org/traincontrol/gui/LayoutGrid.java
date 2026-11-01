@@ -579,12 +579,14 @@ public class LayoutGrid
             {
                 super.paintChildren(g);
 
+                final java.awt.Component[] children = getComponents();
+
                 // A station on a curve spills onto the squares beside it, drawn once every square is, since a square
                 // painted after would cover it.  Under the captions, trains and addresses; the captions are drawn again
                 // over it below.
                 java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
 
-                for (java.awt.Component child : getComponents())
+                for (java.awt.Component child : children)
                 {
                     if (child instanceof LayoutLabel && ((LayoutLabel) child).paintStationSpill(g))
                     {
@@ -613,7 +615,7 @@ public class LayoutGrid
                     {
                         under.clip(spilled);
 
-                        for (java.awt.Component child : getComponents())
+                        for (java.awt.Component child : children)
                         {
                             if (child instanceof LayoutLabel)
                             {
@@ -623,7 +625,7 @@ public class LayoutGrid
 
                         java.awt.Rectangle reach = spilled.getBounds();
 
-                        for (java.awt.Component child : getComponents())
+                        for (java.awt.Component child : children)
                         {
                             if (child instanceof StationCaption && child.isVisible() && child.getBounds().intersects(reach))
                             {
@@ -647,7 +649,7 @@ public class LayoutGrid
                     }
                 }
 
-                for (java.awt.Component child : getComponents())
+                for (java.awt.Component child : children)
                 {
                     if (child instanceof LayoutLabel)
                     {
@@ -660,7 +662,7 @@ public class LayoutGrid
                 // squares by three.
                 java.awt.Rectangle clip = g.getClipBounds();
 
-                for (java.awt.Component child : getComponents())
+                for (java.awt.Component child : children)
                 {
                     if (child instanceof AddressLabel && child.isVisible()
                         && (clip == null || clip.intersects(child.getBounds())))
