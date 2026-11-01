@@ -30,10 +30,6 @@ import support.SourceOf;
 /**
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
  *
- * Adam: *"when asking about the tail, instead of showing the list of points, highlight possible squares on the diagram
- * and ask the user to click one.  only show the list if there are options on another page."*  And: *"you can probably
- * piggyback off the highlight feature and s88 click events."*
- *
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
  * 12,7 on the other, both on 1 - Main.  The question is asked owned by the main window, as a placement door asks it,
  * but off the event thread so the test can click (`testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers the
@@ -83,10 +79,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The list, not the diagram, where a choice's sensor is on another page or is not drawn (FR-100).
-     *
-     * Adam: *"only show the list if there are options on another page."*  Not drawn is the same case seen from the
-     * window: a square nobody can see cannot be clicked.
+     * The list, not the diagram, where a choice's sensor is on another page or is not drawn (FR-100): a square nobody
+     * can see cannot be clicked.
      *
      * MUTATION: drop either half of `putsTheQuestionOnTheDiagram`, and this fails.
      */
@@ -255,11 +249,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A double-click on a lit sensor answers the question and does not then flip the sensor.
-     *
-     * The first click answers and takes the question down; the second must not then reach the sensor's own click, which
-     * would flip it as a real sensor change, the thing the question's taking the click prevents and an armed route acts
-     * on.
+     * A double-click on a lit sensor answers the question and does not then flip the sensor: the second click must not
+     * reach the sensor's own click, which would flip it as a real sensor change that an armed route acts on.
      *
      * MUTATION: let the second click of a double-click reach the sensor, and this fails.
      */
@@ -329,12 +320,10 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The paste door reads every part of its landing before the question is asked.
-     *
-     * Since FR-100 the question waits on the diagram with the window live, and a second Control+V in that wait runs the
-     * paste door again and writes the same fields for its own train, so the first train's road, side and facing must be
-     * read before the question.  Asked of the source: the wait is a secondary loop on the event thread, which a test
-     * cannot hold open while it pastes.
+     * The paste door reads every part of its landing before the question is asked: a second Control+V in the wait runs
+     * the paste door again and writes the same fields for its own train, so the first train's road, side and facing
+     * must be read first.  Asked of the source, since the wait is a secondary loop a test cannot hold open while it
+     * pastes.
      *
      * MUTATION: read any of them after the question again, and this fails.
      *
@@ -363,8 +352,8 @@ public class testTheTailIsPickedOnTheDiagram
     private static final String PASTE_DOOR = "private void rememberPlacement(";
 
     /**
-     * The three doors that put a train down and ask the tail question - the paste, the right-click Place and the
-     * locomotive dialog - each named by its declaration, found wherever the program keeps it.
+     * The three doors that put a train down and ask the tail question (the paste, the right-click Place and the
+     * locomotive dialog), each named by its declaration.
      */
     private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing(",
         "public static void commitAndRecord(GraphLocAssign edit)"};
@@ -389,9 +378,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Asked on the event thread, as every placement door asks it, the question waits in a secondary loop and a click
-     * answers it.
-     *
-     * The other claims here ask off the event thread, which is the latch branch; every real door is on the event thread.
+     * answers it; the other claims ask off the event thread, which is the latch branch.
      *
      * MUTATION: leave the secondary loop without exiting it on the answer, and this fails.
      */
@@ -432,11 +419,9 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * With an editor open the question is the list, not the main window's diagram.
-     *
-     * From the autonomy editor's Place door the question must not go on the main window's diagram: the editor's squares
-     * are lit too and do not take the click, and its small window would sit at the top of a main window the editor
-     * covers.
+     * With an editor open the question is the list, not the main window's diagram: from the autonomy editor's Place
+     * door the editor's squares are lit too and do not take the click, and the small window would sit at the top of a
+     * main window the editor covers.
      *
      * MUTATION: put the question on the diagram with an editor open, and this fails.
      */
@@ -510,11 +495,10 @@ public class testTheTailIsPickedOnTheDiagram
     /**
      * A tail question answered after the square has changed writes nothing onto whatever stands there by then.
      *
-     * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement
-     * all still work - and the door that asked writes its answer when it comes back.  If a run has meanwhile brought
-     * another train onto the same copy, Cancel must not write the first train's (empty) road over the second train's
-     * driven one.  Here the paste door asks for train A at Tunnel; while it waits, train B is put on the same copy with
-     * the road it drove in by, as a run's arrival puts it; then Cancel.
+     * The question waits on the diagram with the window live (FR-100), so a run may meanwhile bring another train onto
+     * the same copy; Cancel must not write the first train's (empty) road over the second train's driven one.  The
+     * paste door asks for train A at Tunnel; while it waits, train B is put on the same copy with the road it drove in
+     * by; then Cancel.
      *
      * MUTATION: write the answer without asking whether the placement still stands, and this fails.
      */
@@ -632,9 +616,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * Every placement door asks whether its placement still stands between the question and its writes - the
-     * paste door is asked by the claim above; the right-click Place and the locomotive dialog are asked here, of their
-     * source, because each needs a menu or a dialog to reach.
+     * Every placement door asks whether its placement still stands between the question and its writes; the paste door
+     * is asked by the claim above, the others here, of their source, because each needs a menu or a dialog to reach.
      *
      * MUTATION: write either door's answer without asking, and this fails naming it.
      */
@@ -661,9 +644,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * Every placement door saves what it wrote before it asks the tail question, through the one helper (OB-305) - the
-     * paste door is asked by the claim below; the right-click Place and the locomotive dialog are asked here, of their
-     * source, as `testEveryPlacementDoorAsksWhetherItStillStands` asks them.
+     * Every placement door saves what it wrote before it asks the tail question, through the one helper (OB-305); the
+     * paste door is asked by the claim below, the others here, of their source.
      *
      * MUTATION: take the save out of any door, and this fails naming it.
      */
@@ -690,12 +672,11 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * While the tail question waits, the setup on disk already has the train where it was put (OB-305).
-     *
-     * Every placement door writes the train, its facing and its side into the setup in memory, puts this question, and
-     * must save before it is answered: since FR-100 the question waits on the diagram for as long as the operator
-     * likes, and a crash in that wait would start the next session without the train where it stands.  The paste door's
-     * question is left waiting, and the configuration's own file is read meanwhile.
+     * While the tail question waits, the setup on disk already has the train where it was put (OB-305).  Every
+     * placement door writes the train, its facing and its side into the setup in memory, puts the question, and must
+     * save before it is answered: the question waits as long as the operator likes, and a crash in that wait would
+     * start the next session without the train where it stands.  The paste door's question is left waiting and the
+     * configuration's own file read meanwhile.
      *
      * MUTATION: save only after the answer again, and this fails.
      */
@@ -788,9 +769,7 @@ public class testTheTailIsPickedOnTheDiagram
         return null;
     }
 
-    /**
-     * What a late answer finds, and what it leaves: the Tunnel copy the answer went to, and TunnelPre's road.
-     */
+    /** What a late answer finds: the Tunnel copy the answer went to, and TunnelPre's road. */
     private static final class LateAnswer
     {
         Point tunnelNow;
@@ -910,11 +889,10 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train -
-     * into the configuration loaded now and onto the railway running (Adam: *"Follow the train."*).
-     *
-     * Otherwise the running copy would hold the train with no road, and the track beyond the switch, where the operator
-     * said the tail lies, would be free to route another train over.
+     * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train,
+     * into the configuration loaded now and onto the railway running (Adam: *"Follow the train."*).  Otherwise the
+     * running copy would hold the train with no road, and the track beyond the switch would be free to route another
+     * train over.
      *
      * MUTATION: ask whether the configuration is the one the question was asked in, and this fails.
      */
@@ -1249,11 +1227,10 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above:
-     * the facing written before the question, the save skipped for a setup let go, only an answer logged, and the square
-     * named as the diagram names it - read, as the pins above are, because each door needs a menu or a dialog.
-     *
-     * And that each writes only where the answer goes somewhere.
+     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above: the
+     * facing written before the question, the save skipped for a setup let go, only an answer logged, the square named
+     * as the diagram names it, and a write only where the answer goes somewhere.  Read, because each door needs a menu
+     * or a dialog.
      *
      * MUTATION: undo any of the five at either door, and this fails naming it.
      */
@@ -1341,15 +1318,13 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A tail answer given after the placement changed is written where the train now stands, or not at all - driven by
-     * the gestures MT-576's steps make.
-     *
-     * His 75 407 DB, given a length of 5, pasted at Tunnel from the north with Control+X and Control+V through the
-     * diagram's own key door, the question left waiting on the diagram.  (a) While it waits, a setting on another station
-     * is changed from the diagram's right-click - which rebuilds the railway - and then TunnelPre is clicked: the new
-     * railway's Tunnel gets TunnelPre's road, made of its own rails.  The setting is put back.  (b) Pasted again; while
-     * it waits the train is taken off Tunnel with its right-click Remove, and TunnelPre is clicked: nothing is written,
-     * and the log says Tunnel changed while the question waited.
+     * A tail answer given after the placement changed is written where the train now stands, or not at all, driven by
+     * the gestures MT-576's steps make: his 75 407 DB, a train of length 5 pasted at Tunnel from the north with
+     * Control+X and Control+V, the question left waiting on the diagram.  (a) While it waits, a setting on another
+     * station is changed from the right-click, which rebuilds the railway, and TunnelPre is clicked: the new railway's
+     * Tunnel gets TunnelPre's road, made of its own rails.  (b) Pasted again; the train is taken off Tunnel with its
+     * right-click Remove and TunnelPre clicked: nothing is written, and the log says Tunnel changed while the question
+     * waited.
      *
      * `testAnAnswerAfterARebuildReachesTheRailway` and `testOnlyADroppedAnswerIsLogged` hold the same two rules with
      * the wait's events made by calls; this makes them by the gestures.
@@ -1488,13 +1463,11 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why.
-     *
-     * The editor holds the setup as it was when it opened, and its Cancel puts that back, so a road written into the
-     * setup while it was open would be taken back out silently and the rail the train lies on stop being held.  Every
-     * main-window door that writes the setup refuses while an editor is open; this one's late answer must ask too.  His
-     * 75 407 DB, given a length of 5, pasted at Tunnel from the north with the question left waiting; the autonomy
-     * editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked on the main window.
+     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why.  The
+     * editor holds the setup as it was when it opened and its Cancel puts that back, so a road written meanwhile would
+     * be taken back out silently.  Every main-window door that writes the setup refuses while an editor is open; this
+     * one's late answer must ask too.  His 75 407 DB, a train of length 5 pasted at Tunnel from the north with the
+     * question left waiting; the autonomy editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked.
      *
      * MUTATION: write the late answer whatever opened in the wait, and this fails.
      */
@@ -1887,12 +1860,10 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after the running railway was rebuilt reaches the railway.
-     *
-     * A rebuild in the wait - any setup change from the diagram, a page left out - builds new copies of every square
-     * and puts each train back on its new one.  The door must ask the running railway's copy, not the one it placed the
-     * train on: otherwise the answer goes to the old copy and the setup, the railway's own Tunnel never gets the road,
-     * and the train's tail stops at the switch with another train routable into it.
+     * An answer given after the running railway was rebuilt reaches the railway: a rebuild in the wait builds new
+     * copies of every square and puts each train back on its new one.  The door must ask the running railway's copy,
+     * not the one it placed the train on, or the railway's own Tunnel never gets the road and another train is routable
+     * into the train's tail.
      *
      * MUTATION: ask the copy the door placed the train on rather than the running railway's, and this fails.
      */
@@ -2046,10 +2017,8 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The tail question offers Cancel and no "Not known", on the diagram and as the list (Adam: "drop not known, keep
-     * cancel").
-     *
-     * Asked for real, as a placement asks it: on the diagram, its buttons; with an editor open, which puts it as the list,
-     * the list's.  Cancel is no answer in both, so a train keeps whatever road it had.
+     * cancel").  Asked for real, as a placement asks it: on the diagram, its buttons; with an editor open, which puts
+     * it as the list, the list's.  Cancel is no answer in both, so a train keeps whatever road it had.
      *
      * MUTATION: put Not known back on either, and this fails.
      */
