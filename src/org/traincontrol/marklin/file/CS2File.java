@@ -264,9 +264,8 @@ public final class CS2File
      * reads as authoritative.
      *
      * Applied on BOTH sides on purpose: the local read locates a page by the name in the index, so sanitizing only the
-     * write would produce a file the reader could not find.  The remote read keeps sanitizeURL, which answers a
-     * different question (what is legal in a url).  Only unusable characters are replaced, so ordinary names load
-     * unchanged.
+     * write would produce a file the reader could not find.  The remote read keeps sanitizeURL (what is legal in a
+     * url).
      *
      * @param name
      * @return
@@ -488,12 +487,10 @@ public final class CS2File
                     }
                     
                     // Joined by hand rather than through HashMap.toString(): its ", " separator cannot be told from a
-                    // ", " INSIDE a value, and lokname (a multi-unit member's name, free text) can hold one ("BR 50,
-                    // Ep. III"), which would match no locomotive and drop the member from its consist.  Same family as
-                    // the "=" the split limit above guards against.
-                    //
-                    // The map is still walked in ITS order, not insertion order: parseLocomotives splits on ",lok=" and
-                    // so needs lokname first, which it is only because of how these two keys hash.
+                    // ", " INSIDE a value, and lokname (free text) can hold one ("BR 50, Ep. III"), which would match
+                    // no locomotive and drop the member from its consist.  The map is still walked in ITS order:
+                    // parseLocomotives splits on ",lok=" and so needs lokname first, which it is only because of how
+                    // these two keys hash.
                     StringBuilder entries = new StringBuilder();
 
                     for (Map.Entry<String, String> pair : array.entrySet())
@@ -513,13 +510,11 @@ public final class CS2File
                     array.clear();
                 }
                 
-                // CASE-INSENSITIVE, LIKE THE OTHER READER OF THIS FILE (`LayoutDiagram.readLayoutIndexIds`).
-                //
-                // A capitalized block name is not a block to this parser: the file would come back with ZERO pages and
-                // ZERO unreadable pages, and the guard that reverts to the Central Station asks only whether anything
-                // failed, so the operator would get an empty diagram with no message.  The station's casing is not
-                // uniform across firmware (`sample_layout` spells `Version`, `cs2_sample_layout` `version`), though no
-                // `gleisbild.cs2` here capitalizes `Seite`.
+                // CASE-INSENSITIVE, LIKE THE OTHER READER OF THIS FILE (`LayoutDiagram.readLayoutIndexIds`).  A
+                // capitalized block name is not a block to this parser: the file would come back with ZERO pages and
+                // ZERO unreadable pages, and the operator would get an empty diagram with no message.  The station's
+                // casing is not uniform across firmware (`sample_layout` spells `Version`, `cs2_sample_layout`
+                // `version`).
                 if (s.matches("^[a-zA-Z]+$"))
                 {
                     if (item != null)
@@ -544,17 +539,12 @@ public final class CS2File
                     // working whatever the file's casing.
                     item.put("_type", s.toLowerCase());
 
-                    // AND THE SPELLING THE FILE USED IS KEPT.
-                    //
-                    // `exportToCS2TextFormat` writes `_type` back as the block name for every block this
-                    // program does not model, and that machinery exists to put back what the file said -
-                    // "what TrainControl does not understand it is not entitled to throw away".  Case is
-                    // part of what it said, so lower-casing alone would silently rewrite a block spelled
-                    // `Version` as `version` on the first save.
-                    //
-                    // Two keys rather than case-insensitive comparisons at the readers: there are twelve
-                    // of those, and a rule applied to eleven of twelve is this project's most repeated
-                    // defect.
+                    // AND THE SPELLING THE FILE USED IS KEPT.  `exportToCS2TextFormat` writes `_type` back as the block
+                    // name for every block this program does not model: "what TrainControl does not understand it is
+                    // not entitled to throw away".  Case is part of what the file said, so lower-casing alone would
+                    // rewrite `Version` as `version` on the first save.  Two keys rather than case-insensitive
+                    // comparisons at the twelve readers: a rule applied to eleven of twelve is this project's most
+                    // repeated defect.
                     if (!s.equals(s.toLowerCase())) item.put("_typeAsWritten", s);
                 }
                 else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
@@ -569,40 +559,22 @@ public final class CS2File
                 }   
                 else if (s.matches("^ \\.[a-z0-9A-Z]+$"))
                 {
-                    // THE SAME CHARACTER CLASS AS THE ARM ABOVE.
-                    //
-                    // It read `[a-z]+` while its sibling nine lines up read `[a-z0-9A-Z]+`, and the
-                    // Central Station spells a route's condition block ` .S88Flag`.  That line has no
-                    // `=`, so it lands here, failed the class, and `lastKey` was NOT updated - so the
-                    // `..kont=` / `..hi=` group that follows was flushed under whatever key the file
-                    // had set earlier.
-                    //
-                    // The shipped fixture survives it by accident: its first route has no conditions
-                    // and opens with ` .item`, so `lastKey` is already "item" when the first condition
-                    // arrives, and `parseRoutes` sorts the pieces out by asking each for `kont`.  A
-                    // file whose FIRST route is conditional flushes into `item.put(null, ...)`, and
-                    // `parseRoutes` drops a route with no `item` outright - its commands as well as
-                    // its conditions - with one log line.  Route ids are not ordered in these files
-                    // and the operator decides which route is first.
+                    // THE SAME CHARACTER CLASS AS THE ARM ABOVE (`[a-z0-9A-Z]+`): the Central Station spells a route's
+                    // condition block ` .S88Flag`.  That line has no `=`, so it lands here, and if it failed the class
+                    // `lastKey` was NOT updated and the `..kont=` / `..hi=` group that follows was flushed under
+                    // whatever key the file had set earlier.  A file whose FIRST route is conditional flushes into
+                    // `item.put(null, ...)`, and `parseRoutes` drops a route with no `item` outright, commands as well
+                    // as conditions.
                     lastKey = s.substring(2);
                 }
                 else if (s.matches("^[a-zA-Z0-9_]+=.*$"))
                 {
-                    // A KEY AT THE LEFT MARGIN.
-                    //
-                    // `page=1` is the second line of a genuine Central Station page export, and it
-                    // matched none of the three arms above: it carries an `=`, so it is not a block
-                    // name, and it has no leading " .", so it is neither a key nor an array header.
-                    // It was dropped on read - and the writer regenerates the whole file from the
-                    // model, so the line was deleted the first time the application saved the page.
-                    //
-                    // Measured on this repository's own exports: every untouched page carries it, and
-                    // the pages the application has worked on do not.
-                    //
-                    // This shape fell between the two preservers the same rule already has - one for a
-                    // block a later firmware adds, one for an element - because it is neither.  It is
-                    // collected into an item of its own so that nothing downstream has to guess where
-                    // it belongs; `LayoutDiagram.addBareKey` puts it back after the header.
+                    // A KEY AT THE LEFT MARGIN: `page=1` is the second line of a genuine Central Station page export.
+                    // It carries an `=`, so it is not a block name, and it has no leading " .", so it is neither a key
+                    // nor an array header; dropped on read, the writer (which regenerates the file from the model)
+                    // deleted it the first time the application saved the page.  It falls between the two preservers
+                    // the same rule already has (a block a later firmware adds, an element), so it is collected into
+                    // an item of its own; `LayoutDiagram.addBareKey` puts it back after the header.
                     if (bare == null) bare = new java.util.LinkedHashMap<>();
 
                     String[] parts = s.split("=", 2);
@@ -795,17 +767,10 @@ public final class CS2File
                 }
                 catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
                 {
-                    // SKIP THE RECORD, NOT THE IMPORT.
-                    //
-                    // The three sibling parsers were each given this guard with a comment explaining
-                    // the blast radius - `parseRoutes`, `parseLocomotives`, `parseLocomotivesCS3` -
-                    // and this one was not swept.  The null-field guard above covers a MISSING key;
-                    // a key with a non-numeric value, or `id=` with nothing after it, lands here.
-                    //
-                    // What it costs unguarded: `parseRoutes` calls `getMagList(false)`, which fetches
-                    // from the station itself, so the throw reaches `syncWithCS2`'s outer catch, the
-                    // whole sync returns -1, and at start-up that reads as "not connected".  One
-                    // malformed accessory would take every route and locomotive with it.
+                    // SKIP THE RECORD, NOT THE IMPORT, as in the sibling parsers `parseRoutes`, `parseLocomotives` and
+                    // `parseLocomotivesCS3`.  The null-field guard above covers a MISSING key; a non-numeric value, or
+                    // `id=` with nothing after it, lands here.  Unguarded, the throw reaches `syncWithCS2`'s outer
+                    // catch, the whole sync returns -1, and at start-up that reads as "not connected".
                     control.logf("acc.invalidCs2Accessory", m.toString());
                 }
              }
@@ -853,15 +818,11 @@ public final class CS2File
                 {
                     MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
 
-                    // THE CONDITIONS AND THE COMMANDS, IN FILE ORDER.
-                    //
-                    // A route file writes its conditions under ` .S88Flag` and its commands under ` .item`, and both
-                    // are read: with the array header recognized the conditions arrive under their own key, so a route
-                    // read from `item` alone would keep every command and silently lose every condition.  The loop
-                    // below tells the two apart by asking each piece whether it carries `kont`.
-                    //
-                    // Conditions first, which is the order the file has them in and the order `addConditionS88`
-                    // records.
+                    // THE CONDITIONS AND THE COMMANDS, IN FILE ORDER.  A route file writes its conditions under
+                    // ` .S88Flag` and its commands under ` .item`, and both are read: from `item` alone every
+                    // condition would be silently lost.  The loop below tells the two apart by asking each piece
+                    // whether it carries `kont`.  Conditions first, the order the file has them in and the order
+                    // `addConditionS88` records.
                     StringBuilder both = new StringBuilder();
 
                     if (m.get("S88Flag") != null)
@@ -1831,15 +1792,10 @@ public final class CS2File
                         {
                             type = MarklinLocomotive.decoderType.MFX;
 
-                            // The same correction the DCC branch below has carried all along, and for
-                            // the same reason: with no address field in the file the UID was used
-                            // instead, and a UID is the address plus the type's base.  Left
-                            // uncorrected it is past the highest MFX address there is, so the
-                            // locomotive was created pointing at a decoder that cannot exist - every
-                            // command sent into nothing, every state update from the real one
-                            // unmatched, and the bad address written into the database.  The
-                            // constructor does not validate; only setAddress does, so this bit
-                            // existing locomotives not at all and new ones every time.
+                            // The same correction the DCC branch below has: with no address field in the file the UID
+                            // was used instead, and a UID is the address plus the type's base, past the highest MFX
+                            // address there is, so the locomotive pointed at a decoder that cannot exist.  The
+                            // constructor does not validate; only setAddress does.
                             if (address > MarklinLocomotive.MFX_MAX_ADDR)
                             {
                                 address -= MarklinLocomotive.MFX_BASE;
@@ -1926,14 +1882,9 @@ public final class CS2File
             configDir.mkdirs();
         }
         
-        // Staged and moved into place, all three of these.
-        //
-        // Opening the destination truncates it at once, so a transfer that stopped part way - the
-        // fifteen second read timeout, a station rebooted mid-sync, a cable - closed and COMMITTED a
-        // half-written file.  When the destination is the local layout folder, which is what this
-        // download is for, the next sync reads that truncation as the authoritative diagram: a page
-        // missing most of its track, and nothing to say so.  The hazard is named in this file's own
-        // comments; only the filename half of it was fixed.
+        // Staged and moved into place, all three of these: opening the destination truncates it at once, so a transfer
+        // that stopped part way (the fifteen second read timeout, a station rebooted mid-sync) COMMITTED a half-written
+        // file, which the next sync reads as the authoritative diagram.
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
         // UTF-8 explicitly, not the platform default: FileWriter would encode in Cp1252 on the
         // Windows/Java 8 configuration this targets, while the only reader of these files -
@@ -1964,19 +1915,10 @@ public final class CS2File
 
         copyAtomically(this.getMagURL(false), magsFile);
 
-        // And the ROUTES, which this did not fetch (FR-021).
-        //
-        // Adam asked whether the current route config is exported when a backup is requested. For a
-        // local layout it always was - the archive copies the whole `config` folder, and
-        // `fahrstrassen.cs2` sits in it. For a layout read from the Central Station the backup
-        // downloads a copy first, and this method is that download: it took the track diagram, the
-        // pages and the accessories, and left the routes behind. So a Central Station backup was
-        // missing them, and so was the local copy this menu makes when it switches over.
-        //
-        // Tolerated when absent, unlike the three above. A Central Station with no routes defined is
-        // an ordinary thing, and the whole download should not fail because there is nothing to
-        // fetch - which is a different judgment from the accessory file, whose absence would mean
-        // the station is not answering properly.
+        // And the ROUTES (FR-021): a Central Station backup downloads a copy of the layout first, and this method is
+        // that download, so without the routes the backup (and the local copy made on switching over) lacked them.
+        // Tolerated when absent, unlike the three above: a Central Station with no routes defined is ordinary, whereas
+        // an accessory file's absence would mean the station is not answering properly.
         try
         {
             copyAtomically(this.getRouteURL(), new File(configDir, "fahrstrassen.cs2"));
@@ -1988,14 +1930,11 @@ public final class CS2File
 
         // Adam: "if the user confirms the CS download, we should also download CS3 data files if using a CS3."
         //
-        // The /config/ export above is the CS2 format, which a CS3 also serves for the track diagram, but
-        // MarklinControlStation does not trust it for accessories and routes on a CS3 (it reads parseRoutesCS3() and
-        // parseLocomotivesCS3() from the JSON API instead).  So a CS3 backup needs those two file types fetched here,
-        // from getCS3MagDBUrl() and getCS3RouteDBUrl().
-        //
-        // this.control can be null (unit tests build a CS2File with no station attached), and a
-        // Central Station that never answers the device-info probe leaves isCS3() at its default of
-        // false, so a plain CS2 - or a test fixture - takes none of this path.
+        // The /config/ export above is the CS2 format, which MarklinControlStation does not trust for accessories and
+        // routes on a CS3 (it reads parseRoutesCS3() and parseLocomotivesCS3() from the JSON API instead), so a CS3
+        // backup needs those fetched here, from getCS3MagDBUrl() and getCS3RouteDBUrl().  this.control can be null
+        // (unit tests), and a station that never answers the device-info probe leaves isCS3() false, so a plain CS2
+        // takes none of this path.
         if (this.control != null && this.control.isCS3())
         {
             // Tolerated exactly like fahrstrassen.cs2 above, and for the same reason: an empty
@@ -2019,17 +1958,9 @@ public final class CS2File
                 logMessage("No CS3 route data was downloaded from the Central Station.", noCS3Routes, false);
             }
 
-            // And the locomotives (OB-099).
-            //
-            // Adam listed all three endpoints - /app/api/locos, /app/api/automatics, /app/api/mags -
-            // as "files that should be downloaded when connected to a CS3 only". Two were added; this
-            // was left out on the argument that downloadCS2Layout never fetched lokomotive.cs2 for a
-            // CS2 either, so adding only the CS3 side would put the two out of step.
-            //
-            // That argument is about tidiness and his is about what a backup is FOR. A CS3 keeps its
-            // locomotive database in this JSON and nowhere else this application reads, so an archive
-            // without it is missing the half a rebuilt railway would need most - and "the CS2 path
-            // does not have one either" is a reason to look at the CS2 path, not to leave this one
+            // And the locomotives (OB-099): a CS3 keeps its locomotive database in this JSON and nowhere else this
+            // application reads, so an archive without it is missing the half a rebuilt railway would need most.  That
+            // the CS2 path fetches no lokomotive.cs2 either is a reason to look at the CS2 path, not to leave this
             // short.
             try
             {
@@ -2044,11 +1975,8 @@ public final class CS2File
     }
 
     /**
-     * Fetches a URL and writes it to a file, all of it or none of it.
-     *
-     * Staged through a sibling file and moved into place, so a transfer that stops part way leaves
-     * whatever was there before rather than a truncated file that the next sync will read as the
-     * whole truth.
+     * Fetches a URL and writes it to a file, all of it or none of it: staged through a sibling file and moved into
+     * place, so a transfer that stops part way leaves whatever was there before.
      *
      * @param url what to fetch
      * @param target where it goes
@@ -2100,21 +2028,16 @@ public final class CS2File
     }
 
     /**
-     * The pages named in gleisbild.cs2, with the id each carries.
-     *
-     * The id is what the Central Station orders pages by, and TrainControl has never used it.  Autonomy
-     * does: it stores its setup against pages, and a page name is something a user renames while an id
-     * is not, so keeping the id lets a setup survive a rename.
+     * The pages named in gleisbild.cs2, with the id each carries.  Autonomy stores its setup against pages, and a page
+     * name is something a user renames while an id is not, so keeping the id lets a setup survive a rename.
      *
      * A page that carries no `.id` of its own has id ZERO - Adam: *"no .id means id 0 implicitly"*, the ordinary CS2
      * convention that an omitted key is the zero value.  Calling it page 1 would give the first page of every genuine
-     * export the number the SECOND page states, so one page's autonomy setup would come back on the other's track.  See
-     * `LayoutDiagram.pageIdOrPosition`, which both readers of this file ask.
+     * export the number the SECOND page states.  See `LayoutDiagram.pageIdOrPosition`, which both readers of this file
+     * ask.
      *
-     * A list rather than a map from name to id: two pages may carry the same name, and collapsing them
-     * here would silently drop one from every caller, including the download that writes the files back.
-     * Duplicate names already alias later, in layoutDB, but that is a decision made elsewhere and this
-     * method should not make it for it.
+     * A list rather than a map from name to id: two pages may carry the same name, and collapsing them here would
+     * silently drop one from every caller, including the download that writes the files back.
      *
      * @return one entry per page, in file order, each with "name" and "id"
      * @throws Exception
@@ -2139,14 +2062,9 @@ public final class CS2File
 
                 Map<String, String> page = new java.util.LinkedHashMap<>();
                 page.put("name", name);
-                // Through LayoutDiagram's rule rather than a second copy of it.
-                //
-                // This said `m.get("id") != null ? m.get("id") : position`, which is the same rule for
-                // an ABSENT id and a different one for a corrupt id: a `.id=` line that is not a
-                // number came through here unchanged and came out of readLayoutIndexIds as the page's
-                // position. The autonomy setup is keyed by whatever this says, and the id allocator by
-                // whatever that says, so the two disagreeing means a setup keyed to ids the index does
-                // not believe.
+                // Through LayoutDiagram's rule rather than a second copy of it: a `.id=` line that is not a number
+                // must come out as the page's position here exactly as readLayoutIndexIds has it, or the setup is keyed
+                // to ids the index does not believe.
                 page.put("id", String.valueOf(
                     org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
 
@@ -2324,11 +2242,8 @@ public final class CS2File
     }
     
     /**
-     * How many pages the last parseLayout could not read.
-     *
-     * Not a total across the life of the parser - parseLayout resets it - so it always describes the
-     * list it just handed back.  A caller holding that list has no other way to tell a complete railway
-     * from most of one, and two things downstream were quietly assuming complete.
+     * How many pages the last parseLayout could not read.  Not a total across the parser's life - parseLayout resets
+     * it - so a caller holding the list can tell a complete railway from most of one.
      */
     private int pagesThatCouldNotBeRead;
 
@@ -2344,12 +2259,8 @@ public final class CS2File
     }
 
     /**
-     * How many pages the index NAMED, whether or not any of them arrived.
-     *
-     * The caller's "did anything read" guard needs something to ask against.  A page can fail
-     * loudly - it throws, and is counted as unread - or it can simply never be recognized, which is what
-     * an index this parser does not understand produces: zero pages AND zero failures, a layout that
-     * read nothing at all and reported no fault.  The index is the statement of what should be there.
+     * How many pages the index NAMED, whether or not any of them arrived.  The caller's "did anything read" guard needs
+     * something to ask against: an index this parser does not understand yields zero pages AND zero failures.
      *
      * @return the page count of the last parseLayout's index
      */
@@ -2409,17 +2320,11 @@ public final class CS2File
         {
             pageIndex++;
 
-            // One page that will not parse costs THAT page, not the layout.
-            //
-            // Nothing here caught a per-page failure, while both sibling parsers in this file were
-            // given per-record guards - parseLocomotives says why: one bad locomotive used to abort
-            // the entire Central Station sync.  Here it was worse than an abort, because the caller
-            // answers a failed parse by clearing the local-layout folder preference: a single
-            // malformed element, or a page the index names and the folder does not hold, silently
-            // discarded the user's choice of where their layout lives.
-            //
-            // pageIndex is advanced ABOVE this, so a skipped page does not renumber the ones after
-            // it.  That matters more than it looks: the autonomy setup is keyed by page id.
+            // One page that will not parse costs THAT page, not the layout (as in the sibling parsers): the caller
+            // answers a failed parse by clearing the local-layout folder preference, so one malformed element, or a
+            // page the index names and the folder does not hold, would discard the user's choice of where their layout
+            // lives.  pageIndex is advanced ABOVE this, so a skipped page does not renumber the ones after it (the
+            // autonomy setup is keyed by page id).
             try
             {
  
@@ -2626,14 +2531,11 @@ public final class CS2File
                             {
                                 added.setUnmodelledKeys(m);
 
-                                // And the file's own word for the type, plus its rotation exactly as given.
-                                // Both ARE modeled, and both are lossy: the type mapping is many-to-one, so
-                                // writing the canonical word back collapses every variant the file
-                                // distinguished, and the rotation of a semaphore signal is corrected on the
-                                // way in by a rule keyed on the word that has just been thrown away.
-                                // Only the word: the export derives the file's number from the word it is writing,
-                                // which is exact and cannot disagree with a second rule, so the rotation is not kept to
-                                // write an untouched component back verbatim.
+                                // And the file's own word for the type, plus its rotation exactly as given.  Both ARE
+                                // modeled, and both are lossy: the type mapping is many-to-one, so writing the
+                                // canonical word back collapses every variant the file distinguished.  Only the word
+                                // is kept: the export derives the file's number from the word it is writing, which
+                                // cannot disagree with a second rule.
                                 added.setOriginalTyp(m.get("typ"));
                             }
                         }
@@ -2653,28 +2555,18 @@ public final class CS2File
             }
             catch (Exception | Error bad)
             {
-                // COUNTED, AND SAID OUT LOUD.
-                //
-                // This was debugOnly, so the one thing that explains an incomplete railway was
-                // invisible unless debug mode happened to be on.  A page that will not read is a fault
-                // the user can act on - re-copy the file, check the folder - which is what separates a
-                // warning worth showing from noise.
-                //
-                // The count is what everything downstream needs.  A caller that prunes, or reverts, is
-                // entitled to know it is not looking at the whole railway, and nothing
-                // could tell: most of a railway and all of one came back the same way.
+                // COUNTED, AND SAID OUT LOUD: a page that will not read is a fault the user can act on (re-copy the
+                // file, check the folder).  The count is what a caller that prunes, or reverts, needs to know it is
+                // not looking at the whole railway.
                 this.pagesThatCouldNotBeRead++;
 
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
                     null, false);
 
-                // AND THE PAGE KEEPS ITS PLACE IN THE LIST.
-                //
-                // Skipping it would leave `getLayoutList()` one entry short, and a link tile holds a POSITION in that
-                // list, so every arrow at or past this page would resolve one page early with nobody having edited
-                // anything (an unhydrated OneDrive placeholder is enough).  `TileGraph.leadsOutsideAutonomy` asks where
-                // a link goes, and its answer decides whether an unpaired portal blocks an autonomy build or only
-                // warns.
+                // AND THE PAGE KEEPS ITS PLACE IN THE LIST.  Skipping it would leave `getLayoutList()` one entry short,
+                // and a link tile holds a POSITION in that list, so every arrow at or past this page would resolve one
+                // page early (`TileGraph.leadsOutsideAutonomy` decides whether an unpaired portal blocks an autonomy
+                // build or only warns).
                 //
                 // Adam: *"Make the page blank and put a text label in it saying it could not be loaded (label as a tile
                 // itself, as if you had parsed a .text at 1,1 with that message."*  So the operator opens the page and
