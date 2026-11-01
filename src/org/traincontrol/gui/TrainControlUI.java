@@ -1256,10 +1256,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // a reset and the rebuild), which would hide EVERY caption; an unanswerable question hides nothing.
         if (this.autonomySession == null) return true;
 
-        // The railway is not asked here: `Layout.isChoosableByAutonomy` is `synchronized` on the `Layout`, a dispatch
-        // holds that monitor across a `CONFIGURE_SLEEP` per accessory, and this runs on the event thread once per
-        // captioned square (OB-192).  So `workOutCaptionVisibility` holds the rule on a worker; this reads its
-        // HIDE-list, so an unknown square shows.
+        // Not the railway: `Layout.isChoosableByAutonomy` is `synchronized` on the `Layout`, and a dispatch holds that
+        // monitor across a `CONFIGURE_SLEEP` per accessory, while this runs on the event thread per captioned square
+        // (OB-192).  So this reads the HIDE-list `workOutCaptionVisibility` keeps on a worker; an unknown square shows.
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> hidden =
             this.captionsAutonomyCannotChoose;
 
@@ -1300,10 +1299,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Set<JLabel> here = layoutStations.computeIfAbsent(station,
             k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
 
-        // Registering a label for this square is the only moment anything can tell the old ones are stale.  The main
-        // window CACHES a page's grid and re-attaches it on return, so those labels are detached yet alive: pruning on
-        // displayability alone would delete every visited page's captions.  Per SQUARE and OWNER, sparing other
-        // windows.
+        // Registering a label is the only moment the old ones can be told stale.  The main window CACHES a page's grid,
+        // so its labels are detached yet alive: pruning on displayability alone would delete every visited page's
+        // captions.  So per SQUARE and OWNER, sparing other windows.
         if (owner != null)
         {
             for (java.util.Iterator<JLabel> i = here.iterator(); i.hasNext();)
@@ -1797,9 +1795,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, with the session capture said separately from where the files go: the archive (FR-015) must hold the
-     * state as it is NOW, so it writes live, but a capture lifts the running layout back into the active configuration,
-     * which a copy must never do.
+     * The same, with the session capture apart from where the files go: the archive (FR-015) writes live, but a copy
+     * must never lift the running layout back into the active configuration, as a capture does.
      *
      * @param backup true to write timestamped copies into the backup folder rather than over the live files
      * @param captureSession whether to lift the running layout into the active configuration first; false for a COPY
@@ -2306,9 +2303,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether the autonomy menu can be opened (OB-202): a layout is loaded (`isLayoutLoaded`, not the raw list) and the
-     * connecting notice does not hold the bar.  Not whether the layout is local: a Central Station diagram has nowhere
-     * to keep a setup, but the menu's download offer and Documentation must stay pressable (`canUseAutonomy` says
-     * whether autonomy can be used).  Here, not in `AutonomyMenu`, as the start-up placeholder asks the same question.
+     * connecting notice does not hold the bar.  Not whether the layout is local: a Central Station diagram can't keep a
+     * setup, yet its download offer and Documentation must stay pressable (`canUseAutonomy` says if autonomy can be
+     * used).
      */
     public boolean autonomyMenuIsUsable()
     {
@@ -2578,9 +2575,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // And the graph when a run ends: `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`,
             // which writes a reversal made at a destination into the setup and refuses while anything moves, so it
-            // needs a refresh after the railway goes idle.  `Layout.announceRunFinished()` is the one door every run
-            // passes (OB-189).  It takes no Layout monitor: `refreshCoveredTrack` works out its covered marks on a
-            // worker (OB-192).
+            // needs a refresh once the railway is idle.  `Layout.announceRunFinished()` is the one door every run
+            // passes (OB-189); it takes no Layout monitor, as `refreshCoveredTrack` works on a worker (OB-192).
             this.updateVisiblePoints();
         });
     }
@@ -2645,11 +2641,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(cannotSave);
             }
 
-            // The railway's settings as built, for these trains only (OB-343): the tick changed them on the railway and
-            // in the setup together, so for them the two agree; left as built, a later press of the Auto tab's pause
-            // button (railway alone) would read to the next fold as no change and the rebuild would undo it.  Not for
-            // the other trains named: a press made before this call has not reached the setup, so writing it as built
-            // would hide it.
+            // The railway's settings as built, for these trains only (OB-343): the tick changed railway and setup
+            // together, so they agree; left as built, a later press of the Auto tab's pause button (railway alone)
+            // would read to the next fold as no change and the rebuild would undo it.  Not for the other trains named:
+            // a press made before this call has not reached the setup, so writing it as built would hide it.
             notePausesAsBuilt(changed);
         }
 
@@ -2736,7 +2731,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.refreshRouteList();
 
         // Interactive loads only: the stop is for choosing a different railway, not for an edit to the running setup,
-        // which also comes through here.  Closing the track diagram editor does not stop the trains (Adam's ruling).
+        // which also comes through here.  Closing the track diagram editor does not stop the trains.
         if (!resumed)
         {
             AltEmergencyStopActionPerformed(null);
@@ -3120,9 +3115,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
         // Station names go with the badges: the platform names must not stay when the arrows, lengths and point badges
-        // go.  Hidden, not emptied, since updateStationLabels writes the text from a worker.  Per square (FR-023): this
-        // is the third place that decides caption visibility; `show` still wins when false, and when true the
-        // per-station rule decides.
+        // go.  Hidden, not emptied, since updateStationLabels writes the text from a worker.  Per square (FR-023):
+        // `show` still wins when false, and when true the per-station rule decides.
         for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, Set<JLabel>> square
             : layoutStations.entrySet())
         {
@@ -3313,8 +3307,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Which way the train standing on a square is pointing, as one arrow ("" when nobody has said).  Read from the
-     * setup, as asking the running graph which copy a Point is would mean building the naming once per Point on every
-     * feedback event.
+     * setup: asking the running graph which copy a Point is would build the naming once per Point per feedback event.
      */
     private String facingArrow(org.traincontrol.automationui.TileGraph.TileKey square)
     {
@@ -3623,11 +3616,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes the safe setting instead of refusing when the railway could release track under a train: a FILE has
-     * nobody at it to read a refusal, and refusing would make an existing configuration unopenable, so the log says
-     * why.  Called by the editor's apply and the four dispatch doors (Start, Execute Timetable, Return Home,
-     * `sendATrainByHand`), as a train length is written on the live layout long after a parse.  The control is put
-     * back in step with the railway afterwards (OB-090).
+     * Writes the safe setting instead of refusing when the railway could release track under a train: a FILE has nobody
+     * at it to read a refusal, and refusing would make an existing configuration unopenable, so the log says why.
+     * Called by the editor's apply and the dispatch doors, as a train length is written on the live layout (OB-090).
      */
     public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()
     {
@@ -5218,8 +5209,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.stats = new LocomotiveStats(this);
         this.KeyboardTab.add(this.stats, "Stats", this.KeyboardTab.getComponentCount() - 1);
         
-        // Routes before signals and switches (Adam: "swap the position of the route tab with the keyboard tab"), moved
-        // here because the generated block is not ours to edit; found by identity.  Order after the move:
+        // Routes before signals and switches, moved here because the generated block is not ours to edit; found by
+        // identity.  Order after the move:
         //     0 control   1 diagram   2 autonomy   3 ROUTES   4 KEYBOARD   5 stats   6 log
         int routesAt = this.KeyboardTab.indexOfComponent(this.RoutePanel);
 
@@ -5539,9 +5530,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private java.awt.KeyEventPostProcessor theMapForTheWholeWindow;
 
     /**
-     * Lets the locomotive keys work anywhere in this window (Adam: "any part of the app should respect the key
-     * mapping").  A post-processor, not a dispatcher: it sees only keys the focused component left unconsumed, skips
-     * text components, and answers no outside this window (it is global to the JVM).
+     * Lets the locomotive keys work anywhere in this window.  A post-processor, not a dispatcher: it sees only keys
+     * the focused component left unconsumed, skips text components, and answers no outside this window (it is global
+     * to the JVM).
      */
     private void letTheWholeWindowDriveTrains()
     {
@@ -5615,7 +5606,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         setContentPane(StartupSplash.panel(message));
 
-        // The menus too (Adam: "just gray out the menu bar before it loads, too.").
+        // The menus too.
         greyTheMenus();
 
         // Where it is going to live, so it does not appear in one place and jump to another.
@@ -7242,10 +7233,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final java.util.Set<String> turnsHeldByARoute = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
-     * Turns a placed locomotive round on the graph when the railway has turned it (Adam: "a locomotive direction
-     * command WILL update the direction on the graph if it does not match."), following the echo `repaintLoc` fires.
-     * Not while autonomy runs (its capture reconciles the setup: two writers); a first sighting only teaches, or
-     * start-up would flip half the railway.
+     * Turns a placed locomotive round on the graph when the railway has turned it (the echo `repaintLoc` fires).  Not
+     * while autonomy runs (its capture reconciles the setup: two writers); a first sighting only teaches, or start-up
+     * would flip half the railway.
      */
     private void followDirectionChanges(List<Locomotive> updated)
     {
@@ -7288,9 +7278,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Follows one train's direction change into the setup and the running layout, on the event thread; returns the
-     * square whose facing was written, or null.  Ignored once trains run (Adam: "if a manual command is sent, ignore
-     * it, as this is likely corrective by the user"); decided again here because a hand send queued ahead of this post
-     * may have started a run.
+     * square whose facing was written, or null.  Ignored once trains run (a manual command then is likely the user's
+     * correction); decided again here because a hand send queued ahead of this post may have started a run.
      */
     private org.traincontrol.automationui.TileGraph.TileKey followTheTurn(String name)
     {
@@ -14128,10 +14117,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
-        // The open editor first, because this is a door out of it (OB-070: "One save/discard/cancel question, asked
-        // wherever a page is left").  Asked once per window, in `everyOpenWindowMaySettle`: asked here too, a dirty
-        // diagram editor is asked twice, and Discard then Save writes the discarded work, as a Save does not clear
-        // `canUndo()`.  Cancel cancels the exit.
+        // The open editor first, because this is a door out of it (OB-070).  Asked once per window, in
+        // `everyOpenWindowMaySettle`: asked here too, a dirty diagram editor is asked twice, and Discard then Save
+        // writes the discarded work, as a Save does not clear `canUndo()`.  Cancel cancels the exit.
         if (!everyOpenWindowMaySettle()) return;
 
         // Trains first, and not conditional on the autosave setting: a guard that stops a railway must not be one
@@ -14142,8 +14130,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.model.getAutoLayout().isRunning())
             {
-                // A warning and no train is touched (Adam: "For simplicity, don't change train state here."): kept
-                // open, the run goes on; closed, the trains run on as they were.  Keeping it open is the default.
+                // A warning and no train is touched: kept open, the run goes on; closed, the trains run on as they
+                // were.  Keeping it open is the default.
                 int dialogResult = JOptionPane.showOptionDialog(
                     this,
                     I18n.t("autolayout.ui.confirmExitAutonomyRunning"),
@@ -14284,8 +14272,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void goToLayoutPage(int index)
     {
-        // A link to nothing clicks to nothing (Adam: "simply resolve to nothing when clicked."): a deleted page's arrow
-        // carries -1. Silent, not logged: the tooltip already says the link points at no page.
+        // A link to nothing clicks to nothing: a deleted page's arrow carries -1.  Silent, not logged: the tooltip
+        // already says the link points at no page.
         if (index < 0) return;
 
         int page = index + 1;
@@ -16871,8 +16859,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether a setup edit must wait for a run: autonomy, a timetable, Return Home, a hand send, or a route executing
-     * (FR-129).  Adam: "There should be no setup edit possible during a run".  Doors that send trains keep their own
-     * question.
+     * (FR-129): no setup edit is possible during a run.  Doors that send trains keep their own question.
      */
     public boolean aRunHoldsTheSetup()
     {
@@ -18564,7 +18551,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 // Capture is left as the operator set it: forcing it off guarded against a run appending to the list
-                // being walked, which `addTimetableEntry` now does for both entrances.
+                // being walked, which `addTimetableEntry` handles for both entrances.
 
                 new Thread(() ->
                     {
@@ -19315,8 +19302,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Whether the power is known to be on, for the picture's tools.  Until the station says, only where start-up turned
-     * it on (Adam: "If we know the power is on (preference to sent power on when startup), hide the icons.  Otherwise
-     * leave as is."): the model takes it as on before it hears.
+     * it on, since the model takes it as on before it hears.
      */
     private boolean powerIsOn()
     {
@@ -20238,8 +20224,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
-     * The play button's glyph size, kept at the text's height; the click target is a strip the full height of the row,
-     * as a 13 pixel square was too easy to miss.  The renderer reserves the strip as a border inset (OB-146).
+     * The play button's glyph size, kept at the text's height; the click target is a strip the full height of the row.
+     * The renderer reserves the strip as a border inset (OB-146).
      */
     private static final int ROUTE_PLAY_SIZE = 13;
     private static final int ROUTE_PLAY_STRIP = 30;
@@ -20422,7 +20408,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         foundRoute = name;
 
-        // Found by identity, not counted to: getComponentAt(4) was right only by luck of the designer's ordering.
+        // Found by identity, not by index: the designer's ordering is not a contract.
         int routesAt = this.KeyboardTab.indexOfComponent(this.RoutePanel);
 
         if (routesAt >= 0) this.KeyboardTab.setSelectedIndex(routesAt);
@@ -20582,7 +20568,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // The strip is reserved from the text (OB-146) as an inset, so the label lays its text out in a narrower
             // box and ellipsises: the text cannot reach the icon.  Not wrapped: a JLabel wraps only as HTML and the
             // rows are a fixed thirty pixels, so a second line would be hidden.  Wrapping wants a taller row, which
-            // changes the whole table - Adam's call.
+            // changes the whole table.
             j.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(top, left, bottom, right, new Color(208,208,208)),
                 BorderFactory.createEmptyBorder(0, 0, 0, ROUTE_PLAY_STRIP)));
