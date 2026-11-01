@@ -44,7 +44,7 @@ import support.WireRecorder;
 import support.WireRecorder.Sent;
 
 /**
- * The locomotive mapping pages and the doors a locomotive's key opens, used as the operator uses them (FR-136 Phase 6).
+ * The locomotive mapping pages and the doors a locomotive's key opens, used as the operator uses them.
  *
  * The pages: the Prev and Next buttons and their keys, and the page menu's Copy, Paste and Reset Mappings with their
  * questions.  The doors: the notes, Find Similar Locomotives, the name and address, Delete from Database, and the
