@@ -1123,9 +1123,8 @@ public class Layout
     
     /**
      * Where each train under way is last known to be: the last station on its path whose sensor it has tripped, or
-     * where it set off.  What a reload that stops the trains has to carry, since a locked path holds every point on
-     * it.  Points with no sensor or no station are never a position; no two trains are kept on one square (keptApart).
-     *
+     * where it set off; what a reload that stops the trains has to carry, since a locked path holds every point on it.
+     * Points with no sensor or no station are never a position; no two trains are kept on one square (keptApart).
      * Read without the railway's monitor, which the event thread must not take: the maps are concurrent.
      *
      * @return each train under way, or still locking its path, against that point; a copy
@@ -3361,8 +3360,7 @@ public class Layout
 
             // The run's reversal answer, kept with its claim so the copy the train will stand on is known while its
             // route is set.  Past the refusals, so a losing duplicate writes nothing; before the route, so a reader
-            // that
-            // finds the route finds this with it.
+            // that finds the route finds this with it.
             this.runPolicies.put(loc, java.util.Optional.ofNullable(reversals));
 
             // Claimed in the same monitor as the cap check, so another thread's check cannot fall between them.
