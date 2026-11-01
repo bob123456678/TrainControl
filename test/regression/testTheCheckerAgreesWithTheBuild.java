@@ -56,7 +56,6 @@ import org.traincontrol.marklin.file.CS2File;
  * asserted only against the oracle's own filters.  The reachability clauses compare the checker's reach, read off the
  * build's JSON (`BuiltReach`), with what Layout's own route search offers a train on the Layout parseAuto made of it
  * (`offeredFrom`), over this fixture and every scenario.
- * Dropping the "never split, so no arrival to trap" filter once reported three squares with no arrival at all.
  *
  * The fixture is `test/test_layout`, frozen and wired the way `testAutonomyDiagramSampleLayout` wires it: a diagram
  * parsed alone has addresses on its tiles but no Accessory objects, and two thirds of the track does not connect.
@@ -309,9 +308,8 @@ public class testTheCheckerAgreesWithTheBuild
      * facings on these squares, the carve-out is gone, and this test passes because the answer is
      * right rather than because it was excused.
      *
-     * The carve-out once forgiving this was added with no guard of its own: deleting it from the production check left
-     * every class green, because nothing referenced FACING_IMPOSSIBLE.  It lives here rather than beside the session's
-     * other tests because their fixture has no berth a train can turn round on.
+     * It lives here rather than beside the session's other tests because their fixture has no berth a train can turn
+     * round on.
      *
      * MUTATION: removing `if (isTurnAround(tile)) out.addAll(arrivalSides(tile));` from
      * `AutonomySession.facingChoices` fails this test, along with the two beside it.
@@ -367,9 +365,7 @@ public class testTheCheckerAgreesWithTheBuild
         session.placeLocomotive(berth, null);
     }
 
-    /**
-     * Any locomotive the database has, for a placement whose identity does not matter.
-     */
+    /** Any locomotive the database has, for a placement whose identity does not matter. */
     private static String firstLocomotive()
     {
         return model.getLocList().get(0);
@@ -796,9 +792,7 @@ public class testTheCheckerAgreesWithTheBuild
             "the sweep compared too little to mean anything: " + compared);
     }
 
-    /**
-     * The stations set to No - Nothing Can Pass, among these (FR-101).
-     */
+    /** The stations set to No - Nothing Can Pass, among these (FR-101). */
     private static Set<TileKey> closedAmong(Set<TileKey> stations)
     {
         Set<TileKey> out = new TreeSet<>(BY_KEY);
@@ -811,9 +805,7 @@ public class testTheCheckerAgreesWithTheBuild
         return out;
     }
 
-    /**
-     * The squares the checker reported one of AutonomyChecks' message keys against.
-     */
+    /** The squares the checker reported one of AutonomyChecks' message keys against. */
     private static Set<TileKey> reported(String messageKey)
     {
         Set<TileKey> out = new TreeSet<>(BY_KEY);
@@ -867,9 +859,7 @@ public class testTheCheckerAgreesWithTheBuild
         }
     }
 
-    /**
-     * An accessory named exactly as the application would name it.
-     */
+    /** An accessory named exactly as the application would name it. */
     private static MarklinAccessory accessory(int logicalAddress, Accessory.accessoryType type,
         Accessory.accessoryDecoderType protocol)
     {
@@ -877,9 +867,7 @@ public class testTheCheckerAgreesWithTheBuild
             MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 
-    /**
-     * Squares sorted by printed key, so a failure reads as a diff of two lists.
-     */
+    /** Squares sorted by printed key, so a failure reads as a diff of two lists. */
     private static final Comparator<TileKey> BY_KEY = new Comparator<TileKey>()
     {
         @Override

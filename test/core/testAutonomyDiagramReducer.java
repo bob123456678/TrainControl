@@ -45,11 +45,8 @@ import support.SourceOf;
 public class testAutonomyDiagramReducer
 {
     /**
-     * `findPath`, the editor's *test a path* tool, and the build the findings read agree about a square switched out of
-     * service: a route the tool draws through it would be one the runtime refuses.
-     *
-     * **Asserted as agreement between the two**, not as either one's answer, because agreement is what is lost when a
-     * rule reaches one of them only.
+     * `findPath`, the editor's path test, and the build the findings read agree about a square switched out of service.
+     * Asserted as agreement between the two, since agreement is what is lost when a rule reaches only one.
      *
      * MUTATION: remove the `closed` continue from `findPath` and the second assertion fails; let `BuiltReach` pass a
      * Point switched off and the first does.
@@ -91,9 +88,7 @@ public class testAutonomyDiagramReducer
             + "it offers a route the runtime refuses - and the findings panel beside it says the "
             + "opposite (DIR-B1)");
 
-        // AND IT IS NOT A DESTINATION IN EITHER: *"inactive really means nothing can pass."*  `isPathClear` lost the
-        // `isAutoRunning` fence on its destination rule at the same time, so a closed square the walks offered would be
-        // a destination the railway refuses.
+        // AND IT IS NOT A DESTINATION IN EITHER: a closed square the walks offered would be one the railway refuses.
         assertFalse(builtReaches(reducer, a, b, none, none, noBars, closed),
             "a closed square is still reachable AS a destination, so the findings offer somewhere the "
             + "runtime will refuse");
@@ -108,13 +103,10 @@ public class testAutonomyDiagramReducer
             + "case Adam kept: closing a square around a train is how it is held in place");
     }
     /**
-     * A red arrow stops a train LANDING, not passing through.
-     *
-     * The case the two tests beside this one could not see: both bar the DESTINATION, the single arrangement where
-     * "cannot stop here" and "cannot come this way" give the same answer, so the walks could enforce the wrong one of
-     * the two and stay green.  `AutonomyBuilder` emits the barred copy of a split square as a non-station that still
-     * carries traffic ("it is simply not somewhere a train can be sent"), so the path test must draw routes through it
-     * and the findings must not report stations as reaching nothing.
+     * A red arrow stops a train LANDING, not passing through.  The two tests beside this one bar the DESTINATION, where
+     * "cannot stop here" and "cannot come this way" agree, so the walks could enforce the wrong one and stay green.
+     * `AutonomyBuilder` emits the barred copy of a split square as a non-station that still carries traffic, so the
+     * path test must draw routes through it and the findings must not report stations as reaching nothing.
      *
      * MUTATION: refusing a barred arrival at every hop of `findPath` fails the first half.
      */
@@ -158,15 +150,12 @@ public class testAutonomyDiagramReducer
 
     /**
      * A barred arrival is not a route, for either walk (OB-120): "test a path should respect all red arrow
-     * restrictions."
+     * restrictions."  Red arrows are the sides a station refuses to let trains STOP at it by; a train may still run
+     * through such a square (see `testABarredArrivalCanStillBePassedThrough`).
      *
-     * The red arrows are barred arrivals, the sides a station refuses to let trains STOP at it by; a train may still
-     * run through such a square (see `testABarredArrivalCanStillBePassedThrough`).
-     *
-     * **The path test and the build, and that is the half worth testing.**  Teaching findPath about the arrows and not
-     * the build, or the other way round, would break quietly: the test would refuse a run the findings panel went on
-     * counting as reachable, with no error anywhere.  The START is exempt, as in the build: a train standing on a
-     * square did not arrive by any side, and refusing it would stop a restricted station SENDING trains.
+     * Asserted on the path test and the build together: teaching only one about the arrows would break quietly, the
+     * test refusing a run the findings panel still counts as reachable.  The START is exempt, as in the build: a train
+     * standing on a square did not arrive by any side.
      *
      * MUTATION: dropping the `refusesArrival` test from findPath, or the bar from `AutonomyBuilder.arrivalAllowed`,
      * fails its half of this.
@@ -218,13 +207,10 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * And it reaches the running layout, through the builder and the file.
-     *
-     * Between the reducer's room after the last switch and the guard that uses it are three steps nothing touched:
-     * `AutonomyBuilder` writes the key, `Layout.parseAuto` reads it back onto the `Edge`, and `Edge.toJSON` writes it
-     * out.  `Edge.crossesASwitch()` is `roomAtTheEnd != Integer.MIN_VALUE`, so an edge that never received the key
-     * answers false and `measuredRoomAtTheEndOf` sums the WHOLE route, the too-permissive rule: a train coming to rest
-     * across the points behind it.
+     * And it reaches the running layout, through the builder and the file: `AutonomyBuilder` writes the key,
+     * `Layout.parseAuto` reads it back onto the `Edge`, and `Edge.toJSON` writes it out.  An edge that never received
+     * it answers `crossesASwitch()` false, and `measuredRoomAtTheEndOf` then sums the WHOLE route, the too-permissive
+     * rule.
      *
      * MUTATION: deleting the write in `AutonomyBuilder`, the read in `parseAuto`, or the export in `Edge.toJSON`.
      */
@@ -302,13 +288,10 @@ public class testAutonomyDiagramReducer
         assertEquals(again.getInt("roomAtTheEnd"), 9, "the room did not survive the round trip");
     }
     /**
-     * The editor asks for the squares AFTER the last switch, and not the ones before it.
-     *
-     * `unmeasuredAfterTheLastSwitch` is the mirror of `roomAfterTheLastSwitch`: that one adds the lengths up, this one
-     * names the squares that have none, so the notice asks for exactly what the guard needs.  The narrowing is one line
-     * (stop at the first switch walking back), and the only fixture that reached it, a straight run of four tiles,
-     * cannot tell the rule from the one it replaced.  The notices were to be deduped, not widened: asking for the whole
-     * run would put one on every square of every approach.
+     * The editor asks for the squares AFTER the last switch, not the ones before it.  `unmeasuredAfterTheLastSwitch`
+     * mirrors `roomAfterTheLastSwitch`; the narrowing is one line (stop at the first switch walking back) and a
+     * straight run of four tiles cannot tell it from the rule it replaced.  Asking for the whole run would put a notice
+     * on every square of every approach.
      *
      * MUTATION: deleting the switch stop, which makes the answer the whole edge.
      */
@@ -351,13 +334,10 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * And it stops asking once the stretch is measured AT ALL (MT-364): "I set the track at 10,10 to length 2 ... But
-     * it is still asking for the tile at 10,9 (TunnelLongPark) to get a length."
-     *
-     * **The notice and the guard disagreed about what "measured" means.**  `roomAfterTheLastSwitch` answers with what
-     * it knows for a partly measured stretch ("It is only indeterminate if the entire logical segment has length 0"),
-     * but this walk kept naming every square that had no number of its own.  A stretch with nothing measured in it
-     * still names every square: the guard is blind there, not merely pessimistic.
+     * And it stops asking once the stretch is measured AT ALL (MT-364): the notice and the guard disagreed about
+     * "measured".  `roomAfterTheLastSwitch` answers for a partly measured stretch, so this walk must not keep naming
+     * every square without a number of its own.  A stretch with nothing measured still names every square: the guard is
+     * blind there.
      *
      * MUTATION: drop the running total and the first claim fails; make an unmeasured stretch answer empty too and the
      * second does.
@@ -445,11 +425,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * A rebuild does not change the lists a reader is already walking (OB-298).
-     *
-     * `AutonomyBuilder.splitSides` iterated `getEdges()` while a rebuild on another thread cleared and refilled that
-     * list in place, and threw `ConcurrentModificationException`.  A rebuild now makes new lists and hands them over
-     * when whole, so a walk that began before it finishes on the railway it began on.
+     * A rebuild does not change the lists a reader is already walking (OB-298): `AutonomyBuilder.splitSides` iterated
+     * `getEdges()` while a rebuild cleared and refilled it in place.  A rebuild now hands over new lists when whole.
      *
      * MUTATION: clear and refill the lists in place again, and this fails.
      *
@@ -487,11 +464,9 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The session hands out a reducer only once it is reduced (OB-298).
-     *
-     * `AutonomySession.rebuild` made a new reducer and assigned it to the field a line before reducing it, so a build
-     * asking for it in between walked lists being filled.  Swapping the lists inside the reducer does not reach that:
-     * it answers such a reader with the empty lists a new reducer starts with, silently.
+     * The session hands out a reducer only once it is reduced (OB-298).  `AutonomySession.rebuild` assigned the new
+     * reducer to the field a line before reducing it, so a build asking in between walked lists being filled; swapping
+     * lists inside the reducer would not reach that.
      *
      * MUTATION: assign the field before `reduce()` again, and this fails.
      *
@@ -614,16 +589,13 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * And how much of that length lies after the last switch, which is the room a train has to stop in: "Between the
-     * switch and the station, the length must be >= length of the train", and "for the switches, for simplicity, let's
-     * use any direction, that way we are guaranteed to be safe."  `Layout.measuredRoomAtTheEndOf` bounds the train by
-     * the stretch beyond the last switch on each edge rather than by the whole route.
+     * And how much of that length lies after the last switch, which is the room a train has to stop in:
+     * `Layout.measuredRoomAtTheEndOf` bounds the train by the stretch beyond the last switch on each edge, not the
+     * whole route.  The switch tile itself is not counted: track it stands on while fouling the points is not room.
      *
-     * **The switch tile itself is not counted:** track it would be standing on while fouling the points is not room.
-     *
-     * Three states, all asserted because two are easy to collapse into one: an edge with no switch does not bound
-     * anything (`crossesASwitch` false), one with a switch and a full set of lengths gives a number, and one with a gap
-     * gives `-1`, bounded but unknown (reading it as zero would refuse every train on an unmeasured layout).
+     * Three states, all asserted because two are easy to collapse: an edge with no switch bounds nothing
+     * (`crossesASwitch` false), one with a switch and full lengths gives a number, and one with a gap gives `-1`,
+     * bounded but unknown (reading it as zero would refuse every train on an unmeasured layout).
      *
      * MUTATION: counting the switch tile (the room becomes 16 rather than 9); walking forwards instead of backwards,
      * which finds the FIRST switch; and returning 0 rather than -1 for the unmeasured case.
@@ -763,16 +735,10 @@ public class testAutonomyDiagramReducer
     /**
      * The room walk stops at a switch that can be thrown AND at a permanent turnout, but not at a crossing.
      *
-     * `roomAfterTheLastSwitch` walks back from the far sensor and stops where the room ends.  A berth BEYOND a
-     * permanent turnout had the track on the far side of the points counted as room, so a four-unit train was admitted
-     * to a two-unit berth and came to rest fouling the merge (OB-233): "treat them the same as regular switches for the
-     * purposes of the check".
-     *
-     * **The crossing half stands.**  A train passing a permanent turnout chooses nothing, so it is not a switch for
-     * ROUTING; what changed is where a train may come to REST.  A crossing is not a fork at all, so a train standing
-     * across it fouls the other route's track, which is the 5c tail walk's business.
-     *
-     * `isSwitch()` is shared with the drawing code and the editor, so it is NOT widened: the two walks ask
+     * A berth BEYOND a permanent turnout had the track past the points counted as room, so a four-unit train was
+     * admitted to a two-unit berth and came to rest fouling the merge (OB-233).  A train passing a permanent turnout
+     * chooses nothing, so it is not a switch for ROUTING, only for where a train may REST; a crossing is no fork at
+     * all.  `isSwitch()` is shared with the drawing code and the editor, so it is not widened: both walks ask
      * `boundsTheRoom`, and this asserts the ROOM NUMBER rather than the predicate.
      *
      * MUTATION: add `componentType.CROSSING` to `boundsTheRoom` and the first half fails with 5 against 10; take the
@@ -896,13 +862,9 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * An overpass's two levels share no place, and a crossing's two roads share one: "show that the overpass routes
-     * don't touch ... and double check our layout model accurately reflects this."
-     *
-     * The locks are held above.  A STANDING train is held by places instead: its tail claims the place ids of the track
-     * it lies on (OB-207), and every door that asks whether track is free reads those.  So a train whose tail lies over
-     * one level of an overpass must claim nothing the other level runs over, while a crossing is one piece of metal
-     * that both roads run over.
+     * An overpass's two levels share no place, and a crossing's two roads share one.  A STANDING train is held by
+     * places: its tail claims the place ids of the track it lies on (OB-207), so a tail over one level of an overpass
+     * must claim nothing the other level runs over, while a crossing is one piece of metal both roads run over.
      *
      * MUTATION: give an overpass's places the square alone in `GraphReducer.locationsOf`, and this fails.
      *
@@ -1057,9 +1019,9 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * Two ways round between the same pair of sensors must not become two edges.  An edge's identity in the autonomy
-     * model is its pair of Point NAMES, so a passing loop emitted two edges called the same thing; createEdge throws on
-     * the second and parseAuto invalidates the WHOLE configuration, with a message naming only JSON.
+     * Two ways round between the same pair of sensors must not become two edges.  An edge's identity is its pair of
+     * Point NAMES, so a passing loop emitting two like-named edges made createEdge throw and parseAuto invalidate the
+     * WHOLE configuration.
      */
     @Test
     public void testTwoRoutesBetweenTheSameSensorsBecomeOneEdge() throws IOException
@@ -1131,14 +1093,9 @@ public class testAutonomyDiagramReducer
 
     /**
      * The SHORTER of two parallel roads is the one kept, and the other is reported rather than dropped in silence.
-     *
-     * The test above pins the invariant the model forces (at most one edge per ordered pair).  WHICH road survives
-     * decides every train's length on this pair: the kept path is what `sumLength` measures and what
-     * `roomAfterTheLastSwitch` walks back through.  `continueWalk` keeps the shorter, "which is the one a train would
-     * be given anyway".  The warning is pinned too: `WARN_PARALLEL_ROUTE` is how anyone learns a road was dropped, and
-     * it is non-blocking, since a passing loop is ordinary railway.
-     *
-     * The same passing loop as the test above: the direct road five tiles, the loop over the top seven.
+     * WHICH road survives decides every train's length on this pair (`sumLength`, `roomAfterTheLastSwitch`), and
+     * `WARN_PARALLEL_ROUTE` is how anyone learns a road was dropped; it is non-blocking, since a passing loop is
+     * ordinary railway.  Same passing loop as above: the direct road five tiles, the loop over the top seven.
      *
      * MUTATION: invert the comparison in `continueWalk` (keep the longer) and the path assertions fail; remove either
      * `noteOnce` and the warning assertion does.
@@ -1372,14 +1329,14 @@ public class testAutonomyDiagramReducer
     /**
      * A lock names EVERY copy of the track it locks, not just the first.
      *
-     * `testAutonomyDiagramSampleLayout.testNoTwoRoutesCanOccupyTheSameTrackUnlocked` asks `reducer.getLocks()`, the
-     * relation between REDUCED edges, before the builder splits each into a named edge per arrival side.  Carrying that
-     * relation across the split is the builder's job, in an inner loop over every emitted copy of the locked edge:
-     * truncate it to the first copy and later copies run unlocked.
+     * `testAutonomyDiagramSampleLayout.testNoTwoRoutesCanOccupyTheSameTrackUnlocked` asks `reducer.getLocks()` before
+     * the builder splits each reduced edge into a named edge per arrival side; carrying the relation across the split
+     * is the builder's job, in an inner loop over every emitted copy: truncate it to the first copy and later copies
+     * run unlocked.
      *
-     * **This cannot be asked of `test/test_layout`:** no piece of track is emitted more than once there.  What makes
-     * one reduced edge emit several pairs is a REVERSIBLE square: `nodesFor` emits a turning copy per side as well as a
-     * plain one.  So: a junction, which produces a lock at all, with a reversible sensor on it.
+     * `test/test_layout` cannot ask this, since no track is emitted more than once there.  A REVERSIBLE square makes
+     * one reduced edge emit several pairs (`nodesFor` emits a turning copy per side as well as a plain one), so: a
+     * junction with a reversible sensor on it.
      *
      * MUTATION: `break` after the first `otherPair` in either of the builder's lock loops.
      */
@@ -1523,9 +1480,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * A feedback tile lying east-west, which is how FEEDBACK is drawn at orientation 0.  The address given is the RAW
-     * one, as in the CS2 file, which is what a Point's s88 means; the logical address is deliberately different
-     * (CS2File halves the raw value), so a Point built from the wrong one shows up at once.
+     * A feedback tile lying east-west (orientation 0).  The address is the RAW one, as in the CS2 file; the logical
+     * address is deliberately different (CS2File halves it), so a Point built from the wrong one shows up at once.
      */
     private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws IOException
     {
@@ -1561,8 +1517,8 @@ public class testAutonomyDiagramReducer
 
     /**
      * Whether the BUILT railway sends a train standing at `from` on to `to`: the answer the findings read
-     * (`BuiltReach`), over this reduction built with the same sets, so `findPath` can be held to it.  `findPath` starts
-     * facing every way, so `from` is built as a square trains may turn at.
+     * (`BuiltReach`), so `findPath` can be held to it.  `findPath` starts facing every way, so `from` is built as a
+     * square trains may turn at.
      */
     private static boolean builtReaches(GraphReducer reducer, TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
@@ -1657,9 +1613,7 @@ public class testAutonomyDiagramReducer
         return set != null && set.contains(b);
     }
 
-    /**
-     * A stable textual form of the whole reduction, for comparing two runs.
-     */
+    /** A stable textual form of the whole reduction, for comparing two runs. */
     private String describe(GraphReducer reducer)
     {
         StringBuilder out = new StringBuilder();
@@ -1688,10 +1642,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * A run that crosses one square twice, on the square's two separate tracks, is still a run.  The walk marked a
-     * square visited by its coordinates alone, so the second crossing looked like a circle and the run vanished
-     * silently.  A crossing carries two routes that never meet; passing over one and coming back through the other is
-     * ordinary railway.
+     * A run that crosses one square twice, on the square's two separate tracks, is still a run: the walk marked a
+     * square visited by coordinates alone, so the second crossing looked like a circle and the run vanished silently.
      */
     @Test
     public void testARunMayCrossTheSameSquareTwice() throws Exception
@@ -1771,10 +1723,9 @@ public class testAutonomyDiagramReducer
 
     /**
      * Reachability does not jump between the two arms of a double curve.  A FEEDBACK_DOUBLE_CURVE at orientation 0 is
-     * two independent curves, N-W and E-S, in one square: a sensor on its N side and one on its E side are on DIFFERENT
-     * arms, and arriving from N the only way on is W.  Plain tile adjacency would say they connect, the over-report
-     * that let checkStations miss a STATION_UNREACHABLE the runtime would show.  Neither the build the findings read
-     * nor the editor's path test may.
+     * two independent curves, N-W and E-S: sensors on its N and E sides are on DIFFERENT arms, and plain tile adjacency
+     * would over-report a connection (checkStations missing a STATION_UNREACHABLE).  Neither the build nor the editor's
+     * path test may.
      */
     @Test
     public void testReachDoesNotCrossADoubleCurve() throws IOException
@@ -1817,9 +1768,9 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * A length set on a station counts toward the edge that arrives there.  The tile a train ARRIVES on is part of the
-     * journey to it, and counting the end of each edge gives every tile along a route exactly once; a sum covering only
-     * the track BETWEEN two sensors left a user who put lengths on their platforms with every edge at zero.
+     * A length set on a station counts toward the edge that arrives there: the tile a train ARRIVES on is part of the
+     * journey, and counting each edge's end counts every tile once.  A sum of only the track BETWEEN sensors left a
+     * user with lengths on platforms and every edge at zero.
      */
     @Test
     public void testALengthOnAStationCountsTowardTheEdgeIntoIt() throws IOException
@@ -1849,17 +1800,13 @@ public class testAutonomyDiagramReducer
 
 
     /**
-     * A station reached by a barred side first, and an open one after turning past it.
-     *
-     * The gap between the two tests above: one bars the middle of a journey, one bars its end, and neither has the
-     * destination appear TWICE in one search, once the wrong way round and once the right way, as every station with a
-     * reversing point beyond it does.
+     * A station reached by a barred side first, and an open one after turning past it: the destination appears TWICE in
+     * one search, as with every station that has a reversing point beyond it, which the two tests above never do.
      *
      *     A ---- X ---- R      X refuses arrivals from A's side; R is a reversing point.
      *
      * A train runs A to X the wrong way round, carries on to R, turns, and comes back into X by its other side, where
-     * it may stop.  The build says X is reachable; `findPath` refused the first hop into X outright, so R was never
-     * reached and "Test a path" drew nothing.
+     * it may stop.  The build says X is reachable; `findPath` refused the first hop into X, so R was never reached.
      *
      * MUTATION: moving the refusal back onto the hop fails this.
      */
@@ -1882,7 +1829,6 @@ public class testAutonomyDiagramReducer
         Set<TileKey> none = Collections.emptySet();
         Set<TileKey> mayTurn = java.util.Collections.singleton(r);
         // CONTROL: without it a fault that breaks the fixture rather than the rule reads as a pass.
-        // CONTROL. Without it a fault that breaks the fixture rather than the rule reads as a pass.
         assertNotNull(reducer.findPath(a, x, mayTurn, none),
             "A cannot reach X at all with nothing barred, so this fixture proves nothing about "
             + "barring - check the page and the reversing point before reading anything below");
@@ -1920,12 +1866,10 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The two roads of a double curve are separate places; a crossing's two roads are one.
-     *
-     * `TilePorts` gives a double curve `route(N, W)` and `route(E, S)`, two curves in opposite corners with no rail
-     * between them, so a train on one is not on the other's metal.  Keyed by the tile alone they were rivals:
-     * `deriveLocks` made the two curves lock each other, and the tail walk blamed the road the train is not on.  The
-     * crossing is the control: its roads cross, so one place is right there.
+     * The two roads of a double curve are separate places; a crossing's two roads are one.  `TilePorts` gives a double
+     * curve two curves in opposite corners with no rail between them; keyed by the tile alone they were rivals, so
+     * `deriveLocks` locked them against each other and the tail walk blamed the road the train is not on.  The
+     * crossing is the control.
      *
      * @throws IOException from the fixture
      */
@@ -1975,17 +1919,15 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * Which squares let two roads run at once, and which do not: "For crossings vs overpasses, does one route of the
-     * overpass correctly not block the other, whereas the crossing does?"  Three answers, following the metal:
+     * Which squares let two roads run at once, and which do not, following the metal:
      *
-     *  - an **overpass** carries its roads at different heights, so they never touch: two routes may run at once;
-     *  - a **crossing** carries them at the same height across each other, so the two roads lock;
-     *  - a **double slip** (`SWITCH_CROSSING`) is a switch whose roads share the frog, so they lock too, and it is cut
-     *    out of the length pieces with the other switches.  Its thrown state adds both diagonals, so it carries FOUR
-     *    roads and eight directed legs cross it; every pair of different roads locks, and only a road against its own
-     *    reverse does not.
+     *  - an **overpass** carries its roads at different heights: two routes may run at once;
+     *  - a **crossing** carries them at the same height: the two roads lock;
+     *  - a **double slip** (`SWITCH_CROSSING`) is a switch whose roads share the frog, so they lock too.  Its thrown
+     *    state adds both diagonals, so it carries FOUR roads and eight directed legs; every pair of different roads
+     *    locks, and only a road against its own reverse does not.
      *
-     * The double curve is the fourth case and has its own claim above: two curves in opposite corners never lock.
+     * The double curve has its own claim above: two curves in opposite corners never lock.
      *
      * @throws IOException from the fixtures
      */

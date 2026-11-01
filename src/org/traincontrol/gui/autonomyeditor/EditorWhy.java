@@ -26,7 +26,7 @@ final class EditorWhy extends SettledQuestion
 
     /**
      * Composes the answer on a worker thread rather than painting one: the stations autonomy could choose, then the
-     * ones it never will, each alphabetical, with the page named for a station that is not on the train's (FR-080).
+     * ones it never will, each alphabetical, with the page named for a station that is not on the train's.
      * Built into a value object and handed over: `traces` is read by the paint, so writing it from here would draw from
      * the wrong thread.
      *
@@ -139,8 +139,8 @@ final class EditorWhy extends SettledQuestion
 
             String station = where == null ? entry.getKey() : editor.describeTile(where);
 
-            // And its page, where that is not the current page (FR-080: *"If a point is on another page, show it"*;
-            // MT-429): a name with no page is one somebody has to go and look for, or two squares that read as one.
+            // And its page, where that is not the current page: a name with no page is one somebody has to go and look
+            // for, or two squares that read as one.
             String nameOnly = station;
 
             boolean elsewhere = where != null && where.getPage() != null && !where.getPage().equals(currentPage);
@@ -478,9 +478,7 @@ final class EditorWhy extends SettledQuestion
             ? "<br><br>" + AutonomyEditorPanel.escape(I18n.t("autosetup.ui.whyUnsaved")) : "";
     }
 
-    /**
-     * Station names, comma separated, capped so one line stays one line.
-     */
+    /** Station names, comma separated, capped so one line stays one line. */
     private static String join(java.util.List<String> names)
     {
         StringBuilder out = new StringBuilder();
