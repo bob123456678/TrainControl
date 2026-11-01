@@ -203,8 +203,7 @@ public final class SelfUpdate
 
     /**
      * TEST HOOK, with no effect unless a test sets it: the jar `runningJar` reports in place of the one the program was
-     * loaded from, because a test runs from a folder of classes with no jar (FR-136 Phase 6; Adam: "OK on download
-     * update test hooks").
+     * loaded from, because a test runs from a folder of classes with no jar (FR-136).
      */
     private static volatile File runningJarForTests;
 
