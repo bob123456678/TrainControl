@@ -210,16 +210,14 @@ public class testStationLabelDrag
     /**
      * The picked-up label is always put back down.
      *
-     * A release arrives whether or not a drag started and whether or not the drop is accepted; if putting it down were
-     * conditional on any of that, a refused drop or a press that was a click would leave a floating copy on the
-     * window's drag layer until the editor was rebuilt.
+     * A release arrives whether or not a drag started and whether or not the drop is accepted, so a refused drop or a
+     * press that was a click must not leave a floating copy on the window's drag layer until the editor is rebuilt.
      *
      * MUTATION: moving `hideCaptionGhost` below the early return fails this.
      *
      * `hideCaptionGhost()` is called TWICE in the method (inside the wrong-button branch, and unconditionally ahead of
      * the real "did this actually move anything" question), so anchoring on the first occurrence of each name can never
-     * fail.  Anchored instead on `boolean moved = dragging[0];`, directly above the real put-down and nowhere else in
-     * the method.
+     * fail.  Anchored instead on `boolean moved = dragging[0];`, directly above the real put-down and nowhere else.
      */
     @Test
     public void testThePickedUpLabelIsAlwaysPutDown() throws Exception
@@ -250,11 +248,9 @@ public class testStationLabelDrag
     }
 
     /**
-     * Only the LEFT button picks a station label up.
-     *
-     * Every button started a drag, so a right-press on a captioned square that wandered past DRAG_SLOP moved the label
-     * instead of opening the properties menu, and `mouseClicked` never fired either.  The click path in the same
-     * adapter already made the distinction.
+     * Only the LEFT button picks a station label up: a right-press on a captioned square that wandered past DRAG_SLOP
+     * must open the properties menu, not move the label (and `mouseClicked` must still fire).  The click path in the
+     * same adapter already made the distinction.
      *
      * MUTATION: dropping the button test lets any press begin a drag and fails this.
      */
@@ -290,12 +286,10 @@ public class testStationLabelDrag
     /**
      * A label cannot be dropped on the grid's spacers, which are not squares.
      *
-     * The grid ends in a dummy row and column that stop long labels misaligning it, and they are LayoutLabels with real
-     * bounds, so the drop accepted them; the mark showed GREEN first (a spacer carries no component, and a square with
-     * nothing on it may hold a caption), and the label then vanished, stored against a square the drawing loop skips.
-     * The strip along the bottom is exactly where somebody would drop a label for a station on the last row.
-     *
-     * Read rather than run: reaching `tileUnder` needs a built grid, a window and a drag in progress.
+     * The grid ends in a dummy row and column that stop long labels misaligning it; they are LayoutLabels with real
+     * bounds, and a spacer carries no component, so the mark would show GREEN and the label then vanish, stored against
+     * a square the drawing loop skips.  The strip along the bottom is exactly where somebody would drop a label for a
+     * station on the last row.  Read rather than run: reaching `tileUnder` needs a built grid, a window and a drag.
      *
      * MUTATION: removing the spacer check from tileUnder fails this.
      */

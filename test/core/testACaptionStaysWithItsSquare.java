@@ -126,9 +126,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
      * A legacy label naming a station the setup already shows on its page does not show it twice (OB-256; on another
      * page it becomes a caption there, which is `testALegacyLabelOnAnotherPageStillCaptionsAStationShownOnItsOwnPage`).
      *
-     * One caption per station per page: `setCaption` takes a station's caption off wherever it was on that page, and
-     * the old-file import captions a station only on a page where it has none.  The setup's caption is the one somebody
-     * chose, so it is kept; the label still leaves the page, or the migration would find it again at every open.
+     * One caption per station per page, and the setup's is the one somebody chose, so it is kept; the label still
+     * leaves the page, or the migration would find it again at every open.
      *
      * MUTATION: caption the label's square whether or not the station has a caption, and this fails.
      */
@@ -172,10 +171,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * The session says which pages the migration rewrote, and how many names it took.
      *
-     * The migration edits files the user owns: a `Point:` name is taken into the setup and emptied out of the `.cs2`
-     * (`saveChanges` keeps a `.cs2.bak`), and nothing writes those labels back.  A failure just runs the migration
-     * again next time, but a success is the one-way half, so both are reported.  `TrainControlUI` writes these two into
-     * the log at start-up; what is asserted here is that the session has them to write.
+     * The migration edits files the user owns (a `Point:` name is taken into the setup and emptied out of the `.cs2`,
+     * `saveChanges` keeps a `.cs2.bak`) and a success is its one-way half, so both are reported.  `TrainControlUI`
+     * writes these two into the log at start-up; what is asserted here is that the session has them to write.
      *
      * MUTATION: dropping either `migratedPages.add` or `migratedCaptions++` fails this.
      */
@@ -232,10 +230,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A caption the user\u2019s own writing sits on top of is reported.
-     *
-     * The square belongs to the diagram, so the text is what gets drawn and the caption goes quiet.  Nothing is
-     * deleted, and a station that looks captioned and shows nothing is worth a warning.
+     * A caption the user’s own writing sits on top of is reported: the square belongs to the diagram, so the text
+     * is drawn and the caption goes quiet.  Nothing is deleted, and a station that looks captioned and shows nothing is
+     * worth a warning.
      */
     @Test
     public void testACaptionCoveredByTextIsReported() throws Exception
@@ -266,10 +263,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * A caption on a blank square is still there after a save.
      *
-     * placeCaption prefers blank space beside a platform, and the migration captions a square whose text it then
-     * empties, which removes that square from the layout file.  Reconciling on "does this square hold a component"
-     * would delete those captions on the next save: a caption is about a station, and the square it is drawn on need
-     * hold nothing.
+     * placeCaption prefers blank space beside a platform, and the migration captions a square whose text it empties,
+     * which removes that square from the layout file.  A caption is about a station, and the square it is drawn on need
+     * hold nothing, so reconciling on "does this square hold a component" would delete it on the next save.
      */
     @Test
     public void testACaptionOnABlankSquareSurvivesASave() throws Exception
@@ -302,8 +298,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
      * A caption is never filed outside the part of the page the diagram draws.
      *
      * getComponent answers null both for a blank square and for one off the edge, so the search for somewhere to put a
-     * caption must not read null as "free": the caption would sit outside the drawn area, visible in the editor (which
-     * pads its grid) and not on the running diagram, and the "not shown anywhere" warning would go quiet.
+     * caption must not read null as "free": the caption would be visible in the editor (which pads its grid) and not on
+     * the running diagram, and the "not shown anywhere" warning would go quiet.
      */
     @Test
     public void testACaptionIsNeverPlacedOutsideTheDrawnArea() throws Exception
@@ -339,9 +335,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * A label naming a station this setup has never heard of is left exactly where it is.
      *
-     * Orphans are not drawn, but not drawing one and deleting it from somebody's diagram are different acts: a label
-     * naming a station on a page left out of autonomy would otherwise be destroyed because this program is not looking
-     * at it.
+     * Orphans are not drawn, but not drawing one and deleting it are different acts: a label naming a station on a page
+     * left out of autonomy would otherwise be destroyed because this program is not looking at it.
      */
     @Test
     public void testAnUnrecognisedLabelIsLeftOnTheDiagram() throws Exception
@@ -365,11 +360,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * A page whose labels all name stations this setup never heard of is not written at all.
      *
-     * The migration leaves an unrecognized "Point:" label where it is, so it is found again on the next open, and a
-     * page whose labels all name unknown stations must not be rewritten at every launch (under a sync lock that is an
-     * error dialog at every start, and the sample layout's four orphan labels make it the shipped default).
-     *
-     * Reading the bytes is the point: "did this rewrite the file" is the actual question.
+     * The migration leaves an unrecognized "Point:" label where it is, so it is found again on the next open, and the
+     * page must not be rewritten at every launch (under a sync lock that is an error dialog at every start, and the
+     * sample layout's four orphan labels make it the shipped default).  Reading the bytes is the point.
      */
     @Test
     public void testAPageThatCannotBeMigratedIsNeverWritten() throws Exception
@@ -394,9 +387,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * A caption is never placed outside the area the RUNNING diagram draws, with the page in edit mode too.
      *
-     * `testACaptionIsNeverPlacedOutsideTheDrawnArea` builds its page with edit mode off.  The autonomy editor puts the
-     * page object the session shares into edit mode, where its bounds are the whole page; the area is worked out from
-     * the components alone, as the running grid does.
+     * The autonomy editor puts the shared page object into edit mode, where its bounds are the whole page; the area is
+     * worked out from the components alone, as the running grid does (`testACaptionIsNeverPlacedOutsideTheDrawnArea`
+     * builds its page with edit mode off).
      *
      * MUTATION: read the page's own bounds in `placeCaption`, and this fails.
      */
@@ -432,10 +425,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A station with nowhere new to go keeps the caption it has.
-     *
-     * The old caption is cleared only once somewhere new has been found, or failing to place would remove the name that
-     * was there.
+     * A station with nowhere new to go keeps the caption it has: the old caption is cleared only once somewhere new
+     * has been found.
      */
     @Test
     public void testAFailedMoveLeavesTheCaptionWhereItWas() throws Exception
@@ -466,10 +457,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * Captioning a station somewhere new takes the caption off wherever it was.
-     *
-     * There are three ways to caption a station - place it automatically, choose the square in the autonomy editor, or
-     * drag the square in the track diagram editor - and the rule belongs to setCaption, which all three go through.
+     * Captioning a station somewhere new takes the caption off wherever it was: the rule belongs to setCaption, which
+     * all three ways of captioning (automatic, the autonomy editor's square, a drag in the track diagram editor) use.
      */
     @Test
     public void testAStationIsOnlyEverCaptionedInOnePlace() throws Exception
@@ -501,10 +490,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * Dragging a square in the track diagram editor carries its caption with it.
-     *
-     * A caption belongs to the setup, keyed by the square it sits on, so moving the tile underneath must carry it
-     * along.
+     * Dragging a square in the track diagram editor carries its caption with it: a caption belongs to the setup, keyed
+     * by the square it sits on, so moving the tile underneath must carry it along.
      */
     @Test
     public void testACaptionFollowsTheSquareItSitsOn() throws Exception
@@ -531,10 +518,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * Moving a square that has no caption on it does nothing, and says so.
-     *
-     * Most dragged tiles are plain track.  The caller asks on every move, so the common answer has to be cheap and
-     * distinguishable from having moved something.
+     * Moving a square that has no caption on it does nothing, and says so: the caller asks on every move, so the
+     * common answer (plain track) must be cheap and distinguishable from having moved something.
      */
     @Test
     public void testMovingASquareWithNoCaptionDoesNothing() throws Exception
@@ -562,10 +547,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * Two copies of one square are the same place; two squares sharing a sensor are not.
-     *
-     * What makes two Points one place is the square they were built from, which only the setup knows; comparing sensors
-     * would be WRONG, since a station and its approach guard legitimately share one and are genuinely two places.
+     * Two copies of one square are the same place; two squares sharing a sensor are not: what makes two Points one
+     * place is the square they were built from, which only the setup knows.  Comparing sensors would be WRONG, as a
+     * station and its approach guard legitimately share one.
      */
     @Test
     public void testCopiesOfOneSquareAreTheSamePlaceAndNeighboursAreNot() throws Exception
@@ -622,9 +606,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * Deleting the square a caption sits on takes the caption with it.
      *
-     * A caption may legitimately sit on blank space, so an EMPTY square keeps its caption.  A square somebody has just
-     * deleted is different: a tile put back on it would make the orphan look like the new tile's own label, because a
-     * caption is drawn wherever its square is.
+     * An EMPTY square keeps its caption (it may legitimately sit on blank space), but on a square somebody has just
+     * deleted, a tile put back would make the orphan look like the new tile's own label.
      */
     @Test
     public void testDeletingTheSquareUnderACaptionTakesItAway() throws Exception
@@ -645,12 +628,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
         assertNull(session.getCaptionTarget(caption), "the caption outlived the square it sat on");
     }
 
-    /**
-     * And deleting the station takes every caption that names it, wherever they are.
-     *
-     * The other end of the same relationship: text pointing at track that no longer exists is the
-     * orphan this design removed, and it can be sitting anywhere on the page.
-     */
+    /** And deleting the station takes every caption that names it, wherever they are on the page. */
     @Test
     public void testDeletingAStationTakesTheCaptionsThatNameIt() throws Exception
     {
@@ -674,10 +652,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A square with nothing written about it is not changed by being deleted.
-     *
-     * Most deleted tiles are plain track.  The editor asks on every delete, so the common answer has
-     * to be cheap and has to be distinguishable from having removed something.
+     * A square with nothing written about it is not changed by being deleted: the editor asks on every delete, so the
+     * common answer (plain track) must be cheap and distinguishable from having removed something.
      */
     @Test
     public void testDeletingAnOrdinarySquareForgetsNothing() throws Exception
@@ -703,13 +679,10 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     /**
      * A page's captions can be taken away and put back exactly.
      *
-     * This is what the track diagram editor's undo holds on to.  A caption belongs to the setup rather than to the
-     * tile, so it cannot ride in the editor's snapshot of components, and without a snapshot of its own Ctrl+Z brought
-     * a deleted platform back with no name on it.
-     *
-     * Driven through session.snapshotPage/restorePage, which is what LayoutEditor calls: captionsOnPage (one caller,
-     * LayoutEditor.forgetCaptionsOutsideThePage, which wants the keys) round-trips against itself and would stay green
-     * if AutonomyCompanionStore.kept() stopped carrying captions through the real snapshot.
+     * This is what the track diagram editor's undo holds on to: a caption belongs to the setup, not the tile, so it
+     * cannot ride in the editor's snapshot of components.  Driven through session.snapshotPage/restorePage, which is
+     * what LayoutEditor calls: captionsOnPage round-trips against itself and would stay green if
+     * AutonomyCompanionStore.kept() stopped carrying captions through the real snapshot.
      *
      * MUTATION: remove "captions" from kept() - restorePage then puts the plaque's TILE back with no name on it.
      */
@@ -740,12 +713,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * Restoring a snapshot removes captions added since it was taken.
-     *
-     * Putting the old ones back is only half of it: a caption placed after the snapshot has to go, or
-     * undo leaves the page with both, which is a state the user was never in.
-     *
-     * Driven through session.snapshotPage/restorePage, as above.
+     * Restoring a snapshot removes captions added since it was taken, or undo leaves the page with both, a state the
+     * user was never in.  Driven through session.snapshotPage/restorePage, as above.
      */
     @Test
     public void testRestoringASnapshotRemovesWhatWasAddedAfterIt() throws Exception
@@ -775,10 +744,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A snapshot of one page leaves the other pages alone.
-     *
-     * The editor works on one page, so restoring every caption in the setup would undo work done somewhere it was never
-     * looking.  Driven through snapshotPage/restorePage, as above.
+     * A snapshot of one page leaves the other pages alone: restoring every caption in the setup would undo work done
+     * somewhere the editor was never looking.  Driven through snapshotPage/restorePage, as above.
      */
     @Test
     public void testACaptionSnapshotIsPerPage() throws Exception
@@ -806,10 +773,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
     /**
      * A caption kept for a square that is not a station now survives the setup being opened, undrawn, and is drawn
-     * again once the square is a station.
-     *
-     * Adam asked that captions be kept, ignored while the square is not a station; opening must not forget them.
-     *
+     * again once the square is a station (Adam asked that captions be kept, ignored while the square is not a station).
      * The square is demoted behind the session's back, as a setup written by another build would arrive.
      *
      * MUTATION: forget non-stations' captions in `open` again, and this fails.

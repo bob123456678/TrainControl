@@ -492,12 +492,12 @@ public class testThePlaceDoorsKeepTheHeading
 
     /**
      * With the autonomy editor open but minimized, the tail question's list belongs to the main window, where it can be
-     * seen, and not to the minimized editor: on Windows a window owned by a minimized frame is hidden, so the question
-     * was a modal nobody could see.
+     * seen: on Windows a window owned by a minimized frame is hidden, so the question would be a modal nobody could
+     * see.
      *
-     * NO DOOR REACHES THIS TODAY: every main-window door that asks the question refuses while an editor is open, and
-     * the editor's own door cannot be used while it is minimized.  So this pins the owner rule itself, asked as a door
-     * would ask it, against the day a door does reach it.
+     * NO DOOR REACHES THIS TODAY (every main-window door that asks the question refuses while an editor is open, and
+     * the editor's own door cannot be used while minimized), so this pins the owner rule itself, asked as a door would
+     * ask it, against the day a door does reach it.
      *
      * MUTATION: hang the list from any editor that is open, and this fails.
      */

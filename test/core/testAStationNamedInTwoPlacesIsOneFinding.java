@@ -18,7 +18,6 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * A station whose name is drawn in two places is one finding, and an import or a move never captions it twice (OB-341).
  *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136 Phase 3);
  * `AutonomySessionFixture` builds the session and layout folder every claim starts from.
  *
  * @author Adam
@@ -105,9 +104,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * A station whose name is drawn in two places is an error that names the station and both squares (OB-341). Every
-     * door of the editor keeps one station to one caption (OB-256), so the state arrives from outside them, and the
-     * file is the door used here: a setup saved, a second caption written into its `captions`, and the setup opened
-     * again.
+     * door of the editor keeps one station to one caption (OB-256), so the state arrives from outside them: a setup
+     * saved, a second caption written into its `captions`, and the setup opened again.
      *
      * One finding for the station, on its own square, carrying both caption squares and their number. THE CONTROLS are
      * the same setup before the edit and the station once it is no station, whose captions are kept but not drawn.
@@ -847,7 +845,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
      * and Stop Showing takes off only the one clicked (OB-341). `clearCaptions` takes off only the captions on the new
      * one's page, and `setCaption`, `placeCaption` and `moveCaption` go through it.
      *
-     * MUTATION: clear the station's captions on every page, as before, and this fails at the first step.
+     * MUTATION: clear the station's captions on every page, and this fails at the first step.
      */
     @Test
     public void testShowingAStationNameOnAnotherPageAddsAndOnTheSamePageMoves() throws Exception
@@ -924,7 +922,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
      * has a caption of it does not (OB-256, OB-341). The counterpart on the next page of
      * `testALegacyLabelDoesNotCaptionAStationTwice`.
      *
-     * MUTATION: caption the label's square only when the station has no caption anywhere, as before, and this fails.
+     * MUTATION: caption the label's square only when the station has no caption anywhere, and this fails.
      */
     @Test
     public void testALegacyLabelOnAnotherPageStillCaptionsAStationShownOnItsOwnPage() throws Exception
@@ -973,7 +971,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
      * OB-341): one station has a hand-edited caption on ANOTHER page and is still captioned on its own square; the
      * other has one beside it on its own page and is not.
      *
-     * MUTATION: caption only a station with no caption anywhere, as before, and this fails.
+     * MUTATION: caption only a station with no caption anywhere, and this fails.
      */
     @Test
     public void testTheOldFileImportCaptionsAStationOnlyWhereItHasNoneOnItsPage() throws Exception

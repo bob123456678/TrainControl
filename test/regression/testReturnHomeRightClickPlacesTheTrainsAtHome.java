@@ -545,8 +545,8 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * with the by-hand sentence, and saying its result in the log rather than on a banner the track diagram does not
      * have.
      *
-     * MUTATION: let the track diagram's item ask the editor's question and say its result on the editor's banner, as it
-     * did, and this fails.
+     * MUTATION: let the track diagram's item ask the editor's question and say its result on the editor's banner,
+     * and this fails.
      */
     @Test
     public void testTheTrackDiagramsBulkToolsItemIsTheSameDoor() throws Exception

@@ -1137,9 +1137,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Flashes the square this one is joined to, when it is on this page (FR-056), where jumping would move away.
-     * Silent with no partner, another page, or not a link.
-     * @param tile the square whose menu is opening
+     * Flashes the square this one is joined to, when it is on this page (FR-056); silent with no partner, another page,
+     * or not a link.
      */
     void highlightPartnerOf(TileKey tile)
     {
@@ -1161,9 +1160,8 @@ public class AutonomyEditorPanel extends JPanel
     // Square numbers follow the grid (OB-179, `LayoutGrid.coordinatesVisible`); Control+K toggles both.
 
     /**
-     * The setup-wide actions (MT-257), for the tile menu and an ignored square's one-item menu.  Each grays on its own
-     * count, the guard's own question.
-     * @return the submenu, always present, its items enabled or not
+     * The setup-wide actions (MT-257), for the tile menu and an ignored square's one-item menu; each grays on its own
+     * count.
      */
     javax.swing.JMenu bulkTools()
     {
@@ -1389,10 +1387,7 @@ public class AutonomyEditorPanel extends JPanel
         return bulk;
     }
 
-    /**
-     * The trains standing on the layout, by name, once each (FR-126), as `trainsWhereTheyStand` has them.
-     * @return the names, in no particular order
-     */
+    /** The trains standing on the layout, by name, once each (FR-126), as `trainsWhereTheyStand` has them. */
     private java.util.List<String> trainsStanding()
     {
         java.util.Set<String> names = new java.util.LinkedHashSet<>();
@@ -1416,9 +1411,7 @@ public class AutonomyEditorPanel extends JPanel
         return window == null || window.getModel() == null ? null : window.getModel().getLocByName(name);
     }
 
-    /**
-     * Whether a train is paused (FR-126): the train's own flag where the model has it, the later word; else the list.
-     */
+    /** Whether a train is paused (FR-126): the train's own flag where the model has it, else the list. */
     private boolean isPaused(String name, java.util.Set<String> listed)
     {
         org.traincontrol.base.Locomotive train = modelTrain(name);
@@ -1469,9 +1462,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Activates every paused train, or pauses every going one standing, and says how many changed (FR-126): through the
-     * window's door per train where it can, else the setup alone; then the railway is told.  The emptiness check is the
-     * guard behind the graying.
-     * @param active true to activate every paused train, false to deactivate every train standing that is going
+     * window's door per train where it can, else the setup alone; then the railway is told.
      */
     private void setEveryTrainActive(boolean active)
     {
@@ -1522,8 +1513,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Makes every placed train's square its home, after confirming (FR-075).  The emptiness check is the guard behind
-     * the graying; the confirmation names what will be overwritten (`AutonomySession.setHome` holds the rule).
+     * Makes every placed train's square its home, after confirming; the confirmation names what it overwrites (FR-075).
      */
     private void homeEveryPlacedTrain()
     {
@@ -1629,9 +1619,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * For each home square, the facing of the copy the running layout made its home, for homes recorded without one
-     * (FR-115); off the Points, taking no monitor.
-     * @return home square to facing
+     * Home square to the facing of the copy the running layout made its home, for homes recorded without one (FR-115);
+     * read off the Points, taking no monitor.
      */
     private java.util.Map<TileKey, org.traincontrol.automationui.TilePorts.Side> homeCopyFacings()
     {
@@ -1691,10 +1680,7 @@ public class AutonomyEditorPanel extends JPanel
         menu.addSeparator();
     }
 
-    /**
-     * Whether a submenu holds anything but its own heading (OB-032), which title() adds.
-     * @return true when there is something under the heading
-     */
+    /** Whether a submenu holds anything but its own heading, which title() adds (OB-032). */
     boolean hasItemsBesidesTitle(javax.swing.JMenu menu)
     {
         for (int i = 0; i < menu.getItemCount(); i++)
@@ -1711,7 +1697,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether a setup edit is refused because trains are running, having said so (Adam: *"There should be no setup edit
      * possible during a run"*): a menu opened at rest can be clicked after a run begins (OB-047).
-     * @return true where the edit is refused
      */
     private boolean refusedWhileRunning()
     {
@@ -1723,7 +1708,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The same refusal for a diagram gesture or key, said on the message strip: an editor opened at rest stays open
      * when a route begins.
-     * @return true where the gesture is refused
      */
     boolean heldByARun()
     {
@@ -1782,10 +1766,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * How wide to wrap so the longest sentence takes two lines, at least `atLeast` (MT-479): half its width plus the
      * longest word, as lines break between words.
-     * @param metrics the font the text is drawn in
-     * @param atLeast the narrowest the text may be - the width of what sits under it
-     * @param sentences the sentences
-     * @return the width in pixels
      */
     static int twoLineWidth(java.awt.FontMetrics metrics, int atLeast, String... sentences)
     {
@@ -1951,10 +1931,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a station's name may be written on this square (OB-042, OB-044): anything but a switch or signal, whose
-     * click does something.
-     * @param component what is drawn on the square
-     * @return whether to offer the caption items
+     * Whether a station's name may be written on this square: anything but a switch or signal, whose click does
+     * something (OB-042, OB-044).
      */
     boolean mayCarryACaption(LayoutDiagramComponent component)
     {
@@ -1980,7 +1958,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Why a dragged label may not land here, or null when it may: one method, so refusal and reason cannot drift.  ""
      * is a silent no, for a drop back where it came from.
-     * @return the message, "" for a silent no, or null for yes
      */
     private String refuseCaptionDrop(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
@@ -2058,8 +2035,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The station nearest this square on this page (FR-034; Adam: *"prefill it with the label of the nearest station by
      * tile distance."*); ties go to the store's order.
-     * @param from the square the label would go on
-     * @return the nearest station on the same page, or null when there is none
      */
     private TileKey nearestStation(TileKey from)
     {
@@ -2140,7 +2115,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether a station square may show its own name where it shows ANOTHER station's only caption on this page
      * (OB-341): asked, naming both, unless nothing is lost.  The drop refuses the same loss; this menu item asks.
-     * @return whether to go on
      */
     private boolean mayTakeAnotherStationsOnlyName(TileKey tile)
     {
@@ -2257,8 +2231,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Shows a station's name on a square, or stops showing it, and says so; the caption is the setup's, not the layout
      * file's.
-     * @param tile the square the text goes on
-     * @param station the sensor it is about, or null to clear the square
      */
     void applyCaption(TileKey tile, TileKey station)
     {
@@ -2278,12 +2250,7 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /**
-     * Which entry of a name list stands for a square: a split station has a name per way in, any will do.
-     * @param tile the square to find, or null
-     * @param names what the dropdown is offering
-     * @return the entry to select, or null where the square is not in the list
-     */
+    /** Which entry of a name list stands for a square (a split station has a name per way in, any will do), or null. */
     private String nameInListFor(TileKey tile, java.util.List<String> names)
     {
         if (tile == null) return null;
@@ -2438,11 +2405,7 @@ public class AutonomyEditorPanel extends JPanel
         return tileMenus.buildFacingMenu(target);
     }
 
-    /**
-     * Writes the road the tail lies along, to the setup and to the train on the railway.
-     * @param target the square the train stands on
-     * @param road the road, or null for Not Known
-     */
+    /** Writes the road the tail lies along (null for Not Known) to the setup and to the train on the railway. */
     void recordTailRoad(TileKey target, java.util.List<org.traincontrol.automation.Edge> road)
     {
         String names = org.traincontrol.automation.Layout.namesOfRoad(road);
@@ -2465,7 +2428,6 @@ public class AutonomyEditorPanel extends JPanel
      * Hands the next click to the tail of the train at `target`: the sensors it can have crossed are outlined, a click
      * on one records its road, elsewhere it says so and stays armed.  Two roads to one sensor are then offered as a
      * list.
-     * @param target the square the train stands on
      */
     void armTailPick(TileKey target)
     {
@@ -2621,12 +2583,7 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /**
-     * Opens or shuts one side of a station to arriving trains, stored as barred sides so a new side arrives open.
-     * @param tile the station
-     * @param side which way in
-     * @param allowed whether trains may arrive that way
-     */
+    /** Opens or shuts one side of a station to arriving trains, stored as barred sides so a new side arrives open. */
     void setArrivalAllowed(TileKey tile, org.traincontrol.automationui.TilePorts.Side side,
         boolean allowed)
     {
@@ -2648,9 +2605,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Applies one of the three answers.
-     * @param station whether trains may stop here
-     * @param open whether they may come here at all
+     * Applies one of the three answers: `station` whether trains may stop here, `open` whether they may come at all.
      */
     void setUsage(TileKey tile, boolean station, boolean open)
     {
@@ -2685,8 +2640,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Asks a sensor becoming a station for its name (FR-120), again with the reason for an unusable or taken name.
-     * Writes nothing.
-     * @return the name, or null for Cancel or a blank name, which change nothing
+     * Writes nothing; null for Cancel or a blank name.
      */
     private String askTheNewStationsName(TileKey tile)
     {
@@ -2852,12 +2806,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * One of the picker's shortcut buttons: choose this name and close the dialog.
-     * @param label what the button says, already formatted with the name
-     * @param name the locomotive it picks
-     * @param answer where the choice is left for the caller
-     * @param pane the dialog to close
-     * @return the button
+     * One of the picker's shortcut buttons: choose `name` (button text `label`), leave it in `answer`, close `pane`.
      */
     private static javax.swing.JButton shortcut(String label, final String name,
         final String[] answer, final javax.swing.JOptionPane pane)
@@ -2891,16 +2840,10 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks for one locomotive from a filterable list (FR-010, FR-011), as a combo box is useless for sixty.  One
+     * Asks for one locomotive from a filterable list (FR-010, FR-011), as a combo box is useless for sixty; one
      * component for homes and for adding to autonomy, which differ in which shortcut buttons make sense.
-     * @param owner what to center the dialog on
-     * @param title the dialog's title
-     * @param prompt the question
-     * @param names what may be chosen, in the order they should appear
-     * @param current the one to start selected, or null
      * @param useActive the locomotive being driven, behind a "use active" button, or null for none
-     * @param useParked the locomotive standing at this station, behind a "use current" button, or
-     *        null when nothing is parked there
+     * @param useParked the locomotive standing at this station, behind a "use current" button, or null for none
      * @return the chosen name, or null if the dialog was canceled
      */
     static String pickLocomotive(java.awt.Component owner, String title, String prompt,
@@ -3055,10 +2998,7 @@ public class AutonomyEditorPanel extends JPanel
         return whyNotABlocker(station, tile);
     }
 
-    /**
-     * Hands the next click to this station's blocking list (FR-025): one method for both doors into the gesture.
-     * @param station the station being held back
-     */
+    /** Hands the next click to this station's blocking list (FR-025): one method for both doors into the gesture. */
     void armBlockerPick(TileKey station)
     {
         // In the deep menu, needsTheGrid jumps to the page instead.
@@ -3074,9 +3014,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Why a clicked square cannot hold this station back, or null (FR-025): a square autonomy does not route over, or
      * the station itself, by name or caption (OB-083).  A click needs no name, as blockers resolve by tile.
-     * @param station the station being held back
-     * @param tile the square that was clicked
-     * @return the message to show, or null to accept it
      */
     private String whyNotABlocker(TileKey station, TileKey tile)
     {
@@ -3266,8 +3203,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The locomotive's own settings on this square's menu, the dialog the track diagram opens: the only place for
-     * arrival and departure functions.  Needs the running layout's Point; the placement is written back to the setup
-     * afterwards (`LayoutRightclickAutonomyMenu.placeFacing`).
+     * arrival and departure functions.  Needs the running layout's Point; the placement is written back to the setup.
      */
     void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)
     {
@@ -3352,8 +3288,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The Is Active tick (FR-117): train and setup together through the window's door, else the setup alone; then the
      * railway is told.
-     * @param name the train standing on the square
-     * @param active whether autonomy may run it
      */
     void setActive(String name, boolean active)
     {
@@ -3389,7 +3323,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Puts a locomotive on a square, chosen from the whole roster with those autonomy runs marked first; choosing one
      * moves it (OB-009).
-     * @param tile the square, which is a station or this item is not offered
      */
     void placeLocomotive(TileKey tile)
     {
@@ -3443,9 +3376,8 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Redraws whatever shows this placement: this window's grid, and the running layout, which the track diagram draws
-     * from (OB-034, OB-035); both, as both are on screen.
-     * @param placementsEdited the locomotives whose placement this gesture wrote into the setup and nowhere else, or
-     *        null where it changed no placement
+     * from (OB-034, OB-035).  `placementsEdited`: the locomotives whose placement this gesture wrote into the setup
+     * only, or null.
      */
     void placementChanged(java.util.Collection<String> placementsEdited)
     {
@@ -3466,11 +3398,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The plain name behind a marked row, matched against the names rather than parsed: a locomotive may be called "BR
-     * 218 (elsewhere)".
-     * @param chosen what the user picked
-     * @param placed the locomotives autonomy already runs
-     * @return the locomotive's real name, or null if the row matched nothing
+     * The plain name behind a marked row, matched against the names rather than parsed: a locomotive may be called
+     * "BR 218 (elsewhere)".  Null if the row matched nothing.
      */
     private String unmark(String chosen, List<String> placed)
     {
@@ -3714,10 +3643,7 @@ public class AutonomyEditorPanel extends JPanel
         return session != null && session.canBeNamed(tile);
     }
 
-    /**
-     * Asks for a square's name and writes it (MT-257); others go through `promptNameFor`.
-     * @param tile the square to name
-     */
+    /** Asks for a square's name and writes it (MT-257); others go through `promptNameFor`. */
     void promptName(TileKey tile)
     {
 
@@ -3843,7 +3769,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether a square can be a station's protecting signal: a SIGNAL with an address (isSignal() is true of a lamp).
-     * @param component what is drawn on the square, or null for an empty one
      */
     boolean isPairableSignal(LayoutDiagramComponent component)
     {
@@ -3914,11 +3839,7 @@ public class AutonomyEditorPanel extends JPanel
         return signalPairing.signalAddresses(signals);
     }
 
-    /**
-     * A digits-only text field; empty stays reachable, as clearing it removes a length.
-     * @param initial what to show
-     * @return the field
-     */
+    /** A digits-only text field; empty stays reachable, as clearing it removes a length. */
     javax.swing.JTextField digitsOnly(String initial)
     {
         // Three digits, 0 to 999 (OB-048).
@@ -4211,7 +4132,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether Why Not Moving waits for its click and this square has a train to ask about (FR-102): the railway's
      * train where there is one, else the setup's.
-     * @return whether it can be clicked
      */
     private boolean whyWaitsOn(TileKey tile)
     {
@@ -4630,10 +4550,9 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Left-click on a two-square crossing (OB-320): both tracks both ways, each one way with the other both ways, the
-     * four one-way pairs, both closed.  Adam: *"Pretend these are two curved tracks on one tile, so we need to cycle
-     * through both possible directions on both (4 combos)"*, and on MT-688: *"when cycling, there is no option for red
-     * in one direction and green in the other 3"*.  Not arms, as the tracks share a side.  Counted on the crossing's
-     * north or west square, so either click carries on alike.
+     * four one-way pairs, both closed (Adam on MT-688: *"when cycling, there is no option for red in one direction and
+     * green in the other 3"*).  Not arms, as the tracks share a side.  Counted on the crossing's north or west square,
+     * so either click carries on alike.
      */
     private void cycleCrossing(TileKey clicked)
     {
@@ -4946,13 +4865,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Works the answer out off the event thread and hands it back to paint, as `CoveredTrackRenderer` does.
-     * @param asked which ask this is, so a stale answer can be discarded
-     * @param layout the railway, captured on the event thread
-     * @param index the square-to-Point translation, captured with it
-     * @param setup the edge names the routes are drawn by, captured with it
-     * @param tile the square that was clicked
-     * @param byHand true when Path Type is Manual
+     * Works the answer out off the event thread and hands it back to paint, as `CoveredTrackRenderer` does.  `asked`
+     * identifies the ask so a stale answer is discarded; `layout`, `index` and `setup` are captured on the event
+     * thread.
      */
     private void workOutWhy(long asked, org.traincontrol.automation.Layout layout,
         org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
@@ -4988,11 +4903,7 @@ public class AutonomyEditorPanel extends JPanel
         return whyAnswers.composeWhy(layout, index, setup, tile, byHand);
     }
 
-    /**
-     * Paints the worker's answer, on the event thread; only the latest answer paints.
-     * @param asked which ask this answer is about
-     * @param answer what to say and what to draw
-     */
+    /** Paints the worker's answer, on the event thread; only the latest ask's answer (`asked`) paints. */
     private void paintWhy(long asked, WhyAnswer answer)
     {
         if (asked != whyAsked.get()) return;
@@ -5015,10 +4926,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Waits until every why ask already started is worked out, for a test.  Waits for the answer, not its
-     * `invokeLater` paint: flush the queue after, and never call it on the event thread.  Bounded, saying which.
-     * @param millis how long to wait at most
-     * @return true when nothing is outstanding, false when the wait ran out
+     * Waits until every why ask already started is worked out, for a test: for the answer, not its `invokeLater` paint,
+     * so flush the queue after, and never call it on the event thread.  Bounded; true when nothing is outstanding.
      */
     boolean awaitWhy(long millis)
     {
@@ -5241,12 +5150,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Lays one leg of a tested route onto the squares it crosses, into a given map: a worker builds its own and the
-     * event thread installs it.
-     * @param into where the lines go
-     * @param run the reduced path, or null when there is no route that way
-     * @param from the square it leaves
-     * @param forward whether this is the outbound leg
-     * @param to the square it ENDS at, which decides whether the leg is drawn as manual-only
+     * event thread installs it.  `to` is the square the leg ENDS at, which decides whether it is drawn as manual-only.
      */
     void trace(java.util.Map<TileKey,
         java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> into,
@@ -5326,10 +5230,7 @@ public class AutonomyEditorPanel extends JPanel
         return " " + I18n.f("autosetup.ui.testVia", String.join(", ", names));
     }
 
-    /**
-     * The address written on a signal, which is how anybody refers to one.
-     * @param tile the signal's square
-     */
+    /** The address written on a signal, which is how anybody refers to one. */
     String addressOf(TileKey tile)
     {
         LayoutDiagramComponent component = componentAt(tile);
@@ -5524,7 +5425,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The armed tool's mark on a square (FR-159): what can be clicked, then Why not Moving?'s answer once it has one.
-     * @return the mark, or null
      */
     private org.traincontrol.automationui.TileAnnotation.ToolMark toolMark(TileKey tile)
     {
@@ -5577,9 +5477,8 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The answers for one route, one-way options named by where they lead; only those the hardware leaves a meaning
-     * (Adam: *"green arrows in the direction that can't be chosen shouldn't be offered"*;
-     * `TileGraph.directionIsPossible`).  The tick follows what is in force (`inForce`), as the stored default `BOTH` is
-     * not offered.
+     * (Adam: *"green arrows in the direction that can't be chosen shouldn't be offered"*).  The tick follows what is in
+     * force (`inForce`), as the stored default `BOTH` is not offered.
      */
     List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
         org.traincontrol.automationui.TilePorts.Route route)
@@ -5616,9 +5515,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The answer in force on a route: stored, narrowed by the hardware.  A stored answer not offered is either the
      * turnout's default `BOTH`, narrowed to its one road, or a closure; one answer for submenus and arm boxes.
-     * @param stored what `TileGraph.getDirection` answers - the authored direction, or the default
-     * @param route the route
-     * @return the direction trains actually have on it
      */
     private static Direction inForce(Direction stored, org.traincontrol.automationui.TilePorts.Route route)
     {
@@ -5731,10 +5627,7 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /**
-     * Every square of this one's run, the leader included; itself when in none.
-     * @return the squares of its run, the leader included
-     */
+    /** Every square of this one's run, the leader included; itself when in none. */
     private java.util.Set<TileKey> runTilesOf(TileKey tile)
     {
         TileKey leader = leaderOf(tile);
@@ -6422,8 +6315,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Forgets every length on every page, after asking (FR-069); the dialog says whether Cancel brings them back, which
-     * it does in the editor (OB-223) and not on the track diagram's menu.  The empty-case guard stands behind the
-     * graying (OB-057).
+     * it does in the editor (OB-223) and not on the track diagram's menu.
      */
     private void clearAllTileLengths()
     {
@@ -6524,9 +6416,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The sentence a bulk clear shows on this surface (FR-112): on the track diagram's menu it is immediate, in the
      * editor Cancel undoes it; the key's "AtOnce" sibling is the former.  For a count not before a noun.
-     * @param key the message key for the editor's sentence, whose "AtOnce" sibling is the other one
-     * @param count how many squares the clear will touch
-     * @return the sentence, already translated
      */
     private String bulkClearWarning(String key, int count)
     {
@@ -6627,11 +6516,7 @@ public class AutonomyEditorPanel extends JPanel
         placementChanged(lifted);
     }
 
-    /**
-     * Asks for one name in the walks' prompt.
-     * @param question which square this is, and how far along the walk
-     * @return the name, "" to skip this one, or null to stop
-     */
+    /** Asks for one name in the walks' prompt: "" skips this one, null stops. */
     private String askForName(String question)
     {
         return massAssignment.askInWalkPrompt(new javax.swing.JTextField(18), question,
