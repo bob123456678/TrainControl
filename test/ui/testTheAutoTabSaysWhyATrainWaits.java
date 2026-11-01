@@ -208,10 +208,12 @@ public class testTheAutoTabSaysWhyATrainWaits
 
     /**
      * A card built before its search lands does not say its train has nowhere to go: no "No available paths" and no
-     * (i) for a train that has paths, until the answer says so.
+     * (i) for a train that has paths, until the answer says so.  Its second line keeps its height meanwhile, so the tab
+     * does not jump when the answer lands.
      *
      * MUTATION: in `updateState`, take the deferred build's "no answer yet" for "no paths" (`noPathsNow = true` and
-     * the "No available paths" text), and the new card says it with the (i).
+     * the "No available paths" text), and the new card says it with the (i); leave the line empty while it waits, and
+     * the heights differ.
      */
     @Test
     public void testACardWaitingForItsSearchDoesNotSayItHasNoPaths() throws Exception
@@ -232,6 +234,29 @@ public class testTheAutoTabSaysWhyATrainWaits
                 "a card waiting for its search says the train has no available paths, and it has some");
 
             assertNull(secondLine(card[0]).getIcon(), "a card waiting for its search offers a reason to hover for");
+
+            final List<List<org.traincontrol.automation.Edge>> paths = railway().getPossiblePaths(mover, true);
+
+            final int[] height = new int[2];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    height[0] = secondLine(card[0]).getPreferredSize().height;
+
+                    card[0].updateState(mover, paths, true);
+
+                    height[1] = secondLine(card[0]).getPreferredSize().height;
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+
+            assertEquals(height[0], height[1], "a card waiting for its search is a line shorter than once it lands, so"
+                + " the tab jumps");
         });
     }
 

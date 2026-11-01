@@ -333,7 +333,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 else if (at != null)
                 {                    
                     // With the info mark, because a tooltip nobody knows about explains nothing.
-                    this.locDest.setText(noAnswerYet ? "" : I18n.t("autolayout.ui.noAvailPaths"));
+                    // A space while it waits, which keeps the line's height so the tab does not jump when it lands
+                    this.locDest.setText(noAnswerYet ? " " : I18n.t("autolayout.ui.noAvailPaths"));
 
                     // And WHY, on hover: a FLAG here, with the reasons worked out when the pointer stops on the label
                     // (see the mouse listener in the constructor).  Computing them here walks every candidate route to
@@ -384,9 +385,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             this.locAvailPaths.setModel(pathList);
 
-            // A pointer already resting on the line gets the reasons again: the tooltip was cleared above, and only
-            // entering the line works them out.
-            if (this.noPathsNow && this.locDest.isShowing() && this.locDest.getMousePosition() != null) workOutWhy();
+            // A pointer already resting on the line is treated as one entering it: the hand or the arrow, and the
+            // reasons worked out again, since the tooltip was cleared above
+            if (this.locDest.isShowing() && this.locDest.getMousePosition() != null) pointerOnTheLine();
         }
     }
 
@@ -791,20 +792,26 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e)
             {
-                // A pointer that says "there is something to read here", matching the mark on the text
-                locDest.setCursor(java.awt.Cursor.getPredefinedCursor(
-                    noPathsNow ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
-
-                if (!noPathsNow)
-                {
-                    locDest.setToolTipText(null);
-
-                    return;
-                }
-
-                workOutWhy();
+                pointerOnTheLine();
             }
         });
+    }
+
+    /** The pointer on the second line: its cursor, and the reasons as its tooltip where there are no paths. */
+    private void pointerOnTheLine()
+    {
+        // A pointer that says "there is something to read here", matching the mark on the text
+        locDest.setCursor(java.awt.Cursor.getPredefinedCursor(
+            noPathsNow ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+
+        if (!noPathsNow)
+        {
+            locDest.setToolTipText(null);
+
+            return;
+        }
+
+        workOutWhy();
     }
 
     /**
