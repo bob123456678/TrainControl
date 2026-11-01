@@ -950,36 +950,10 @@ public class testAPendingTurnSurvivesTheRebuild
     {
         settle();
 
-        @SuppressWarnings("unchecked")
-        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+        final org.traincontrol.automationui.TileGraph.TileKey[] drawnOnce = aStationDrawnOnceOnTheShownPage();
 
-        String shownPage = String.valueOf(pages.getSelectedItem());
-
-        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
-        org.traincontrol.automationui.TileGraph.TileKey found = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
-        {
-            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
-                || ui.getLayoutStations(square).isEmpty())
-            {
-                continue;
-            }
-
-            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
-
-            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
-            {
-                found = square;
-                drawnAt = drawn.get(0);
-                break;
-            }
-        }
-
-        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
-
-        final org.traincontrol.automationui.TileGraph.TileKey station = found;
-        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
+        final org.traincontrol.automationui.TileGraph.TileKey station = drawnOnce[0];
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnOnce[1];
 
         final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
 
@@ -1025,36 +999,13 @@ public class testAPendingTurnSurvivesTheRebuild
     {
         settle();
 
+        final org.traincontrol.automationui.TileGraph.TileKey[] drawnOnce = aStationDrawnOnceOnTheShownPage();
+
+        final org.traincontrol.automationui.TileGraph.TileKey station = drawnOnce[0];
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnOnce[1];
+
         @SuppressWarnings("unchecked")
         final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
-
-        String shownPage = String.valueOf(pages.getSelectedItem());
-
-        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
-        org.traincontrol.automationui.TileGraph.TileKey found = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
-        {
-            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
-                || ui.getLayoutStations(square).isEmpty())
-            {
-                continue;
-            }
-
-            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
-
-            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
-            {
-                found = square;
-                drawnAt = drawn.get(0);
-                break;
-            }
-        }
-
-        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
-
-        final org.traincontrol.automationui.TileGraph.TileKey station = found;
-        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
 
         // REMEMBER WINDOW LOCATION ON, the operator's own choice put back below, with whatever was kept for the window
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
@@ -1443,6 +1394,40 @@ public class testAPendingTurnSurvivesTheRebuild
         });
 
         return count[0];
+    }
+
+    /** A station of the page shown that its grid draws exactly once, and the square that caption is drawn on. */
+    private static org.traincontrol.automationui.TileGraph.TileKey[] aStationDrawnOnceOnTheShownPage() throws Exception
+    {
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
+        org.traincontrol.automationui.TileGraph.TileKey found = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
+                || ui.getLayoutStations(square).isEmpty())
+            {
+                continue;
+            }
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
+
+            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
+            {
+                found = square;
+                drawnAt = drawn.get(0);
+                break;
+            }
+        }
+
+        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
+
+        return new org.traincontrol.automationui.TileGraph.TileKey[] {found, drawnAt};
     }
 
     /** Something to run with a direction set on plain track of the page shown, put back however it ends. */

@@ -174,16 +174,13 @@ public class testDownloadUpdateFetchesTheNewVersion
     {
         final AbstractButton item = item();
 
-        final String download = I18n.t("ui.update.download");
-
         support.PopupShape notice;
 
         NoFileManager guard = new NoFileManager();
 
         System.setSecurityManager(guard);
 
-        try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
-            ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+        try (Answering answering = pressingDownload())
         {
             SwingUtilities.invokeLater(item::doClick);
 
@@ -219,8 +216,6 @@ public class testDownloadUpdateFetchesTheNewVersion
 
         final AbstractButton item = item();
 
-        final String download = I18n.t("ui.update.download");
-
         List<String> said;
         List<String> shown;
 
@@ -228,8 +223,7 @@ public class testDownloadUpdateFetchesTheNewVersion
 
         System.setSecurityManager(guard);
 
-        try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
-            ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+        try (Answering answering = pressingDownload())
         {
             SwingUtilities.invokeLater(item::doClick);
 
@@ -271,12 +265,9 @@ public class testDownloadUpdateFetchesTheNewVersion
 
         final AbstractButton item = item();
 
-        final String download = I18n.t("ui.update.download");
-
         List<String> said;
 
-        try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
-            ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+        try (Answering answering = pressingDownload())
         {
             SwingUtilities.invokeLater(item::doClick);
 
@@ -351,7 +342,6 @@ public class testDownloadUpdateFetchesTheNewVersion
         final AbstractButton item = item();
 
         final String cancel = I18n.t("ui.cancel");
-        final String download = I18n.t("ui.update.download");
         final String textBefore = item.getText();
         final String tipBefore = item.getToolTipText();
         final boolean visibleBefore = item.isVisible();
@@ -391,8 +381,7 @@ public class testDownloadUpdateFetchesTheNewVersion
 
             List<String> second;
 
-            try (Answering answering = Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
-                ? Answering.press(download) : Answering.press(I18n.t("ui.ok"))))
+            try (Answering answering = pressingDownload())
             {
                 SwingUtilities.invokeLater(item::doClick);
 
@@ -424,6 +413,15 @@ public class testDownloadUpdateFetchesTheNewVersion
         {
             System.setSecurityManager(null);
         }
+    }
+
+    /** Answers the update question by pressing Download and every notice after it by pressing OK. */
+    private static Answering pressingDownload()
+    {
+        final String download = I18n.t("ui.update.download");
+
+        return Answering.start(message -> message.startsWith(firstLineOfTheQuestion())
+            ? Answering.press(download) : Answering.press(I18n.t("ui.ok")));
     }
 
     /** The question's first sentence, which the answer is chosen by. */

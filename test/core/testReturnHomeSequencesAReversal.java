@@ -125,12 +125,7 @@ public class testReturnHomeSequencesAReversal
         {
             loc.setReversible(true);
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH start", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH home", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH start", "RH home");
 
             assertTrue(plan.isPossible(),
                 "Return Home gave up on a berth the train can reach in two moves - out to the "
@@ -179,12 +174,7 @@ public class testReturnHomeSequencesAReversal
             // The conflict removed, and nothing else changed: now the whole run is one clear path.
             layout.getEdge("RH mid", "RH home").clearAllConfigCommands();
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH start", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH home", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH start", "RH home");
 
             assertTrue(plan.isPossible(), "the plain journey was refused: " + plan.getOutcome());
 
@@ -220,12 +210,7 @@ public class testReturnHomeSequencesAReversal
         {
             loc.setReversible(true);
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH start", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH home", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH start", "RH home");
 
             assertTrue(plan.isPossible(),
                 "a reversing square that autonomy may not choose was refused as a place to turn round "
@@ -264,12 +249,7 @@ public class testReturnHomeSequencesAReversal
         {
             loc.setReversible(true);
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH start", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH home", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH start", "RH home");
 
             assertFalse(plan.isPossible(),
                 "a train was routed home by way of a square the operator has taken out of service: "
@@ -314,12 +294,7 @@ public class testReturnHomeSequencesAReversal
             // It cannot turn itself, so it has to arrive already turned - which it is.
             loc.setReversible(false);
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH pad", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH berth", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH pad", "RH berth");
 
             assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
                 "the planner PROVED a journey impossible that its own route search would have taken - "
@@ -367,12 +342,7 @@ public class testReturnHomeSequencesAReversal
         {
             loc.setReversible(false);
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH berth A", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH berth B", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH berth A", "RH berth B");
 
             // THE OUTCOME ITSELF, named exactly: "not impossible" admits five of the seven outcomes, and if the home
             // assignment stopped taking, `triage()` would answer NO_HOMES before the code under test ran.
@@ -421,12 +391,7 @@ public class testReturnHomeSequencesAReversal
         {
             loc.setReversible(true);
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH from", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH end", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH from", "RH end");
 
             assertNotEquals(String.valueOf(plan.getOutcome()), "IMPOSSIBLE",
                 "the planner PROVED this journey impossible because the only way there is to stop at a "
@@ -567,12 +532,7 @@ public class testReturnHomeSequencesAReversal
                 "the fixture did not take: this berth has to be one autonomy will not choose, or the "
                 + "test is about nothing");
 
-            assertTrue(layout.moveLocomotive(loc.getName(), "RH away", false),
-                "could not place the locomotive");
-
-            layout.setHomeLocomotive("RH berth", loc.getName());
-
-            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+            HomeStaging.Plan plan = planHome(layout, loc, "RH away", "RH berth");
 
             assertTrue(plan.isPossible(),
                 "a locomotive was refused its own home because autonomy is not allowed to choose that "
@@ -588,6 +548,17 @@ public class testReturnHomeSequencesAReversal
         {
             loc.setReversible(was);
         }
+    }
+
+    /** Places the locomotive at the start, gives it the other square as its home, and plans the way there. */
+    private static HomeStaging.Plan planHome(Layout layout, Locomotive loc, String start, String home) throws Exception
+    {
+        assertTrue(layout.moveLocomotive(loc.getName(), start, false),
+            "could not place the locomotive");
+
+        layout.setHomeLocomotive(home, loc.getName());
+
+        return HomeStaging.snapshot(layout).plan();
     }
 
     /**

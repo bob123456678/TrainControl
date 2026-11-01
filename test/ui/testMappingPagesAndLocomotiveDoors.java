@@ -284,16 +284,7 @@ public class testMappingPagesAndLocomotiveDoors
     @Test
     public void testPasteMappingsAnsweredYesCopiesThePage() throws Exception
     {
-        AbstractButton copy = pageMenuItem(I18n.t("page.ui.menuCopyMappings"));
-
-        Components.onTheEventThread(() ->
-        {
-            copy.doClick();
-
-            return null;
-        });
-
-        turnTo(pageQ);
+        copyMappingsAndTurnTo(pageQ);
 
         AbstractButton paste = pageMenuItem(I18n.t("page.ui.menuPasteMappings"));
 
@@ -317,16 +308,7 @@ public class testMappingPagesAndLocomotiveDoors
     @Test
     public void testPasteMappingsAnsweredNoChangesNothing() throws Exception
     {
-        AbstractButton copy = pageMenuItem(I18n.t("page.ui.menuCopyMappings"));
-
-        Components.onTheEventThread(() ->
-        {
-            copy.doClick();
-
-            return null;
-        });
-
-        turnTo(pageQ);
+        copyMappingsAndTurnTo(pageQ);
 
         AbstractButton paste = pageMenuItem(I18n.t("page.ui.menuPasteMappings"));
 
@@ -664,6 +646,21 @@ public class testMappingPagesAndLocomotiveDoors
     private static Locomotive onKey(int key)
     {
         return Components.onTheEventThread(() -> ui.getButtonLocomotive(letters().get(key)));
+    }
+
+    /** Copies the mappings of the page showing, as its menu does, and turns to the page. */
+    private static void copyMappingsAndTurnTo(int page) throws Exception
+    {
+        AbstractButton copy = pageMenuItem(I18n.t("page.ui.menuCopyMappings"));
+
+        Components.onTheEventThread(() ->
+        {
+            copy.doClick();
+
+            return null;
+        });
+
+        turnTo(page);
     }
 
     /** Turns to a page by its tab, as clicking the tab does. */

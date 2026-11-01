@@ -1338,6 +1338,19 @@ public class testAutoLayout
         }
     }
 
+    /** Creates a point per name on a fresh feedback of its own (off), each a station or not. */
+    private static void createPoints(Layout layout, String[] names, boolean[] stations, int[] sensors) throws Exception
+    {
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback fb = model.newFeedback(sensors[i], null);
+
+            model.setFeedbackState(fb.getName(), false);
+
+            layout.createPoint(names[i], stations[i], fb.getName());
+        }
+    }
+
     /** The name of the point a route reaches first, which is what says which way it went. */
     private String nameOfSecondPoint(java.util.List<Edge> path)
     {
@@ -2778,14 +2791,7 @@ public class testAutoLayout
         boolean[] stations = {true, false, false, false, true};
         int[] sensors = {8970, 8971, 8972, 8973, 8974};
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback fb = model.newFeedback(sensors[i], null);
-
-            model.setFeedbackState(fb.getName(), false);
-
-            layout.createPoint(names[i], stations[i], fb.getName());
-        }
+        createPoints(layout, names, stations, sensors);
 
         layout.createEdge("RV_S", "RV_X").addConfigCommand(sw.getName(), Accessory.accessorySetting.STRAIGHT);
         layout.createEdge("RV_X", "RV_E").addConfigCommand(sw.getName(), Accessory.accessorySetting.TURN);
@@ -2840,14 +2846,7 @@ public class testAutoLayout
         boolean[] stations = {true, false, false, false, true};
         int[] sensors = {8975, 8976, 8977, 8978, 8979};
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback fb = model.newFeedback(sensors[i], null);
-
-            model.setFeedbackState(fb.getName(), false);
-
-            layout.createPoint(names[i], stations[i], fb.getName());
-        }
+        createPoints(layout, names, stations, sensors);
 
         layout.createEdge("EQ_S", "EQ_A");
         layout.createEdge("EQ_S", "EQ_B");
@@ -2905,14 +2904,7 @@ public class testAutoLayout
         boolean[] stations = {true, false, false, true};
         int[] sensors = {8980, 8981, 8983, 8982};
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback fb = model.newFeedback(sensors[i], null);
-
-            model.setFeedbackState(fb.getName(), false);
-
-            layout.createPoint(names[i], stations[i], fb.getName());
-        }
+        createPoints(layout, names, stations, sensors);
 
         layout.createEdge("RC_S", "RC_X").addConfigCommand(sw.getName(), Accessory.accessorySetting.STRAIGHT);
         layout.createEdge("RC_X", "RC_Y").addConfigCommand(sw.getName(), Accessory.accessorySetting.TURN);

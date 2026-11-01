@@ -618,20 +618,7 @@ public class testTheArrivalHonoursTheAnswer
         final Point plain = rail.getPoint("RSMP");
 
         // THE OPERATOR SAID KEEP THE DIRECTION: asked about the turning copy, and no
-        final Layout.ReversalPolicy keep = new Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(Locomotive loc, Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(Point at)
-            {
-                return at == turning;
-            }
-        };
+        final Layout.ReversalPolicy keep = answering(false, turning);
 
         final java.util.concurrent.atomic.AtomicBoolean arriving = new java.util.concurrent.atomic.AtomicBoolean(false);
         final java.util.List<String> atTheArrival = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
@@ -742,20 +729,7 @@ public class testTheArrivalHonoursTheAnswer
         final Point plain = rail.getPoint("ICFP");
 
         // THE OPERATOR SAID KEEP THE DIRECTION: asked about the turning copy, and no
-        final Layout.ReversalPolicy keep = new Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(Locomotive loc, Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(Point at)
-            {
-                return at == turning;
-            }
-        };
+        final Layout.ReversalPolicy keep = answering(false, turning);
 
         // The diagram: the start on one square, both copies of the destination on another - the turning copy facing back
         // the way trains come in, the plain one onward
