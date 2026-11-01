@@ -424,7 +424,7 @@ public class testLocomotiveExclusions
     }
     /**
      * A second locomotive from the database, borrowed like `placed` so this class owns no addresses, and asserted to be
-     * a different object: two names resolving to one locomotive would make the test ask one question twice.
+     * a different object (two names resolving to one locomotive would make the test ask one question twice).
      */
     private static Locomotive other(Locomotive notThisOne) throws Exception
     {
@@ -441,10 +441,10 @@ public class testLocomotiveExclusions
 
     /**
      * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that
-     * way.  The copy the builder makes for the barred side is no destination ("A station, unless a train arriving THIS
-     * way is not allowed to stop"), and read as "not a station" its list stopped them passing: with an allow-only list,
-     * every train it does not name.  A station's list says who may not STOP there, so it is asked of the square, not of
-     * the copy.  The control: on a plain sensor the list is still a wall.
+     * way.  The copy the builder makes for the barred side is no destination, and read as "not a station" its list
+     * stopped them passing (with an allow-only list, every train it does not name); a station's list says who may not
+     * STOP there, so it is asked of the square, not of the copy.  The control: on a plain sensor the list is still a
+     * wall.
      *
      * MUTATION: ask the copy's own destination flag again, in `Layout.isPathClear` or in Return Home's
      * `HomeStaging.canEnter`, and this fails.
