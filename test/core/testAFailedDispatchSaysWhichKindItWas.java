@@ -62,20 +62,7 @@ public class testAFailedDispatchSaysWhichKindItWas
 
         // THE LOG, READ AT ITS OWN LOGGER: `MarklinControlStation.log(String)` ends in `log.info(message)`, so no hook
         // is added to the program for the sake of the test.
-        tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) LOGGED.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        tap = support.LogTap.messagesInto(LOGGED);
 
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
     }

@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -59,20 +58,7 @@ public class testAPausedTrainStaysPaused
     /** What the model logged, as the log window shows it. */
     private static final List<String> logged = Collections.synchronizedList(new ArrayList<String>());
 
-    private static final Handler listening = new Handler()
-    {
-        @Override
-        public void publish(LogRecord record)
-        {
-            if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-        }
-
-        @Override
-        public void flush() { }
-
-        @Override
-        public void close() { }
-    };
+    private static final Handler listening = support.LogTap.messagesInto(logged);
 
     @BeforeClass
     public static void setUpClass() throws Exception

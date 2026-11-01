@@ -313,20 +313,7 @@ public class testLayoutTimetable
         // at the start of the path" with the validity check deleted; the log says which of the two it was.
         java.util.List<String> logged = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
 
@@ -560,20 +547,7 @@ public class testLayoutTimetable
 
         final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
 
@@ -659,20 +633,7 @@ public class testLayoutTimetable
         // AND THE RUN REFUSES ONE, whatever door brings it
         final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
 

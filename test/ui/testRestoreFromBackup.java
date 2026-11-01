@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -510,24 +509,7 @@ public class testRestoreFromBackup
 
         final List<String> logged = Collections.synchronizedList(new ArrayList<>());
 
-        Handler listening = new Handler()
-        {
-            @Override
-            public void publish(LogRecord record)
-            {
-                logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        Handler listening = support.LogTap.everyMessageInto(logged);
 
         Logger station = Logger.getLogger(MarklinControlStation.class.getName());
 

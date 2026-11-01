@@ -854,20 +854,7 @@ public class testAdvancedRoutes
 
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                said.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.everyMessageInto(said);
 
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
 

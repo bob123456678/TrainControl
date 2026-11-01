@@ -467,24 +467,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         // What the railway says, for a dispatch that does not go
         final java.util.List<String> said = java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
 
-        java.util.logging.Handler listening = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                said.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        java.util.logging.Handler listening = support.LogTap.everyMessageInto(said);
 
         java.util.logging.Logger.getLogger("").addHandler(listening);
 
