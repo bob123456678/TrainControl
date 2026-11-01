@@ -16,7 +16,6 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
@@ -425,17 +424,7 @@ public class testTheTrainIsShownAsALine
 
     private static Set<TileKey> everyTile()
     {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
-        {
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() != null) out.add(step.getTile());
-            }
-        }
-
-        return out;
+        return support.TileLengths.onTheEdges(session);
     }
 
     /**
@@ -486,19 +475,7 @@ public class testTheTrainIsShownAsALine
 
     private static void measureEveryTileAs(int units)
     {
-        Set<TileKey> everyTile = new LinkedHashSet<>();
-
-        for (TileKey tile : session.getReducer().getPoints().keySet()) everyTile.add(tile);
-
-        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
-        {
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() != null) everyTile.add(step.getTile());
-            }
-        }
-
-        for (TileKey tile : everyTile) session.setTileLength(tile, units);
+        support.TileLengths.measureEveryTileAs(session, units);
     }
 
     private static void pump() throws Exception
