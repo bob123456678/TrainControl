@@ -106,9 +106,8 @@ public class TileOverlay
     private static final float DOT_ALPHA = 0.9f;
 
     /**
-     * The picture drawn where a train is moving (FR-027).  A file, so it can be replaced: any PNG dropped over
-     * `src/org/traincontrol/gui/resources/running_train.png` is scaled to the tile, so only its shape and
-     * transparency matter.  If it is missing or unreadable the dot is drawn instead.
+     * The picture drawn where a train is moving (FR-027): any PNG dropped over this file is scaled to the tile, so only
+     * its shape and transparency matter.  The dot is drawn if it is missing or unreadable.
      */
     private static final String TRAIN_ICON = "/org/traincontrol/gui/resources/running_train.png";
 
@@ -314,11 +313,9 @@ public class TileOverlay
     }
 
     /**
-     * Which way the rail runs under the train on a curve - from the middle of the train's road to the midpoint of the
-     * side it is heading for (MT-642) - or null on a straight, a switch or a crossing, where the icon stays square.  A
-     * curve is the line between the midpoints of two neighboring sides, so its middle is a quarter of the tile in from
-     * each.  A run that ENDS here has only the side it came in by and goes on through the middle of its road, towards
-     * the curve's other side.
+     * Which way the rail runs under the train on a curve, from the middle of the train's road to the midpoint of the
+     * side it is heading for (MT-642); null on a straight, a switch or a crossing, where the icon stays square.  A run
+     * that ENDS here goes on through the middle of its road towards the curve's other side.
      *
      * @param trackCentre the middle of the train's road, or null if it is not known
      * @return which way the rail runs, as {dx, dy}, or null
@@ -647,10 +644,10 @@ public class TileOverlay
     }
 
     /**
-     * The same, told whether the tile underneath is already faint (MT-375, OB-212).  Up to three washes can land on one
-     * square: `LayoutLabel` fades the tile art where the railway refuses it, `TileAnnotation` lays one under its
-     * arrows, and this one pales out held track.  Adam's rule (MT-373): *"greyed out means either edge locked or path
-     * blocked."*  One gray for either reason, so the second wash is not drawn rather than blended into a third tone.
+     * The same, told whether the tile underneath is already faint (MT-375, OB-212): up to three washes can land on one
+     * square (`LayoutLabel`'s fade, `TileAnnotation`'s under its arrows, this one's pale held track).  Adam's rule
+     * (MT-373): *"greyed out means either edge locked or path blocked."*  One gray for either reason, so the second
+     * wash is not drawn rather than blended into a third tone.
      *
      * @param alreadyFaded whether the caller has drawn the WHOLE tile faint already
      */

@@ -64,13 +64,10 @@ public class testAutonomySimulationSanity
     private static final long POLL_MS = 500;
 
     // Minimum activity a genuine one-minute run must produce.
-    // FIVE, not twenty.
-    //
-    // This is a time-boxed simulation, so the count measures how loaded the machine is as much as
-    // whether the railway did anything: it passes alone and came back 18 inside a full battery. The
-    // mutation it exists to catch - the accessory-command loop removed from configureEdge - produces
-    // NO actuations at all, so a floor of five catches it exactly as well as twenty and does not go
-    // red because something else was running.
+    // FIVE, not twenty.  This is a time-boxed simulation, so the count measures how loaded the machine is as much as
+    // whether the railway did anything: it passes alone and came back 18 inside a full battery.  The mutation it exists
+    // to catch (the accessory-command loop removed from configureEdge) produces NO actuations at all, so five catches
+    // it as well as twenty without going red under load.
     private static final int MIN_TOTAL_ACTUATIONS = 5;
     private static final int MIN_STATION_CHANGES_PER_LOC = 3;
 
@@ -122,26 +119,16 @@ public class testAutonomySimulationSanity
     /**
      * Two turns in one session do not add up to a flip of anything: the record names the LAST one.
      *
-     * **This test used to assert that they cancel**, and that was right for a record whose
-     * membership was a parity - because the window applied each entry by FLIPPING the facing the setup
-     * had stored, and two flips undo each other. The flip has since been taken away: the setup's stored
-     * facing is stale at exactly the moment the drain reads it (behaviour/editing-while-running.md 6a), so the window
-     * now writes the facing ABSOLUTELY, from the side the train came in by at the square it turned at.
+     * The name is historical: the window now writes the facing ABSOLUTELY, from the side the train came in by at the
+     * square it turned at, because the setup's stored facing is stale at exactly the moment the drain reads it
+     * (behaviour/editing-while-running.md 6a).  An absolute write says the same thing however many times it is applied,
+     * so two turns must not cancel: canceling would leave the graph with nothing to say about a train standing at the
+     * far end of the shuttle having turned there.
      *
-     * Once the write is absolute the parity has nothing left to protect. The hazard it was for - *"a
-     * shuttle that turned at both ends came back facing the way it started and had its facing flipped
-     * once"* - cannot arise from an absolute write, which says the same thing however many times it is
-     * applied; and canceling would now be the defect, because it would leave the graph with nothing
-     * to say about a train standing at the far end of the shuttle having turned there.
+     * So the same shuttle runs and the record follows the train: after the outward leg it names the east end, after the
+     * return the west end, and never two entries for one locomotive.
      *
-     * So what this runs is the same shuttle, and what it asserts is that the record follows the train:
-     * after the outward leg it names the east end, after the return it names the west end, and never
-     * two entries for one locomotive.
-     *
-     * MUTATION: keeping the old toggle - removing the name on the second turn - fails the last
-     * assertion, which is the same journey the parity version measured, read the other way round.
-     *
-     * @throws Exception on a failure to run
+     * MUTATION: keeping the old toggle - removing the name on the second turn - fails the last assertion.
      */
     @Test
     public void testTwoTurnsInOneSessionCancel() throws Exception
@@ -221,14 +208,8 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * What the graph is owed, without draining it.
-     *
-     * By reflection because the only public reader is the drain, and draining here would destroy the
-     * state the next leg has to cancel.
-     *
-     * @param layout the layout
-     * @return the names owed a facing, against the Point each turned at
-     * @throws Exception on a reflection failure
+     * What the graph is owed, without draining it: the names owed a facing, against the Point each turned at.  By
+     * reflection, as the only public reader is the drain, which would destroy the state the next leg checks.
      */
     @SuppressWarnings("unchecked")
     private static java.util.Map<String, String> owed(Layout layout) throws Exception
@@ -240,16 +221,7 @@ public class testAutonomySimulationSanity
         return new java.util.LinkedHashMap<>((java.util.Map<String, String>) f.get(layout));
     }
 
-    /**
-     * Runs one leg and fails with a legible message rather than a timeout.
-     *
-     * @param watchdog the executor
-     * @param layout the layout
-     * @param path the leg
-     * @param loc the locomotive
-     * @param which which leg, for the message
-     * @throws Exception on a failure to run
-     */
+    /** Runs one leg and fails with a legible message rather than a timeout. */
     private static void run(ExecutorService watchdog, Layout layout, List<Edge> path,
         MarklinLocomotive loc, String which) throws Exception
     {
@@ -274,18 +246,13 @@ public class testAutonomySimulationSanity
     /**
      * A train stopped to turn on its way is where it turns, not at the sensor before.
      *
-     * The run turns a train at a reversing point it has reached - its sensor has answered - and recorded the point as
-     * reached only after the turn.  So for the length of the turn the railway placed the train a square back, and the
-     * track diagram drew it standing there (OB-317 draws a standing train where the railway says it is).
-     *
-     * A line A, M, R, B with R a reversing point; every place the railway gives while the train stands still between its
-     * start and its end.  Beside the turn at the destination, because it needs a run that completes.
-     *
-     * And the railway says so while the train turns, so the track diagram is redrawn then.
+     * The run turns a train at a reversing point it has reached (its sensor has answered) and recorded the point as
+     * reached only after the turn, so for the length of the turn the railway placed the train a square back and the
+     * diagram drew it standing there (OB-317).  A line A, M, R, B with R a reversing point; every place the railway
+     * gives while the train stands still between start and end is checked, and the railway says so while the train
+     * turns, so the diagram is redrawn then.  Beside the turn at the destination, which needs a run that completes.
      *
      * MUTATION: record the turning point only after the turn again, or tell nothing at the turn's stop, and this fails.
-     *
-     * @throws Exception on a failure to run
      */
     @Test
     public void testATrainTurningOnItsWayIsWhereItTurns() throws Exception
@@ -420,24 +387,19 @@ public class testAutonomySimulationSanity
      * Adam: **"it should be recorded at the destination.  Otherwise, it�s just the same as
      * always."**
      *
-     * A reversal at the arrival is the one direction change nothing was following. Its echo lands
-     * inside the run’s own thousand-millisecond pause, while `isRunning()` is still true, so the window
-     * takes the baseline-only branch; and when the run ends the idle reconcile LEVELS the baseline
-     * rather than following it. Both are right for a command somebody else sent mid-run - that is what
-     * they were written for - and both were wrong for this one, because this one is not news arriving
-     * late. It is something this code did on purpose and knew about as it did it.
+     * A reversal at the arrival is the one direction change nothing was following.  Its echo lands inside the run's own
+     * thousand-millisecond pause, while `isRunning()` is still true, so the window takes the baseline-only branch, and
+     * when the run ends the idle reconcile LEVELS the baseline rather than following it.  Both are right for a command
+     * somebody else sent mid-run and wrong for this one, which this code did on purpose.  Unrecorded, the physical
+     * train reversed while the graph and the setup went on saying it had not, and the next dispatch offered paths for
+     * the wrong heading.
      *
-     * Before the fix: the physical train reversed, the graph and the setup went on saying it had not,
-     * and the next dispatch offered paths for the wrong heading.
+     * **In this class rather than beside the reversal rules**, because it needs a run that actually ARRIVES: every
+     * `executePath` test elsewhere throws from a callback before the arrival, while this class runs with
+     * `DEBUG_SIMULATE_PACKETS` and a watchdog, which lets a path complete.
      *
-     * **In this class rather than beside the reversal rules**, because it needs a run that actually
-     * ARRIVES. Every `executePath` test elsewhere throws from a callback before the arrival, so none of
-     * them reaches the block under test; this class runs with `DEBUG_SIMULATE_PACKETS` and a watchdog,
-     * which is what lets a path complete. A test that could not reach the arrival would be asserting
-     * the absence of something it never triggered.
-     *
-     * The drain is asserted too: a record read without clearing is re-applied on every refresh, which
-     * turns one reversal into a metronome.
+     * The drain is asserted too: a record read without clearing is re-applied on every refresh, which turns one
+     * reversal into a metronome.
      *
      * MUTATION: removing the `reversedOnArrival.put` at the arrival fails the first assertion; making
      * `takeReversalsOnArrival` a plain getter fails the last.
@@ -473,11 +435,9 @@ public class testAutonomySimulationSanity
             layout.createPoint("B4 start", true, "47411");
             layout.createPoint("B4 end", true, "47412");
 
-            // A REVERSING point rather than a terminus.  Both turn an arriving train without asking -
-            // `shouldReverseAt` answers `current.isReversing()` when there is no policy, and a terminus
-            // is a reversing point that is also a destination - but a terminus brings the track-room
-            // rule with it, and an unmeasured two-point fixture is refused by it before the run starts.
-            // The block under test is the same one either way.
+            // A REVERSING point rather than a terminus: both turn an arriving train without asking, but a terminus
+            // brings the track-room rule with it, and an unmeasured two-point fixture is refused by it before the run
+            // starts.  The block under test is the same either way.
             layout.getPoint("B4 end").setReversing(true);
 
             List<Edge> path = new LinkedList<>();
@@ -535,12 +495,10 @@ public class testAutonomySimulationSanity
                 "the record was not drained, so the same reversal is written to the graph again on"
                 + " every refresh, flipping the facing back and forth instead of recording it once");
 
-            // AND A DRAIN THAT WAS NOT WRITTEN CAN BE PUT BACK.
-            //
-            // Draining happens before the caller has written anything, and the caller can fail: no
-            // setup to write to, a store that throws on the second of three names. Those turns were
-            // gone, which is the opposite of what a record described as "recorded here, where it is
-            // certain" is for.
+            // AND A DRAIN THAT WAS NOT WRITTEN CAN BE PUT BACK.  Draining happens before the caller has written
+            // anything, and the caller can fail (no setup to write to, a store that throws on the second of three
+            // names); those turns would be gone, the opposite of what a record "recorded here, where it is certain" is
+            // for.
             layout.restoreReversalsOnArrival(turned);
 
             assertTrue(layout.takeReversalsOnArrival().containsKey(loc.getName()),
@@ -645,21 +603,12 @@ public class testAutonomySimulationSanity
                 sawActivity = true;
             }
 
-            // WHAT THIS CAN AND CANNOT CATCH.
-            //
-            // It reads as a check on the path-integrity guard and is not one.  That guard compares
-            // each accessory against the state it was commanded to, and in simulate mode no accessory
-            // is actuated at all - so `configureAndLockPath` returns before it
-            // (`Layout.java:3043-3046`) and no regression in it can ever move this counter.
-            //
-            // **It cannot be made to, either, and that is the finding's real answer.** Validating
-            // actuation means reading back real hardware; a simulated railway has none. The guard is
-            // reachable only with a Central Station attached, so no automated test can reach it -
-            // stated here rather than left looking covered.
-            //
-            // What the counter DOES see here is `handleMisconfiguredPath` reached the other two ways
-            // - a configure that failed, or a lock that threw - and those happen in simulate.  That
-            // is worth asserting and is what this now says.
+            // WHAT THIS CAN AND CANNOT CATCH.  It reads as a check on the path-integrity guard and is not one: that
+            // guard compares each accessory against the state it was commanded to, and in simulate mode no accessory is
+            // actuated, so `configureAndLockPath` returns before it (`Layout.java:3043-3046`) and no regression in it
+            // can move this counter.  The guard is reachable only with a Central Station attached, so no automated test
+            // reaches it - stated here rather than left looking covered.  What the counter DOES see is
+            // `handleMisconfiguredPath` reached the other two ways: a configure that failed, or a lock that threw.
             assertTrue(layout.getPathValidationFailureCount() == 0,
                 "a path was abandoned as misconfigured during the run - a configure that failed or a "
                     + "lock that threw, since the actuation guard itself is skipped in simulate "
@@ -692,11 +641,10 @@ public class testAutonomySimulationSanity
             Accessory acc = model.getAccessoryByName(name);
             assertTrue(acc != null, "Accessory " + name + " should exist");
 
-            // MUTATION this catches: remove the accessory-command loop from Layout.configureEdge so
-            // autonomy never actually throws a switch.  Comparing against a baseline of 0 (or against
-            // a DB carried-over count instead of a delta) would stay >= MIN_TOTAL_ACTUATIONS purely
-            // from whatever the operator's own restored LocDB already had at this address; comparing
-            // the delta since setUpClass does not.
+            // MUTATION this catches: remove the accessory-command loop from Layout.configureEdge so autonomy never
+            // throws a switch.  A baseline of 0 (or a DB carried-over count instead of a delta) would stay >=
+            // MIN_TOTAL_ACTUATIONS from whatever the operator's own restored LocDB already had at this address; the
+            // delta since setUpClass does not.
             totalActuations += acc.getNumActuations() - baselineActuations.get(name);
         }
 
@@ -884,30 +832,24 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * Proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to
-     * stay silent is actually capable of firing.
+     * Proves the actuation-confirmation guard that testSimulatedAutonomyRaisesNoWarning trusts to stay silent is
+     * actually capable of firing.
      *
-     * That soak test runs entirely against the fixture's own Layout, which loads with "simulate": true
-     * (test/autonomy_sanity.json:143).  Layout.configureAndLockPath returns at Layout.java:2604 -
-     * "if (this.simulate || !PATH_INTEGRITY_VALIDATION) return true;" - BEFORE validatePathActuation ever
-     * runs, so for the whole two-minute run handleMisconfiguredPath is unreachable and
-     * getPathValidationFailureCount() is pinned at 0 no matter what the guard would have found.  "No
-     * warning fired" there is unfalsifiable, not a verified outcome - the mechanism was never armed.
+     * That soak test runs against the fixture's own Layout, which loads with "simulate": true
+     * (test/autonomy_sanity.json:143), so Layout.configureAndLockPath returns at Layout.java:2604 BEFORE
+     * validatePathActuation ever runs: for the whole run handleMisconfiguredPath is unreachable and
+     * getPathValidationFailureCount() is pinned at 0 whatever the guard would have found.  "No warning fired" there is
+     * unfalsifiable.
      *
-     * Simulate mode cannot simply be turned off for the soak itself: it is also what makes
-     * simAnnounce/simClearBehind fake each point's sensor as the train "arrives", which is the only
-     * reason the fixture's locomotives move at all without real hardware.  So this is a separate, small
-     * Layout built directly (like testAutonomyPathValidation.java's fixtures) with simulate left at its
-     * default OFF, network still disconnected and DEBUG_SIMULATE_PACKETS still on from setUpClass - so
-     * the CS echo is simulated and no real hardware is needed, but the real validatePathActuation guard
-     * runs instead of being bypassed.  The path's one accessory is then driven to the wrong state out of
-     * band so it can never confirm, proving the exact mechanism the soak test's silence depends on can in
-     * fact detect a real misconfiguration.
+     * Simulate mode cannot simply be turned off for the soak: it is what makes simAnnounce/simClearBehind fake each
+     * point's sensor as the train "arrives".  So this is a separate, small Layout built directly (like
+     * testAutonomyPathValidation.java's fixtures) with simulate at its default OFF and DEBUG_SIMULATE_PACKETS still on
+     * from setUpClass, so the CS echo is simulated and the real validatePathActuation guard runs.  The path's one
+     * accessory is driven to the wrong state out of band so it can never confirm.
      *
-     * MUTATION this catches: delete the guard at Layout.java:2604-2609 (or make validatePathActuation
-     * return true unconditionally, or set PATH_INTEGRITY_VALIDATION = false) - the failure below would
-     * then never be recorded and this test goes red, exactly where the always-simulate soak test above
-     * cannot.
+     * MUTATION this catches: delete the guard at Layout.java:2604-2609 (or make validatePathActuation return true
+     * unconditionally, or set PATH_INTEGRITY_VALIDATION = false) - the failure below would never be recorded and this
+     * test goes red.
      */
     @Test
     public void testPathValidationCanActuallyFireOutsideSimulateMode() throws Exception

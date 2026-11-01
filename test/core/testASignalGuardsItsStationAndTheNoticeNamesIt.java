@@ -458,9 +458,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     /**
      * An exit guard on its station's way out is not noticed; an entry guard there still is.
      *
-     * The notice used to ask only of the ways in and named a real railway's exit signals as ones no arriving train
-     * meets.  An exit guard is noticed only where no way into or out of its station passes it; an entry guard, which
-     * turns red behind an arriving train, still where no way in does.
+     * An exit guard is noticed only where no way into or out of its station passes it; an entry guard, which turns red
+     * behind an arriving train, still where no way in does.
      *
      * MUTATION: ask an exit guard of the ways in only, and the first half fails; count a way out for an entry guard
      * too, and the second does.

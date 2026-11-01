@@ -158,15 +158,14 @@ public class testBarredArrivalIsNotADestination
     /**
      * A barred copy still carries the protecting signal, because it is still the same platform.
      *
-     * The builder emits the pairing under `protecting != null && !protecting.isEmpty() && stops`, two lines below a
-     * comment saying "On every copy, because the copies are one platform."  `stops` is false exactly when the copy's
-     * arrival side is barred, and a person may still drive a train onto it (Adam, MT-078: autonomy will not route into
-     * a barred side, a person may), so nothing protects the occupied platform: `refreshOneSignal` asks every Point
-     * whose protecting signals contain the accessory, and this one is not among them.
+     * The builder emits the pairing under `protecting != null && !protecting.isEmpty() && stops`; `stops` is false
+     * exactly when the copy's arrival side is barred, and a person may still drive a train onto it (Adam, MT-078:
+     * autonomy will not route into a barred side, a person may), so nothing would protect the occupied platform:
+     * `refreshOneSignal` asks every Point whose protecting signals contain the accessory, and this one is not among
+     * them.
      *
-     * Nothing refuses a protecting signal on a non-station (`setProtectingSignals` stores what it is given), which was
-     * confirmed before removing the condition, because `stops` exists for a case where the model DOES refuse: a
-     * terminus that is not a destination invalidates the whole layout.
+     * Nothing refuses a protecting signal on a non-station (`setProtectingSignals` stores what it is given); `stops`
+     * exists for a case where the model DOES refuse: a terminus that is not a destination invalidates the whole layout.
      */
     @Test
     public void testABarredCopyStillHoldsItsProtectingSignal() throws IOException
@@ -231,9 +230,8 @@ public class testBarredArrivalIsNotADestination
      *
      * The running layout's `setHomeLocomotive` clears the same locomotive's home from every other Point; the setup-side
      * editor ends at `setPointProperty(tile, "home", picked)` and nothing sweeps, so two squares could be given the
-     * same home from the menu, silently.  On the next load `rebuildHomeStations` drops the second it meets (which
-     * depends on `points.values()` order) with only a log line.  Its comment said "only a hand-edited file reaches
-     * here", which stopped being true when the home editor arrived, and is corrected too.
+     * same home from the menu, silently.  On the next load `rebuildHomeStations` would drop the second it meets (which
+     * depends on `points.values()` order) with only a log line.
      */
     @Test
     public void testALocomotiveHasOneHomeAcrossTheWholeSetup() throws Exception
@@ -293,9 +291,9 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Clearing every home at once clears them all, and asks the station index once.  The editor cleared them by calling
-     * the single-square setter in a loop, each re-deriving the station index (a full builder construction on the event
-     * thread): sixty-two rebuilds for the gesture that exists because sixty-two right-clicks are too many.
+     * Clearing every home at once clears them all, and asks the station index once: the single-square setter in a loop
+     * re-derives the station index (a full builder construction on the event thread) per square, and the gesture exists
+     * because sixty-two right-clicks are too many.
      *
      * What this pins is the behavior, not the count, since the rebuild is not observable from outside: every home goes,
      * the count comes back, and the index is still right afterwards, which a bulk path skipping the re-derive gets
@@ -350,7 +348,7 @@ public class testBarredArrivalIsNotADestination
 
     /**
      * Every placement goes at once, and the station index is asked once.  The twin of `testEveryHomeGoesAtOnce`:
-     * clearing one placement writes TWO properties (the placement and the facing), so the editor's loop cost two full
+     * clearing one placement writes TWO properties (the placement and the facing), so a per-square loop costs two full
      * builder constructions per square.  Pinned as behavior: every placement goes, the count comes back, the FACING
      * goes with it, and the session still works afterwards.
      *
@@ -415,8 +413,8 @@ public class testBarredArrivalIsNotADestination
      *
      * MT-078: barred arrivals are advisory.  Autonomy will not route into a barred side; a person may.  Adam: "We
      * should let the user know a train can't come in in any way (warning). If manual only, it's info."  A station with
-     * every side barred is reachable BY HAND, so blocking the setup from starting over it was wrong; the case where
-     * nothing can arrive by any means is a square no track reaches, POINT_ISOLATED, a warning already.
+     * every side barred is reachable BY HAND, so blocking the setup from starting over it would be wrong; the case
+     * where nothing can arrive by any means is a square no track reaches, POINT_ISOLATED, a warning already.
      */
     @Test
     public void testAStationWithEveryArrivalBarredIsOnlyInformation() throws IOException
@@ -451,9 +449,8 @@ public class testBarredArrivalIsNotADestination
      * Autonomy can be set up FROM AN IMPORT, with no setup here to begin with.
      *
      * FR-007: "it should be possible to initially load autonomy from an import, not just forcing the creation of a new
-     * one."  The Autonomy menu offered only "add a configuration" while `names.isEmpty()`, with Import in the branch
-     * that runs once a configuration exists.  This is the model half: a session on a folder that has never held a setup
-     * takes a bundle and comes out with a working configuration; the menu half is one item in AutonomyMenu.
+     * one."  This is the model half: a session on a folder that has never held a setup takes a bundle and comes out
+     * with a working configuration; the menu half is one item in AutonomyMenu.
      */
     @Test
     public void testASetupCanBeCreatedByImportingOne() throws Exception

@@ -64,7 +64,7 @@ public class testLocIconCrop
 
             try
             {
-                // Inside the try, so a failure here is tidied up like everything else (validator).
+                // Inside the try, so a failure here is tidied up like everything else.
                 assertNull(ui.cropSourceOf(crop.toPath().toUri().toString()),
                     "a file outside the application's own icon folder came back with a source, which "
                     + "would mean writing notes beside the user's own pictures");
@@ -495,8 +495,7 @@ public class testLocIconCrop
     /**
      * Pressing OK at full zoom-out does not allocate an image squared in the source: at `zoomFraction = 0` the scale is
      * half the fit, so the rectangle `contentOf` built was twice the source each way (~134 MB for a 4032 x 3024
-     * photograph) though the output is 296 x 114. The OutOfMemoryError lands in the OK listener on the EDT, so the user
-     * sees OK doing nothing.
+     * photograph) and the OutOfMemoryError in the OK listener left OK doing nothing.
      *
      * Asserted on the allocation, not the symptom (an OOM would need a JVM sized to fail): `contentOf` is asked by
      * reflection what it built, and it must not be bigger than the icon needs.
@@ -1224,8 +1223,8 @@ public class testLocIconCrop
      * The picture's tools, and a right-click on the picture, wait for the power to be off; the picture says to turn it
      * off while it is on, and to right-click once it is off (MT-591; Adam: "when right clicking the locomotive image in
      * the main UI, only make this open the file chooser if the power is off, similar to the overlay icons.  update the
-     * tooltip to match the status").  Told through the window's own door for a change of power, so it follows the power
-     * as it changes.  The chooser is answered with a picture that cannot be read, so its refusal says the chooser opened.
+     * tooltip to match the status").  Told through the window's own door for a change of power.  The chooser is
+     * answered with a picture that cannot be read, so its refusal says the chooser opened.
      *
      * MUTATION: offer the tools whatever the power, say nothing while it is on, open the chooser on a right-click
      * whatever the power in `locIconMouseReleased`, or leave the tooltip when `renderActiveLoc` lets the locomotive go,

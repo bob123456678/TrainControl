@@ -406,8 +406,8 @@ public class testAutonomyDiagramPorts
     /**
      * A route button sits ON the line and the track runs beneath it.  Its art carries no track, so this comes from how
      * layouts use them: the sample layout's hand-built graph connects straight across every one, and treating them as
-     * decoration severed every run containing one.  Orientation says nothing, so it conducts both ways like a crossing
-     * without joining two lines that merely meet at it.
+     * decoration would sever every run containing one.  Orientation says nothing, so it conducts both ways like a
+     * crossing without joining two lines that merely meet at it.
      */
     @Test
     public void testARouteButtonDeclaresItselfTransparentRatherThanClaimingTrack()
@@ -500,8 +500,7 @@ public class testAutonomyDiagramPorts
 
     /**
      * The whole port table, every tile type at once: `portmap-verification.py` (git history, e5f77c9c^) brought into
-     * the suite, where it is executed rather than remembered.  It held the only complete statement of the port map, but
-     * its javadoc told the reader to keep the Python copy in step BY HAND, and that copy had already gone stale.
+     * the suite, where it is executed rather than kept in step by hand.
      *
      * **The union across every state, not state 0:** what a reader wants is which pieces of track the tile joins in any
      * position at all.  The per-state and per-orientation behavior is pinned by the tests above (how the tile TURNS;
@@ -585,7 +584,7 @@ public class testAutonomyDiagramPorts
      * A DIRECTION THE HARDWARE REFUSES IS NOT OFFERED AS AN ANSWER (Adam: "Green arrows in the direction that can't be
      * chosen shouldn't be offered.").  An authored direction ANDs with the tile's own restriction, so on a permanent
      * turnout (every route directed at the toe) "toward the fork" and "both ways" restrict nothing: no train could take
-     * that road either way, and the editor drew a green arrow for it (OB-057, OB-090).
+     * that road either way (OB-057, OB-090).
      *
      * `TileGraph.directionIsPossible` is the question the MENU asks; whether a train MOVES is `isPassable`
      * (`core.testTheDiagramDrawsWhatTrainsMayDo.testAShutRouteDrawsNoArrow` holds that one).  They disagree about

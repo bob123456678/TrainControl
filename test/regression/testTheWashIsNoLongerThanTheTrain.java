@@ -37,11 +37,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * Coverage is recorded per EDGE (Adam: "because the points are technically unoccupied. But the blocked edges should
  * prevent routing to the covered points"), and the tail walk stops when the train's length is used up, so a train of
- * length 1 claims one edge; the DRAWING then painted every tile of it, and an edge can be a dozen squares long.  The
- * railway still blocks the whole edge (nothing here touches `Layout.edgesCoveredByStandingTrains`); the diagram says
- * WHERE THE TRAIN IS, so the wash is a subset of what is blocked, the safe direction.
- *
- * Every tile is measured at ONE here, so a length is a number of squares: a train of length 1 covers one square.
+ * length 1 claims one edge, which can be a dozen squares long.  The railway still blocks the whole edge (nothing here
+ * touches `Layout.edgesCoveredByStandingTrains`); the diagram says WHERE THE TRAIN IS, so the wash is a subset of what
+ * is blocked, the safe direction.  Every tile is measured at ONE here, so a length is a number of squares.
  *
  * MUTATION: put the whole-edge loop back in `AutonomySession.tilesCoveredByStandingTrains` and
  * `testATrainOfLengthOneCoversOneSquare` fails with the number of squares in the edge behind the train.  Stop the walk
@@ -83,8 +81,7 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         // The frozen copy, not the railway he is operating (OB-111, `test/layouts/live-snapshot`):
         // `cs2_sample_layout`'s placements and lengths move as Adam runs trains, and a class that skips everything
-        // reads as green.  `Scenario.folderFor` cannot spell its way out to the operator's own railway, and
-        // `LayoutSandbox` copies what it names.
+        // reads as green.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // showUI, because the subject is what is drawn.  debug on, so the simulated Central Station
@@ -318,12 +315,11 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * A path locked ahead of the train does not move the wash (MT-438).  `AutonomySession.walkBackFrom` anchored at
-     * `Layout.getLocomotiveLocation`, the FIRST Point in `HashMap` order that holds the locomotive, while a locked path
-     * reserves every Point on it, so the anchor could be the destination the train has not reached.  Adam: *"why is the
-     * tail from bottommainapre to bottommaina not orange.  it's almost as if you are shifting the location of the
-     * train"*.  `Layout.whereTheTrainIs` is now the one rule for this walk, `DiagramMonitor` and
-     * `AutoLocomotiveStatus`.
+     * A path locked ahead of the train does not move the wash (MT-438).  A locked path reserves every Point on it, so
+     * an anchor taken from `Layout.getLocomotiveLocation`, the FIRST Point in `HashMap` order that holds the
+     * locomotive, could be the destination the train has not reached.  Adam: *"why is the tail from bottommainapre to
+     * bottommaina not orange.  it's almost as if you are shifting the location of the train"*.
+     * `Layout.whereTheTrainIs` is the one rule for this walk, `DiagramMonitor` and `AutoLocomotiveStatus`.
      *
      * The arrangement is sought, not hoped for: the test tries candidate destinations until the anchor moves off the
      * square the train stands on, and fails if none can.  A LOCK rather than a run, because a lock returns with the
