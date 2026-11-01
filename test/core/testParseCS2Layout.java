@@ -867,6 +867,38 @@ public class testParseCS2Layout
             java.util.Arrays.asList("Gamma", "Delta"), "Gamma", "Delta", ".xoffset=1");
     }
 
+    /** A change to the layout index of a folder, given the folder's path. */
+    private interface IndexRewrite
+    {
+        void on(String folder) throws Exception;
+    }
+
+    /** Puts the text in a new folder's index, runs the rewrite on the folder, and returns the index file then. */
+    private static String theIndexAfter(String index, IndexRewrite rewrite) throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                index.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            rewrite.on(folder.getAbsolutePath());
+
+            return new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
     /**
      * Writes an index holding the given `seite` blocks, then asserts the named key came back under
      * `keeper` and not under `other`.
@@ -880,47 +912,28 @@ public class testParseCS2Layout
     private static void assertKeysStayWithTheirPage(String pages, java.util.List<String> order,
         String keeper, String other, String key) throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+        String after = theIndexAfter(
+            "[gleisbild]\nversion\n .major=1\ngroesse\n" + pages,
+            folder -> org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder, order));
 
-        try
-        {
-            java.io.File config = new java.io.File(folder, "config");
+        int at = after.indexOf(key);
 
-            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+        assertTrue(at >= 0,
+            key + " is gone from the file entirely.  The page it belongs to states it, and these "
+            + "are the lines this writer does not model - a scroll position the station set, or the "
+            + "next key a firmware adds (N8-B1).  File was:\n" + after);
 
-            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
-                ("[gleisbild]\nversion\n .major=1\ngroesse\n" + pages)
-                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        int keeperAt = after.indexOf(".name=" + keeper);
+        int otherAt = after.indexOf(".name=" + other);
 
-            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(), order);
+        assertTrue(keeperAt >= 0 && otherAt >= 0,
+            "precondition: both pages have to be written:\n" + after);
 
-            String after = new String(
-                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            int at = after.indexOf(key);
-
-            assertTrue(at >= 0,
-                key + " is gone from the file entirely.  The page it belongs to states it, and these "
-                + "are the lines this writer does not model - a scroll position the station set, or the "
-                + "next key a firmware adds (N8-B1).  File was:\n" + after);
-
-            int keeperAt = after.indexOf(".name=" + keeper);
-            int otherAt = after.indexOf(".name=" + other);
-
-            assertTrue(keeperAt >= 0 && otherAt >= 0,
-                "precondition: both pages have to be written:\n" + after);
-
-            // The key belongs to whichever block it falls inside, which is the block whose name is the
-            // closest one above it.
-            assertTrue(at > keeperAt && (otherAt < keeperAt || at < otherAt),
-                key + " came back under " + other + " rather than under " + keeper + ", which is the "
-                + "page the file states it for.  File was:\n" + after);
-        }
-        finally
-        {
-            deleteTree(folder);
-        }
+        // The key belongs to whichever block it falls inside, which is the block whose name is the
+        // closest one above it.
+        assertTrue(at > keeperAt && (otherAt < keeperAt || at < otherAt),
+            key + " came back under " + other + " rather than under " + keeper + ", which is the "
+            + "page the file states it for.  File was:\n" + after);
     }
 
     /**
@@ -930,38 +943,19 @@ public class testParseCS2Layout
     @Test
     public void testOnePageClaimingAnIdStillKeepsItsKeys() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+        String after = theIndexAfter(
+            "[gleisbild]\nversion\n .major=1\ngroesse\n"
+                + "seite\n .id=1\n .name=Alpha\n"
+                + "seite\n .id=2\n .name=Beta\n .xoffset=42\n",
+            folder -> org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder,
+                java.util.Arrays.asList("Alpha", "Beta")));
 
-        try
-        {
-            java.io.File config = new java.io.File(folder, "config");
+        int beta = after.indexOf(".name=Beta");
+        int offset = after.indexOf(".xoffset=42");
 
-            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
-
-            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
-                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
-                    + "seite\n .id=1\n .name=Alpha\n"
-                    + "seite\n .id=2\n .name=Beta\n .xoffset=42\n")
-                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
-                java.util.Arrays.asList("Alpha", "Beta"));
-
-            String after = new String(
-                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            int beta = after.indexOf(".name=Beta");
-            int offset = after.indexOf(".xoffset=42");
-
-            assertTrue(beta >= 0 && offset > beta,
-                "control: two pages with DIFFERENT ids lost the one page's keys, so the collision guard "
-                + "is refusing everything:\n" + after);
-        }
-        finally
-        {
-            deleteTree(folder);
-        }
+        assertTrue(beta >= 0 && offset > beta,
+            "control: two pages with DIFFERENT ids lost the one page's keys, so the collision guard "
+            + "is refusing everything:\n" + after);
     }
 
     /**
@@ -976,46 +970,27 @@ public class testParseCS2Layout
     @Test
     public void testAPageWithNoIdKeepsWhatTheStationWroteInsideIt() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+        // The shape of the shipped export: the last-used-page block, then a first page with no id.
+        String after = theIndexAfter(
+            "[gleisbild]\nversion\n .major=1\ngroesse\n"
+                + "zuletztBenutzt\n .name=Page One\n"
+                + "seite\n .name=Page One\n .xoffset=1\n .yoffset=3\n"
+                + "seite\n .id=2\n .name=Page Two\n",
+            folder -> org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder,
+                java.util.Arrays.asList("Page One", "Page Two")));
 
-        try
-        {
-            java.io.File config = new java.io.File(folder, "config");
+        assertTrue(after.contains(".xoffset=1") && after.contains(".yoffset=3"),
+            "the page with no stated id lost what the station wrote inside it.  An absent id is "
+            + "the page's position, which is what every other reader of this file does with it "
+            + "(X8-B2).  File was:\n" + after);
 
-            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+        // AND ON THE RIGHT PAGE.
+        int pageOne = after.indexOf(".name=Page One");
+        int pageTwo = after.indexOf(".name=Page Two");
+        int offset = after.indexOf(".xoffset=1");
 
-            // The shape of the shipped export: the last-used-page block, then a first page with no id.
-            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
-                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
-                    + "zuletztBenutzt\n .name=Page One\n"
-                    + "seite\n .name=Page One\n .xoffset=1\n .yoffset=3\n"
-                    + "seite\n .id=2\n .name=Page Two\n")
-                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
-                java.util.Arrays.asList("Page One", "Page Two"));
-
-            String after = new String(
-                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            assertTrue(after.contains(".xoffset=1") && after.contains(".yoffset=3"),
-                "the page with no stated id lost what the station wrote inside it.  An absent id is "
-                + "the page's position, which is what every other reader of this file does with it "
-                + "(X8-B2).  File was:\n" + after);
-
-            // AND ON THE RIGHT PAGE.
-            int pageOne = after.indexOf(".name=Page One");
-            int pageTwo = after.indexOf(".name=Page Two");
-            int offset = after.indexOf(".xoffset=1");
-
-            assertTrue(pageOne >= 0 && offset > pageOne && (pageTwo < 0 || offset < pageTwo),
-                "the offsets came back attached to the wrong page:\n" + after);
-        }
-        finally
-        {
-            deleteTree(folder);
-        }
+        assertTrue(pageOne >= 0 && offset > pageOne && (pageTwo < 0 || offset < pageTwo),
+            "the offsets came back attached to the wrong page:\n" + after);
     }
 
     /**
@@ -1028,42 +1003,24 @@ public class testParseCS2Layout
     @Test
     public void testARenamedPageKeepsWhatTheStationWroteInsideIt() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+        String after = theIndexAfter(
+            "[gleisbild]\nversion\n .major=1\ngroesse\n"
+                + "seite\n .id=7\n .name=Page One\n .xoffset=5\n",
+            folder ->
+            {
+                java.util.Map<String, String> renamed = new java.util.HashMap<>();
+                renamed.put("Page One", "Page Renamed");
+                org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder,
+                    java.util.Arrays.asList("Page Renamed"), renamed, 0, null);
+            });
 
-        try
-        {
-            java.io.File config = new java.io.File(folder, "config");
+        assertTrue(after.contains(".name=Page Renamed"),
+            "precondition: the rename has to have happened:\n" + after);
 
-            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
-
-            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
-                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
-                    + "seite\n .id=7\n .name=Page One\n .xoffset=5\n")
-                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-            java.util.Map<String, String> renamed = new java.util.HashMap<>();
-
-            renamed.put("Page One", "Page Renamed");
-
-            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
-                java.util.Arrays.asList("Page Renamed"), renamed, 0, null);
-
-            String after = new String(
-                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            assertTrue(after.contains(".name=Page Renamed"),
-                "precondition: the rename has to have happened:\n" + after);
-
-            assertTrue(after.contains(".xoffset=5"),
-                "renaming a page deleted what the station wrote inside its block.  The extras are "
-                + "carried by id precisely because a rename is when the name is not usable (X8-B2).  "
-                + "File was:\n" + after);
-        }
-        finally
-        {
-            deleteTree(folder);
-        }
+        assertTrue(after.contains(".xoffset=5"),
+            "renaming a page deleted what the station wrote inside its block.  The extras are "
+            + "carried by id precisely because a rename is when the name is not usable (X8-B2).  "
+            + "File was:\n" + after);
     }
 
     /**

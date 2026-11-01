@@ -1248,20 +1248,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheDirectionsBoxKeepsTheLabelsBoxWidthInEveryLanguage() throws Exception
     {
-        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
-
-        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
-
-        String pageName = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
-        {
-            if (pageName == null) pageName = station.getPage();
-        }
-
-        assertNotNull(pageName, "precondition: no station in the fixture layout");
-
-        final LayoutDiagram page = model.getLayout(pageName);
+        final LayoutDiagram page = theFirstStationsPage();
 
         final java.util.Locale was = java.util.Locale.getDefault();
 
@@ -1282,9 +1269,101 @@ public class testDiagramLooksRight
         }
         finally
         {
-            java.util.Locale.setDefault(was);
-            org.traincontrol.util.I18n.setLocale(was);
+            useLanguage(was);
         }
+    }
+
+    /** Presses the Medium pop-up button and returns the window it opens, or fails with the message. */
+    private org.traincontrol.gui.LayoutPopupUI openedByTheMediumButton(String notOpened) throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        org.traincontrol.gui.LayoutPopupUI opened = null;
+
+        for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        assertNotNull(opened, notOpened);
+
+        return opened;
+    }
+
+    /** A diagram container of the side on white, laid out by hand. */
+    private static javax.swing.JPanel aWhiteDiagramContainer(int side)
+    {
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(side, side);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        return grid;
+    }
+
+    /** The component painted onto a new picture of the size, which is first filled with the background. */
+    private static BufferedImage paintedOn(java.awt.Color background, java.awt.Component what, int width, int height)
+    {
+        BufferedImage shot = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(background);
+            g.fillRect(0, 0, width, height);
+
+            what.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return shot;
+    }
+
+    /** Switches the default locale and the program's language to the locale. */
+    private static void useLanguage(java.util.Locale locale)
+    {
+        java.util.Locale.setDefault(locale);
+        org.traincontrol.util.I18n.setLocale(locale);
+    }
+
+    /** The page of the first captioned station of the fixture's autonomy setup. */
+    private LayoutDiagram theFirstStationsPage()
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
+
+        String pageName = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (pageName == null) pageName = station.getPage();
+        }
+
+        assertNotNull(pageName, "precondition: no station in the fixture layout");
+
+        return model.getLayout(pageName);
     }
 
     /**
@@ -1293,8 +1372,7 @@ public class testDiagramLooksRight
      */
     private int[] editorWidths(LayoutDiagram page, java.util.Locale locale) throws Exception
     {
-        java.util.Locale.setDefault(locale);
-        org.traincontrol.util.I18n.setLocale(locale);
+        useLanguage(locale);
 
         final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
@@ -1363,20 +1441,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheRightColumnIsAsWideAsItsDropdowns() throws Exception
     {
-        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
-
-        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
-
-        String pageName = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
-        {
-            if (pageName == null) pageName = station.getPage();
-        }
-
-        assertNotNull(pageName, "precondition: no station in the fixture layout");
-
-        final LayoutDiagram page = model.getLayout(pageName);
+        final LayoutDiagram page = theFirstStationsPage();
 
         final java.util.Locale was = java.util.Locale.getDefault();
 
@@ -1407,8 +1472,7 @@ public class testDiagramLooksRight
         }
         finally
         {
-            java.util.Locale.setDefault(was);
-            org.traincontrol.util.I18n.setLocale(was);
+            useLanguage(was);
         }
     }
 
@@ -1424,20 +1488,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheRightColumnsButtonsReadInFull() throws Exception
     {
-        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
-
-        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
-
-        String pageName = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
-        {
-            if (pageName == null) pageName = station.getPage();
-        }
-
-        assertNotNull(pageName, "precondition: no station in the fixture layout");
-
-        final LayoutDiagram page = model.getLayout(pageName);
+        final LayoutDiagram page = theFirstStationsPage();
 
         final java.util.Locale was = java.util.Locale.getDefault();
 
@@ -1461,8 +1512,7 @@ public class testDiagramLooksRight
         }
         finally
         {
-            java.util.Locale.setDefault(was);
-            org.traincontrol.util.I18n.setLocale(was);
+            useLanguage(was);
         }
     }
 
@@ -1479,20 +1529,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheRightColumnEndsWhereItsTextEnds() throws Exception
     {
-        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
-
-        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
-
-        String pageName = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
-        {
-            if (pageName == null) pageName = station.getPage();
-        }
-
-        assertNotNull(pageName, "precondition: no station in the fixture layout");
-
-        final LayoutDiagram page = model.getLayout(pageName);
+        final LayoutDiagram page = theFirstStationsPage();
 
         final java.util.Locale was = java.util.Locale.getDefault();
 
@@ -1517,8 +1554,7 @@ public class testDiagramLooksRight
         }
         finally
         {
-            java.util.Locale.setDefault(was);
-            org.traincontrol.util.I18n.setLocale(was);
+            useLanguage(was);
         }
     }
 
@@ -1539,8 +1575,7 @@ public class testDiagramLooksRight
     private java.util.Map<String, java.awt.Rectangle> rightColumn(LayoutDiagram page, java.util.Locale locale,
         final java.util.Map<String, Integer> needs, final java.util.Map<String, Integer> texts) throws Exception
     {
-        java.util.Locale.setDefault(locale);
-        org.traincontrol.util.I18n.setLocale(locale);
+        useLanguage(locale);
 
         final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
@@ -2698,11 +2733,7 @@ public class testDiagramLooksRight
         // different whichever way round they were painted.
         caption.setBackground(new java.awt.Color(0, 0, 115));
 
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size, size);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size);
 
         tile.setBounds(0, 0, size, size);
 
@@ -2782,11 +2813,7 @@ public class testDiagramLooksRight
 
         org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size, size);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size);
 
         tile.setBounds(0, 0, size, size);
         grid.add(tile);
@@ -2829,21 +2856,7 @@ public class testDiagramLooksRight
         panel.setSize(size, size);
         panel.doLayout();
 
-        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
-            panel.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, panel, size, size);
 
         return shot;
     }
@@ -3651,11 +3664,7 @@ public class testDiagramLooksRight
         address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size / 3));
         address.setLines("88");
 
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size, size);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size);
 
         tile.setBounds(0, 0, size, size);
 
@@ -3918,11 +3927,7 @@ public class testDiagramLooksRight
 
         final int size = 30;
 
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size * 3, size * 3);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
 
         org.traincontrol.gui.LayoutLabel station = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
@@ -3944,21 +3949,7 @@ public class testDiagramLooksRight
             grid.add(beside, 0);
         }
 
-        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
-            grid.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
 
         int inside = 0, beside = 0;
 
@@ -4074,11 +4065,7 @@ public class testDiagramLooksRight
 
         final int size = 30;
 
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size * 3, size * 3);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
 
         org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
@@ -4137,21 +4124,7 @@ public class testDiagramLooksRight
      */
     private static int[] blueAndArrowsBeside(javax.swing.JPanel grid, int size)
     {
-        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
-            grid.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
 
         // THE ARROWS' COLORS ARE THE PROGRAM'S OWN, so a color changed there is followed and not left uncounted
         java.awt.Color oneWay = (java.awt.Color) support.ProgramConstants.get(
@@ -4272,11 +4245,7 @@ public class testDiagramLooksRight
      */
     private static int spilledInFrontOfCaptions(int size, org.traincontrol.automationui.TileAnnotation station)
     {
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size * 3, size * 3);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
 
         java.awt.Rectangle[] covered = {new java.awt.Rectangle(2 * size, size, size, size),
             new java.awt.Rectangle(size, 2 * size, size, size)};
@@ -4311,21 +4280,7 @@ public class testDiagramLooksRight
 
         grid.add(middle);
 
-        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
-            grid.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
 
         int blue = 0;
 
@@ -4416,11 +4371,7 @@ public class testDiagramLooksRight
         org.traincontrol.automationui.TileAnnotation station)
     {
 
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size * 3, size * 3);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
 
         org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
@@ -4445,21 +4396,7 @@ public class testDiagramLooksRight
         // painted after the station, as a later square on the page is
         grid.add(right, 0);
 
-        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
-            grid.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
 
         int n = 0;
 
@@ -4499,21 +4436,7 @@ public class testDiagramLooksRight
             text.setHalo(true);
             text.setSize(text.getPreferredSize());
 
-            BufferedImage shot = new BufferedImage(text.getWidth(), text.getHeight(), BufferedImage.TYPE_INT_RGB);
-
-            java.awt.Graphics2D g = shot.createGraphics();
-
-            try
-            {
-                g.setColor(java.awt.Color.BLACK);
-                g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
-
-                text.paint(g);
-            }
-            finally
-            {
-                g.dispose();
-            }
+            BufferedImage shot = paintedOn(java.awt.Color.BLACK, text, text.getWidth(), text.getHeight());
 
             int white = 0, widest = 0;
 
@@ -4579,11 +4502,7 @@ public class testDiagramLooksRight
     /** The orange of a selection outline on the square to the right of the middle one, a station on its curve or none. */
     private static int outlineBesideACurvedStation(int size, org.traincontrol.automationui.TileAnnotation station)
     {
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size * 3, size * 3);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
 
         org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
@@ -4605,21 +4524,7 @@ public class testDiagramLooksRight
 
         grid.add(right);
 
-        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
-            grid.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
 
         int orange = 0;
 
@@ -4749,33 +4654,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheMediumButtonOpensAMediumPopUp() throws Exception
     {
-        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
-        buttonField.setAccessible(true);
-
-        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
-
-        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
-
-        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
-
-        org.traincontrol.gui.LayoutPopupUI opened = null;
-
-        for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
-        {
-            Thread.sleep(100);
-
-            for (java.awt.Window w : java.awt.Window.getWindows())
-            {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
-                {
-                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
-                }
-            }
-        }
-
-        assertNotNull(opened, "the Medium button opened no pop-up window");
-
-        final org.traincontrol.gui.LayoutPopupUI popup = opened;
+        final org.traincontrol.gui.LayoutPopupUI popup = openedByTheMediumButton("the Medium button opened no pop-up window");
 
         try
         {
@@ -5241,33 +5120,7 @@ public class testDiagramLooksRight
     @Test
     public void testAPoppedOutDiagramScrollsHalfASquareAtATime() throws Exception
     {
-        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
-        buttonField.setAccessible(true);
-
-        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
-
-        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
-
-        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
-
-        org.traincontrol.gui.LayoutPopupUI opened = null;
-
-        for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
-        {
-            Thread.sleep(100);
-
-            for (java.awt.Window w : java.awt.Window.getWindows())
-            {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
-                {
-                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
-                }
-            }
-        }
-
-        assertNotNull(opened, "precondition: the Medium button opened no pop-up window");
-
-        final org.traincontrol.gui.LayoutPopupUI popup = opened;
+        final org.traincontrol.gui.LayoutPopupUI popup = openedByTheMediumButton("precondition: the Medium button opened no pop-up window");
 
         try
         {
@@ -5362,11 +5215,7 @@ public class testDiagramLooksRight
     private static int trainInk(int size, java.util.function.BooleanSupplier switched, java.lang.reflect.Method shown)
         throws Exception
     {
-        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        grid.setLayout(null);
-        grid.setSize(size * 3, size * 3);
-        grid.setBackground(java.awt.Color.WHITE);
+        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
 
         org.traincontrol.gui.LayoutLabel square = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
@@ -5378,21 +5227,7 @@ public class testDiagramLooksRight
 
         grid.add(square);
 
-        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
-            grid.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
 
         int ink = 0;
 
@@ -5428,21 +5263,7 @@ public class testDiagramLooksRight
             text.setHalo(true);
             text.setSize(text.getPreferredSize());
 
-            BufferedImage shot = new BufferedImage(text.getWidth(), text.getHeight(), BufferedImage.TYPE_INT_RGB);
-
-            java.awt.Graphics2D g = shot.createGraphics();
-
-            try
-            {
-                g.setColor(java.awt.Color.BLACK);
-                g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
-
-                text.paint(g);
-            }
-            finally
-            {
-                g.dispose();
-            }
+            BufferedImage shot = paintedOn(java.awt.Color.BLACK, text, text.getWidth(), text.getHeight());
 
             int white = 0, blue = 0, blueTop = Integer.MAX_VALUE, blueBottom = -1, whiteTop = Integer.MAX_VALUE,
                 whiteBottom = -1, blueLeft = Integer.MAX_VALUE, whiteLeft = Integer.MAX_VALUE;

@@ -358,17 +358,8 @@ public class testAutonomyStoreSettingsMatrix
 
             try
             {
-                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
-
-                store.setPageIds(pageIds());
-
-                store.createConfiguration(CONFIGURATION, null);
-                store.setActiveConfiguration(CONFIGURATION);
-
                 TileKey was = at(4, 4);
-
-                setting.write.accept(store, was);
-
+                AutonomyCompanionStore store = aStoreHolding(setting, folder, was);
                 Object expected = setting.read.apply(store, was);
 
                 store.save();
@@ -446,6 +437,21 @@ public class testAutonomyStoreSettingsMatrix
             assertTrue(found, setting + " says it lives in a field called " + setting.field
                 + ", and the store has no such field - so the guard is not guarding it");
         }
+    }
+
+    /** A store in the folder with the page ids set and the matrix configuration active, the setting written at the square. */
+    private static AutonomyCompanionStore aStoreHolding(Setting setting, File folder, TileKey at) throws IOException
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+        store.setPageIds(pageIds());
+
+        store.createConfiguration(CONFIGURATION, null);
+        store.setActiveConfiguration(CONFIGURATION);
+
+        setting.write.accept(store, at);
+
+        return store;
     }
 
     /**
@@ -534,17 +540,8 @@ public class testAutonomyStoreSettingsMatrix
 
             try
             {
-                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
-
-                store.setPageIds(pageIds());
-
-                store.createConfiguration(CONFIGURATION, null);
-                store.setActiveConfiguration(CONFIGURATION);
-
                 TileKey was = at(4, 4);
-
-                setting.write.accept(store, was);
-
+                AutonomyCompanionStore store = aStoreHolding(setting, folder, was);
                 Object expected = setting.read.apply(store, was);
 
                 store.save();
@@ -595,17 +592,8 @@ public class testAutonomyStoreSettingsMatrix
 
             try
             {
-                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
-
-                store.setPageIds(pageIds());
-
-                store.createConfiguration(CONFIGURATION, null);
-                store.setActiveConfiguration(CONFIGURATION);
-
                 TileKey was = at(4, 4);
-
-                setting.write.accept(store, was);
-
+                AutonomyCompanionStore store = aStoreHolding(setting, folder, was);
                 Object expected = setting.read.apply(store, was);
 
                 // The rename, then the save, then the load - the order the menu item does it in.
@@ -666,17 +654,8 @@ public class testAutonomyStoreSettingsMatrix
 
             try
             {
-                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
-
-                store.setPageIds(pageIds());
-
-                store.createConfiguration(CONFIGURATION, null);
-                store.setActiveConfiguration(CONFIGURATION);
-
                 TileKey was = at(4, 4);
-
-                setting.write.accept(store, was);
-
+                AutonomyCompanionStore store = aStoreHolding(setting, folder, was);
                 Object expected = setting.read.apply(store, was);
 
                 store.save();

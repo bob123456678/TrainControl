@@ -276,6 +276,34 @@ public class testRouteEditorLocked
     }
 
     /**
+     * Clicks the mark on a row of an ordinary route, which changes the row count by `change`, and then on a locked one,
+     * which does not change it.
+     */
+    private static void aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(final String mark, int change, String ordinaryDidNothing,
+        String lockedActed) throws Exception
+    {
+        final org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
+
+        int before = ordinary.commandCount();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> ordinary.clickCommandMarkForTest(0, mark));
+
+        assertEquals(ordinary.commandCount(), before + change, ordinaryDidNothing);
+
+        close(ordinary);
+
+        final org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
+
+        int lockedBefore = owned.commandCount();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> owned.clickCommandMarkForTest(0, mark));
+
+        assertEquals(owned.commandCount(), lockedBefore, lockedActed);
+
+        close(owned);
+    }
+
+    /**
      * deleteRow's own guard refuses, not just the trash mark that is never drawn.
      *
      * MUTATION: delete "if (locked) return;" from deleteRow.
@@ -285,31 +313,11 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
-
-        int before = ordinary.commandCount();
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markDelete()));
-
-        assertEquals(ordinary.commandCount(), before - 1,
+        aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(org.traincontrol.gui.RouteEditorFrame.markDelete(), -1,
             "deleting a row on an ordinary route did nothing, so the locked half below would "
-            + "prove nothing about deleteRow's own guard");
-
-        close(ordinary);
-
-        org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
-
-        int lockedBefore = owned.commandCount();
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            owned.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markDelete()));
-
-        assertEquals(owned.commandCount(), lockedBefore,
+            + "prove nothing about deleteRow's own guard",
             "deleteRow removed a row from a route belonging to the Central Station - the drawing "
             + "guard is not the only door in");
-
-        close(owned);
     }
 
     /**
@@ -322,31 +330,11 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorFrame ordinary = open(locked(false));
-
-        int before = ordinary.commandCount();
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markCopy()));
-
-        assertEquals(ordinary.commandCount(), before + 1,
+        aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(org.traincontrol.gui.RouteEditorFrame.markCopy(), +1,
             "duplicating a row on an ordinary route did nothing, so the locked half below would "
-            + "prove nothing about duplicateRow's own guard");
-
-        close(ordinary);
-
-        org.traincontrol.gui.RouteEditorFrame owned = open(locked(true));
-
-        int lockedBefore = owned.commandCount();
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            owned.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorFrame.markCopy()));
-
-        assertEquals(owned.commandCount(), lockedBefore,
+            + "prove nothing about duplicateRow's own guard",
             "duplicateRow copied a row on a route belonging to the Central Station - the drawing "
             + "guard is not the only door in");
-
-        close(owned);
     }
 
     /**

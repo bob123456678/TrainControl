@@ -135,12 +135,7 @@ public class testTheArrowsTellTheWholeStory
 
         try
         {
-            org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
-
-            json.getJSONObject("tileDirections").put(key(main), "BOTH");
-            json.getJSONObject("tileDirections").put(key(spur), "NONE");
-
-            Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+            closeTheSpurUnderAGreenToe(setup, was);
 
             AutonomySession read = new AutonomySession(scenario.getFolder());
 
@@ -447,6 +442,17 @@ public class testTheArrowsTellTheWholeStory
         return null;
     }
 
+    /** Writes the setup file as it was, but with the switch's main line open both ways and its spur closed. */
+    private static void closeTheSpurUnderAGreenToe(File setup, byte[] was) throws Exception
+    {
+        org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
+
+        json.getJSONObject("tileDirections").put(key(main), "BOTH");
+        json.getJSONObject("tileDirections").put(key(spur), "NONE");
+
+        Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+    }
+
     /** The sides of a square drawn green: those a train may leave by, as the arrows combine its roads. */
     private static Set<Side> arrows(AutonomySession on, TileKey square)
     {
@@ -648,12 +654,7 @@ public class testTheArrowsTellTheWholeStory
 
         try
         {
-            org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
-
-            json.getJSONObject("tileDirections").put(key(main), "BOTH");
-            json.getJSONObject("tileDirections").put(key(spur), "NONE");
-
-            Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+            closeTheSpurUnderAGreenToe(setup, was);
 
             // A FILE THAT CANNOT BE WRITTEN
             assertTrue(setup.setReadOnly(), "precondition: the setup file would not be made read-only");

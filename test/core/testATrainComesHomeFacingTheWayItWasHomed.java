@@ -228,13 +228,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         {
             layout.clearHomeLocomotives();
 
-            for (Point p : new ArrayList<>(layout.getPoints()))
-            {
-                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
-                {
-                    layout.moveLocomotive(null, p.getName(), true);
-                }
-            }
+            liftTheProbeTrainOffTheRailway();
         }
     }
 
@@ -289,13 +283,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
             layout.clearHomeLocomotives();
 
-            for (Point p : new ArrayList<>(layout.getPoints()))
-            {
-                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
-                {
-                    layout.moveLocomotive(null, p.getName(), true);
-                }
-            }
+            liftTheProbeTrainOffTheRailway();
         }
     }
 
@@ -356,13 +344,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
             session.placeLocomotive(square, null);
             session.setRunningLayoutSource(null);
 
-            for (Point p : new ArrayList<>(layout.getPoints()))
-            {
-                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
-                {
-                    layout.moveLocomotive(null, p.getName(), true);
-                }
-            }
+            liftTheProbeTrainOffTheRailway();
         }
     }
 
@@ -418,12 +400,18 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
             layout.clearHomeLocomotives();
 
-            for (Point p : new ArrayList<>(layout.getPoints()))
+            liftTheProbeTrainOffTheRailway();
+        }
+    }
+
+    /** Takes the probe train off every square of the running layout. */
+    private static void liftTheProbeTrainOffTheRailway()
+    {
+        for (Point p : new ArrayList<>(layout.getPoints()))
+        {
+            if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
             {
-                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
-                {
-                    layout.moveLocomotive(null, p.getName(), true);
-                }
+                layout.moveLocomotive(null, p.getName(), true);
             }
         }
     }

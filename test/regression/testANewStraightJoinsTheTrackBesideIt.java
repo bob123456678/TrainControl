@@ -121,9 +121,7 @@ public class testANewStraightJoinsTheTrackBesideIt
             componentType.UNCOUPLER })
         {
             int ways = LayoutDiagramComponent.getNumOrientations(type);
-            int[] helds = new int[ways];
-
-            for (int way = 0; way < ways; way++) helds[way] = way;
+            int[] helds = everyWay(ways);
 
             int[] eastWest = landings(type, helds, 2, 2);
             int[] northSouth = landings(type, helds, 5, 2);
@@ -161,9 +159,7 @@ public class testANewStraightJoinsTheTrackBesideIt
             componentType.SIGNAL, componentType.UNCOUPLER })
         {
             int ways = LayoutDiagramComponent.getNumOrientations(type);
-            int[] helds = new int[ways];
-
-            for (int way = 0; way < ways; way++) helds[way] = way;
+            int[] helds = everyWay(ways);
 
             int[] east = landings(type, helds, 11, 9);
             int[] north = landings(type, helds, 6, 10);
@@ -210,9 +206,7 @@ public class testANewStraightJoinsTheTrackBesideIt
             componentType.SIGNAL, componentType.END })
         {
             int ways = LayoutDiagramComponent.getNumOrientations(type);
-            int[] helds = new int[ways];
-
-            for (int way = 0; way < ways; way++) helds[way] = way;
+            int[] helds = everyWay(ways);
 
             for (int how : new int[] { COPY, MOVE })
             {
@@ -338,9 +332,7 @@ public class testANewStraightJoinsTheTrackBesideIt
         for (componentType type : new componentType[] { componentType.LAMP, componentType.TEXT, componentType.ROUTE })
         {
             int ways = LayoutDiagramComponent.getNumOrientations(type);
-            int[] helds = new int[ways];
-
-            for (int way = 0; way < ways; way++) helds[way] = way;
+            int[] helds = everyWay(ways);
 
             int[] gap = landings(type, helds, 5, 2);
             int[] beside = landings(type, helds, 11, 9);
@@ -388,9 +380,7 @@ public class testANewStraightJoinsTheTrackBesideIt
             componentType.CUSTOM_PERM_THREEWAY })
         {
             int ways = LayoutDiagramComponent.getNumOrientations(type);
-            int[] helds = new int[ways];
-
-            for (int way = 0; way < ways; way++) helds[way] = way;
+            int[] helds = everyWay(ways);
 
             int[] landed = landings(type, helds, 10, 7);
 
@@ -455,6 +445,38 @@ public class testANewStraightJoinsTheTrackBesideIt
         }
     }
 
+    /** The held ways of a tile that has that many, in order: the way each is held as. */
+    private static int[] everyWay(int ways)
+    {
+        int[] helds = new int[ways];
+
+        for (int way = 0; way < ways; way++) helds[way] = way;
+
+        return helds;
+    }
+
+    /** An editor on the page, once the grid it draws on a later turn of the event queue has settled. */
+    private static LayoutEditor aRenderedEditor(final LayoutDiagram page) throws Exception
+    {
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new LayoutEditor(page, 30, ui, 0);
+            editor[0].render();
+        });
+
+        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
+
+        ui.whenTilesSettled(() -> settled.countDown());
+
+        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+        for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        return editor[0];
+    }
+
     /**
      * One page, one editor: drops a tile of the type on the square once for each way round it may be held, and says how
      * each landed.  The page: an east-west line broken at 2,2, a north-south line broken at 5,2, and four lone pieces of
@@ -494,21 +516,7 @@ public class testANewStraightJoinsTheTrackBesideIt
         page.addComponent(componentType.STRAIGHT, 16, 5, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 17, 9, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
 
-        final LayoutEditor[] editor = new LayoutEditor[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            editor[0] = new LayoutEditor(page, 30, ui, 0);
-            editor[0].render();
-        });
-
-        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
-
-        ui.whenTilesSettled(() -> settled.countDown());
-
-        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
-
-        for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+        final LayoutEditor[] editor = {aRenderedEditor(page)};
 
         try
         {
@@ -587,22 +595,7 @@ public class testANewStraightJoinsTheTrackBesideIt
 
         assertNotNull(held, "precondition: the palette tile was not made");
 
-        final LayoutEditor[] editor = new LayoutEditor[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            editor[0] = new LayoutEditor(page, 30, ui, 0);
-            editor[0].render();
-        });
-
-        // RENDER DRAWS THE GRID ON A LATER TURN of the event queue, as the other editor tests wait for.
-        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
-
-        ui.whenTilesSettled(() -> settled.countDown());
-
-        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
-
-        for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+        final LayoutEditor[] editor = {aRenderedEditor(page)};
 
         try
         {
