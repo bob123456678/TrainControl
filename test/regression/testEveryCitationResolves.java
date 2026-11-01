@@ -55,7 +55,7 @@ public class testEveryCitationResolves
     private static final String THE_ROLL_ITSELF = "testEveryCitationResolves.java";
 
     /** Citations that resolve to nothing in `docs/`: a ratchet that may fall, and then must be lowered. */
-    private static final int DEAD_CITATIONS = 16;
+    private static final int DEAD_CITATIONS = 15;
 
     /**
      * Every id cited from the code is defined in `docs/`, or is one of the known dead ones.
