@@ -2,7 +2,6 @@ package regression;
 
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Window;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +11,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -204,19 +202,15 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             Answerer answerer = pressImport(ui[0], MT491, "MT-491 report", Collections.<String>emptySet());
 
@@ -251,16 +245,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -278,19 +263,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -427,16 +408,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -455,19 +427,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             importFromTheMenu(ui[0], MT298, "MT-298 import");
 
@@ -546,16 +514,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -573,11 +532,9 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         File broken = File.createTempFile("tc-broken-autonomy", ".json");
 
@@ -590,11 +547,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -622,16 +577,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
 
             if (!broken.delete()) broken.deleteOnExit();
         }
@@ -652,11 +598,9 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -664,11 +608,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -704,16 +646,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -733,19 +666,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -789,16 +718,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -818,23 +738,19 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-
-            sandbox.simulated();
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
         // One train already standing is "already placed", so the file's four stay off the railway and the moved train
         // is named.
-            sandbox.withNoTrains().standing(new TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
+            sandboxed.sandbox().withNoTrains().standing(new TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
 
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -940,16 +856,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -966,19 +873,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             importFromTheMenu(ui[0], MT298, "MT-298 run");
 
@@ -1027,16 +930,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1053,19 +947,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1112,16 +1002,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1138,11 +1019,9 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -1150,11 +1029,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1187,16 +1064,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1213,11 +1081,9 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1225,11 +1091,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1277,16 +1141,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1302,11 +1157,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1314,11 +1167,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1381,16 +1232,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1406,11 +1248,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1418,11 +1258,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1457,16 +1295,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1483,11 +1312,9 @@ public class testTheImportDoorReadsAnOldFile
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1495,11 +1322,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1548,16 +1373,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1573,11 +1389,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1589,11 +1403,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1631,16 +1443,7 @@ public class testTheImportDoorReadsAnOldFile
             if (ui[0] != null) staging.set(ui[0], false);
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1656,11 +1459,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1668,11 +1469,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1705,16 +1504,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1730,13 +1520,11 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
         final String routeName = "RLV7-A1 route";
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
 
@@ -1753,11 +1541,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -1836,16 +1622,7 @@ public class testTheImportDoorReadsAnOldFile
 
             if (ui[0] != null && ui[0].getModel().getRoute(routeName) != null) ui[0].getModel().deleteRoute(routeName);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1882,11 +1659,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -1896,11 +1671,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -2015,16 +1788,7 @@ public class testTheImportDoorReadsAnOldFile
 
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2042,21 +1806,17 @@ public class testTheImportDoorReadsAnOldFile
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -2116,16 +1876,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2143,11 +1894,9 @@ public class testTheImportDoorReadsAnOldFile
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -2155,11 +1904,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -2228,16 +1975,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2275,11 +2013,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -2287,11 +2023,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -2320,8 +2054,8 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(forgotten.get(ui[0]), inUse, "choosing the folder already in use forgot which configuration it"
                 + " ran (RLV8-C5)");
 
-            assertTheFileHasItWhereItWasMoved(sandbox.getFolder(), inUse, session, move, "after the folder in use was"
-                + " chosen again while an edit waited (RSA21-A1)");
+            assertTheFileHasItWhereItWasMoved(sandboxed.sandbox().getFolder(), inUse, session, move,
+                "after the folder in use was" + " chosen again while an edit waited (RSA21-A1)");
 
             answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
 
@@ -2391,16 +2125,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2417,21 +2142,17 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final Object[] dispatched = dispatchATrain(ui[0], null);
 
@@ -2468,16 +2189,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2491,11 +2203,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -2507,11 +2217,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             declined.set(ui[0], true);
 
@@ -2531,16 +2239,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2556,11 +2255,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -2568,11 +2265,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             java.lang.reflect.Field covered = TrainControlUI.class.getDeclaredField("coveredTrack");
 
@@ -2675,16 +2370,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2701,21 +2387,17 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -2771,16 +2453,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2796,21 +2469,17 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -2866,16 +2535,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2892,11 +2552,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -2906,11 +2564,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
@@ -2958,16 +2614,7 @@ public class testTheImportDoorReadsAnOldFile
 
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2983,11 +2630,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -2995,11 +2640,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -3033,16 +2676,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3076,23 +2710,19 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-
-            sandbox.simulated();
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
             if (!unload) addAConfigurationLikeTheOneInUse("Other");
 
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -3164,16 +2794,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3220,19 +2841,15 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -3267,16 +2884,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3546,11 +3154,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -3560,11 +3166,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -3618,16 +3222,7 @@ public class testTheImportDoorReadsAnOldFile
 
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3648,21 +3243,17 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
+            ui[0] = sandboxed.hold(openTheWindow());
 
-            ui[0] = openTheWindow();
-
-            final File folder = new File(sandbox.getFolder(), "mt779");
+            final File folder = new File(sandboxed.sandbox().getFolder(), "mt779");
 
             assertTrue(folder.mkdirs(), "precondition: " + folder + " could not be made");
 
@@ -3807,16 +3398,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3832,23 +3414,19 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
+            ui[0] = sandboxed.hold(openTheWindow());
 
-            ui[0] = openTheWindow();
-
-            final File old = new File(sandbox.getFolder(), "MT-491-autonomy-2.7.4c.json");
+            final File old = new File(sandboxed.sandbox().getFolder(), "MT-491-autonomy-2.7.4c.json");
 
             java.nio.file.Files.copy(MT491.toPath(), old.toPath());
 
@@ -3916,16 +3494,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4052,21 +3621,17 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -4171,16 +3736,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4208,19 +3764,15 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
@@ -4260,16 +3812,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4285,19 +3828,15 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -4351,16 +3890,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4377,11 +3907,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -4389,11 +3917,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -4528,16 +4054,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4702,36 +4219,20 @@ public class testTheImportDoorReadsAnOldFile
         {
             Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            // Told to stop during the sleep, one more scan would answer the next door's dialog.
+            support.DialogWatch.untilStillGoing(going::get, 150, dialog ->
             {
-                try
-                {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
 
-                // Told to stop during the sleep, one more scan would answer the next door's dialog.
-                if (!going.get()) return;
+                if (pane == null || !handled.add(pane)) return;
 
-                for (Window window : Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof JDialog)) continue;
+                asked.add(String.valueOf(pane.getMessage()));
 
-                    final JOptionPane pane = find(((JDialog) window).getContentPane(), JOptionPane.class);
+                final Object[] options = pane.getOptions();
 
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    asked.add(String.valueOf(pane.getMessage()));
-
-                    final Object[] options = pane.getOptions();
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
-                        ? options[0] : Integer.valueOf(JOptionPane.OK_OPTION)));
-                }
-            }
+                SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
+                    ? options[0] : Integer.valueOf(JOptionPane.OK_OPTION)));
+            });
         }, "answering yes");
 
         answering.setDaemon(true);
@@ -4845,19 +4346,15 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             importFromTheMenu(ui[0], MT491, "MT-491 facings");
 
@@ -4913,16 +4410,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4939,11 +4427,9 @@ public class testTheImportDoorReadsAnOldFile
 
         assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         // The locomotive is named from the file: written here, its name reads as a finding's id to the citation census.
         File homed = File.createTempFile("tc-homed-autonomy", ".json");
@@ -4982,11 +4468,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             importFromTheMenu(ui[0], homed, "MT-298 homes");
 
@@ -5030,16 +4514,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
 
             if (!homed.delete()) homed.deleteOnExit();
         }
@@ -5267,74 +4742,58 @@ public class testTheImportDoorReadsAnOldFile
         @Override
         public void run()
         {
-            while (running)
+            // Told to stop while asleep: the next import's dialogs are not this one's to answer (OB-323).
+            support.DialogWatch.untilStillGoing(() -> running, 150, dialog ->
             {
-                try
+                Container content = dialog.getContentPane();
+
+                final JFileChooser chooser = find(content, JFileChooser.class);
+
+                if (chooser != null)
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
+                    if (!handled.add(chooser)) return;
+
+                    chose = true;
+
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        chooser.setSelectedFile(file);
+                        chooser.approveSelection();
+                    });
+
                     return;
                 }
 
-                // Told to stop while asleep: the next import's dialogs are not this one's to answer (OB-323).
-                if (!running) return;
+                final JOptionPane pane = find(content, JOptionPane.class);
 
-                for (Window window : Window.getWindows())
+                if (pane == null || !handled.add(pane)) return;
+
+                final String text = textOf(pane.getMessage());
+
+                if (I18n.t("autosetup.ui.promptImportName").equals(text))
                 {
-                    if (!window.isShowing() || !(window instanceof JDialog)) continue;
+                    named = true;
 
-                    Container content = ((JDialog) window).getContentPane();
-
-                    final JFileChooser chooser = find(content, JFileChooser.class);
-
-                    if (chooser != null)
+                    SwingUtilities.invokeLater(() ->
                     {
-                        if (!handled.add(chooser)) continue;
+                        pane.setInputValue(name);
+                        pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION));
+                    });
 
-                        chose = true;
-
-                        SwingUtilities.invokeLater(() ->
-                        {
-                            chooser.setSelectedFile(file);
-                            chooser.approveSelection();
-                        });
-
-                        continue;
-                    }
-
-                    final JOptionPane pane = find(content, JOptionPane.class);
-
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    final String text = textOf(pane.getMessage());
-
-                    if (I18n.t("autosetup.ui.promptImportName").equals(text))
-                    {
-                        named = true;
-
-                        SwingUtilities.invokeLater(() ->
-                        {
-                            pane.setInputValue(name);
-                            pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION));
-                        });
-
-                        continue;
-                    }
-
-                    said.add(text);
-                    heights.add(window.getHeight());
-                    shapes.add(support.PopupShape.of(pane));
-
-                    final Object[] options = pane.getOptions();
-
-                    final int answer = no.contains(text) ? 1 : 0;
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > answer
-                        ? options[answer] : Integer.valueOf(JOptionPane.OK_OPTION)));
+                    return;
                 }
-            }
+
+                said.add(text);
+                heights.add(dialog.getHeight());
+                shapes.add(support.PopupShape.of(pane));
+
+                final Object[] options = pane.getOptions();
+
+                final int answer = no.contains(text) ? 1 : 0;
+
+                SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > answer
+                    ? options[answer] : Integer.valueOf(JOptionPane.OK_OPTION)));
+            });
         }
     }
 
@@ -5382,19 +4841,7 @@ public class testTheImportDoorReadsAnOldFile
     /** The first component of a type inside a container, however deep. */
     private static <T> T find(Container container, Class<T> type)
     {
-        for (Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof Container)
-            {
-                T deeper = find((Container) child, type);
-
-                if (deeper != null) return deeper;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 
     // ---------------------------------------------------------------- what it said
@@ -5543,8 +4990,7 @@ public class testTheImportDoorReadsAnOldFile
     /** The chooser remembers the folder a file was chosen in; put the operator's back. */
     static void putTheFolderBack(String folderWas)
     {
-        if (folderWas == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
-        else TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, folderWas);
+        support.SandboxedWindow.putTheFolderBack(folderWas);
     }
 
     // ---------------------------------------------------------------- the log
@@ -5622,19 +5068,15 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -5671,16 +5113,7 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -5696,22 +5129,18 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -5745,16 +5174,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             going.set(false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -5831,11 +5251,9 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -5844,11 +5262,9 @@ public class testTheImportDoorReadsAnOldFile
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -5964,7 +5380,7 @@ public class testTheImportDoorReadsAnOldFile
                 + asked);
 
             org.traincontrol.automationui.AutonomyCompanionStore onDisk =
-                new org.traincontrol.automationui.AutonomyCompanionStore(sandbox.getFolder());
+                new org.traincontrol.automationui.AutonomyCompanionStore(sandboxed.sandbox().getFolder());
 
             onDisk.load();
 
@@ -5992,16 +5408,7 @@ public class testTheImportDoorReadsAnOldFile
 
             if (answers != null) answers.join(5000);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 

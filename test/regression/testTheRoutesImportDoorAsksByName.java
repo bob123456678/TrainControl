@@ -1,8 +1,6 @@
 package regression;
 
-import java.awt.Component;
 import java.awt.Container;
-import java.awt.Window;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,7 +11,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -370,11 +367,9 @@ public class testTheRoutesImportDoorAsksByName
                 + " own copy of the data (one.sh, battery.sh)");
         }
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         File file = File.createTempFile("tc-routes-export", ".json");
 
@@ -382,9 +377,9 @@ public class testTheRoutesImportDoorAsksByName
 
         try
         {
-            sandbox = support.LayoutSandbox.open();
+            sandboxed.hold(support.LayoutSandbox.open());
 
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             MarklinControlStation model = (MarklinControlStation) ui[0].getModel();
 
@@ -466,17 +461,7 @@ public class testTheRoutesImportDoorAsksByName
         {
             if (answerer != null) answerer.running = false;
 
-            if (folderWas == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
-            else TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
 
             if (!file.delete()) file.deleteOnExit();
         }
@@ -540,88 +525,60 @@ public class testTheRoutesImportDoorAsksByName
         @Override
         public void run()
         {
-            while (running)
+            support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                try
+                final JFileChooser chooser = find(dialog.getContentPane(), JFileChooser.class);
+
+                if (chooser != null)
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
+                    if (!handled.add(chooser)) return;
+
+                    chose = true;
+
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        chooser.setSelectedFile(file);
+                        chooser.approveSelection();
+                    });
+
                     return;
                 }
 
-                for (Window window : Window.getWindows())
+                final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
+
+                if (pane == null || !handled.add(pane)) return;
+
+                if (I18n.t("route.ui.confirmRearmImportedTitle").equals(dialog.getTitle()))
                 {
-                    if (!window.isShowing() || !(window instanceof JDialog)) continue;
+                    questionShape = support.PopupShape.of(pane);
+                    question = textOf(questionShape);
+                    initial = String.valueOf(pane.getInitialValue());
 
-                    final JDialog dialog = (JDialog) window;
+                    final String answer = yes ? YES : NO;
 
-                    final JFileChooser chooser = find(dialog.getContentPane(), JFileChooser.class);
-
-                    if (chooser != null)
+                    SwingUtilities.invokeLater(() ->
                     {
-                        if (!handled.add(chooser)) continue;
-
-                        chose = true;
-
-                        SwingUtilities.invokeLater(() ->
+                        for (Object option : pane.getOptions())
                         {
-                            chooser.setSelectedFile(file);
-                            chooser.approveSelection();
-                        });
+                            if (answer.equals(String.valueOf(option))) pane.setValue(option);
+                        }
+                    });
 
-                        continue;
-                    }
-
-                    final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
-
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    if (I18n.t("route.ui.confirmRearmImportedTitle").equals(dialog.getTitle()))
-                    {
-                        questionShape = support.PopupShape.of(pane);
-                        question = textOf(questionShape);
-                        initial = String.valueOf(pane.getInitialValue());
-
-                        final String answer = yes ? YES : NO;
-
-                        SwingUtilities.invokeLater(() ->
-                        {
-                            for (Object option : pane.getOptions())
-                            {
-                                if (answer.equals(String.valueOf(option))) pane.setValue(option);
-                            }
-                        });
-
-                        continue;
-                    }
-
-                    support.PopupShape shown = support.PopupShape.of(pane);
-
-                    saidShapes.add(shown);
-                    said.add(textOf(shown));
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
+                    return;
                 }
-            }
+
+                support.PopupShape shown = support.PopupShape.of(pane);
+
+                saidShapes.add(shown);
+                said.add(textOf(shown));
+
+                SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
+            });
         }
     }
 
     private static <T> T find(Container container, Class<T> type)
     {
-        for (Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof Container)
-            {
-                T found = find((Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 }

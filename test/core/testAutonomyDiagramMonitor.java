@@ -2926,15 +2926,7 @@ public class testAutonomyDiagramMonitor
                     java.awt.image.BufferedImage diagram = wholeIcon(badge, road, size, false);
                     java.awt.image.BufferedImage editor = wholeIcon(badge, road, size, true);
 
-                    int differ = 0;
-
-                    for (int x = 0; x < diagram.getWidth(); x++)
-                    {
-                        for (int y = 0; y < diagram.getHeight(); y++)
-                        {
-                            if (diagram.getRGB(x, y) != editor.getRGB(x, y)) differ++;
-                        }
-                    }
+                    int differ = support.Pixels.differing(diagram, editor);
 
                     assertEquals(differ, 0, badge + " on " + road[0] + "-" + road[1] + " at " + size + " pixels is drawn"
                         + " differently in the editor - Adam: \"same appearance in editor as viewer\"");
@@ -3083,17 +3075,7 @@ public class testAutonomyDiagramMonitor
     /** How many pixels of a color an image has. */
     private static int inkOf(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
     {
-        int n = 0;
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                if (colour.test(image.getRGB(x, y))) n++;
-            }
-        }
-
-        return n;
+        return support.Pixels.count(image, colour);
     }
 
     /**

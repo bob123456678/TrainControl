@@ -1547,24 +1547,7 @@ public class testHomeStaging
         // `testALockEdgeNamingMissingTrackIsDroppedLoudly` listens the same way.
         final List<String> heard = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-        java.util.logging.Handler ear = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                heard.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        java.util.logging.Handler ear = support.LogTap.everyMessageInto(heard);
 
         java.util.logging.Logger modelLog =
             java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
@@ -1660,24 +1643,7 @@ public class testHomeStaging
     {
         final List<String> heard = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-        java.util.logging.Handler ear = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                heard.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        java.util.logging.Handler ear = support.LogTap.everyMessageInto(heard);
 
         java.util.logging.Logger modelLog =
             java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());

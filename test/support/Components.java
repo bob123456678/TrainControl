@@ -70,6 +70,34 @@ public final class Components
         return find(root, type, c -> name.equals(c.getName()));
     }
 
+    /**
+     * The first component of this type below the container, depth first through `getComponents`, on the calling
+     * thread: for a thread watching dialogs, where {@link #find} would wait for the event thread.  Not the container
+     * itself, nor a menu's items; null when none.
+     */
+    public static <T> T inside(Container container, Class<T> type)
+    {
+        return inside(container, type, null);
+    }
+
+    /** The same, the first that also passes the test (null: any). */
+    public static <T> T inside(Container container, Class<T> type, Predicate<? super T> which)
+    {
+        for (Component child : container.getComponents())
+        {
+            if (type.isInstance(child) && (which == null || which.test(type.cast(child)))) return type.cast(child);
+
+            if (child instanceof Container)
+            {
+                T found = inside((Container) child, type, which);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
     /** Presses a button or menu item, as a click does: posted to the event thread, and returning at once. */
     public static void press(final AbstractButton button)
     {

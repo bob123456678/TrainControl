@@ -18,7 +18,6 @@ import org.traincontrol.util.I18n;
 import static regression.testNoSetupEditDuringARun.control;
 import static regression.testTheImportDoorReadsAnOldFile.answeringYes;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
-import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 
 /**
  * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts
@@ -51,11 +50,9 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -65,11 +62,9 @@ public class testTheAutoTabWaitsForTheTrains
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // THE POWER ON, which the gate asks
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -188,16 +183,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -215,11 +201,9 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -227,11 +211,9 @@ public class testTheAutoTabWaitsForTheTrains
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // THE POWER ON, which the gate asks
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -350,16 +332,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -376,19 +349,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // THE TRACK EDITOR, USED LAST
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
@@ -430,16 +399,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -464,19 +424,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // EITHER BUTTON OFFERED WHILE AN EDITOR WINDOW IS THERE
             final List<String> offered = Collections.synchronizedList(new ArrayList<String>());
@@ -643,16 +599,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -671,19 +618,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
 
@@ -773,16 +716,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -804,19 +738,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
 
@@ -872,16 +802,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -903,11 +824,9 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> pages = null;
 
@@ -915,11 +834,9 @@ public class testTheAutoTabWaitsForTheTrains
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // A PAGE WHOSE FIRST USE RAISES AN ERROR
             java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
@@ -999,16 +916,7 @@ public class testTheAutoTabWaitsForTheTrains
         {
             if (pages != null) pages.delete(failing);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1031,11 +939,9 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> pages = null;
 
@@ -1049,11 +955,9 @@ public class testTheAutoTabWaitsForTheTrains
         {
             TrainControlUI.getPrefs().putBoolean(onTopKey, true);
 
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             pages = thePages(ui[0]);
 
@@ -1121,16 +1025,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             if (pages != null) pages.delete(failing);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1151,11 +1046,9 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> pages = null;
 
@@ -1163,11 +1056,9 @@ public class testTheAutoTabWaitsForTheTrains
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
 
@@ -1221,16 +1112,7 @@ public class testTheAutoTabWaitsForTheTrains
         {
             if (pages != null) pages.delete(failing);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1282,19 +1164,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
 
@@ -1380,16 +1258,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1465,19 +1334,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final org.traincontrol.gui.AutonomyOverlayToggle strip =
                 (org.traincontrol.gui.AutonomyOverlayToggle) control(ui[0], "autonomyOverlayToggle");
@@ -1529,16 +1394,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1742,19 +1598,15 @@ public class testTheAutoTabWaitsForTheTrains
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
 
@@ -1815,16 +1667,7 @@ public class testTheAutoTabWaitsForTheTrains
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 

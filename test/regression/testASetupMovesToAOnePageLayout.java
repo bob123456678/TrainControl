@@ -1,6 +1,5 @@
 package regression;
 
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
 import java.io.File;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -331,68 +329,52 @@ public class testASetupMovesToAOnePageLayout
         @Override
         public void run()
         {
-            while (running)
+            support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                try
+                final JFileChooser chooser = find(dialog.getContentPane(), JFileChooser.class);
+
+                if (chooser != null)
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
+                    if (!handled.add(chooser)) return;
+
+                    chose = true;
+
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        chooser.setSelectedFile(file);
+                        chooser.approveSelection();
+                    });
+
                     return;
                 }
 
-                for (Window window : Window.getWindows())
+                final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
+
+                if (pane == null || !handled.add(pane)) return;
+
+                String text = String.valueOf(pane.getMessage());
+
+                seen.add(new String[] {String.valueOf(dialog.getTitle()), text});
+
+                if (I18n.t("autosetup.ui.promptImportName").equals(text))
                 {
-                    if (!window.isShowing() || !(window instanceof JDialog)) continue;
+                    named = true;
 
-                    final JDialog dialog = (JDialog) window;
-
-                    final JFileChooser chooser = find(dialog.getContentPane(), JFileChooser.class);
-
-                    if (chooser != null)
+                    // THE NAME AS SUGGESTED, pressing OK.
+                    SwingUtilities.invokeLater(() ->
                     {
-                        if (!handled.add(chooser)) continue;
+                        pane.setInputValue(pane.getInitialSelectionValue());
+                        pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION));
+                    });
 
-                        chose = true;
-
-                        SwingUtilities.invokeLater(() ->
-                        {
-                            chooser.setSelectedFile(file);
-                            chooser.approveSelection();
-                        });
-
-                        continue;
-                    }
-
-                    final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
-
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    String text = String.valueOf(pane.getMessage());
-
-                    seen.add(new String[] {String.valueOf(dialog.getTitle()), text});
-
-                    if (I18n.t("autosetup.ui.promptImportName").equals(text))
-                    {
-                        named = true;
-
-                        // THE NAME AS SUGGESTED, pressing OK.
-                        SwingUtilities.invokeLater(() ->
-                        {
-                            pane.setInputValue(pane.getInitialSelectionValue());
-                            pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION));
-                        });
-
-                        continue;
-                    }
-
-                    final Object[] options = pane.getOptions();
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0 ? options[0]
-                        : Integer.valueOf(JOptionPane.OK_OPTION)));
+                    return;
                 }
-            }
+
+                final Object[] options = pane.getOptions();
+
+                SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0 ? options[0]
+                    : Integer.valueOf(JOptionPane.OK_OPTION)));
+            });
         }
 
         /** Every dialog seen, as "title: message", for a failure to show. */
@@ -433,18 +415,6 @@ public class testASetupMovesToAOnePageLayout
 
     private static <T> T find(Container container, Class<T> type)
     {
-        for (Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof Container)
-            {
-                T found = find((Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 }

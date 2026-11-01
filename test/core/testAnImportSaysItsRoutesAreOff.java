@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -57,20 +56,7 @@ public class testAnImportSaysItsRoutesAreOff
 
         model = support.TestStation.simulatedInDebug();
 
-        tap = new Handler()
-        {
-            @Override
-            public void publish(LogRecord record)
-            {
-                logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        tap = support.LogTap.everyMessageInto(logged);
 
         Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
     }

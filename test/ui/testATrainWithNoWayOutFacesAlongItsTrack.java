@@ -687,20 +687,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         final List<String> logged = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
 
-        final java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        final java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
 

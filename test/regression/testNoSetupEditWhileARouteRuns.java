@@ -1,12 +1,10 @@
 package regression;
 
 import java.awt.Component;
-import java.awt.Window;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.swing.JDialog;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -2662,46 +2660,32 @@ public class testNoSetupEditWhileARouteRuns
             {
                 java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-                while (going.get())
+                support.DialogWatch.until(going::get, 100, dialog ->
                 {
-                    try
+                    final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
+
+                    if (pane != null && handled.add(pane))
                     {
-                        Thread.sleep(100);
+                        said.add(String.valueOf(pane.getMessage()));
+
+                        final Object[] options = pane.getOptions();
+
+                        final Object answer = first && options != null && options.length > 0 ? options[0]
+                            : Integer.valueOf(JOptionPane.CLOSED_OPTION);
+
+                        SwingUtilities.invokeLater(() -> pane.setValue(answer));
                     }
-                    catch (InterruptedException stop)
+
+                    final javax.swing.JFileChooser chooser = find(dialog.getContentPane(),
+                        javax.swing.JFileChooser.class);
+
+                    if (chooser != null && handled.add(chooser))
                     {
-                        return;
+                        said.add("chooser: " + dialog.getTitle());
+
+                        SwingUtilities.invokeLater(chooser::cancelSelection);
                     }
-
-                    for (Window window : Window.getWindows())
-                    {
-                        if (!window.isShowing() || !(window instanceof JDialog)) continue;
-
-                        final JOptionPane pane = find(((JDialog) window).getContentPane(), JOptionPane.class);
-
-                        if (pane != null && handled.add(pane))
-                        {
-                            said.add(String.valueOf(pane.getMessage()));
-
-                            final Object[] options = pane.getOptions();
-
-                            final Object answer = first && options != null && options.length > 0 ? options[0]
-                                : Integer.valueOf(JOptionPane.CLOSED_OPTION);
-
-                            SwingUtilities.invokeLater(() -> pane.setValue(answer));
-                        }
-
-                        final javax.swing.JFileChooser chooser = find(((JDialog) window).getContentPane(),
-                            javax.swing.JFileChooser.class);
-
-                        if (chooser != null && handled.add(chooser))
-                        {
-                            said.add("chooser: " + ((JDialog) window).getTitle());
-
-                            SwingUtilities.invokeLater(chooser::cancelSelection);
-                        }
-                    }
-                }
+                });
             }, "closing every question");
 
             thread.setDaemon(true);
@@ -2737,18 +2721,6 @@ public class testNoSetupEditWhileARouteRuns
 
     private static <T> T find(java.awt.Container container, Class<T> type)
     {
-        for (Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 }

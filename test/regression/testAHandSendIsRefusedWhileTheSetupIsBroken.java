@@ -842,47 +842,21 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         @Override
         public void run()
         {
-            while (running)
+            support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                try
-                {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                final javax.swing.JOptionPane pane = paneIn(dialog.getContentPane());
 
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+                if (pane == null || !handled.add(pane)) return;
 
-                    final javax.swing.JOptionPane pane = paneIn(((javax.swing.JDialog) window).getContentPane());
+                said.add(String.valueOf(pane.getMessage()));
 
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    said.add(String.valueOf(pane.getMessage()));
-
-                    javax.swing.SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
-                }
-            }
+                javax.swing.SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
+            });
         }
 
         private static javax.swing.JOptionPane paneIn(java.awt.Container container)
         {
-            for (java.awt.Component component : container.getComponents())
-            {
-                if (component instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) component;
-
-                if (component instanceof java.awt.Container)
-                {
-                    javax.swing.JOptionPane found = paneIn((java.awt.Container) component);
-
-                    if (found != null) return found;
-                }
-            }
-
-            return null;
+            return support.Components.inside(container, javax.swing.JOptionPane.class);
         }
     }
 

@@ -60,11 +60,9 @@ public class testNoSetupEditDuringARun
 
         final String combined = "4 - Combined";
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.io.File broken = java.io.File.createTempFile("tc-broken-autonomy", ".json");
 
@@ -77,11 +75,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession opened = ui[0].getAutonomySession();
 
@@ -120,16 +116,7 @@ public class testNoSetupEditDuringARun
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
 
             if (!broken.delete()) broken.deleteOnExit();
         }
@@ -160,22 +147,18 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -278,16 +261,7 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
-                putTheFolderBack(folderWas);
-
-                if (ui[0] != null)
-                {
-                    final TrainControlUI closing = ui[0];
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -325,21 +299,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
             final String inUse = session.getStore().getActiveConfiguration();
@@ -420,16 +390,7 @@ public class testNoSetupEditDuringARun
 
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -445,21 +406,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
@@ -504,16 +461,7 @@ public class testNoSetupEditDuringARun
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -529,21 +477,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
@@ -568,16 +512,7 @@ public class testNoSetupEditDuringARun
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -593,21 +528,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         Thread driving = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
             final String inUse = session.getStore().getActiveConfiguration();
@@ -649,16 +580,7 @@ public class testNoSetupEditDuringARun
         {
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -733,11 +655,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
 
@@ -752,11 +672,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
@@ -866,16 +784,7 @@ public class testNoSetupEditDuringARun
 
             if (ui[0] != null) declined.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -933,11 +842,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         org.traincontrol.automation.Layout locked = null;
         List<org.traincontrol.automation.Edge> route = null;
@@ -945,11 +852,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -1055,16 +960,7 @@ public class testNoSetupEditDuringARun
         {
             if (locked != null) locked.unlockPath(route, train);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -1080,22 +976,18 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
@@ -1190,16 +1082,7 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
-                putTheFolderBack(folderWas);
-
-                if (ui[0] != null)
-                {
-                    final TrainControlUI closing = ui[0];
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -1244,22 +1127,18 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -1325,16 +1204,7 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
-                putTheFolderBack(folderWas);
-
-                if (ui[0] != null)
-                {
-                    final TrainControlUI closing = ui[0];
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -1353,19 +1223,15 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final String editorsWords = I18n.t("autosetup.ui.menuEditorOpen");
 
@@ -1393,16 +1259,7 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
-                putTheFolderBack(folderWas);
-
-                if (ui != null)
-                {
-                    final TrainControlUI closing = ui;
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -1419,11 +1276,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -1432,11 +1287,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -1509,16 +1362,7 @@ public class testNoSetupEditDuringARun
             {
                 if (ui[0] != null && ui[0].getModel().getRoute(probe) != null) ui[0].getModel().deleteRoute(probe);
 
-                putTheFolderBack(folderWas);
-
-                if (ui[0] != null)
-                {
-                    final TrainControlUI closing = ui[0];
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -1537,22 +1381,18 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -1608,16 +1448,7 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
-                putTheFolderBack(folderWas);
-
-                if (ui[0] != null)
-                {
-                    final TrainControlUI closing = ui[0];
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -1633,11 +1464,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -1648,11 +1477,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -1714,16 +1541,7 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
-                putTheFolderBack(folderWas);
-
-                if (ui[0] != null)
-                {
-                    final TrainControlUI closing = ui[0];
-
-                    SwingUtilities.invokeAndWait(() -> closing.dispose());
-                }
-
-                if (sandbox != null) sandbox.close();
+                sandboxed.close();
             }
         }
     }
@@ -1739,11 +1557,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final Thread[] driving = new Thread[1];
 
@@ -1752,11 +1568,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
             final String inUse = session.getStore().getActiveConfiguration();
@@ -1830,47 +1644,33 @@ public class testNoSetupEditDuringARun
             {
                 java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-                while (going.get())
+                support.DialogWatch.until(going::get, 150, dialog ->
                 {
-                    try
+                    javax.swing.JOptionPane pane = findPane(dialog.getContentPane());
+
+                    if (pane == null || !handled.add(pane)) return;
+
+                    if (pane.getMessage() instanceof java.awt.Component && driving[0] == null)
                     {
-                        Thread.sleep(150);
-                    }
-                    catch (InterruptedException stop)
-                    {
-                        return;
-                    }
-
-                    for (java.awt.Window w : java.awt.Window.getWindows())
-                    {
-                        if (!w.isShowing() || !(w instanceof javax.swing.JDialog)) continue;
-
-                        javax.swing.JOptionPane pane = findPane(((javax.swing.JDialog) w).getContentPane());
-
-                        if (pane == null || !handled.add(pane)) continue;
-
-                        if (pane.getMessage() instanceof java.awt.Component && driving[0] == null)
+                        try
                         {
-                            try
-                            {
-                                driving[0] = (Thread) dispatchATrainFrom(window, standing)[3];
-                            }
-                            catch (Exception | AssertionError e)
-                            {
-                                asked.add("could not begin a run: " + e);
-                            }
+                            driving[0] = (Thread) dispatchATrainFrom(window, standing)[3];
                         }
-                        else
+                        catch (Exception | AssertionError e)
                         {
-                            asked.add(String.valueOf(pane.getMessage()));
+                            asked.add("could not begin a run: " + e);
                         }
-
-                        final Object[] options = pane.getOptions();
-
-                        SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
-                            ? options[0] : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
                     }
-                }
+                    else
+                    {
+                        asked.add(String.valueOf(pane.getMessage()));
+                    }
+
+                    final Object[] options = pane.getOptions();
+
+                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
+                        ? options[0] : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
+                });
             }, "answering at OK");
 
             answering.setDaemon(true);
@@ -1902,35 +1702,14 @@ public class testNoSetupEditDuringARun
 
             if (driving[0] != null) driving[0].interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
     /** The first option pane anywhere in this container. */
     private static javax.swing.JOptionPane findPane(java.awt.Container container)
     {
-        for (java.awt.Component c : container.getComponents())
-        {
-            if (c instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) c;
-
-            if (c instanceof java.awt.Container)
-            {
-                javax.swing.JOptionPane found = findPane((java.awt.Container) c);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JOptionPane.class);
     }
 
     /** The import door's dispatch, leaving this train standing: its name, where it set off, where it is bound, the thread. */
@@ -2043,8 +1822,6 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
         org.traincontrol.automation.Layout railway = null;
@@ -2053,18 +1830,16 @@ public class testNoSetupEditDuringARun
 
         Integer was = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             railway = ui.getModel().getAutoLayout();
 
@@ -2121,16 +1896,7 @@ public class testNoSetupEditDuringARun
 
             if (loc != null) loc.setTrainLength(was);
 
-            putTheFolderBack(folderWas);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2146,22 +1912,18 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
@@ -2208,16 +1970,7 @@ public class testNoSetupEditDuringARun
 
             stopWhatTheClaimSent(ui[0]);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2247,21 +2000,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
         org.traincontrol.automation.Layout railway = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             railway = ui[0].getModel().getAutoLayout();
 
@@ -2289,16 +2038,7 @@ public class testNoSetupEditDuringARun
         {
             if (railway != null) railway.setStagingInProgress(false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2470,39 +2210,25 @@ public class testNoSetupEditDuringARun
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 150, dialog ->
             {
-                try
+                javax.swing.JOptionPane pane = null;
+
+                for (Component c : dialog.getContentPane().getComponents())
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
+                    if (c instanceof javax.swing.JOptionPane) pane = (javax.swing.JOptionPane) c;
                 }
 
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+                if (pane == null || !handled.add(pane)) return;
 
-                    javax.swing.JOptionPane pane = null;
+                asked.add(String.valueOf(pane.getMessage()));
 
-                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
-                    {
-                        if (c instanceof javax.swing.JOptionPane) pane = (javax.swing.JOptionPane) c;
-                    }
+                final javax.swing.JOptionPane answered = pane;
+                final Object[] options = pane.getOptions();
 
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    asked.add(String.valueOf(pane.getMessage()));
-
-                    final javax.swing.JOptionPane answered = pane;
-                    final Object[] options = pane.getOptions();
-
-                    SwingUtilities.invokeLater(() -> answered.setValue(options != null && options.length > 1
-                        ? options[1] : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
-                }
-            }
+                SwingUtilities.invokeLater(() -> answered.setValue(options != null && options.length > 1
+                    ? options[1] : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
+            });
         }, "answering keep open");
 
         answering.setDaemon(true);
@@ -2521,19 +2247,15 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -2621,16 +2343,7 @@ public class testNoSetupEditDuringARun
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -2686,42 +2399,28 @@ public class testNoSetupEditDuringARun
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 150, dialog ->
             {
-                try
+                for (Component c : dialog.getContentPane().getComponents())
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
-
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
-
-                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    if (c instanceof javax.swing.JFileChooser && handled.add(c))
                     {
-                        if (c instanceof javax.swing.JFileChooser && handled.add(c))
-                        {
-                            final javax.swing.JFileChooser chooser = (javax.swing.JFileChooser) c;
+                        final javax.swing.JFileChooser chooser = (javax.swing.JFileChooser) c;
 
-                            SwingUtilities.invokeLater(() ->
-                            {
-                                chooser.setSelectedFile(file);
-                                chooser.approveSelection();
-                            });
-                        }
-                        else if (c instanceof javax.swing.JOptionPane && handled.add(c))
+                        SwingUtilities.invokeLater(() ->
                         {
-                            final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
+                            chooser.setSelectedFile(file);
+                            chooser.approveSelection();
+                        });
+                    }
+                    else if (c instanceof javax.swing.JOptionPane && handled.add(c))
+                    {
+                        final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
 
-                            SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
-                        }
+                        SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
                     }
                 }
-            }
+            });
         }, "saving to " + file.getName());
 
         answering.setDaemon(true);
@@ -2796,21 +2495,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             assertTrue(ui[0].getModel().isSimulation(), "precondition: the window is not a simulation");
 
@@ -2983,16 +2678,7 @@ public class testNoSetupEditDuringARun
         {
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3008,11 +2694,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -3022,11 +2706,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             assertTrue(ui[0].getModel().isSimulation() && ui[0].getModel().isDebug(), "precondition: the window is not a"
                 + " debug simulation");
@@ -3089,16 +2771,7 @@ public class testNoSetupEditDuringARun
 
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.ECHO_COMMANDS_PREF, storedWas);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3114,11 +2787,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -3126,11 +2797,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -3271,16 +2940,7 @@ public class testNoSetupEditDuringARun
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3295,11 +2955,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -3309,11 +2967,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // DURING A RUN
             staging.set(ui[0], true);
@@ -3339,16 +2995,7 @@ public class testNoSetupEditDuringARun
 
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3363,42 +3010,28 @@ public class testNoSetupEditDuringARun
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 150, dialog ->
             {
-                try
+                for (Component c : dialog.getContentPane().getComponents())
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
-
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
-
-                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    if (c instanceof javax.swing.JOptionPane && handled.add(c))
                     {
-                        if (c instanceof javax.swing.JOptionPane && handled.add(c))
-                        {
-                            final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
+                        final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
 
-                            asked.add(String.valueOf(pane.getMessage()));
+                        asked.add(String.valueOf(pane.getMessage()));
 
-                            SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
-                        }
-                        else if (c instanceof javax.swing.JFileChooser && handled.add(c))
-                        {
-                            final javax.swing.JFileChooser chooser = (javax.swing.JFileChooser) c;
+                        SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
+                    }
+                    else if (c instanceof javax.swing.JFileChooser && handled.add(c))
+                    {
+                        final javax.swing.JFileChooser chooser = (javax.swing.JFileChooser) c;
 
-                            choosers.add(String.valueOf(((javax.swing.JDialog) window).getTitle()));
+                        choosers.add(String.valueOf(dialog.getTitle()));
 
-                            SwingUtilities.invokeLater(chooser::cancelSelection);
-                        }
+                        SwingUtilities.invokeLater(chooser::cancelSelection);
                     }
                 }
-            }
+            });
         }, "closing every question");
 
         answering.setDaemon(true);
@@ -3416,11 +3049,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -3430,11 +3061,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -3492,16 +3121,7 @@ public class testNoSetupEditDuringARun
 
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3517,11 +3137,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -3529,11 +3147,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             java.util.Set<String> live = new java.util.HashSet<>(java.util.Arrays.asList(
                 I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.main.documentation")));
@@ -3586,16 +3202,7 @@ public class testNoSetupEditDuringARun
         {
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3611,11 +3218,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -3628,11 +3233,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             String why = I18n.t("ui.main.errorNoEditsWhileRunning");
 
@@ -3680,16 +3283,7 @@ public class testNoSetupEditDuringARun
         {
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3753,11 +3347,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -3767,11 +3359,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             assertNotNull(ui[0].getActiveDiagramConfiguration(), "precondition: no configuration runs");
 
@@ -3846,16 +3436,7 @@ public class testNoSetupEditDuringARun
         {
             going.set(false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3871,11 +3452,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -3887,11 +3466,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // THE POWER ON, so the gate lets the press through to its own refusal
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -3958,16 +3535,7 @@ public class testNoSetupEditDuringARun
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -3983,11 +3551,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -3997,11 +3563,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
@@ -4056,16 +3620,7 @@ public class testNoSetupEditDuringARun
 
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4082,11 +3637,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -4094,11 +3647,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // A RUN UNDER WAY
             final Object[] dispatched = dispatchATrain(ui[0], null);
@@ -4153,16 +3704,7 @@ public class testNoSetupEditDuringARun
 
             if (driving != null) driving.interrupt();
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4177,19 +3719,15 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             javax.swing.JMenuItem manage = autonomyMenuItems(ui[0]).get(I18n.t("autosetup.ui.btnManage"));
 
@@ -4211,16 +3749,7 @@ public class testNoSetupEditDuringARun
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4236,11 +3765,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -4248,11 +3775,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -4313,16 +3838,7 @@ public class testNoSetupEditDuringARun
         {
             going.set(false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4360,21 +3876,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui[0].getAutonomySession();
 
@@ -4445,16 +3957,7 @@ public class testNoSetupEditDuringARun
 
             org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(null);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4469,47 +3972,33 @@ public class testNoSetupEditDuringARun
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 150, dialog ->
             {
-                try
+                for (Component c : dialog.getContentPane().getComponents())
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                    if (!(c instanceof javax.swing.JOptionPane) || !handled.add(c)) continue;
 
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+                    final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
 
-                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    asked.add(String.valueOf(pane.getMessage()));
+
+                    SwingUtilities.invokeLater(() ->
                     {
-                        if (!(c instanceof javax.swing.JOptionPane) || !handled.add(c)) continue;
-
-                        final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
-
-                        asked.add(String.valueOf(pane.getMessage()));
-
-                        SwingUtilities.invokeLater(() ->
+                        if (pane.getWantsInput())
                         {
-                            if (pane.getWantsInput())
-                            {
-                                pane.setInputValue(input);
-                                pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
-                            }
-                            else
-                            {
-                                Object[] options = pane.getOptions();
+                            pane.setInputValue(input);
+                            pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
+                        }
+                        else
+                        {
+                            Object[] options = pane.getOptions();
 
-                                pane.setValue(options != null && options.length > 1 ? options[1]
-                                    : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION));
-                            }
-                        });
-                    }
+                            pane.setValue(options != null && options.length > 1 ? options[1]
+                                : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION));
+                        }
+                    });
                 }
-            }
+            });
         }, "answering with " + input);
 
         answering.setDaemon(true);
@@ -4527,21 +4016,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // THE POWER ON, which the gate asks
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -4590,16 +4075,7 @@ public class testNoSetupEditDuringARun
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4616,11 +4092,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -4629,11 +4103,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
                 boolean.class);
@@ -4753,16 +4225,7 @@ public class testNoSetupEditDuringARun
 
             if (answers != null) answers.join(5000);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4807,40 +4270,26 @@ public class testNoSetupEditDuringARun
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 100, dialog ->
             {
-                try
+                final javax.swing.JOptionPane pane = findPane(dialog.getContentPane());
+
+                if (pane == null || !handled.add(pane)) return;
+
+                final boolean wantsName = pane.getWantsInput();
+
+                if (!wantsName) asked.add(String.valueOf(pane.getMessage()));
+
+                final Object[] options = pane.getOptions();
+
+                SwingUtilities.invokeLater(() ->
                 {
-                    Thread.sleep(100);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                    if (wantsName) pane.setInputValue(name);
 
-                for (java.awt.Window w : java.awt.Window.getWindows())
-                {
-                    if (!w.isShowing() || !(w instanceof javax.swing.JDialog)) continue;
-
-                    final javax.swing.JOptionPane pane = findPane(((javax.swing.JDialog) w).getContentPane());
-
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    final boolean wantsName = pane.getWantsInput();
-
-                    if (!wantsName) asked.add(String.valueOf(pane.getMessage()));
-
-                    final Object[] options = pane.getOptions();
-
-                    SwingUtilities.invokeLater(() ->
-                    {
-                        if (wantsName) pane.setInputValue(name);
-
-                        pane.setValue(options != null && options.length > 0 ? options[0]
-                            : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
-                    });
-                }
-            }
+                    pane.setValue(options != null && options.length > 0 ? options[0]
+                        : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
+                });
+            });
         }, "answering names and yes");
 
         answering.setDaemon(true);
@@ -4861,11 +4310,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -4874,11 +4321,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
                 boolean.class);
@@ -4966,16 +4411,7 @@ public class testNoSetupEditDuringARun
 
             if (answers != null) answers.join(5000);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -4991,11 +4427,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -5004,11 +4438,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
                 boolean.class);
@@ -5089,16 +4521,7 @@ public class testNoSetupEditDuringARun
 
             if (answers != null) answers.join(5000);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -5118,11 +4541,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
 
@@ -5132,11 +4553,9 @@ public class testNoSetupEditDuringARun
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
 
@@ -5300,16 +4719,7 @@ public class testNoSetupEditDuringARun
 
             if (ui[0] != null) staging.set(ui[0], false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -5324,21 +4734,17 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            sandbox.simulated();
-
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // THE POWER ON, which the gate asks
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -5458,16 +4864,7 @@ public class testNoSetupEditDuringARun
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
