@@ -331,7 +331,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     );
                 }
                 else if (at != null)
-                {
+                {                    
                     // With the info mark, because a tooltip nobody knows about explains nothing.
                     this.locDest.setText(noAnswerYet ? "" : I18n.t("autolayout.ui.noAvailPaths"));
 
@@ -339,7 +339,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // (see the mouse listener in the constructor).  Computing them here walks every candidate route to
                     // every station under the Layout's monitor (explainDestinations), once per panel on the event
                     // thread, and loading a configuration rebuilds every panel in this deferred branch.
-                    this.noPathsNow = !noAnswerYet;
+                    this.noPathsNow = true;
+
+                    if (noAnswerYet) this.noPathsNow = false;
+
                     this.locStation.setText("@" +  stationName(at)
                         + (at.equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(at, locomotive)
