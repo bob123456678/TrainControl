@@ -523,7 +523,6 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testATrainIsReadWhereItWasLastSeenThoughAnotherPassesThere() throws Exception
     {
         Layout layout = new Layout(model);
@@ -545,18 +544,11 @@ public class testATrainIsDispatchedOnce
         Locomotive second = model.getLocByName(model.getLocList().get(1));
 
         // RESERVED, as locking a path records a train on every point of it - `setLocomotive` would take it off the others
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         // FIRST: set off from RC_a, tripped RC_x, and the release behind it has cleared RC_a and RC_x; it holds RC_b
-        reserve.invoke(layout.getPoint("RC_b"), first);
+        reserve(layout, first, "RC_b");
 
         // SECOND: standing at RC_c, its path locked through RC_x to RC_d
-        reserve.invoke(layout.getPoint("RC_c"), second);
-        reserve.invoke(layout.getPoint("RC_x"), second);
-        reserve.invoke(layout.getPoint("RC_d"), second);
+        reserve(layout, second, "RC_c", "RC_x", "RC_d");
 
         assertEquals(layout.getPoint("RC_x").getCurrentLocomotive(), second, "precondition: RC_x does not record the"
             + " second train, whose path runs through it");
@@ -564,18 +556,9 @@ public class testATrainIsDispatchedOnce
         // A SIDE RECORDED FOR ITS OCCUPANT
         layout.getPoint("RC_x").setArrivedFrom("N");
 
-        java.util.Map<Locomotive, List<Edge>> active =
-            (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-        java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-            (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+        setOff(layout, first, through(layout, "RC_a", "RC_x", "RC_b"), "RC_a", "RC_x");
 
-        active.put(first, Arrays.asList(layout.getEdge("RC_a", "RC_x"), layout.getEdge("RC_x", "RC_b")));
-        milestones.put(first, new java.util.concurrent.CopyOnWriteArrayList<>(
-            Arrays.asList(layout.getPoint("RC_a"), layout.getPoint("RC_x"))));
-
-        active.put(second, Arrays.asList(layout.getEdge("RC_c", "RC_x"), layout.getEdge("RC_x", "RC_d")));
-        milestones.put(second, new java.util.concurrent.CopyOnWriteArrayList<>(
-            Arrays.asList(layout.getPoint("RC_c"))));
+        setOff(layout, second, through(layout, "RC_c", "RC_x", "RC_d"), "RC_c");
 
         try
         {
@@ -626,8 +609,7 @@ public class testATrainIsDispatchedOnce
         }
         finally
         {
-            active.clear();
-            milestones.clear();
+            clearUnderWay(layout);
         }
     }
 
@@ -642,7 +624,6 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testATrainWhoseLastStationAnotherHasStoppedOnIsKeptOnTheStationAheadItHolds() throws Exception
     {
         Layout layout = new Layout(model);
@@ -661,27 +642,14 @@ public class testATrainIsDispatchedOnce
         Locomotive second = model.getLocByName(model.getLocList().get(1));
         Locomotive third = model.getLocByName(model.getLocList().get(2));
 
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         // FIRST: set off from RK_a, no sensor tripped yet; the release behind it has cleared RK_a, and it holds RK_x and
         // RK_b ahead
-        reserve.invoke(layout.getPoint("RK_x"), first);
-        reserve.invoke(layout.getPoint("RK_b"), first);
+        reserve(layout, first, "RK_x", "RK_b");
 
         // SECOND: has since stopped on RK_a, as an arrival stands it there
         layout.getPoint("RK_a").setLocomotive(second);
 
-        java.util.Map<Locomotive, List<Edge>> active =
-            (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-        java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-            (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
-
-        active.put(first, Arrays.asList(layout.getEdge("RK_a", "RK_x"), layout.getEdge("RK_x", "RK_b")));
-        milestones.put(first, new java.util.concurrent.CopyOnWriteArrayList<>(
-            Arrays.asList(layout.getPoint("RK_a"))));
+        setOff(layout, first, through(layout, "RK_a", "RK_x", "RK_b"), "RK_a");
 
         try
         {
@@ -730,8 +698,7 @@ public class testATrainIsDispatchedOnce
         }
         finally
         {
-            active.clear();
-            milestones.clear();
+            clearUnderWay(layout);
         }
     }
 
@@ -750,14 +717,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testTheStationAheadIsNotAnotherTrainsKeptPoint() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
 
         List<String> wrong = new ArrayList<>();
@@ -796,24 +757,14 @@ public class testATrainIsDispatchedOnce
                 layout.createEdge("TS", "TB");
                 layout.createEdge("TS", "TC");
 
-                reserve.invoke(layout.getPoint("TC"), c);
-                reserve.invoke(layout.getPoint("TJ"), a);
-                reserve.invoke(layout.getPoint("TS"), a);
-                reserve.invoke(layout.getPoint("TB"), a);
+                reserve(layout, c, "TC");
+                reserve(layout, a, "TJ", "TS", "TB");
 
                 layout.getPoint("TA").setLocomotive(b);
 
-                java.util.Map<Locomotive, List<Edge>> active =
-                    (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-                java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                    (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+                setOff(layout, a, through(layout, "TA", "TJ", "TS", "TB"), "TA");
 
-                active.put(a, Arrays.asList(layout.getEdge("TA", "TJ"), layout.getEdge("TJ", "TS"),
-                    layout.getEdge("TS", "TB")));
-                milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TA"))));
-
-                active.put(c, Arrays.asList(layout.getEdge("TS", "TC")));
-                milestones.put(c, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TS"))));
+                setOff(layout, c, through(layout, "TS", "TC"), "TS");
 
                 pairs++;
 
@@ -844,8 +795,7 @@ public class testATrainIsDispatchedOnce
                     wrong.add(said);
                 }
 
-                active.clear();
-                milestones.clear();
+                clearUnderWay(layout);
             }
         }
 
@@ -868,14 +818,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testATrainBoundForAnothersKeptStationTakesItAndTheOtherGoesOn() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
 
         List<String> wrong = new ArrayList<>();
@@ -912,22 +856,14 @@ public class testATrainIsDispatchedOnce
                 layout.createEdge("TJ", "TS");
                 layout.createEdge("TS", "TC");
 
-                reserve.invoke(layout.getPoint("TC"), c);
-                reserve.invoke(layout.getPoint("TJ"), a);
-                reserve.invoke(layout.getPoint("TS"), a);
+                reserve(layout, c, "TC");
+                reserve(layout, a, "TJ", "TS");
 
                 layout.getPoint("TA").setLocomotive(b);
 
-                java.util.Map<Locomotive, List<Edge>> active =
-                    (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-                java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                    (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+                setOff(layout, a, through(layout, "TA", "TJ", "TS"), "TA");
 
-                active.put(a, Arrays.asList(layout.getEdge("TA", "TJ"), layout.getEdge("TJ", "TS")));
-                milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TA"))));
-
-                active.put(c, Arrays.asList(layout.getEdge("TS", "TC")));
-                milestones.put(c, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TS"))));
+                setOff(layout, c, through(layout, "TS", "TC"), "TS");
 
                 pairs++;
 
@@ -935,8 +871,7 @@ public class testATrainIsDispatchedOnce
 
                 if (!said.equals("A@TS C@TC | carry A@TS C@TC | fold A@TS B@TA C@TC")) wrong.add(nameA + "/" + nameC + ": " + said);
 
-                active.clear();
-                milestones.clear();
+                clearUnderWay(layout);
             }
         }
 
@@ -956,14 +891,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testTwoTrainsLastSeenAtOneStationAreBothKept() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
 
         List<String> wrong = new ArrayList<>();
@@ -994,21 +923,12 @@ public class testATrainIsDispatchedOnce
                 layout.createEdge("KP", "KJ2");
                 layout.createEdge("KJ2", "KS2");
 
-                reserve.invoke(layout.getPoint("KJ1"), k1);
-                reserve.invoke(layout.getPoint("KS1"), k1);
-                reserve.invoke(layout.getPoint("KJ2"), k2);
-                reserve.invoke(layout.getPoint("KS2"), k2);
+                reserve(layout, k1, "KJ1", "KS1");
+                reserve(layout, k2, "KJ2", "KS2");
 
-                java.util.Map<Locomotive, List<Edge>> active =
-                    (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-                java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                    (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+                setOff(layout, k1, through(layout, "KP", "KJ1", "KS1"), "KP");
 
-                active.put(k1, Arrays.asList(layout.getEdge("KP", "KJ1"), layout.getEdge("KJ1", "KS1")));
-                milestones.put(k1, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("KP"))));
-
-                active.put(k2, Arrays.asList(layout.getEdge("KP", "KJ2"), layout.getEdge("KJ2", "KS2")));
-                milestones.put(k2, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("KP"))));
+                setOff(layout, k2, through(layout, "KP", "KJ2", "KS2"), "KP");
 
                 pairs++;
 
@@ -1042,8 +962,7 @@ public class testATrainIsDispatchedOnce
                         + "; written " + written);
                 }
 
-                active.clear();
-                milestones.clear();
+                clearUnderWay(layout);
             }
         }
 
@@ -1063,14 +982,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testAChainOfTrainsUnderWayIsMovedOnAlongIt() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         List<String> wrong = new ArrayList<>();
 
         int orders = 0;
@@ -1103,26 +1016,15 @@ public class testATrainIsDispatchedOnce
             layout.createEdge("CP3", "CJ3");
             layout.createEdge("CJ3", "CP4");
 
-            reserve.invoke(layout.getPoint("CJ1"), a);
-            reserve.invoke(layout.getPoint("CP2"), a);
-            reserve.invoke(layout.getPoint("CJ2"), b);
-            reserve.invoke(layout.getPoint("CP3"), b);
-            reserve.invoke(layout.getPoint("CJ3"), c);
-            reserve.invoke(layout.getPoint("CP4"), c);
+            reserve(layout, a, "CJ1", "CP2");
+            reserve(layout, b, "CJ2", "CP3");
+            reserve(layout, c, "CJ3", "CP4");
 
             layout.getPoint("CP1").setLocomotive(z);
 
-            java.util.Map<Locomotive, List<Edge>> active =
-                (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-            java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
-
-            active.put(a, Arrays.asList(layout.getEdge("CP1", "CJ1"), layout.getEdge("CJ1", "CP2")));
-            milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("CP1"))));
-            active.put(b, Arrays.asList(layout.getEdge("CP2", "CJ2"), layout.getEdge("CJ2", "CP3")));
-            milestones.put(b, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("CP2"))));
-            active.put(c, Arrays.asList(layout.getEdge("CP3", "CJ3"), layout.getEdge("CJ3", "CP4")));
-            milestones.put(c, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("CP3"))));
+            setOff(layout, a, through(layout, "CP1", "CJ1", "CP2"), "CP1");
+            setOff(layout, b, through(layout, "CP2", "CJ2", "CP3"), "CP2");
+            setOff(layout, c, through(layout, "CP3", "CJ3", "CP4"), "CP3");
 
             orders++;
 
@@ -1140,8 +1042,7 @@ public class testATrainIsDispatchedOnce
                 wrong.add(nA + "/" + nB + "/" + nC + "/" + nZ + ": " + said);
             }
 
-            active.clear();
-            milestones.clear();
+            clearUnderWay(layout);
         }
 
         assertTrue(orders >= 24, "precondition: fewer than four locomotives to order");
@@ -1161,14 +1062,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testATrainUnderWayIsNotKeptOnTheSquareAStandingTrainStandsOn() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         List<String> wrong = new ArrayList<>();
 
         int pairs = 0;
@@ -1184,18 +1079,11 @@ public class testATrainIsDispatchedOnce
 
             Layout layout = aSplitSquare();
 
-            reserve.invoke(layout.getPoint("SJ"), a);
-            reserve.invoke(layout.getPoint("ST"), a);
+            reserve(layout, a, "SJ", "ST");
 
             layout.getPoint("SW").setLocomotive(z);
 
-            java.util.Map<Locomotive, List<Edge>> active =
-                (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-            java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
-
-            active.put(a, Arrays.asList(layout.getEdge("SE", "SJ"), layout.getEdge("SJ", "ST")));
-            milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("SE"))));
+            setOff(layout, a, through(layout, "SE", "SJ", "ST"), "SE");
 
             pairs++;
 
@@ -1217,8 +1105,7 @@ public class testATrainIsDispatchedOnce
                 wrong.add(nA + "/" + nZ + ": " + said);
             }
 
-            active.clear();
-            milestones.clear();
+            clearUnderWay(layout);
         }
 
         assertTrue(pairs >= 6, "precondition: fewer than two locomotives to pair");
@@ -1236,14 +1123,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testTwoTrainsUnderWayAreNotKeptOnOneSquare() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         List<String> wrong = new ArrayList<>();
 
         int pairs = 0;
@@ -1259,20 +1140,11 @@ public class testATrainIsDispatchedOnce
 
             Layout layout = aSplitSquareWithTwoWaysOut();
 
-            reserve.invoke(layout.getPoint("SJ"), a);
-            reserve.invoke(layout.getPoint("ST"), a);
-            reserve.invoke(layout.getPoint("SK"), b);
-            reserve.invoke(layout.getPoint("SU"), b);
+            reserve(layout, a, "SJ", "ST");
+            reserve(layout, b, "SK", "SU");
 
-            java.util.Map<Locomotive, List<Edge>> active =
-                (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-            java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
-
-            active.put(a, Arrays.asList(layout.getEdge("SE", "SJ"), layout.getEdge("SJ", "ST")));
-            milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("SE"))));
-            active.put(b, Arrays.asList(layout.getEdge("SW", "SK"), layout.getEdge("SK", "SU")));
-            milestones.put(b, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("SW"))));
+            setOff(layout, a, through(layout, "SE", "SJ", "ST"), "SE");
+            setOff(layout, b, through(layout, "SW", "SK", "SU"), "SW");
 
             pairs++;
 
@@ -1302,8 +1174,7 @@ public class testATrainIsDispatchedOnce
                     + "/" + nameOf(built.getLocomotiveLocation(b)));
             }
 
-            active.clear();
-            milestones.clear();
+            clearUnderWay(layout);
         }
 
         assertTrue(pairs >= 6, "precondition: fewer than two locomotives to pair");
@@ -1323,14 +1194,8 @@ public class testATrainIsDispatchedOnce
      * @throws Exception from reflection
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testTheTrainItsStationStillRecordsKeepsIt() throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
-
         List<String> wrong = new ArrayList<>();
 
         int pairs = 0;
@@ -1359,22 +1224,11 @@ public class testATrainIsDispatchedOnce
             layout.createEdge("OP", "OK");
             layout.createEdge("OK", "OU");
 
-            reserve.invoke(layout.getPoint("OP"), x);
-            reserve.invoke(layout.getPoint("OJ"), x);
-            reserve.invoke(layout.getPoint("OT"), x);
-            reserve.invoke(layout.getPoint("OK"), y);
-            reserve.invoke(layout.getPoint("OU"), y);
+            reserve(layout, x, "OP", "OJ", "OT");
+            reserve(layout, y, "OK", "OU");
 
-            java.util.Map<Locomotive, List<Edge>> active =
-                (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
-            java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
-                (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
-
-            active.put(x, Arrays.asList(layout.getEdge("OX", "OP"), layout.getEdge("OP", "OJ"), layout.getEdge("OJ", "OT")));
-            milestones.put(x, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("OX"),
-                layout.getPoint("OP"))));
-            active.put(y, Arrays.asList(layout.getEdge("OP", "OK"), layout.getEdge("OK", "OU")));
-            milestones.put(y, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("OP"))));
+            setOff(layout, x, through(layout, "OX", "OP", "OJ", "OT"), "OX", "OP");
+            setOff(layout, y, through(layout, "OP", "OK", "OU"), "OP");
 
             pairs++;
 
@@ -1385,8 +1239,7 @@ public class testATrainIsDispatchedOnce
                 wrong.add(nX + "@" + nameOf(keptAt.get(x)) + ", " + nY + "@" + nameOf(keptAt.get(y)));
             }
 
-            active.clear();
-            milestones.clear();
+            clearUnderWay(layout);
         }
 
         assertTrue(pairs >= 6, "precondition: fewer than two locomotives to pair");
@@ -1444,6 +1297,38 @@ public class testATrainIsDispatchedOnce
         }
 
         return written;
+    }
+
+    /** Records the train on each of the points, as locking a path does. */
+    private static void reserve(Layout layout, Locomotive loc, String... points) throws Exception
+    {
+        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
+            Locomotive.class);
+
+        reserve.setAccessible(true);
+
+        for (String point : points) reserve.invoke(layout.getPoint(point), loc);
+    }
+
+    /** Sets the train off as a dispatch records it: its path, and the points it has reached. */
+    @SuppressWarnings("unchecked")
+    private static void setOff(Layout layout, Locomotive loc, List<Edge> path, String... reached) throws Exception
+    {
+        ((java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives")).put(loc, path);
+
+        List<org.traincontrol.automation.Point> points = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        for (String name : reached) points.add(layout.getPoint(name));
+
+        ((java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones"))
+            .put(loc, points);
+    }
+
+    /** Takes every train set off by hand off the railway's run lists. */
+    private static void clearUnderWay(Layout layout) throws Exception
+    {
+        ((java.util.Map<?, ?>) field(layout, "activeLocomotives")).clear();
+        ((java.util.Map<?, ?>) field(layout, "locomotiveMilestones")).clear();
     }
 
     /** A point's name, or null. */
@@ -2692,13 +2577,7 @@ public class testATrainIsDispatchedOnce
 
         final List<Edge> path = through(rail, names);
 
-        for (int i = 0; i < path.size(); i++)
-        {
-            org.traincontrol.marklin.MarklinAccessory turnout =
-                model.newSwitch(241 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
-
-            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
-        }
+        aSwitchOnEach(path, 241);
 
         final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
 
@@ -2769,18 +2648,10 @@ public class testATrainIsDispatchedOnce
 
         final List<Edge> path = through(rail, names);
 
-        for (int i = 0; i < path.size(); i++)
-        {
-            org.traincontrol.marklin.MarklinAccessory turnout =
-                model.newSwitch(251 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
-
-            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
-        }
+        aSwitchOnEach(path, 251);
 
         // AS THE CENTRAL STATION'S STOP AND GO ARE TAKEN IN
-        final java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
-
-        power.setAccessible(true);
+        final java.lang.reflect.Method power = setPowerState();
 
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
 
@@ -2864,17 +2735,9 @@ public class testATrainIsDispatchedOnce
 
         final List<Edge> path = through(rail, names);
 
-        for (int i = 0; i < path.size(); i++)
-        {
-            org.traincontrol.marklin.MarklinAccessory turnout =
-                model.newSwitch(261 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+        aSwitchOnEach(path, 261);
 
-            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
-        }
-
-        final java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
-
-        power.setAccessible(true);
+        final java.lang.reflect.Method power = setPowerState();
 
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
 
@@ -3048,13 +2911,7 @@ public class testATrainIsDispatchedOnce
 
         final List<Edge> path = through(rail, names);
 
-        for (int i = 0; i < path.size(); i++)
-        {
-            org.traincontrol.marklin.MarklinAccessory turnout =
-                model.newSwitch(271 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
-
-            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
-        }
+        aSwitchOnEach(path, 271);
 
         final java.lang.reflect.Field epochField = MarklinControlStation.class.getDeclaredField("powerEpoch");
 
@@ -3108,23 +2965,32 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /** A new switch for each edge of the path, at consecutive addresses from `first`, thrown by the edge's commands. */
+    private static void aSwitchOnEach(List<Edge> path, int first)
+    {
+        for (int i = 0; i < path.size(); i++)
+        {
+            org.traincontrol.marklin.MarklinAccessory turnout =
+                model.newSwitch(first + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
+        }
+    }
+
+    /** The model's way of taking in the Central Station's stop and go. */
+    private static java.lang.reflect.Method setPowerState() throws Exception
+    {
+        java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
+
+        power.setAccessible(true);
+
+        return power;
+    }
+
     /** A handler on the model's own logger, collecting every message into `into` - removed by the caller. */
     private static java.util.logging.Handler aTapOn(final List<String> into)
     {
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) into.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(into);
 
         java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(tap);
 

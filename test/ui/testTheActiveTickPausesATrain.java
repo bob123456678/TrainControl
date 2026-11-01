@@ -306,29 +306,9 @@ public class testTheActiveTickPausesATrain
         try
         {
             // THE EDITOR, as Autonomy > Edit Autonomy > the page opens it
-            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+            editor = openTheEditor();
 
-            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
-            {
-                Thread.sleep(100);
-
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
-                }
-            }
-
-            assertNotNull(editor, "the autonomy editor did not open on " + mainB.getPage());
-
-            for (int turn = 0; turn < 6; turn++) pump();
-
-            java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
-
-            panelField.setAccessible(true);
-
-            final AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
-
-            assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
+            final AutonomyEditorPanel panel = editorsPanel(editor);
 
             java.lang.reflect.Field setupField = AutonomyEditorPanel.class.getDeclaredField("session");
 
@@ -339,26 +319,17 @@ public class testTheActiveTickPausesATrain
             assertEquals(edited.getLocomotiveNameAt(mainB), HIS_TRAIN, "precondition: the editor's setup does not have "
                 + HIS_TRAIN + " on BottomMainB");
 
-            final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
-
             final List<String> offered = new ArrayList<>();
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                javax.swing.JPopupMenu menu = panel.buildTileMenu(mainB, null);
+            final javax.swing.JMenuItem tick = editorsTickItem(panel, label, offered);
 
-                texts(menu, offered);
-
-                tick[0] = itemNamed(menu, label);
-            });
-
-            assertNotNull(tick[0], "the editor's right-click on BottomMainB, where " + HIS_TRAIN + " stands, offers no "
+            assertNotNull(tick, "the editor's right-click on BottomMainB, where " + HIS_TRAIN + " stands, offers no "
                 + label + ": " + offered);
 
-            assertTrue(tick[0] instanceof javax.swing.JCheckBoxMenuItem && tick[0].isSelected(), label + " is not a tick,"
+            assertTrue(tick instanceof javax.swing.JCheckBoxMenuItem && tick.isSelected(), label + " is not a tick,"
                 + " or reads unticked for a train nobody paused");
 
-            click(tick[0]);
+            click(tick);
 
             for (int turn = 0; turn < 6; turn++) pump();
 
@@ -566,11 +537,7 @@ public class testTheActiveTickPausesATrain
     {
         String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
-        javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
-
-        assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
-
-        click(tick);
+        clickTheDiagramsTick(label);
 
         assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " did not pause the train");
 
@@ -719,11 +686,7 @@ public class testTheActiveTickPausesATrain
             String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
             // ANOTHER TRAIN UNTICKED
-            javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
-
-            assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
-
-            click(tick);
+            clickTheDiagramsTick(label);
 
             theNextSetupGestureRebuilds();
 
@@ -732,11 +695,7 @@ public class testTheActiveTickPausesATrain
             assertPausedEverywhere(card, true, "after unticking " + label);
 
             // AND TICKED AGAIN
-            tick = diagramMenuItem(mainB, label);
-
-            assertTrue(tick != null && !tick.isSelected(), "precondition: " + label + " does not read unticked");
-
-            click(tick);
+            clickTheDiagramsTickAgain(label);
 
             theNextSetupGestureRebuilds();
 
@@ -798,11 +757,7 @@ public class testTheActiveTickPausesATrain
             String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
             // ANOTHER TRAIN UNTICKED
-            javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
-
-            assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
-
-            click(tick);
+            clickTheDiagramsTick(label);
 
             theNextSetupGestureRebuilds();
 
@@ -811,11 +766,7 @@ public class testTheActiveTickPausesATrain
             assertPausedEverywhere(card, false, "after unticking " + label);
 
             // AND TICKED AGAIN
-            tick = diagramMenuItem(mainB, label);
-
-            assertTrue(tick != null && !tick.isSelected(), "precondition: " + label + " does not read unticked");
-
-            click(tick);
+            clickTheDiagramsTickAgain(label);
 
             theNextSetupGestureRebuilds();
 
@@ -1010,23 +961,7 @@ public class testTheActiveTickPausesATrain
             crowd();
 
             // BUILT WITH THE TRAIN PAUSED: through its own tick, and the rebuild after it
-            String cardsLabel = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
-
-            javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), cardsLabel);
-
-            assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no "
-                + cardsLabel);
-
-            click(own);
-
-            theNextSetupGestureRebuilds();
-
-            final Locomotive card = model.getLocByName(CARD_TRAIN);
-
-            assertTrue(card.isAutonomyPaused() && session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: "
-                + CARD_TRAIN + " was not built paused");
-
-            rebuildTheCards();
+            final Locomotive card = theCardsTrainBuiltPaused();
 
             // SET GOING BY ITS CARD'S BUTTON, and the editor opens: the fold takes that into the setup
             pressTheCardsButton(card, false);
@@ -1042,9 +977,7 @@ public class testTheActiveTickPausesATrain
             // ANOTHER TRAIN UNTICKED IN THE EDITOR
             String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
-            clickTheEditorsTick(editorsPanel(editor), label);
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, label);
 
             assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause "
                 + HIS_TRAIN);
@@ -1323,9 +1256,7 @@ public class testTheActiveTickPausesATrain
             // AN EDIT IN THE EDITOR whose rebuild replaces the railway
             String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
-            clickTheEditorsTick(editorsPanel(editor), label);
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, label);
 
             assertNotSame(railway(), opened, "precondition: the editor's rebuild did not replace the railway");
 
@@ -1446,9 +1377,7 @@ public class testTheActiveTickPausesATrain
             // THE EDITOR'S TICK pauses a train
             String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
-            clickTheEditorsTick(editorsPanel(editor), label);
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, label);
 
             assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause " + HIS_TRAIN);
 
@@ -1519,9 +1448,7 @@ public class testTheActiveTickPausesATrain
             editor = openTheEditor();
 
             // TICKED ACTIVE IN THE EDITOR: the record then lists nobody
-            clickTheEditorsTick(editorsPanel(editor), label);
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, label);
 
             assertFalse(train.isAutonomyPaused(), "precondition: ticking " + label + " in the editor did not set it going");
 
@@ -1584,9 +1511,7 @@ public class testTheActiveTickPausesATrain
 
             String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size() - 1);
 
-            clickTheEditorsTick(editorsPanel(editor), deactivate);
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, deactivate);
 
             for (String name : standing)
             {
@@ -1758,9 +1683,7 @@ public class testTheActiveTickPausesATrain
             pressTheCardsButton(card, false);
 
             // AN EDIT whose rebuild folds the card's change
-            clickTheEditorsTick(editorsPanel(editor), I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
 
             assertFalse(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the fold did not take the card's going");
 
@@ -1808,9 +1731,7 @@ public class testTheActiveTickPausesATrain
 
             pressTheCardsButton(card, true);
 
-            clickTheEditorsTick(editorsPanel(editor), I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
 
             assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the fold did not take the card's pause");
 
@@ -1865,9 +1786,7 @@ public class testTheActiveTickPausesATrain
             // PAUSED, as a card pauses it: the train alone, and an edit's rebuild folds it
             made.setAutonomyPaused(true);
 
-            clickTheEditorsTick(editorsPanel(editor), I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
-
-            settleTheRebuild();
+            clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
 
             assertTrue(session.getPausedLocomotives().contains(doomed), "precondition: the fold did not take the pause");
 
@@ -1895,9 +1814,20 @@ public class testTheActiveTickPausesATrain
     /** The editor's right-click on BottomMainB built and the tick on it clicked, as the editor's own menu does. */
     private static void clickTheEditorsTick(final AutonomyEditorPanel panel, final String label) throws Exception
     {
-        final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
-
         final List<String> offered = new ArrayList<>();
+
+        final javax.swing.JMenuItem tick = editorsTickItem(panel, label, offered);
+
+        assertNotNull(tick, "precondition: the editor's right-click on BottomMainB offers no " + label + ": " + offered);
+
+        click(tick);
+    }
+
+    /** The item named `label` in the editor's right-click on BottomMainB, built on the event thread; `offered` gets the menu's texts. */
+    private static javax.swing.JMenuItem editorsTickItem(final AutonomyEditorPanel panel, final String label,
+        final List<String> offered) throws Exception
+    {
+        final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1908,9 +1838,47 @@ public class testTheActiveTickPausesATrain
             tick[0] = itemNamed(menu, label);
         });
 
-        assertNotNull(tick[0], "precondition: the editor's right-click on BottomMainB offers no " + label + ": " + offered);
+        return tick[0];
+    }
 
-        click(tick[0]);
+    /** The editor's tick of `label` clicked, and the rebuild it asks for done. */
+    private static void clickTheEditorsTickAndSettle(java.awt.Window editor, String label) throws Exception
+    {
+        clickTheEditorsTick(editorsPanel(editor), label);
+
+        settleTheRebuild();
+    }
+
+    /** The track diagram's right-click on BottomMainB, and the tick `label` on it clicked. */
+    private static void clickTheDiagramsTick(String label) throws Exception
+    {
+        javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
+
+        assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
+
+        click(tick);
+    }
+
+    /** The diagram's tick `label` clicked a second time: it must read unticked now. */
+    private static void clickTheDiagramsTickAgain(String label) throws Exception
+    {
+        javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
+
+        assertTrue(tick != null && !tick.isSelected(), "precondition: " + label + " does not read unticked");
+
+        click(tick);
+    }
+
+    /** The Bulk Tools item `label` chosen on the diagram, and the rebuild it asks for done. */
+    private static void chooseBulkTool(String label) throws Exception
+    {
+        javax.swing.JMenuItem tool = diagramMenuItem(mainB, label);
+
+        assertNotNull(tool, "precondition: Bulk Tools offers no " + label + ": " + diagramMenuTexts(mainB));
+
+        click(tool);
+
+        settleTheRebuild();
     }
 
     /**
@@ -1945,13 +1913,7 @@ public class testTheActiveTickPausesATrain
             // PAUSED BY ITS CARD: the train alone
             pressTheCardsButton(away, true);
 
-            javax.swing.JMenuItem tool = diagramMenuItem(mainB, deactivate);
-
-            assertNotNull(tool, "precondition: Bulk Tools offers no " + deactivate + ": " + diagramMenuTexts(mainB));
-
-            click(tool);
-
-            settleTheRebuild();
+            chooseBulkTool(deactivate);
 
             for (String name : standing)
             {
@@ -2010,13 +1972,7 @@ public class testTheActiveTickPausesATrain
 
             String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size());
 
-            javax.swing.JMenuItem tool = diagramMenuItem(mainB, deactivate);
-
-            assertNotNull(tool, "precondition: Bulk Tools offers no " + deactivate + ": " + diagramMenuTexts(mainB));
-
-            click(tool);
-
-            settleTheRebuild();
+            chooseBulkTool(deactivate);
 
             for (String name : standing)
             {
@@ -2072,13 +2028,7 @@ public class testTheActiveTickPausesATrain
             // THE TRAIN IS READ, NOT THE LIST: one to set going
             String activate = I18n.f("autosetup.ui.menuActivateAllTrains", 1);
 
-            javax.swing.JMenuItem tool = diagramMenuItem(mainB, activate);
-
-            assertNotNull(tool, "precondition: Bulk Tools offers no " + activate + ": " + diagramMenuTexts(mainB));
-
-            click(tool);
-
-            settleTheRebuild();
+            chooseBulkTool(activate);
 
             assertFalse(card.isAutonomyPaused(), CARD_TRAIN + " is still paused after " + activate);
 

@@ -215,9 +215,8 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             final String running = I18n.t("ui.main.tooltip.placeAtHomesWhileRunning");
 
             // AUTONOMY, OR A TIMETABLE: the railway's own running flag
-            java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+            java.lang.reflect.Field flag = runningFlag();
 
-            flag.setAccessible(true);
             flag.setBoolean(layout, true);
 
             try
@@ -293,16 +292,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             greyedWith(ui, I18n.t("autosetup.ui.infoNoHomesToPlace"), "no train having a home");
 
             // AN EDITOR HOLDING THE SETUP
-            TileKey square = null;
-
-            for (TileKey tile : session.getGraph().getTiles().keySet())
-            {
-                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
-            }
-
-            assertNotNull(square, "precondition: no square on the main page");
-
-            openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+            openAnEditorOnTheMainPage(ui);
 
             try
             {
@@ -348,16 +338,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             SwingUtilities.invokeAndWait(() -> button.setEnabled(true));
 
-            TileKey square = null;
-
-            for (TileKey tile : ui.getAutonomySession().getGraph().getTiles().keySet())
-            {
-                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
-            }
-
-            assertNotNull(square, "precondition: no square on the main page");
-
-            openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+            openAnEditorOnTheMainPage(ui);
 
             try
             {
@@ -384,6 +365,42 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         {
             sandboxed.close();
         }
+    }
+
+    /** Opens the layout editor on the first square of the main page. */
+    private static void openAnEditorOnTheMainPage(TrainControlUI ui) throws Exception
+    {
+        TileKey square = null;
+
+        for (TileKey tile : ui.getAutonomySession().getGraph().getTiles().keySet())
+        {
+            if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+        }
+
+        assertNotNull(square, "precondition: no square on the main page");
+
+        openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+    }
+
+    /** The reflected flag that says the railway's autonomy is running, opened for writing. */
+    private static java.lang.reflect.Field runningFlag() throws Exception
+    {
+        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+
+        flag.setAccessible(true);
+
+        return flag;
+    }
+
+    /** Clears every placement, then puts a train that is nobody's home on the first of the homes; the train. */
+    private static String placeOnlyAStrayTrain(TrainControlUI ui, AutonomySession session, Map<TileKey, String> homes)
+    {
+        String stray = aTrainWithNoHome(ui, homes);
+
+        session.clearEveryPlacement();
+        session.placeLocomotive(homes.keySet().iterator().next(), stray);
+
+        return stray;
     }
 
     /** The window's question and the right-click item both give this reason, and the item is grayed. */
@@ -423,10 +440,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             Map<TileKey, String> homes = session.homesToPlace();
 
-            String stray = aTrainWithNoHome(ui, homes);
-
-            session.clearEveryPlacement();
-            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+            String stray = placeOnlyAStrayTrain(ui, session, homes);
 
             final Map<TileKey, String> before = new LinkedHashMap<>(session.placementsAutonomyWillWrite());
 
@@ -477,11 +491,8 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             Map<TileKey, String> homes = new LinkedHashMap<>(session.homesToPlace());
 
-            String stray = aTrainWithNoHome(ui, homes);
-
             // THE TRAINS ELSEWHERE: a train with no home on a home, and the homed trains nowhere
-            session.clearEveryPlacement();
-            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+            String stray = placeOnlyAStrayTrain(ui, session, homes);
 
             assertEquals(session.placementsAutonomyWillWrite().get(homes.keySet().iterator().next()), stray,
                 "precondition: the stray train was not placed");
@@ -546,15 +557,11 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             Map<TileKey, String> homes = new LinkedHashMap<>(session.homesToPlace());
 
-            String stray = aTrainWithNoHome(ui, homes);
-
-            session.clearEveryPlacement();
-            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+            String stray = placeOnlyAStrayTrain(ui, session, homes);
 
             // WHILE A RUN IS UNDER WAY: grayed with Return Home's reason
-            java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+            java.lang.reflect.Field flag = runningFlag();
 
-            flag.setAccessible(true);
             flag.setBoolean(layout, true);
 
             try
@@ -655,9 +662,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
-
-        flag.setAccessible(true);
+        java.lang.reflect.Field flag = runningFlag();
 
         Layout layout = null;
 

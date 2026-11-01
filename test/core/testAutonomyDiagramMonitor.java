@@ -300,15 +300,7 @@ public class testAutonomyDiagramMonitor
         layout.active.put(locomotive(), Arrays.asList(run));
         layout.standingAt = west88;
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    published.add(overlays);
-                }
-            });
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles, overlays -> published.add(overlays));
 
         for (int i = 0; i < 50; i++)
         {
@@ -337,25 +329,8 @@ public class testAutonomyDiagramMonitor
     {
         final int[] publishes = {0};
 
-        DiagramMonitor monitor = new DiagramMonitor(
-            new DiagramMonitor.LayoutSource()
-            {
-                @Override
-                public org.traincontrol.automation.Layout get()
-                {
-                    return null;
-                }
-            },
-            new LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(),
-            new LinkedHashMap<String, TileKey>(),
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    publishes[0]++;
-                }
-            });
+        DiagramMonitor monitor = new DiagramMonitor(source(null), new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), overlays -> publishes[0]++);
 
         monitor.refresh();
         monitor.refresh();
@@ -372,18 +347,8 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testThePictureCanBeAskedForAgainAfterAViewIsRebuilt()
     {
-        DiagramMonitor monitor = new DiagramMonitor(
-            new DiagramMonitor.LayoutSource()
-            {
-                @Override
-                public org.traincontrol.automation.Layout get()
-                {
-                    return null;
-                }
-            },
-            new LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(),
-            new LinkedHashMap<String, TileKey>(),
-            null);
+        DiagramMonitor monitor = new DiagramMonitor(source(null), new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), null);
 
         assertNotNull(monitor.getPublished(), "there is always a picture, even if it is empty");
         assertTrue(monitor.getPublished().isEmpty());
@@ -431,15 +396,7 @@ public class testAutonomyDiagramMonitor
         layout.active.put(locomotive(), Arrays.asList(run));
         layout.standingAt = west88;
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    publishes[0]++;
-                }
-            });
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles, overlays -> publishes[0]++);
 
         monitor.refresh();
 
@@ -515,15 +472,7 @@ public class testAutonomyDiagramMonitor
         layout.active.put(locomotive(), Arrays.asList(run));
         layout.standingAt = west88;
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    published.add(new LinkedHashMap<>(overlays));
-                }
-            });
+        DiagramMonitor monitor = monitorOf(layout, edges, tiles, published);
 
         // 1. the path is claimed and the train has reached nothing yet
         monitor.refresh();
@@ -652,15 +601,7 @@ public class testAutonomyDiagramMonitor
         layout.active.put(locomotive(), Arrays.asList(claimed));
         layout.standingAt = a;
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles,
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    published.add(new LinkedHashMap<>(overlays));
-                }
-            });
+        DiagramMonitor monitor = monitorOf(layout, edges, tiles, published);
 
         monitor.refresh();
 
@@ -727,32 +668,22 @@ public class testAutonomyDiagramMonitor
                 && Math.abs(drawn.getBlue() - expected.getBlue()) < 12, state + " is drawn in " + drawn + ", not "
                 + expected + " (FR-106)");
 
-            int white = 0;
-
-            for (int y = 0; y < size; y++)
+            int white = support.Pixels.count(image, argb ->
             {
-                for (int x = 0; x < size; x++)
-                {
-                    java.awt.Color p = new java.awt.Color(image.getRGB(x, y), true);
+                java.awt.Color p = new java.awt.Color(argb, true);
 
-                    if (p.getAlpha() > 200 && p.getRed() > 230 && p.getGreen() > 230 && p.getBlue() > 230) white++;
-                }
-            }
+                return p.getAlpha() > 200 && p.getRed() > 230 && p.getGreen() > 230 && p.getBlue() > 230;
+            });
 
             assertTrue(white > 0, "the arrowhead on a " + state + " run is not white, so it does not read on its line"
                 + " (FR-106)");
 
-            int edged = 0;
-
-            for (int y = 0; y < size; y++)
+            int edged = support.Pixels.count(image, argb ->
             {
-                for (int x = 0; x < size; x++)
-                {
-                    java.awt.Color p = new java.awt.Color(image.getRGB(x, y), true);
+                java.awt.Color p = new java.awt.Color(argb, true);
 
-                    if (p.getAlpha() > 200 && p.getRed() < 70 && p.getGreen() < 70 && p.getBlue() < 70) edged++;
-                }
-            }
+                return p.getAlpha() > 200 && p.getRed() < 70 && p.getGreen() < 70 && p.getBlue() < 70;
+            });
 
             assertTrue(edged > 0, "the white arrowhead on a " + state + " run has no dark edge, so on a sensor's white"
                 + " contact it disappears (RSA25-C4)");
@@ -862,14 +793,7 @@ public class testAutonomyDiagramMonitor
 
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles, new DiagramMonitor.Publisher()
-        {
-            @Override
-            public void publish(Map<TileKey, TileOverlay> overlays)
-            {
-                published.add(new LinkedHashMap<>(overlays));
-            }
-        });
+        DiagramMonitor monitor = monitorOf(layout, edges, tiles, published);
 
         // ATOMIC: nothing given back
         monitor.refresh();
@@ -966,6 +890,13 @@ public class testAutonomyDiagramMonitor
         }
     }
 
+    /** A monitor of the layout that keeps a copy of each picture it publishes in the list. */
+    private static DiagramMonitor monitorOf(StubLayout layout, Map<String, ReducedEdge> edges,
+        Map<String, TileKey> tiles, List<Map<TileKey, TileOverlay>> published)
+    {
+        return new DiagramMonitor(source(layout), edges, tiles, overlays -> published.add(new LinkedHashMap<>(overlays)));
+    }
+
     private static DiagramMonitor.LayoutSource source(final org.traincontrol.automation.Layout layout)
     {
         return new DiagramMonitor.LayoutSource()
@@ -1053,17 +984,8 @@ public class testAutonomyDiagramMonitor
         TileOverlay overlay = new TileOverlay(State.ACTIVE, false,
             Arrays.asList(new TileOverlay.Segment(Side.N, null, State.ACTIVE)));
 
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
         // The rail's own midpoint, which is what the label knows and the overlay did not.
-        // Both passes, for the reason given on `painted` (OB-159).
-        overlay.paint(g, size, size, new int[] {45, 15});
-        overlay.paintTrain(g, size, size, new int[] {45, 15});
-
-        g.dispose();
+        java.awt.image.BufferedImage image = paintedOnTheRail(overlay, size);
 
         assertTrue(painted(image, 45, 15), "nothing was drawn where the rail actually runs");
 
@@ -1449,11 +1371,7 @@ public class testAutonomyDiagramMonitor
                 tile.setAutonomyOverlay(comesOrGoes);
 
                 // the tile and the half of each neighbor an icon on a curve can reach
-                java.awt.Rectangle reach = new java.awt.Rectangle(size / 2, size / 2, 2 * size, 2 * size);
-
-                boolean covered = false;
-
-                for (java.awt.Rectangle r : dirty) covered |= r.contains(reach);
+                boolean covered = reachIsDirty(dirty, size);
 
                 assertTrue(covered, "a train " + (comesOrGoes == null ? "leaving" : "coming to") + " a curve repainted"
                     + " only " + dirty + ", not the neighbours its icon reaches onto (MT-642)");
@@ -1469,11 +1387,7 @@ public class testAutonomyDiagramMonitor
 
                 tile.setAutonomyAnnotation(changed);
 
-                java.awt.Rectangle reach = new java.awt.Rectangle(size / 2, size / 2, 2 * size, 2 * size);
-
-                boolean covered = false;
-
-                for (java.awt.Rectangle r : dirty) covered |= r.contains(reach);
+                boolean covered = reachIsDirty(dirty, size);
 
                 assertTrue(covered, "the annotation of a curve with a train on it changed and repainted only " + dirty
                     + ", not the neighbours the train's icon reaches onto (RSA23-C1)");
@@ -1483,6 +1397,37 @@ public class testAutonomyDiagramMonitor
         {
             javax.swing.RepaintManager.setCurrentManager(was);
         }
+    }
+
+    /**
+     * The overlay painted on a transparent square with the rail's midpoint at 45,15, both passes, for the reason given
+     * on `painted` (OB-159).
+     */
+    private static java.awt.image.BufferedImage paintedOnTheRail(TileOverlay overlay, int size)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        overlay.paint(g, size, size, new int[] {45, 15});
+        overlay.paintTrain(g, size, size, new int[] {45, 15});
+
+        g.dispose();
+
+        return image;
+    }
+
+    /** Whether one dirty region holds the tile and the half of each neighbor an icon on a curve can reach. */
+    private static boolean reachIsDirty(List<java.awt.Rectangle> dirty, int size)
+    {
+        java.awt.Rectangle reach = new java.awt.Rectangle(size / 2, size / 2, 2 * size, 2 * size);
+
+        boolean covered = false;
+
+        for (java.awt.Rectangle r : dirty) covered |= r.contains(reach);
+
+        return covered;
     }
 
     /** Whether the overlay drew anything at this pixel. */
@@ -1505,16 +1450,7 @@ public class testAutonomyDiagramMonitor
         // No segments: the dot and the claim outline, nothing else to confuse the pixels
         TileOverlay overlay = new TileOverlay(State.ACTIVE, true, new ArrayList<TileOverlay.Segment>());
 
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        // Both passes, for the reason given on `painted` (OB-159).
-        overlay.paint(g, size, size, new int[] {45, 15});
-        overlay.paintTrain(g, size, size, new int[] {45, 15});
-
-        g.dispose();
+        java.awt.image.BufferedImage image = paintedOnTheRail(overlay, size);
 
         assertTrue(painted(image, 45, 15), "the train dot is not on the rail");
 
@@ -2016,8 +1952,13 @@ public class testAutonomyDiagramMonitor
     {
         boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
 
-        java.awt.image.BufferedImage art = sensorArt(curve ? "s88_curve_active.gif" : "s88_active.gif", size);
+        return turnedToRun(sensorArt(curve ? "s88_curve_active.gif" : "s88_active.gif", size), road,
+            "the occupied sensor's art");
+    }
 
+    /** The art turned a quarter turn at a time until its track runs along the road; "which" names it in the failure. */
+    private static java.awt.image.BufferedImage turnedToRun(java.awt.image.BufferedImage art, Side[] road, String which)
+    {
         for (int k = 0; k < 4; k++)
         {
             java.awt.image.BufferedImage image = turned(art, k);
@@ -2025,24 +1966,15 @@ public class testAutonomyDiagramMonitor
             if (runs(image, road)) return image;
         }
 
-        throw new AssertionError("precondition: no quarter turn of the occupied sensor's art runs " + road[0] + "-"
-            + road[1]);
+        throw new AssertionError("precondition: no quarter turn of " + which + " runs " + road[0] + "-" + road[1]);
     }
 
     /** A square out of service painted on this art, or on white, with a road one-way through it. */
     private static java.awt.image.BufferedImage outOfServiceOn(java.awt.image.BufferedImage art, TileAnnotation.Badge badge,
         Side[] road, int size, boolean editor)
     {
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
+        return onWhite(size, size, g ->
         {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
             if (art != null) g.drawImage(art, 0, 0, null);
 
             boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
@@ -2054,13 +1986,7 @@ public class testAutonomyDiagramMonitor
             if (editor) annotation = annotation.inTheEditor();
 
             annotation.paint(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return image;
+        });
     }
 
     /** The red of the activation arrows a sensor's art draws while it reads occupied. */
@@ -2261,11 +2187,9 @@ public class testAutonomyDiagramMonitor
     @support.DrawsFR118Icons
     public void testAStationOnACurveIsFullSizeOnItsRails() throws Exception
     {
-        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
-
         for (int size : new int[] {30, 60})
         {
-            for (Side[] road : curves)
+            for (Side[] road : CURVES)
             {
                 TileAnnotation.Badge[] kinds = everyKind(road[0], road[1]);
                 TileAnnotation.Badge[] straight = everyKind(Side.W, Side.E);
@@ -2380,27 +2304,14 @@ public class testAutonomyDiagramMonitor
     {
         java.awt.image.BufferedImage square = overTheArt(badge, road, size);
 
-        java.awt.image.BufferedImage canvas =
-            new java.awt.image.BufferedImage(size * 3, size * 3, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = canvas.createGraphics();
-
-        try
+        return onWhite(size * 3, size * 3, g ->
         {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
             g.drawImage(square, size, size, null);
             g.translate(size, size);
 
             new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1], null)), -1, false, badge, false,
                 false, false, null, true, null).paintSpill(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return canvas;
+        });
     }
 
     /**
@@ -2413,30 +2324,11 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testTheContactIsCoveredOnACurve() throws Exception
     {
-        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
-
         for (int size : new int[] {30, 60})
         {
-            for (Side[] road : curves)
+            for (Side[] road : CURVES)
             {
-                java.awt.image.BufferedImage art = curvedSensorArt(size, road);
-
-                double cx = (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
-                double cy = (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
-
-                List<int[]> ring = new ArrayList<>();
-
-                for (int x = 0; x < size; x++)
-                {
-                    for (int y = 0; y < size; y++)
-                    {
-                        if (BLACK.test(art.getRGB(x, y)) && Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= size * 0.3
-                            && acrossTheChord(new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)
-                        {
-                            ring.add(new int[] {x, y});
-                        }
-                    }
-                }
+                List<int[]> ring = ringOffItsRails(curvedSensorArt(size, road), road, size);
 
                 assertFalse(ring.isEmpty(), "precondition: the curved sensor's art at " + size + " pixels has no ring off"
                     + " its rails to cover");
@@ -2445,12 +2337,7 @@ public class testAutonomyDiagramMonitor
                 {
                     java.awt.image.BufferedImage image = overTheArt(badge, road, size);
 
-                    int showing = 0;
-
-                    for (int[] at : ring)
-                    {
-                        if (BLACK.test(image.getRGB(at[0], at[1]))) showing++;
-                    }
+                    int showing = ringShowing(ring, image);
 
                     assertEquals(showing, 0, badge + " on a curve " + road[0] + "-" + road[1] + " at " + size
                         + " pixels leaves " + showing + " of the sensor's ring's " + ring.size() + " pixels showing round"
@@ -2458,6 +2345,48 @@ public class testAutonomyDiagramMonitor
                 }
             }
         }
+    }
+
+    /** The four ways a curve turns. */
+    private static final Side[][] CURVES = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+    /**
+     * The pixels of a sensor's art that are dark near its contact and off the rails along the road from one side to
+     * the other: the contact's ring, which an icon has to cover.
+     */
+    private static List<int[]> ringOffItsRails(java.awt.image.BufferedImage art, Side[] road, int size)
+    {
+        double cx = (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
+        double cy = (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
+
+        List<int[]> ring = new ArrayList<>();
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                if (BLACK.test(art.getRGB(x, y)) && Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= size * 0.3
+                    && acrossTheChord(new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)
+                {
+                    ring.add(new int[] {x, y});
+                }
+            }
+        }
+
+        return ring;
+    }
+
+    /** How many of the ring's pixels are dark in the image. */
+    private static int ringShowing(List<int[]> ring, java.awt.image.BufferedImage image)
+    {
+        int showing = 0;
+
+        for (int[] at : ring)
+        {
+            if (BLACK.test(image.getRGB(at[0], at[1]))) showing++;
+        }
+
+        return showing;
     }
 
     /** Every kind of station on a road from a to b: plain, may turn, must turn, a terminus each way, parking, shut. */
@@ -2490,24 +2419,7 @@ public class testAutonomyDiagramMonitor
         {
             for (Side[] road : roads)
             {
-                java.awt.image.BufferedImage art = overTheArt(null, road, size);
-
-                double cx = (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
-                double cy = (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
-
-                List<int[]> ring = new ArrayList<>();
-
-                for (int x = 0; x < size; x++)
-                {
-                    for (int y = 0; y < size; y++)
-                    {
-                        if (BLACK.test(art.getRGB(x, y)) && Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= size * 0.3
-                            && acrossTheChord(new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)
-                        {
-                            ring.add(new int[] {x, y});
-                        }
-                    }
-                }
+                List<int[]> ring = ringOffItsRails(overTheArt(null, road, size), road, size);
 
                 assertFalse(ring.isEmpty(), "precondition: the sensor's art " + road[0] + "-" + road[1] + " at " + size
                     + " pixels has no ring off its rails to cover");
@@ -2519,12 +2431,7 @@ public class testAutonomyDiagramMonitor
 
                     java.awt.image.BufferedImage image = overTheArt(mark, road, size);
 
-                    int showing = 0;
-
-                    for (int[] at : ring)
-                    {
-                        if (BLACK.test(image.getRGB(at[0], at[1]))) showing++;
-                    }
+                    int showing = ringShowing(ring, image);
 
                     String what = (may ? "the diamond where trains may turn" : "the square where trains must turn") + " on a"
                         + " plain sensor " + road[0] + "-" + road[1] + " at " + size + " pixels";
@@ -2607,11 +2514,9 @@ public class testAutonomyDiagramMonitor
     @support.DrawsFR118Icons
     public void testTheEditorsIconOnACurveIsOnItsRails()
     {
-        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
-
         for (int size : new int[] {30, 60})
         {
-            for (Side[] road : curves)
+            for (Side[] road : CURVES)
             {
                 double cx = size + (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
                 double cy = size + (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
@@ -2672,23 +2577,7 @@ public class testAutonomyDiagramMonitor
     {
         int size = 150;
 
-        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size,
-            java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
-            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), -1, false, badge,
-                false, false, false, null, true, null).paint(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        java.awt.image.BufferedImage image = paintedOn(badge, size);
 
         java.awt.Rectangle fill = extent(image, BLUE);
 
@@ -2712,11 +2601,9 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testAClassicStationsDiamondOnACurveIsOnItsRails()
     {
-        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
-
         for (int size : new int[] {30, 60})
         {
-            for (Side[] road : curves)
+            for (Side[] road : CURVES)
             {
                 TileAnnotation.Badge station = new TileAnnotation.Badge(true, true, false, false, true, road[0], road[1],
                     true, false, null);
@@ -2805,18 +2692,46 @@ public class testAutonomyDiagramMonitor
     /** A badge painted alone on a square of white, on straight track. */
     private static java.awt.image.BufferedImage paintedOn(TileAnnotation.Badge badge, int size)
     {
-        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size,
-            java.awt.image.BufferedImage.TYPE_INT_RGB);
+        return onWhite(size, size, g -> new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(),
+            badge.getB(), null)), -1, false, badge, false, false, false, null, true, null).paint(g, size, size));
+    }
+
+    /** A new white image, width by height, with the step painting on its graphics, which are disposed afterwards. */
+    private static java.awt.image.BufferedImage onWhite(int width, int height,
+        java.util.function.Consumer<java.awt.Graphics2D> painting)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
         java.awt.Graphics2D g = image.createGraphics();
 
         try
         {
             g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
+            g.fillRect(0, 0, width, height);
 
-            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), -1, false, badge,
-                false, false, false, null, true, null).paint(g, size, size);
+            painting.accept(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /** A new transparent image, width by height, with the step painting on its graphics, disposed afterwards. */
+    private static java.awt.image.BufferedImage onNothing(int width, int height,
+        java.util.function.Consumer<java.awt.Graphics2D> painting)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            painting.accept(g);
         }
         finally
         {
@@ -2992,16 +2907,8 @@ public class testAutonomyDiagramMonitor
      */
     private static int[] arrowAndArrivalInk(TileAnnotation.Badge badge, Side[] road, int size, boolean editor)
     {
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
+        java.awt.image.BufferedImage image = onWhite(size, size, g ->
         {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
             TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
                 road[1], org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge,
                 false, road[0] != Side.W, false, null, false, Arrays.asList(
@@ -3010,42 +2917,18 @@ public class testAutonomyDiagramMonitor
             if (editor) annotation = annotation.inTheEditor();
 
             annotation.paint(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        });
 
-        int arrows = 0, arrivals = 0;
-
-        for (int x = 0; x < size; x++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
-
-                if (isArrowInk(r, gr, b)) arrows++;
-
-                if (isArrivalInk(r, gr, b)) arrivals++;
-            }
-        }
-
-        return new int[] {arrows, arrivals};
+        return new int[] {
+            support.Pixels.count(image, rgb -> isArrowInk(channel(rgb, 16), channel(rgb, 8), channel(rgb, 0))),
+            support.Pixels.count(image, rgb -> isArrivalInk(channel(rgb, 16), channel(rgb, 8), channel(rgb, 0)))};
     }
 
     /** A badge painted on a canvas three squares across, the square in the middle - its own paint and its spill. */
     private static java.awt.image.BufferedImage wholeIcon(TileAnnotation.Badge badge, Side[] road, int size, boolean editor)
     {
-        java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
-            java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = canvas.createGraphics();
-
-        try
+        return onWhite(size * 3, size * 3, g ->
         {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size * 3, size * 3);
-
             boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
 
             TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1], null)),
@@ -3063,13 +2946,7 @@ public class testAutonomyDiagramMonitor
             spill.translate(size, size);
             annotation.paintSpill(spill, size, size);
             spill.dispose();
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return canvas;
+        });
     }
 
     /** How many pixels of a color an image has. */
@@ -3097,20 +2974,11 @@ public class testAutonomyDiagramMonitor
             assertFalse(shaded.spillsOverItsSquare(), "a shaded curve station at " + size + " pixels says it spills"
                 + " (RSA63-C4)");
 
-            java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
-                java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-            java.awt.Graphics2D g = canvas.createGraphics();
-
-            try
+            java.awt.image.BufferedImage canvas = onNothing(size * 3, size * 3, g ->
             {
                 g.translate(size, size);
                 shaded.paintSpill(g, size, size);
-            }
-            finally
-            {
-                g.dispose();
-            }
+            });
 
             assertEquals(inkOf(canvas), 0, "a shaded curve station at " + size + " pixels spills onto the squares beside it"
                 + " (RSA63-C4)");
@@ -3149,16 +3017,7 @@ public class testAutonomyDiagramMonitor
     /** The curved sensor's art, turned until its track runs from one side of the road to the other, on white. */
     private static java.awt.image.BufferedImage curvedSensorArt(int size, Side[] road) throws Exception
     {
-        java.awt.image.BufferedImage art = sensorArt("s88_curve.gif", size);
-
-        for (int k = 0; k < 4; k++)
-        {
-            java.awt.image.BufferedImage image = turned(art, k);
-
-            if (runs(image, road)) return image;
-        }
-
-        throw new AssertionError("precondition: no quarter turn of the curved sensor's art runs " + road[0] + "-" + road[1]);
+        return turnedToRun(sensorArt("s88_curve.gif", size), road, "the curved sensor's art");
     }
 
     private static java.awt.image.BufferedImage sensorArt(String name, int size) throws Exception
@@ -3166,23 +3025,7 @@ public class testAutonomyDiagramMonitor
         java.awt.image.BufferedImage art = javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class
             .getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name));
 
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-            g.drawImage(art, 0, 0, null);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return image;
+        return onWhite(size, size, g -> g.drawImage(art, 0, 0, null));
     }
 
     /** The image turned k quarter turns clockwise. */
@@ -3312,11 +3155,9 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testTheArrowsAreDrawnOverAStationsIconOnACurve()
     {
-        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
-
         for (int size : new int[] {30, 60})
         {
-            for (Side[] road : curves)
+            for (Side[] road : CURVES)
             {
                 for (TileAnnotation.Badge badge : everyKind(road[0], road[1]))
                 {
@@ -3356,16 +3197,8 @@ public class testAutonomyDiagramMonitor
      */
     private static int arrowInk(TileAnnotation.Badge badge, Side[] road, int size, boolean editor, boolean overRun)
     {
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
+        java.awt.image.BufferedImage image = onWhite(size, size, g ->
         {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
             TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1],
                 org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge, false, false, false, null,
                 false, null);
@@ -3375,26 +3208,10 @@ public class testAutonomyDiagramMonitor
             annotation.paint(g, size, size);
 
             if (overRun) annotation.paintBadgeOverRun(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        });
 
-        int n = 0;
-
-        for (int x = 0; x < size; x++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
-
-                // the arrows' own red and green, solid: an antialiased edge takes the color of what it is drawn over
-                if (isArrowInk(r, gr, b)) n++;
-            }
-        }
-
-        return n;
+        // the arrows' own red and green, solid: an antialiased edge takes the color of what it is drawn over
+        return support.Pixels.count(image, rgb -> isArrowInk(channel(rgb, 16), channel(rgb, 8), channel(rgb, 0)));
     }
 
     /**
@@ -3627,16 +3444,8 @@ public class testAutonomyDiagramMonitor
         java.awt.image.BufferedImage art = javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class
             .getResource("/org/traincontrol/gui/resources/icons" + size + "/s88.gif"));
 
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
+        return onWhite(size, size, g ->
         {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
             java.awt.Graphics2D tile = (java.awt.Graphics2D) g.create();
 
             if (badge.getA() == Side.N || badge.getA() == Side.S) tile.rotate(Math.PI / 2, size / 2.0, size / 2.0);
@@ -3646,13 +3455,7 @@ public class testAutonomyDiagramMonitor
 
             new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), 0, false, badge,
                 false, false, false, null, true, null).paintBadgeOverRun(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return image;
+        });
     }
 
     /**
@@ -3699,54 +3502,20 @@ public class testAutonomyDiagramMonitor
     /** How many of a painted badge's pixels are solid in the gray of a berth autonomy does not choose. */
     private static int greyOf(java.awt.image.BufferedImage image)
     {
-        int n = 0;
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                if ((image.getRGB(x, y) >>> 24) >= 200 && GREY.test(image.getRGB(x, y))) n++;
-            }
-        }
-
-        return n;
+        return support.Pixels.count(image, rgb -> (rgb >>> 24) >= 200 && GREY.test(rgb));
     }
 
     /** How many of a painted badge's pixels are the cross's orange. */
     private static int orangeOf(java.awt.image.BufferedImage image)
     {
-        int n = 0;
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                if ((image.getRGB(x, y) >>> 24) >= 200 && ORANGE.test(image.getRGB(x, y))) n++;
-            }
-        }
-
-        return n;
+        return support.Pixels.count(image, rgb -> (rgb >>> 24) >= 200 && ORANGE.test(rgb));
     }
 
     /** One badge on a road from W to E, painted over the run as the diagram does, on nothing. */
     private static java.awt.image.BufferedImage painted(TileAnnotation.Badge b, int size)
     {
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
-        {
-            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false, false,
-                false, null, true, null).paintBadgeOverRun(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return image;
+        return onNothing(size, size, g -> new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E,
+            null)), 0, false, b, false, false, false, null, true, null).paintBadgeOverRun(g, size, size));
     }
 
     /** An ordinary station badge, where only the two flags that decide its color vary. */
@@ -3760,22 +3529,7 @@ public class testAutonomyDiagramMonitor
     {
         // as the running diagram builds one: its road for the badge, and only restricted roads' arrows (`blockedOnly`),
         // which an open road has none of - the arrows are drawn over the badge (MT-710)
-        TileAnnotation annotation = new TileAnnotation(
-            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false, false, false, null, true, null);
-
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
-        {
-            annotation.paintBadgeOverRun(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        java.awt.image.BufferedImage image = painted(b, size);
 
         java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
 
@@ -3828,43 +3582,14 @@ public class testAutonomyDiagramMonitor
     private static java.awt.image.BufferedImage badgeAt(boolean station, boolean turns,
         boolean parking, boolean shut, int size) throws Exception
     {
-        TileAnnotation annotation = new TileAnnotation(
-            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false,
-            new TileAnnotation.Badge(station, station && turns, !station && turns, parking, true,
-                Side.W, Side.E, false, shut),
-            false, false, false, null, true, null);
-
-        java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = image.createGraphics();
-
-        try
-        {
-            annotation.paintBadgeOverRun(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return image;
+        return painted(new TileAnnotation.Badge(station, station && turns, !station && turns, parking, true,
+            Side.W, Side.E, false, shut), size);
     }
 
     /** How much of the tile the mark actually covers. */
     private static int inkOf(java.awt.image.BufferedImage image)
     {
-        int ink = 0;
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                if ((image.getRGB(x, y) >>> 24) > 8) ink++;
-            }
-        }
-
-        return ink;
+        return support.Pixels.count(image, rgb -> (rgb >>> 24) > 8);
     }
 
     /** And a straight is still the middle of the square, which is the case that must not move. */
@@ -4307,15 +4032,7 @@ public class testAutonomyDiagramMonitor
 
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(), tiles,
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    published.add(new LinkedHashMap<>(overlays));
-                }
-            });
+        DiagramMonitor monitor = monitorOf(layout, new LinkedHashMap<String, ReducedEdge>(), tiles, published);
 
         Map<String, Side> facings = new LinkedHashMap<>();
 
@@ -4391,15 +4108,7 @@ public class testAutonomyDiagramMonitor
 
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(), tiles,
-            new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    published.add(new LinkedHashMap<>(overlays));
-                }
-            });
+        DiagramMonitor monitor = monitorOf(layout, new LinkedHashMap<String, ReducedEdge>(), tiles, published);
 
         monitor.refresh();
 
@@ -4433,15 +4142,8 @@ public class testAutonomyDiagramMonitor
 
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(),
-            new LinkedHashMap<String, TileKey>(), new DiagramMonitor.Publisher()
-            {
-                @Override
-                public void publish(Map<TileKey, TileOverlay> overlays)
-                {
-                    published.add(new LinkedHashMap<>(overlays));
-                }
-            });
+        DiagramMonitor monitor = monitorOf(layout, new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), published);
 
         Map<TileKey, Side> nowhere = new LinkedHashMap<>();
 
@@ -4617,8 +4319,8 @@ public class testAutonomyDiagramMonitor
 
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
-        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(),
-            new LinkedHashMap<String, TileKey>(), overlays -> published.add(new LinkedHashMap<>(overlays)));
+        DiagramMonitor monitor = monitorOf(layout, new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), published);
 
         Map<TileKey, Side> nowhere = new LinkedHashMap<>();
 
@@ -4802,22 +4504,7 @@ public class testAutonomyDiagramMonitor
     /** Which pixels of a white square this annotation draws on. */
     private static boolean[][] ink(TileAnnotation annotation, int size)
     {
-        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(size, size,
-            java.awt.image.BufferedImage.TYPE_INT_RGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, size, size);
-
-            annotation.paint(g, size, size);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        java.awt.image.BufferedImage shot = onWhite(size, size, g -> annotation.paint(g, size, size));
 
         boolean[][] on = new boolean[size][size];
 

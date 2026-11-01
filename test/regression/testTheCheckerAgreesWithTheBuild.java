@@ -212,19 +212,7 @@ public class testTheCheckerAgreesWithTheBuild
             "reachFromEachStation() examined no stations at all, so the comparison below is between "
             + "two empty sets and proves nothing about whether the checker and the build agree");
 
-        Set<TileKey> unreached = new TreeSet<>(BY_KEY);
-
-        for (TileKey station : reach.keySet())
-        {
-            boolean reachable = false;
-
-            for (TileKey other : reach.keySet())
-            {
-                if (!other.equals(station) && reach.get(other).contains(station)) reachable = true;
-            }
-
-            if (!reachable) unreached.add(station);
-        }
+        Set<TileKey> unreached = unlinked(reach, true);
 
         // A STATION NOTHING CAN PASS IS SAID TO BE CLOSED, NOT UNREACHABLE (FR-101): nothing reaches such a square, so
         // the checker says so once, as closed, in place of the reachability sentences.  They are compared under their
@@ -260,19 +248,7 @@ public class testTheCheckerAgreesWithTheBuild
     {
         Map<TileKey, Set<TileKey>> reach = reachFromEachStation();
 
-        Set<TileKey> stranded = new TreeSet<>(BY_KEY);
-
-        for (TileKey station : reach.keySet())
-        {
-            boolean reaches = false;
-
-            for (TileKey other : reach.keySet())
-            {
-                if (!other.equals(station) && reach.get(station).contains(other)) reaches = true;
-            }
-
-            if (!reaches) stranded.add(station);
-        }
+        Set<TileKey> stranded = unlinked(reach, false);
 
         assertTrue(String.valueOf(stranded).contains("1 - Main:12,11"),
             "precondition: BottomSecondary, whose one copy cannot leave eastward, is no longer stranded on the built"
@@ -876,4 +852,25 @@ public class testTheCheckerAgreesWithTheBuild
             return a.toString().compareTo(b.toString());
         }
     };
+
+    /** The stations no other station reaches (`reachedByOthers`), or that reach no other station, on the built graph. */
+    private static Set<TileKey> unlinked(Map<TileKey, Set<TileKey>> reach, boolean reachedByOthers)
+    {
+        Set<TileKey> none = new TreeSet<>(BY_KEY);
+
+        for (TileKey station : reach.keySet())
+        {
+            boolean linked = false;
+
+            for (TileKey other : reach.keySet())
+            {
+                if (!other.equals(station) && (reachedByOthers ? reach.get(other).contains(station)
+                    : reach.get(station).contains(other))) linked = true;
+            }
+
+            if (!linked) none.add(station);
+        }
+
+        return none;
+    }
 }

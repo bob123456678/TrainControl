@@ -39,12 +39,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testAStraightRunConnectsAndStopsAtBlankSquares() throws IOException
     {
-        LayoutDiagram page = page("main", 5, 3);
-        straight(page, 1, 1);
-        straight(page, 2, 1);
-        straight(page, 3, 1);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = graph(aRunOfThreeStraights());
 
         List<Exit> exits = graph.exits(key("main", 2, 1), Side.W);
         assertEquals(exits.size(), 1);
@@ -82,10 +77,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testSwitchesDefaultToBaseToForks() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.SWITCH_LEFT, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.SWITCH_LEFT);
         TileKey sw = key("main", 1, 1);
 
         // the toe of a SWITCH_LEFT at orientation 0 is S; from there both positions are available
@@ -101,10 +93,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testTrailingIsEnabledPerBranch() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.SWITCH_LEFT, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.SWITCH_LEFT);
         TileKey sw = key("main", 1, 1);
 
         graph.setDirection(sw, new RouteId(0, 0), Direction.BOTH);
@@ -121,10 +110,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testABranchSetToNoneIsNotTraversable() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.SWITCH_LEFT, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.SWITCH_LEFT);
         TileKey sw = key("main", 1, 1);
 
         graph.setDirection(sw, new RouteId(1, 0), Direction.NONE);
@@ -138,10 +124,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testExitsCarryTheSwitchPositionTheyRequire() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.SWITCH_LEFT, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.SWITCH_LEFT);
 
         List<Exit> exits = graph.exits(key("main", 1, 1), Side.S);
 
@@ -169,10 +152,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testDefectiveSwitchesRefuseFacingMovesEvenIfTheUserAsks() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.CUSTOM_PERM_LEFT, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.CUSTOM_PERM_LEFT);
         TileKey sw = key("main", 1, 1);
 
         // The base-to-forks default must not apply here: it would say "out of the toe only" while the blades say "into
@@ -204,10 +184,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testCrossingRoutesDoNotMeet() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.CROSSING, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.CROSSING);
 
         List<Exit> fromNorth = graph.exits(key("main", 1, 1), Side.N);
         assertEquals(fromNorth.size(), 1);
@@ -275,10 +252,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testOverpassRoutesDoNotMeetEither() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.OVERPASS, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.OVERPASS);
 
         assertEquals(graph.exits(key("main", 1, 1), Side.N).get(0).getSide(), Side.S);
         assertEquals(graph.exits(key("main", 1, 1), Side.E).get(0).getSide(), Side.W);
@@ -503,12 +477,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testPerTileDirectionClosesOneWay() throws IOException
     {
-        LayoutDiagram page = page("main", 5, 3);
-        straight(page, 1, 1);
-        straight(page, 2, 1);
-        straight(page, 3, 1);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = graph(aRunOfThreeStraights());
         TileKey middle = key("main", 2, 1);
 
         assertFalse(graph.exits(middle, Side.W).isEmpty());
@@ -560,10 +529,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testScissorsBlockTheBuild() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.CUSTOM_SCISSORS, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.CUSTOM_SCISSORS);
 
         assertTrue(hasProblem(graph, TileGraph.ERROR_SCISSORS, true));
         assertTrue(graph.hasBlockingProblems());
@@ -577,10 +543,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testTurntablesStopWithoutBlocking() throws IOException
     {
-        LayoutDiagram page = page("main", 4, 4);
-        add(page, componentType.TURNTABLE, 1, 1, 0);
-
-        TileGraph graph = graph(page);
+        TileGraph graph = aLoneTile(componentType.TURNTABLE);
 
         assertTrue(hasProblem(graph, TileGraph.WARN_TURNTABLE, false));
         assertFalse(graph.hasBlockingProblems(), "a turntable must not refuse the diagram");
@@ -611,19 +574,7 @@ public class testAutonomyDiagramTiles
     @Test
     public void testAnUnpairedLinkToAnIncludedPageBlocks() throws Exception
     {
-        LayoutDiagram main = page("main", 6, 6);
-        LayoutDiagram other = page("other", 6, 6);
-
-        // Track either side, so whichever way the stub faces there is something to arrive from.
-        straight(main, 0, 1);
-        linkTo(main, 1, 1, 1);
-        straight(main, 2, 1);
-
-        TileGraph graph = new TileGraph(new ArrayList<>(Arrays.asList(main, other)),
-            Collections.<String>emptySet());
-
-        // The unpaired-link sweep lives in validatePortals, not the constructor.
-        graph.validatePortals();
+        TileGraph graph = anUnpairedLinkOnMain(Collections.<String>emptySet());
 
         assertTrue(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, true),
             "a reachable unpaired link to a page inside autonomy has to refuse the diagram");
@@ -638,19 +589,10 @@ public class testAutonomyDiagramTiles
     @Test
     public void testAnUnpairedLinkToAnExcludedPageDoesNotBlock() throws Exception
     {
-        LayoutDiagram main = page("main", 6, 6);
-        LayoutDiagram other = page("other", 6, 6);
-
-        straight(main, 0, 1);
-        linkTo(main, 1, 1, 1);
-        straight(main, 2, 1);
-
         Set<String> excluded = new java.util.LinkedHashSet<>();
         excluded.add("other");
 
-        TileGraph graph = new TileGraph(new ArrayList<>(Arrays.asList(main, other)), excluded);
-
-        graph.validatePortals();
+        TileGraph graph = anUnpairedLinkOnMain(excluded);
 
         assertFalse(hasProblem(graph, TileGraph.WARN_PORTAL_NEVER_PAIRED, true),
             "a link to a page left out of autonomy cannot be paired, so refusing the diagram over it "
@@ -697,6 +639,47 @@ public class testAutonomyDiagramTiles
     {
         page.addComponent(componentType.LINK, x, y, 0, 0, 0, destination,
             accessoryDecoderType.MM2, null);
+    }
+
+    /** A graph of one tile of the given type alone on a 4 by 4 page called main, at square 1,1 and orientation 0. */
+    private TileGraph aLoneTile(componentType type) throws IOException
+    {
+        LayoutDiagram page = page("main", 4, 4);
+        add(page, type, 1, 1, 0);
+
+        return graph(page);
+    }
+
+    /** A 5 by 3 page called main holding three straights in a row, at squares 1,1 to 3,1. */
+    private LayoutDiagram aRunOfThreeStraights() throws IOException
+    {
+        LayoutDiagram page = page("main", 5, 3);
+        straight(page, 1, 1);
+        straight(page, 2, 1);
+        straight(page, 3, 1);
+
+        return page;
+    }
+
+    /**
+     * A graph of the page main, whose link at 1,1 points at the page other and has track either side so that whichever
+     * way the stub faces there is something to arrive from, with the given pages left out of autonomy and the portals
+     * validated (the unpaired-link sweep lives in validatePortals, not the constructor).
+     */
+    private TileGraph anUnpairedLinkOnMain(Set<String> excluded) throws IOException
+    {
+        LayoutDiagram main = page("main", 6, 6);
+        LayoutDiagram other = page("other", 6, 6);
+
+        straight(main, 0, 1);
+        linkTo(main, 1, 1, 1);
+        straight(main, 2, 1);
+
+        TileGraph graph = new TileGraph(new ArrayList<>(Arrays.asList(main, other)), excluded);
+
+        graph.validatePortals();
+
+        return graph;
     }
 
     private TileGraph graph(LayoutDiagram... pages)

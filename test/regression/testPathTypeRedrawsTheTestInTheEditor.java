@@ -103,12 +103,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             session.setAutoDestination(to, false);
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                built[0] = new LayoutEditor(page, 30, ui, 0);
-                built[0].render();
-                built[0].setAutonomyMode(session);
-            });
+            openAnEditorOn(page, built);
 
             settle();
 
@@ -161,12 +156,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
         finally
         {
-            if (built[0] != null)
-            {
-                final LayoutEditor closing = built[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+            closeTheEditor(built);
 
             session.restoreSetup(asFound);
         }
@@ -197,12 +187,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
         try
         {
-            SwingUtilities.invokeAndWait(() ->
-            {
-                built[0] = new LayoutEditor(page, 30, ui, 0);
-                built[0].render();
-                built[0].setAutonomyMode(session);
-            });
+            openAnEditorOn(page, built);
 
             settle();
 
@@ -247,12 +232,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
         finally
         {
-            if (built[0] != null)
-            {
-                final LayoutEditor closing = built[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+            closeTheEditor(built);
         }
     }
 
@@ -283,12 +263,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         try
         {
             // The editor first: opening it builds the railway the trains stand on, which this claim run alone has not.
-            SwingUtilities.invokeAndWait(() ->
-            {
-                built[0] = new LayoutEditor(page, 30, ui, 0);
-                built[0].render();
-                built[0].setAutonomyMode(session);
-            });
+            openAnEditorOn(page, built);
 
             settle();
 
@@ -428,12 +403,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             if (train != null) train.setTrainLength(lengthWas == null ? 0 : lengthWas);
 
-            if (built[0] != null)
-            {
-                final LayoutEditor closing = built[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+            closeTheEditor(built);
         }
     }
 
@@ -462,12 +432,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
         try
         {
-            SwingUtilities.invokeAndWait(() ->
-            {
-                built[0] = new LayoutEditor(page, 30, ui, 0);
-                built[0].render();
-                built[0].setAutonomyMode(session);
-            });
+            openAnEditorOn(page, built);
 
             settle();
 
@@ -730,12 +695,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
         finally
         {
-            if (built[0] != null)
-            {
-                final LayoutEditor closing = built[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+            closeTheEditor(built);
         }
     }
 
@@ -818,6 +778,28 @@ public class testPathTypeRedrawsTheTestInTheEditor
             {
                 assertFalse(sameStretch(here.get(i), here.get(j)), "one stretch is drawn twice: " + here);
             }
+        }
+    }
+
+    /** Builds an editor on the page in autonomy mode, on the event thread, and puts it in `built[0]` at once. */
+    private static void openAnEditorOn(LayoutDiagram page, LayoutEditor[] built) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+            built[0].setAutonomyMode(session);
+        });
+    }
+
+    /** Disposes of the editor in `built[0]`, if one was made. */
+    private static void closeTheEditor(LayoutEditor[] built) throws Exception
+    {
+        if (built[0] != null)
+        {
+            final LayoutEditor closing = built[0];
+
+            SwingUtilities.invokeAndWait(() -> closing.dispose());
         }
     }
 
@@ -1035,12 +1017,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
         try
         {
-            SwingUtilities.invokeAndWait(() ->
-            {
-                built[0] = new LayoutEditor(page, 30, ui, 0);
-                built[0].render();
-                built[0].setAutonomyMode(session);
-            });
+            openAnEditorOn(page, built);
 
             settle();
 
@@ -1126,12 +1103,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         {
             if (train != null) train.setTrainLength(lengthWas == null ? 0 : lengthWas);
 
-            if (built[0] != null)
-            {
-                final LayoutEditor closing = built[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+            closeTheEditor(built);
         }
     }
 

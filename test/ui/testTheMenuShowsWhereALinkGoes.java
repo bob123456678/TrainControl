@@ -1,6 +1,5 @@
 package ui;
 
-import java.util.Arrays;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -38,6 +37,10 @@ public class testTheMenuShowsWhereALinkGoes
         }
     }
 
+    /** Why the claims that build real Swing components skip on a machine with no display. */
+    private static final String NEEDS_A_DISPLAY =
+        "AutonomyEditorPanel builds real Swing components - this needs a display";
+
     /** A page with a tunnel at each end of it and ordinary track between them, both on one page. */
     private static LayoutDiagram aPageWithTwoTunnels(String name) throws java.io.IOException
     {
@@ -69,21 +72,8 @@ public class testTheMenuShowsWhereALinkGoes
     @Test
     public void testBulkToolsIsTheLastThingOnTheMenu() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
+        onASession("tc-bulk-last", "a popup menu needs a display", session ->
         {
-            throw new SkipException("a popup menu needs a display");
-        }
-
-        java.io.File layout = java.nio.file.Files.createTempDirectory("tc-bulk-last").toFile();
-
-        try
-        {
-            LayoutDiagram page = aPageWithTwoTunnels("main");
-
-            AutonomySession session = new AutonomySession(layout);
-
-            session.open(Arrays.asList(page));
-
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
             javax.swing.JPopupMenu menu = panel.buildTileMenu(new TileKey("main", 1, 2), null);
@@ -114,6 +104,40 @@ public class testTheMenuShowsWhereALinkGoes
 
             assertFalse(menu.getComponent(count - 1) instanceof javax.swing.JSeparator,
                 "the menu ends with a divider, which is a line under nothing: " + shapeOf(menu));
+        }, "main");
+    }
+
+    /** What a claim does with the session it is given. */
+    private interface OnTheSession
+    {
+        void run(AutonomySession session) throws Exception;
+    }
+
+    /**
+     * Skips on a machine with no display; otherwise opens a session in a temporary folder over a page of two tunnels
+     * for each name, runs the claim on it, and deletes the folder.
+     */
+    private static void onASession(String folderPrefix, String skipReason, OnTheSession claim, String... pageNames)
+        throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException(skipReason);
+        }
+
+        java.io.File layout = java.nio.file.Files.createTempDirectory(folderPrefix).toFile();
+
+        try
+        {
+            java.util.List<LayoutDiagram> pages = new java.util.ArrayList<>();
+
+            for (String name : pageNames) pages.add(aPageWithTwoTunnels(name));
+
+            AutonomySession session = new AutonomySession(layout);
+
+            session.open(pages);
+
+            claim.run(session);
         }
         finally
         {
@@ -191,22 +215,8 @@ public class testTheMenuShowsWhereALinkGoes
     @Test
     public void testRightClickingATunnelFlashesItsPair() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
+        onASession("tc-link-flash", NEEDS_A_DISPLAY, session ->
         {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs "
-                + "a display");
-        }
-
-        java.io.File layout = java.nio.file.Files.createTempDirectory("tc-link-flash").toFile();
-
-        try
-        {
-            LayoutDiagram page = aPageWithTwoTunnels("main");
-
-            AutonomySession session = new AutonomySession(layout);
-
-            session.open(Arrays.asList(page));
-
             TileKey here = new TileKey("main", 1, 1);
             TileKey there = new TileKey("main", 5, 1);
 
@@ -227,33 +237,15 @@ public class testTheMenuShowsWhereALinkGoes
             assertTrue(back.seen.contains(here),
                 "right-clicking the far end flashed " + back.seen + " rather than " + here
                 + " - the highlight only works from one end of the pairing");
-        }
-        finally
-        {
-            deleteRecursively(layout);
-        }
+        }, "main");
     }
 
     /** Nothing to flash, and nothing flashed: a tunnel nobody has paired, and ordinary track, must stay dark. */
     @Test
     public void testNothingFlashesWithoutAPairing() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
+        onASession("tc-link-flash-none", NEEDS_A_DISPLAY, session ->
         {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs "
-                + "a display");
-        }
-
-        java.io.File layout = java.nio.file.Files.createTempDirectory("tc-link-flash-none").toFile();
-
-        try
-        {
-            LayoutDiagram page = aPageWithTwoTunnels("main");
-
-            AutonomySession session = new AutonomySession(layout);
-
-            session.open(Arrays.asList(page));
-
             TileKey unpaired = new TileKey("main", 1, 1);
 
             assertNull(session.getStore().getPortalPartner(unpaired),
@@ -265,11 +257,7 @@ public class testTheMenuShowsWhereALinkGoes
 
             assertTrue(menuOn(session, "main", new TileKey("main", 1, 2)).seen.isEmpty(),
                 "a plain piece of straight track flashed something when its menu opened");
-        }
-        finally
-        {
-            deleteRecursively(layout);
-        }
+        }, "main");
     }
 
     /**
@@ -281,23 +269,8 @@ public class testTheMenuShowsWhereALinkGoes
     @Test
     public void testAPartnerOnAnotherPageIsLeftToTheJump() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
+        onASession("tc-link-flash-away", NEEDS_A_DISPLAY, session ->
         {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs "
-                + "a display");
-        }
-
-        java.io.File layout = java.nio.file.Files.createTempDirectory("tc-link-flash-away").toFile();
-
-        try
-        {
-            LayoutDiagram one = aPageWithTwoTunnels("one");
-            LayoutDiagram two = aPageWithTwoTunnels("two");
-
-            AutonomySession session = new AutonomySession(layout);
-
-            session.open(Arrays.asList(one, two));
-
             TileKey here = new TileKey("one", 1, 1);
             TileKey away = new TileKey("two", 1, 1);
 
@@ -309,23 +282,6 @@ public class testTheMenuShowsWhereALinkGoes
             assertTrue(menuOn(session, "one", here).seen.isEmpty(),
                 "the menu flashed a square on another page, which nobody can see - the highlight has "
                 + "to stay on the page being looked at, and the jump is what the other case has");
-        }
-        finally
-        {
-            deleteRecursively(layout);
-        }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
+        }, "one", "two");
     }
 }

@@ -183,65 +183,113 @@ public class testNoSelfRecursiveWrappers
 
             List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
 
-            // What each side calls on the other: the owner through `<field>.` (or `Class.` for a static), the
-            // collaborator through its back-prefix (or `OwnerClass.` for a static).
-            java.util.Map<String, java.util.Set<String>> windowCalls = merged(
-                callsThrough(window, each[0] + "."), callsThrough(window, each[2] + "."));
-            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
-                callsThrough(helper, each[5]), callsThrough(helper, each[4] + "."));
-
-            int checked = 0;
-
-            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : windowCalls.entrySet())
-            {
-                for (String handedTo : delegator.getValue())
-                {
-                    checked++;
-
-                    java.util.Set<String> back = helperCalls.get(handedTo);
-
-                    assertFalse(back != null && back.contains(delegator.getKey()),
-                        each[4] + "." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
-                        + ", which calls back into " + each[4] + "." + delegator.getKey() + " - a loop the compiler accepts");
-                }
-            }
-
-            assertTrue(checked > 0, each[4] + " hands nothing to " + each[0] + ", so this checks nothing");
-
-            // And a delegator that calls its own name, bare or through `this.`, beside the collaborator's.  Every method of
-            // the owner named like one of the collaborator's is read, since a delegator rewritten that way names the
-            // collaborator nowhere; the arity test in `callsItself` leaves another overload alone.
-            java.util.Set<String> collaboratorNames = new java.util.HashSet<>();
-
-            for (String line : helper)
-            {
-                String declared = methodDeclaredAt(line);
-
-                if (declared != null) collaboratorNames.add(declared);
-            }
-
-            int delegators = 0;
-
-            for (int i = 0; i < window.size(); i++)
-            {
-                String name = methodDeclaredAt(window.get(i));
-
-                if (name == null || !collaboratorNames.contains(name)) continue;
-
-                delegators++;
-
-                int arity = arityOfTheDeclarationAt(window, i);
-
-                for (String line : bodyOf(window, i))
-                {
-                    assertFalse(callsItself(line, name, arity), each[4] + "." + name + " calls itself instead of "
-                        + each[0] + "." + name + ".  Line: " + line.trim());
-                }
-            }
-
-            assertTrue(delegators > 0, "no method of " + each[4] + " is named like one of " + each[2] + "'s, so this"
-                + " checks nothing");
+            // The collaborator calls its owner back through its back-prefix (or `OwnerClass.` for a static)
+            assertNoLoopBetween(window, helper, each[0], each[2], each[4], each[5]);
         }
+    }
+
+    /**
+     * Reads an owner's source and its collaborator's: no delegator hands to a method that calls back into it, and no
+     * method of the owner named like one of the collaborator's calls its own name instead.  The owner calls the
+     * collaborator through `<field>.` (or `Class.` for a static); the collaborator calls the owner through `backPrefix`
+     * or `OwnerClass.`.
+     */
+    private static void assertNoLoopBetween(List<String> owner, List<String> helper, String field, String helperClass,
+        String ownerClass, String backPrefix)
+    {
+        // What each side calls on the other
+        java.util.Map<String, java.util.Set<String>> ownerCalls = merged(
+            callsThrough(owner, field + "."), callsThrough(owner, helperClass + "."));
+        java.util.Map<String, java.util.Set<String>> helperCalls = merged(
+            callsThrough(helper, backPrefix), callsThrough(helper, ownerClass + "."));
+
+        int checked = 0;
+
+        for (java.util.Map.Entry<String, java.util.Set<String>> delegator : ownerCalls.entrySet())
+        {
+            for (String handedTo : delegator.getValue())
+            {
+                checked++;
+
+                java.util.Set<String> back = helperCalls.get(handedTo);
+
+                assertFalse(back != null && back.contains(delegator.getKey()),
+                    ownerClass + "." + delegator.getKey() + " hands to " + helperClass + "." + handedTo
+                    + ", which calls back into " + ownerClass + "." + delegator.getKey() + " - a loop the compiler accepts");
+            }
+        }
+
+        assertTrue(checked > 0, ownerClass + " hands nothing to " + field + ", so this checks nothing");
+
+        // And a delegator that calls its own name, bare or through `this.`, instead of the collaborator's.  Every method of
+        // the owner named like one of the collaborator's is read, since a delegator rewritten that way names the
+        // collaborator nowhere; the arity test in `callsItself` leaves another overload alone.
+        java.util.Set<String> helperNames = declaredNames(helper);
+
+        int delegators = 0;
+
+        for (int i = 0; i < owner.size(); i++)
+        {
+            String name = methodDeclaredAt(owner.get(i));
+
+            if (name == null || !helperNames.contains(name)) continue;
+
+            delegators++;
+
+            int arity = arityOfTheDeclarationAt(owner, i);
+
+            for (String line : bodyOf(owner, i))
+            {
+                assertFalse(callsItself(line, name, arity), ownerClass + "." + name + " calls itself instead of "
+                    + field + "." + name + ".  Line: " + line.trim());
+            }
+        }
+
+        assertTrue(delegators > 0, "no method of " + ownerClass + " is named like one of " + helperClass + "'s, so this"
+            + " checks nothing");
+    }
+
+    /** The names of the methods a file declares at a class's top level. */
+    private static java.util.Set<String> declaredNames(List<String> lines)
+    {
+        java.util.Set<String> names = new java.util.HashSet<>();
+
+        for (String line : lines)
+        {
+            String declared = methodDeclaredAt(line);
+
+            if (declared != null) names.add(declared);
+        }
+
+        return names;
+    }
+
+    /** The `.java` files under a folder. */
+    private static List<File> javaFilesUnder(String folder) throws java.io.IOException
+    {
+        List<File> files = new ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File(folder).toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
+        }
+
+        return files;
+    }
+
+    /** The statements of a method's body, without comments or braces: what a one-line delegator is read by. */
+    private static List<String> statementsOfTheBody(List<String> lines, int declaredAt)
+    {
+        List<String> statements = new ArrayList<>();
+
+        for (String line : bodyOf(lines, declaredAt))
+        {
+            String code = withoutComments(line).replace("{", "").replace("}", "").trim();
+
+            if (!code.isEmpty()) statements.add(code);
+        }
+
+        return statements;
     }
 
     /** How many parameters the method declared at a line takes, reading on while they run onto the next lines. */
@@ -366,28 +414,16 @@ public class testNoSelfRecursiveWrappers
 
             if (name == null) continue;
 
-            // A signature wrapped over several lines, whole
-            for (int next = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && next < lines.size(); next++)
-            {
-                declaration += " " + lines.get(next).trim();
-            }
-
             // A ONE-STATEMENT BODY, the delegator's shape, whether it still calls the collaborator or has been
             // rewritten to call itself
-            List<String> statements = new ArrayList<>();
-
-            for (String line : bodyOf(lines, i))
-            {
-                String code = withoutComments(line).replace("{", "").replace("}", "").trim();
-
-                if (!code.isEmpty()) statements.add(code);
-            }
+            List<String> statements = statementsOfTheBody(lines, i);
 
             if (statements.size() != 1) continue;
 
             String statement = statements.get(0);
 
-            int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1, declaration.lastIndexOf(')')));
+            // A signature wrapped over several lines, whole
+            int arity = arityOfTheDeclarationAt(lines, i);
 
             assertFalse(callsItself(statement, name, arity),
                 name + " calls itself instead of its collaborator - an infinite recursion the compiler accepts."
@@ -446,71 +482,8 @@ public class testNoSelfRecursiveWrappers
 
             List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
 
-            // What each side calls on the other: the railway through its field (or `Class.` for a static), the helper
-            // through `owner.` (or `Layout.` for a static)
-            java.util.Map<String, java.util.Set<String>> railwayCalls = merged(
-                callsThrough(railway, each[0] + "."), callsThrough(railway, each[2] + "."));
-            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
-                callsThrough(helper, "owner."), callsThrough(helper, "Layout."));
-
-            int checked = 0;
-
-            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : railwayCalls.entrySet())
-            {
-                for (String handedTo : delegator.getValue())
-                {
-                    checked++;
-
-                    java.util.Set<String> back = helperCalls.get(handedTo);
-
-                    assertFalse(back != null && back.contains(delegator.getKey()),
-                        "Layout." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
-                        + ", which calls back into Layout." + delegator.getKey() + " - a loop the compiler accepts");
-                }
-            }
-
-            assertTrue(checked > 0, "Layout hands nothing to " + each[0] + ", so this checks nothing");
-
-            // And a delegator that calls its own name, bare or through `this.`, instead of the helper's.  Every method of
-            // Layout named like one of the helper's is read, since a delegator rewritten that way names the helper nowhere.
-            java.util.Set<String> helperNames = new java.util.HashSet<>();
-
-            for (String line : helper)
-            {
-                String name = methodDeclaredAt(line);
-
-                if (name != null) helperNames.add(name);
-            }
-
-            int delegators = 0;
-
-            for (int i = 0; i < railway.size(); i++)
-            {
-                String name = methodDeclaredAt(railway.get(i));
-
-                if (name == null || !helperNames.contains(name)) continue;
-
-                delegators++;
-
-                String declaration = railway.get(i).trim();
-
-                // A declaration whose parameters run onto the next lines
-                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < railway.size(); k++)
-                {
-                    declaration += " " + railway.get(k).trim();
-                }
-
-                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
-                    declaration.lastIndexOf(')')));
-
-                for (String line : bodyOf(railway, i))
-                {
-                    assertFalse(callsItself(line, name, arity),
-                        "Layout." + name + " calls itself instead of " + each[0] + "." + name + ".  Line: " + line.trim());
-                }
-            }
-
-            assertTrue(delegators > 0, "no method of Layout is named like one of " + each[2] + "'s, so this checks nothing");
+            // The helper calls the railway back through `owner.` (or `Layout.` for a static)
+            assertNoLoopBetween(railway, helper, each[0], each[2], "Layout", "owner.");
 
             // AND THE HELPER'S OWN HAND-OFFS, bare, at their own arity.  Another arity is another overload (the idiom), the
             // same arity is the helper calling itself.
@@ -558,13 +531,7 @@ public class testNoSelfRecursiveWrappers
             + "|\\.\\s*(?:keySet|values|entrySet)\\s*\\(\\s*\\)\\s*\\.\\s*(?:remove|removeAll|removeIf|retainAll|clear)\\s*\\()");
         java.util.regex.Pattern read = java.util.regex.Pattern.compile("\\.\\s*(?:edges|points)\\b");
 
-        List<File> files = new ArrayList<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(
-            new File("src/org/traincontrol/automation").toPath()))
-        {
-            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
-        }
+        List<File> files = javaFilesUnder("src/org/traincontrol/automation");
 
         int readers = 0;
 
@@ -621,14 +588,8 @@ public class testNoSelfRecursiveWrappers
 
             List<String> panel = Files.readAllLines(new File(each[3]).toPath(), StandardCharsets.UTF_8);
 
-            java.util.Set<String> helperNames = new java.util.HashSet<>();
-
-            for (String line : Files.readAllLines(new File(each[1]).toPath(), StandardCharsets.UTF_8))
-            {
-                String name = methodDeclaredAt(line);
-
-                if (name != null) helperNames.add(name);
-            }
+            java.util.Set<String> helperNames = declaredNames(
+                Files.readAllLines(new File(each[1]).toPath(), StandardCharsets.UTF_8));
 
             int delegators = 0;
 
@@ -640,14 +601,7 @@ public class testNoSelfRecursiveWrappers
 
                 delegators++;
 
-                List<String> statements = new ArrayList<>();
-
-                for (String line : bodyOf(panel, i))
-                {
-                    String code = withoutComments(line).replace("{", "").replace("}", "").trim();
-
-                    if (!code.isEmpty()) statements.add(code);
-                }
+                List<String> statements = statementsOfTheBody(panel, i);
 
                 assertTrue(statements.size() == 1 && (statements.get(0).contains(each[0] + "." + name + "(")
                         || statements.get(0).contains(each[2] + "." + name + "(")),
@@ -754,12 +708,7 @@ public class testNoSelfRecursiveWrappers
         assertEquals(seen, new java.util.HashSet<>(java.util.Arrays.asList("session", "promptName", "applyLength")),
             "the helpers are expected to reach all three through `editor`, which is what shows the pattern matches");
 
-        List<File> files = new ArrayList<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(new File("src/org/traincontrol/gui").toPath()))
-        {
-            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
-        }
+        List<File> files = javaFilesUnder("src/org/traincontrol/gui");
 
         int outside = 0;
         boolean layoutEditorKnown = false;

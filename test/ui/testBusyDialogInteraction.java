@@ -233,34 +233,7 @@ public class testBusyDialogInteraction
     @Test(timeOut = 120000)
     public void testASyncRunsInsideTheDialogAndStillAnswers() throws Exception
     {
-        com.sun.net.httpserver.HttpServer station =
-            com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
-
-        station.createContext("/", exchange ->
-        {
-            java.io.File file = exchange.getRequestURI().getPath().endsWith("/lokomotive.cs2")
-                ? new java.io.File("test/lokomotive.cs2")
-                : exchange.getRequestURI().getPath().endsWith("/fahrstrassen.cs2")
-                    ? new java.io.File("test/fahrstrassen.cs2")
-                    : exchange.getRequestURI().getPath().endsWith("/magnetartikel.cs2")
-                        ? new java.io.File("test/magnetartikel.cs2") : null;
-
-            if (file == null || !file.isFile())
-            {
-                exchange.sendResponseHeaders(404, -1);
-                exchange.close();
-                return;
-            }
-
-            byte[] body = java.nio.file.Files.readAllBytes(file.toPath());
-
-            exchange.sendResponseHeaders(200, body.length);
-
-            try (java.io.OutputStream out = exchange.getResponseBody())
-            {
-                out.write(body);
-            }
-        });
+        com.sun.net.httpserver.HttpServer station = servingTheSampleFiles();
 
         station.start();
 
