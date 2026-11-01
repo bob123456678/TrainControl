@@ -159,9 +159,9 @@ final class ReturnHomeController extends SettledQuestion
                 // Blocks until every train has arrived, not merely until the last one set off
                 final boolean completed = layout.executeTimetable(stopsAtPress);
 
-                // Asked outright rather than trusting the boolean (a chain: every move completed or was abandoned, and
-                // executePath completes only on arrival), which costs one occupancy read and does not decay.  A paused
-                // train is left where it stands, so it does not make the run short (FR-117)
+                // Asked outright rather than trusting the boolean (every move completed or was abandoned, and
+                // executePath completes only on arrival): one occupancy read that does not decay.  A paused train is
+                // left where it stands, so it does not make the run short (FR-117)
                 HomeStaging.Outcome after = layout.triageReturnToHome();
 
                 final boolean everyoneHome = after == HomeStaging.Outcome.ALREADY_HOME
@@ -242,12 +242,10 @@ final class ReturnHomeController extends SettledQuestion
      * otherwise simply be switched back on, and whenever the autonomy locomotive list is repainted.  Only the cheap
      * half of the question is asked: whether a plan exists needs a search.
      *
-     * **AND THE CHEAP HALF IS STILL NOT ASKED HERE (OB-192).**  This runs on the event thread, and
-     * `Layout.triageReturnToHome` builds a `HomeStaging.snapshot`, which calls the `synchronized`
-     * `Layout.getHomeStations`; `isAutonomyBusy` does not cover it, as it says nothing about every OTHER holder of that
-     * monitor, the nearest being `AutoLocomotiveStatus.findPaths` from the refresh itself (`refreshCoveredTrack` says
-     * why the event thread must never queue for it).  So the question goes to a worker and the answer comes back to be
-     * painted.
+     * The cheap half is NOT asked here either (OB-192): this runs on the event thread, and `Layout.triageReturnToHome`
+     * builds a `HomeStaging.snapshot`, which calls the `synchronized` `Layout.getHomeStations`; `isAutonomyBusy` says
+     * nothing about every OTHER holder of that monitor (the nearest is `AutoLocomotiveStatus.findPaths` from the
+     * refresh itself).  So the question goes to a worker and the answer comes back to be painted.
      *
      * @see #askForReturnHomeTriage(org.traincontrol.automation.Layout)
      */
