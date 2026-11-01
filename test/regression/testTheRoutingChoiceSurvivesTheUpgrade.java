@@ -316,8 +316,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
      * A configuration that exists and has NOT answered gets the old choice written into it: a session with an active
      * configuration carrying no pathPreference, the migration working end to end.
      *
-     * MUTATION THIS CATCHES: AutonomySession.getGlobal returning "" instead of null for an absent key.  The guard
-     * then fires on the FIRST call, the legacy key is deleted, and nothing is ever stored.
+     * MUTATION THIS CATCHES: in `TrainControlUI`'s migration, take any stored configuration as having answered (drop
+     * `stored.getGlobal("pathPreference") != null`): the legacy key is deleted and nothing is ever stored.
      */
     @Test
     public void testAConfigurationWithNoAnswerIsGivenTheOldOne() throws Exception
