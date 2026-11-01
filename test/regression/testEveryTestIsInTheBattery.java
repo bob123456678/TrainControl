@@ -11,10 +11,9 @@ import org.testng.annotations.Test;
 /**
  * Every test class is in `ant test`, and this is what notices when one is not.
  *
- * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and only one control
- * station can exist per JVM, so the battery runs one class per JVM with no wildcard.  A hand-kept list of everything
- * falls behind (a review once found thirty-five classes missing); it is still kept by hand, but forgetting it now
- * fails.
+  * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and only one
+  * control station can exist per JVM, so the battery runs one class per JVM with no wildcard.  A hand-kept list of
+  * everything falls behind; it is still kept by hand, but forgetting it now fails.
  *
  * `testAutoDetect` is the one deliberate omission: it probes the network for a real Central Station.  Anything else
  * left out is added to the exclusion below WITH ITS REASON, so the next reader can tell a decision from an oversight.
@@ -88,10 +87,9 @@ public class testEveryTestIsInTheBattery
     @Test
     public void testTheExclusionListIsStillOneEntry()
     {
-        // BACK TO ONE, on Adam's instruction: "ok, so that test should then be red."  A test for something that does
-        // not work (Return Home for the parking-berth arrangement) belongs in the battery being red rather than
-        // excused.  The one left is testAutoDetect, which needs hardware that is not here: a test nothing on this
-        // machine could satisfy.
+        // ONE: a test for something that does not work (Return Home for the parking-berth arrangement) belongs in the
+        // battery being red rather than excused.  The one left is testAutoDetect, which needs hardware that is not
+        // here.
         assertEquals(DELIBERATELY_OUT.length, 1,
             "something has been added to the list of tests `ant test` deliberately skips. That may be "
             + "right, but it is a decision worth a second look: the reason must be in the table, and "
@@ -119,17 +117,10 @@ public class testEveryTestIsInTheBattery
      * `CS2File.parseLayout` builds the components, but what attaches each to a live `Accessory` is
      * `MarklinControlStation.wireComponents`, in a loop after the parse.  A test that calls `parseLayout` directly
      * skips it, every switch and signal has a null accessory, and `TileGraph` refuses to trace through, so the railway
-     * falls to pieces (measured on the sample layout):
-     *
-     * | | re-parsed | wired |
-     * |---|---|---|
-     * | switches and signals with an accessory | 0 of 222 | 221 of 222 |
-     * | reduced edges | 18 | 128 |
-     * | built points / edges | 59 / 5 | 96 / 149 |
-     * | isolated points | 51 | 3 |
-     *
-     * Twenty test classes did it and passed, since an assertion about a square with no edges is usually an assertion
-     * about null.  `support.LayoutSandbox.wired(model, parser)` is the recipe.
+     * falls to pieces (on the sample layout, with the wiring: switches and signals with an accessory 221 of 222 against
+     * 0, reduced edges 128 against 18, isolated points 3 against 51).  Twenty test classes did it and passed, since an
+     * assertion about a square with no edges is usually an assertion about null.  `support.LayoutSandbox.wired(model,
+     * parser)` is the recipe.
      *
      * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside the excused list
      * fails this.
@@ -284,10 +275,9 @@ public class testEveryTestIsInTheBattery
                         {
                             // A TESTNG ONE, NOT ANY ONE: `@Override`, `@Deprecated` and
                             // `@SuppressWarnings("unchecked")` all marked a test-shaped method as annotated, so a
-                            // method that lost its @Test and gained a
-                            // @SuppressWarnings passed.  Anything further up the list still counts: the loop keeps
-                            // reading
-                            // until it meets something that is not an annotation.
+                            // method that lost its @Test and gained a @SuppressWarnings passed.  Anything further up
+                            // the list still counts: the loop keeps reading until it meets something that is not an
+                            // annotation.
                             if (isTestNGAnnotation(line)) annotated = true;
 
                             continue;
