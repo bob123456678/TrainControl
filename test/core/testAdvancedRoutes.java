@@ -934,16 +934,7 @@ public class testAdvancedRoutes
             assertTrue(model.getRoute(routeName).commandsDrive(loc),
                 "precondition: the route does not name the locomotive this deletes");
 
-            new Thread(() -> model.execRoute(routeName)).start();
-
-            long armed = System.currentTimeMillis() + 5000;
-
-            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed)
-            {
-                Thread.sleep(20);
-            }
-
-            assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
+            runUntilExecuting(routeName, "route");
 
             // PART-WAY ALONG, which is where the hazard is: waited for rather than slept for, because a loaded
             // machine can leave the route thread with nothing sent after any fixed sleep.  The upper bound
@@ -1010,13 +1001,7 @@ public class testAdvancedRoutes
         final String inner = "ProbeChain inner";
         final String outer = "ProbeChain outer";
 
-        model.newMM2Locomotive(loc, 62);
-
-        List<RouteCommand> fires = new ArrayList<>();
-
-        fires.add(RouteCommand.RouteCommandFunction(loc, 1, true));
-
-        model.newRoute(inner, fires, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        aFunctionRouteOnALocomotive(loc, 62, inner);
 
         List<RouteCommand> chain = new ArrayList<>();
 
@@ -1040,16 +1025,7 @@ public class testAdvancedRoutes
             assertTrue(model.getRoute(inner).commandsDrive(loc),
                 "precondition: the inner route does not name the locomotive");
 
-            new Thread(() -> model.execRoute(outer)).start();
-
-            long armed = System.currentTimeMillis() + 5000;
-
-            while (!model.getRoute(outer).isExecuting() && System.currentTimeMillis() < armed)
-            {
-                Thread.sleep(20);
-            }
-
-            assertTrue(model.getRoute(outer).isExecuting(), "precondition: the outer route never started");
+            runUntilExecuting(outer, "outer route");
 
             assertFalse(model.getRoute(inner).isExecuting(),
                 "precondition: the inner route has already started, so the window this is about is over");
@@ -1095,13 +1071,7 @@ public class testAdvancedRoutes
         final String loc = "ProbeGSR3 loc";
         final String name = "ProbeGSR3 route";
 
-        model.newMM2Locomotive(loc, 66);
-
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
-
-        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        List<RouteCommand> commands = aFunctionRouteOnALocomotive(loc, 66, name);
 
         MarklinRoute running = model.getRoute(name);
 
@@ -1126,10 +1096,7 @@ public class testAdvancedRoutes
         }
         finally
         {
-            running.stopExecuting();
-
-            try { model.deleteRoute(name); } catch (Exception ignored) { }
-            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+            dropTheRunningRoute(running, name, loc);
         }
     }
 
@@ -1153,13 +1120,7 @@ public class testAdvancedRoutes
         final String loc = "ProbeGSR3S loc";
         final String name = "ProbeGSR3S route";
 
-        model.newMM2Locomotive(loc, 66);
-
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
-
-        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        List<RouteCommand> commands = aFunctionRouteOnALocomotive(loc, 66, name);
 
         MarklinRoute running = model.getRoute(name);
 
@@ -1191,10 +1152,7 @@ public class testAdvancedRoutes
         }
         finally
         {
-            running.stopExecuting();
-
-            try { model.deleteRoute(name); } catch (Exception ignored) { }
-            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+            dropTheRunningRoute(running, name, loc);
         }
     }
 
@@ -1214,13 +1172,7 @@ public class testAdvancedRoutes
         final String loc = "ProbeGSR3N loc";
         final String name = "ProbeGSR3N route";
 
-        model.newMM2Locomotive(loc, 67);
-
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
-
-        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        List<RouteCommand> commands = aFunctionRouteOnALocomotive(loc, 67, name);
 
         MarklinRoute running = model.getRoute(name);
 
@@ -1249,10 +1201,7 @@ public class testAdvancedRoutes
         }
         finally
         {
-            running.stopExecuting();
-
-            try { model.deleteRoute(name); } catch (Exception ignored) { }
-            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+            dropTheRunningRoute(running, name, loc);
         }
     }
 
@@ -1426,6 +1375,44 @@ public class testAdvancedRoutes
         }
     }
 
+    /** Makes a locomotive and a route of the given name whose one command turns on its function 1; the command list. */
+    private static List<RouteCommand> aFunctionRouteOnALocomotive(String loc, int address, String name) throws Exception
+    {
+        model.newMM2Locomotive(loc, address);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        return commands;
+    }
+
+    /** Stops a route marked running, then deletes it and its locomotive, ignoring a delete that fails. */
+    private static void dropTheRunningRoute(MarklinRoute running, String name, String loc)
+    {
+        running.stopExecuting();
+
+        try { model.deleteRoute(name); } catch (Exception ignored) { }
+        try { model.deleteLoc(loc); } catch (Exception ignored) { }
+    }
+
+    /** Runs the route on a thread of its own and waits up to five seconds for it to be executing; "which" names it. */
+    private static void runUntilExecuting(String name, String which) throws InterruptedException
+    {
+        new Thread(() -> model.execRoute(name)).start();
+
+        long armed = System.currentTimeMillis() + 5000;
+
+        while (!model.getRoute(name).isExecuting() && System.currentTimeMillis() < armed)
+        {
+            Thread.sleep(20);
+        }
+
+        assertTrue(model.getRoute(name).isExecuting(), "precondition: the " + which + " never started");
+    }
+
     // Every command and trigger, run (Adam: "Add the tests.  Advise if any fail") - the gaps
     // a read of the suite found: features that were only parsed or round-tripped, never run as a route
 
@@ -1507,11 +1494,7 @@ public class testAdvancedRoutes
 
         MarklinLocomotive loc = loco("AR solo", 61);
 
-        List<RouteCommand> commands = new ArrayList<>();
-        commands.add(RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, true));
-
-        MarklinRoute route = new MarklinRoute(model, "AR fires on occupied", 9891, commands, trigger,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+        MarklinRoute route = functionRoute("AR fires on occupied", 9891, loc.getName(), trigger, null);
 
         try
         {

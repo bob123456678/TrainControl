@@ -457,14 +457,26 @@ public class testACompulsoryTurnIsNotAQuestion
     {
         Point end = path.get(path.size() - 1).getEnd();
 
-        Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answer, -1), "built-line-claim");
+        arriveAt(setOffByHand(rail, x, path, answer, "built-line-claim"), end);
+    }
+
+    /** Starts a hand send on a thread of its own and waits for the train to set off; the thread. */
+    private static Thread setOffByHand(Layout rail, org.traincontrol.base.Locomotive x,
+        List<org.traincontrol.automation.Edge> path, Layout.ReversalPolicy answer, String name) throws Exception
+    {
+        Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answer, -1), name);
 
         journey.setDaemon(true);
         journey.start();
 
-        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
-            "precondition: the hand send did not start: " + Layout.getLastError());
+        assertTrue(waitUntilSetOff(rail, x), "precondition: the hand send did not start: " + Layout.getLastError());
 
+        return journey;
+    }
+
+    /** Plays the arrival sensor of a hand send's end and waits for the send to finish. */
+    private static void arriveAt(Thread journey, Point end) throws Exception
+    {
         model.setFeedbackState(end.getS88(), true);
 
         journey.join(20000);
@@ -472,6 +484,65 @@ public class testACompulsoryTurnIsNotAQuestion
         model.setFeedbackState(end.getS88(), false);
 
         assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+    }
+
+    /** Waits until the train is moving as one of the railway's active trains. */
+    private static boolean waitUntilSetOff(Layout rail, org.traincontrol.base.Locomotive x) throws InterruptedException
+    {
+        return waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000);
+    }
+
+    /** Waits until the train is no longer one of the railway's active trains. */
+    private static boolean waitUntilDone(Layout rail, org.traincontrol.base.Locomotive x) throws InterruptedException
+    {
+        return waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000);
+    }
+
+    /** Runs the railway's timetable on a daemon thread of its own; the thread. */
+    private static Thread startTheTimetable(Layout rail, String name)
+    {
+        Thread runner = new Thread(rail::executeTimetable, name);
+
+        runner.setDaemon(true);
+        runner.start();
+
+        return runner;
+    }
+
+    /** An entry of the running timetable: the train sets off, its end sensor is played, the entry ends. */
+    private static void anEntryRuns(Layout rail, org.traincontrol.base.Locomotive x, Point end, String which)
+        throws Exception
+    {
+        assertTrue(waitUntilSetOff(rail, x), "precondition: the " + which + " did not start: " + Layout.getLastError());
+
+        model.setFeedbackState(end.getS88(), true);
+
+        assertTrue(waitUntilDone(rail, x), "precondition: the " + which + " did not end");
+
+        model.setFeedbackState(end.getS88(), false);
+    }
+
+    /** The edge from Alpha onto Beta's turning copy, asserted to exist; lines are named by their tag. */
+    private static org.traincontrol.automation.Edge intoBetasTurningCopy(Layout rail, String tag)
+    {
+        org.traincontrol.automation.Edge in = intoA(rail, tag + "Beta", true, tag + "Alpha");
+
+        assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+
+        return in;
+    }
+
+    /** The last edge from this Point onto a copy of the line's Alpha, or null. */
+    private static org.traincontrol.automation.Edge backToAlpha(Layout rail, Point from, String tag)
+    {
+        org.traincontrol.automation.Edge back = null;
+
+        for (org.traincontrol.automation.Edge edge : rail.getEdges())
+        {
+            if (edge.getStart() == from && edge.getEnd().getName().startsWith(tag + "Alpha")) back = edge;
+        }
+
+        return back;
     }
 
     /** The operator's answer at the destination, as the door hands it over once asked. */
@@ -658,20 +729,9 @@ public class testACompulsoryTurnIsNotAQuestion
 
             try
             {
-                Thread runner = new Thread(rail::executeTimetable, "recorded-keep-playback");
+                startTheTimetable(rail, "recorded-keep-playback");
 
-                runner.setDaemon(true);
-                runner.start();
-
-                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
-                    "precondition: the entry did not start: " + Layout.getLastError());
-
-                model.setFeedbackState(gamma.getS88(), true);
-
-                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "precondition: the entry"
-                    + " did not end");
-
-                model.setFeedbackState(gamma.getS88(), false);
+                anEntryRuns(rail, x, gamma, "entry");
 
                 assertTrue(x.goingForward() != forward, "a timetable entry recorded with keep was played back keeping the"
                     + " train facing the end of a line - a turn every train must make (RSA50-A2)");
@@ -719,14 +779,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
             final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(e);
 
-            Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answered(true, plain, asking), -1),
-                "turned-at-a-plain-copy");
-
-            journey.setDaemon(true);
-            journey.start();
-
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
-                "precondition: the hand send did not start: " + Layout.getLastError());
+            Thread journey = setOffByHand(rail, x, path, answered(true, plain, asking), "turned-at-a-plain-copy");
 
             // ON ITS WAY, the copy it will stand on - which the caption's arrow and the icon read - faces the way it will
             // face once turned
@@ -736,13 +789,7 @@ public class testACompulsoryTurnIsNotAQuestion
                 + " copy, the train is said to be going to stand on " + will + ", facing its old heading - the caption's"
                 + " arrow and the icon show the way it will not face (RSA50-A3)");
 
-            model.setFeedbackState(plain.getS88(), true);
-
-            journey.join(20000);
-
-            model.setFeedbackState(plain.getS88(), false);
-
-            assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+            arriveAt(journey, plain);
 
             Point on = standing(rail, x);
 
@@ -808,12 +855,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
             Point turnedOn = standing(rail, x);
 
-            org.traincontrol.automation.Edge second = null;
-
-            for (org.traincontrol.automation.Edge edge : rail.getEdges())
-            {
-                if (edge.getStart() == turnedOn && edge.getEnd().getName().startsWith("RWTAlpha")) second = edge;
-            }
+            org.traincontrol.automation.Edge second = backToAlpha(rail, turnedOn, "RWT");
 
             assertNotNull(second, "precondition: the turned train, on " + turnedOn + ", has no way back to Alpha");
 
@@ -844,30 +886,18 @@ public class testACompulsoryTurnIsNotAQuestion
 
             try
             {
-                Thread runner = new Thread(rail::executeTimetable, "recorded-turn-playback");
+                startTheTimetable(rail, "recorded-turn-playback");
 
-                runner.setDaemon(true);
-                runner.start();
+                anEntryRuns(rail, x, beta, "first entry");
 
-                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
-                    "precondition: the first entry did not start: " + Layout.getLastError());
-
-                model.setFeedbackState(beta.getS88(), true);
-
-                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "precondition: the first"
-                    + " entry did not end");
-
-                model.setFeedbackState(beta.getS88(), false);
-
-                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                assertTrue(waitUntilSetOff(rail, x),
                     "the second entry, recorded from the copy the turned train was stood on, never started - playback is"
                     + " never idle, and the train was still on the copy it turned on (RSA50-B1): "
                     + Layout.getLastError());
 
                 model.setFeedbackState(alpha.getS88(), true);
 
-                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "the second entry did not"
-                    + " arrive");
+                assertTrue(waitUntilDone(rail, x), "the second entry did not arrive");
 
                 model.setFeedbackState(alpha.getS88(), false);
             }
@@ -928,12 +958,7 @@ public class testACompulsoryTurnIsNotAQuestion
                 + " plan's next leg, or the timetable's next entry, does not start (RSA52-B1)");
 
             // AND THAT NEXT LEG STARTS: from the turning copy, back the way it came
-            org.traincontrol.automation.Edge back = null;
-
-            for (org.traincontrol.automation.Edge edge : rail.getEdges())
-            {
-                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("PTSAlpha")) back = edge;
-            }
+            org.traincontrol.automation.Edge back = backToAlpha(rail, turning, "PTS");
 
             assertNotNull(back, "precondition: the turning copy has no way back to Alpha");
 
@@ -997,20 +1022,9 @@ public class testACompulsoryTurnIsNotAQuestion
 
             try
             {
-                Thread runner = new Thread(rail::executeTimetable, "recorded-turn-no-longer-allowed");
+                startTheTimetable(rail, "recorded-turn-no-longer-allowed");
 
-                runner.setDaemon(true);
-                runner.start();
-
-                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
-                    "precondition: the entry did not start: " + Layout.getLastError());
-
-                model.setFeedbackState(in.getEnd().getS88(), true);
-
-                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "precondition: the entry"
-                    + " did not end");
-
-                model.setFeedbackState(in.getEnd().getS88(), false);
+                anEntryRuns(rail, x, in.getEnd(), "entry");
 
                 assertTrue(x.goingForward() == forward, "a turn recorded at a station that no longer lets trains turn"
                     + " was played back - a turn no door could make now (RSA52-C1)");
@@ -1042,9 +1056,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
             Layout rail = model.getAutoLayout();
 
-            org.traincontrol.automation.Edge e = intoA(rail, "THTBeta", true, "THTAlpha");
-
-            assertNotNull(e, "precondition: no edge from Alpha onto Beta's turning copy");
+            org.traincontrol.automation.Edge e = intoBetasTurningCopy(rail, "THT");
 
             final Point turning = e.getEnd();
 
@@ -1067,27 +1079,14 @@ public class testACompulsoryTurnIsNotAQuestion
 
             final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(e);
 
-            Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answered(true, turning, asking), -1),
-                "turned-on-a-turning-copy");
-
-            journey.setDaemon(true);
-            journey.start();
-
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
-                "precondition: the hand send did not start: " + Layout.getLastError());
+            Thread journey = setOffByHand(rail, x, path, answered(true, turning, asking), "turned-on-a-turning-copy");
 
             Point will = rail.copyItWillStandOn(x);
 
             assertTrue(will == turning, "on its way to be turned on Beta's turning copy, the train is said to be going to"
                 + " stand on " + will + " - not the copy it arrives on, which already faces its new way (RSA52-B1)");
 
-            model.setFeedbackState(turning.getS88(), true);
-
-            journey.join(20000);
-
-            model.setFeedbackState(turning.getS88(), false);
-
-            assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+            arriveAt(journey, turning);
 
             assertTrue(standing(rail, x) == turning, "a train turned by hand on Beta's turning copy, which already faces"
                 + " the way it came in, was moved onto " + standing(rail, x) + " - a plan's turn there leaves the train"
@@ -1124,18 +1123,11 @@ public class testACompulsoryTurnIsNotAQuestion
 
             Layout rail = model.getAutoLayout();
 
-            org.traincontrol.automation.Edge in = intoA(rail, "XASBeta", true, "XASAlpha");
-
-            assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+            org.traincontrol.automation.Edge in = intoBetasTurningCopy(rail, "XAS");
 
             final Point turning = in.getEnd();
 
-            org.traincontrol.automation.Edge back = null;
-
-            for (org.traincontrol.automation.Edge edge : rail.getEdges())
-            {
-                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("XASAlpha")) back = edge;
-            }
+            org.traincontrol.automation.Edge back = backToAlpha(rail, turning, "XAS");
 
             assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
 
@@ -1183,7 +1175,7 @@ public class testACompulsoryTurnIsNotAQuestion
                 runner.setDaemon(true);
                 runner.start();
 
-                assertTrue(waitFor(() -> x.getSpeed() > 0 && again.getActiveLocomotives().containsKey(x), 10000),
+                assertTrue(waitUntilSetOff(again, x),
                     "the entry from Beta's turning copy did not set off after the exit and the start, with the train on "
                     + on + " facing its way: " + Layout.getLastError() + " (RSA53-B1)");
 
@@ -1191,8 +1183,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
                 model.setFeedbackState(alpha.getS88(), true);
 
-                assertTrue(waitFor(() -> !again.getActiveLocomotives().containsKey(x), 15000), "precondition: the entry"
-                    + " did not end");
+                assertTrue(waitUntilDone(again, x), "precondition: the entry did not end");
 
                 model.setFeedbackState(alpha.getS88(), false);
 
@@ -1227,18 +1218,11 @@ public class testACompulsoryTurnIsNotAQuestion
 
             Layout rail = model.getAutoLayout();
 
-            org.traincontrol.automation.Edge in = intoA(rail, "XOWBeta", true, "XOWAlpha");
-
-            assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+            org.traincontrol.automation.Edge in = intoBetasTurningCopy(rail, "XOW");
 
             final Point turning = in.getEnd();
 
-            org.traincontrol.automation.Edge back = null;
-
-            for (org.traincontrol.automation.Edge edge : rail.getEdges())
-            {
-                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("XOWAlpha")) back = edge;
-            }
+            org.traincontrol.automation.Edge back = backToAlpha(rail, turning, "XOW");
 
             assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
 
@@ -1324,21 +1308,14 @@ public class testACompulsoryTurnIsNotAQuestion
 
             final Point plain = fromGamma.getEnd();
 
-            org.traincontrol.automation.Edge in = intoA(rail, "XTLBeta", true, "XTLAlpha");
-
-            assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+            org.traincontrol.automation.Edge in = intoBetasTurningCopy(rail, "XTL");
 
             final Point turning = in.getEnd();
 
             assertTrue(plain.getCopyFacing() != null && plain.getCopyFacing().equals(turning.getCopyFacing()),
                 "precondition: " + plain + " does not face the way " + turning + " does");
 
-            org.traincontrol.automation.Edge back = null;
-
-            for (org.traincontrol.automation.Edge edge : rail.getEdges())
-            {
-                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("XTLAlpha")) back = edge;
-            }
+            org.traincontrol.automation.Edge back = backToAlpha(rail, turning, "XTL");
 
             assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
 
@@ -1357,7 +1334,7 @@ public class testACompulsoryTurnIsNotAQuestion
                 journey.setDaemon(true);
                 journey.start();
 
-                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                assertTrue(waitUntilSetOff(rail, x),
                     "precondition: the train did not set off from Gamma: " + Layout.getLastError());
 
                 model.setFeedbackState(plain.getS88(), true);
@@ -1380,10 +1357,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
                 Layout.TIMETABLE_STUCK_MS = 4000;
 
-                Thread runner = new Thread(rail::executeTimetable, "an-entry-from-the-turning-copy");
-
-                runner.setDaemon(true);
-                runner.start();
+                Thread runner = startTheTimetable(rail, "an-entry-from-the-turning-copy");
 
                 Thread.sleep(1500);
 
