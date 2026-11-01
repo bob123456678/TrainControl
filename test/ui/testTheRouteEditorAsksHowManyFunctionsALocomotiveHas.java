@@ -26,15 +26,12 @@ import org.testng.annotations.Test;
  * decoder has five functions (`MarklinLocomotive.MM2_NUM_FN`, what `getNumF` reports), so F32 saves cleanly and does
  * nothing on the rails.
  *
- * It is not another claim in `testRouteEditorValidation`: that class builds `new RouteEditorFrame(null, null)`, and
- * `problemsWith` returns at `if (parent == null || parent.getModel() == null)` before any per-row rule, so the
- * function-range rule was never exercised.  This one pays for a real window and a real locomotive database.
+ * Not a claim in `testRouteEditorValidation`: that class builds `new RouteEditorFrame(null, null)`, and `problemsWith`
+ * returns before any per-row rule when the parent is null.  This one pays for a real window and a real locomotive
+ * database, and goes through the CELL, not a built row (column 5 rebuilds the setting as `number + ":" + state`).
  *
- * Through the CELL, not a built row: column 5 rebuilds the setting as `number + ":" + state`, and a row assembled
- * directly would test this test's arithmetic instead of the editor's.
- *
- * The command table also marks the row (OB-246, Adam: "yes"); the mark is the same answer `everythingWrong` gives at
- * Save, said while the choice is still in front of the user, and the third claim below is about it.
+ * The command table also marks the row (OB-246): the same answer `everythingWrong` gives at Save, said while the
+ * choice is still in front of the user; the third claim below is about it.
  *
  * MUTATION: drop `|| number >= loco.getNumF()` from the FUNCTION rule in `problemsWith` and the first claim goes red;
  * drop the whole rule and the control below still passes, which is what makes the pair worth having.
@@ -172,20 +169,16 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * A row Save would refuse is marked as it is typed, and a row Save accepts is not (OB-246).
      *
      * The target column offers every locomotive in the database, one of which may hold a COMMA that
-     * `RouteCommand.isNameUsable` refuses, so the operator picked it and Save refused; the only way out was renaming
-     * the locomotive.  Marked rather than hidden, since dropping a name would refuse a legal selection with nothing
-     * shown: the row is drawn in the refusal ink with the reason on its tooltip (the OB-057 / OB-090 rule: the control
+     * `RouteCommand.isNameUsable` refuses.  Marked rather than hidden, since dropping a name would refuse a legal
+     * selection with nothing shown: the row is drawn in the refusal ink with the reason on its tooltip (the control
      * that offers an action asks the question the guard asks).
      *
-     * Asserted through the table's own renderer, because what is claimed is what the user SEES; a claim on
-     * `problemsWith` would pass with the mark not drawn.  The third assertion pins the mark as the SAME answer as the
-     * gate by name.
+     * Asserted through the table's own renderer, because what is claimed is what the user SEES; the third assertion
+     * pins the mark as the SAME answer as the gate by name.
      *
-     * MUTATION: have `settle` record nothing and the first claim fails, the row drawn in ordinary ink
-     * while Save still refuses it.  Mark on the answer alone - drop the `named` clause - and the
-     * fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
-     * that is always there is a mark nobody reads.  Stop `unshaded` clearing the tooltip and the + row
-     * claim fails: that row wears the refusal of the row drawn before it.
+     * MUTATION: have `settle` record nothing and the first claim fails.  Mark on the answer alone - drop the `named`
+     * clause - and the fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
+     * that is always there is a mark nobody reads.  Stop `unshaded` clearing the tooltip and the + row claim fails.
      */
     @Test
     public void testARowSaveWouldRefuseIsMarkedAsItIsTyped() throws Exception
@@ -309,15 +302,11 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /**
      * The function column offers that locomotive's functions, and keeps a number already in the row.
      *
-     * The control which OFFERS a value asks the question the guard asks (OB-057, OB-090): the old route editor built
-     * its list from the locomotive, and the typed-number editor gave that up, with no live mark and a digits-only cell.
-     *
-     * A NUMBER ALREADY IN THE ROW IS OFFERED TOO, out of range or not: a combo box handed a value it has not got keeps
-     * whatever was selected, so a route carrying F32 on a five-function locomotive would be rewritten to F0 (the
-     * lights) by a click and a click away.
-     *
-     * Where the target is not a locomotive this database has, there is nothing to ask and a typed number is still
-     * taken, so the editor stays usable for a route whose locomotive is not on this railway.
+     * The control which OFFERS a value asks the question the guard asks (OB-057, OB-090).  A NUMBER ALREADY IN THE ROW
+     * IS OFFERED TOO, out of range or not: a combo box handed a value it has not got keeps whatever was selected, so a
+     * route carrying F32 on a five-function locomotive would be rewritten to F0 (the lights) by a click and a click
+     * away.  Where the target is not a locomotive this database has, a typed number is still taken, so the editor
+     * stays usable for a route whose locomotive is not on this railway.
      *
      * MUTATION: put `column == 5` back on the `digitsOnly()` line and the first claim goes red; drop
      * the "keep what is there" clause from `functionsOffered` and the second does.
@@ -379,10 +368,10 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A name the database no longer has stays in the cell that holds it (Adam: "Fix b5, 253").  A combo box handed a
+     * A name the database no longer has stays in the cell that holds it (Adam: "Fix b5, 253"): a combo box handed a
      * value it has not got keeps its own selection, so one click into a route naming a deleted locomotive and one away
-     * rewrote the command to the first locomotive in the list, which satisfied the Save gate.  The function column
-     * already kept a number in its cell (MT-464, above).
+     * would rewrite the command to the first locomotive in the list.  The function column does the same (MT-464,
+     * above).
      *
      * MUTATION: offer only the database's names again, and this fails.
      */
@@ -426,8 +415,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A condition that a locomotive is at a sensor names a sensor: saved with the sensor 0, the route could
-     * never fire, and nothing said so - a sensor condition is refused it (`frameNotASensor`), this one was not.
+     * A condition that a locomotive is at a sensor names a sensor: saved with the sensor 0, the route could never fire,
+     * so it is refused as a sensor condition is (`frameNotASensor`).
      *
      * MUTATION: drop the sensor check and this fails.
      */
@@ -468,9 +457,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A route is not offered as a route it can call: Save refuses a route that calls itself
-     * (`frameRouteCallsItself`), and the ROUTE column's dropdown offered it, so the editor offered a choice it would then
-     * refuse.
+     * A route is not offered as a route it can call: Save refuses a route that calls itself (`frameRouteCallsItself`),
+     * so the ROUTE column's dropdown must not offer the choice.
      *
      * MUTATION: offer the database's whole list again and this fails.
      */
@@ -508,9 +496,9 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
-     * A name with a space at either end stays in its cell as it stands.  The cells once offered the name
-     * trimmed, and a combo box cannot select a value it has not got, so one click into a command naming " X " and one away
-     * still wrote the first locomotive in the list.  Only a routes file edited by hand carries such a name.
+     * A name with a space at either end stays in its cell as it stands: a combo box cannot select a value it has not
+     * got, so offering the name trimmed would write the first locomotive in the list after one click in and one away.
+     * Only a routes file edited by hand carries such a name.
      *
      * MUTATION: offer the cell's name trimmed again, and this fails.
      */
