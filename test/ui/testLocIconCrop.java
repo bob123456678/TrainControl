@@ -989,19 +989,7 @@ public class testLocIconCrop
 
     private static javax.swing.JFileChooser chooserIn(java.awt.Container container)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.JFileChooser) return (javax.swing.JFileChooser) child;
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JFileChooser found = chooserIn((java.awt.Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JFileChooser.class);
     }
 
     /** A showing dialog titled so, within the time, or null. */

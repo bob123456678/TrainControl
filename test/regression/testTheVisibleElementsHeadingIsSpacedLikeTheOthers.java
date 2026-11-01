@@ -739,19 +739,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     private static javax.swing.JScrollPane scrollerIn(Container in)
     {
-        for (Component child : in.getComponents())
-        {
-            if (child instanceof javax.swing.JScrollPane) return (javax.swing.JScrollPane) child;
-
-            if (child instanceof Container)
-            {
-                javax.swing.JScrollPane deeper = scrollerIn((Container) child);
-
-                if (deeper != null) return deeper;
-            }
-        }
-
-        return null;
+        return support.Components.inside(in, javax.swing.JScrollPane.class);
     }
 
     /** A status sentence longer than any language's: 521 pixels is English and 655 German, and this is over 900 */
@@ -813,6 +801,21 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         if (examined == 0) throw new SkipException("the screen is too small for the editor's smallest size at any diagram size");
     }
 
+    /** The editor of the page at a diagram size, rendered and, when asked, in autonomy mode, built on the event thread. */
+    private static LayoutEditor builtEditor(final boolean autonomy, final int size) throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, size, ui, 0);
+            built[0].render();
+            if (autonomy) built[0].setAutonomyMode(session);
+        });
+
+        return built[0];
+    }
+
     /**
      * What an editor's window cuts off of its controls once it is shrunk to its smallest size, each as "Cancel: 13 of 23
      * pixels high"; null where the screen, not the editor's own floor, is what held the floor down.
@@ -822,16 +825,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     private static java.util.List<String> cutOffAtTheSmallestSize(final boolean autonomy, final int size, final int[] floor)
     throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final LayoutEditor built = builtEditor(autonomy, size);
         final java.util.List<String> out = new java.util.ArrayList<>();
         final boolean[] heldDown = new boolean[1];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, size, ui, 0);
-            built[0].render();
-            if (autonomy) built[0].setAutonomyMode(session);
-        });
 
         try
         {
@@ -841,7 +837,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 try
                 {
-                    LayoutEditor editor = built[0];
+                    LayoutEditor editor = built;
 
                     // The words are the railway's and the language's; the window is asked about the longest there could be
                     if (autonomy) editor.getAutonomyPanel().getBanner().setText(A_STATUS_LONGER_THAN_ANY_LANGUAGES);
@@ -875,7 +871,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+            SwingUtilities.invokeAndWait(() -> built.dispose());
         }
 
         return heldDown[0] ? null : out;
@@ -931,15 +927,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      */
     private static java.util.List<String> checkboxGaps(final boolean autonomy) throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final LayoutEditor built = builtEditor(autonomy, 30);
         final java.util.List<String> out = new java.util.ArrayList<>();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-            built[0].render();
-            if (autonomy) built[0].setAutonomyMode(session);
-        });
 
         try
         {
@@ -949,8 +938,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 try
                 {
-                    Container pane = (Container) field(built[0], "formPane");
-                    JLabel heading = (JLabel) field(built[0], "toggleVisibility");
+                    Container pane = (Container) field(built, "formPane");
+                    JLabel heading = (JLabel) field(built, "toggleVisibility");
                     Point at = SwingUtilities.convertPoint(heading.getParent(), heading.getLocation(), pane);
 
                     java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
@@ -960,7 +949,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                     boxes.sort((a, b) -> Integer.compare(SwingUtilities.convertPoint(a.getParent(), a.getLocation(), pane).y,
                         SwingUtilities.convertPoint(b.getParent(), b.getLocation(), pane).y));
 
-                    javax.swing.JCheckBox unmeasured = autonomy ? built[0].getAutonomyPanel().getShowUnmeasured() : null;
+                    javax.swing.JCheckBox unmeasured = autonomy ? built.getAutonomyPanel().getShowUnmeasured() : null;
 
                     for (int i = 1; i < boxes.size(); i++)
                     {
@@ -986,7 +975,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+            SwingUtilities.invokeAndWait(() -> built.dispose());
         }
 
         return out;
@@ -1017,17 +1006,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      */
     private static int[] gaps(final boolean autonomy) throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final LayoutEditor built = builtEditor(autonomy, 30);
         final int[] out = new int[2];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-
-            built[0].render();
-
-            if (autonomy) built[0].setAutonomyMode(session);
-        });
 
         try
         {
@@ -1037,12 +1017,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 try
                 {
-                    Container pane = (Container) field(built[0], "formPane");
+                    Container pane = (Container) field(built, "formPane");
 
-                    JLabel size = (JLabel) field(built[0], "diagramSize");
+                    JLabel size = (JLabel) field(built, "diagramSize");
 
                     out[0] = size.isShowing() ? gapUnder(pane, size) : -1;
-                    out[1] = gapUnder(pane, (JLabel) field(built[0], "toggleVisibility"));
+                    out[1] = gapUnder(pane, (JLabel) field(built, "toggleVisibility"));
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -1052,7 +1032,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+            SwingUtilities.invokeAndWait(() -> built.dispose());
         }
 
         assertTrue(out[1] >= 0 && (autonomy || out[0] >= 0), "precondition: nothing was found under one of the"

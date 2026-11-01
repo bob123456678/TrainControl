@@ -224,24 +224,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         final List<String> heard = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-        java.util.logging.Handler ear = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                heard.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        java.util.logging.Handler ear = support.LogTap.everyMessageInto(heard);
 
         ears.add(ear);
 
@@ -1200,19 +1183,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     /** The option pane inside a container, at any depth. */
     private static javax.swing.JOptionPane paneIn(java.awt.Container container)
     {
-        for (java.awt.Component c : container.getComponents())
-        {
-            if (c instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) c;
-
-            if (c instanceof java.awt.Container)
-            {
-                javax.swing.JOptionPane inner = paneIn((java.awt.Container) c);
-
-                if (inner != null) return inner;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JOptionPane.class);
     }
 
     /** That the timetable holds exactly these entries, the same objects in the same order. */
