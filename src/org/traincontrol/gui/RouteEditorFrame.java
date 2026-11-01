@@ -127,15 +127,17 @@ public class RouteEditorFrame extends JFrame
     /** Says which way the joins nest, in words. */
     private final JLabel readsAs = new JLabel(" ");
 
-    /** In red under the reading, while there are conditions and Automatically Fire is off. */
+    /** In red on the conditions' heading line, while there are conditions and Automatically Fire is off. */
     private final JLabel unasked = new JLabel(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
 
-    /** The row under the conditions (OB-396): Add Condition, then Group Selected and Ungroup. */
+    /** The row under the conditions (OB-396): Add Condition, the grouping actions, then Undo and Redo (FR-161). */
     private JPanel conditionActions;
     private JButton addConditionButton;
     private JButton groupButton;
     private JButton ungroupButton;
     private JButton splitButton;
+    private JButton undoButton;
+    private JButton redoButton;
 
     /** Name, Automatically Fire, S88 and Trigger: the line the window is never narrower than (OB-396). */
     private JPanel topLine;
@@ -911,8 +913,8 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Add Condition, a divider, Group Selected, Ungroup and Split Here (OB-396), flat as the table is, so they do not
-     * read as the buttons under the section.
+     * Add Condition, a divider, Group Selected, Ungroup and Split Here (OB-396), a divider, Undo and Redo (FR-161), flat
+     * as the table is, so they do not read as the buttons under the section.
      */
     private JPanel conditionActions()
     {
@@ -933,20 +935,37 @@ public class RouteEditorFrame extends JFrame
         splitButton = flatButton("route.ui.menuSplitHere", RowIcons.split(16), RowIcons.split(16, gray),
             "route.ui.tooltipSplitHere", conditions::splitHere);
 
-        JPanel divider = new JPanel();
+        java.awt.Color ink = new java.awt.Color(110, 110, 110);
 
-        divider.setBackground(new java.awt.Color(0xE0, 0xE0, 0xE0));
-        divider.setPreferredSize(new Dimension(1, 18));
+        undoButton = flatButton("route.ui.menuUndo", RowIcons.undo(16, ink), RowIcons.undo(16, gray),
+            "route.ui.tooltipUndo", conditions::undo);
+
+        redoButton = flatButton("route.ui.menuRedo", RowIcons.redo(16, ink), RowIcons.redo(16, gray),
+            "route.ui.tooltipRedo", conditions::redo);
 
         conditionActions.add(addConditionButton);
-        conditionActions.add(divider);
+        conditionActions.add(divider());
         conditionActions.add(groupButton);
         conditionActions.add(ungroupButton);
         conditionActions.add(splitButton);
+        conditionActions.add(divider());
+        conditionActions.add(undoButton);
+        conditionActions.add(redoButton);
 
         refreshConditionActions();
 
         return conditionActions;
+    }
+
+    /** A thin upright line between the condition row's kinds of action. */
+    private static JPanel divider()
+    {
+        JPanel out = new JPanel();
+
+        out.setBackground(new java.awt.Color(0xE0, 0xE0, 0xE0));
+        out.setPreferredSize(new Dimension(1, 18));
+
+        return out;
     }
 
     /** A toolbar button: no border until hovered (FlatLaf's toolBarButton), out of the tab order. */
@@ -983,6 +1002,8 @@ public class RouteEditorFrame extends JFrame
         groupButton.setEnabled(conditions.canGroupSelected());
         ungroupButton.setEnabled(conditions.canUngroupSelected());
         splitButton.setEnabled(conditions.canSplitHere());
+        undoButton.setEnabled(conditions.canUndo());
+        redoButton.setEnabled(conditions.canRedo());
     }
 
     /**
@@ -1302,6 +1323,8 @@ public class RouteEditorFrame extends JFrame
             conditions.rows.addAll(ConditionOutline.of(conditionsAsFound));
         }
 
+        conditions.forget();
+
         commands.fireTableDataChanged();
         conditions.fireTableDataChanged();
         updateReadsAs();
@@ -1588,6 +1611,7 @@ public class RouteEditorFrame extends JFrame
     {
         conditions.rows.clear();
         conditions.rows.addAll(rows);
+        conditions.forget();
         conditions.fireTableDataChanged();
     }
 
@@ -2151,10 +2175,8 @@ public class RouteEditorFrame extends JFrame
             menu.add(menuItem("route.ui.menuInsertConditionAbove", true, () -> table.insertBeside(row, -1)));
             menu.add(menuItem("route.ui.menuInsertConditionBelow", true, () -> table.insertBeside(row, 1)));
             menu.addSeparator();
-            menu.add(menuItem("route.ui.menuMoveUp", ConditionOutline.canMove(table.rows, row, -1),
-                () -> table.shift(row, -1)));
-            menu.add(menuItem("route.ui.menuMoveDown", ConditionOutline.canMove(table.rows, row, 1),
-                () -> table.shift(row, 1)));
+            menu.add(menuItem("route.ui.menuMoveUp", table.canShiftChosen(-1), () -> table.shiftChosen(-1)));
+            menu.add(menuItem("route.ui.menuMoveDown", table.canShiftChosen(1), () -> table.shiftChosen(1)));
             menu.add(menuItem("route.ui.menuGroupSelected", table.canGroupSelected(), table::groupSelected));
             menu.add(menuItem("route.ui.menuUngroup", table.canUngroupSelected(), table::ungroupSelected));
             menu.add(menuItem("route.ui.menuSplitHere", table.canSplitHere(), table::splitHere));
@@ -3898,24 +3920,29 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * A condition's Protocol cell is filled only inside its group's outline: its gray, or the selection, would
-         * otherwise run past the outline's right edge (OB-396).
+         * A condition's cells are filled only inside its group's outline: the gray, or the selection, would otherwise
+         * run past the outline's right edge (OB-396), and down through the gap where a group's bottom edge is drawn
+         * (MT-868).
          */
         @Override
         public java.awt.Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int line, int column)
         {
             java.awt.Component out = super.prepareRenderer(renderer, line, column);
 
-            if (column == PROTOCOL && line >= 0 && line < lines.size() && lines.get(line).row >= 0
+            if (column != HANDLE && line >= 0 && line < lines.size() && lines.get(line).row >= 0
                 && out instanceof javax.swing.JComponent)
             {
                 javax.swing.JComponent cell = (javax.swing.JComponent) out;
 
-                int beyond = columnX(PROTOCOL) + getColumnModel().getColumn(PROTOCOL).getWidth()
+                int beyond = column != PROTOCOL ? 0 : columnX(PROTOCOL) + getColumnModel().getColumn(PROTOCOL).getWidth()
                     - outlineRight(levelOf(lines.get(line).group)) + 2;
+                int below = Math.max(0, getRowHeight(line) - LINE);
 
-                cell.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 0, beyond, getBackground()), cell.getBorder()));
+                if (beyond > 0 || below > 0)
+                {
+                    cell.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, below, beyond, getBackground()), cell.getBorder()));
+                }
             }
 
             return out;
@@ -4321,6 +4348,8 @@ public class RouteEditorFrame extends JFrame
             keys("ctrl G", "group", this::groupSelected);
             keys("ctrl shift G", "ungroup", this::ungroupSelected);
             keys("ctrl shift S", "split", this::splitHere);
+            keys("ctrl Z", "undo", this::undo);
+            keys("ctrl Y", "redo", this::redo);
         }
 
         private void keys(String stroke, String name, Runnable action)
@@ -4474,8 +4503,7 @@ public class RouteEditorFrame extends JFrame
             caption.setEnabled(conditionsEditable);
             caption.setForeground(problem != null ? WRONG : conditionsEditable ? java.awt.Color.BLACK : java.awt.Color.GRAY);
             caption.setIcon(problem == null ? null : RowIcons.warning(14));
-            caption.setToolTipText(problem == null ? (conditionsEditable ? I18n.t("route.ui.tooltipConditionCaption") : null)
-                : "<html><p style='width:300px'>" + marked(I18n.t(problem == ConditionOutline.Problem.DISAGREES
+            caption.setToolTipText(problem == null ? null : "<html><p style='width:300px'>" + marked(I18n.t(problem == ConditionOutline.Problem.DISAGREES
                     ? "route.ui.conditionWordDisagrees" : "route.ui.conditionWordJoinsNothing")) + "</p></html>");
 
             return caption;
@@ -4908,6 +4936,8 @@ public class RouteEditorFrame extends JFrame
          */
         void append(RouteCommand condition)
         {
+            remember(new ArrayList<>(rows));
+
             int last = rows.size() - 1;
 
             while (last >= 0 && rows.get(last).isJoiner()) last--;
@@ -4997,6 +5027,11 @@ public class RouteEditorFrame extends JFrame
          */
         private void showChanges(List<ConditionOutline.Row> before)
         {
+            if (!restoring && (before.size() != rows.size() || !ConditionOutline.changed(before, rows).isEmpty()))
+            {
+                remember(before);
+            }
+
             changed.clear();
 
             java.util.Set<Integer> differ = ConditionOutline.changed(before, rows);
@@ -5227,14 +5262,99 @@ public class RouteEditorFrame extends JFrame
             return ConditionOutline.problems(outline).size();
         }
 
-        /** Alt+Up and Alt+Down, and the menu's Move Up and Move Down, on the selected condition. */
-        private void shiftChosen(int by)
+        /**
+         * Alt+Up and Alt+Down, and the menu's Move Up and Move Down: the selected conditions move together, by the rule
+         * `ConditionOutline.movedTogether` holds (MT-868), and stay selected.
+         */
+        void shiftChosen(int by)
         {
-            int row = rowOf(getSelectionModel().getLeadSelectionIndex());
+            if (!canShiftChosen(by)) return;
 
-            if (row < 0 && !chosenRows().isEmpty()) row = chosenRows().first();
+            java.util.SortedSet<Integer> chosen = chosenRows();
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
 
-            if (row >= 0) shift(row, by);
+            replaceWith(ConditionOutline.movedTogether(rows, chosen, by), commandsOf(chosen), before);
+        }
+
+        boolean canShiftChosen(int by)
+        {
+            return !locked && conditionsEditable && ConditionOutline.movedTogether(rows, chosenRows(), by) != null;
+        }
+
+        /** The outline before each edit, the latest first, for Undo (FR-161). */
+        private final java.util.Deque<List<ConditionOutline.Row>> undoable = new java.util.ArrayDeque<>();
+
+        /** The outline before each Undo, for Redo; a new edit clears it. */
+        private final java.util.Deque<List<ConditionOutline.Row>> redoable = new java.util.ArrayDeque<>();
+
+        /** Set while Undo or Redo puts an outline back, so that is not itself an edit to undo. */
+        private boolean restoring;
+
+        /** Keeps the outline as it was before an edit, so Undo can put it back; the oldest goes after a hundred. */
+        private void remember(List<ConditionOutline.Row> before)
+        {
+            undoable.push(new ArrayList<>(before));
+
+            if (undoable.size() > 100) undoable.removeLast();
+
+            redoable.clear();
+            refreshConditionActions();
+        }
+
+        /** A route loaded starts with nothing to undo. */
+        void forget()
+        {
+            undoable.clear();
+            redoable.clear();
+        }
+
+        boolean canUndo()
+        {
+            return !locked && conditionsEditable && !undoable.isEmpty();
+        }
+
+        boolean canRedo()
+        {
+            return !locked && conditionsEditable && !redoable.isEmpty();
+        }
+
+        void undo()
+        {
+            if (canUndo()) step(undoable, redoable);
+        }
+
+        void redo()
+        {
+            if (canRedo()) step(redoable, undoable);
+        }
+
+        /**
+         * Puts back the outline on top of one history and keeps the one it replaces on the other (FR-161); the lines
+         * that differ are marked and their conditions selected, as after any edit.
+         */
+        private void step(java.util.Deque<List<ConditionOutline.Row>> from,
+            java.util.Deque<List<ConditionOutline.Row>> to)
+        {
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            List<ConditionOutline.Row> back = from.pop();
+            List<RouteCommand> differ = new ArrayList<>();
+
+            for (int at : ConditionOutline.changed(before, back))
+            {
+                if (!back.get(at).isJoiner()) differ.add(back.get(at).getCommand());
+            }
+
+            to.push(before);
+            restoring = true;
+
+            try
+            {
+                replaceWith(back, differ, before);
+            }
+            finally
+            {
+                restoring = false;
+            }
         }
 
         /**

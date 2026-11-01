@@ -34147,7 +34147,7 @@ ordinal: 865
 anchor: mt-866
 date: 2026-10-31
 title: Save Current Track Diagram as a Picture asks what diagram size to save
-disposition: needs test
+disposition: fixed validated
 from: MT-827
 written: 2026-10-31
 reopened: no
@@ -34155,7 +34155,7 @@ body:
 | <a id="mt-866"></a>
 | ### MT-866 - 2026-10-31 - Save Current Track Diagram as a Picture asks what diagram size to save
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** MT-827
 |
 | **Written:** 2026-10-31
@@ -34224,7 +34224,7 @@ ordinal: 867
 anchor: mt-868
 date: 2026-10-31
 title: The route editor shows condition groups as outlines you can split, group, ungroup and drag
-disposition: needs test
+disposition: fixed validated
 from: OB-396
 written: 2026-10-31
 reopened: no
@@ -34232,7 +34232,7 @@ body:
 | <a id="mt-868"></a>
 | ### MT-868 - 2026-10-31 - The route editor shows condition groups as outlines you can split, group, ungroup and drag
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-396
 |
 | **Written:** 2026-10-31
@@ -34261,6 +34261,77 @@ body:
 | - Step 8: the selection runs from Kind to Protocol only. At every depth, the gray stops inside the outline, and only the Kind text is indented.
 | - Step 9: the top line (Name, Automatically Fire, S88, Trigger) stays whole; the window will not go narrower.
 | - Step 10: the groups, their rules and the reading come back as you saved them.
+|
+tail:
+| ---
+|
+
+[test MT-869]
+ordinal: 868
+anchor: mt-869
+date: 2026-10-31
+title: Condition groups: the gray stays inside, captions have no tooltip, moves take the whole selection
+disposition: needs test
+from: MT-868
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-869"></a>
+| ### MT-869 - 2026-10-31 - Condition groups: the gray stays inside, captions have no tooltip, moves take the whole selection
+|
+| **Disposition:** needs test
+| **From:** MT-868
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Press **Add Route**, press **Add Condition** three times, then select the third condition and press **Split Here**.
+| 2. Look closely at the gray Protocol cells on the last condition of each group.
+| 3. Hover over a group's caption ("All of these must be true" or "At least one must be true").
+| 4. Select two neighboring conditions and press Alt+Down, then Alt+Up. Then right-click one of them and choose **Move Down**.
+|
+| **Expected**
+|
+| - Step 2: the gray stops above each group's bottom line; none shows below it.
+| - Step 3: no tooltip. A red caption on a group that mixes and with or still explains itself when hovered.
+| - Step 4: both conditions move together, one place each time, and stay selected. Where the first one has nowhere to go, neither moves.
+|
+tail:
+| ---
+|
+
+[test MT-870]
+ordinal: 869
+anchor: mt-870
+date: 2026-10-31
+title: Undo and Redo in the route editor's conditions
+disposition: needs test
+from: FR-161
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-870"></a>
+| ### MT-870 - 2026-10-31 - Undo and Redo in the route editor's conditions
+|
+| **Disposition:** needs test
+| **From:** FR-161
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Press **Add Route**. In its conditions, press **Add Condition** three times.
+| 2. Make a few changes of different kinds: type a new address, select two conditions and press **Group Selected**, drag one by its handle, delete one, and click a caption to change its rule.
+| 3. Press **Undo** (on the row with Add Condition) once for each change, then **Redo** as many times. Do the same again with Ctrl+Z and Ctrl+Y.
+| 4. Undo twice, then make a new change.
+| 5. Press **Cancel**, and open the route editor again.
+|
+| **Expected**
+|
+| - Step 3: each Undo takes back one change, latest first, and the amber mark shows what it changed; Redo makes them again in order. The buttons are grayed when there is nothing to undo or redo.
+| - Step 4: Redo is grayed after the new change.
+| - Step 5: Undo and Redo start grayed.
 |
 tail:
 | ---

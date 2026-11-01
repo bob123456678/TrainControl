@@ -319,6 +319,52 @@ public final class ConditionOutline
         return plan(rows, line, by) != null;
     }
 
+    /**
+     * Moves several conditions one place together (MT-868): each by the rule of `moved`, the one leading the way first,
+     * so a run keeps its order.  Where the leading one has nowhere to go, none moves.
+     *
+     * @param chosen line indices of the conditions; words among them are ignored
+     * @param by -1 for up, 1 for down
+     * @return a new list, or null where nothing moves
+     */
+    public static List<Row> movedTogether(List<Row> rows, java.util.Collection<Integer> chosen, int by)
+    {
+        if (rows == null || chosen == null || by == 0) return null;
+
+        List<RouteCommand> moving = new ArrayList<>();
+
+        for (int at : new java.util.TreeSet<>(chosen))
+        {
+            if (at >= 0 && at < rows.size() && !rows.get(at).isJoiner()) moving.add(rows.get(at).getCommand());
+        }
+
+        if (by > 0) java.util.Collections.reverse(moving);
+
+        List<Row> out = rows;
+
+        for (RouteCommand command : moving)
+        {
+            Move move = plan(out, lineHolding(out, command), by);
+
+            if (move == null && out == rows) return null;
+
+            if (move != null) out = move.rows;
+        }
+
+        return out == rows ? null : out;
+    }
+
+    /** The line holding this very condition, by identity: two lines can ask the same thing; -1 where none does. */
+    private static int lineHolding(List<Row> rows, RouteCommand command)
+    {
+        for (int at = 0; at < rows.size(); at++)
+        {
+            if (rows.get(at).getCommand() == command) return at;
+        }
+
+        return -1;
+    }
+
     /** Where the condition a move takes ends up, so the editor can keep it selected. */
     public static int landing(List<Row> rows, int line, int by)
     {

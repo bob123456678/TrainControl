@@ -36,6 +36,17 @@ text:
 | Moved to 3.0.4 on Adam's word of 2026-10-25: "Sorry, I also meant to put FR-145 in."
 |
 
+[comment FR-161 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Built: Undo and Redo after Split Here on the row with Add Condition, with Ctrl+Z and Ctrl+Y; every change to the conditions (a capture too) can be taken back, the last hundred kept, and a route opened starts with none. Tested by MT-870.
+|
+
 [comment MT-001 0]
 who: Adam
 date: 2026-08-22
@@ -30571,6 +30582,28 @@ text:
 | Validated on your *Works, with notes* of 2026-10-31; the notes are built (an answer you asked for stays until the next notice or its X; the strip shows up to four lines, and the room below the diagram's last row follows its height) and tested by MT-865.
 |
 
+[comment MT-866 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-31 (triage).** Works.
+|
+| *Run against commit 5571a57f, in English - build\classes, compiled 31 Oct 23:23 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-866 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works* of 2026-10-31.
+|
+
 [comment MT-867 0]
 who: Claude
 date: 2026-10-31
@@ -30580,6 +30613,30 @@ text:
 | **Claude, 2026-10-31.**
 |
 | Superseded by MT-868 before testing: step 4 selected the group's caption for Ungroup, which needs a condition inside the group, and expected the reading never to change, which holds for Group Selected only.
+|
+
+[comment MT-868 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-31 (triage).** Works, with notes.
+|
+| The protocol grayout spills over below the bottom line of its group (slightly).  Remove the tooltip from "at least one/all of these must be true", as it adds clutter.  "move down/up" only applies to one item, not the full selection.
+|
+| *Run against commit 5571a57f, in English - build\classes, compiled 31 Oct 23:23 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-868 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works, with notes* of 2026-10-31; the notes are built (the gray stops above a group's bottom line, a caption that is not flagged has no tooltip, and Alt+Up, Alt+Down and the menu's Move Up and Move Down move every selected condition together) and tested by MT-869.
 |
 
 [comment OB-331 0]

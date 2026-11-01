@@ -366,6 +366,66 @@ public final class RowIcons
         };
     }
 
+    /**
+     * A hooked arrow pointing back: Undo (FR-161).
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon undo(final int size, final Color colour)
+    {
+        return hooked(size, colour, false);
+    }
+
+    /**
+     * Undo's arrow, mirrored: Redo (FR-161).
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon redo(final int size, final Color colour)
+    {
+        return hooked(size, colour, true);
+    }
+
+    private static Icon hooked(final int size, final Color colour, final boolean forward)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                if (forward)
+                {
+                    g.translate(width, 0);
+                    g.scale(-1, 1);
+                }
+
+                java.awt.geom.Path2D.Float hook = new java.awt.geom.Path2D.Float();
+
+                hook.moveTo(width * 0.32f, height * 0.38f);
+                hook.lineTo(width * 0.58f, height * 0.38f);
+                hook.curveTo(width * 0.92f, height * 0.38f, width * 0.92f, height * 0.84f, width * 0.58f, height * 0.84f);
+                hook.lineTo(width * 0.36f, height * 0.84f);
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.draw(hook);
+
+                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+
+                head.moveTo(width * 0.08f, height * 0.38f);
+                head.lineTo(width * 0.38f, height * 0.16f);
+                head.lineTo(width * 0.38f, height * 0.60f);
+                head.closePath();
+
+                g.fill(head);
+            }
+        };
+    }
+
     private static Icon outlined(final int size, final Color colour, final boolean broken)
     {
         return new Painted(size)

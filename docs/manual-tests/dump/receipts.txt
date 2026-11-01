@@ -4354,3 +4354,11 @@ kind: bug
 what: RouteEditorFrame ConditionTable: C3 outlines with rule captions (click to switch), only Kind indented, drag handle, the R1 row (Add Condition, Group Selected, Ungroup, Split Here), the Automatically Fire warning with a triangle on the heading line and the reading under it, gray kept inside the outline, minimum width from the top line; ConditionOutline groupsOf, grouped (keeps the meaning), ungrouped, split. Claims in ui.testRouteEditorValidation and core.testConditionOutline.
 state: -
 became: MT-868
+
+[receipt FR-161]
+seq: 544
+filed: 2026-10-31
+kind: feature request
+what: ConditionTable: undoable and redoable outline snapshots taken in showChanges (and append, for a capture), step() puts one back without recording it, forget() on load; Undo and Redo buttons and Ctrl+Z / Ctrl+Y; RowIcons.undo and redo. Claim ui.testRouteEditorValidation.testUndoAndRedoWalkThroughEveryEdit.
+state: -
+became: MT-870

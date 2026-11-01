@@ -895,6 +895,25 @@ text:
 | In the autonomy editor, drag a locomotive drawn on the diagram from one station to another to relocate it, equivalent to a copy and paste. Adam 2026-10-29: "drag and drop locomotives in the autonomy editor to relocate them (from station to station, equivalent to a copy and paste)."
 |
 
+[issue FR-161]
+ordinal: 83
+inbox: yes
+kind: feature request
+title: Undo and Redo for the route editor's conditions
+filed: 2026-10-31
+filed_at: 2026-10-31 23:32
+raised_from: chat, 2026-10-31
+build: -
+text:
+| ### FR-161 - 2026-10-31 - Undo and Redo for the route editor's conditions
+|
+| **Kind:** feature request  
+| **Raised from:** chat, 2026-10-31  
+| **Filed:** 2026-10-31 23:32
+|
+| I'd also like to add an undo/redo feature for the conditions.  these can be buttons on the bottom row, linked to control+Z/control+Y
+|
+
 [issue OB-324]
 ordinal: 19
 inbox: yes

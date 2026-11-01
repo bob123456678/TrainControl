@@ -477,6 +477,41 @@ public class testConditionOutline
     }
 
     /**
+     * MT-868: selected conditions move one place together, the one leading the way first, so a run keeps its order;
+     * where the leading one has nowhere to go, none moves.
+     *
+     * MUTATION: in `ConditionOutline.movedTogether`, drop the `Collections.reverse`, and 1 and 2 moved down give
+     * "2, 3, 1, 4" rather than "3, 1, 2, 4".
+     * MUTATION: in `ConditionOutline.movedTogether`, return `out` where the leading one has nowhere to go, and 1 and 3
+     * moved up leave 1 and lift 3.
+     */
+    @Test
+    public void testSelectedConditionsMoveTogether()
+    {
+        List<ConditionOutline.Row> rows = outline(
+            condition(0, 1),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 2),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 3),
+            joining(0, ConditionOutline.Joiner.AND),
+            condition(0, 4));
+
+        java.util.Set<Integer> first = new java.util.TreeSet<>(java.util.Arrays.asList(0, 2));
+        java.util.Set<Integer> second = new java.util.TreeSet<>(java.util.Arrays.asList(2, 6));
+
+        assertEquals(levels(ConditionOutline.movedTogether(rows, first, 1)), " 0:3 0AND 0:1 0AND 0:2 0AND 0:4",
+            "1 and 2 moved down");
+        assertEquals(levels(ConditionOutline.movedTogether(rows, second, -1)), " 0:2 0AND 0:1 0AND 0:4 0AND 0:3",
+            "2 and 4 moved up");
+        assertNull(ConditionOutline.movedTogether(rows, first, -1), "1 and 2 moved up: 1 is first");
+        assertNull(ConditionOutline.movedTogether(rows, new java.util.TreeSet<>(java.util.Arrays.asList(0, 4)), -1),
+            "1 and 3 moved up: 1 is first, so 3 stays too");
+        assertNull(ConditionOutline.movedTogether(rows, second, 1), "2 and 4 moved down: 4 is last");
+        assertEquals(levels(rows), " 0:1 0AND 0:2 0AND 0:3 0AND 0:4", "the outline asked about is left as it was");
+    }
+
+    /**
      * OB-379: "(1 and 2 and 3) or (7 and 4 and 5 and 6)" with 7 moved up is "(1 and 2 and 3 and 7) or (4 and 5 and 6)":
      * at its group's edge a condition joins the group past the shallower word, at that group's near end and by its
      * word, and moving it down goes back.

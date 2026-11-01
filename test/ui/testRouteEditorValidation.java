@@ -828,8 +828,8 @@ public class testRouteEditorValidation
                 "the mixed group's caption tooltip does not say that its words disagree: " + cell[0].tooltip);
 
             assertNull(cell[1].icon, "the (5 or 6) group is not flagged and wears the triangle of the caption painted before it");
-            assertEquals(cell[1].tooltip, I18n.t("route.ui.tooltipConditionCaption"),
-                "the (5 or 6) group is not flagged and wears the tooltip of the caption painted before it");
+            assertNull(cell[1].tooltip, "the (5 or 6) group is not flagged and wears a tooltip (MT-868: none on a"
+                + " caption that is not flagged)");
 
             // 2 or 3 with the OR alone indented, as a stored route can have it: it joins nothing.
             final java.util.List<org.traincontrol.base.ConditionOutline.Row> stranded = flat(2, "OR", 3);
@@ -2868,12 +2868,23 @@ public class testRouteEditorValidation
                 java.awt.Rectangle protocol = table.getCellRect(0, 4, true);
                 int right = protocol.x + protocol.width;
 
-                for (int at = 0; at < 3; at++)
+                for (int at = 0; at < 4; at++)
                 {
                     int line = (Integer) call(table, "lineOf", at * 2);
                     java.awt.Rectangle cell = table.getCellRect(line, 4, true);
-                    int edge = (Integer) call(table, "outlineRight", at);
+                    int edge = (Integer) call(table, "outlineRight", Math.min(at, 2));
                     int y = cell.y + cell.height / 2;
+
+                    // MT-868: nor down through the gap under a line where a group ends, its bottom edge drawn there.
+                    for (int below = cell.y + cell.height; below < cell.y + table.getRowHeight(line); below++)
+                    {
+                        if (image.getRGB(edge - 4, below) == gray)
+                        {
+                            return new String[]{"the depth " + Math.min(at, 2) + " Protocol cell of condition " + at
+                                + " is gray at y=" + below + ", under its content, which ends at "
+                                + (cell.y + cell.height)};
+                        }
+                    }
 
                     if (image.getRGB(edge - 4, y) != gray)
                     {
@@ -3122,6 +3133,188 @@ public class testRouteEditorValidation
         assertNotNull(menu, "a click on caption " + caption + " opened no menu");
 
         support.Mouse.choose(item(menu, key));
+    }
+
+    /**
+     * FR-161: Undo (Ctrl+Z or its button) takes back each edit to the conditions in turn - a group made, an address
+     * typed, a condition added, one deleted, one moved - and Redo (Ctrl+Y or its button) makes them again.  A new edit
+     * after an Undo leaves nothing to redo, and a route loaded has nothing to undo; the buttons are grayed when there is
+     * nothing for them to do.
+     *
+     * MUTATION: in `ConditionTable.showChanges`, drop the `remember(before)` call, and Undo has nothing to take back.
+     * MUTATION: in `ConditionTable.step`, drop `to.push(before)`, and Redo has nothing to make again.
+     */
+    @Test
+    public void testUndoAndRedoWalkThroughEveryEdit() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+            final java.util.List<String> seen = new java.util.ArrayList<>();
+
+            assertFalse(enabled(frame, "route.ui.menuUndo"), "Undo is offered on a route just loaded");
+            assertFalse(enabled(frame, "route.ui.menuRedo"), "Redo is offered on a route just loaded");
+
+            seen.add(levels(frame));
+
+            selectLines(table, 2, 4);
+            press(frame, "route.ui.menuGroupSelected");
+            seen.add(levels(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                table.getModel().setValueAt("31", (Integer) call(table, "lineOf", 0), ADDRESS));
+            seen.add(levels(frame));
+
+            clickCondition(table, 0, NOTHING_TO_EDIT, 0);
+            press(frame, "route.ui.menuAddCondition");
+            seen.add(levels(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(0));
+            seen.add(levels(frame));
+
+            clickCondition(table, 0, NOTHING_TO_EDIT, 0);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DOWN, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            seen.add(levels(frame));
+
+            for (int at = 1; at < seen.size(); at++)
+            {
+                assertNotEquals(seen.get(at), seen.get(at - 1), "edit " + at + " changed nothing: " + seen);
+            }
+
+            assertTrue(enabled(frame, "route.ui.menuUndo"), "Undo is grayed after " + (seen.size() - 1) + " edits");
+
+            for (int at = seen.size() - 2; at >= 0; at--)
+            {
+                if (at % 2 == 0) press(frame, "route.ui.menuUndo");
+                else ctrl(table, java.awt.event.KeyEvent.VK_Z);
+
+                assertEquals(levels(frame), seen.get(at), "Undo back to the outline before edit " + (at + 1));
+            }
+
+            assertFalse(enabled(frame, "route.ui.menuUndo"), "Undo is offered with every edit taken back");
+            assertTrue(enabled(frame, "route.ui.menuRedo"), "Redo is grayed with every edit taken back");
+
+            for (int at = 1; at < seen.size(); at++)
+            {
+                if (at % 2 == 0) press(frame, "route.ui.menuRedo");
+                else ctrl(table, java.awt.event.KeyEvent.VK_Y);
+
+                assertEquals(levels(frame), seen.get(at), "Redo of edit " + at);
+            }
+
+            assertFalse(enabled(frame, "route.ui.menuRedo"), "Redo is offered with every edit made again");
+
+            ctrl(table, java.awt.event.KeyEvent.VK_Z);
+            ctrl(table, java.awt.event.KeyEvent.VK_Z);
+
+            assertTrue(enabled(frame, "route.ui.menuRedo"), "Redo is grayed after two Undos");
+
+            press(frame, "route.ui.menuAddCondition");
+
+            assertFalse(enabled(frame, "route.ui.menuRedo"), "Redo is offered after a new edit");
+            assertTrue(enabled(frame, "route.ui.menuUndo"), "Undo is grayed after a new edit");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22")));
+
+            assertFalse(enabled(frame, "route.ui.menuUndo"), "Undo is offered on a route just loaded after edits");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * Ctrl and a letter, pressed on the table as the keyboard sends it: with its extended key code.  `support.Keys`
+     * leaves that code 0, and on a table that has the focus, Swing looks the code-0 stroke up first, finds no binding,
+     * and starts editing the selected cell, so the shortcut never runs.
+     */
+    private static void ctrl(final javax.swing.JTable table, final int letter) throws Exception
+    {
+        final java.lang.reflect.Field extended = java.awt.event.KeyEvent.class.getDeclaredField("extendedKeyCode");
+
+        extended.setAccessible(true);
+
+        support.Components.onTheEventThread(() ->
+        {
+            long now = System.currentTimeMillis();
+
+            for (int id : new int[]{java.awt.event.KeyEvent.KEY_PRESSED, java.awt.event.KeyEvent.KEY_RELEASED})
+            {
+                java.awt.event.KeyEvent key = new java.awt.event.KeyEvent(table, id, now,
+                    java.awt.event.InputEvent.CTRL_DOWN_MASK, letter, (char) letter);
+
+                try
+                {
+                    extended.setLong(key, letter);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                table.dispatchEvent(key);
+            }
+
+            return null;
+        });
+
+        support.Components.settle();
+    }
+
+    /**
+     * MT-868: Alt+Down and Alt+Up move every selected condition, together, and they stay selected; where the first
+     * has nowhere to go, none moves.
+     *
+     * MUTATION: in `ConditionTable.shiftChosen`, move only `chosen.first()`, and Alt+Down on 21 and 22 moves 21 alone.
+     */
+    @Test
+    public void testAltUpAndDownMoveTheWholeSelection() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            selectLines(table, 0, 2);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DOWN, java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+            assertEquals(levels(frame), " 0:23 0AND 0:21 0AND 0:22 0AND 0:24", "Alt+Down on 21 and 22");
+            assertEquals(selectedRows(table), "[2, 4]", "21 and 22 stay selected");
+
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:24",
+                "Alt+Up twice on 21 and 22: back, then nowhere to go");
+            assertEquals(selectedRows(table), "[0, 2]", "21 and 22 stay selected at the top");
+        }
+        finally
+        {
+            close(frame);
+        }
     }
 
     /**
