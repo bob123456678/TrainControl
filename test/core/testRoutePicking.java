@@ -152,8 +152,8 @@ public class testRoutePicking
     }
 
     /**
-     * A stretch answered 0 counts 0 in the length a route is chosen by, and one nobody measured still counts 1 (Adam:
-     * "Yes, count answered 0 as 0").  The floor of 1 keeps an unmeasured railway from tying every route at 0.
+     * A stretch answered 0 counts 0 in the length a route is chosen by, and one nobody measured still counts 1.  The
+     * floor of 1 keeps an unmeasured railway from tying every route at 0.
      * Two ways to one end: 4 + 0 + 0 + 4 over two hops answered 0, and 9.  Shortest takes the first and longest the
      * second; with the hops unanswered, each counts 1 and the first is 10.
      *
@@ -315,9 +315,9 @@ public class testRoutePicking
     }
 
     /**
-     * With no lengths recorded, an edge counts as one s88 of track (Adam: "where we count each s88 as length 1 by
-     * default").  The fixture above cannot test this because every edge in it has a length; with none recorded every
-     * route scored zero, tied, and SHORTEST_LENGTH and LONGEST_LENGTH returned the SAME route.
+     * With no lengths recorded, an edge counts as one s88 of track.  The fixture above cannot test this because every
+     * edge in it has a length; with none recorded every route would score zero, tie, and SHORTEST_LENGTH and
+     * LONGEST_LENGTH would return the SAME route.
      *
      * BOTH DIRECTIONS, because asserting only that shortest takes the two-edge way is satisfied by a rule that always
      * takes it, including the tie-break that was already doing so.
@@ -595,9 +595,9 @@ public class testRoutePicking
         return path.get(0).getEnd().getName();
     }
     /**
-     * Station priority weighed against distance can send a train past the higher-priority station (Adam: "one that
-     * balances priority vs distance as a ratio").  Every other preference ranks candidates within one priority band, so
-     * the fixture has a high-priority station a long way off and an ordinary one close by.
+     * Station priority weighed against distance (as a ratio) can send a train past the higher-priority station.  Every
+     * other preference ranks candidates within one priority band, so the fixture has a high-priority station a long way
+     * off and an ordinary one close by.
      *
      * BOTH DIRECTIONS, because either alone is satisfied by a constant: under FEWEST_STATIONS (any banded rule) the
      * important station must still win outright; under the ratio the near one must.
