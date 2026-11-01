@@ -133,14 +133,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
      */
     synchronized public List<ITEM> getItems()
     {
-        List<ITEM> l = new LinkedList<>();
-        
-        for(IDENTIFIER k : this.db.keySet())
-        {
-            l.add(this.db.get(k));
-        }
-        
-        return l;
+        return new LinkedList<>(this.db.values());
     }
     
     /**
