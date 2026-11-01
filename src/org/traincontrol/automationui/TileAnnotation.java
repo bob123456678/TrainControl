@@ -80,8 +80,17 @@ public class TileAnnotation
     /** The edge round a green arrow: reads on both the black rail and the white around it (MT-675). */
     private static final Color ONE_WAY_EDGE = new Color(0, 95, 40);
 
+    private static final BasicStroke ONE_WAY_EDGE_STROKE =
+        new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+
     /** Closed.  The only mark drawn as a bar rather than a path, because it means a train cannot get through. */
     private static final Color CLOSED = new Color(200, 0, 0);
+
+    private static final BasicStroke CLOSED_STROKE =
+        new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+
+    private static final BasicStroke BADGE_STROKE_STATION = new BasicStroke(2f);
+    private static final BasicStroke BADGE_STROKE = new BasicStroke(1.5f);
 
     /** The red the diagram writes accessory addresses in, so one color means small numbers over track art. */
     private static final Color LENGTH = Color.RED;
@@ -89,6 +98,8 @@ public class TileAnnotation
 
     /** Selected for a bulk edit: a border, not a fill, so the track stays readable while forty tiles are picked. */
     private static final Color SELECTED = new Color(255, 140, 0);
+
+    private static final BasicStroke SELECTED_STROKE = new BasicStroke(2f);
 
     /** How much the tile art is dimmed under the marks, so the thin chevrons do not vanish into busy icons. */
     private static final float DIM = 0.55f;
@@ -272,6 +283,8 @@ public class TileAnnotation
 
     /** Hatching over a square autonomy cannot use, so "unavailable" is a pattern and not only a shade. */
     private static final Color HATCH = new Color(150, 150, 150);
+
+    private static final BasicStroke HATCH_STROKE = new BasicStroke(1f);
 
     private final List<Mark> marks;
     private final int length;
@@ -661,7 +674,7 @@ public class TileAnnotation
 
     private static void paintSelectionOutline(Graphics2D g, int width, int height)
     {
-        g.setStroke(new BasicStroke(2f));
+        g.setStroke(SELECTED_STROKE);
         g.setColor(SELECTED);
         g.drawRect(1, 1, width - 3, height - 3);
     }
@@ -715,7 +728,7 @@ public class TileAnnotation
         g.setComposite(java.awt.AlphaComposite.getInstance(
             java.awt.AlphaComposite.SRC_OVER, 0.55f));
         g.setColor(HATCH);
-        g.setStroke(new BasicStroke(1f));
+        g.setStroke(HATCH_STROKE);
 
         for (int at = -height; at < width; at += 5)
         {
@@ -979,9 +992,13 @@ public class TileAnnotation
         // them apart.
         java.util.Map<java.util.Set<Side>, Integer> corners = new java.util.HashMap<>();
 
+        java.util.List<java.util.Set<Side>> cornerOfArrival = new ArrayList<>();
+
         for (Arrival arrival : arrivals)
         {
             java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+
+            cornerOfArrival.add(corner);
 
             if (corner != null) corners.put(corner, corners.containsKey(corner) ? corners.get(corner) + 1 : 1);
         }
@@ -989,13 +1006,15 @@ public class TileAnnotation
         g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-        for (Arrival arrival : arrivals)
+        for (int i = 0; i < arrivals.size(); i++)
         {
+            Arrival arrival = arrivals.get(i);
+
             int[] at = midpoint(arrival.getSide(), width, height);
 
             if (at == null) continue;
 
-            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+            java.util.Set<Side> corner = cornerOfArrival.get(i);
 
             double along = corner != null && corners.get(corner) > 1 ? span / 5.0 : offset;
 
@@ -1443,7 +1462,7 @@ public class TileAnnotation
                 g.fillPolygon(xs, ys, 3);
 
                 g.setColor(ONE_WAY_EDGE);
-                g.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.setStroke(ONE_WAY_EDGE_STROKE);
                 g.drawPolygon(xs, ys, 3);
             }
             else
@@ -1453,7 +1472,7 @@ public class TileAnnotation
                 g.fillPolygon(xs, ys, 3);
 
                 g.setColor(CLOSED);
-                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.setStroke(CLOSED_STROKE);
                 g.drawPolygon(xs, ys, 3);
             }
         }
@@ -1680,7 +1699,7 @@ public class TileAnnotation
         // a second copy of the placement arithmetic would be a second chance to disagree.
         badgeDrawnAt = new int[] {x + size / 2, y + size / 2};
 
-        g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
+        g.setStroke(badge.isStation() ? BADGE_STROKE_STATION : BADGE_STROKE);
 
         // Filled when named, hollow when not, so an unnamed point is visible but visibly unfinished; white with its
         // color round it in the editor with FR-118's icons.
@@ -1831,11 +1850,6 @@ public class TileAnnotation
             : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
             : mustTurnShape(h, turning, large);
 
-        java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
-
-        java.awt.geom.Rectangle2D needs =
-            java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
-
         double scale = 1;
 
         // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (MT-710): a chord across a corner
@@ -1843,10 +1857,23 @@ public class TileAnnotation
         // them.
         boolean spills = known && bends;
 
-        // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved toward the middle as far as it needs, and made
-        // smaller only where even there it would not fit.
-        double[] at = spills ? new double[] {centre[0], centre[1], scale}
-            : fitInside(needs, scale, centre[0], centre[1], width, height);
+        double[] at;
+
+        if (spills)
+        {
+            at = new double[] {centre[0], centre[1], scale};
+        }
+        else
+        {
+            java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
+
+            java.awt.geom.Rectangle2D needs =
+                java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
+
+            // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved toward the middle as far as it needs, and made
+            // smaller only where even there it would not fit.
+            at = fitInside(needs, scale, centre[0], centre[1], width, height);
+        }
 
         scale = at[2];
 

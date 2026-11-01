@@ -3896,9 +3896,14 @@ public class Layout
 
             left.add(current.at);
 
-            if (current.commands != null && !HomeStaging.alreadyReached(seen, current.at.getUniqueId(), current.commands))
+            if (current.commands != null)
             {
-                seen.computeIfAbsent(current.at.getUniqueId(), k -> new ArrayList<>()).add(current.commands);
+                String id = current.at.getUniqueId();
+
+                if (!HomeStaging.alreadyReached(seen, id, current.commands))
+                {
+                    seen.computeIfAbsent(id, k -> new ArrayList<>()).add(current.commands);
+                }
             }
 
             for (Edge next : this.getNeighbors(current.at))

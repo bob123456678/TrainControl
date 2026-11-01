@@ -1165,13 +1165,13 @@ public final class LayoutLabel extends JLabel
         // afterwards, since those are about this instant and the fade is about the track underneath.
         boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
 
+        // One road of a double curve, where that is what is covered: narrowing the extent (OB-207) spares tiles the
+        // train never reaches, but a double curve is one tile with two roads and the wash fades the whole square.
+        // Null everywhere else: on a tile with one road the square is the road.
+        final java.awt.Shape road = refused ? theRoadToFade() : null;
+
         if (refused)
         {
-            // One road of a double curve, where that is what is covered: narrowing the extent (OB-207) spares tiles the
-            // train never reaches, but a double curve is one tile with two roads and the wash fades the whole square.
-            // Null everywhere else: on a tile with one road the square is the road.
-            java.awt.Shape road = theRoadToFade();
-
             if (road != null)
             {
                 // The rest of the tile at full strength first: the fade is the tile drawn at reduced alpha, so painting
@@ -1248,8 +1248,7 @@ public final class LayoutLabel extends JLabel
             // the region already faded, not whether any was: on a double curve `theRoadToFade` fades one road, and a
             // tile-wide "yes" would skip the wash under both roads' arrows.
             java.awt.Shape faded = !refused ? null
-                : (theRoadToFade() == null
-                    ? new java.awt.Rectangle(0, 0, getWidth(), getHeight()) : theRoadToFade());
+                : (road == null ? new java.awt.Rectangle(0, 0, getWidth(), getHeight()) : road);
 
             if (annotation != null) annotation.paint(g2, getWidth(), getHeight(), faded);
 
@@ -1919,7 +1918,12 @@ public final class LayoutLabel extends JLabel
 
         for (java.util.Map.Entry<LayoutLabel, java.awt.Rectangle> spill : spilt.entrySet())
         {
-            if (spill.getKey() != this && spill.getValue().intersects(mine)) under = true;
+            if (spill.getKey() != this && spill.getValue().intersects(mine))
+            {
+                under = true;
+
+                break;
+            }
         }
 
         if (!under) return;
