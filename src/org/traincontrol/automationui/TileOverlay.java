@@ -922,21 +922,6 @@ public class TileOverlay
         // midpoint of this tile's own two track sides: the geometric center is nowhere near the track on a curve.
         int[] centre = middle(trackCentre, width, height);
 
-        // Held track is paled out first, under everything, and only where nothing is running over the square, or it
-        // would say two things about one rail.
-        boolean onlyHeld = true;
-
-        for (Segment segment : segments)
-        {
-            if (segment.getState() != State.LOCKED) onlyHeld = false;
-        }
-
-        if (onlyHeld && !segments.isEmpty())
-        {
-            // On a double curve the road a route is holding keeps its wash even when the other road carries a tail.
-            if (!washWhatIsLeft(g, width, height, alreadyFaint, LOCKED_WASH_ALPHA, LOCKED_WASH)) return;
-        }
-
         // Track merely held clear is dropped where a path is running over the same square, or the gray line reads as a
         // second route going nowhere.
         boolean running = false;
@@ -944,6 +929,14 @@ public class TileOverlay
         for (Segment segment : segments)
         {
             if (segment.getState() != State.LOCKED) running = true;
+        }
+
+        // Held track is paled out first, under everything, and only where nothing is running over the square, or it
+        // would say two things about one rail.
+        if (!running && !segments.isEmpty())
+        {
+            // On a double curve the road a route is holding keeps its wash even when the other road carries a tail.
+            if (!washWhatIsLeft(g, width, height, alreadyFaint, LOCKED_WASH_ALPHA, LOCKED_WASH)) return;
         }
 
         g.setStroke(new java.awt.BasicStroke(Math.max(3f, span / 7f),
