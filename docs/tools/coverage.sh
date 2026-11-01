@@ -6,9 +6,9 @@
 # html/ beside it.  It measures HEAD: uncommitted edits are not in it.  TC_LANES, TC_CLASSES and the rest pass through to
 # battery.sh.  --report-only skips the battery and reports again from the exec files the last run left.
 #
-# THE RUN IS IN A THROWAWAY WORKTREE of HEAD ($TC_SCRATCH/coverage/tree), because JaCoCo cannot instrument
-# TrainControlUI as written: its probes push the GUI Builder's initComponents past the JVM's 64 KB method limit, and the
-# whole class goes unmeasured.  split-initcomponents.py cuts that method into a chain there, keeping every line number,
+# THE RUN IS IN A THROWAWAY WORKTREE of HEAD (tc-coverage-tree in %TEMP%, or TC_COVERAGE_TREE), because JaCoCo cannot
+# instrument TrainControlUI as written: its probes push the GUI Builder's initComponents past the JVM's 64 KB method
+# limit, and the whole class goes unmeasured.  split-initcomponents.py cuts that method into a chain there, keeping every line number,
 # so the report reads against the real file.  StartupSplash is left out of the agent, as in the 3.0.5 run.
 #
 # JaCoCo is not in the repository: TC_JACOCO names its lib folder (default C:/Users/adamo/tools/jacoco-0.8.13/lib,
@@ -23,7 +23,8 @@ OUT="${TC_SCRATCH:?TC_SCRATCH must name a scratch folder}/coverage"
 JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 JAVAC="${TC_JAVAC:-/c/Program Files/Java/jdk1.8.0_361/bin/javac}"
 REPO=$(pwd)
-TREE="$OUT/tree"
+# Short, because the fixtures' paths pass Windows' 260-character limit under a scratch folder
+TREE="${TC_COVERAGE_TREE:-$(cygpath -u "${TEMP:-/tmp}")/tc-coverage-tree}"
 
 if [ ! -f "$JACOCO/jacocoagent.jar" ]; then echo "no JaCoCo agent in $JACOCO (TC_JACOCO)"; exit 1; fi
 if [ ! -f "$REPO/docs/tools/battery.sh" ]; then echo "run this from the repository root"; exit 1; fi

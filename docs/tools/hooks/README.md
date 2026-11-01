@@ -31,6 +31,8 @@ It asks first about:
 * a shell command that may write or remove the root `LocDB.data`, `UIState.data` or `autonomy.json`
 * a `.java` edit in `src/` or `test/` while a battery runs: `battery.sh` writes `%TEMP%\traincontrol-battery.lock.battery` with its pid and removes it on the way out, and a marker whose process is gone is ignored
 
+An "ask" reaches you only in a session that prompts for permission. In auto mode, Claude Code's own check decides it instead, so treat ask as a speed bump and deny as the guard.
+
 Calls outside this repository pass untouched, apart from the Bypass rule. A shell command counts as inside it when its working folder is in the repository or the command names `TrainControl`. Any error inside the script lets the call through: a broken guard must never stop work.
 
 `precommit.py` stops a commit that stages:
