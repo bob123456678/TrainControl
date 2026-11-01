@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The manual-test and issue tracker: a database, the API that reads and writes it, and a text dump of it.
+"""The manual-test and issue tracker: a database, and the API that reads and writes it.
 
 Adam, 2026-08-25: "for the triage app, lets convert it to use a database and then add apis to check, update, and
 file dispositions/cases. then you dont need to scan with regexes or use other tricks."  The first version put a
@@ -41,15 +41,14 @@ A comment is INSERTED, never written by rewriting an entry, so there is no copy 
 re-reads the store whenever another process commits to it (PRAGMA data_version).
 
 
-THE DUMP
---------
+WHAT CHANGED
+------------
 
-After every write the store is also written out as plain text in `dump/` beside it: one file per table, one record per
-row in tag order, one field per line, and every line of a text written behind "| ".  So a new comment is a few added
-lines in comments.txt, and a changed disposition is one changed line in tests.txt.  It exists for git: a history and a
-diff a person can read, which a binary database cannot give.  NOTHING READS IT BACK except the Java tests, which have no
-SQLite driver; agents can grep it, but the README sends them to the command line.  `verify` says whether it is the
-store's own rows.
+`changes` says what differs between two stores, record by record: by default the store as the last commit holds it and
+the store on disk, so a triage's new verdicts, dispositions and filings read as records added and changed.  Either side
+can be a git revision or a .db file, so the same command shows what the other side of a merge wrote.  `text` prints
+the records whole, for a reader without SQLite (the Java tests).  A record is a [header] line and one field per line,
+every line of a text field written behind "| ".  Nothing is written out: the store is the only copy.
 """
 
 from __future__ import print_function
@@ -76,9 +75,6 @@ import triage  # noqa: E402  - the path has to be set first
 
 DB_FILE = os.path.join(HERE, "triage.db")
 
-# The text dump, beside the store it is written from.
-DUMP_NAME = "dump"
-DUMP_DIR = os.path.join(HERE, DUMP_NAME)
 
 FINDINGS_MIRROR = os.path.join(HERE, "findings.tsv")
 
@@ -307,17 +303,6 @@ class MarkdownGone(IOError):
     """`migrate` was asked to run and the markdown it imports is not there."""
 
 
-class DumpNotWritten(IOError):
-    """A write reached the store and something that follows it - the text dump, or a count a reference document
-    quotes - could not be written.  THE WRITE STANDS: a caller that retried it would make it twice.  `result` is what
-    the write returned - the ref filed, the comment written."""
-
-    def __init__(self, message, result=None):
-        IOError.__init__(self, message)
-
-        self.result = result
-
-
 def connect(path=DB_FILE, timeout=BUSY_SECONDS):
     """Opens the store, creating its tables if they are not there.
 
@@ -461,28 +446,6 @@ def data_version(conn):
     return conn.execute("PRAGMA data_version").fetchone()[0]
 
 
-def _after_write(conn, result=None):
-    """Brings the text dump up to date after a write, under the write lock so two processes' dumps cannot cross.
-
-    The whole dump is rendered - a tenth of a second - and only the files whose bytes differ are written, so a write
-    whose dump could not follow it, through a full disk or a file held open, is caught up by the next.
-
-    :param conn: the connection that wrote
-    :param result: what the write returns, carried by the DumpNotWritten raised when the dump cannot follow it
-    :return: the files written
-    """
-
-    if not db_path(conn) or not is_migrated(conn):
-        return []
-
-    try:
-        with writing(conn):
-            return write_dump(conn)
-    except (IOError, OSError, sqlite3.Error) as bad:
-        raise DumpNotWritten("the change is in the store, but the text dump was not written (%s).  The next write"
-                             " writes it, or run `py -3 docs/manual-tests/triagedb.py dump`" % bad, result)
-
-
 # --------------------------------------------------------------------------------------------
 # the review findings
 # --------------------------------------------------------------------------------------------
@@ -534,8 +497,6 @@ def load_findings(conn, rows, force=False):
         for r in rows:
             _put_finding(conn, r, kept.get((r.get("ref"), r.get("document")), (None, None)))
 
-    _after_write(conn, len(rows))
-
     return len(rows)
 
 
@@ -584,8 +545,6 @@ def add_findings(conn, rows):
 
             _put_finding(conn, r, tuple(held) if held is not None else (None, None))
 
-    _after_write(conn, (added, updated))
-
     return added, updated
 
 
@@ -614,8 +573,6 @@ def prune_findings(conn, rows):
 
                     removed.append((document, row[0]))
 
-    _after_write(conn, removed)
-
     return removed
 
 
@@ -633,8 +590,6 @@ def load_dead(conn, orphans):
         for ref in sorted(orphans):
             conn.execute("INSERT OR REPLACE INTO dead_citation (ref, cited_by) VALUES (?, ?)",
                          (ref, ",".join(sorted(orphans[ref])) or None))
-
-    _after_write(conn, len(orphans))
 
     return len(orphans)
 
@@ -664,8 +619,6 @@ def close_findings(conn, note, severity=None, only_open=True):
     with writing(conn):
         n = conn.execute("UPDATE finding SET status = 'Closed', status_note = ? WHERE " + " AND ".join(where),
                          [note] + args).rowcount
-
-    _after_write(conn, n)
 
     return n
 
@@ -1318,8 +1271,6 @@ def set_disposition(conn, tag, disposition):
 
         _derive_test(conn, tag)
 
-    _after_write(conn, row["disposition"])
-
     return row["disposition"]
 
 
@@ -1346,11 +1297,7 @@ def add_comment(conn, tag, who, text, verdict=None):
 
     comment = head + ((" " + verdict + ".") if verdict else "") + "\n\n" + text.strip() + "\n"
 
-    try:
-        add_comment_text(conn, tag, comment)
-    except DumpNotWritten as bad:
-        bad.result = comment
-        raise
+    add_comment_text(conn, tag, comment)
 
     return comment
 
@@ -1404,8 +1351,6 @@ def add_comment_text(conn, ref, comment):
 
         if ref.startswith("MT-"):
             _derive_test(conn, ref)
-
-    _after_write(conn, text)
 
     return text
 
@@ -1477,8 +1422,6 @@ def add_test(conn, title, origin, body, disposition="needs test"):
 
         _derive_test(conn, tag)
 
-    _after_write(conn, tag)
-
     return tag
 
 
@@ -1527,8 +1470,6 @@ def file_issue(conn, kind, title, detail, raised_from=None, build=None):
         conn.execute("INSERT INTO issue (ref, ordinal, text, inbox, kind, title, filed, filed_at, raised_from, build)"
                      " VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?)", (ref, ordinal, text) + _derive_issue(text))
 
-    _after_inbox_write(conn, ref, ref)
-
     return ref
 
 
@@ -1566,8 +1507,6 @@ def add_receipt(conn, ref, what, state="-", became="-", kind=None, filed=None):
 
         conn.execute("INSERT INTO receipt (ref, seq, filed, kind, what, state, became) VALUES (?, ?, ?, ?, ?, ?, ?)",
                      (ref, seq, filed, kind, " ".join(what.split()), state or "-", became or "-"))
-
-    _after_write(conn, None)
 
 
 RECEIPT_STATES = ("-", "pending", "needs test", "fixed unvalidated", "fixed validated", "declined")
@@ -1610,8 +1549,6 @@ def update_receipt(conn, ref, state=None, became=None, what=None):
                      (state if state is not None else row["state"], became if became is not None else row["became"],
                       " ".join(what.split()) if what is not None else row["what"], ref.upper()))
 
-    _after_write(conn, was)
-
     return was
 
 
@@ -1638,49 +1575,28 @@ def clear_from_inbox(conn, ref):
 
         conn.execute("UPDATE issue SET inbox = 0 WHERE ref = ?", (ref,))
 
-    _after_inbox_write(conn, ref, None)
-
-
-def _after_inbox_write(conn, ref, result):
-    """What follows a write to the Inbox: its dump file.
-
-    A failure raises DumpNotWritten, whose `result` is the write's: the item IS filed, or cleared, and an error that
-    said only what failed would invite doing it again.
-
-    :param conn: the connection that wrote
-    :param ref: the item written
-    :param result: what the write returns
-    """
-
-    try:
-        _after_write(conn, result)
-    except DumpNotWritten as bad:
-        raise DumpNotWritten("%s is written to the store, but %s" % (ref, bad), result)
-
 
 # --------------------------------------------------------------------------------------------
-# the text dump
+# the records as text, and what changed
 # --------------------------------------------------------------------------------------------
 
-DUMP_FILES = ["tests.txt", "comments.txt", "issues.txt", "receipts.txt", "notes.txt", "findings.txt",
-              "dead-citations.txt", "meta.txt"]
+KINDS = ["tests", "comments", "issues", "receipts", "notes", "findings", "dead-citations", "meta"]
 
 _ABOUT = {
-    "tests.txt": "the `test` table: one record per manual test, in tag order.  Its comments are in comments.txt",
-    "comments.txt": "the `comment` table: every comment on a test or an issue, by tag, oldest first",
-    "issues.txt": "the `issue` table: every OB and FR filed into the Inbox, in ref order (`inbox: no` once cleared"
-                  " out of it)",
-    "receipts.txt": "the `receipt` table: what has been picked up, in the order written (the app shows it newest"
-                    " first)",
-    "notes.txt": "the `note` table: the prose the markdown carried around its entries, by name",
-    "findings.txt": "the `finding` table: every review finding, by ref and document",
-    "dead-citations.txt": "the `dead_citation` table: refs cited from the code that are findings in no document",
-    "meta.txt": "the `meta` table",
+    "tests": "the `test` table: one record per manual test, in tag order.  Its comments are under comments",
+    "comments": "the `comment` table: every comment on a test or an issue, by tag, oldest first",
+    "issues": "the `issue` table: every OB and FR filed into the Inbox, in ref order (`inbox: no` once cleared out of"
+              " it)",
+    "receipts": "the `receipt` table: what has been picked up, in the order written (the app shows it newest first)",
+    "notes": "the `note` table: the prose the markdown carried around its entries, by name",
+    "findings": "the `finding` table: every review finding, by ref and document",
+    "dead-citations": "the `dead_citation` table: refs cited from the code that are findings in no document",
+    "meta": "the `meta` table",
 }
 
 
 def _text_field(name, text):
-    """A text column as dump lines: its name, then every line behind "| ", so nothing in it can read as a field.
+    """A text column as record lines: its name, then every line behind "| ", so nothing in it can read as a field.
 
     :param name: the column
     :param text: its value
@@ -1700,7 +1616,7 @@ def _text_field(name, text):
 
 
 def _short_field(name, value):
-    """A one-line column as a dump line: `name: value`.
+    """A one-line column as a record line: `name: value`.
 
     :param name: the column
     :param value: its value
@@ -1723,16 +1639,16 @@ def _yes(value):
 
 
 def _records(name, conn):
-    """One dump file's records, each a list of lines.
+    """One kind's records, each a list of lines, its [header] first.
 
-    :param name: the file
+    :param name: the kind, one of KINDS
     :param conn: an open connection
     :return: list of line lists, in the file's order
     """
 
     out = []
 
-    if name == "tests.txt":
+    if name == "tests":
         for r in sorted(conn.execute("SELECT * FROM test"), key=lambda r: _tag_order(r["tag"])):
             out.append(["[test %s]" % r["tag"]]
                        + _short_field("ordinal", r["ordinal"]) + _short_field("anchor", r["anchor"])
@@ -1741,14 +1657,14 @@ def _records(name, conn):
                        + _short_field("written", r["written"]) + _short_field("reopened", _yes(r["reopened"]))
                        + _text_field("body", r["body"]) + _text_field("tail", r["tail"]))
 
-    elif name == "comments.txt":
+    elif name == "comments":
         for r in sorted(conn.execute("SELECT * FROM comment"), key=lambda r: (_tag_order(r["tag"]), r["seq"])):
             out.append(["[comment %s %d]" % (r["tag"], r["seq"])]
                        + _short_field("who", r["who"]) + _short_field("date", r["date"])
                        + _short_field("kind", r["kind"]) + _short_field("verdict", r["verdict"])
                        + _text_field("text", r["text"]))
 
-    elif name == "issues.txt":
+    elif name == "issues":
         for r in sorted(conn.execute("SELECT * FROM issue"), key=lambda r: _tag_order(r["ref"])):
             out.append(["[issue %s]" % r["ref"]]
                        + _short_field("ordinal", r["ordinal"]) + _short_field("inbox", _yes(r["inbox"]))
@@ -1757,26 +1673,26 @@ def _records(name, conn):
                        + _short_field("raised_from", r["raised_from"]) + _short_field("build", r["build"])
                        + _text_field("text", r["text"]))
 
-    elif name == "receipts.txt":
+    elif name == "receipts":
         for r in conn.execute("SELECT * FROM receipt ORDER BY seq"):
             out.append(["[receipt %s]" % r["ref"]] + _short_field("seq", r["seq"])
                        + [line for k in RECEIPT_CELLS if k != "ref" for line in _short_field(k, r[k])])
 
-    elif name == "notes.txt":
+    elif name == "notes":
         for r in conn.execute("SELECT * FROM note ORDER BY name"):
             out.append(["[note %s]" % r["name"]] + _text_field("text", r["text"]))
 
-    elif name == "findings.txt":
+    elif name == "findings":
         for r in conn.execute("SELECT * FROM finding ORDER BY ref, document"):
             out.append(["[finding %s in %s]" % (r["ref"], r["document"])]
                        + [line for k in ("line", "severity", "title", "disposition", "evidence", "commit_id",
                                          "cited_by", "status", "status_note") for line in _short_field(k, r[k])])
 
-    elif name == "dead-citations.txt":
+    elif name == "dead-citations":
         for r in conn.execute("SELECT * FROM dead_citation ORDER BY ref"):
             out.append(["[dead %s]" % r["ref"]] + _short_field("cited_by", r["cited_by"]))
 
-    elif name == "meta.txt":
+    elif name == "meta":
         for r in conn.execute("SELECT * FROM meta ORDER BY key"):
             out.append(["[meta %s]" % r["key"]] + _short_field("value", r["value"]))
 
@@ -1786,110 +1702,150 @@ def _records(name, conn):
     return out
 
 
-def render_dump(conn, files=None):
-    """The text dump, as the store says it should be.
+def render_records(conn, kinds=None):
+    """The store's records as text.
 
     :param conn: an open connection
-    :param files: the files to render, or None for all
-    :return: [(file name, text)]
+    :param kinds: the kinds to render, or None for all of KINDS
+    :return: [(kind, [record lines])]
     """
+
+    return [(kind, _records(kind, conn)) for kind in (kinds or KINDS)]
+
+
+def records_text(conn, kinds=None):
+    """The records as `text` prints them: each kind under a line saying what it is, a blank line after each record.
+
+    :param conn: an open connection
+    :param kinds: the kinds, or None for all
+    :return: the text
+    """
+
+    lines = []
+
+    for kind, records in render_records(conn, kinds):
+        lines += ["# %s - %s." % (kind, _ABOUT[kind]), ""]
+
+        for record in records:
+            lines += record + [""]
+
+    return "\n".join(lines)
+
+
+@contextlib.contextmanager
+def store_at(where):
+    """A store to compare: the one on disk, a .db file, or the store as a git revision holds it.
+
+    :param where: None for the store on disk, a path to a .db file, or a git revision (HEAD, a commit, a branch)
+    :return: a context giving an open connection; a revision's copy is a temporary file, removed afterwards
+    """
+
+    if where is None or os.path.isfile(where):
+        conn = connect(where or DB_FILE)
+        try:
+            yield conn
+        finally:
+            conn.close()
+        return
+
+    import subprocess
+    import tempfile
+
+    root = os.path.dirname(os.path.dirname(HERE))
+    path = os.path.relpath(DB_FILE, root).replace("\\", "/")
+    got = subprocess.run(["git", "show", "%s:%s" % (where, path)], cwd=root, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+
+    if got.returncode != 0:
+        raise ValueError("no store at %s: %s" % (where, got.stderr.decode("utf-8", "replace").strip()))
+
+    handle, temp = tempfile.mkstemp(suffix=".db")
+
+    try:
+        with os.fdopen(handle, "wb") as fh:
+            fh.write(got.stdout)
+
+        conn = connect(temp)
+
+        try:
+            yield conn
+        finally:
+            conn.close()
+    finally:
+        os.remove(temp)
+
+
+def changes(before, after, kinds=None):
+    """What differs between two stores, record by record.
+
+    :param before: the earlier store, an open connection
+    :param after: the later one
+    :param kinds: the kinds to compare, or None for all
+    :return: [(mark, kind, header, lines)]: mark "+" for a record added (lines: the record), "-" for one gone (the
+             record as it was), "~" for one changed (lines: its changed lines, each behind "-" or "+")
+    """
+
+    import difflib
 
     out = []
 
-    for name in (files or DUMP_FILES):
-        lines = ["# docs/manual-tests/dump/%s - %s." % (name, _ABOUT[name]),
-                 "# WRITTEN BY triagedb.py FROM triage.db ON EVERY WRITE.  Never edit it, and never read it back: ask the",
-                 "# store (py -3 docs/manual-tests/triagedb.py show MT-123).  Only the Java tests read it, having no SQLite.",
-                 "# A record is a [header] line and one field per line; every line of a text field is written behind \"| \".",
-                 ""]
+    for kind in (kinds or KINDS):
+        was = dict((r[0], r) for r in _records(kind, before))
+        now = _records(kind, after)
 
-        for record in _records(name, conn):
-            lines += record + [""]
+        for record in now:
+            old = was.pop(record[0], None)
 
-        out.append((name, "\n".join(lines)))
+            if old is None:
+                out.append(("+", kind, record[0], record[1:]))
+            elif old != record:
+                diff = [line for line in difflib.unified_diff(old[1:], record[1:], lineterm="", n=0)
+                        if line[:1] in "+-" and not line.startswith(("+++", "---"))]
+
+                out.append(("~", kind, record[0], diff))
+
+        for header, record in was.items():
+            out.append(("-", kind, header, record[1:]))
 
     return out
 
 
-def write_dump(conn, files=None, folder=None):
-    """Writes the text dump, each file only when its bytes change, each by an atomic replace.
+def changes_text(found):
+    """`changes` as the command prints it: each record's mark and header, then its lines indented.
 
-    :param conn: an open connection
-    :param files: the files to write, or None for all
-    :param folder: where, or None for `dump/` beside the store's file
-    :return: the files written
+    :param found: what changes() returned
+    :return: the text
     """
 
-    if folder is None:
-        path = db_path(conn)
+    lines = []
 
-        if not path:
-            return []
+    for mark, _kind, header, body in found:
+        lines.append("%s %s" % (mark, header))
+        lines += ["    " + line for line in body]
+        lines.append("")
 
-        folder = os.path.join(os.path.dirname(path), DUMP_NAME)
-
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
-
-    written = []
-
-    for name, text in render_dump(conn, files):
-        path = os.path.join(folder, name)
-
-        data = text.encode("utf-8")
-
-        if os.path.exists(path):
-            with io.open(path, "rb") as fh:
-                if fh.read().replace(b"\r\n", b"\n") == data:
-                    continue
-
-        temp = path + ".tmp"
-
-        try:
-            with io.open(temp, "wb") as fh:
-                fh.write(data)
-
-            os.replace(temp, path)
-        finally:
-            if os.path.exists(temp):
-                try:
-                    os.remove(temp)
-                except OSError:
-                    pass
-
-        written.append(name)
-
-    return written
+    return "\n".join(lines)
 
 
-def verify_dump(conn, folder=None):
-    """Whether the text dump on disk is the store's own rows.
+def dated(conn, since):
+    """The tests written, the comments made and the Inbox items filed on or after a day, as records.
 
     :param conn: an open connection
-    :param folder: the dump, or None for `dump/` beside the store
-    :return: (ok, message)
+    :param since: YYYY-MM-DD
+    :return: [(kind, [record lines])]
     """
 
-    folder = folder or os.path.join(os.path.dirname(db_path(conn) or DB_FILE), DUMP_NAME)
+    fields = {"tests": "written: ", "comments": "date: ", "issues": "filed: "}
 
-    stale = []
+    out = []
 
-    for name, text in render_dump(conn):
-        path = os.path.join(folder, name)
+    for kind, field in sorted(fields.items(), key=lambda k: KINDS.index(k[0])):
+        found = [r for r in _records(kind, conn)
+                 if any(line.startswith(field) and line[len(field):len(field) + 10] >= since for line in r)]
 
-        if not os.path.exists(path):
-            stale.append(name + " (missing)")
-            continue
+        out.append((kind, found))
 
-        with io.open(path, "rb") as fh:
-            if fh.read().replace(b"\r\n", b"\n") != text.encode("utf-8"):
-                stale.append(name)
-
-    if stale:
-        return False, ("the dump is not the store's own rows: %s.  Write it again with"
-                       " `py -3 docs/manual-tests/triagedb.py dump`" % ", ".join(stale))
-
-    return True, "the dump is the store's own rows (%d files)" % len(DUMP_FILES)
+    return out
 
 
 def verify_record(conn):
@@ -2274,7 +2230,7 @@ def migrate(conn, folder=HERE, force=False):
     :param conn: an open connection to the store
     :param folder: where tests.md, its archives and issues.md are
     :param force: True to import over a store written since its migration
-    :return: dict - "changed", "written" (dump files), "duplicates", and record_counts
+    :return: dict - "changed", "duplicates", and record_counts
     """
 
     record = read_markdown(folder)
@@ -2283,7 +2239,7 @@ def migrate(conn, folder=HERE, force=False):
         differences = _record_differences(conn, record)
 
         if not differences:
-            out = {"changed": False, "written": _after_write(conn), "duplicates": record["duplicates"]}
+            out = {"changed": False, "duplicates": record["duplicates"]}
             out.update(record_counts(conn))
             return out
 
@@ -2312,7 +2268,7 @@ def migrate(conn, folder=HERE, force=False):
             ("migrated from", "; ".join("%s sha256 %s" % s for s in record["sources"])),
         ])
 
-    out = {"changed": True, "written": _after_write(conn), "duplicates": record["duplicates"]}
+    out = {"changed": True, "duplicates": record["duplicates"]}
     out.update(record_counts(conn))
 
     return out
@@ -2516,7 +2472,6 @@ def selftest():
         put(ISSUES_MD, _FIXTURE_ISSUES, True)
 
         store = os.path.join(work, "triage.db")
-        dump = os.path.join(work, DUMP_NAME)
 
         conn = connect(store)
 
@@ -2583,19 +2538,26 @@ def selftest():
 
         check_that("the record holds together", verify_record(conn)[0])
 
-        check_that("the dump is written, and is the store's own rows", verify_dump(conn, dump)[0])
+        texts = dict((kind, records_text(conn, [kind])) for kind in ("tests", "comments"))
 
-        files = dict((name, io.open(os.path.join(dump, name), "rb").read()) for name in DUMP_FILES)
+        check_that("the records give back every entry exactly as written", all(
+            _from_text(texts["tests"], texts["comments"], tag) == block for tag, block in blocks.items()))
 
-        check_that("the dump gives back every entry exactly as written", all(
-            _from_dump(files["tests.txt"], files["comments.txt"], tag) == block for tag, block in blocks.items()))
+        def snapshot(of):
+            copy = sqlite3.connect(":memory:")
+            of.backup(copy)
+            copy.row_factory = sqlite3.Row
+            return copy
+
+        before = snapshot(conn)
 
         again = migrate(conn, md)
 
-        check_that("migrating again changes nothing", not again["changed"] and not again["written"]
-                   and dict((name, io.open(os.path.join(dump, name), "rb").read()) for name in DUMP_FILES) == files)
+        check_that("migrating again changes nothing", not again["changed"] and changes(before, conn) == [])
 
-        check_that("the dump renders the same twice", render_dump(conn) == render_dump(conn))
+        check_that("the records render the same twice", render_records(conn) == render_records(conn))
+
+        before = snapshot(conn)
 
         # ---- the writes
 
@@ -2608,50 +2570,41 @@ def selftest():
         check_that("and show ends with it, under what was there", show(conn, "MT-001").startswith(
             blocks["MT-001"][:-len("---\n\n")]) and "A self test wrote this.\n\n---\n\n" in show(conn, "MT-001"))
 
-        def changed(name):
-            now = io.open(os.path.join(dump, name), "rb").read().decode("utf-8").split("\n")
-            was = files[name].decode("utf-8").split("\n")
+        found = changes(before, conn)
 
-            diff = [line for line in difflib.unified_diff(was, now, lineterm="", n=0)
-                    if line[:1] in "+-" and not line.startswith(("+++", "---"))]
+        check_that("and `changes` shows it as one comment record added, and nothing else (%s)"
+                   % [(m, h) for m, _, h, _ in found],
+                   len(found) == 1 and found[0][0] == "+" and found[0][2].startswith("[comment MT-001 ")
+                   and "| A self test wrote this." in found[0][3])
 
-            return [line for line in diff if line.startswith("-")], [line for line in diff if line.startswith("+")]
-
-        gone, added = changed("comments.txt")
-
-        check_that("and in the dump it is a small added hunk: %d lines added, none removed" % len(added),
-                   not gone and 0 < len(added) <= 12)
-
-        gone, added = changed("tests.txt")
-
-        check_that("and the entry's own record is untouched", not gone and not added)
-
-        check_that("and the dump is still the store's own rows", verify_dump(conn, dump)[0])
-
-        files = dict((name, io.open(os.path.join(dump, name), "rb").read()) for name in DUMP_FILES)
+        before = snapshot(conn)
 
         was = set_disposition(conn, "MT-002", "fixed unvalidated")
 
-        gone, added = changed("tests.txt")
+        found = changes(before, conn)
 
-        check_that("a disposition change is one line of the text and the field read out of it",
-                   len(gone) == len(added) == 2 and any("| **Disposition:** fixed unvalidated  " == a[1:]
-                                                       for a in added))
+        check_that("a disposition change is one changed test record: the line of its text and the field read out of"
+                   " it (%s)" % [(m, h) for m, _, h, _ in found],
+                   len(found) == 1 and found[0][:3] == ("~", "tests", "[test MT-002]")
+                   and "+| **Disposition:** fixed unvalidated  " in found[0][3]
+                   and "+disposition: fixed unvalidated" in found[0][3])
 
         set_disposition(conn, "MT-002", was)
 
-        check_that("and it goes back, byte for byte",
-                   io.open(os.path.join(dump, "tests.txt"), "rb").read() == files["tests.txt"])
+        check_that("and set back, nothing has changed", changes(before, conn) == [])
 
         ref = file_issue(conn, "bug", "Filed by the self test", "Nothing to see.", raised_from="MT-002 (second)")
 
         check_that("filing takes the number after the highest named anywhere, prose included (%s)" % ref,
                    ref == "OB-1000")
 
-        gone, added = changed("issues.txt")
+        found = changes(before, conn)
 
-        check_that("and in the dump it is one record added to issues.txt (%d lines)" % len(added),
-                   not gone and 0 < len(added) <= 25)
+        check_that("and `changes` shows it as one issue record added (%s)" % [(m, h) for m, _, h, _ in found],
+                   [(m, h) for m, _, h, _ in found] == [("+", "[issue OB-1000]")])
+
+        check_that("and `changes --date` finds it by the day it was filed",
+                   "[issue OB-1000]" in [r[0] for r in dict(dated(conn, datetime.date.today().isoformat()))["issues"]])
 
         check_that("and the item is in the Inbox, not picked up", [i["ref"] for i in issues(conn)] == ["FR-020", ref])
 
@@ -2670,34 +2623,7 @@ def selftest():
 
         check_that("an issue takes a comment as a test does", "A receipt takes a comment." in show(conn, "FR-010"))
 
-        real_dump = write_dump
-
-        def stuck(*_args, **_kwargs):
-            raise IOError("the disk said no")
-
-        globals()["write_dump"] = stuck
-
-        got = []
-
-        try:
-            for write in (lambda: file_issue(conn, "bug", "Filed while the dump is stuck", "-"),
-                          lambda: add_comment_text(conn, "MT-001", "**Claude, 2026-10-19.** Said while it is stuck.")):
-                try:
-                    write()
-                    got.append(None)
-                except DumpNotWritten as bad:
-                    got.append(bad.result)
-        finally:
-            globals()["write_dump"] = real_dump
-
-        check_that("a write the dump cannot follow stands, and its error carries what it wrote (%s)" % got[0],
-                   got[0] is not None and got[0] in [i["ref"] for i in issues(conn)]
-                   and got[1] is not None and got[1].strip().startswith("**Claude, 2026-10-19.** Said while")
-                   and "Said while it is stuck." in entry_text(conn, "MT-001") and not verify_dump(conn, dump)[0])
-
         tag = add_test(conn, "A test the self test wrote", "hands-on testing", "**Steps**\n\n1. Nothing.")
-
-        check_that("and the next write, of anything, catches the dump up", verify_dump(conn, dump)[0])
 
         check_that("a new test is numbered after the last (%s), and reads as it was written" % tag,
                    tag == "MT-004" and check(conn, tag=tag)[0]["disposition"] == "needs test"
@@ -2715,8 +2641,6 @@ def selftest():
                    refused(lambda: add_comment_text(conn, "MT-001", "unsigned"), ValueError))
 
         check_that("the record still holds together after every kind of write", verify_record(conn)[0])
-
-        check_that("and the dump is still the store's own rows", verify_dump(conn, dump)[0])
 
         check_that("migrating over a store written since is refused", refused(lambda: migrate(conn, md), IOError))
 
@@ -2788,8 +2712,6 @@ def selftest():
         check_that("three filings at once take three numbers (%s)" % ", ".join(sorted(refs)),
                    not errors and len(set(refs)) == 3)
 
-        check_that("and the dump caught up with every write", verify_dump(conn, dump)[0])
-
         other.close()
         conn.close()
 
@@ -2817,26 +2739,15 @@ def selftest():
                 check_that("the repository's record holds together (%s)" % ("; ".join(problems[:3]) or "no problems"),
                            held)
 
-                check_that("its dump is its own rows", verify_dump(real_store)[0])
-
                 counts = record_counts(real_store)
 
-                # In a folder of its own, so its dump is its own too.
-                os.makedirs(os.path.join(work, "real"))
-
-                copy = os.path.join(work, "real", "triage.db")
+                copy = os.path.join(work, "real.db")
 
                 shutil.copyfile(DB_FILE, copy)
 
                 c = connect(copy)
 
-                write_dump(c)
-
-                def dumped():
-                    return dict((name, io.open(os.path.join(work, "real", DUMP_NAME, name), "rb").read())
-                                for name in DUMP_FILES)
-
-                was = dumped()
+                was = snapshot(c)
 
                 tag = check(c, disposition="needs test")[0]["tag"] if check(c, disposition="needs test") else \
                     check(c)[-1]["tag"]
@@ -2847,21 +2758,20 @@ def selftest():
                            show(c, tag).count("A self test wrote this on a copy.") == 1
                            and record_counts(c)["comments"] == counts["comments"] + 1)
 
-                now = dumped()
+                found = changes(was, c)
 
-                grown = now["comments.txt"].decode("utf-8").split("\n")
-                held = was["comments.txt"].decode("utf-8").split("\n")
-
-                gone = [line for line in difflib.unified_diff(held, grown, lineterm="", n=0)
-                        if line.startswith("-") and not line.startswith("---")]
-
-                check_that("and in the copy's dump it is a hunk added to comments.txt (%d lines), and the dump is the"
-                           " copy's own rows" % (len(grown) - len(held)),
-                           verify_dump(c)[0] and not gone and 0 < len(grown) - len(held) <= 12
-                           and all(now[name] == was[name] for name in DUMP_FILES
-                                   if name not in ("comments.txt", "tests.txt")))
+                check_that("and `changes` on the copy shows it as one comment record added (%s)"
+                           % [(m, h) for m, _, h, _ in found],
+                           [m for m, _, _, _ in found] == ["+"] and found[0][2].startswith("[comment %s " % tag))
 
                 c.close()
+
+                try:
+                    with store_at("HEAD") as head:
+                        check_that("the store as the last commit holds it opens, and holds tests (%d)"
+                                   % record_counts(head)["tests"], record_counts(head)["tests"] > 0)
+                except ValueError as bad:
+                    skip("no store at HEAD to open (%s)" % bad)
             finally:
                 real_store.close()
 
@@ -2878,18 +2788,17 @@ def selftest():
     return ok[0], results
 
 
-def _from_dump(tests_txt, comments_txt, tag):
-    """A test's text as the dump holds it - for the self test's question whether the dump lost a word.  Nothing else
-    reads the dump back.
+def _from_text(tests_text, comments_text, tag):
+    """A test's text as its records hold it - for the self test's question whether the records lose a word.
 
-    :param tests_txt: tests.txt's bytes
-    :param comments_txt: comments.txt's bytes
+    :param tests_text: the tests' records, as records_text gives them
+    :param comments_text: the comments'
     :param tag: MT-###
     :return: the text
     """
 
     def fields(data, header):
-        lines = data.decode("utf-8").split("\n")
+        lines = data.split("\n")
 
         found = {}
         name = None
@@ -2918,14 +2827,14 @@ def _from_dump(tests_txt, comments_txt, tag):
 
         return found
 
-    test = fields(tests_txt, "[test %s]" % tag)
+    test = fields(tests_text, "[test %s]" % tag)
 
     said = []
 
     seq = 0
 
     while True:
-        found = fields(comments_txt, "[comment %s %d]" % (tag, seq))
+        found = fields(comments_text, "[comment %s %d]" % (tag, seq))
 
         if "text" not in found:
             break
@@ -2974,6 +2883,8 @@ GONE = {
     "sync": "there is nothing to sync: triage.db is the record (FR-136 Phase 1c)",
     "regenerate-ledger": "the ledger is a query now: `triagedb.py ledger`",
     "archive": "nothing is archived any more: every entry is in the store, wherever it was kept",
+    "dump": "there is no text dump any more: `triagedb.py changes` shows what changed, `triagedb.py text` prints the"
+            " records",
 }
 
 
@@ -3063,10 +2974,18 @@ def main(argv=None):
     p = sub.add_parser("notes", help="the prose the markdown carried, by name")
     p.add_argument("name", nargs="?")
 
-    sub.add_parser("dump", help="write the text dump (every write does this itself)")
+    p = sub.add_parser("changes", help="what differs between two stores, record by record: by default the last"
+                                       " commit's store and the one on disk")
+    p.add_argument("--from", dest="before", default="HEAD", help="a git revision or a .db file (default HEAD)")
+    p.add_argument("--to", dest="after", default=None, help="a git revision or a .db file (default the store on disk)")
+    p.add_argument("--date", help="instead: the tests written, comments made and Inbox items filed on or after this"
+                                  " day (YYYY-MM-DD), in the store on disk")
 
-    p = sub.add_parser("verify", help="the record holds together, the dump and findings.tsv are the store's own rows,"
-                                      " and every OB a finding says it is tracked as is in the Inbox")
+    p = sub.add_parser("text", help="the store's records as text: every kind, or these (%s)" % ", ".join(KINDS))
+    p.add_argument("kinds", nargs="*", choices=[[]] + KINDS, metavar="kind")
+
+    p = sub.add_parser("verify", help="the record holds together, findings.tsv is the store's own rows, and every OB a"
+                                      " finding says it is tracked as is in the Inbox")
     p.add_argument("--store", default=DB_FILE, help="the store whose status notes are checked - a copy, to see the"
                                                      " check fail")
 
@@ -3097,9 +3016,6 @@ def main(argv=None):
     except (NotMigrated, MarkdownGone, KeyError, ValueError) as bad:
         print("triagedb: %s" % (bad.args[0] if bad.args else bad), file=sys.stderr)
         return 1
-    except DumpNotWritten as bad:
-        print("triagedb: %s" % bad, file=sys.stderr)
-        return 1
     finally:
         conn.close()
 
@@ -3123,8 +3039,6 @@ def _command(args, conn):
 
         for tag, name in done["duplicates"]:
             print("  %s was also in %s, word for word, and is kept once" % (tag, name))
-
-        print("dump: %s" % (", ".join(done["written"]) or "unchanged"))
 
         return 0
 
@@ -3150,11 +3064,7 @@ def _command(args, conn):
             for problem in problems:
                 print("  " + problem)
 
-            dumped, message = verify_dump(conn)
-
-            print(message)
-
-            ok = held and dumped
+            ok = held
         else:
             print("the store has not been migrated: run `triagedb.py migrate`")
 
@@ -3272,9 +3182,27 @@ def _command(args, conn):
 
         return 0
 
-    if args.command == "dump":
-        written = _after_write(conn)
-        print("wrote %s" % (", ".join(written) or "nothing: the dump was already the store's own rows"))
+    if args.command == "changes":
+        if args.date:
+            for kind, records in dated(conn, args.date):
+                for record in records:
+                    _print("\n".join(record) + "\n\n")
+
+            return 0
+
+        with store_at(None if args.before == "-" else args.before) as before:
+            if args.after is None:
+                found = changes(before, conn)
+            else:
+                with store_at(args.after) as after:
+                    found = changes(before, after)
+
+        _print(changes_text(found) if found else "no changes\n")
+
+        return 0
+
+    if args.command == "text":
+        _print(records_text(conn, args.kinds or None))
         return 0
 
     return 2

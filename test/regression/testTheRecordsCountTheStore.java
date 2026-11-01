@@ -170,26 +170,29 @@ public class testTheRecordsCountTheStore
             + " read \"" + words + " review documents\"");
     }
 
-    /** The store's text dump, which `triagedb.py` writes beside `triage.db` on every write. */
-    private static final String DUMP = "docs/manual-tests/dump/";
+    /** One kind of the store's records, as `triagedb.py text` prints them. */
+    private static String records(String kind) throws Exception
+    {
+        Ran ran = python("docs/manual-tests/triagedb.py", "text", kind);
+
+        assertEquals(ran.exit, 0, "triagedb.py text " + kind + " failed:\n" + ran.err);
+
+        return ran.out;
+    }
 
     /**
-     * The dump holds the record whole: every test once, in tag order, each record's text opening with its own anchor,
-     * and every comment on a test or an issue the dump holds, numbered from nought without a gap.  It is the only form
-     * of the tests a Java test can read (`triagedb.py verify` needs Python); a dump cut short, written from the wrong
-     * store or merged badly leaves a comment on nothing, a gap in a test's comments, or two records for one tag.
+     * The store holds the record whole: every test once, in tag order, each record's text opening with its own anchor,
+     * and every comment on a test or an issue the store holds, numbered from nought without a gap.  A store merged
+     * badly, or written past the API, leaves a comment on nothing, a gap in a test's comments, or two records for one
+     * tag.  Read through `triagedb.py text`: there is no SQLite driver on the classpath.
      *
-     * MUTATION: add a record `[comment MT-9999 0]` to comments.txt, or delete any comment record but a
-     * test's last, and this names it.
+     * MUTATION: in `triagedb._records`, leave out each tag's first comment (`if r["seq"] == 0: continue` in the
+     * comments loop), and this names the gap.
      */
     @Test
-    public void testTheDumpHoldsTheRecordWhole() throws Exception
+    public void testTheStoreHoldsTheRecordWhole() throws Exception
     {
-        String tests = read(DUMP + "tests.txt");
-
-        assertTrue(tests.contains("triagedb.py") && tests.contains("triage.db"),
-            "tests.txt no longer says it is written by triagedb.py from triage.db, so the next person to find"
-            + " it has no way to know it must never be edited");
+        String tests = records("tests");
 
         java.util.Set<String> held = new java.util.HashSet<>();
 
@@ -205,7 +208,7 @@ public class testTheRecordsCountTheStore
 
                 int number = Integer.parseInt(tag.substring("MT-".length()));
 
-                assertTrue(number > last, "tests.txt holds " + tag + " after MT-" + last + ", so its records are not"
+                assertTrue(number > last, "the store lists " + tag + " after MT-" + last + ", so its records are not"
                     + " one per test in tag order");
 
                 last = number;
@@ -225,16 +228,16 @@ public class testTheRecordsCountTheStore
             }
         }
 
-        assertTrue(held.size() > 700, "tests.txt holds " + held.size() + " tests, far fewer than the record");
+        assertTrue(held.size() > 700, "the store holds " + held.size() + " tests, far fewer than the record");
 
-        assertTrue(tag == null, "the last test in tests.txt, " + tag + ", has no body");
+        assertTrue(tag == null, "the last test in the store, " + tag + ", has no body");
 
-        for (String line : read(DUMP + "issues.txt").split("\n"))
+        for (String line : records("issues").split("\n"))
         {
             if (line.startsWith("[issue ")) held.add(line.substring("[issue ".length(), line.length() - 1));
         }
 
-        for (String line : read(DUMP + "receipts.txt").split("\n"))
+        for (String line : records("receipts").split("\n"))
         {
             if (line.startsWith("[receipt ")) held.add(line.substring("[receipt ".length(), line.length() - 1));
         }
@@ -243,26 +246,26 @@ public class testTheRecordsCountTheStore
 
         int comments = 0;
 
-        for (String line : read(DUMP + "comments.txt").split("\n"))
+        for (String line : records("comments").split("\n"))
         {
             if (!line.startsWith("[comment ")) continue;
 
             String[] parts = line.substring("[comment ".length(), line.length() - 1).split(" ");
 
-            assertTrue(held.contains(parts[0]), "comments.txt holds a comment on " + parts[0]
-                + ", which no test, Inbox item or receipt in the dump is");
+            assertTrue(held.contains(parts[0]), "the store holds a comment on " + parts[0]
+                + ", which no test, Inbox item or receipt in it is");
 
             int expected = next.containsKey(parts[0]) ? next.get(parts[0]) : 0;
 
             assertEquals(Integer.parseInt(parts[1]), expected, "the comments on " + parts[0] + " skip from "
-                + (expected - 1) + " to " + parts[1] + ", so one has gone missing from the dump");
+                + (expected - 1) + " to " + parts[1] + ", so one has gone missing from the store");
 
             next.put(parts[0], expected + 1);
 
             comments++;
         }
 
-        assertTrue(comments > 1500, "comments.txt holds " + comments + " comments, far fewer than the record");
+        assertTrue(comments > 1500, "the store holds " + comments + " comments, far fewer than the record");
     }
 
     // ---------------------------------------------------------------- the next round comes from the store (FR-136)

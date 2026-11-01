@@ -8,7 +8,7 @@ database, why have md files at all?"*).  The old markdown files (`tests.md`, `is
 
 **Agents: ask the CLI.**  `py -3 docs\manual-tests\triagedb.py show MT-089` prints an entry in full, exactly as it
 was written, with its comments; `ledger` what is open, `issues` the Inbox, `check` any query; see "The query API"
-below.  The text dump in `dump/` can be grepped, but it is 5 MB and is not where to read an entry.
+below.  `triagedb.py changes` says what changed since the last commit, a triage's verdicts among it.
 
 Findings are recorded as [docs/reviews/README.md](../reviews/README.md) describes: a round's reviews are cataloged
 into the same store and deleted in the round that wrote them.  This file covers the HANDS-ON half.
@@ -80,7 +80,7 @@ it came from.  That is the whole of the outstanding work, and where to start.
 `py -3 docs\manual-tests\triagedb.py ledger` prints it, and the triage app's **Show > open** filters are the same
 list.  A note you want kept against an entry goes in that entry's comments.
 
-### The store, and its text dump
+### The store
 
 **`triage.db` is the record, and every reader and writer goes through `triagedb.py`.**  A test is kept as written: its
 text up to its first comment, each comment as a row of its own, and the rule that closes it.  Joined, they are the entry
@@ -94,22 +94,19 @@ same moment queue for the lock instead of overwriting each other; a busy store i
 is added as a row, never by reading the entry and writing it back.  The app re-reads the store within two seconds of
 another process writing to it.
 
-**After every write the store is written out as plain text, in `dump/`**, so git has a diff a person can read.
-Nothing reads it back except the Java tests, which have no SQLite driver.  For small diffs it has one file per table
-(`tests.txt`, `comments.txt`, `issues.txt`, `receipts.txt`, `notes.txt`, `findings.txt`, `dead-citations.txt`,
-`meta.txt`) with records sorted by tag, one field per line, and every line of a text on its own line behind `| `,
-exactly as written (trailing spaces kept); comments are in their own file, so answering a test touches its record at
-most on its `reopened:` line.  It is never edited: a hand edit is overwritten by the next write and changes nothing in
-the store.  `triagedb.py verify` says whether it is the store's own rows.
+**What changed is a command, not a file.**  `triagedb.py changes` compares two stores record by record and prints the
+records added, gone and changed: by default the store the last commit holds and the one on disk, so after a triage it
+lists Adam's new verdicts and comments, and every disposition set.  `--from` and `--to` take a git revision or a `.db`
+file; `--date 2026-11-01` lists instead the tests written, comments made and items filed on or after a day.  A record is
+a `[header]` line and one field per line, every line of a text behind `| `; `triagedb.py text` prints them whole (the
+Java tests read the store this way, having no SQLite driver).  Nothing is written out beside the store.
 
-**A merge conflict in `triage.db`** is never resolved by picking a side blind.  Take one side's store, read what the
-other side wrote from its dump diff (`git diff` of `dump/comments.txt` and the rest), and write those again through the
-CLI (a comment, a disposition, a filing), which rewrites the dump.  Then `triagedb.py verify`.
+**A merge conflict in `triage.db`** is never resolved by picking a side blind.  Take one side's store, list what the
+other side wrote (`triagedb.py changes --from <the merge base> --to MERGE_HEAD`), and write those again through the
+CLI (a comment, a disposition, a filing).  Then `triagedb.py verify`.
 
 **The migration** (`triagedb.py migrate`) read the markdown once; rerun on the same markdown it changes nothing, and it
-refuses once the store has been written since or the markdown has gone.  `docs/tools/prove-tracker-migration.py`
-proved it lost nothing (every count in the markdown, the store and the dump; every entry's `show` text equal to its
-markdown block; the findings unchanged).
+refuses once the store has been written since or the markdown has gone.
 
 ---
 
@@ -205,10 +202,9 @@ the same shape as `triagedb.py comment`.  Anything else noticed, and everything 
 a link to that entry, including old links written as `[MT-123](tests.md#mt-123)`, which stay as written.
 
 When another process writes to the store, the app shows what it holds within two seconds, keeping what has been typed.
-**File > Open the text dump folder** shows the record as plain text.
 
-**The store is tracked, and it is a binary.**  Expect `triage.db` and `dump/` to change with any triage action, and
-commit them together.  For a merge conflict see "The store, and its text dump" above.
+**The store is tracked, and it is a binary.**  Expect `triage.db` to change with any triage action; `triagedb.py
+changes` reads the change.  For a merge conflict see "The store" above.
 
 ### The query API
 
@@ -228,7 +224,9 @@ py -3 docs\manual-tests\triagedb.py file bug "One line" "The detail." --raised-f
 py -3 docs\manual-tests\triagedb.py receipt OB-324 "What was done." --became MT-773
 py -3 docs\manual-tests\triagedb.py update-receipt FR-131 --state "fixed unvalidated"
 py -3 docs\manual-tests\triagedb.py clear OB-324         # out of the Inbox, once it has a receipt; it is kept
-py -3 docs\manual-tests\triagedb.py verify               # the record holds together; the dump and findings.tsv are its own
+py -3 docs\manual-tests\triagedb.py changes              # what changed since the last commit (--from, --to, --date)
+py -3 docs\manual-tests\triagedb.py text comments        # every record of a kind, as text (no kind: all of them)
+py -3 docs\manual-tests\triagedb.py verify               # the record holds together; findings.tsv is its own
 py -3 docs\manual-tests\triagedb.py selftest             # exercises the store on copies
 py -3 docs\manual-tests\triage.py stats                  # counts: tests by disposition, issues pending
 py -3 docs\manual-tests\triage.py tests --open           # every entry not fixed validated, as JSON
@@ -274,8 +272,8 @@ wrong, or a change you want instead.  Claude updates the disposition from what y
    promoted), then close out both the request and the target.
 8. Run `triage.py verify-ledger` and `triagedb.py verify` at the end.
 9. Never mark anything validated.  Never edit an instruction.  Never reorder.  Never write to the store except through
-   `triagedb.py` (not with SQL, not by editing the dump), because its writes keep the fields true to the text, the
-   dump current, and two writers from crossing.
+   `triagedb.py` (not with SQL), because its writes keep the fields true to the text, and two writers from
+   crossing.
 
 **When a fix lands that changes behavior a validated test covered**, move that test back to **fixed unvalidated** and
 say why in its Comments: a test validated against code that has since changed looks finished and is not.

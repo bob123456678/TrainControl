@@ -477,12 +477,13 @@ public class RouteEditorFrame extends JFrame
 
         right.setBackground(java.awt.Color.WHITE);
 
-        // Through the question Escape asks, so Cancel does not skip the discard prompt.
-        right.add(button(I18n.t("route.ui.frameCancel"), this::closeIfThrowingNothingAway));
-
+        // Save, then Cancel: the Windows order.
         saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
 
         right.add(saveButton);
+
+        // Through the question Escape asks, so Cancel does not skip the discard prompt.
+        right.add(button(I18n.t("route.ui.frameCancel"), this::closeIfThrowingNothingAway));
 
         buttons.add(right, BorderLayout.EAST);
 

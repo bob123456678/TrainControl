@@ -430,15 +430,13 @@ class TestsDoc(object):
 
         :param tag: MT-###
         :param comment: the whole comment, already formatted
-        :return: None, or a warning when the comment is in the store and the text dump could not follow
+        :return: None
         """
 
         import triagedb
 
         try:
             triagedb.add_comment_text(self.conn, tag, comment)
-        except triagedb.DumpNotWritten as bad:
-            return str(bad)
         finally:
             self.load()
 
@@ -617,21 +615,17 @@ class IssuesDoc(object):
         The number is taken inside the store's write, so a script filing at the same moment cannot be
         handed the same one.
 
-        :return: (the ref it was filed as, None or a warning when the text dump could not follow)
+        :return: (the ref it was filed as, None)
         """
 
         import triagedb
 
-        warning = None
-
         try:
             ref = triagedb.file_issue(self.conn, kind, summary, detail, raised_from=raised_from, build=build)
-        except triagedb.DumpNotWritten as bad:
-            ref, warning = bad.result, str(bad)
         finally:
             self.load()
 
-        return ref, warning
+        return ref, None
 
 
 # --------------------------------------------------------------------------------------------
@@ -1288,10 +1282,6 @@ class Triage(tk.Tk):
         f.add_command(label="Reload from the store\tCtrl+R", command=self.reload)
         f.add_separator()
 
-        # THE MARKDOWN HAS GONE (FR-136 Phase 1c), and with it "Open tests.md".  The text dump is the
-        # record written out as plain text on every write - for reading, never for editing.
-        f.add_command(label="Open the text dump folder", command=self._open_dump)
-        f.add_separator()
         f.add_command(label="Quit", command=self._on_close)
         bar.add_cascade(label="File", menu=f)
 
@@ -2956,21 +2946,9 @@ class Triage(tk.Tk):
             "click it to go there.\n\n"
             "View > Fill the right third of the screen puts this window beside TrainControl, top to bottom.  The "
             "dividers between the list, the steps and your answer can be dragged, and are remembered.\n\n"
-            "Everything is kept in triage.db, and written out as plain text in the dump folder after "
-            "every write (File > Open the text dump folder).  From a terminal, run this script with "
+            "Everything is kept in triage.db.  From a terminal, run this script with "
             "an argument (stats, tests, issues, verify-ledger, --help) for the same data as JSON, no "
             "window needed.", parent=self)
-
-    def _open_dump(self):
-        import triagedb
-
-        self._open(triagedb.DUMP_DIR)
-
-    def _open(self, path):
-        try:
-            os.startfile(path)
-        except Exception as bad:
-            messagebox.showerror("Could not open", str(bad), parent=self)
 
     def _say(self, text):
         self.status.config(text=text)

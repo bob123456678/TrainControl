@@ -266,28 +266,37 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * Every manual-test entry's text, every comment on one, and every Inbox item: the store's text dump.  There is no
-     * SQLite driver on the classpath, so it is read from the dump `triagedb.py` writes beside
-     * `docs/manual-tests/triage.db` on every write; a file can be named in an entry's steps or in a comment on it, so
+     * Every manual-test entry's text, every comment on one, and every Inbox item, as `triagedb.py text` prints them:
+     * there is no SQLite driver on the classpath.  A file can be named in an entry's steps or in a comment on it, so
      * both are read.
      */
     private static String entries() throws Exception
     {
-        File dump = new File("docs" + File.separator + "manual-tests" + File.separator + "dump");
+        File out = File.createTempFile("entries", ".txt");
 
-        StringBuilder all = new StringBuilder();
-
-        for (String name : new String[] {"tests.txt", "comments.txt", "issues.txt"})
+        try
         {
-            File file = new File(dump, name);
+            ProcessBuilder builder = new ProcessBuilder("python", "docs/manual-tests/triagedb.py", "text", "tests",
+                "comments", "issues").redirectOutput(out).redirectErrorStream(true);
 
-            assertTrue(file.isFile(), file + " is not there, so no entry can be read.  triagedb.py writes"
-                + " it on every write to the store, and `triagedb.py dump` writes it again");
+            builder.environment().put("PYTHONIOENCODING", "utf-8");
 
-            all.append(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)).append('\n');
+            Process process = builder.start();
+
+            process.getOutputStream().close();
+
+            assertTrue(process.waitFor(180, java.util.concurrent.TimeUnit.SECONDS), "triagedb.py text did not finish");
+
+            String text = new String(Files.readAllBytes(out.toPath()), StandardCharsets.UTF_8);
+
+            assertEquals(process.exitValue(), 0, "triagedb.py text failed: " + text);
+
+            return text;
         }
-
-        return all.toString();
+        finally
+        {
+            out.delete();
+        }
     }
 
     /** How many times the needle occurs in the text. */
