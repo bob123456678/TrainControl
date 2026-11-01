@@ -39,6 +39,7 @@ public class Edge
     private int runOver;
     private final Point start;
     private final Point end;
+    private Named named;
     private final Map<String, Accessory.accessorySetting> configCommands;
     private int length = 0;
 
@@ -203,7 +204,32 @@ public class Edge
      */
     public String getName()
     {
-        return getEdgeName(start, end);
+        String s = start.getName();
+        String t = end.getName();
+        Named n = named;
+
+        // A point rename replaces its String, so an identity check notices it
+        if (n == null || n.from != s || n.to != t)
+        {
+            n = new Named(s, t, s + " -> " + t);
+            named = n;
+        }
+
+        return n.name;
+    }
+
+    private static final class Named
+    {
+        final String from;
+        final String to;
+        final String name;
+
+        Named(String from, String to, String name)
+        {
+            this.from = from;
+            this.to = to;
+            this.name = name;
+        }
     }
     
     /**
