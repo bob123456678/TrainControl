@@ -169,11 +169,10 @@ public class testDiagramLooksRight
      * Every pixel the run paints lands on track (OB-026, MT-124, MT-127).
      *
      * An INVARIANT rather than a golden image: render the page bare and with a real run laid on it, and look only at
-     * the pixels that CHANGED to a run color.  Each must be within `TOLERANCE` of dark ink in the bare image.  The
-     * difference cancels tile art, badges, captions and lamps, and the chevrons and train dot are black and white.
-     *
-     * The tolerance covers the stroke (a seventh of a tile, centered on the rail) and its anti-aliasing, and is far
-     * too narrow to reach the middle of a curve from the rail that cuts its corner.
+     * the pixels that CHANGED to a run color.  Each must be within `TOLERANCE` of dark ink in the bare image (the
+     * difference cancels tile art, badges, captions and lamps).  The tolerance covers the stroke (a seventh of a tile,
+     * centered on the rail) and its anti-aliasing, and is far too narrow to reach the middle of a curve from the rail
+     * that cuts its corner.
      */
     @Test
     public void testEveryPixelOfARunLandsOnTrack() throws Exception
@@ -678,9 +677,8 @@ public class testDiagramLooksRight
      *
      * The color is ASKED FOR each time a caption is colored, so the menu switch takes effect without a restart.  The
      * readability half is not decoration: the text color follows the fill's brightness, so a gray a few shades DARKER
-     * would leave black text on a dark ground and nobody would notice until they looked.
-     *
-     * The operator's own setting is put back at the end, as a real preference node.
+     * would leave black text on a dark ground.  The operator's own setting is put back at the end, as a real preference
+     * node.
      *
      * MUTATION: making restingFill ignore the preference fails the second assertion; making readableOn return WHITE
      * always fails the fourth.
@@ -741,11 +739,9 @@ public class testDiagramLooksRight
      * A placeholder is drawn dimmer than a name, on either pill.
      *
      * The editors show "this square is a PLACEHOLDER" in gray.  On a pill, gray is not red, so `onPill` must not fall
-     * through to `readableOn`, which answers by the FILL and would give a placeholder and a name the same color.
-     *
-     * Both fills: on navy the readable color is white and dimming moves it DOWN towards the fill, on pale gray it is
-     * black and dimming moves it UP.  The separation is asserted as a distance, not a constant, because the exact blend
-     * is a matter of taste.
+     * through to `readableOn`, which answers by the FILL and would give a placeholder and a name the same color.  Both
+     * fills: on navy the readable color is white and dimming moves it DOWN towards the fill, on pale gray it is black
+     * and dimming moves it UP.  The separation is asserted as a distance, not a constant.
      *
      * MUTATION: returning `readableOn(fill)` for gray fails the first assertion on both fills.
      */
@@ -800,9 +796,9 @@ public class testDiagramLooksRight
     /**
      * An old "Point:" label is drawn as it was written, prefix and all (OB-344).
      *
-     * A layout served by the Central Station still carries those labels and has no setup to turn them into captions,
-     * so the grid draws a label as written unless autonomy has a caption for its square.  The page is one square built
-     * in memory under a name no setup knows, so there is nothing to restore.
+     * A layout served by the Central Station still carries those labels and has no setup to turn them into captions, so
+     * the grid draws a label as written unless autonomy has a caption for its square.  The page is one square built in
+     * memory under a name no setup knows, so there is nothing to restore.
      *
      * MUTATION: putting back the branch that stripped the "Point:" prefix fails this with "Bahnhof".
      *
@@ -863,11 +859,9 @@ public class testDiagramLooksRight
      * The four facing arrows are rotations of each other, not two pairs of different shapes (OB-116).
      *
      * In Segoe UI the right arrow U+25BA is half the height of the up arrow U+25B2, and those are the only horizontal
-     * triangles it can draw (U+25B6 and U+25C0 come out as empty boxes), so the font was the answer.  This asserts the
-     * property, a left or right arrow about as tall as an up or down one, not the code points.
-     *
-     * SKIPPED where the matched font is not installed, the same condition the code uses; a squat arrow beats an empty
-     * box.
+     * triangles it can draw (U+25B6 and U+25C0 come out as empty boxes).  This asserts the property, a left or right
+     * arrow about as tall as an up or down one, not the code points.  SKIPPED where the matched font is not installed,
+     * the same condition the code uses.
      *
      * MUTATION: putting U+25BA and U+25C4 back fails the height comparison at better than three to one.
      */
@@ -953,7 +947,7 @@ public class testDiagramLooksRight
      * A square with a train running on it stays below the station captions and the address label over it (OB-117,
      * OB-259).
      *
-     * A tile is opaque, so a tile lifted to the front for its train paints the caption out.  Nothing lifts now: the
+     * A tile is opaque, so a tile lifted to the front for its train would paint the caption out.  Nothing lifts: the
      * panel paints every train after all its components (OB-159).  This holds the order a running train leaves: the
      * captions in build order, the address label, and the tile behind them all.
      *
@@ -1011,8 +1005,8 @@ public class testDiagramLooksRight
      * than its square and must not be clamped to zero: the dash of an empty station is narrow, the name that replaces
      * it is wide, and both must be centered.
      *
-     * MUTATION: restoring `Math.max(0, (wide - tile) / 2)` and subtracting it fails the dash case while the
-     * long-name case still passes.
+     * MUTATION: restoring `Math.max(0, (wide - tile) / 2)` and subtracting it fails the dash case while the long-name
+     * case still passes.
      */
     @Test
     public void testAnEmptyCaptionIsCentredOnItsSquare()
@@ -1092,8 +1086,7 @@ public class testDiagramLooksRight
      * The caption choice remembers itself and rebuilds the diagram (FR-061).
      *
      * A caption's text is decided when the grid is BUILT, so a control that only repainted would appear to do nothing.
-     * The control is one dropdown of four exclusive options; the two tick boxes the drawing code reads are set from
-     * it, so driving the dropdown covers them too.
+     * The control is one dropdown of four exclusive options; the two tick boxes the drawing code reads are set from it.
      *
      * MUTATION: dropping the onDiagramChanged call from the listener fails the rebuild assertion; dropping the
      * preference write fails the last one.
@@ -1681,10 +1674,10 @@ public class testDiagramLooksRight
      * A caption may move itself.  It may not move anything else (OB-115): the text labels' vertical alignment must not
      * drift when a caption becomes a pill.
      *
-     * **Nothing about the mechanism is visible in the caption code.**  GridBagLayout lines every `BASELINE_LEADING`
-     * component up on one baseline for the row, so a caption anchored that way would move the row when given a pill
-     * and a smaller font.  Captions are anchored NORTHWEST, out of that ballot.  The test changes the one thing a
-     * caption changes on its own, its TEXT, and insists that nothing else has moved a pixel, with no golden file.
+     * GridBagLayout lines every `BASELINE_LEADING` component up on one baseline for the row, so a caption anchored that
+     * way would move the row when given a pill and a smaller font.  Captions are anchored NORTHWEST, out of that
+     * ballot.  The test changes the one thing a caption changes on its own, its TEXT, and insists that nothing else has
+     * moved a pixel, with no golden file.
      *
      * MUTATION: anchoring captions BASELINE_LEADING again fails this.
      */
@@ -1783,9 +1776,8 @@ public class testDiagramLooksRight
      * Changing what trains may do at a station leaves its caption where it is (OB-310).
      *
      * Each answer under Station goes through `setStation(tile, true)`, which must place a caption only where the
-     * station has none: `placeCaption` MOVES one it already has, so every change would send the name to the next
-     * free square beside the platform and the next change back, from on end to flat.  The rename has the same rule
-     * (MT-116).
+     * station has none: `placeCaption` MOVES one it already has, so every change would send the name to the next free
+     * square beside the platform and the next change back.  The rename has the same rule (MT-116).
      *
      * Every named station with a caption, both changes, through `buildAutonomyTileMenu`; then a station captioned on
      * north-south rails, drawn after the answer that lets no train pass, where a second move could put it back flat.
@@ -2029,9 +2021,9 @@ public class testDiagramLooksRight
     /**
      * A caption sits clear of its rail at every tile size, whichever way the rail runs.
      *
-     * A caption lying across the track it names would cover its own subject.  The caption starts past the rail, and
-     * not so far past it that it stops reading as that track's label; the second half stops the offset being
-     * increased a few pixels at a time until the captions float free.  Line heights are three fifths of the tile.
+     * A caption lying across the track it names would cover its own subject; but not so far past it that it stops
+     * reading as that track's label (the second half stops the offset being increased a few pixels at a time).  Line
+     * heights are three fifths of the tile.
      *
      * MUTATION: returning a fixed number of pixels from captionOffset fails this at every size but one; dropping the
      * nudge fails the first assertion at 20px.
@@ -2072,8 +2064,8 @@ public class testDiagramLooksRight
      * The four arrows a caption can end in can all be drawn in the font captions are drawn in.
      *
      * **It asks StationCaption for both halves, and that is the point.**  A test naming its own font and codepoints
-     * watches something other than the code: OB-116 fixed the arrows by changing the FONT, not the character.
-     * A tofu box on a diagram is the failure this stops.
+     * watches something other than the code (OB-116 fixed the arrows by changing the FONT, not the character).  A tofu
+     * box on a diagram is the failure this stops.
      *
      * MUTATION: setting either arrow constant to a codepoint LABEL_FONT cannot draw fails this.
      */
@@ -2104,9 +2096,8 @@ public class testDiagramLooksRight
      *
      * Turning the drawing turns everything in it, so an arrow keeps its meaning only if the GLYPH is chosen for where
      * it ends up: a quarter turn anticlockwise sends right to up, so a caption that means north is drawn with the east
-     * glyph.  Get that backwards and every caption sits in the right place with every train appearing to run the
-     * other way.  Decided by painting and reading the ink: a triangle pointing up has its widest row at the BOTTOM of
-     * its ink, whichever pair of glyphs the installed fonts give.
+     * glyph.  Decided by painting and reading the ink: a triangle pointing up has its widest row at the BOTTOM of its
+     * ink, whichever pair of glyphs the installed fonts give.
      *
      * MUTATION: cycling the arrows the other way - north to west rather than north to east - fails both halves; not
      * rotating them at all fails both as well.
@@ -2136,9 +2127,9 @@ public class testDiagramLooksRight
     /**
      * A rotated caption is stood on end, and takes the mouse only where it is drawn.
      *
-     * Painting, sizing and hit-testing all ask `pillBounds` for one rectangle: a flat pill painted inside its insets
-     * but hit-tested over the whole component swallows every click on the tile it borrowed centring room from, and a
-     * rotated caption borrows a whole ROW, so it would eat a click on the square above.
+     * Painting, sizing and hit-testing all ask `pillBounds` for one rectangle: a flat pill hit-tested over the whole
+     * component swallows every click on the tile it borrowed centring room from, and a rotated caption borrows a whole
+     * ROW, so it would eat a click on the square above.
      *
      * MUTATION: having `contains` fall back to `super.contains` fails the last assertion; returning the flat preferred
      * size when rotated fails the first.
@@ -2304,9 +2295,9 @@ public class testDiagramLooksRight
     /**
      * Which way the rails run, for the square a caption lands on (FR-028).
      *
-     * The decision is made from the tile's geometry: a straight rail answers one way, and the same rail turned a
-     * quarter answers the other.  Deliberately not asserting WHICH orientation is which: the rotation convention is the
-     * layout format's (a diagram tile rotates by (4 - o)), and pinning it would fail the day the format changed.
+     * Decided from the tile's geometry: a straight rail answers one way, and the same rail turned a quarter answers the
+     * other.  Deliberately not asserting WHICH orientation is which: the rotation convention is the layout format's (a
+     * diagram tile rotates by (4 - o)).
      *
      * MUTATION: making runsNorthSouth return a constant fails this whichever constant it returns.
      */
@@ -2335,10 +2326,8 @@ public class testDiagramLooksRight
 
     /**
      * A sensor's caption knows which way its rails run whatever the sensor was reporting when the layout was saved
-     * (OB-263).
-     *
-     * The state a Central Station saves for a sensor tile is whether a train stood on it, and state 1 found no ports at
-     * all: a vertical station saved occupied read as running east to west and its caption lay flat.
+     * (OB-263): the state a Central Station saves for a sensor tile is whether a train stood on it, and state 1 found
+     * no ports at all, so a vertical station saved occupied lay flat.
      *
      * MUTATION: ask the port table with the sensor's saved state again, and this fails.
      */
@@ -2379,8 +2368,7 @@ public class testDiagramLooksRight
      * Checked on the menu itself, through `buildAutonomyTileMenu`, the main window's door to the one builder the editor
      * uses.  The assertion is about the FIRST component: a heading that is not at the top is not a heading.
      *
-     * MUTATION: removing the `title` call from buildTileMenu fails this; so does putting tidy()'s heading test back
-     * the way it was.
+     * MUTATION: removing the `title` call from buildTileMenu fails this.
      */
     @Test
     public void testTheAutonomyMenuOpensWithTheSquaresName() throws Exception
@@ -2458,11 +2446,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A diagram already drawn is not taken away 120ms later either, which is the half OB-109 left behind (MT-273).
+     * A diagram already drawn is not taken away 120ms later either (MT-273).
      *
      * **Why the editor and not the viewer.** The editor rebuilds the whole grid after every placement, and the tile
      * just placed is the decode that keeps the outstanding count above zero, so the grace timer fires on the commonest
-     * action there.
+     * action.
      *
      * **The rule.** A rebuild at the SAME tile size is not an arrival: every square is a cache hit, so the page is
      * complete when mounted.  A rebuild at a DIFFERENT size is one: the size is part of the cache key, so the page
@@ -2556,7 +2544,7 @@ public class testDiagramLooksRight
      * A diagram that is already drawn is not taken off the screen to be rebuilt (OB-109).
      *
      * Every placement in the track diagram editor rebuilds the whole grid; a new grid that hid itself until its tiles
-     * had decoded would blink, depending on where the event thread was.  Two rules, each what the other misses.
+     * had decoded would blink.  Two rules, each what the other misses.
      *
      * **Nothing pending, nothing to hide.** On a warm cache the hold-back has nothing to wait for.
      *
@@ -2681,10 +2669,8 @@ public class testDiagramLooksRight
      *
      * The caption and the tile under it are separate components, and no ORDER satisfies both: caption in front paints
      * over the locomotive, tile in front paints the NAME out because a tile is opaque.  So the container paints its
-     * children as always, then walks them once more asking each for its train, and the locomotive lands above both.
-     *
-     * Asserted as a DIFFERENCE, not a color: the same arrangement is rendered with a train and without, and the middle
-     * of the square has to change.
+     * children as always, then walks them once more asking each for its train.  Asserted as a DIFFERENCE, not a color:
+     * the same arrangement is rendered with a train and without, and the middle of the square has to change.
      *
      * MUTATION: drop the paintTrainOverCaptions loop from newDiagramContainer and nothing changes, so the first
      * assertion fails; paint the train inside the tile again and it fails the same way.
@@ -2864,10 +2850,8 @@ public class testDiagramLooksRight
 
     /**
      * A caption on a running route is in the route's colors: the blue of the path ahead until the train gets there
-     * (FR-106).
-     *
-     * On both pills the operator can choose, because the blue has to read on each: the path's own blue on the pale
-     * gray, lifted to a light blue on the blue pill, where the path's own blue would disappear.
+     * (FR-106), on both pills the operator can choose: the path's own blue on the pale gray, lifted to a light blue on
+     * the blue pill, where it would disappear.
      *
      * MUTATION: let `onPill` answer the route's blue with plain black or white, and this fails.
      */
@@ -2973,10 +2957,9 @@ public class testDiagramLooksRight
     /**
      * A pill's text sits in the middle of it, as much room at the right end as at the left.
      *
-     * The pill is sized from the text's width as measured for layout.  Painted at a larger scale (a display at 125 or
-     * 150 per cent, or the 2x the guide's pictures use) the glyphs come out wider than measured and must still sit
-     * centered.  Painted here at 2x, the room either side of the ink is measured, with the arrow on the left, on the
-     * right, and none.
+     * The pill is sized from the text's width as measured for layout; painted at a larger scale (125 or 150 per cent,
+     * or the 2x the guide's pictures use) the glyphs come out wider than measured and must still sit centered.  Painted
+     * here at 2x, with the arrow on the left, on the right, and none.
      *
      * MUTATION: draw the text where the label's layout put it again, and this fails.
      */
@@ -3222,8 +3205,8 @@ public class testDiagramLooksRight
      * A pill's edge and a destination's ring are as thick on the right and the bottom as on the left and the top.
      *
      * `drawRoundRect(x, y, w - 1, h - 1)` with anti-aliasing puts the left and top of the outline half outside the fill
-     * and the right and bottom wholly inside it.  Painted at twice the size, where the pill's ends fall on whole
-     * pixels, the four sides of an even outline read the same from the outside in.
+     * and the right and bottom wholly inside it.  Painted at twice the size, the four sides of an even outline read the
+     * same from the outside in.
      *
      * MUTATION: draw the outline the old way and this fails.
      */
@@ -3645,8 +3628,8 @@ public class testDiagramLooksRight
      * A square's address is drawn over the locomotive standing on it, not under it (FR-116).
      *
      * The diagram's container paints its children and then every tile's train over them (OB-159), so an address, being
-     * a child, was painted over by the icon.  Here an address lies across the middle of a square with a running train
-     * on it; its red letters must all still be there with the train drawn.
+     * a child, would be painted over by the icon.  Here an address lies across the middle of a square with a running
+     * train on it; its red letters must all still be there with the train drawn.
      *
      * MUTATION: drop the last pass that paints the addresses over the trains and this fails.
      */
@@ -4363,12 +4346,11 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A curve's station spills onto the squares beside it at the middle of their edges, where their arrows are, and the
-     * ingress/egress arrows must stay visible, especially on curves: the arrows of a square a spill reaches are drawn
-     * back over it.  Nine squares, a station of every kind on an E-S curve in the middle (the may-turn and must-turn
-     * icons and a terminus are longer than the curve's chord), the square to its right a one-way road from W to E, or
-     * the one below from N to S, at 30 and 60 pixels: that square's arrows have all their pixels with the station as
-     * without.
+     * A curve's station spills onto the squares beside it at the middle of their edges, where their arrows are, and
+     * those ingress/egress arrows must stay visible: the arrows of a square a spill reaches are drawn back over it.
+     * Nine squares, a station of every kind on an E-S curve in the middle (the may-turn and must-turn icons and a
+     * terminus are longer than the curve's chord), the square to its right a one-way road from W to E, or the one below
+     * from N to S, at 30 and 60 pixels: that square's arrows have all their pixels with the station as without.
      *
      * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`, and this fails.
      */
@@ -4832,8 +4814,8 @@ public class testDiagramLooksRight
      * A pop-up's title names the configuration that is loaded, beside the page, and follows it (FR-127).
      *
      * A pop-up open while the configuration is unloaded, loaded, switched, renamed and unloaded is asked for its title
-     * after each; a title with nothing loaded is today's.  Run last (priority 1) because unloading rebuilds the session
-     * the other claims ask the window for.
+     * after each; with nothing loaded it is today's.  Run last (priority 1) because unloading rebuilds the session the
+     * other claims ask the window for.
      *
      * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it
      * again, and this fails.
@@ -4907,7 +4889,7 @@ public class testDiagramLooksRight
      * Two places set the title from that render: the one with a locomotive active, which adds its text after the page,
      * and the one with none, which takes it off.  Each is reached by making a locomotive active and then none, the
      * title set to something else first so that only the render can have written what is read, and the render waited
-     * for through the window's own futures, since pumping the event thread does not wait for the worker that posts it.
+     * for through the window's own futures (pumping the event thread does not wait for the worker that posts it).
      *
      * MUTATION: set either title from the page alone (`popup.getLayoutTitle() + ...`) in the render, and this fails.
      *
@@ -5428,9 +5410,8 @@ public class testDiagramLooksRight
     /**
      * The halo is drawn round writing that shares its square with track (MT-716).
      *
-     * Writing on a square that also has track or a sensor is set as HTML (`<html><br>` and the words) to stand a line
-     * below the square, so the halo has to be drawn from the words inside the HTML too.  It lies round the words where
-     * the HTML draws them: white on black, and the words' own blue inside it, a line down.
+     * Such writing is set as HTML (`<html><br>` and the words) to stand a line below the square, so the halo has to be
+     * drawn from the words inside the HTML too: white on black, and the words' own blue inside it, a line down.
      *
      * MUTATION: skip HTML again, and this fails.
      */
@@ -5512,10 +5493,9 @@ public class testDiagramLooksRight
 
     /**
      * A train standing at its home is shown by a little house on the Auto tab, not by a teal badge (MT-709), in the
-     * same spot as the (i).
-     *
-     * `AutoLocomotiveStatus.markFor` chooses the card's mark: the house at home, the (i) where there is a reason to
-     * hover for, both where both, nothing otherwise; the badge is the tab's blue at home as everywhere else.
+     * same spot as the (i).  `AutoLocomotiveStatus.markFor` chooses the card's mark: the house at home, the (i) where
+     * there is a reason to hover for, both where both, nothing otherwise; the badge is the tab's blue at home as
+     * everywhere else.
      *
      * MUTATION: put the teal back, or the house away, and this fails.
      *
@@ -5608,7 +5588,7 @@ public class testDiagramLooksRight
 
     /**
      * The tunnel portal's wall is near white, #EEEEEE, and a pixel wider each side at 30 and two at 60 (three pixels
-     * and seven), and the arch between the walls is still the track's width, 8 and 16 (FR-134).  The wall grew outward:
+     * and seven), and the arch between the walls is still the track's width, 8 and 16 (FR-134): the wall grew outward,
      * the track through the arch is where it was.  Read across the portal below the arch's curve, row 12 at 30, row 25
      * at 60.
      *
@@ -5663,8 +5643,8 @@ public class testDiagramLooksRight
      * comes in are the straight's own, at both sizes (FR-135).
      *
      * The track's band has a one-pixel edge in a dark gray (#333 at 30, #666 at 60), so an edge row of another shade on
-     * a signal would be a lighter stripe between two straights.  The link is asked at its open side, the column the
-     * track comes in by; a signal along both its edge rows, end to end.
+     * a signal would be a lighter stripe between two straights.  The link is asked at its open side; a signal along
+     * both its edge rows, end to end.
      *
      * MUTATION: put the old Large signal back, or draw the link's shaft pure black to its edge, and this fails.
      *
