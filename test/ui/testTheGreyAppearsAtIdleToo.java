@@ -39,36 +39,32 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * Four claims:
  * - The gray is THERE at idle, on a square the railway refuses and no train is drawn on.  Asserted in pixels, because
- *   whether a square is grayed is decided when the tile is PAINTED (the lesson of OB-180 and `support.Rendered`).
+ *   whether a square is grayed is decided when the tile is PAINTED (`support.Rendered`).
  * - It is REGENERATED when a locomotive is placed or removed, when a train's length changes, and when a tile's length
  *   changes.
  *
- * The three regeneration claims drive a production door and never ask for a refresh: `support.CoveredMarks.refresh`
- * calls the window's private recompute, so calling it after the gesture would prove only that the recompute works.
- * Each gesture goes through the code the operator's hand reaches, and the test only WAITS
- * (`support.CoveredMarks.settle`), because the marks are worked out on a worker (OB-192).
+ * The three regeneration claims drive a production door and never ask for a refresh (`support.CoveredMarks.refresh`
+ * calls the window's private recompute, so calling it after the gesture would prove only that the recompute works);
+ * the test only WAITS (`support.CoveredMarks.settle`), because the marks are worked out on a worker.
  *
  * The doors:
  * - Removal: `TrainControlUI.locomotiveGestureOnDiagram` with Delete (Control+X would fill the clipboard, Control+V
  *   could open a modal arrival-side dialog).
- * - Train length: `TrainControlUI.applyTrainLength`, everything `promptTrainLength` does once the dialog has answered;
- *   `regression.testEditorSurfaceRules` pins the call site.
+ * - Train length: `TrainControlUI.applyTrainLength`, everything `promptTrainLength` does once the dialog has answered.
  * - Tile length: `TrainControlUI.rebuildRunningLayoutFromSetup`, which `AutonomyEditorPanel.setupChanged` posts; edge
  *   lengths are baked into the built `Layout`, unlike train lengths.
  *
  * The blocked extent is worked out from the railway, not asked of the window, as
- * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does: asking the window would ask the thing under test for the answer.
- *
- * Unmeasured track makes the tile-length gesture visible: the tail walk "stops at unmeasured track.  Only positive
- * lengths are determinate." (behaviour/tail.md 5c), so every square measured as one unit blocks track and as none
- * blocks nothing.
+ * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does.  Unmeasured track makes the tile-length gesture visible: the tail
+ * walk stops at it (behaviour/tail.md 5c), so every square measured as one unit blocks track and as none blocks
+ * nothing.
  *
  * MUTATION, both measured:
  * - Put the `isAutonomyBusy()` fence back on the blocked set in `CoveredTrackView.workOutCoveredTrack`: five of the
  *   seven fail, all but the two controls.
  * - Take `blockedTrackChanged()` out of `TrainControlUI.applyTrainLength`: three fail, the length claim and the two
- *   pixel claims, because their reference picture is taken through the same door and becomes a copy of the picture it
- *   is compared with.  So the pixel claims cannot tell that failure from the fence's; the set-level claim names it.
+ *   pixel claims (their reference picture is taken through the same door), so the pixel claims cannot tell that failure
+ *   from the fence's; the set-level claim names it.
  *
  * @author Adam
  */
@@ -245,8 +241,7 @@ public class testTheGreyAppearsAtIdleToo
         claimedAtIdle = everySquareTheRailwayClaims();
 
         // AT IDLE WITH NOTHING STANDING, the reference every "is this square marked at all" question is asked against
-        // (a length of zero is "not set", and an unmeasured train covers nothing), THROUGH THE DOOR: this is the
-        // train-length gesture too.
+        // (a length of zero is "not set", and an unmeasured train covers nothing), THROUGH THE DOOR.
         SwingUtilities.invokeAndWait(() -> ui.applyTrainLength(train, 0));
 
         pump();
