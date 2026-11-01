@@ -90,6 +90,19 @@ public class testTheOwnTailArithmetic
         }
     }
 
+    /** The refusal's note about a stretch with no length, or null when the bundle has no such message. */
+    private static String thePartlyUnmeasuredNote()
+    {
+        try
+        {
+            return I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1);
+        }
+        catch (java.util.MissingResourceException none)
+        {
+            return null;
+        }
+    }
+
     /** One edge over these places with these lengths, between two new Points. */
     private static Edge edge(List<String> places, List<Integer> lengths) throws Exception
     {
@@ -264,16 +277,7 @@ public class testTheOwnTailArithmetic
 
         assertNotNull(said, "precondition: a twenty-unit train is not refused a way round of 1 onto its own body");
 
-        String note;
-
-        try
-        {
-            note = I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1);
-        }
-        catch (java.util.MissingResourceException none)
-        {
-            note = null;
-        }
+        String note = thePartlyUnmeasuredNote();
 
         assertTrue(note != null && said.contains(note), "the way round comes back to the body in a stretch with nothing"
             + " measured on it, and the refusal does not say so: " + said);
@@ -354,16 +358,7 @@ public class testTheOwnTailArithmetic
 
         assertNotNull(said, "precondition: a twenty-unit train is not refused a way round of 1 measured square");
 
-        String note;
-
-        try
-        {
-            note = I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1);
-        }
-        catch (java.util.MissingResourceException none)
-        {
-            note = null;
-        }
+        String note = thePartlyUnmeasuredNote();
 
         assertTrue(note != null && said.contains(note), "the refusal does not say that one stretch of the way round has"
             + " no length, so the only way past it names is a shorter train: " + said);

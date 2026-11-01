@@ -102,14 +102,10 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
-
-        assertEquals(wayTaken(layout, loc), "RP_ViaStation",
+        assertWayTaken(layout, loc, Layout.PathPreference.FEWEST_POINTS, "RP_ViaStation",
             "fewest sensors must take the way across two of them rather than three");
 
-        layout.setPathPreference(Layout.PathPreference.MOST_POINTS);
-
-        assertEquals(wayTaken(layout, loc), "RP_Plain1",
+        assertWayTaken(layout, loc, Layout.PathPreference.MOST_POINTS, "RP_Plain1",
             "most sensors must take the way across three.  A mirror that picks the same route as the "
             + "rule it mirrors is a missing minus sign, and nothing else would ever say so");
     }
@@ -121,14 +117,10 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        layout.setPathPreference(Layout.PathPreference.FEWEST_STATIONS);
-
-        assertEquals(wayTaken(layout, loc), "RP_Plain1",
+        assertWayTaken(layout, loc, Layout.PathPreference.FEWEST_STATIONS, "RP_Plain1",
             "fewest stations must take the way that passes none");
 
-        layout.setPathPreference(Layout.PathPreference.MOST_STATIONS);
-
-        assertEquals(wayTaken(layout, loc), "RP_ViaStation",
+        assertWayTaken(layout, loc, Layout.PathPreference.MOST_STATIONS, "RP_ViaStation",
             "most stations must take the way that calls past one - this is the rule for a layout "
             + "that should look busy, and taking the direct route is the opposite of it");
     }
@@ -140,14 +132,10 @@ public class testRoutePicking
         Layout layout = twoWaysAcross();
         Locomotive loc = placedLocomotive(layout);
 
-        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
-
-        assertEquals(wayTaken(layout, loc), "RP_Plain1",
+        assertWayTaken(layout, loc, Layout.PathPreference.SHORTEST_LENGTH, "RP_Plain1",
             "shortest track must take the 12-long way over the 100-long one");
 
-        layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
-
-        assertEquals(wayTaken(layout, loc), "RP_ViaStation",
+        assertWayTaken(layout, loc, Layout.PathPreference.LONGEST_LENGTH, "RP_ViaStation",
             "longest track must take the 100-long way");
     }
 
@@ -165,14 +153,12 @@ public class testRoutePicking
         Layout layout = twoWaysAcrossWithAnsweredHops(true);
         Locomotive loc = placedLocomotive(layout);
 
-        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
-
-        assertEquals(wayTaken(layout, loc), "RZ_Plain1", "shortest track takes the 9-long way over the one measured 8 -"
+        assertWayTaken(layout, loc, Layout.PathPreference.SHORTEST_LENGTH, "RZ_Plain1",
+            "shortest track takes the 9-long way over the one measured 8 -"
             + " its two hops answered 0 are counted as 1 each, as if nobody had measured them");
 
-        layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
-
-        assertEquals(wayTaken(layout, loc), "RZ_Via", "longest track takes the way measured 8 over the 9-long one");
+        assertWayTaken(layout, loc, Layout.PathPreference.LONGEST_LENGTH, "RZ_Via",
+            "longest track takes the way measured 8 over the 9-long one");
 
         // CONTROL: the same hops unanswered count 1 each, so that way is 10.
         Layout unanswered = twoWaysAcrossWithAnsweredHops(false);
@@ -334,15 +320,11 @@ public class testRoutePicking
         // on.
         for (int round = 0; round < 20; round++)
         {
-            layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
-
-            assertEquals(wayTaken(layout, loc), "RP_ViaStation",
+            assertWayTaken(layout, loc, Layout.PathPreference.SHORTEST_LENGTH, "RP_ViaStation",
                 "round " + round + ": with no lengths anywhere, the two-edge way is the shorter track "
                 + "and has to be chosen");
 
-            layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
-
-            assertEquals(wayTaken(layout, loc), "RP_Plain1",
+            assertWayTaken(layout, loc, Layout.PathPreference.LONGEST_LENGTH, "RP_Plain1",
                 "round " + round + ": the three-edge way is the longer - if this matches the line "
                 + "above, both rules are seeing a tie at zero and neither is ranking anything");
         }
@@ -585,6 +567,16 @@ public class testRoutePicking
 
         return path.get(path.size() - 1).getEnd().getName();
     }
+
+    /** Sets the preference, then asserts that the chosen route goes by the way, with the message. */
+    private static void assertWayTaken(Layout layout, Locomotive loc, Layout.PathPreference preference, String way,
+        String message)
+    {
+        layout.setPathPreference(preference);
+
+        assertEquals(wayTaken(layout, loc), way, message);
+    }
+
     /** Which way the chosen route went, named by the square it takes first; the routes share their destination. */
     private static String wayTaken(Layout layout, Locomotive loc)
     {
