@@ -22,9 +22,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Atomic Routes cannot be switched off while the railway could release track under a train (Adam: "can we simply refuse
- * it now if there are unmeasured segments in what's walkable via the autonomy editor?"; of a setup loaded from a file:
- * "yes, shut the file door too - just enable the setting and show a warning in the log.").
+ * Atomic Routes cannot be switched off while the railway could release track under a train: refused at the checkbox
+ * when there are unmeasured segments in what's walkable via the autonomy editor, and for a setup loaded from a file the
+ * setting is enabled with a warning in the log.
  *
  * The escape has two clauses: `Layout.tailHasProvablyPassed` hands an edge back when `pathIsUnmeasured` OR when `behind
  * >= trainLength`, and a locomotive's length is 0 until set, so an unmeasured TRAIN releases the whole railway.  The
@@ -204,9 +204,8 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
-     * A setup that loads non-atomic over track it could release comes up atomic (Adam: "Yes, shut the file door too -
-     * just enable the setting and show a warning in the log.").  A file has nobody at it, and refusing the load would
-     * make a configuration he already has unopenable.
+     * A setup that loads non-atomic over track it could release comes up atomic, with a warning in the log.  A file has
+     * nobody at it, and refusing the load would make a configuration he already has unopenable.
      */
     @Test(dependsOnMethods = "testTheTrackHalfRefusesAndNamesTheRail")
     public void testALoadedSetupCannotRunNonAtomicOverTrackItCouldRelease() throws Exception
