@@ -674,9 +674,17 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         String elsewhere = null;
 
+        // A station it can go to by any copy is in neither list.
+        java.util.Set<String> canGo = new java.util.HashSet<>();
+
         for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
         {
-            if (entry.getValue() == null) continue;
+            if (entry.getValue() == null) canGo.add(shownAs(entry.getKey(), occupied));
+        }
+
+        for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
+        {
+            if (entry.getValue() == null || canGo.contains(shownAs(entry.getKey(), occupied))) continue;
 
             String shown = shownAs(entry.getKey(), occupied);
 

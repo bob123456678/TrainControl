@@ -4459,18 +4459,30 @@ public class Layout
         }
 
         /**
-         * Files one point's reason under the station it is a copy of: a station is choosable if any of its copies is,
+         * Files one point's reason under the station it is a copy of.  A station the train can go to by any copy is in
+         * `canGo` and in neither group, whichever copy comes first; otherwise it is choosable if any of its copies is,
          * and barred only while none is; each group keeps the first reason it was given.
          *
          * @param point a point name from getReasons
          * @param station the station it is a copy of, as shown
+         * @param canGo the stations it can go to now
          * @param choosable the stations autonomy could choose, to their reason
          * @param neverChosen the stations it never would, to their reason
          */
-        public void fileUnderStation(String point, String station, java.util.Map<String, String> choosable,
-            java.util.Map<String, String> neverChosen)
+        public void fileUnderStation(String point, String station, java.util.Set<String> canGo,
+            java.util.Map<String, String> choosable, java.util.Map<String, String> neverChosen)
         {
-            if (barred.contains(point))
+            if (reasons.get(point) == null)
+            {
+                canGo.add(station);
+                choosable.remove(station);
+                neverChosen.remove(station);
+            }
+            else if (canGo.contains(station))
+            {
+                return;
+            }
+            else if (barred.contains(point))
             {
                 if (!choosable.containsKey(station) && !neverChosen.containsKey(station))
                 {

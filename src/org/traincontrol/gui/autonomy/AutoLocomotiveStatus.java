@@ -721,13 +721,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             java.util.Map<String, String> choosable = new java.util.TreeMap<>();
             java.util.Map<String, String> barred = new java.util.TreeMap<>();
+            java.util.Set<String> canGo = new java.util.HashSet<>();
 
             for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
             {
-                if (entry.getValue() == null) continue;
-
-                destinations.fileUnderStation(entry.getKey(), stationName(layout.getPoint(entry.getKey())), choosable,
-                    barred);
+                destinations.fileUnderStation(entry.getKey(), stationName(layout.getPoint(entry.getKey())), canGo,
+                    choosable, barred);
             }
 
             if (choosable.isEmpty() && barred.isEmpty())

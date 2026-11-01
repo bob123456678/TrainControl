@@ -174,16 +174,9 @@ final class EditorWhy extends SettledQuestion
             sortKey.put(station, new String[] {
                 where == null || where.getPage() == null ? "2" : elsewhere ? "1" + where.getPage() : "0", nameOnly });
 
-            if (entry.getValue() == null)
-            {
-                available.add(station);
-            }
-            else
-            {
-                // One line per station.  The first reason is the one that would have stopped it; the
-                // others are the same square's other arrival sides saying the same thing.
-                grouped.fileUnderStation(entry.getKey(), station, choosable, neverChosen);
-            }
+            // One line per station.  The first reason is the one that would have stopped it; the others are the same
+            // square's other arrival sides saying the same thing.
+            grouped.fileUnderStation(entry.getKey(), station, available, choosable, neverChosen);
         }
 
         finishMarks(marks, outOfReach);

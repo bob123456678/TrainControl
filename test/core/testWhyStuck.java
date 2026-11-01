@@ -106,6 +106,52 @@ public class testWhyStuck
     }
 
     /**
+     * A station the train can go to by one copy is not also listed as one it cannot go to by another, whichever copy
+     * is filed first.  The editor drew Ashby green and named it under "can go to", and listed it again under "could
+     * choose, but cannot right now" with its other arrival side's reason.
+     */
+    @Test
+    public void testAStationItCanGoToIsNotListedAsOneItCannot() throws Exception
+    {
+        java.lang.reflect.Constructor<Layout.Destinations> make =
+            Layout.Destinations.class.getDeclaredConstructor(Map.class, java.util.Set.class);
+
+        make.setAccessible(true);
+
+        for (boolean reachableFirst : new boolean[] {true, false})
+        {
+            Map<String, String> reasons = new java.util.LinkedHashMap<>();
+
+            if (reachableFirst) reasons.put("Ashby_W", null);
+
+            reasons.put("Ashby_E", "Contains an intermediate terminus station");
+            reasons.put("Thornbury", "ICE 3 is standing there.");
+            reasons.put("Siding", "Excluded");
+
+            if (!reachableFirst) reasons.put("Ashby_W", null);
+
+            Layout.Destinations destinations =
+                make.newInstance(reasons, new java.util.HashSet<>(java.util.Arrays.asList("Siding")));
+
+            java.util.Set<String> canGo = new java.util.TreeSet<>();
+            Map<String, String> choosable = new java.util.TreeMap<>();
+            Map<String, String> neverChosen = new java.util.TreeMap<>();
+
+            for (String point : reasons.keySet())
+            {
+                destinations.fileUnderStation(point, point.replaceAll("_.*", ""), canGo, choosable, neverChosen);
+            }
+
+            String order = reachableFirst ? "with the reachable copy first" : "with the reachable copy last";
+
+            assertEquals(canGo, new java.util.TreeSet<>(java.util.Arrays.asList("Ashby")), order);
+            assertEquals(choosable.keySet(), new java.util.TreeSet<>(java.util.Arrays.asList("Thornbury")),
+                "Ashby can be gone to by one copy and is listed as one autonomy cannot go to right now, " + order);
+            assertEquals(neverChosen.keySet(), new java.util.TreeSet<>(java.util.Arrays.asList("Siding")), order);
+        }
+    }
+
+    /**
      * A station with a train standing on it says so, and names the train.
      */
     @Test
