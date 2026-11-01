@@ -56,8 +56,8 @@ final class RouteListPanel
             {
                 // Asked here rather than inside the model, which has no business showing a dialog, and before the run,
                 // so the answer is about the route the operator picked.  Every route the station holds is a
-                // MarklinRoute, the only kind that knows the autonomy graph (the model is held as a ViewListener, whose
-                // getRoute is typed as the base Route).
+                // MarklinRoute, the only kind that knows the autonomy graph (the model is held as a ViewListener typed
+                // to the base Route).
                 org.traincontrol.base.Route found = this.ui.getModel().getRoute(route);
 
                 org.traincontrol.marklin.MarklinRoute picked =
@@ -81,10 +81,9 @@ final class RouteListPanel
                     }
 
                     // Said out loud, as the midway door says it (MT-247): the operator confirmed a dialog and is owed a
-                    // reason why nothing happened.  The two cancels differ in size: a REFUSED here happens before the
-                    // route starts, so not one command goes out, whereas the midway question is answered inside
-                    // `MarklinRoute.execRoute`'s command loop, so every earlier command has gone out and stands;
-                    // behaviour/routes.md section 7a carries both halves.
+                    // reason.  A REFUSED here happens before the route starts, so not one command goes out, whereas the
+                    // midway question is answered inside `MarklinRoute.execRoute`'s command loop, so every earlier
+                    // command stands (behaviour/routes.md section 7a carries both halves).
                     if (answer == TrainControlUI.RouteConflict.REFUSED)
                     {
                         this.ui.getModel().logf("route.cancelledByOperator", picked.getName());
