@@ -250,6 +250,11 @@ public class Edge
     @Override
     public boolean equals(Object other)
     {
+        if (other == this && start != null && end != null)
+        {
+            return true;
+        }
+
         if (!(other instanceof Edge))
         {
             return false;
