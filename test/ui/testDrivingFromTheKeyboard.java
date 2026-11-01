@@ -923,12 +923,7 @@ public class testDrivingFromTheKeyboard
 
         int mark = wire.mark();
 
-        try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("layout.ui.optionProceed"))))
-        {
-            Components.press(button);
-
-            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
-        }
+        pressAnsweringWith(button, I18n.t("layout.ui.optionProceed"));
 
         assertTrue(waitFor(() -> model.getAccessoryState(address, keyboardProtocol()) == !was),
             "Proceed did not switch the accessory");
@@ -952,13 +947,7 @@ public class testDrivingFromTheKeyboard
 
         int mark = wire.mark();
 
-        try (Answering answering = Answering.start(
-            asked -> Answering.press(I18n.t("layout.ui.optionTurnPowerOnAndProceed"))))
-        {
-            Components.press(button);
-
-            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
-        }
+        pressAnsweringWith(button, I18n.t("layout.ui.optionTurnPowerOnAndProceed"));
 
         assertTrue(waitFor(() -> lastAccessory(mark, address) == (was ? 1 : 0)), "the accessory's command was not sent");
 
@@ -978,6 +967,17 @@ public class testDrivingFromTheKeyboard
 
         assertTrue(go >= 0, "the power was not turned on: " + sent);
         assertTrue(go < switched, "the accessory was sent before the power came on: " + sent);
+    }
+
+    /** The button pressed, and the question it asks answered by pressing the named option; fails when nothing is asked. */
+    private static void pressAnsweringWith(JToggleButton button, String option) throws Exception
+    {
+        try (Answering answering = Answering.start(asked -> Answering.press(option)))
+        {
+            Components.press(button);
+
+            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
+        }
     }
 
     /** The power off, as the railway reports it, and the first accessory button. */
