@@ -1924,7 +1924,7 @@ public class RouteEditorFrame extends JFrame
      * @param addOn the column the plus sits under on the last row, or -1
      * @param marked the columns that hold a mark
      */
-    private void actOnRowMarks(final JTable table, final int addOn, final int... marked)
+    private void actOnRowMarks(final HandledTable table, final int addOn, final int... marked)
     {
         final int mark = Math.max(12, table.getRowHeight() - 10);
 
@@ -2108,7 +2108,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** What a press on a row's mark does: the mark's own value says whether it may. */
-    private void pressRowMark(JTable table, int row, int column)
+    private void pressRowMark(HandledTable table, int row, int column)
     {
         if (row < 0 || column < 0) return;
 
@@ -2208,11 +2208,11 @@ public class RouteEditorFrame extends JFrame
         if (table == commands) commands.shift(row, by);
     }
 
-    private void deleteRow(JTable table, int row)
+    private void deleteRow(HandledTable table, int row)
     {
         if (locked) return;
 
-        ((HandledTable) table).removeLines(row);
+        table.removeLines(row);
     }
 
     /**
