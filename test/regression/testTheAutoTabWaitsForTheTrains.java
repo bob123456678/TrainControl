@@ -678,24 +678,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             final javax.swing.AbstractButton track = button(editor.getRootPane(), I18n.t("layout.ui.sidebarTrack"));
 
-            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-            close.setAccessible(true);
-
             // TRACK DIAGRAM, SAVE AND CONTINUE (the question's first answer), AND THE CLOSE IN THE SWITCH'S GAP
-            List<String> asked = answeringYes(() ->
-            {
-                track.doClick();
-
-                try
-                {
-                    close.invoke(editor);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            List<String> asked = clickAndCloseInTheSwitchsGap(track, editor);
 
             assertFalse(asked.contains(I18n.t("autosetup.ui.confirmExitWithoutSaving")), "a close straight after Save and"
                 + " Continue asked to throw away everything changed since the last save (RSA28-C1): " + asked);
@@ -748,49 +732,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             ui[0] = sandboxed.hold(openTheWindow());
 
-            final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
-
-            final Object[] was = new Object[1];
-            final java.awt.event.ActionListener[][] actions = new java.awt.event.ActionListener[1][];
-            final java.awt.event.ItemListener[][] items = new java.awt.event.ItemListener[1][];
-
-            final String missing = "No such page (RSA29-C1)";
-
             // A PAGE THE MODEL DOES NOT HAVE, chosen with the list's listeners off
-            SwingUtilities.invokeAndWait(() ->
-            {
-                was[0] = list.getSelectedItem();
-                actions[0] = list.getActionListeners();
-                items[0] = list.getItemListeners();
-
-                for (java.awt.event.ActionListener l : actions[0]) list.removeActionListener(l);
-                for (java.awt.event.ItemListener l : items[0]) list.removeItemListener(l);
-
-                ((javax.swing.DefaultComboBoxModel) list.getModel()).addElement(missing);
-                list.setSelectedItem(missing);
-            });
-
-            try
-            {
-                answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
-
-                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-
-                Thread.sleep(1000);
-
-                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-            }
-            finally
-            {
-                SwingUtilities.invokeAndWait(() ->
-                {
-                    ((javax.swing.DefaultComboBoxModel) list.getModel()).removeElement(missing);
-                    list.setSelectedItem(was[0]);
-
-                    for (java.awt.event.ActionListener l : actions[0]) list.addActionListener(l);
-                    for (java.awt.event.ItemListener l : items[0]) list.addItemListener(l);
-                });
-            }
+            openTheEditorOnAPageChosenWithTheListenersOff(ui[0], "No such page (RSA29-C1)");
 
             assertEquals(editorWindows(ui[0]), 0, "an editor that failed to build left its frame (RSA29-C1)");
 
@@ -858,46 +801,7 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             }, failing, failing);
 
-            final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
-
-            final Object[] was = new Object[1];
-            final java.awt.event.ActionListener[][] actions = new java.awt.event.ActionListener[1][];
-            final java.awt.event.ItemListener[][] items = new java.awt.event.ItemListener[1][];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                was[0] = list.getSelectedItem();
-                actions[0] = list.getActionListeners();
-                items[0] = list.getItemListeners();
-
-                for (java.awt.event.ActionListener l : actions[0]) list.removeActionListener(l);
-                for (java.awt.event.ItemListener l : items[0]) list.removeItemListener(l);
-
-                ((javax.swing.DefaultComboBoxModel) list.getModel()).addElement(failing);
-                list.setSelectedItem(failing);
-            });
-
-            try
-            {
-                answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
-
-                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-
-                Thread.sleep(1000);
-
-                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-            }
-            finally
-            {
-                SwingUtilities.invokeAndWait(() ->
-                {
-                    ((javax.swing.DefaultComboBoxModel) list.getModel()).removeElement(failing);
-                    list.setSelectedItem(was[0]);
-
-                    for (java.awt.event.ActionListener l : actions[0]) list.addActionListener(l);
-                    for (java.awt.event.ItemListener l : items[0]) list.addItemListener(l);
-                });
-            }
+            openTheEditorOnAPageChosenWithTheListenersOff(ui[0], failing);
 
             java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
 
@@ -963,46 +867,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             pages.add(aPageThatFailsToDraw(failing, ui[0]), failing, failing);
 
-            final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
-
-            final Object[] was = new Object[1];
-            final java.awt.event.ActionListener[][] actions = new java.awt.event.ActionListener[1][];
-            final java.awt.event.ItemListener[][] items = new java.awt.event.ItemListener[1][];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                was[0] = list.getSelectedItem();
-                actions[0] = list.getActionListeners();
-                items[0] = list.getItemListeners();
-
-                for (java.awt.event.ActionListener l : actions[0]) list.removeActionListener(l);
-                for (java.awt.event.ItemListener l : items[0]) list.removeItemListener(l);
-
-                ((javax.swing.DefaultComboBoxModel) list.getModel()).addElement(failing);
-                list.setSelectedItem(failing);
-            });
-
-            try
-            {
-                answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
-
-                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-
-                Thread.sleep(1000);
-
-                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
-            }
-            finally
-            {
-                SwingUtilities.invokeAndWait(() ->
-                {
-                    ((javax.swing.DefaultComboBoxModel) list.getModel()).removeElement(failing);
-                    list.setSelectedItem(was[0]);
-
-                    for (java.awt.event.ActionListener l : actions[0]) list.addActionListener(l);
-                    for (java.awt.event.ItemListener l : items[0]) list.addItemListener(l);
-                });
-            }
+            openTheEditorOnAPageChosenWithTheListenersOff(ui[0], failing);
 
             assertEquals(editorWindows(ui[0]), 0, "an editor whose drawing raised an Error left its frame, counted as open"
                 + " (RSA31-C3)");
@@ -1219,24 +1084,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             assertNotNull(setup, "precondition: no Autonomy Setup in the editor's sidebar");
 
-            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-            close.setAccessible(true);
-
             // AUTONOMY SETUP, SAVE AND CONTINUE (the question's first answer), AND THE CLOSE IN THE SWITCH'S GAP
-            List<String> asked = answeringYes(() ->
-            {
-                setup.doClick();
-
-                try
-                {
-                    close.invoke(editor);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            List<String> asked = clickAndCloseInTheSwitchsGap(setup, editor);
 
             assertFalse(asked.contains(I18n.t("layout.ui.confirmExitWithoutSaving")), "a close straight after the track"
                 + " editor's Save and Continue asked to close without saving (RSA29-C2): " + asked);
@@ -1281,6 +1130,75 @@ public class testTheAutoTabWaitsForTheTrains
         }
 
         return count;
+    }
+
+    /** Chooses `page` in the page list with its listeners off, presses Edit, and puts the list back as it was. */
+    private static void openTheEditorOnAPageChosenWithTheListenersOff(final TrainControlUI ui, final String page)
+        throws Exception
+    {
+        final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui, "LayoutList");
+
+        final Object[] was = new Object[1];
+        final java.awt.event.ActionListener[][] actions = new java.awt.event.ActionListener[1][];
+        final java.awt.event.ItemListener[][] items = new java.awt.event.ItemListener[1][];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            was[0] = list.getSelectedItem();
+            actions[0] = list.getActionListeners();
+            items[0] = list.getItemListeners();
+
+            for (java.awt.event.ActionListener l : actions[0]) list.removeActionListener(l);
+            for (java.awt.event.ItemListener l : items[0]) list.removeItemListener(l);
+
+            ((javax.swing.DefaultComboBoxModel) list.getModel()).addElement(page);
+            list.setSelectedItem(page);
+        });
+
+        try
+        {
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.FALSE, null, true));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(1000);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                ((javax.swing.DefaultComboBoxModel) list.getModel()).removeElement(page);
+                list.setSelectedItem(was[0]);
+
+                for (java.awt.event.ActionListener l : actions[0]) list.addActionListener(l);
+                for (java.awt.event.ItemListener l : items[0]) list.addItemListener(l);
+            });
+        }
+    }
+
+    /** Presses `button` and closes `editor` in one answerer run, the close landing in the switch's gap; what was asked. */
+    private static List<String> clickAndCloseInTheSwitchsGap(final javax.swing.AbstractButton button,
+        final org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
+    {
+        final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
+
+        close.setAccessible(true);
+
+        return answeringYes(() ->
+        {
+            button.doClick();
+
+            try
+            {
+                close.invoke(editor);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
     }
 
     /**
@@ -1620,24 +1538,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             assertNotNull(track, "precondition: no Track Diagram in the editor's sidebar");
 
-            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-            close.setAccessible(true);
-
             // TRACK DIAGRAM, AND THE CLOSE BEFORE THE SWITCH'S POSTED WORK HAS RUN
-            answeringYes(() ->
-            {
-                track.doClick();
-
-                try
-                {
-                    close.invoke(editor);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            clickAndCloseInTheSwitchsGap(track, editor);
 
             // Until the switch has arrived, or not: its latch comes down first thing either way
             java.lang.reflect.Field latch = editor.getClass().getDeclaredField("changingPage");

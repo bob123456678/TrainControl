@@ -404,34 +404,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             }
         });
 
-        String said = null;
-
-        long giveUp = System.currentTimeMillis() + 10000;
-
-        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
-        {
-            Thread.sleep(100);
-
-            final String[] found = new String[1];
-
-            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
-
-            said = found[0];
-        }
-
-        giveUp = System.currentTimeMillis() + 10000;
-
-        // AND ANY QUESTION A DOOR THAT WENT ON WOULD ASK NEXT - closed, never answered yes.
-        while (!returned.get() && System.currentTimeMillis() < giveUp)
-        {
-            Thread.sleep(100);
-
-            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
-        }
-
-        assertTrue(returned.get(), "precondition: the door never returned");
-
-        return said;
+        return closeUntilTheDoorReturns(returned, "the door");
     }
 
     /** The multi-unit item at a menu's own level (set, edit or view), or null. */
@@ -510,32 +483,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         assertTrue(ticked[0], "precondition: the multi-unit dialog did not offer " + member);
 
-        String said = null;
-
-        giveUp = System.currentTimeMillis() + 10000;
-
-        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
-        {
-            Thread.sleep(100);
-
-            final String[] found = new String[1];
-
-            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
-
-            said = found[0];
-        }
-
-        giveUp = System.currentTimeMillis() + 10000;
-
-        while (!returned.get() && System.currentTimeMillis() < giveUp)
-        {
-            Thread.sleep(100);
-            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
-        }
-
-        assertTrue(returned.get(), "precondition: the multi-unit door never returned");
-
-        return said;
+        return closeUntilTheDoorReturns(returned, "the multi-unit door");
     }
 
     /** The tick box naming this locomotive in the multi-unit dialog's panel, or null. */
@@ -708,9 +656,16 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         assertTrue(typed[0], "precondition: the edit door showed no Change Name or Address dialog");
 
+        return closeUntilTheDoorReturns(returned, "the edit door");
+    }
+
+    /** Closes each message a running door shows, never answering yes; the first one's text, or null if none showed. */
+    private static String closeUntilTheDoorReturns(java.util.concurrent.atomic.AtomicBoolean returned, String door)
+        throws Exception
+    {
         String said = null;
 
-        giveUp = System.currentTimeMillis() + 10000;
+        long giveUp = System.currentTimeMillis() + 10000;
 
         while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
         {
@@ -725,6 +680,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         giveUp = System.currentTimeMillis() + 10000;
 
+        // AND ANY QUESTION A DOOR THAT WENT ON WOULD ASK NEXT - closed, never answered yes.
         while (!returned.get() && System.currentTimeMillis() < giveUp)
         {
             Thread.sleep(100);
@@ -732,7 +688,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
         }
 
-        assertTrue(returned.get(), "precondition: the edit door never returned");
+        assertTrue(returned.get(), "precondition: " + door + " never returned");
 
         return said;
     }

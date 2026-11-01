@@ -253,13 +253,12 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
     }
 
-    /** Every call from a user-interface class to a method that takes the railway's monitor is listed. */
-    @Test
-    public void testEveryDoorOntoTheRailwaysMonitorIsWrittenDown() throws Exception
+    /** Each call from a user-interface class to a door onto the monitor, as {`File.java#member`, the line it is on}. */
+    private static List<String[]> callsOntoTheMonitor() throws Exception
     {
         Set<String> guarded = doorsOntoTheMonitor();
 
-        List<String> unlisted = new ArrayList<>();
+        List<String[]> found = new ArrayList<>();
 
         for (File source : surfaceSources())
         {
@@ -271,13 +270,24 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
                 while (calls.find())
                 {
-                    String key = source.getName() + "#" + memberAround(code, calls.start());
-
-                    if (ALLOWED.containsKey(key)) continue;
-
-                    unlisted.add(key + "\n        " + lineAround(code, calls.start()));
+                    found.add(new String[] {source.getName() + "#" + memberAround(code, calls.start()),
+                        lineAround(code, calls.start())});
                 }
             }
+        }
+
+        return found;
+    }
+
+    /** Every call from a user-interface class to a method that takes the railway's monitor is listed. */
+    @Test
+    public void testEveryDoorOntoTheRailwaysMonitorIsWrittenDown() throws Exception
+    {
+        List<String> unlisted = new ArrayList<>();
+
+        for (String[] call : callsOntoTheMonitor())
+        {
+            if (!ALLOWED.containsKey(call[0])) unlisted.add(call[0] + "\n        " + call[1]);
         }
 
         assertTrue(unlisted.isEmpty(),
@@ -356,24 +366,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     @Test
     public void testEveryAllowanceIsStillADoor() throws Exception
     {
-        Set<String> guarded = doorsOntoTheMonitor();
-
         Set<String> found = new LinkedHashSet<>();
 
-        for (File source : surfaceSources())
-        {
-            String code = withoutComments(read(source));
-
-            for (String door : guarded)
-            {
-                Matcher calls = Pattern.compile("\\.\\s*" + door + "\\s*\\(").matcher(code);
-
-                while (calls.find())
-                {
-                    found.add(source.getName() + "#" + memberAround(code, calls.start()));
-                }
-            }
-        }
+        for (String[] call : callsOntoTheMonitor()) found.add(call[0]);
 
         List<String> stale = new ArrayList<>();
 
