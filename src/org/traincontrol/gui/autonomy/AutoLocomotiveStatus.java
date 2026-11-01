@@ -229,8 +229,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             final boolean atAssignedHome = at != null && locomotive.equals(at.getHomeLoc());
 
             // Gray out locomotives on inactive points / not on the graph
-            if ((layout.getLocomotiveLocation(locomotive) != null && !layout.getLocomotiveLocation(locomotive).isActive()) ||
-                    layout.getLocomotiveLocation(locomotive) == null
+            if ((at != null && !at.isActive()) ||
+                    at == null
             )
             {
                 this.locName.setForeground(Color.LIGHT_GRAY);
@@ -290,10 +290,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // offered to double-click
             else if (layout.isAutoRunning() || layout.isStagingInProgress())
             {
-                if (layout.getLocomotiveLocation(locomotive) != null)
+                if (at != null)
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.noActivePath"));
-                    this.locStation.setText("@" + stationName(layout.getLocomotiveLocation(locomotive)));
+                    this.locStation.setText("@" + stationName(at));
                 }
                 else
                 {
@@ -322,13 +322,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 if (!this.paths.isEmpty())
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
-                    this.locStation.setText("@" + stationName(layout.getLocomotiveLocation(locomotive))                     
-                        + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
-                        + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
+                    this.locStation.setText("@" + stationName(at)
+                        + (at.equals(timetableStart()) ? " *" : "")
+                        + notChosenByAutonomy(at, locomotive)
 
                     );
                 }
-                else if (layout.getLocomotiveLocation(locomotive) != null)
+                else if (at != null)
                 {                    
                     // With the info mark, because a tooltip nobody knows about explains nothing.
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
@@ -338,9 +338,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // every station under the Layout's monitor (explainDestinations), once per panel on the event
                     // thread, and loading a configuration rebuilds every panel in this deferred branch.
                     this.noPathsNow = true;
-                    this.locStation.setText("@" +  stationName(layout.getLocomotiveLocation(locomotive))
-                        + (layout.getLocomotiveLocation(locomotive).equals(timetableStart()) ? " *" : "")
-                        + notChosenByAutonomy(layout.getLocomotiveLocation(locomotive), locomotive)
+                    this.locStation.setText("@" +  stationName(at)
+                        + (at.equals(timetableStart()) ? " *" : "")
+                        + notChosenByAutonomy(at, locomotive)
                     );
                 }
                 else
@@ -352,7 +352,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locStation.setToolTipText(I18n.t("autolayout.ui.tooltip.currentLocation"));
                 
                 // Sort the list
-                this.paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
+                java.util.IdentityHashMap<List<Edge>, String> key = new java.util.IdentityHashMap<>();
+
+                for (List<Edge> path : this.paths)
+                {
+                    key.put(path, Edge.pathToString(path));
+                }
+
+                this.paths.sort(java.util.Comparator.comparing(key::get));
                 
                 for (List<Edge> path : this.paths)
                 {

@@ -36,6 +36,7 @@ import org.traincontrol.util.I18n;
 public class LayoutGrid
 {
     private LayoutLabel[][] grid;
+    private final java.util.IdentityHashMap<LayoutLabel, int[]> coordinates = new java.util.IdentityHashMap<>();
     public final int maxWidth;
     public final int maxHeight;
     
@@ -876,6 +877,7 @@ public class LayoutGrid
                 if (x == (width - 1) || y == (height - 1))
                 {
                     grid[x][y] = new LayoutLabel(null, master, size, ui, false);
+                    coordinates.put(grid[x][y], new int[]{x, y});
 
                     // Not a square, so not part of the gray grid (OB-055): these hold nothing, and a border would show
                     // them.
@@ -904,6 +906,7 @@ public class LayoutGrid
 
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor, gridLines);
+                coordinates.put(grid[x][y], new int[]{x, y});
 
                 // THE AUTONOMY EDITOR'S TRAINS FOLLOW ITS OWN SWITCH (FR-119), and no other diagram's do
                 if (autonomyEditor && ((LayoutEditor) master).getAutonomyPanel() != null)
@@ -1611,18 +1614,9 @@ public class LayoutGrid
      */
     public int[] getCoordinates(LayoutLabel target)
     {
-        for (int x = 0; x < grid.length; x++)
-        {
-            for (int y = 0; y < grid[x].length; y++)
-            {
-                if (grid[x][y] == target)
-                {
-                    return new int[]{x, y};
-                }
-            }
-        }
+        int[] at = coordinates.get(target);
 
-        return new int[]{-1, -1};
+        return at == null ? new int[]{-1, -1} : at.clone();
     }
     
     public LayoutLabel getValueAt(int x, int y)

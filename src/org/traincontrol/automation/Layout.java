@@ -2124,17 +2124,11 @@ public class Layout
      */
     public List<Edge> getNeighbors(Point p)
     {
-        List<Edge> neighbors = new LinkedList<>();
-        
-        if (this.adjacency.containsKey(p.getName()))
-        {
-            for (Edge e : this.adjacency.get(p.getName()))
-            {
-                neighbors.add(e);
-            }
-        }
+        List<Edge> out = this.adjacency.get(p.getName());
+        List<Edge> neighbors = out == null ? new ArrayList<>() : new ArrayList<>(out);
 
         // Randomize order to allow for variation in paths
+        // Collections.shuffle draws the same random numbers whatever the list type.
         Collections.shuffle(neighbors);
 
         return neighbors;
@@ -2293,10 +2287,12 @@ public class Layout
             }
 
             // The same edge going in the opposite direction
-            if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
+            Edge opposite = this.getEdge(e.getOppositeName());
+
+            if (opposite != null && opposite.isOccupied(loc))
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(this.getEdge(e.getOppositeName())))
+                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(opposite))
                 );
                 return false;
             }
