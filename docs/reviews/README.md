@@ -23,7 +23,7 @@ What survives a round:
 | | |
 |---|---|
 | every finding | the `finding` table in `docs/manual-tests/triage.db`: ref, severity, what it was about, the evidence, the commit, which source files cite it, and a `status` set deliberately |
-| the same, greppable | `docs/manual-tests/findings.tsv`, rendered from the store: `grep "^MKR-B1" docs/manual-tests/findings.tsv` |
+| one finding | `py -3 docs/manual-tests/triagedb.py findings MKR-B1` (no ref: the whole catalogue as text) |
 | the rules it settled | [../reference/behaviour.md](../reference/behaviour.md) |
 | the questions it left | the findings whose status is "Open - Adam's decision", in the same store |
 | the work it left | the Inbox, in the same store: `py -3 docs/manual-tests/triagedb.py issues` |
@@ -33,7 +33,7 @@ Adam: *"I don't want more reviews living in the repo"*, and *"everything relevan
 in behaviour.md."*
 
 **So a round's documents are written, cataloged and deleted in the same round, and the store hands out the numbers.**
-The finding store (`docs/manual-tests/triage.db`, with `findings.tsv` as its mirror) is the index; a round never looks
+The finding store (`docs/manual-tests/triage.db`) is the index; a round never looks
 in a folder to see what has been used:
 
 1. **Take the round's number from the store.** `python docs/tools/catalog-findings.py --next RSA` prints the next

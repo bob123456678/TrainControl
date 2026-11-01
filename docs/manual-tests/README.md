@@ -226,7 +226,8 @@ py -3 docs\manual-tests\triagedb.py update-receipt FR-131 --state "fixed unvalid
 py -3 docs\manual-tests\triagedb.py clear OB-324         # out of the Inbox, once it has a receipt; it is kept
 py -3 docs\manual-tests\triagedb.py changes              # what changed since the last commit (--from, --to, --date)
 py -3 docs\manual-tests\triagedb.py text comments        # every record of a kind, as text (no kind: all of them)
-py -3 docs\manual-tests\triagedb.py verify               # the record holds together; findings.tsv is its own
+py -3 docs\manual-tests\triagedb.py findings DY3-C7      # a review finding in full (no ref: the whole catalogue)
+py -3 docs\manual-tests\triagedb.py verify               # the record holds together
 py -3 docs\manual-tests\triagedb.py selftest             # exercises the store on copies
 py -3 docs\manual-tests\triage.py stats                  # counts: tests by disposition, issues pending
 py -3 docs\manual-tests\triage.py tests --open           # every entry not fixed validated, as JSON

@@ -272,31 +272,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
      */
     private static String entries() throws Exception
     {
-        File out = File.createTempFile("entries", ".txt");
-
-        try
-        {
-            ProcessBuilder builder = new ProcessBuilder("python", "docs/manual-tests/triagedb.py", "text", "tests",
-                "comments", "issues").redirectOutput(out).redirectErrorStream(true);
-
-            builder.environment().put("PYTHONIOENCODING", "utf-8");
-
-            Process process = builder.start();
-
-            process.getOutputStream().close();
-
-            assertTrue(process.waitFor(180, java.util.concurrent.TimeUnit.SECONDS), "triagedb.py text did not finish");
-
-            String text = new String(Files.readAllBytes(out.toPath()), StandardCharsets.UTF_8);
-
-            assertEquals(process.exitValue(), 0, "triagedb.py text failed: " + text);
-
-            return text;
-        }
-        finally
-        {
-            out.delete();
-        }
+        return support.Store.text("tests", "comments", "issues");
     }
 
     /** How many times the needle occurs in the text. */

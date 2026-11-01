@@ -22,22 +22,15 @@ All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **5,8
 findings**, because a finding written up in two documents has a row for each, and reading the row count as a finding
 count is a mistake three documents have made - with the document they came from, the line in it, the severity, what it
 was about, the file and line of the evidence, the commit that fixed it where one is named, and the source files that
-cite it. `docs/manual-tests/findings.tsv` is a plain-text mirror of the same rows, rendered from the database, for the
-two readers that cannot open one: a person with a `grep`, and `regression.testEveryCitationResolves`, which resolves
-every citation in `src/` and `test/` against it and fails if a new comment names a finding that does not exist. The
-counts above are rewritten from the store by `triagedb.py counts` and checked by `regression.testTheRecordsCountTheStore`.
+cite it. `triagedb.py findings` prints the same rows as one table of text, which is how
+`regression.testEveryCitationResolves` reads them (Java has no SQLite driver): it resolves every citation in `src/` and
+`test/` against them and fails if a new comment names a finding that does not exist. The counts above are rewritten
+from the store by `triagedb.py counts` and checked by `regression.testTheRecordsCountTheStore`.
 
-So, having found `DY3-C7` in a comment:
-
-```
-grep "^DY3-C7" docs/manual-tests/findings.tsv
-```
-
-or, for everything the database holds about it:
+So, having found `DY3-C7` in a comment, everything the database holds about it:
 
 ```
-python -c "import sys; sys.path.insert(0, 'docs/manual-tests'); import triagedb; \
-           print(triagedb.findings(triagedb.connect(), ref='DY3-C7'))"
+py -3 docs/manual-tests/triagedb.py findings DY3-C7
 ```
 
 The questions the review folder could not answer:
@@ -73,17 +66,10 @@ an OB. The whole open list:
 SELECT ref, severity, status, status_note FROM finding WHERE status LIKE 'Open%';
 ```
 
-Citations that resolve to no finding at all are rolled in the `dead_citation` table and at the foot of the mirror. The
-CITING FILES are in the table, not the mirror (the mirror's roll is `ref` and four dashes): `SELECT * FROM
-dead_citation` says who cites what. They cluster into whole prefixes whose declaring document never existed (`RC` above
-A5, all of `LE2` and `LD`).
+Citations that resolve to no finding at all are rolled in the `dead_citation` table and at the foot of
+`triagedb.py findings` (as `ref` and four dashes); `SELECT * FROM dead_citation` says who cites what. They cluster into
+whole prefixes whose declaring document never existed (`RC` above A5, all of `LE2` and `LD`).
 
 [`docs/reviews/README.md`](../../reviews/README.md) survives, and is now the convention rather than an index: how a
 round is run, and the rule that its documents are catalogued and deleted in the same round.
 
-Regenerate the mirror after any change to the store:
-
-```
-python -c "import sys; sys.path.insert(0, 'docs/manual-tests'); import triagedb; \
-           triagedb.render_findings(triagedb.connect())"
-```

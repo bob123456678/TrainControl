@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  * only safe if every id a comment names still resolves to something, which is what this holds.
  *
  * Some do not: they cluster into whole prefixes whose declaring document is gone.  They are rolled at the foot of
- * `docs/manual-tests/findings.tsv` (`ref` and four dashes, the citing files being in the `dead_citation` table), so the
+ * `triagedb.py findings` (`ref` and four dashes, the citing files being in the `dead_citation` table), so the
  * citation leads somewhere even though the finding does not, and this holds the count.  A new one is a comment pointing
  * at nothing, and the point of catching it here is the day it is written.
  *
@@ -50,12 +50,6 @@ public class testEveryCitationResolves
     private static final Pattern NOT_A_FINDING = Pattern.compile(
         "^(MT|FR|OB|SU45|EN57|F\\d+|Z0|UTF|ISO|CS|MM|DCC|RGB|ARGB|HTTP|JSON|IPV4|SHA|MD5|JDK|API|UI"
         + "|ID|X|Y|Z)-");
-
-    /**
-     * The catalog mirror, as plain text: `ref<TAB>document<TAB>disposition`, `#` for a comment.  Not the database (no
-     * SQLite driver on this classpath): `docs/tools/catalog-findings.py` writes both from the same rows.
-     */
-    private static final File CATALOGUE = new File("docs/manual-tests/findings.tsv");
 
     /** This file, which names dead ids rather than citing them, so it is left out of the scan. */
     private static final String THE_ROLL_ITSELF = "testEveryCitationResolves.java";
@@ -105,14 +99,9 @@ public class testEveryCitationResolves
         // @date` because they mean two things in two documents; a citation of the bare ref resolves through either.
         Set<String> defined = new LinkedHashSet<>();
 
-        assertTrue(CATALOGUE.isFile(),
-            CATALOGUE + " is missing, so there is nothing to resolve citations against."
-            + " Regenerate it: python docs/tools/catalog-findings.py");
-
-        for (String line : new String(java.nio.file.Files.readAllBytes(CATALOGUE.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8).split("\n"))
+        for (String line : support.Store.findings().split("\n"))
         {
-            // THE ROLL IS AT THE FOOT of the same file, and its entries are shaped like findings. Read
+            // THE ROLL IS AT THE FOOT of the same table, and its entries are shaped like findings. Read
             // past this marker and every dead citation resolves to itself.
             if (line.startsWith("# DEAD")) break;
 
@@ -145,7 +134,7 @@ public class testEveryCitationResolves
         assertTrue(dead.size() == DEAD_CITATIONS,
             dead.size() + " dead citations remain, fewer than the " + DEAD_CITATIONS + " recorded."
             + " Lower DEAD_CITATIONS to " + dead.size() + " so the improvement is kept, and take them"
-            + " out of the roll at the foot of " + CATALOGUE);
+            + " out of the roll at the foot of `triagedb.py findings`");
     }
 
     /**
@@ -225,20 +214,18 @@ public class testEveryCitationResolves
      * them X8V's, so a sub-lettered ref whose document does not write it out is the signature of this fault and of
      * nothing else.
      *
-     * This reads the mirror rather than the database, for the reason the test above does.  With every review document
+     * This reads the catalogue as the test above does.  With every review document
      * deleted, `resolvable` is zero by design and the `document == null` skip fires for every row, so the `unwritten`
      * assertion cannot fail and the count ratchet is the live half; the document arm revives when a review folder is
      * added back through `--add`.
      *
-     * MUTATION: add a sub-lettered row to the mirror and the RATCHET names the count; the document
+     * MUTATION: add a sub-lettered finding to the store and the RATCHET names the count; the document
      * arm names the row itself only while some review document is present to be read.
      */
     @Test
     public void testNoCataloguedFindingHasASubLetterItsDocumentDoesNotWrite() throws Exception
     {
-        String mirror = new String(java.nio.file.Files.readAllBytes(
-            new File("docs/manual-tests/findings.tsv").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String mirror = support.Store.findings();
 
         // The reading is in `subLetteredIn`, so a made-up mirror and made-up documents can drive the same code
         // (`testTheSubLetterCheckSeesADocumentThatDoesNotWriteIt`) - with every review document deleted, this
@@ -273,7 +260,7 @@ public class testEveryCitationResolves
             + "authoritative for the documents in it.  Found:\n  " + String.join("\n  ", unwritten));
     }
 
-    /** What reading the mirror's sub-lettered rows came to: how many there were, how many could be compared, and the bad ones. */
+    /** What reading the catalogue's sub-lettered rows came to: how many there were, how many could be compared, and the bad ones. */
     private static final class SubLetters
     {
         int seen;
@@ -281,7 +268,7 @@ public class testEveryCitationResolves
         final List<String> unwritten = new ArrayList<>();
     }
 
-    /** Reads the mirror's sub-lettered rows against the documents under a folder. */
+    /** Reads the catalogue's sub-lettered rows against the documents under a folder. */
     private static SubLetters subLetteredIn(String mirror, File docs) throws Exception
     {
         SubLetters out = new SubLetters();
@@ -314,7 +301,7 @@ public class testEveryCitationResolves
 
             seen++;
 
-            // The document is the second column by the mirror's own layout.  A sub-lettered ref is only
+            // The document is the second column by the catalogue's own layout.  A sub-lettered ref is only
             // legitimate if the document writes it out, which is what the fifteen did not.
             File document = null;
 
@@ -391,40 +378,22 @@ public class testEveryCitationResolves
     }
 
     /**
-     * The catalog is regenerable and current.
-     *
-     * It is rendered from `docs/manual-tests/triage.db` by `triagedb.render_findings`, and a generated file that has
-     * drifted from its source is read as authoritative.  This does not re-run the generator (that needs Python) but
-     * holds the three things that would make it a lie, the third being the database itself, which is now the only copy.
+     * The catalogue comes from the store, the only copy of what the review findings were: `triagedb.py findings` prints
+     * it from `docs/manual-tests/triage.db`, and both are in the repository.
      */
     @Test
-    public void testTheCatalogueIsThereAndSaysWhereItCameFrom() throws Exception
+    public void testTheCatalogueComesFromTheStore() throws Exception
     {
-        assertTrue(CATALOGUE.isFile(),
-            CATALOGUE + " has gone. It is the index every citation in this codebase resolves through,"
-            + " and the reviews are being deleted on the strength of it (MON-C11)");
-
-        String body = new String(java.nio.file.Files.readAllBytes(CATALOGUE.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(body.contains("triagedb"),
-            "the catalogue no longer names the script that generates it, so the next person to find it"
-            + " out of date has no way to bring it up to date");
-
-        File generator = new File("docs/manual-tests/triagedb.py");
-
-        assertTrue(generator.isFile(),
-            "the generator named by the catalogue is not in the repository. That is the fault one.sh had"
-            + " - a tool nobody can see is a tool nobody can review, and it lived in a scratch directory"
-            + " while its bug was fixed five times in the copy people could read");
-
         assertTrue(new File("docs/manual-tests/triage.db").isFile(),
-            "docs/manual-tests/triage.db is gone. Since the review folder was deleted on 2026-09-08 it"
-            + " and the mirror beside it are the only record of what 2,265 findings were about, and the"
-            + " mirror is rendered FROM it - losing it means the next regeneration writes an empty file");
+            "docs/manual-tests/triage.db is gone. Since the review folder was deleted on 2026-09-08 it is the"
+            + " only record of what the review findings were about");
+
+        assertTrue(support.Store.findings().startsWith("# Every review finding, printed from"
+            + " docs/manual-tests/triage.db by `triagedb.py findings`"),
+            "`triagedb.py findings` no longer says where the catalogue comes from");
     }
 
-    /** How many rows the mirror holds, counted rather than quoted, since a figure typed into a message goes stale. */
+    /** How many rows the catalogue holds, counted rather than quoted, since a figure typed into a message goes stale. */
     private static int rowsInTheMirror(String mirror)
     {
         int rows = 0;

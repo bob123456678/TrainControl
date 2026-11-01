@@ -59,7 +59,7 @@ nothing new above C.
 5. **Records.**  Keep the round's documents in a working folder in the scratch area, never in the repository.  Write
    the dispositions (commit hashes, claim hashes, "red first"); catalogue with
    `python docs/tools/catalog-findings.py --add <the working folder>`; set each new row's status in the store
-   (Closed / Open / "Open - Adam's decision"); render the mirror; update the counts in behaviour.md
+   (Closed / Open / "Open - Adam's decision"); update the counts in behaviour.md
    (`triagedb.py counts`).  Anything Adam has to see on the railway gets a tracker entry with `triagedb.py add-test`,
    proved with `triagedb.py show MT-###`.
 6. **The next round's validators** each get their lane's documents so far and the round's fix commits, and are asked:

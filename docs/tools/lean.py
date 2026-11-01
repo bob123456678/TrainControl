@@ -63,14 +63,15 @@ TRACKER = re.compile(r'\b((?:OB|MT|FR)-\d+)\b')
 
 
 def review_prefixes():
-    """Prefixes of review ids: the first-column refs of docs/manual-tests/findings.tsv, before the dash."""
-    out = set()
-    with open(os.path.join(ROOT, 'docs', 'manual-tests', 'findings.tsv'), encoding='utf-8') as f:
-        for l in f:
-            ref = l.split('\t')[0]
-            if not l.startswith('#') and '-' in ref:
-                out.add(ref.split('-')[0])
-    return out - TRACKER_PREFIXES
+    """Prefixes of review ids: the refs of the finding store's findings and dead citations, before the dash."""
+    import sqlite3
+    db = os.path.join(ROOT, 'docs', 'manual-tests', 'triage.db')
+    conn = sqlite3.connect('file:' + db.replace(chr(92), '/') + '?mode=ro', uri=True)
+    try:
+        refs = [r[0] for r in conn.execute('SELECT ref FROM finding UNION SELECT ref FROM dead_citation')]
+    finally:
+        conn.close()
+    return set(ref.split('-')[0] for ref in refs if '-' in ref) - TRACKER_PREFIXES
 
 
 def read():

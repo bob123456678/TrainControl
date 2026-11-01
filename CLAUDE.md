@@ -13,7 +13,7 @@ Agents pay to read every comment line, so:
 - **No history:** what the code used to do, which review round found it, who said what when, how a bug was found.
   That lives in the tracker row the id resolves to, and in git: write the commit message, not a comment.
 - **Only Adam's tracker ids** (OB-###, MT-###, FR-###), at most one per rule.  Review-finding ids (RSA52-B1, GST-C3,
-  RC-B2 and every other prefix in `docs/manual-tests/findings.tsv`) never go in code comments.
+  RC-B2 and every other prefix `triagedb.py findings` lists) never go in code comments.
 - **Quote Adam only where his words are the rule**, verbatim, without the date.
 - A block over 15 lines is a javadoc contract or too long.  Javadoc sits directly on its declaration.
 - Do not copy the density of the comments around you: older code is still being trimmed.

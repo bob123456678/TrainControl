@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
  * document and compared with the thing it describes, and the failure message says what to write instead.
  *
  * ROWS ARE NOT FINDINGS: a finding written up in two documents has a row for each, so the `finding` table holds more
- * rows than findings.  Both are checked here, against the mirror's rows and its distinct refs.
+ * rows than findings.  Both are checked here, against the catalogue's rows and its distinct refs.
  *
  * The review total is not a constant of this test: a guard whose expectation is its subject's own claim checks
  * nothing but its own arithmetic.  What the README states is four countable things (files deleted per round, reviews
@@ -39,13 +39,6 @@ import org.testng.annotations.Test;
  */
 public class testTheRecordsCountTheStore
 {
-    /**
-     * The mirror is the store's Java-readable projection, the same file the citation guard reads.  This class never
-     * opens `triage.db` (there is no SQLite driver on the classpath); `triagedb.verify_findings_mirror`, which every
-     * `sync` runs, is what makes reading the mirror the same as reading the store.
-     */
-    private static final String MIRROR = "docs/manual-tests/findings.tsv";
-
     /** The finding counts behaviour/citations.md quotes are the store's own, rows and findings. */
     @Test
     public void testTheFindingCountIsTheStoresOwn() throws Exception
@@ -54,11 +47,11 @@ public class testTheRecordsCountTheStore
         int findings = findingsInTheMirror();
 
         assertTrue(rows > 3000,
-            "only " + rows + " rows were counted in " + MIRROR + ", so the reader of that file has"
+            "only " + rows + " rows were counted in `triagedb.py findings`, so the reader of it has"
             + " stopped matching its rows and every claim below is about nothing");
 
         assertTrue(findings > 3000 && findings < rows,
-            "the mirror holds " + rows + " rows for " + findings + " distinct refs.  This guard exists"
+            "the catalogue holds " + rows + " rows for " + findings + " distinct refs.  This guard exists"
             + " to keep those two apart, and it cannot do that if the reader has stopped telling them"
             + " apart: a row is a finding in one document, and a finding written up twice has two");
 
@@ -170,16 +163,6 @@ public class testTheRecordsCountTheStore
             + " read \"" + words + " review documents\"");
     }
 
-    /** One kind of the store's records, as `triagedb.py text` prints them. */
-    private static String records(String kind) throws Exception
-    {
-        Ran ran = python("docs/manual-tests/triagedb.py", "text", kind);
-
-        assertEquals(ran.exit, 0, "triagedb.py text " + kind + " failed:\n" + ran.err);
-
-        return ran.out;
-    }
-
     /**
      * The store holds the record whole: every test once, in tag order, each record's text opening with its own anchor,
      * and every comment on a test or an issue the store holds, numbered from nought without a gap.  A store merged
@@ -192,7 +175,7 @@ public class testTheRecordsCountTheStore
     @Test
     public void testTheStoreHoldsTheRecordWhole() throws Exception
     {
-        String tests = records("tests");
+        String tests = support.Store.text("tests");
 
         java.util.Set<String> held = new java.util.HashSet<>();
 
@@ -232,12 +215,12 @@ public class testTheRecordsCountTheStore
 
         assertTrue(tag == null, "the last test in the store, " + tag + ", has no body");
 
-        for (String line : records("issues").split("\n"))
+        for (String line : support.Store.text("issues").split("\n"))
         {
             if (line.startsWith("[issue ")) held.add(line.substring("[issue ".length(), line.length() - 1));
         }
 
-        for (String line : records("receipts").split("\n"))
+        for (String line : support.Store.text("receipts").split("\n"))
         {
             if (line.startsWith("[receipt ")) held.add(line.substring("[receipt ".length(), line.length() - 1));
         }
@@ -246,7 +229,7 @@ public class testTheRecordsCountTheStore
 
         int comments = 0;
 
-        for (String line : records("comments").split("\n"))
+        for (String line : support.Store.text("comments").split("\n"))
         {
             if (!line.startsWith("[comment ")) continue;
 
@@ -373,14 +356,14 @@ public class testTheRecordsCountTheStore
         }
     }
 
-    /** The refs in the mirror whose prefix is this one, with the round each belongs to (no number: the first). */
+    /** The refs in the catalogue whose prefix is this one, with the round each belongs to (no number: the first). */
     private static java.util.Map<String, Integer> roundsInTheMirror(String prefix) throws Exception
     {
         java.util.Map<String, Integer> out = new java.util.TreeMap<>();
 
         Pattern mine = Pattern.compile("^" + prefix + "([0-9]*)-");
 
-        for (String line : read(MIRROR).split("\n"))
+        for (String line : support.Store.findings().split("\n"))
         {
             if (line.trim().isEmpty() || line.startsWith("#")) continue;
 
@@ -394,22 +377,22 @@ public class testTheRecordsCountTheStore
         return out;
     }
 
-    /** The highest round the mirror holds for a prefix. */
+    /** The highest round the catalogue holds for a prefix. */
     private static int highestRound(String prefix) throws Exception
     {
         int highest = 0;
 
         for (int round : roundsInTheMirror(prefix).values()) highest = Math.max(highest, round);
 
-        assertTrue(highest > 0, "the mirror holds no " + prefix + " refs, so nothing below is a check of the prefix");
+        assertTrue(highest > 0, "the catalogue holds no " + prefix + " refs, so nothing below is a check of the prefix");
 
         return highest;
     }
 
     /**
      * `--next` prints one past the highest round the store holds, for the prefixes that run to many rounds and for ones
-     * whose first round has no number.  The expected value is counted here from the mirror, which `--next` cross-checks
-     * against the database, so a tool that read a folder or sorted the numbers as text would print another.
+     * whose first round has no number.  The expected value is counted here from `triagedb.py findings`, so a tool that
+     * read a folder or sorted the numbers as text would print another.
      */
     @Test
     public void testTheNextRoundIsOnePastTheHighestTheStoreHolds() throws Exception
@@ -521,34 +504,43 @@ public class testTheRecordsCountTheStore
             + " some ref carries its number");
     }
 
-    /** The store's refs include the dead citations, and a store that disagrees with its mirror hands out nothing. */
+    /** The store's refs include the dead citations: a ref cited from the code is a used number too. */
     @Test
-    public void testTheStoreAndItsMirrorMustAgreeBeforeANumberIsHandedOut() throws Exception
+    public void testTheStoresRefsIncludeTheDeadCitations() throws Exception
     {
         String said = script(
             "d = tempfile.mkdtemp()",
             "db = os.path.join(d, 't.db')",
-            "mirror = os.path.join(d, 'm.tsv')",
             "conn = triagedb.connect(db)",
             "first, dead = fix('ZZ~A1', 'ZZ7~C1')",
             "conn.execute(\"INSERT INTO finding (ref, document) VALUES (?, 'ZZ.md')\", (first,))",
             "conn.execute(\"INSERT INTO dead_citation (ref) VALUES (?)\", (dead,))",
             "conn.commit()",
             "conn.close()",
-            "tab = chr(9)",
-            "io.open(mirror, 'w').write('# header\\n' + first + tab + 'ZZ.md\\n' + dead + tab + '-\\n')",
-            "refs = cf.refs_in_the_store(db, mirror)",
-            "print(len(refs), cf.next_round(refs, 'ZZ'))",
-            "io.open(mirror, 'w').write('# header\\n' + first + tab + 'ZZ.md\\n')",
-            "try:",
-            "    cf.refs_in_the_store(db, mirror)",
-            "    print('agreed')",
-            "except cf.Refusal as no:",
-            "    print('disagree' if 'disagree' in str(no) else str(no))");
+            "refs = cf.refs_in_the_store(db)",
+            "print(len(refs), cf.next_round(refs, 'ZZ'))");
 
-        assertEquals(said, "2 ZZ8\ndisagree\n",
-            "a ref cited from the code and a finding in no document (the DEAD roll) is a used number too, and a"
-            + " store whose mirror lacks one of its refs must refuse to hand out a number");
+        assertEquals(said, "2 ZZ8\n",
+            "a ref cited from the code and a finding in no document (the DEAD roll) is a used number too");
+    }
+
+    /**
+     * The tracker's own checks pass: `triagedb.py selftest`, which exercises every kind of write on copies of a store,
+     * and `triagedb.py verify` on the repository's store.
+     *
+     * MUTATION: in `triagedb.changes`, return `out[1:]`, and the selftest's claim that a new comment shows as one added
+     * record fails.
+     */
+    @Test
+    public void testTheTrackersOwnChecksPass() throws Exception
+    {
+        Ran selftest = python("docs/manual-tests/triagedb.py", "selftest");
+
+        assertEquals(selftest.exit, 0, "triagedb.py selftest failed:\n" + selftest.out + selftest.err);
+
+        Ran verify = python("docs/manual-tests/triagedb.py", "verify");
+
+        assertEquals(verify.exit, 0, "triagedb.py verify failed:\n" + verify.out + verify.err);
     }
 
     // ---------------------------------------------------------------- no mode drops a deleted round's rows (FR-136)
@@ -678,12 +670,12 @@ public class testTheRecordsCountTheStore
 
     // ---------------------------------------------------------------- the counting
 
-    /** The rows in the mirror: its data rows, less the dead-citation roll at the foot. */
+    /** The rows in the catalogue: its data rows, less the dead-citation roll at the foot. */
     private static int rowsInTheMirror() throws Exception
     {
         int rows = 0;
 
-        for (String line : read(MIRROR).split("\n"))
+        for (String line : support.Store.findings().split("\n"))
         {
             if (!isAFinding(line)) continue;
 
@@ -693,12 +685,12 @@ public class testTheRecordsCountTheStore
         return rows;
     }
 
-    /** The findings in the mirror: its distinct refs, which is fewer than its rows. */
+    /** The findings in the catalogue: its distinct refs, which is fewer than its rows. */
     private static int findingsInTheMirror() throws Exception
     {
         java.util.Set<String> refs = new java.util.HashSet<>();
 
-        for (String line : read(MIRROR).split("\n"))
+        for (String line : support.Store.findings().split("\n"))
         {
             if (!isAFinding(line)) continue;
 
@@ -708,7 +700,7 @@ public class testTheRecordsCountTheStore
         return refs.size();
     }
 
-    /** Whether a line of the mirror is a finding row rather than a comment or the dead-citation roll. */
+    /** Whether a line of the catalogue is a finding row rather than a comment or the dead-citation roll. */
     private static boolean isAFinding(String line)
     {
         if (line.trim().isEmpty() || line.startsWith("#")) return false;

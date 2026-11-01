@@ -28,7 +28,7 @@ once, by `migrate`, and deleted; their history is in git.
             receipt); the row is never deleted.
   receipt   one row per line of the old "What has been picked up" table: Filed, Ref, Kind, What, State, Became.
   note      the prose that surrounded those, kept word for word (the conventions, and the notes under the table).
-  finding, dead_citation   the review catalogue, as before.  `findings.tsv` is still rendered from them.
+  finding, dead_citation   the review catalogue.  `triagedb.py findings` prints it; nothing writes it out.
   meta      when the store was migrated, and from what.
 
 
@@ -76,7 +76,6 @@ import triage  # noqa: E402  - the path has to be set first
 DB_FILE = os.path.join(HERE, "triage.db")
 
 
-FINDINGS_MIRROR = os.path.join(HERE, "findings.tsv")
 
 # The reference document that quotes the record's counts (see render_counts): the behavior reference's area file
 # that holds "Looking up a citation".
@@ -623,27 +622,22 @@ def close_findings(conn, note, severity=None, only_open=True):
     return n
 
 
-def render_findings(conn, path=FINDINGS_MIRROR, force=False):
-    """Writes the plain-text mirror of the catalogue, from the store.
+def findings_text(conn):
+    """The catalogue as one table of text, as `triagedb.py findings` prints it.
 
-    `testEveryCitationResolves` resolves every citation in the codebase against it - there is no SQLite driver on this
-    project's classpath - and a person who has just found `RC-A1` in a comment wants one grep, not a query.  Rendering
-    the repository's own mirror also rewrites the counts the reference documents quote of it.
+    `testEveryCitationResolves` resolves every citation in the codebase against it, reading it through python - there is
+    no SQLite driver on this project's classpath.
 
     :param conn: an open connection
-    :param path: where to write it
-    :param force: write even over a mirror that holds ten times as many rows
-    :return: how many findings were written
+    :return: the text
     """
-    out = ["# Every review finding. Rendered from docs/manual-tests/triage.db - do not hand-edit.",
-           "# Regenerate: python -c \"import triagedb; triagedb.render_findings(triagedb.connect())\"",
+    out = ["# Every review finding, printed from docs/manual-tests/triage.db by `triagedb.py findings`.",
            "#",
            "# ref<TAB>document<TAB>status<TAB>disposition-as-stated<TAB>what it was about",
            "#",
            "# The DOCUMENTS ARE GONE - 143 deleted 2026-09-08 and the last 65 on 2026-09-21, and in git",
-           "# history before that. This file and the database are what is left of them, and the last",
-           "# column is here so that this file is enough on its own: somebody who has just found a",
-           "# citation in a comment should not need a SQLite driver to find out what it referred to.",
+           "# history before that. The database is what is left of them; the last column says what each",
+           "# finding was about.",
            "#",
            "# `disposition` is what a document said ON THE DAY IT WAS WRITTEN, and nothing ever updated",
            "# one: of 63 A-severity findings still reading `open`, 13 were checked against the code and",
@@ -652,31 +646,12 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
            "#",
            "# Refs below the DEAD marker are cited from the code and are findings in no document."]
 
-    n = 0
-
     for r in conn.execute("SELECT ref, document, status, disposition, title FROM finding"
                           " ORDER BY ref, document"):
         out.append("%s\t%s\t%s\t%s\t%s" % (
             r["ref"], r["document"], r["status"] or "-",
             " ".join((r["disposition"] or "-").split())[:90],
             " ".join((r["title"] or "-").split())[:150]))
-
-        n += 1
-
-    # IT WILL NOT EMPTY A FULL MIRROR (VD15-T3, VD17-C3).  A render from the wrong store - one with no findings, or a
-    # handful - looks like a collapse rather than a change: an ordinary round adds tens of rows to thousands.
-    if os.path.exists(path):
-        held = 0
-
-        for line in io.open(path, encoding="utf-8"):
-            if line.strip() and not line.startswith("#"):
-                held += 1
-
-        if held > 0 and n * 10 < held and not force:
-            raise IOError(
-                "REFUSING to write %d rows over %d. A collapse like that is not an edit, so this is"
-                " not the store the mirror comes from.  Render from triagedb.connect(), or pass"
-                " force=True if you mean it." % (n, held))
 
     out.append("# DEAD - cited, no finding behind them")
 
@@ -685,14 +660,7 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
 
     out.append("")
 
-    io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(out))
-
-    # Only the repository's own mirror: a render to a temporary file is `verify_findings_mirror` asking a question,
-    # and answering it must not rewrite a document.
-    if os.path.abspath(path) == os.path.abspath(FINDINGS_MIRROR):
-        render_finding_counts(conn)
-
-    return n
+    return "\n".join(out)
 
 
 def holdsFindings(conn):
@@ -702,50 +670,6 @@ def holdsFindings(conn):
     :return: true when it has findings in it
     """
     return conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0] > 0
-
-
-def verify_findings_mirror(conn=None, path=FINDINGS_MIRROR):
-    """Whether the plain-text mirror on disk is what the store would render right now (VD15-T3).
-
-    :param conn: an open connection, or None for the repository's store
-    :param path: the mirror
-    :return: (ok, message)
-    """
-    import tempfile
-
-    ours = conn is None
-
-    if ours:
-        conn = connect()
-
-    try:
-        if conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0] == 0:
-            return True, "this store holds no findings, so the mirror is not rendered from it"
-
-        handle, temp = tempfile.mkstemp(suffix=".tsv", prefix="mirror-")
-
-        os.close(handle)
-
-        try:
-            render_findings(conn, temp)
-
-            fresh = io.open(temp, "rb").read()
-        finally:
-            os.remove(temp)
-
-        if not os.path.exists(path):
-            return False, path + " is not there at all, and it is what Java reads the catalogue from"
-
-        # Line endings aside, on both sides: git may check the file out with CRLF, and the render may write either.
-        if io.open(path, "rb").read().replace(b"\r\n", b"\n") == fresh.replace(b"\r\n", b"\n"):
-            return True, "the mirror is the store's own rows"
-
-        return False, ("%s is not what the store renders - regenerate it with"
-                       " triagedb.render_findings(triagedb.connect())" % path)
-    finally:
-        # ONLY WHAT WE OPENED, AND ALWAYS (VD16-C3).
-        if ours:
-            conn.close()
 
 
 def findings(conn, ref=None, disposition=None, severity=None, cited=None):
@@ -2984,8 +2908,12 @@ def main(argv=None):
     p = sub.add_parser("text", help="the store's records as text: every kind, or these (%s)" % ", ".join(KINDS))
     p.add_argument("kinds", nargs="*", choices=[[]] + KINDS, metavar="kind")
 
-    p = sub.add_parser("verify", help="the record holds together, findings.tsv is the store's own rows, and every OB a"
-                                      " finding says it is tracked as is in the Inbox")
+    p = sub.add_parser("findings", help="the review-finding catalogue as one table of text; with refs, those findings"
+                                        " in full")
+    p.add_argument("refs", nargs="*")
+
+    p = sub.add_parser("verify", help="the record holds together, and every OB a finding says it is tracked as is in the"
+                                      " Inbox")
     p.add_argument("--store", default=DB_FILE, help="the store whose status notes are checked - a copy, to see the"
                                                      " check fail")
 
@@ -3070,10 +2998,6 @@ def _command(args, conn):
 
             ok = False
 
-        mirrored, message = verify_findings_mirror(conn)
-
-        print(message)
-
         claims_ok, claims_message, offenders = verify_inbox_claims(args.store)
 
         print(claims_message)
@@ -3081,7 +3005,7 @@ def _command(args, conn):
         for ref, document, ob in offenders:
             print("  %s (%s) says %s" % (ref, document, ob))
 
-        return 0 if ok and mirrored and claims_ok else 1
+        return 0 if ok and claims_ok else 1
 
     require_record(conn)
 
@@ -3200,6 +3124,26 @@ def _command(args, conn):
         _print(changes_text(found) if found else "no changes\n")
 
         return 0
+
+    if args.command == "findings":
+        if not args.refs:
+            _print(findings_text(conn))
+            return 0
+
+        missing = 0
+
+        for ref in args.refs:
+            found = [r for r in _records("findings", conn) + _records("dead-citations", conn)
+                     if r[0].startswith("[finding %s in " % ref) or r[0] == "[dead %s]" % ref]
+
+            for record in found:
+                _print("\n".join(record) + "\n\n")
+
+            if not found:
+                print("%s: no such finding" % ref, file=sys.stderr)
+                missing += 1
+
+        return 1 if missing else 0
 
     if args.command == "text":
         _print(records_text(conn, args.kinds or None))

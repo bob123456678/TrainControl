@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
  * <li>LONG BLOCKS: a run of more than 15 consecutive `//` lines, or a non-javadoc block comment over 15 lines.  A
  * javadoc contract may be long.</li>
  * <li>REVIEW IDS: an id of a review finding in a comment of `src/` or `test/` - a prefix from the first column of
- * `docs/manual-tests/findings.tsv`, a dash, an optional capital letter and digits.  The store is read when the test runs,
+ * `triagedb.py findings`, a dash, an optional capital letter and digits.  The store is read when the test runs,
  * so a prefix added to it is guarded from that day.  OB, MT and FR are Adam's tracker ids, which comments may cite, and
  * are not counted.  The generated regions are counted too.</li>
  * </ul>
@@ -132,9 +132,6 @@ public class testCommentsStayLean
         "test/core/testNonReversibleTrains.java (1)",
         "test/regression/testPageIdsAreDurable.java (1)",
     };
-
-    /** The finding store: the part of a first-column ref before its dash is a prefix of review ids. */
-    private static final File FINDINGS = new File("docs/manual-tests/findings.tsv");
 
     /** Adam's tracker ids, which comments may cite (CLAUDE.md); every other prefix in the store is a review id. */
     private static final Set<String> TRACKER_PREFIXES = new HashSet<>(java.util.Arrays.asList("OB", "MT", "FR"));
@@ -344,12 +341,10 @@ public class testCommentsStayLean
     /** Any prefix the finding store holds except Adam's tracker ones, a dash, an optional capital letter and digits. */
     private Pattern reviewIds() throws IOException
     {
-        assertTrue(FINDINGS.isFile(), FINDINGS + " is missing, so the review-id prefixes cannot be read - this test has "
-            + "to run from the project root");
-
         Set<String> prefixes = new TreeSet<>();
 
-        for (String line : new String(Files.readAllBytes(FINDINGS.toPath()), StandardCharsets.UTF_8).split("\n"))
+        // The part of a first-column ref before its dash is a prefix of review ids.
+        for (String line : support.Store.findings().split("\n"))
         {
             if (line.startsWith("#") || line.trim().isEmpty()) continue;
 
@@ -360,7 +355,7 @@ public class testCommentsStayLean
             if (dash > 0 && !TRACKER_PREFIXES.contains(ref.substring(0, dash))) prefixes.add(ref.substring(0, dash));
         }
 
-        assertTrue(prefixes.size() > 100, "only " + prefixes.size() + " prefixes were read from " + FINDINGS
+        assertTrue(prefixes.size() > 100, "only " + prefixes.size() + " prefixes were read from the finding store"
             + ", far fewer than it holds - its format has changed and review ids would go uncounted");
 
         StringBuilder any = new StringBuilder();
