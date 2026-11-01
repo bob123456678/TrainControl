@@ -105,11 +105,9 @@ public class testHomeStaging
     }
 
     /**
-     * Loading a configuration leaves alone what its placements do not carry.
-     *
-     * `captureFromLayout` writes a placement as `{"name": X}` only, so `parseAuto` must treat an absent key as
-     * "not stated", not as an instruction to clear train length, reversible and the function slots in the live
-     * `Locomotive`.  The fixture is the ordinary one: `station()` emits the name-only placement the editor writes.
+     * Loading a configuration leaves alone what its placements do not carry: `captureFromLayout` writes a placement as
+     * `{"name": X}` only, so `parseAuto` must treat an absent key as "not stated", not as an instruction to clear train
+     * length, reversible and the function slots in the live `Locomotive`.
      *
      * MUTATION: restoring any of the four `else` clauses in `parseAuto` (`setTrainLength(0)`,
      * `setReversible(false)`, `setDepartureFunc(null)`, `setArrivalFunc(null)`).
@@ -167,9 +165,6 @@ public class testHomeStaging
 
     /**
      * The planner asks the same question about covered track that the runtime does (OB-184).
-     *
-     * Adam: **"The home planner does not consider blocks due to the length of a train, i.e. a train
-     * that blocks edges behind it."**
      *
      * A pairing test, not a journey: a tail only extends along a LINEAR stretch, and the real case (a tail across a
      * SWITCH, reached through lock edges) cannot be built from this suite's hand-made fixtures.  So this pins that
@@ -295,12 +290,10 @@ public class testHomeStaging
     }
 
     /**
-     * The audit speaks when the runtime refuses a berth for want of room and the planner does not.
-     *
-     * `HomeStaging` carries its own copy of the runtime's rules and never reads `getLength()`.  The assertion is
-     * deliberately weak: not that the planner must carry the rule, only that the two must not silently disagree,
-     * which `auditAgainstRuntime` notices.  Fixture: a ring whose HS D is a terminus over an edge measured 5, with
-     * a train 40 long homed there.
+     * The audit speaks when the runtime refuses a berth for want of room and the planner does not.  `HomeStaging`
+     * carries its own copy of the runtime's rules and never reads `getLength()`; the assertion is deliberately weak:
+     * the two must not silently disagree, which `auditAgainstRuntime` notices.  Fixture: a ring whose HS D is a
+     * terminus over an edge measured 5, with a train 40 long homed there.
      *
      * MUTATION: taking the length off the edge, or the train length off the locomotive, makes the runtime stop
      * refusing and the audit fall back to zero; both are asserted as preconditions.
@@ -456,10 +449,6 @@ public class testHomeStaging
     }
     /**
      * The planner offers a platform whose approach holds the train, as the railway does.
-     *
-     * Adam: *"it would not fit just past 14,12 ... so we need a clear rule to govern that this is OK, or simply make a
-     * rule that parking berths cant block any other edges, but not make that check for active stations."*
-     *
      * `Layout.theApproachItselfHoldsIt` is the relaxation and both sides ask it: the runtime in
      * `whyTooLongForThisRoute` (room applies only where the train comes to rest, MT-333) and the planner at its
      * destination test.  A planner stricter than the runtime would leave a train standing with nothing said.
@@ -528,10 +517,10 @@ public class testHomeStaging
 
     /**
      * The planner refuses a home the operator has said is too short for the train.
-     *
-     * The **Advanced Parameters** maximum train length is a preference, not a measurement, and
-     * `HomeStaging.canRest` ends with `at.validateTrainLength(loc)`; no other claim here covers it, since the room
-     * and berth rules both measure the track.
+     * The planner refuses a home the operator has said is too short for the train.  The **Advanced Parameters** maximum
+     * train length is a preference, not a measurement, and `HomeStaging.canRest` ends with
+     * `at.validateTrainLength(loc)`; no other claim here covers it, since the room and berth rules both measure the
+     * track.
      *
      * MUTATION: deleting `at.validateTrainLength(loc)` from `canRest` makes this plan READY, and the runtime then
      * refuses the move it contains.  The control beside it (the limit raised) tells that from an unstageable fixture.
@@ -609,8 +598,7 @@ public class testHomeStaging
     }
 
     /**
-     * A platform reached over a six-unit approach with a switch three units from the end (Adam's figures for the
-     * relaxation).
+     * A platform reached over a six-unit approach with a switch three units from the end.
      *
      * @return the configuration
      */
@@ -646,8 +634,7 @@ public class testHomeStaging
             + ", 'terminus': true, 'home': '" + LOC_A + "'}"
             + "],'edges': ["
             // EVERY EDGE MEASURED, the point of the fixture: with any segment unmeasured the rule declines to judge and
-            // the planner routes the long way round, which the runtime accepts for the same reason, so the two agree
-            // and the test proves nothing.  Measured throughout, every route to HS D is too short for the train.
+            // the planner routes the long way round, so the two agree and the test proves nothing.
             + "{'start': 'HS A', 'end': 'HS B', 'length': 5},"
             + "{'start': 'HS B', 'end': 'HS A', 'length': 5},"
             + "{'start': 'HS B', 'end': 'HS C', 'length': 5},"
@@ -684,8 +671,7 @@ public class testHomeStaging
      * without the second check a replay could not notice a move the railway then refuses.
      *
      * The planner applies the restriction (`HomeStaging.firstClearRoute` reads `Point.heldBackBy`) and so does the
-     * railway (Adam: *"enforce the occupancy ruling in all modes and then rely on isPathClear"*), so the oracle asks
-     * it too, with the LIVE occupancy, which the replay has.
+     * railway, so the oracle asks it too, with the LIVE occupancy, which the replay has.
      *
      * MUTATION: dropping the `heldBackBy` line from `HomeStaging.firstClearRoute`'s search fails
      * `testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan` here.
@@ -700,8 +686,7 @@ public class testHomeStaging
                 "move \"" + move + "\" sends a locomotive into an occupied station");
 
             // AND NOT HELD BACK BY A SQUARE SOMEBODY ELSE IS STANDING ON (FR-001, OB-073): the railway refuses that
-            // AFTER the planner offered it, which staging exists to avoid.  The locomotive being moved is exempt
-            // where it is itself the occupant, which `heldBackBy` applies.
+            // AFTER the planner offered it.  The locomotive being moved is exempt where it is itself the occupant.
             org.traincontrol.automation.Point heldBy = org.traincontrol.automation.Point.heldBackBy(
                 end, move.getLocomotive());
 
@@ -932,9 +917,8 @@ public class testHomeStaging
     }
 
     /**
-     * A fold while the plan occupies the timetable writes his timetable, not the plan, and no one-at-a-time flag;
-     * once the plan has handed it back, a fold writes the timetable as it is then.  Otherwise a timetable changed
-     * afterwards would never be saved: the one held when Return Home began would be written every time.
+     * A fold while the plan occupies the timetable writes his timetable, not the plan, and no one-at-a-time flag; once
+     * the plan has handed it back, a fold writes the timetable as it is then (else a later change is never saved).
      *
      * MUTATION: fold the timetable the railway holds while the plan has it, or leave the loan standing after the
      * hand-back, and this fails.
@@ -1415,8 +1399,7 @@ public class testHomeStaging
 
     /**
      * One station per locomotive: assigning it somewhere new gives up wherever it was.  Two stations waiting for the
-     * same train could never both be satisfied, and the planner would report the layout impossible rather than the
-     * assignment contradictory.
+     * same train could never both be satisfied, and the planner would report the layout impossible.
      */
     @Test
     public void testAssigningALocomotiveSomewhereNewReleasesItsOldStation() throws Exception
@@ -1547,9 +1530,8 @@ public class testHomeStaging
     }
 
     /**
-     * A placement naming a locomotive the database does not have loses the placement, not the layout, as every
-     * other dangling name in the loader does.  Adam: **"drop the train and keep the rest."**  The legacy importer
-     * already behaves this way
+     * A placement naming a locomotive the database does not have loses the placement, not the layout, as every other
+     * dangling name in the loader does.  The legacy importer already behaves this way
      * (`core.testATrainIsPlacedOnceAndKeepsItsFacing.testAPlacementForAnUnknownLocomotiveIsRefused`).
      *
      * Asserted on everything the file carries around that placement (the other train, the home, the exclusion, the
@@ -1663,10 +1645,9 @@ public class testHomeStaging
     }
 
     /**
-     * A lock naming track the file does not contain is dropped LOUDLY, and the locks that do resolve are kept.
-     *
-     * A lock edge says two roads are one piece of metal: if its name is a misspelling of track that IS there,
-     * dropping it lets two trains onto shared metal.  Adam: **"drop the lock edge with a loud log line too."**
+     * A lock naming track the file does not contain is dropped LOUDLY, and the locks that do resolve are kept.  A lock
+     * edge says two roads are one piece of metal: if its name is a misspelling of track that IS there, dropping it lets
+     * two trains onto shared metal.
      *
      * Pins that the configuration loads, that a lock in the same list that DOES resolve is applied, and that the
      * model's own `java.util.logging` logger carries the dedicated warning naming both the owning track and the name
@@ -2003,9 +1984,8 @@ public class testHomeStaging
     /**
      * A train that cannot reverse is homed at a terminus with nothing on the way to turn it round.
      *
-     * Adam: **"Return home is manual, take the rule out and say why."**  The rule was `mustBackIn`: a terminus was
-     * refused to a non-reversible train unless a reversing point lay on the route, so a real railway answered
-     * `NO_PLAN_FOUND` for a train that setting `reversible` true staged at once.
+     * Return home is manual, so a terminus is no longer refused to a non-reversible train: the old rule `mustBackIn`
+     * answered `NO_PLAN_FOUND` for a train that setting `reversible` true staged at once.
      *
      * The fixture is the plain ring with **no reversing point anywhere**: with one, the old rule would have been
      * satisfied and this would have passed before the change.
@@ -2125,17 +2105,15 @@ public class testHomeStaging
 
 
     /**
-     * Nothing edits the graph while the railway is using it, deletes included.
-     *
-     * `renamePoint` refuses while `isRunning() || isStagingInProgress()` (a rename mid-run mutates `Point.hashCode`
-     * under live visited sets); `deletePoint` and `deleteEdge` do more damage and had no such guard.  The menu items
-     * are grayed when the popup OPENS and the action fires when it is CLICKED, so starting autonomy from another
-     * window in between leaves a live item over a running railway (the two-moment gap of OB-057 and OB-090): the
-     * guard has to be the one that actually holds.
+     * Nothing edits the graph while the railway is using it, deletes included.  `renamePoint` refuses while
+     * `isRunning() || isStagingInProgress()`; `deletePoint` and `deleteEdge` do more damage and had no such guard.  The
+     * menu items are grayed when the popup OPENS and the action fires when it is CLICKED, so starting autonomy from
+     * another window in between leaves a live item over a running railway (the two-moment gap of OB-057 and OB-090):
+     * the guard has to be the one that actually holds.
      *
      * Staging is the busy state because the planner walks these structures with nothing dispatched (the window a bare
-     * `isAutoRunning` flag waves through) and it can be entered without moving a train.  `renamePoint` is the
-     * CONTROL: if it stops refusing, the two deletes are passing for another reason.
+     * `isAutoRunning` flag waves through).  `renamePoint` is the CONTROL: if it stops refusing, the two deletes are
+     * passing for another reason.
      *
      * @throws Exception on a failure to build
      */
@@ -2414,10 +2392,9 @@ public class testHomeStaging
     }
 
     /**
-     * getHomeStations hands back a snapshot, not a window onto the live map.  The planner reads it on a worker thread
-     * while placement, deletions and rebuilds write to it elsewhere; as a view that is a
-     * ConcurrentModificationException or a plan built from half the homes, and turning it back into a view is a
-     * one-word change nothing else notices.
+     * getHomeStations hands back a snapshot, not a window onto the live map: the planner reads it on a worker thread
+     * while placement, deletions and rebuilds write to it elsewhere, and as a view that is a
+     * ConcurrentModificationException or a plan built from half the homes.
      */
     @Test
     public void testGetHomeStationsIsASnapshotRatherThanALiveView() throws Exception
@@ -2525,15 +2502,11 @@ public class testHomeStaging
     }
 
     /**
-     * A blocker with a home of its own does not make staging impossible.
-     *
-     * The impossibility scan proves "no move can ever end there", so its tests are state-INDEPENDENT; `connected` says
-     * so: a route blocked merely by another train is not impossible, since moving that train is what the planner is
-     * for.  OB-073's state-AWARE rest test read the starting occupancy, so a locomotive standing on a watched square
-     * proved the goal unreachable even when the plan's own first move vacates it.
-     *
-     * The blocker here has a home elsewhere, the difference between "in the way" and "stuck": one with no home
-     * genuinely cannot be moved and IMPOSSIBLE is right for it.
+     * A blocker with a home of its own does not make staging impossible.  The impossibility scan proves "no move can
+     * ever end there", so its tests are state-INDEPENDENT (`connected` says so): a route blocked merely by another
+     * train is not impossible, since moving that train is what the planner is for.  The blocker here has a home
+     * elsewhere, the difference between "in the way" and "stuck": one with no home genuinely cannot be moved and
+     * IMPOSSIBLE is right.
      */
     @Test
     public void testABlockerWithAHomeOfItsOwnIsNotAProofOfImpossibility() throws Exception
@@ -2591,16 +2564,12 @@ public class testHomeStaging
     }
 
     /**
-     * Two homes that hold each other back are a real deadlock.
-     *
-     * HS C is held back while HS D is occupied and HS D while HS C is, each the other occupant's home.  The
-     * restriction is enforced in every tier (Adam: *"enforce the occupancy ruling in all modes and then rely on
-     * isPathClear"*), so the planner cannot stage it and says NO_PLAN_FOUND, not IMPOSSIBLE: IMPOSSIBLE names
-     * locomotives and asserts that no arrangement exists, and the scan that produced it (OB-085) was removed for
-     * proving false things about working railways.  IMPOSSIBLE appearing here means that scan has come back.
-     *
-     * The control is the same fixture with one hold removed, so NO_PLAN_FOUND is the mutual hold and not a ring
-     * nothing can be staged on.
+     * Two homes that hold each other back are a real deadlock: HS C is held back while HS D is occupied and HS D while
+     * HS C is, each the other occupant's home.  The restriction is enforced in every tier, so the planner cannot stage
+     * it and says NO_PLAN_FOUND, not IMPOSSIBLE (IMPOSSIBLE names locomotives and asserts that no arrangement exists;
+     * the scan that produced it, OB-085, was removed for proving false things about working railways).  The control is
+     * the same fixture with one hold removed, so NO_PLAN_FOUND is the mutual hold and not a ring nothing can be staged
+     * on.
      */
     @Test
     public void testTwoHomesThatHoldEachOtherBackAreADeadlock() throws Exception
@@ -2648,16 +2617,10 @@ public class testHomeStaging
     }
 
     /**
-     * A sensor shared with an approach guard does not make an ordinary layout impossible (OB-085).
-     *
-     * The scan asked "would a train standing there close this station" through `sameTrackAs`, which unions block copies
-     * AND the points reporting the same feedback address; the sensor half is conservative on purpose (a refused plan,
-     * never a wrong movement).  But IMPOSSIBLE is a PROOF, naming locomotives and asserting no arrangement exists, so
-     * it may only be built out of the relation the railway enforces, the block.  The fixture builds its restrictions
-     * out of a shared sensor, which reaches the widened relation.
-     *
-     * The scan is removed; this stays as the line it drew: no verdict of IMPOSSIBLE may be built out of the sensor
-     * relation.
+     * A sensor shared with an approach guard does not make an ordinary layout impossible (OB-085).  The removed scan
+     * built IMPOSSIBLE (a PROOF naming locomotives) out of `sameTrackAs`, which unions block copies AND the points
+     * reporting the same feedback address; a proof may only be built out of the relation the railway enforces, the
+     * block.  This stays as the line it drew: no verdict of IMPOSSIBLE may be built out of the sensor relation.
      */
     @Test
     public void testASharedSensorDoesNotMakeAnOrdinaryLayoutImpossible() throws Exception
@@ -2699,12 +2662,10 @@ public class testHomeStaging
     }
 
     /**
-     * The blocked list names the locomotive that genuinely cannot get home, and nobody else (OB-085).
-     *
-     * The cycle argument rests on both trains actually parking; if one can never get home (no route, a home it cannot
-     * rest at) the square stays clear and the other is free to arrive.  The plan is impossible either way, but the LIST
-     * is what the operator reads, and naming a locomotive that could get home sends them looking for a fault that is
-     * not there.  The `unreachable` scan it comes from is untouched.
+     * The blocked list names the locomotive that genuinely cannot get home, and nobody else (OB-085).  If one train can
+     * never get home (no route, a home it cannot rest at) the square stays clear and the other is free to arrive; the
+     * plan is impossible either way, but the LIST is what the operator reads, and naming a locomotive that could get
+     * home sends them looking for a fault that is not there.
      */
     @Test
     public void testACycleDoesNotNameATrainThatWasAlreadyStuck() throws Exception
@@ -2739,13 +2700,9 @@ public class testHomeStaging
     }
 
     /**
-     * A hold in ONE direction is an ordering, not an impossibility (OB-085).
-     *
-     * The control for the pair: with one of the two restrictions removed the fixture is solvable (park at HS C first
-     * while HS D is empty, then HS D, which nothing watches), and a scan reporting it impossible would refuse
-     * arrangements the railway can make.  The cycle scan is gone; this outlives it as the second of the pair that says
-     * an occupancy restriction may not produce IMPOSSIBLE.  The other is
-     * testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan (the plan still executes).
+     * A hold in ONE direction is an ordering, not an impossibility (OB-085): with one of the two restrictions removed
+     * the fixture is solvable (park at HS C first while HS D is empty, then HS D, which nothing watches).  The control
+     * for the pair; the other is testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan (the plan still executes).
      */
     @Test
     public void testAOneWayHoldIsJustAnOrdering() throws Exception
@@ -2826,15 +2783,13 @@ public class testHomeStaging
     }
 
     /**
-     * Saving a layout that has not changed produces the same file it produced last time.
+     * Saving a layout that has not changed produces the same file it produced last time: `Point.excludedLocs` is a set
+     * of Locomotive objects with identity hashCodes, so iteration order differs on every JVM run, and without a stable
+     * order opening and saving a layout rewrote the file with nothing changed.
      *
-     * `Point.excludedLocs` is a set of Locomotive objects with identity hashCodes, so iteration order differs on every
-     * JVM run; without a stable order, opening and saving a layout rewrote the file with nothing changed (a sync on
-     * every launch for a layout kept in OneDrive).
-     *
-     * Written as "two sets built in opposite orders serialise identically", the property, not "run it twice and hope
-     * the hashes differ".  The sets are `LinkedHashSet`s, which keep the fixture's order: a HashSet discards insertion
-     * order, so the two strings would be equal whatever `toJSON` did.
+     * Written as "two sets built in opposite orders serialise identically", the property.  The sets are
+     * `LinkedHashSet`s, which keep the fixture's order: a HashSet discards insertion order, so the two strings would be
+     * equal whatever `toJSON` did.
      *
      * MUTATION: removing the `Collections.sort(locNames)` from `Point.toJSON` fails this.
      */
@@ -3262,8 +3217,7 @@ public class testHomeStaging
      *
      * `behaviour/return-home.md` section 6: a plan may rest a train that cannot reverse on a terminus or reversing
      * point only when its next move takes it home - *"a train the railway already had standing on one moves as
-     * before"*.  The test is whether this plan put the train there, not whether it is STANDING on such a square;
-     * otherwise, with its home occupied, a train found on a terminus cannot step aside and the answer is NO_PLAN_FOUND.
+     * before"*.  The test is whether this plan put the train there, not whether it is STANDING on such a square.
      *
      * LOC_A stands on the terminus HS A and is homed to HS B; LOC_B stands on HS B and is homed to HS A.  LOC_B is kept
      * off the two spare squares, so the only way round is LOC_A stepping aside, LOC_B going home, and LOC_A following,
@@ -3589,19 +3543,16 @@ public class testHomeStaging
     }
 
     /**
-     * A sensor a standing train's TAIL holds is not blocked for the whole plan.
-     *
-     * `blockedSensors` treats an occupied sensor as unexplained unless a train stands on a point that reports it.  A
-     * train's tail holds the section behind it too (Adam: **"Yes, tails hold sensors."**), so the sensor behind a
-     * standing train is explained, and its point is not closed for the moves made after that train has gone.
+     * A sensor a standing train's TAIL holds is not blocked for the whole plan.  `blockedSensors` treats an occupied
+     * sensor as unexplained unless a train stands on a point that reports it; a train's tail holds the section behind
+     * it too, so that sensor is explained and its point is not closed for the moves made after that train has gone.
      *
      * TB_A holds a three-unit train that came in over a three-unit approach from TB_B, so its tail lies over that
      * approach and TB_B's sensor is set.  The only way home for the other train runs through TB_B.
      *
      * **THE TRAIN WHOSE TAIL IT IS HAS SOMEWHERE TO GO**, the whole case.  While it stands there the railway refuses
-     * that section to anybody (`isPathClear` reads the live feedback), so letting a train in would offer what the
-     * runtime refuses (OB-073).  But its home is a spur off its own square, so once it has gone the section must not
-     * stay shut for the REST of the plan: the other train can come home.
+     * that section to anybody (`isPathClear` reads the live feedback, OB-073), but its home is a spur off its own
+     * square, so once it has gone the section must not stay shut for the REST of the plan.
      *
      * TWO CONTROLS: with that sensor clear the plan is found, so the refusal is about the sensor; and a sensor NOTHING
      * accounts for still blocks, which is the rule this narrows rather than removes.
@@ -3664,12 +3615,10 @@ public class testHomeStaging
     }
 
     /**
-     * A train has to fit in the room at a square the route TURNS it at, and is asked nothing at a square it only
-     * passes (Adam's ruling on MT-333).
-     *
-     * `firstClearRoute` asks `measuredRoomAtTheEndOf` at the destination and at a reversing square in the MIDDLE of a
-     * route: a train that turns stands still, so the stretch behind that square has to hold it; one that runs through
-     * does not stand there and the runtime asks it nothing.
+     * A train has to fit in the room at a square the route TURNS it at, and is asked nothing at a square it only passes
+     * (Adam's ruling on MT-333).  `firstClearRoute` asks `measuredRoomAtTheEndOf` at the destination and at a reversing
+     * square in the MIDDLE of a route: a train that turns stands still, so the stretch behind that square has to hold
+     * it.
      *
      * Three railways identical but for one thing each: the turn with one unit of room refuses a three-unit train, the
      * same square not reversing admits it (the half Adam ruled on), and the same turn admits a one-unit train (the
@@ -3751,13 +3700,10 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
-    // THE CLAIM WAS REMOVED RATHER THAN LEFT GREEN.
-    //
-    // Seven fixtures could not produce the case the validation describes: a sensor is "explained" whenever a point
-    // reporting it holds a train, so in every shape built here the held section was accounted for by its own occupant
-    // and not by a tail.  A test that cannot fail is worse than none.  The FIX is kept: `edgesCoveredByStandingTrains`
-    // claims an edge whole, so freeing both of its ends frees a point no tail ever reached; see
-    // `HomeStaging.blockedSensors`.
+    // THE CLAIM WAS REMOVED RATHER THAN LEFT GREEN: seven fixtures could not produce the case, since a sensor is
+    // "explained" whenever a point reporting it holds a train, so the held section was always accounted for by its own
+    // occupant and not by a tail.  The FIX is kept: `edgesCoveredByStandingTrains` claims an edge whole, so freeing
+    // both of its ends frees a point no tail ever reached; see `HomeStaging.blockedSensors`.
 
     @Test
     public void testATurnIsNotLaunderedThroughABerth() throws Exception
@@ -4015,14 +3961,11 @@ public class testHomeStaging
     }
 
     /**
-     * A terminus may be arrived at but never driven through - and that is not the same as unreachable.
-     *
-     * The planner refuses to expand a terminus and the runtime refuses any path whose intermediate point is one, so
-     * the two agree about a SINGLE PATH.  But `plan()` ends a move at any station and starts the next from there, so
-     * HS A -> HS B -> HS C is two ordinary moves (`testALocomotiveStartingOnATerminusIsPlannedHome` shows a terminus
-     * can be set off from again), and IMPOSSIBLE would be false of this track.  NO_PLAN_FOUND says the planner may
-     * fail to find the arrangement and nothing more: **"I did not find a way" is allowed to be wrong; "there is no way"
-     * is not.**
+     * A terminus may be arrived at but never driven through - and that is not the same as unreachable.  The planner and
+     * the runtime agree about a SINGLE PATH, but `plan()` ends a move at any station and starts the next from there, so
+     * HS A -> HS B -> HS C is two ordinary moves (`testALocomotiveStartingOnATerminusIsPlannedHome`), and IMPOSSIBLE
+     * would be false of this track.  NO_PLAN_FOUND says the planner may fail to find the arrangement and nothing more:
+     * **"I did not find a way" is allowed to be wrong; "there is no way" is not.**
      */
     @Test
     public void testAHomeReachableOnlyThroughATerminusIsNotProvedImpossible() throws Exception
@@ -4104,15 +4047,13 @@ public class testHomeStaging
 
     /**
      * Two roads to the same square that differ only in whether they passed a reversing point are two states, not one.
+     * `astar` stores the route in `routesOf` against the state key and `turnedByThePlan` reads it back, so a train
+     * turned on the way is then restricted to squares the turn was for; `tailKey` identifies a state by where the
+     * trains stand and what their tails cover, which must not drop the turn, or whichever road the search reached first
+     * decides the restriction for both.
      *
-     * **The search keeps one route per key and reads it back to decide what the train may do next.**  `astar` stores
-     * the route in `routesOf` against the state key, `turnedByThePlan` reads it, and a train turned on the way is then
-     * restricted to squares the turn was for.  `tailKey` identified a state by where the trains stand and what their
-     * tails cover, dropping a train whose tail covered nothing, which is exactly where two roads are otherwise
-     * indistinguishable; whichever the search reached first decided the restriction for both.
-     *
-     * Driven at `tailKey` because that is where the fact is dropped, with unmeasured edges so the tails are empty for
-     * both roads and the turn is the only difference left.
+     * Driven at `tailKey` with unmeasured edges, so the tails are empty for both roads and the turn is the only
+     * difference left.
      *
      * @throws Exception from the reflection
      */
@@ -4516,10 +4457,9 @@ public class testHomeStaging
      * Two trains already standing on their own homes are not told the arrangement is impossible.
      *
      * The pairwise goal scan proves two homes on one detection section cannot both be occupied, but about an ARRIVAL,
-     * and nothing arrives when the train is already there; its sibling scan carries that exemption ("Both already
-     * parked: nothing arrives, so nothing is checked.") and this one lacked it.  IMPOSSIBLE refuses the WHOLE staging
-     * run, so a third locomotive that only needed driving to the next platform never moves, and the two names given are
-     * the trains already where they belong.  A platform and its terminus stub sharing a feedback is an ordinary shape.
+     * and nothing arrives when the train is already there; its sibling scan carries that exemption.  IMPOSSIBLE refuses
+     * the WHOLE staging run, so a third locomotive that only needed driving to the next platform never moves.  A
+     * platform and its terminus stub sharing a feedback is an ordinary shape.
      *
      * MUTATION: removing the exemption restores the fault: IMPOSSIBLE, with the two parked locomotives named.
      */
@@ -4792,13 +4732,11 @@ public class testHomeStaging
     }
 
     /**
-     * A plan whose destination is held back by an occupied point is one the railway can carry out (OB-073).
-     *
-     * FR-001 holds a station back while another named square is occupied, and `isPathClear` enforces that on every move
+     * A plan whose destination is held back by an occupied point is one the railway can carry out (OB-073): FR-001
+     * holds a station back while another named square is occupied, and `isPathClear` enforces that on every move
      * staging makes.  What matters is that a plan is EXECUTABLE, not that such a station is unreachable (staging can
-     * move whatever stands there), so this asserts the property rather than `!= READY`, which could not tell a proof
-     * from a refusal: a plan comes back and every move finds its destination free at the moment it runs.  The move
-     * count is not asserted.
+     * move whatever stands there), so this asserts the property rather than `!= READY`: a plan comes back and every
+     * move finds its destination free at the moment it runs.
      */
     @Test
     public void testAHomeHeldBackByAnOccupiedPointStillGetsAnExecutablePlan() throws Exception
@@ -4864,12 +4802,10 @@ public class testHomeStaging
     }
 
     /**
-     * Two locomotives cannot be homed on two copies of one square, whichever door they arrive by.
-     *
-     * `claimHome` refuses a square another home already occupies: two locomotives homed on one platform is a state
-     * nothing can satisfy (`sharesSection` sees two active Points on one sensor, and Return Home answers IMPOSSIBLE
-     * naming both).  The ASSIGNMENT loop asks about squares too, since `parseAuto` writes a home straight onto the
-     * Point, so a file or an older setup would otherwise walk both assignments through intact.
+     * Two locomotives cannot be homed on two copies of one square, whichever door they arrive by.  `claimHome` refuses
+     * a square another home already occupies: two locomotives homed on one platform is a state nothing can satisfy
+     * (`sharesSection` sees two active Points on one sensor, and Return Home answers IMPOSSIBLE naming both).  The
+     * ASSIGNMENT loop asks about squares too, since `parseAuto` writes a home straight onto the Point.
      *
      * The fixture is one square emitted as two copies sharing a block, with a different locomotive named as the home of
      * each.
@@ -4941,12 +4877,10 @@ public class testHomeStaging
     }
 
     /**
-     * A longer approach really is tried when the short one has no room.
-     *
-     * The room rule refuses with `continue` on the theory that **"another route to the same berth may be longer, and a
-     * longer approach is more room"**, which holds only if the search still has the longer route to try.  The arrival
-     * must not be recorded in `seen` before the room test runs: `alreadyReached` is a dominance test, and the short
-     * route would dominate the longer one before its room is measured.
+     * A longer approach really is tried when the short one has no room.  The room rule refuses with `continue` on the
+     * theory that **"another route to the same berth may be longer, and a longer approach is more room"**, which holds
+     * only if the search still has the longer route to try: the arrival must not be recorded in `seen` before the room
+     * test runs, since `alreadyReached` is a dominance test and the short route would dominate the longer one.
      *
      * HS D is a terminus with two ways in (five units from HS A, ten by way of HS B) and the train is eight long: the
      * short way has no room and the long way does.
@@ -4987,8 +4921,7 @@ public class testHomeStaging
             // TWENTY TIMES, though NOT because of the shuffle: the search's queue is FIFO and both ways into HS D leave
             // the origin, so the direct one is recorded first whatever order the shuffle gives and the long way is
             // pruned as dominated every time.  The repetition is kept because a guard that catches a regression only
-            // sometimes reads as protection; if the order ever matters, twenty attempts still catch it and one might
-            // not.
+            // sometimes reads as protection.
             int refused = 0;
 
             HomeStaging.Outcome last = null;
@@ -5236,11 +5169,10 @@ public class testHomeStaging
     /**
      * The planner agrees with the door that accepted the home.
      *
-     * The home is the square, and `whyNotAHome` asks the square whether a train can stand there.  The planner's own
-     * reachability scan asked `canRest` and `connected` about the one copy that carries the home, so the editor
-     * accepted a home that Return Home then called IMPOSSIBLE.  **Both halves have to be asked of the same copy**: a
-     * copy you can rest at but not reach, plus another you can reach but not rest at, would pass two separate scans
-     * while being no home.
+     * The home is the square, and `whyNotAHome` asks the square whether a train can stand there; the planner's own
+     * reachability scan must ask `canRest` and `connected` of the same copy.  **Both halves have to be asked of the
+     * same copy**: a copy you can rest at but not reach, plus another you can reach but not rest at, would pass two
+     * separate scans while being no home.
      *
      * The disqualifier is an exclusion list, a property of one graph Point (a terminus disqualifies nobody: Adam,
      * "trains should be allowed to back into terminuses if they are not reversible").
@@ -5302,8 +5234,7 @@ public class testHomeStaging
      * `setHomeLocomotive` enforces one station per LOCOMOTIVE and a Point holds one `homeLoc`, so naming a second
      * locomotive at the same Point displaces the first.  Two copies of one platform are two Points with two fields, so
      * assigning one locomotive to each would leave both homed on one piece of track, which Return Home says is
-     * IMPOSSIBLE.  Displacing rather than refusing, as naming the same Point twice already does: the operator is saying
-     * this train lives here now.
+     * IMPOSSIBLE.  Displacing rather than refusing, as naming the same Point twice already does.
      *
      * MUTATION: sweeping only the exact Point rather than the square leaves both homed.
      */
@@ -5354,11 +5285,8 @@ public class testHomeStaging
      *
      * Adam: "trains should be allowed to back into terminuses if they are not reversible (that's why we have the
      * reversing point at feedback 2013)."  Almost every parking berth is a terminus, so refusing one in `canRest` would
-     * refuse homes at most of the places a train is parked.
-     *
-     * Whether it can GET there with a reversal is a route question, and `Layout.isPathClear` asks it (a terminus is
-     * allowed when the path passes a reversing point); asking again here, without a route, could only guess.  An
-     * over-strict check at a door where nothing can satisfy it is worse than no check.
+     * refuse homes at most of the places a train is parked.  Whether it can GET there with a reversal is a route
+     * question, and `Layout.isPathClear` asks it; asking again here, without a route, could only guess.
      *
      * MUTATION: putting the terminus clause back in canRest fails this.
      */
@@ -5392,10 +5320,9 @@ public class testHomeStaging
     /**
      * A train that cannot reverse gets home to its terminus WITH OR WITHOUT a reversing point on the way.
      *
-     * `mustBackIn` once refused a terminus unless the route turned the train, so it backed in and could leave forwards.
-     * Adam took it out: *"Return home is manual, take the rule out and say why."*  The reasoning is at
-     * `firstClearRoute`'s arrival test: pressing Return Home IS the operator asking, which is what makes it manual, and
-     * manual operation may back a non-reversible train into a terminus.
+     * `mustBackIn` once refused a terminus unless the route turned the train.  Adam took it out: *"Return home is
+     * manual, take the rule out and say why."*  Pressing Return Home IS the operator asking, which is what makes it
+     * manual, and manual operation may back a non-reversible train into a terminus (`firstClearRoute`'s arrival test).
      *
      * The two halves are the same railway with one flag moved, which keeps this about the rule rather than the fixture,
      * and both answer the same way.
@@ -5506,15 +5433,11 @@ public class testHomeStaging
     }
 
     /**
-     * Two homes, a one-way hold, and an approach guard that shares a feedback with the other home.
-     *
-     * The counterexample to the OB-085 impossibility proof.  HS C is held back while HS D is occupied; HS D is held
-     * back while its approach guard HS W2 is occupied, and HS W2 shares a feedback address with HS C, which
-     * AutonomyBuilder says is normal: "a station, its approach guard and a reversing point can be three Points on one
-     * feedback - so the sensor cannot say which Points are one square."  There is no cycle, and the railway stages it
-     * in two moves.
-     *
-     * No block anywhere, deliberately: "shares a sensor" versus "is the same block" is the point of the fixture.
+     * Two homes, a one-way hold, and an approach guard that shares a feedback with the other home.  The counterexample
+     * to the OB-085 impossibility proof: HS C is held back while HS D is occupied; HS D is held back while its approach
+     * guard HS W2 is occupied, and HS W2 shares a feedback address with HS C (normal, per AutonomyBuilder).  There is
+     * no cycle, and the railway stages it in two moves.  No block anywhere, deliberately: "shares a sensor" versus "is
+     * the same block" is the point of the fixture.
      *
      * @return the graph JSON
      */
@@ -5558,16 +5481,14 @@ public class testHomeStaging
     }
 
     /**
-     * The audit's FR-001 exemption is NARROW - it does not blind the instrument.
-     *
-     * An exemption written too wide (skipping every FR-001 destination rather than the currently-held ones) would blind
-     * the audit to a real mis-copy of the rule; the sibling tests, which assert the audit is SILENT, cannot tell a
-     * narrow hole from a total one.  This is the only test in the class that asserts it still speaks.
+     * The audit's FR-001 exemption is NARROW - it does not blind the instrument: an exemption written too wide
+     * (skipping every FR-001 destination rather than the currently-held ones) would blind the audit to a real mis-copy
+     * of the rule, and the sibling tests, which assert the audit is SILENT, cannot tell a narrow hole from a total one.
      *
      * The vehicle is a real divergence the audit reports today: HS B shares its feedback with HS X, where LOC_B stands,
      * so `canEnter`'s shared-sensor rule refuses the arrival while the at-rest runtime offers it.  HS B also carries a
      * blockedBy list naming a square nobody is on, which makes the two shapes of exemption differ.  If that divergence
-     * is ever exempted in its own right, this needs a new vehicle rather than deletion: it pins the FR-001 skip.
+     * is ever exempted in its own right, this needs a new vehicle rather than deletion.
      *
      * MUTATION: widening the exemption to `if (!p.getBlockedBy().isEmpty()) continue;` takes the count to 0 and fails
      * this test and no other.
@@ -5599,12 +5520,10 @@ public class testHomeStaging
     }
 
     /**
-     * The parity audit is silent about a station FR-001 is holding back.
-     *
-     * Both sides apply the rule in every tier, at rest too (Adam: "enforce the occupancy ruling in all modes and then rely
-     * on isPathClear."): the runtime through `isPathClear`, the planner through its path search and `canRest`, all by
-     * `Point.heldBackBy`.  So neither offers HS C while HS B is occupied, and the audit has nothing to report; a count
-     * above zero means one side has stopped applying it.
+     * The parity audit is silent about a station FR-001 is holding back.  Both sides apply the rule in every tier, at
+     * rest too: the runtime through `isPathClear`, the planner through its path search and `canRest`, all by
+     * `Point.heldBackBy`.  So neither offers HS C while HS B is occupied; a count above zero means one side has stopped
+     * applying it.
      *
      * MUTATION: make `Layout.blockingOccupantOf` answer null, or take FR-001 out of both the planner's path search and
      * `canRest`, and this fails.  Taking it out of `canRest` alone does not: the path search already refuses the square.
@@ -5633,12 +5552,10 @@ public class testHomeStaging
     }
 
     /**
-     * A station held back by the square the ARRIVING train is leaving can still be reached.
-     *
-     * Adam: "The condition should not apply to trains leaving - only departing."  Both production copies exempt the
-     * locomotive being routed, or the one movement that clears the condition is the movement it forbids.  The replay
-     * oracle (`applyPlan`) calls `Point.heldBackBy`, the same call `isPathClear` makes, so the exemption holds there
-     * too; without it a legal plan whose move IS the departing train would be a false red.
+     * A station held back by the square the ARRIVING train is leaving can still be reached.  Both production copies
+     * exempt the locomotive being routed, or the one movement that clears the condition is the movement it forbids.
+     * The replay oracle (`applyPlan`) calls `Point.heldBackBy`, the same call `isPathClear` makes, so the exemption
+     * holds there too; without it a legal plan whose move IS the departing train would be a false red.
      *
      * MUTATION: restoring applyPlan's hand-written loop (assertNull on `watched.getCurrentLocomotive()` for every
      * entry in `end.getBlockedBy()`) fails this test and no other.
@@ -5673,16 +5590,12 @@ public class testHomeStaging
 
     /**
      * Return Home does NOT stage a train into a home FR-001 is holding back.
-     *
-     * Adam: **"if it's cleaner to go with consistency across the board, then let's enforce the occupancy ruling in all
-     * modes and then rely on isPathClear.  Revert the prior lax ruling."**  So the planner reads the restriction, as it
-     * must: the runtime refuses this arrival in every tier, and a plan offering a leg the railway refuses is OB-073.
-     * `auditAgainstRuntime` keeps the two together.
+     * The occupancy ruling is enforced in every tier, so the planner reads the restriction: the runtime refuses this
+     * arrival, and a plan offering a leg the railway refuses is OB-073.  `auditAgainstRuntime` keeps the two together.
      *
      * The fixture is the strongest form: nothing can leave block HSW (a siding of its own), so HS B is held back for
-     * the whole run and no shunting clears it; the planner will happily move an occupant OFF a watched square and back,
-     * so an escapable watcher proves nothing about the rule.  **The control is the same fixture with the watcher
-     * cleared**; without it NO_PLAN_FOUND would be satisfied by a layout nothing can be staged on.
+     * the whole run and no shunting clears it.  **The control is the same fixture with the watcher cleared**; without
+     * it NO_PLAN_FOUND would be satisfied by a layout nothing can be staged on.
      *
      * MUTATION: dropping the FR-001 term from `canRest(loc, at, state)` fails this.
      */
@@ -5770,12 +5683,11 @@ public class testHomeStaging
 
     /**
      * Every tier gives the same answer about a held-back arrival.
-     *
      * The other half of Adam's ruling: with both fences gone (`isAutoRunning`, then `isFullAutonomyRunning`), the
      * question **"may a train be sent to a station held back by an occupied square"** has one answer wherever it is
-     * asked: no.  Asserted over the three flag combinations, by reflection as
-     * `testAStagingRunIsNotCapturedIntoItsOwnTimetable` reaches them: stopped, running under a timetable, and running
-     * as full autonomy.  A fence of either kind coming back moves exactly one of these three.
+     * asked: no.  Asserted over the three flag combinations (stopped, running under a timetable, running as full
+     * autonomy), by reflection as `testAStagingRunIsNotCapturedIntoItsOwnTimetable` reaches them.  A fence of either
+     * kind coming back moves exactly one of these three.
      */
     @Test
     public void testEveryTierRefusesAHeldBackArrival() throws Exception
@@ -5843,16 +5755,12 @@ public class testHomeStaging
     }
 
     /**
-     * A locomotive held on two points is reported, not planned for.
-     *
-     * A locked path reserves every point along it for the one locomotive, and a path that failed part-way through
-     * unlocking leaves those reservations standing.  Nothing in the model tells a reservation from a train (`reserve()`
-     * and `setLocomotive()` write the same field), so the planner can see a locomotive at two places at once.  Counting
-     * it properly is the wrong fix: the plan would depart from whichever point the map yields first, driving a real
-     * train from a place it is not standing.  NO_PLAN_FOUND claims nothing false; a guessed origin may.
-     *
-     * The operator is told instead the locomotive and the remedy: place it on the square it is actually on, which
-     * sweeps the rest.
+     * A locomotive held on two points is reported, not planned for.  A locked path reserves every point along it for
+     * the one locomotive, and a path that failed part-way through unlocking leaves those reservations standing; nothing
+     * in the model tells a reservation from a train (`reserve()` and `setLocomotive()` write the same field), so the
+     * planner can see a locomotive at two places at once.  Guessing an origin could drive a real train from a place it
+     * is not standing, while NO_PLAN_FOUND claims nothing false.  The operator is told the locomotive and the remedy:
+     * place it on the square it is actually on, which sweeps the rest.
      *
      * MUTATION: removing the check returns NO_PLAN_FOUND, which the first assertion rejects; naming nothing fails the
      * second.
@@ -5911,11 +5819,9 @@ public class testHomeStaging
     /**
      * A train may not be planned into the detection section it is standing on.
      *
-     * canEnter exempts the MOVER from its own sensor ("there != null && !there.equals(loc)"), but isPathClear reads the
-     * live feedback for the end of every edge and refuses the path whoever is standing on it.  The exemption looks
-     * right (a train must not be blocked by its own sensor), yet isPathClear never checks the point a path starts from:
-     * the train is blocked from a DIFFERENT point that reports the same sensor, which really is set while it stands
-     * there.
+     * `canEnter` exempts the MOVER from its own sensor, but `isPathClear` reads the live feedback for the end of every
+     * edge and refuses the path whoever is standing on it, and never checks the point a path starts from: the train is
+     * blocked from a DIFFERENT point that reports the same sensor, which really is set while it stands there.
      *
      * Hardware-conditional: on pulsed feedback the sensor clears behind the train; on latching detection it fires every
      * time.  So the feedback is set here explicitly.

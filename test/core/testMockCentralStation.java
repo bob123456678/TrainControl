@@ -25,18 +25,16 @@ import org.traincontrol.marklin.file.CS2File;
  * A Central Station that is not there: a local HTTP server serving the same config files a real one would, so the
  * fetching half of a sync can be tested without hardware.
  *
- * Everything TrainControl knows about a Central Station arrives as an HTTP GET of a `.cs2` file.  This covers the seam
- * between that and the parsers: a file served over the wire produces exactly what the same file produces locally, and a
- * station that is missing, empty or broken is REPORTED rather than quietly producing an empty database ("the fetch
- * failed" and "the station has nothing" must never look the same, because the sync acts on what came off the wire).
+ * This covers the seam between the HTTP GET of a `.cs2` file and the parsers: a file served over the wire produces
+ * exactly what the same file produces locally, and a station that is missing, empty or broken is REPORTED rather than
+ * quietly producing an empty database ("the fetch failed" and "the station has nothing" must never look the same).
  *
- * `syncWithCS2` never deletes a locomotive: it matches by UID, renames and re-addresses.  It deletes ROUTES: a fetched
- * route whose commands, s88 or trigger differ from the stored route of that id is deleted and re-added, and a fetched
- * name belonging to another id deletes the route that had it.  So the sharpest fault-injection test is the garbled
- * ROUTE file, and the locomotive one beside it is a ratchet against a wipe that does not exist yet.
+ * `syncWithCS2` never deletes a locomotive (it matches by UID, renames and re-addresses) but it deletes ROUTES: a
+ * fetched route that differs from the stored one of that id is deleted and re-added, and a fetched name belonging to
+ * another id deletes the route that had it.  So the sharpest fault injection is the garbled ROUTE file; the
+ * locomotive one beside it is a ratchet against a wipe that does not exist yet.
  *
- * The port is chosen by the operating system, so two of these can run at once; CS2File takes its address as a string,
- * so a host:port pair goes in unchanged without touching production code.
+ * The port is chosen by the operating system, so two of these can run at once.
  */
 public class testMockCentralStation
 {
@@ -55,10 +53,7 @@ public class testMockCentralStation
 
     private static volatile String forcedBody;
 
-    /**
-     * A path suffix to serve rubbish for, leaving every other file intact: a real fault is ONE config file arriving
-     * broken while the rest are fine, and that is the shape under which the sync decides whether to delete anything.
-     */
+    /** A path suffix to serve rubbish for, leaving every other file intact: a real fault is ONE config file broken. */
     private static volatile String garbledPath;
 
     @BeforeClass
@@ -158,9 +153,9 @@ public class testMockCentralStation
 
     /**
      * A locomotive database fetched over the wire is the one the file describes: parity rather than a fixed
-     * expectation, so fetching adds nothing and loses nothing.  Both sides share the parser, so this catches
-     * transport-level loss (a truncated body, a mangled encoding, a dropped block).  Name, address and decoder type are
-     * compared, since the address decides which engine a command reaches.
+     * expectation.  Both sides share the parser, so this catches transport-level loss (a truncated body, a mangled
+     * encoding, a dropped block).  Name, address and decoder type are compared, since the address decides which engine
+     * a command reaches.
      */
     @Test
     public void testLocomotivesFetchedOverHttpMatchTheFile() throws Exception
@@ -326,8 +321,8 @@ public class testMockCentralStation
      * A station that has been switched off is given up on rather than waited for: its SYNs go into a hole, and the
      * operating system would retry for its own idea of long enough (21 seconds measured) with the interface waiting.
      *
-     * 192.0.2.1 is TEST-NET-1 (RFC 5737), routed nowhere, so it black-holes rather than refusing.  A machine whose
-     * routing table rejects it outright would fail fast for the wrong reason, so that case SKIPS rather than passing.
+     * 192.0.2.1 is in the documentation range of RFC 5737, routed nowhere, so it black-holes rather than refusing.  A
+     * machine whose routing table rejects it outright would fail fast for the wrong reason, so that case SKIPS.
      *
      * MUTATION: delete `connection.setConnectTimeout(CONNECT_TIMEOUT_MS)` from `CS2File.fetchURL`.
      */
@@ -370,9 +365,8 @@ public class testMockCentralStation
     /**
      * A sync that gives a member of a standing multi-unit the address of another standing train takes that train off
      * the graph, as the window's Change Name or Address does: the sync is the only door a Central Station multi-unit's
-     * members come in by, and it swept nothing, so autonomy would run the second as a train of its own.  Here the
-     * served file's BR 85 006 Gl. is at address 5, the database has it at 70 in a consist standing on one station, and
-     * another train at 5 stands on the other.
+     * members come in by.  Here the served file's BR 85 006 Gl. is at address 5, the database has it at 70 in a consist
+     * standing on one station, and another train at 5 stands on the other.
      *
      * MUTATION: sweep nothing after the sync's locomotive pass, and this fails.
      */
@@ -466,8 +460,8 @@ public class testMockCentralStation
 
     /**
      * Stands the Central Station's OBB 1043 on one point and the member its database copy does not have on another
-     * (OB-303).  A first sync brings OBB 1043 in with the two members `test/lokomotive.cs2` gives it, each made a
-     * locomotive where this database has none; then the database's copy is cut back to the first member.
+     * (OB-303): a first sync brings in the two members `test/lokomotive.cs2` gives it, then the database's copy is cut
+     * back to the first member.
      *
      * @param made filled with the names of the locomotives this makes, for the caller to delete
      * @return the multi-unit, the member, and the railway they stand on
@@ -549,8 +543,7 @@ public class testMockCentralStation
 
     /**
      * A sync that gives a standing Central Station multi-unit a member standing on the graph takes that member off, and
-     * redraws the railway (OB-303): the window's own doors call the layout's refresh after the same sweep, and the
-     * autonomy panels went on drawing the member standing.
+     * redraws the railway (OB-303): the window's own doors refresh the layout after the same sweep.
      *
      * MUTATION: sweep nothing after the sync's member pass, or redraw nothing after it, and this fails.
      */
@@ -601,8 +594,7 @@ public class testMockCentralStation
 
     /**
      * A member a Central Station multi-unit is given while autonomy runs is taken off by the first sync after the run,
-     * not left standing until the next load (OB-303).  The sweep is not made while autonomy runs, so the next sync saw
-     * no change; here the run is the railway's own flag, set by reflection.
+     * not left standing until the next load (OB-303).  Here the run is the railway's own flag, set by reflection.
      *
      * MUTATION: forget what a sync held back while autonomy ran, and this fails.
      */
@@ -661,9 +653,8 @@ public class testMockCentralStation
     }
 
     /**
-     * A full sync against the mock station, reconciliation and all.  Modest on purpose: a sync against a station that
-     * IS there succeeds and brings its locomotives in; the value is that the path executes at all.  Nothing is saved:
-     * the databases are mutated in memory, so the operator's LocDB.data on disk is not touched.
+     * A full sync against the mock station, reconciliation and all.  Modest on purpose: a station that IS there
+     * succeeds and brings its locomotives in.  Nothing is saved: the databases are mutated in memory.
      */
     @Test
     public void testAFullSyncAgainstTheMockStationSucceeds() throws Exception
@@ -697,11 +688,7 @@ public class testMockCentralStation
     }
 
     /**
-     * A route file that arrives as rubbish leaves the routes alone: the database the sync really does delete from.  A
-     * fetched route that differs from the stored one of that id is deleted and re-added, and a fetched name that
-     * belongs to a different id deletes the route that had it, so a fetch that came back as nonsense could decide
-     * anything.
-     *
+     * A route file that arrives as rubbish leaves the routes alone: the database the sync really does delete from.
      * Only the route file is garbled: a station where every file is broken at once is not a real fault and would not
      * reach the route-deletion code.
      *
@@ -771,8 +758,8 @@ public class testMockCentralStation
 
     /**
      * A sync against a station that is not there leaves the locomotive database alone.  A ratchet: `syncWithCS2` has no
-     * path that deletes a locomotive, but the day it learns to remove one the station no longer lists, a failed fetch
-     * will look like a station that lists nothing, and this fails.  The routes are tested above.
+     * path that deletes a locomotive, but the day it learns to, a failed fetch will look like a station that lists
+     * nothing, and this fails.
      */
     @Test
     public void testASyncAgainstNothingDoesNotEmptyTheDatabase() throws Exception

@@ -32,12 +32,11 @@ import org.traincontrol.marklin.file.CS2File;
  * of six train lengths, the journeys the widened track-room rule (MT-262) NEWLY refuses, and where they arrive.
  *
  * A journey is newly refused when the room behind its destination is measured, is shorter than the train, and the
- * destination is neither a terminus nor a reversing point (the fence `Layout` used to have). The station-capacity rule
- * is not counted: it is asked separately in `whyTooLongForThisRoute`.
+ * destination is neither a terminus nor a reversing point.  The station-capacity rule is not counted: it is asked
+ * separately in `whyTooLongForThisRoute`.
  *
- * The original probe was never committed, so the published totals cannot be reproduced; this file carries the figures
- * and the method so they can be re-derived. Every newly refused journey arrives at one of the berths in BERTHS, each
- * with ONE measured unit of room behind it.
+ * The original probe was never committed, so this file carries the figures and the method so they can be re-derived.
+ * Every newly refused journey arrives at one of the berths in BERTHS, each with ONE measured unit of room behind it.
  *
  * Runs on a `LayoutSandbox` copy of `test/layouts/live-snapshot`, with the three tight tiles set by this class, so
  * every figure is what a rule about room does on a railway with no room, not a survey of his track.
@@ -53,30 +52,23 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int ORDERED_PAIRS = 1332;
     /**
      * Pairs with a route, and the newly refused journeys among them: `Layout.bfs` does not extend a route through a
-     * terminus that is not its end (OB-229), and routes doubling back through another copy of the journey's own start
-     * or end are not walked.
+     * terminus that is not its end (OB-229).
      */
     private static final int PAIRS_WITH_A_PATH = 956;
     private static final int NEWLY_REFUSED = 505;
 
-    /**
-     * The census's six lengths are this test's own, not a reading of Adam's database (which `init()` restores): his
-     * edits must not move the set.
-     */
+    /** The census's six lengths are this test's own, not a reading of Adam's database (which `init()` restores). */
     private static final Integer[] LENGTHS = {1, 2, 3, 4, 5, 6};
 
     /** Name of each census train, so a failure says why it is there. */
     private static final String CENSUS_NAME = "census %d-unit";
 
-    /**
-     * Address of the first census train; 51 because no other test class uses that band, so a leftover is identifiable.
-     */
+    /** Address of the first census train; 51 because no other test class uses that band. */
     private static final int FIRST_CENSUS_ADDRESS = 51;
 
     /**
      * Where every newly refused journey arrives, and the room measured behind each: the berths `behaviour/tail.md`
-     * section 5c names, by their split copies. BottomMainC is a compulsory turn that builds to a terminus, whose
-     * refusal is not new.
+     * section 5c names, by their split copies.  BottomMainC is a compulsory turn that builds to a terminus.
      */
     private static final String[] BERTHS =
     {
@@ -228,12 +220,10 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
-     * Journeys refused on the way though the berth has room: every route to it turns at a square too short. Banded,
+     * Journeys refused on the way though the berth has room: every route to it turns at a square too short.  Banded,
      * because `bfs(from, to, exclude)` returns SOME route and the adjacency is keyed by identity hashes, so counts move
-     * about two per cent between JVMs; the ceiling catches the pass-through check coming back.
-     *
-     * Zero on this railway: routes doubling back through a copy of their own start or end are no longer walked. This
-     * census cannot catch the ruling being taken out (its loop is a replica of the rule);
+     * about two per cent between JVMs; the ceiling catches the pass-through check coming back.  Zero on this railway.
+     * This census cannot catch the ruling being taken out (its loop is a replica of the rule);
      * `core.testATrainIsJudgedOnlyWhereItStops` and `core.testNonReversibleTrains` hold it, through the real door.
      */
     private static final int REFUSED_ON_THE_WAY_AT_LEAST = 0;
@@ -243,8 +233,8 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
     /**
      * Route-journeys refused at a square the train turns at (Adam's reversal bound), counted per ROUTE and so banded as
-     * above. Zero on this railway: its one-way marks took away the turn-backs, so this census no longer reaches the
-     * bound; `core.testNonReversibleTrains` and `core.testATrainIsJudgedOnlyWhereItStops` hold it.
+     * above.  Zero on this railway: its one-way marks took away the turn-backs; `core.testNonReversibleTrains` and
+     * `core.testATrainIsJudgedOnlyWhereItStops` hold it.
      */
     private static final int AT_A_TURN_AT_LEAST = 0;
 
@@ -270,11 +260,9 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
     /**
      * What Adam's ruling that "will the train fit" applies everywhere on the way, not only at the destination, costs on
-     * top of the census above (*"This should only apply if lengths are specified."*).
-     *
-     * A train is refused a destination when every route to it refuses (as `getPossiblePaths` does), so this asks every
-     * route: one route per pair gave different counts from run to run. The track rule is asked directly, by prefix, not
-     * through `whyTooLongForThisRoute`, whose station-capacity rule is a different rule.
+     * top of the census above (*"This should only apply if lengths are specified."*).  A train is refused a destination
+     * when every route to it refuses (as `getPossiblePaths` does), so this asks every route.  The track rule is asked
+     * directly, by prefix, not through `whyTooLongForThisRoute`, whose station-capacity rule is a different rule.
      */
     @Test
     public void testWhatTheRouteWideRuleCostsOnTopOfIt() throws Exception

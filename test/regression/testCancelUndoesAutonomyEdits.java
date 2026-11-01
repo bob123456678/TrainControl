@@ -23,15 +23,12 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Cancel in the autonomy editor undoes the setup edits made in it (MT-406).
- *
- * Adam: "Escape works, but it seems a one-way run (or any other edits to arrows) persist after I press cancel.  They
- * are not undone by cancelling."
+ * Cancel in the autonomy editor undoes the setup edits made in it (MT-406): a one-way run or any other edit to arrows
+ * must not persist after Cancel.
  *
  * Every setup gesture rebuilds the running layout through `AutonomyViewerPanel.load`, which SAVES the setup and so
- * clears the session's unsaved flag.  By the time Cancel asked `mayLeave` the answer was always no: nothing was
- * discarded and the edit was already on disk.  The snapshot `LayoutEditor` takes when it opens (`autonomyAsOpened`,
- * which the track editor's Cancel restores) was never consulted in autonomy mode.
+ * clears the session's unsaved flag; Cancel's `mayLeave` must therefore consult the snapshot `LayoutEditor` takes when
+ * it opens (`autonomyAsOpened`), not that flag.
  *
  * On the real path: the click on a square (`AutonomyEditorPanel.cycle`) with an autonomy configuration loaded, because
  * the save that hid the edit happens only when the rebuild runs, and the button's own `confirmExit`.  A confirmation is
@@ -170,7 +167,7 @@ public class testCancelUndoesAutonomyEdits
 
     /**
      * And Cancel asks first, because there is something to throw away: `mayLeave` asks whenever the setup has unsaved
-     * edits, and never did in autonomy mode because the per-gesture save had just cleared the flag.
+     * edits.
      */
     @Test
     public void testCancelAsksBeforeThrowingTheEditAway() throws Exception
@@ -207,11 +204,9 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation now says.
-     *
-     * The sentence said the clear could not be undone, true before OB-223; `tileLengths` is in the setup snapshot the
-     * editor takes when it opens.  A sentence nobody has run is how the locomotive clear came to say the wrong one, so
-     * this runs it.
+     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation now says (OB-223):
+     * `tileLengths` is in the setup snapshot the editor takes when it opens.  A sentence nobody has run is how the
+     * locomotive clear came to say the wrong one, so this runs it.
      */
     @Test
     public void testCancelPutsTheLengthsBack() throws Exception
@@ -302,12 +297,10 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * And the locomotives a bulk clear took off come back with Cancel.
-     *
-     * The discard restores the setup as the editor opened it, placements included, and the rebuild on close regenerates
-     * placements from it; `putTheTrainsBack` only moves trains that were standing.  So the OB-194 warning, "Cancel will
-     * not put them back", stopped being true when OB-223 made Cancel undo.  Asked through the real Bulk Tools door and
-     * the real Cancel.
+     * And the locomotives a bulk clear took off come back with Cancel.  The discard restores the setup as the editor
+     * opened it, placements included, and the rebuild on close regenerates placements from it, so the OB-194 warning,
+     * "Cancel will not put them back", stopped being true when OB-223 made Cancel undo.  Asked through the real Bulk
+     * Tools door and the real Cancel.
      */
     @Test
     public void testCancelPutsBackTheLocomotivesABulkClearTook() throws Exception
@@ -384,13 +377,10 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * Discard on the way out of the application puts back the locomotives a bulk clear took, as Cancel does.
-     *
-     * Closing with the autonomy editor open asks Save / Discard / Cancel through `LayoutEditor.maySettleBeforeExit`,
-     * but the running layout was rebuilt after the clear and the exit's save folds it back over the setup
-     * (`captureFromLayout`); Cancel does not have this problem because the closing editor rebuilds from the restored
-     * setup first.  The exit ends in `System.exit`, so it is asked in two parts: the real settle answered Discard, then
-     * the fold (`captureRunningLayout`) without writing the operator's `UIState.data`.
+     * Discard on the way out of the application puts back the locomotives a bulk clear took, as Cancel does.  The exit
+     * ends in `System.exit`, so it is asked in two parts: the real `LayoutEditor.maySettleBeforeExit` answered Discard,
+     * then the fold (`captureRunningLayout`) without writing the operator's `UIState.data`.  The running layout was
+     * rebuilt after the clear and the exit's fold would otherwise put it back over the setup.
      */
     @Test
     public void testDiscardOnTheWayOutPutsBackTheLocomotivesABulkClearTook() throws Exception
@@ -463,11 +453,8 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * The exit asks each open window ONCE.
-     *
-     * `WindowClosed` asked the track editor whether it might settle (OB-070) and, when the route editor's question was
-     * added, the original call stayed: a page with unsaved work was asked twice, and since `settleUnsavedWork` decides
-     * from `canUndo()`, which a Save does not clear, Discard and then Save wrote the discarded work on the way out.
+     * The exit asks each open window ONCE: a page with unsaved work asked twice let Discard and then Save write the
+     * discarded work on the way out, since `settleUnsavedWork` decides from `canUndo()`, which a Save does not clear.
      * Asked of `everyOpenWindowMaySettle` by counting the dialogs it raises; a source-shape rule cannot see this.
      */
     @Test
@@ -527,10 +514,8 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * And an arrow changed in the editor is put back by Discard on the way out - the control for the claim above.
-     *
-     * Green before the fix as after: the exit's fold does not carry arrows.  Kept so the rebuild the fix added cannot
-     * bring an arrow back without this saying so.
+     * And an arrow changed in the editor is put back by Discard on the way out - the control for the claim above.  The
+     * exit's fold does not carry arrows; kept so the rebuild cannot bring one back without this saying so.
      */
     @Test
     public void testDiscardOnTheWayOutPutsTheArrowsBack() throws Exception
@@ -578,12 +563,10 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * And a home set in the editor is put back by Discard on the way out.
-     *
-     * The exit's fold carries more than placements (`active`, `maxTrainLength`, `speedMultiplier`, `priority`, `home`,
-     * `excludedLocs`), so a discarded home was written back too; the arrow claim cannot say so, a tile direction being
-     * the one setting the fold never carries.  The home is set through the session and the running layout rebuilt, as
-     * the editor's home door does.
+     * And a home set in the editor is put back by Discard on the way out.  The exit's fold carries more than placements
+     * (`active`, `maxTrainLength`, `speedMultiplier`, `priority`, `home`, `excludedLocs`), so a discarded home was
+     * written back too; the arrow claim cannot say so.  The home is set through the session and the running layout
+     * rebuilt, as the editor's home door does.
      */
     @Test
     public void testDiscardOnTheWayOutPutsTheHomeBack() throws Exception
@@ -657,13 +640,11 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A setup edit declined during a run is not removed by the next door that folds the running layout back.
-     *
-     * An edit made as a run starts reaches the file and not the running layout; the exit save skips its fold while that
-     * is so, but `captureRunningLayout`, the same fold at every other door, did not ask, so opening the autonomy editor
-     * after the run removed the edit.  The race is set up as the state it leaves behind (the home written without a
-     * rebuild, and the flag the declined rebuild sets); the fold is called directly, not through `openLayoutEditor`,
-     * which also writes the operator's last-editor preference.
+     * A setup edit declined during a run is not removed by the next door that folds the running layout back: the exit
+     * save skips its fold while the flag is set, and `captureRunningLayout`, the same fold at every other door, must
+     * too.  The race is set up as the state it leaves behind (the home written without a rebuild, and the flag the
+     * declined rebuild sets); the fold is called directly, not through `openLayoutEditor`, which also writes the
+     * operator's last-editor preference.
      */
     @Test
     public void testADeclinedEditSurvivesTheNextCapture() throws Exception
@@ -734,12 +715,9 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * The declined-edit guard ends once a rebuild has carried the edit.
-     *
-     * `setupEditDeclinedDuringRun` stops every fold of the running layout back into the setup, and was never cleared,
-     * so after the run every door went on refusing: the editor opened on pre-run placements, a home went to a pre-run
-     * square, and the exit saved no positions (OB-183's consequence kept alive).  Cleared only by a rebuild that
-     * REPLACED the running layout: `load` can decline, and a declined load has carried nothing.
+     * The declined-edit guard ends once a rebuild has carried the edit (OB-183): `setupEditDeclinedDuringRun` stops
+     * every fold of the running layout back into the setup.  Cleared only by a rebuild that REPLACED the running
+     * layout: `load` can decline, and a declined load has carried nothing.
      */
     @Test
     public void testTheDeclinedEditGuardEndsWhenARebuildCarriesTheEdit() throws Exception
@@ -821,16 +799,11 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it.
-     *
-     * `unfinishedEdit` checks a note's top-level shape, then `restoreSetup` emptied the store and read the note with
-     * strict accessors; a wrong type inside `shared` threw part way through with nothing to put back, left
-     * `revertUnfinishedEdit` before the note was forgotten, and `TrainControlUI.getAutonomySession` handed back no
-     * session at every start.
-     *
-     * The wrong type is a page name that is a list, in the first field the read takes.  Asked of a session of its own
-     * over the sandbox's files: the revert says it did nothing, the setup is as it was, and the note is kept and
-     * reported as unusable.  The note is taken away however this ends.
+     * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it:
+     * `restoreSetup` read the note with strict accessors and a wrong type threw part way through with nothing to put
+     * back.  The wrong type is a page name that is a list, in the first field the read takes.  Asked of a session of
+     * its own over the sandbox's files: the revert says it did nothing, the setup is as it was, and the note is kept
+     * and reported as unusable.  The note is taken away however this ends.
      *
      * MUTATION: let the throw out of `AutonomySession.revertUnfinishedEdit` again, and this fails.
      */
@@ -1214,13 +1187,10 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was.
-     *
-     * "Exit without saving" puts the setup back, but the railway (rebuilt after every gesture) was put back only by the
-     * hand-over posted after the window closed.  A door that folds the railway into the configuration while Cancel's
-     * handler ran (Export, which folds before its chooser opens, or the exit) found the window gone and wrote the
-     * discarded edit back.  The fold is queued as such a click is, before Cancel's tail, and called directly as
-     * `testDiscardOnTheWayOutPutsTheHomeBack` does.
+     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was.  A door that folds the
+     * railway into the configuration while Cancel's handler ran (Export, which folds before its chooser opens, or the
+     * exit) must not find the window gone and write the discarded edit back.  The fold is queued as such a click is,
+     * before Cancel's tail, and called directly as `testDiscardOnTheWayOutPutsTheHomeBack` does.
      *
      * MUTATION: leave the railway to the hand-over after a discard, and this fails.
      */
