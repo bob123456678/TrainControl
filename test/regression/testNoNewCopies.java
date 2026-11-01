@@ -29,6 +29,9 @@ public class testNoNewCopies
     /** The groups as they stand.  Never raise it. */
     private static final int GROUPS_ALLOWED = 128;
 
+    /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 274209;
+
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
         "ArrivalSidePrompt:1,FacingPrompt:1 (69)",
@@ -163,6 +166,47 @@ public class testNoNewCopies
 
     private static final String ADVICE = "Call the method that already does it, or move the code into one both call "
         + "(CLAUDE.md, 'One rule, one place').  Do not raise GROUPS_ALLOWED or add to GROUPS.";
+
+    /**
+     * The copies in `test/` only go down, as one total: the tokens standing in a second or later copy, over every group.
+     * A total rather than pinned groups, since cutting a long copy in two leaves two shorter groups behind.
+     *
+     * MUTATION: pasting a 70-token claim body into a second test class fails this.
+     */
+    @Test
+    public void testTestCopiesOnlyGoDown() throws Exception
+    {
+        List<CopyScan.Group> found = CopyScan.scan(new File("test"));
+
+        long copied = 0;
+
+        for (CopyScan.Group g : found) copied += (long) g.tokens * (g.places.size() - 1);
+
+        Collections.sort(found, new Comparator<CopyScan.Group>()
+        {
+            @Override
+            public int compare(CopyScan.Group a, CopyScan.Group b)
+            {
+                return Long.compare((long) b.tokens * (b.places.size() - 1), (long) a.tokens * (a.places.size() - 1));
+            }
+        });
+
+        StringBuilder largest = new StringBuilder();
+
+        for (int i = 0; i < Math.min(5, found.size()); i++)
+        {
+            largest.append("\n  ").append(found.get(i).entry()).append(" in ").append(found.get(i).places);
+        }
+
+        assertFalse(copied > TEST_COPIED_TOKENS_ALLOWED, "test copies rose: " + copied + " tokens stand in a second"
+            + " copy, against " + TEST_COPIED_TOKENS_ALLOWED + " pinned.  The largest groups:" + largest + "\nA claim's"
+            + " own set-up may stay written in it; shared steps belong in a helper (test/support, or the class).  Do not"
+            + " raise TEST_COPIED_TOKENS_ALLOWED.");
+
+        assertFalse(copied < TEST_COPIED_TOKENS_ALLOWED, "test copies fell to " + copied + " tokens, fewer than the "
+            + TEST_COPIED_TOKENS_ALLOWED + " pinned.  Lower TEST_COPIED_TOKENS_ALLOWED to " + copied
+            + " so the gain is kept.");
+    }
 
     /**
      * The scan of `src/` against the baseline: a group that is not pinned, or is longer than its pin, fails with its
