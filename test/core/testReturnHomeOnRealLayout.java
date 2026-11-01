@@ -61,10 +61,9 @@ public class testReturnHomeOnRealLayout
     private static final long SETTLE_TIMEOUT_MS = 60000;
 
     /**
-     * Seeded, and the seed is in every failure message - the same doctrine testTimetableOnDerivedGraph
-     * follows (README.md, Testing).  This test stops autonomy at a random moment on the operator's own
-     * layout; an unseeded Random made a failure unreproducible, which the class comment above used to
-     * concede outright rather than fix.  Pass -Dreturnhome.seed to re-run a particular one.
+     * Seeded, and the seed is in every failure message, the doctrine testTimetableOnDerivedGraph follows (README.md,
+     * Testing): this test stops autonomy at a random moment on the operator's own layout.  Pass -Dreturnhome.seed to
+     * re-run a particular one.
      */
     private static final long SEED = Long.getLong("returnhome.seed", 20260828L);
 
@@ -391,42 +390,23 @@ public class testReturnHomeOnRealLayout
     /**
      * A train standing on a square that turns trains can still be brought home (MT-463).
      *
-     * Adam, on MT-463: *"Could not run this.  make an automated test for this with
-     * appropriate placements."*  The rule is `behaviour/return-home.md` section 6 and his ruling: a
-     * plan may rest a train that cannot reverse on a terminus or reversing point only when its next move
-     * takes it home, *"a train the railway already had standing on one moves as before"*.  The defect was
-     * that second clause: the code asked the SQUARE whether it turns trains, and a square cannot say who
-     * turned the train standing on it, so a train merely FOUND on one could be planned nowhere but its
-     * own home - and where that home was occupied, or the train had no home at all, the answer was
-     * NO_PLAN_FOUND and the train whose berth it was standing on was stranded with it.
+     * The rule is `behaviour/return-home.md` section 6: a plan may rest a train that cannot reverse on a terminus or
+     * reversing point only when its next move takes it home, and a train the railway already had standing on one moves
+     * as before.  The code asked the SQUARE whether it turns trains, and a square cannot say who turned the train
+     * standing on it, so a train merely FOUND on one was planned nowhere but its own home (NO_PLAN_FOUND where that
+     * home was occupied or there was none).  `core.testHomeStaging` covers the two halves on hand-built fixtures; this
+     * meets the arrangement on the real railway, where the turning squares are real berths with real approaches.
      *
-     * **The two halves have hand-built fixtures already** -
-     * `core.testHomeStaging.testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome` and
-     * `testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt`, both seen red before the fix.  What
-     * they cannot do is what he was trying to do by hand: meet the arrangement on HIS railway, where the
-     * turning squares are real berths with real approaches and real neighbors.
+     * THE PLACEMENTS ARE STAGED, NOT WAITED FOR: each train is put on a turning square through the same
+     * `moveLocomotive` door the operator uses, and put back afterwards.  A hand placement does not re-home an
+     * already-homed locomotive (`Layout.claimHome` returns at `containsKey`), which makes the arrangement stageable.
      *
-     * **THE PLACEMENTS ARE STAGED, NOT WAITED FOR.**  The first version of this ran autonomy, stopped it
-     * and took whatever had come to rest on a turning square away from home - and on his layout, over
-     * three runs, nothing did: the test SKIPPED, which is no test at all when a skip is what he reported
-     * in the first place.  So it puts each train on a turning square itself, through the same
-     * `moveLocomotive` door the operator uses, and puts it back afterwards.  A hand placement does not
-     * re-home an already-homed locomotive (`Layout.claimHome` returns at `containsKey`), which is what
-     * makes the arrangement stageable at all.
+     * THE CONTROL: a plan can be impossible for reasons unrelated to this rule (an occupied approach, a berth nothing
+     * may enter, a square the train is excluded from), so each train is asked twice on the same square: as it is, and
+     * unable to reverse; both must produce a plan.  A train whose own control fails is passed over and named.
      *
-     * **THE CONTROL IS WHAT MAKES EACH CLAIM MEAN ANYTHING.**  A plan can be impossible for reasons that
-     * have nothing to do with this rule - an occupied approach, a berth nothing may enter, a square this
-     * train is excluded from.  So each train is asked twice on the same square: once as it is, which must
-     * produce a plan, and then unable to reverse, which must still produce one.  A train whose own
-     * control fails is passed over and named.
-     *
-     * MUTATION, MEASURED rather than reasoned: drop `&& this.movedAlong.containsKey(l)` from
-     * `turnedByThePlan` in `HomeStaging` - the pre-RTX-B1 reading - and this goes RED on his railway,
-     * together with both claims in `testHomeStaging`.  So the arrangement really does arise there: a
-     * train staged on one of his turning squares cannot be planned home at all once the square rather
-     * than the journey decides whether it was turned.  The guess written here first was that his layout
-     * would let every such train reach its own free home and the mutation would pass; running it says
-     * otherwise, and the run is what counts.
+     * MUTATION: drop `&& this.movedAlong.containsKey(l)` from `turnedByThePlan` in `HomeStaging` and this goes red on
+     * the real railway, together with both claims in `testHomeStaging`.
      *
      * @throws Exception from the model
      */
@@ -458,17 +438,12 @@ public class testReturnHomeOnRealLayout
             Point home = layout.getHomeStation(l);
             Point was = standingAt(layout, l);
 
-            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME.
-            //
-            // `moveLocomotive` calls `claimHome`, which claims an unclaimed square for a locomotive
-            // that has none - so putting such a train on a turning square makes that square ITS HOME,
-            // and the plan is then asked about a train standing where it belongs, which this claim's
-            // own guard excludes.  It also counted towards the floor, so the claim could be carried
-            // entirely by trains it was not about, and the invented home outlived the loop.
-            //
-            // MT-463's step 4 is the homeless case and
-            // `core.testHomeStaging.testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt` holds
-            // it on a fixture built for it.
+            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME: `moveLocomotive` calls
+            // `claimHome`, which claims an unclaimed square for a locomotive that has none, so the plan would be asked
+            // about a train standing where it belongs, which this claim's own guard excludes (and it would count toward
+            // the floor).  MT-463's step 4 is the homeless case and
+            // `core.testHomeStaging.testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt` holds it on a fixture
+            // built for it.
             if (home == null) continue;
 
             for (Point onto : turning)
@@ -504,10 +479,8 @@ public class testReturnHomeOnRealLayout
 
                     asked++;
 
-                    // AND THE STAGING DID NOT MOVE IT.  Only a locomotive with no home is
-                    // re-homed by a hand placement, and those are skipped above - this is the claim
-                    // that keeps that true, because it is the thing that would make the assertion
-                    // below about a different arrangement than the one it names.
+                    // AND THE STAGING DID NOT MOVE IT: only a locomotive with no home is re-homed by a hand placement,
+                    // and those are skipped above; this keeps the assertion below about the arrangement it names.
                     assertTrue(home.isSamePlaceAs(layout.getHomeStation(l)),
                         "staging " + l.getName() + " on " + onto.getName() + " moved its home from "
                         + home.getName() + " to " + layout.getHomeStation(l)
@@ -529,11 +502,8 @@ public class testReturnHomeOnRealLayout
                 {
                     l.setReversible(reversible);
 
-                    // BACK WHERE IT WAS, so the next locomotive is staged against his arrangement rather
-                    // than against this loop's leftovers.  A train the configuration had NOWHERE is taken
-                    // off the square instead of being left on it - otherwise the one case with no `was`
-                    // leaves a train standing on a turning berth for every iteration after it, which is
-                    // this loop arranging the railway rather than staging one train.
+                    // BACK WHERE IT WAS, so the next locomotive is staged against the configuration's arrangement.  A
+                    // train the configuration had NOWHERE is taken off the square instead of being left on it.
                     if (moved && was != null) layout.moveLocomotive(l.getName(), was.getName(), false);
 
                     if (moved && was == null) onto.setLocomotive(null);
@@ -543,9 +513,8 @@ public class testReturnHomeOnRealLayout
             }
         }
 
-        // THE FLOOR.  Every train could have been passed over by its own control, or never staged at
-        // all, which would leave this green having asked nothing - the hole in the round
-        // loop above, and the skip this test was rewritten to stop.
+        // THE FLOOR: every train could have been passed over by its own control, or never staged at all, which would
+        // leave this green having asked nothing.
         assertTrue(asked > 0,
             "no train could be staged on a turning square at all, so the rule this is about was never"
             + " reached.  Passed over: " + passedOver + ", arrangement " + describe(layout)

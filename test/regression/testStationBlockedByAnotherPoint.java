@@ -21,8 +21,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * A station can be held back while another point is in use (FR-001, Adam: "similar to excluding locomotives, we should
- * be able to exclude the autonomous selection of a station when another (specified) point is occupied.").
+ * A station can be held back while another point is occupied (FR-001), as a locomotive can be excluded from it.
  *
  * The setting is remembered against SQUARES in the setup, and the build turns it into LOCK EDGES: every edge arriving
  * at the held-back station gains every edge that ends at the watched square.  `Edge.isLockHeld` asks whether the track
@@ -208,9 +207,8 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * Setting the station to pass through keeps its restriction, and the build still applies it (Adam: "do allow
-     * restrictions on non-stations, and let's not clear them when the type changes"): a route into the square still
-     * waits on the watched one.
+     * Setting the station to pass through keeps its restriction, and the build still applies it: a route into the
+     * square still waits on the watched one.
      *
      * MUTATION: clear the restriction in `AutonomySession.setStation` again, and this fails.
      */
@@ -255,8 +253,7 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * Every restriction is listed as a notice, on a station and on a square that is not one (Adam: "a simple info
-     * notice on restrictions (in the list for any type of station or non station) would be better.").
+     * Every restriction is listed as an info notice, on a station and on a square that is not one.
      *
      * MUTATION: leave the notice out of `AutonomyChecks.run`, or list it for stations only, and this fails.
      */
@@ -414,8 +411,8 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A hand-driven route is refused too (Adam: "let's enforce the occupancy ruling in all modes and then rely on
-     * isPathClear.").  The exemption for the train LEAVING the watched square keeps that from being a trap:
+     * A hand-driven route is refused too: the occupancy ruling is enforced in all modes through isPathClear.  The
+     * exemption for the train LEAVING the watched square keeps that from being a trap:
      * `testATrainLeavingTheWatchedPointMayStillBeSentThere` is it.
      *
      * MUTATION: putting either fence back in `Layout.isPathClear` fails this and leaves every other
@@ -526,8 +523,8 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * The train leaving the watched point may still be sent to the station that point holds back (Adam: "The condition
-     * should not apply to trains leaving - only departing.").  Without the exemption the one movement that clears the
+     * The train leaving the watched point may still be sent to the station that point holds back.  Without the
+     * exemption the one movement that clears the
      * condition is the movement it forbids.  It is the choice `Edge.isOccupied` makes, for the reason `Edge.isLockHeld`
      * records.
      */
@@ -702,9 +699,8 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A train STANDING on the watched point closes a square trains only pass, as well as a station (OB-295; Adam: "It
-     * means trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other specified
-     * station(s).").  The standing half was asked only of a path's destination, which a square trains only pass never
+     * A train STANDING on the watched point closes a square trains only pass, as well as a station (OB-295).  The
+     * standing half was asked only of a path's destination, which a square trains only pass never
      * is.
      *
      * MUTATION: ask the standing half of the destination only, and this fails.

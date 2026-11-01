@@ -13,9 +13,9 @@ import support.SourceOf;
 /**
  * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263).
  *
- * Adam: "Start autonomy doesn't run autonomy, as expected - I get an error message saying errors must first be fixed.
- * Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy tab, which should
- * throw an error instead."  A hand send runs over the railway the same setup built, so the same question,
+ * Start refuses with an error message saying errors must first be fixed, and trains moved manually via the track
+ * diagram viewer or the autonomy tab must be refused the same way.  A hand send runs over the railway the same setup
+ * built, so the same question,
  * `autonomyHasErrors`, is asked at both hand doors (the diagram's right-click destinations and the Auto tab's list of
  * paths) and at the two run doors that dispatch without Start, Execute Timetable and Return Home.
  *

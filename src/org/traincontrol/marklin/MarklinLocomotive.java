@@ -891,16 +891,15 @@ public class MarklinLocomotive extends Locomotive
     @Override
     synchronized public Locomotive setF(int fNumber, boolean state)
     {
-        // The consist's range is the highest of its members' (MT-359).  Adam: "Make the allowed function be the highest
-        // possible for the consist - so two MM2 locs mean F0-4 do something.  one mm2 loc and one dcc/mfx mean all
-        // functions are unlocked." A function outside that range is refused rather than sent and forgotten, `getF`
-        // answers for the members where the head has none, and `functionsOff` clears the same range it can set.
+        // The consist's range is the highest of its members' (MT-359): two MM2 locs mean F0-4 do something, one MM2 loc
+        // and one dcc/mfx mean all functions are unlocked.  A function outside that range is refused rather than sent
+        // and forgotten, `getF` answers for the members where the head has none, and `functionsOff` clears the same
+        // range it can set.
         if (fNumber < 0 || fNumber >= this.drivableFunctionCount()) return this;
 
-        // Every locomotive in the consist is sent the command, head included.  Adam: "Pressing F6 on the MM2 head, if
-        // it has a MFX/DCC member, should simply propagate a F6 command to all the consist's locomotives as per normal.
-        // The CS will figure out whether that means anything."  What is recorded locally stays bounded by each
-        // locomotive's own count (`_setF`).
+        // Every locomotive in the consist is sent the command, head included: F6 on the MM2 head with a MFX/DCC member
+        // propagates to all, and the CS figures out whether that means anything.  What is recorded locally stays
+        // bounded by each locomotive's own count (`_setF`).
         for (Locomotive l : this.linkedLocomotives.keySet())
         {
             if (l instanceof MarklinLocomotive)

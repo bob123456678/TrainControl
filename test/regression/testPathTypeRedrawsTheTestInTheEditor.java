@@ -20,11 +20,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Switching Path Type redraws the path test in the real autonomy editor (OB-225).
  *
  * The note "will never be chosen in autonomy" is written only while Auto is selected, so seeing it on Manual means the
- * test was never run again.  The first claim missed it:
- * `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute` drove `applyTest` on a panel
- * with no page and no window and compared the route against an empty substring.  This class asks the editor Adam uses:
- * a `LayoutEditor` in autonomy mode on the frozen snapshot, Test a Path pressed, the two squares clicked through
- * `tileClicked` (what the grid calls) and the radio clicked.
+ * test was never run again.  This class asks the real editor: a `LayoutEditor` in autonomy mode on the frozen
+ * snapshot, Test a Path pressed, the two squares clicked through `tileClicked` (what the grid calls) and the radio
+ * clicked.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).  The station made manual-only is put back.
  *
@@ -177,9 +175,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /**
      * Test a Path outlines in orange what can be clicked: every station once it is armed, the start in blue once
      * clicked, and with the answer both ends in blue and every other station orange, when the next click starts a new
-     * test; nothing once the tool is put down (FR-159; OB-395, Adam: "I want them to be orange when I click and then
-     * they can become blue post click").  No station takes Why not Moving?'s colors here (MT-854: "The station
-     * highlighting in green/purple should happen in "why not moving", not test a path").
+     * test; nothing once the tool is put down (FR-159; OB-395).  No station takes Why not Moving?'s colors here
+     * (MT-854): the green/purple station highlighting belongs to "why not moving".
      *
      * MUTATION: drop the `annotation.markedByATool` call in `AutonomyEditorPanel.annotationFor`, mark `testFrom`
      * CLICKABLE in `toolMark`, or forget the last test's ends there, and this fails.
@@ -263,7 +260,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * Why not Moving? outlines in orange the squares with a train while it waits, then, with its answer, the train's
      * square in blue and each station in the answer's colors: green where it can go now, gray where it cannot right
      * now, and purple, on Auto alone, where autonomy will never choose it but it could be sent by hand (OB-394), with a
-     * line saying so (FR-159; Adam, MT-854: "The station highlighting in green/purple should happen in "why not moving"").
+     * line saying so (FR-159, MT-854).
      *
      * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
      * marks off (and asking about a square with no train, the lines), and an answer that lands after the tool was put
@@ -1004,8 +1001,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
     /**
      * Why Not Moving? answers for the tier Path Type names, and switching the radio answers again (OB-225).  The answer
-     * stays until the next notice, never fading on a timer (MT-864: "seems to disappear on its own after a while"), and
-     * closes when the user goes back to editing: the tool's button pressed again, or Escape.
+     * stays until the next notice, never fading on a timer (MT-864), and closes when the user goes back to editing: the
+     * tool's button pressed again, or Escape.
      *
      * MUTATION: in `AutonomyEditorPanel.backToEditing`, always say the editing hint, and the answer is replaced but the
      * strip stays up.
