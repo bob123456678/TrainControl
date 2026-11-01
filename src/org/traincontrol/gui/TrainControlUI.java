@@ -21093,7 +21093,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // End of variables declaration//GEN-END:variables
 
     /**
-    /**
      * The Medium tile size, between Small (30) and Large (60): even, so the rails' middle falls on a whole pixel
      * (FR-122).
      */

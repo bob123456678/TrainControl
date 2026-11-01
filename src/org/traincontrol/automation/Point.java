@@ -21,9 +21,9 @@ public class Point
     /**
      * The side a train standing here came IN by, which is where its tail lies.
      *
-      * Facing cannot answer this: a train faces the way it will leave, and once turned round its tail points the same
-      * way it faces, so inferring the tail from the heading finds the wrong track.  A compass side rather than an edge,
-      * because an edge is directional and a tail is not.  Null when nothing has said.
+     * Facing cannot answer this: a train faces the way it will leave, and once turned round its tail points the same
+     * way it faces, so inferring the tail from the heading finds the wrong track.  A compass side rather than an edge,
+     * because an edge is directional and a tail is not.  Null when nothing has said.
      */
     private String arrivedFrom;
 
@@ -62,7 +62,7 @@ public class Point
     /** The key the mode is written under, beside `excludedLocs` - only when the list names the locomotives allowed. */
     public static final String EXCLUDED_LOCS_MODE = "excludedLocsMode";
 
-    /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed. */
+    /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed (Adam's word for it). */
     public static final String ALLOW_ONLY_LISTED = "whitelist";
 
     private double speedMultiplier = 1.0;
@@ -672,9 +672,9 @@ public class Point
      * The square holding this one back, or null when none is (FR-001), asked of every square a route arrives at, not
      * only its destination (OB-295).  The one expression of the rule: callers supply only where to look for occupancy.
      *
-      * The train LEAVING the watched square is exempt, else a locomotive in the yard could never be sent to the
-      * platform the yard holds back.  Whether the rule is in force at all is the caller's business; no caller fences
-      * it, in any mode.
+     * The train LEAVING the watched square is exempt, else a locomotive in the yard could never be sent to the
+     * platform the yard holds back.  Whether the rule is in force at all is the caller's business; no caller fences
+     * it, in any mode.
      *
      * @param destination the square being arrived at - a route's destination or any square on the way (OB-295); a null
      *        square is held back by nothing

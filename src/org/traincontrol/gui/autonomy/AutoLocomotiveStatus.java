@@ -313,10 +313,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 List<List<Edge>> answer = haveFound ? found
                     : withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
 
-                this.paths = answer == null ? new java.util.LinkedList<>() : answer;
-                
-                // Paths found off the event thread can arrive after the train left its square.
-                if (!this.paths.isEmpty() && at != null)
+                // Paths found off the event thread can arrive after the train left its square: none are offered then.
+                this.paths = answer == null || at == null ? new java.util.LinkedList<>() : answer;
+
+                if (!this.paths.isEmpty())
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + stationName(at)
@@ -715,19 +715,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             // Both halves under ONE acquisition of the Layout monitor: asked separately, the reasons and the grouping
             // could be computed against two states, and a line would sit under the wrong heading.
-            Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive, byHand);
-
-            java.util.Map<String, String> reasons = destinations.getReasons();
-
             java.util.Map<String, String> choosable = new java.util.TreeMap<>();
             java.util.Map<String, String> barred = new java.util.TreeMap<>();
-            java.util.Set<String> canGo = new java.util.HashSet<>();
 
-            for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
-            {
-                destinations.fileUnderStation(entry.getKey(), stationName(layout.getPoint(entry.getKey())), canGo,
-                    choosable, barred);
-            }
+            fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
 
             if (choosable.isEmpty() && barred.isEmpty())
             {
@@ -820,9 +811,24 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
+     * Files every Point's reason under its station name, as `Layout.Destinations.fileUnderStation` does: a station it
+     * can go to by any copy is in neither map.
+     */
+    private void fileByStation(Layout.Destinations destinations, java.util.Map<String, String> choosable,
+        java.util.Map<String, String> barred)
+    {
+        java.util.Set<String> canGo = new java.util.HashSet<>();
+
+        for (String point : destinations.getReasons().keySet())
+        {
+            destinations.fileUnderStation(point, stationName(layout.getPoint(point)), canGo, choosable, barred);
+        }
+    }
+
+    /**
      * Why this locomotive has nowhere to go, as a tooltip: a list, so kept out of the panel's text, where a user who is
-     * not asking would have to read it.  Keyed by station name, not Point (a square is several Points); only the first
-     * reason per station is kept, the one that would have stopped it.
+     * not asking would have to read it.  The same stations as the window, the ones autonomy could choose first; one
+     * line per station, not per Point (a square is several Points).
      */
     private String whyNotToolTip()
     {
@@ -838,18 +844,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // WRAPPED: the sentences with a remedy run to two hundred characters, on one line otherwise.
             if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
 
-            java.util.Map<String, String> reasons = layout.explainDestinations(locomotive, byHand);
+            java.util.Map<String, String> choosable = new java.util.TreeMap<>();
+            java.util.Map<String, String> barred = new java.util.TreeMap<>();
 
-            java.util.Map<String, String> byStation = new java.util.LinkedHashMap<>();
+            fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
 
-            for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
-            {
-                if (entry.getValue() == null) continue;
-
-                String station = stationName(layout.getPoint(entry.getKey()));
-
-                if (!byStation.containsKey(station)) byStation.put(station, entry.getValue());
-            }
+            java.util.Map<String, String> byStation = new java.util.LinkedHashMap<>(choosable);
+            byStation.putAll(barred);
 
             if (byStation.isEmpty()) return null;
 

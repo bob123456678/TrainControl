@@ -204,6 +204,57 @@ public class testCommentsStayLean
     }
 
     /**
+     * A trimmed javadoc keeps its shape: one `/**` opener, and every `*` line one column right of it.  A trim that
+     * rewrites a block's body without its opener leaves a second opener and the body one column out.
+     *
+     * MUTATION: put a second `/**` line above any javadoc's first line, and this fails naming the file and line.
+     */
+    @Test
+    public void testNoJavadocIsMisshapen() throws Exception
+    {
+        List<String> found = new ArrayList<>();
+
+        for (String tree : new String[] {"src", "test"})
+        {
+            try (java.util.stream.Stream<java.nio.file.Path> walk = Files.walk(new File(tree).toPath()))
+            {
+                for (java.nio.file.Path path : (Iterable<java.nio.file.Path>) walk
+                    .filter(p -> p.toString().endsWith(".java")).sorted()::iterator)
+                {
+                    List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+
+                    for (int i = 0; i < lines.size(); i++)
+                    {
+                        Matcher opener = Pattern.compile("^( *)/\\*\\*\\s*$").matcher(lines.get(i));
+
+                        if (!opener.matches()) continue;
+
+                        String inside = opener.group(1) + "  *";
+
+                        for (int j = i + 1; j < lines.size(); j++)
+                        {
+                            String line = lines.get(j);
+
+                            if (j == i + 1 && line.trim().startsWith("/**"))
+                            {
+                                found.add(path + ":" + (j + 1) + " a second opener");
+                            }
+                            else if (line.startsWith(inside) && !line.startsWith(" " + inside))
+                            {
+                                found.add(path + ":" + (j + 1) + " a line one column right");
+                            }
+
+                            if (line.trim().endsWith("*/")) break;
+                        }
+                    }
+                }
+            }
+        }
+
+        assertTrue(found.isEmpty(), "javadocs out of shape: " + found);
+    }
+
+    /**
      * The counts against the pinned ones: a rise fails naming the offenders and giving the advice, a fall fails asking
      * for the number to be lowered so that the gain is kept.
      */

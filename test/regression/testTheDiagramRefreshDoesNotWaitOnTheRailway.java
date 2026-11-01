@@ -747,6 +747,14 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
                 + " on another page carries its page, as " + elsewhere + " should.  Could choose: " + candidates
                 + ".  Never: " + never);
         }
+
+        for (String reachable : canGo)
+        {
+            String name = reachable.replace("&", "&amp;").replace("<", "&lt;");
+
+            assertFalse(candidates.contains(name) || never.contains(name), reachable + " can be gone to by one copy"
+                + " and is listed as a station it cannot go to.  Could choose: " + candidates + ".  Never: " + never);
+        }
     }
 
     /** The locomotive standing on a square, whichever of its Points holds it. */

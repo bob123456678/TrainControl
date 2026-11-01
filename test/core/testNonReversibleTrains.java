@@ -156,7 +156,6 @@ public class testNonReversibleTrains
     // so it is tested in testLayoutPickPath.testFullAutonomyDoesNotDriveThroughAReversingPoint.
 
     /**
-    /**
      * One locomotive on several copies of a square is one train in the caption, not several: a locked path reserves
      * every point along it, so the train is on both copies and the caption showed "[BR &lt; |BR &gt;]".
      */

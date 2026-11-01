@@ -544,14 +544,13 @@ public class testTheShadingFollowsTheTrain
     // ---------------------------------------------------------------- the fixture
 
     /**
-     /**
-      * Leaves one train on the railway, which makes the assertions attributable: with four trains standing about, a
-      * square that stops being shaded could have stopped for a reason nothing in this test did.  The one kept is the
-      * first found standing somewhere that records which way it came in (the tail walk needs that side to choose its
-      * first hop) and that actually covers something, which the railway is simply asked, with the length this class
-      * uses.  A recorded arrival side does not guarantee it: a locomotive at `1 - Main:0,11` recorded a side that
-      * leaves by track the graph cannot follow, so no edge was covered at all.
-      */
+     * Leaves one train on the railway, which makes the assertions attributable: with four trains standing about, a
+     * square that stops being shaded could have stopped for a reason nothing in this test did.  The one kept is the
+     * first found standing somewhere that records which way it came in (the tail walk needs that side to choose its
+     * first hop) and that actually covers something, which the railway is simply asked, with the length this class
+     * uses.  A recorded arrival side does not guarantee it: a locomotive at `1 - Main:0,11` recorded a side that
+     * leaves by track the graph cannot follow, so no edge was covered at all.
+     */
     private static void oneTrainOnly()
     {
         Point keep = null;
@@ -560,8 +559,8 @@ public class testTheShadingFollowsTheTrain
         {
             if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
 
-            // AT A STATION AUTONOMY MAY CHOOSE: one it does not choose is drawn in the train mark's own orange, so its
-            // square reads as marked with no train on it.
+            // AT A STATION AUTONOMY MAY CHOOSE: one it does not choose is drawn gray (MT-492), which a test of the
+            // shading cannot tell from shading.
             if (!point.isAutoDestination()) continue;
 
             Locomotive candidate = point.getCurrentLocomotive();

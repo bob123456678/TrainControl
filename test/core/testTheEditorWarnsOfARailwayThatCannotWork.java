@@ -186,7 +186,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-      * check reports it as an error (refusals that make sense are errors, smaller issues warnings).
+     * check reports it as an error (refusals that make sense are errors, smaller issues warnings).
      *
      * MUTATION: report it as a warning, and this fails.
      */
@@ -220,8 +220,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-      * A placed train facing track that runs only towards it is a warning - set, not refused - and the track closed
-      * instead is not, nothing arriving by it.
+     * A placed train facing track that runs only towards it is a warning - set, not refused - and the track closed
+     * instead is not, nothing arriving by it.
      *
      * MUTATION: leave the warning out, and this fails.
      */
@@ -256,8 +256,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-      * A trapped arrival is named by the side it comes in by, and the advice offers to close arrivals from that side,
-      * as well as opening the way ahead or letting trains change direction there (OB-201).
+     * A trapped arrival is named by the side it comes in by, and the advice offers to close arrivals from that side,
+     * as well as opening the way ahead or letting trains change direction there (OB-201).
      *
      * MUTATION: name the point instead of the side, or every way in rather than the trapped one, and this fails.
      */

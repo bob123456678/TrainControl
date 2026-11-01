@@ -26,8 +26,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train put down by the assign dialog records which way it came in.
  *
-  * The question `behaviour/facing.md` section 4 left open is settled: the missing arrival side is set, from the data,
-  * by the user, or randomly, reusing the machinery and checks of the current popup.
+ * The question `behaviour/facing.md` section 4 left open is settled: the missing arrival side is set, from the data,
+ * by the user, or randomly, reusing the machinery and checks of the current popup.
  *
  * `Layout.edgesCoveredByStandingTrains` walks back from a standing train along the side it came in by and blocks that
  * track for everything else.  Three doors put a train down by hand and only the diagram's drag and paste worked the
@@ -118,7 +118,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-      * A side the operator has barred is not a side a train can have arrived by (OB-204).
+     * A side the operator has barred is not a side a train can have arrived by (OB-204).
      *
      * `AutonomyBuilder.splitSides`, which every placement door reads through `StationIndex.arrivalSidesAt`, collected
      * entry sides with no reference to the barred list, so a square with one way in and one barred side looked
@@ -441,8 +441,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-      * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  The two lists are
-      * one question; this one wrote its own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
+     * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  The two lists are
+     * one question; this one wrote its own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
      *
      * MUTATION: leave the limit at 20, or write this list out by hand again, and this fails.
      */

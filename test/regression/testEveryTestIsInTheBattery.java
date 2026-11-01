@@ -11,9 +11,9 @@ import org.testng.annotations.Test;
 /**
  * Every test class is in `ant test`, and this is what notices when one is not.
  *
-  * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and only one
-  * control station can exist per JVM, so the battery runs one class per JVM with no wildcard.  A hand-kept list of
-  * everything falls behind; it is still kept by hand, but forgetting it now fails.
+ * `build.xml` names each test class on its own line, because `NetworkProxy` binds a fixed UDP port and only one
+ * control station can exist per JVM, so the battery runs one class per JVM with no wildcard.  A hand-kept list of
+ * everything falls behind; it is still kept by hand, but forgetting it now fails.
  *
  * `testAutoDetect` is the one deliberate omission: it probes the network for a real Central Station.  Anything else
  * left out is added to the exclusion below WITH ITS REASON, so the next reader can tell a decision from an oversight.

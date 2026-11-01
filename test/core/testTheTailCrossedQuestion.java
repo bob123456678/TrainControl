@@ -577,7 +577,6 @@ public class testTheTailCrossedQuestion
     // ------------------------------------------------------------------------------------------------ OB-276
 
     /**
-    /**
      * Two copies of one square leaving by the same rail are ONE road back, offered once and no reason to ask (OB-276).
      * They are RampDown's southbound lane and its northbound TURNING copy, both leaving south over the same places;
      * keyed by lane name they would be two roads.

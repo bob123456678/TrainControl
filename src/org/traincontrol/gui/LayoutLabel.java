@@ -903,8 +903,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-      * The same flash, in a color and for a length the caller chooses: the route editor lights what a route commands in
-      * the ordinary yellow and what it merely checks in orange, held long enough to look from window to diagram.
+     * The same flash, in a color and for a length the caller chooses: the route editor lights what a route commands in
+     * the ordinary yellow and what it merely checks in orange, held long enough to look from window to diagram.
      *
      * @param wash the color to lay over the tile
      * @param holdMs how long to hold it
@@ -1254,24 +1254,21 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     /**
-      * The orange a train is drawn in (MT-309).  Opaque, and the one strongly colored line on an ordinary diagram:
-      * green and red already mean "trains may run this way" and "they may not", and yellow is the transient flash.
-      * Also the orange for a square autonomy does not choose, so a diagram carrying both reads them as one color; a
-      * parking berth is gray (FR-103).
-      *
-      * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
-      * set otherwise.
-      */
+     * The orange a train is drawn in (MT-309).  Opaque, and the one strongly colored line on an ordinary diagram:
+     * green and red already mean "trains may run this way" and "they may not", and yellow is the transient flash.  A
+     * square autonomy will not choose is gray, not orange (MT-492).
+     *
+     * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
+     * set otherwise.
+     */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
 
     /**
-     /**
-      * How solid a square is drawn while the railway refuses it (MT-278): the same device as
-      * `TileAnnotation.IGNORED_ALPHA` (0.62), but lower on purpose.  An ignored square is a permanent property of the
-      * layout; blocked track is a fact about this minute and must be told apart at a glance.
-      */
+     * How solid a square is drawn while the railway refuses it (MT-278): the same device as
+     * `TileAnnotation.IGNORED_ALPHA` (0.62), but lower on purpose.  An ignored square is a permanent property of the
+     * layout; blocked track is a fact about this minute and must be told apart at a glance.
+     */
     public static final float BLOCKED_ALPHA = 0.40f;
 
     /**
@@ -1323,7 +1320,10 @@ public final class LayoutLabel extends JLabel
         COACHES
     }
 
-    /** The style trains are drawn in. */
+    /**
+     * The style trains are drawn in: the line by default, which Adam chose after seeing both, so the coaches are
+     * only ever a choice.
+     */
     private static volatile TailStyle tailStyle = TailStyle.LINE;
 
     /**

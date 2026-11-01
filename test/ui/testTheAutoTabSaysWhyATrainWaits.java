@@ -66,7 +66,7 @@ public class testTheAutoTabSaysWhyATrainWaits
      * the (i) mark and a hand cursor, and hovering the line lists, per station, the reason a hand-driven send meets
      * there (the occupant, the terminus it could not leave).
      *
-     * MUTATION: in `whyNotToolTip`, key each reason by the Point's own name (`String station = entry.getKey()`), and the
+     * MUTATION: in `fileByStation`, file each reason under the Point's own name (`point` for its `stationName`), and the
      * square's two copies are listed apart, as "Approach (eastbound)" and "Approach (westbound)".
      */
     @Test
@@ -154,6 +154,127 @@ public class testTheAutoTabSaysWhyATrainWaits
         {
             close();
         }
+    }
+
+    /**
+     * A station the train can be sent to by one copy is in neither the window nor the tooltip, though its other copy is
+     * refused.
+     *
+     * MUTATION: in `fileByStation`, skip the Points with no reason (`if (destinations.getReasons().get(point) == null)
+     * continue;`), and Approach is listed with its other copy's reason.
+     */
+    @Test
+    public void testAStationItCanBeSentToIsNotListed() throws Exception
+    {
+        needsADisplay();
+
+        try
+        {
+            open("single-switch");
+
+            Locomotive mover = train(MOVER, true);
+
+            train(BLOCKER, true);
+
+            stand(MOVER, PLATFORM_X, PLATFORM_Y);
+            stand(BLOCKER, BRANCH_X, BRANCH_Y);
+
+            // Westbound it can go; eastbound Approach is an intermediate terminus.
+            java.util.Map<String, String> reasons = railway().explainDestinations(mover, true);
+
+            assertTrue(reasons.containsKey("Approach (westbound)") && reasons.get("Approach (westbound)") == null
+                && reasons.get("Approach (eastbound)") != null,
+                "precondition: Approach is not reachable by one copy and refused by the other: " + reasons);
+
+            AutoLocomotiveStatus card = card(mover);
+
+            String window = (String) said(card, "whyNotReport");
+            String tooltip = (String) said(card, "whyNotToolTip");
+
+            assertTrue(window.contains("BranchPlatform"), "precondition: the window lists no refused station: " + window);
+
+            assertFalse(window.contains("Approach"),
+                "the window lists Approach as a station it cannot be sent to, and it can: " + window);
+
+            assertFalse(tooltip != null && tooltip.contains("Approach"),
+                "the tooltip lists Approach as a station it cannot be sent to, and it can: " + tooltip);
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    /**
+     * Paths found off the event thread for a train that has since left its square are not offered: the card lists no
+     * path to double-click and says the train is not on the graph.
+     *
+     * MUTATION: in `updateState`, keep a late answer (`this.paths = answer == null ? ... : answer`), and its paths are
+     * listed under a train that stands nowhere.
+     */
+    @Test
+    public void testPathsForATrainThatHasLeftAreNotOffered() throws Exception
+    {
+        needsADisplay();
+
+        try
+        {
+            open("single-switch");
+
+            final Locomotive mover = train(MOVER, true);
+
+            stand(MOVER, PLATFORM_X, PLATFORM_Y);
+
+            final List<List<org.traincontrol.automation.Edge>> late = railway().getPossiblePaths(mover, true);
+
+            assertFalse(late.isEmpty(), "precondition: the train has no path to be late with");
+
+            // The card the answer was asked for, before the train leaves.
+            final AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
+
+            SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(null,
+                railway().getLocomotiveLocation(mover).getName(), true));
+
+            SwingUtilities.invokeAndWait(() -> card.updateState(mover, late, true));
+
+            Field list = AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+
+            list.setAccessible(true);
+
+            assertEquals(((javax.swing.JList<?>) list.get(card)).getModel().getSize(), 0,
+                "paths that arrived after the train left its square are offered to double-click");
+
+            assertEquals(secondLine(card).getText(), I18n.t("autolayout.ui.locNotOnGraph"),
+                "the card does not say the train is off the graph");
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    /** What a card's private answer method says, asked on the event thread as the card asks it. */
+    private static Object said(final AutoLocomotiveStatus card, String method) throws Exception
+    {
+        final java.lang.reflect.Method asked = AutoLocomotiveStatus.class.getDeclaredMethod(method);
+
+        asked.setAccessible(true);
+
+        final Object[] out = new Object[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                out[0] = asked.invoke(card);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        return out[0];
     }
 
     /**
@@ -523,7 +644,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
         assertEquals(line.getCursor().getType(), Cursor.DEFAULT_CURSOR, "the pointer invites a click that explains nothing");
 
-        assertNull(tooltipAfterHover(line), "the line gives reasons although there is nothing to explain");
+        assertNull(tooltipAfterHover(line, 3000), "the line gives reasons although there is nothing to explain");
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
@@ -534,13 +655,22 @@ public class testTheAutoTabSaysWhyATrainWaits
         }
     }
 
-    /** What hovering the line gives, which arrives a moment after the pointer: null when nothing comes. */
+    /**
+     * What hovering the line gives, which arrives a moment after the pointer: worked out off the event thread under the
+     * railway's monitor, which a big railway's searches hold for seconds.
+     */
     private static String tooltipAfterHover(JLabel line) throws Exception
+    {
+        return tooltipAfterHover(line, PATIENCE_MS);
+    }
+
+    /** The same, giving up after `patience`: null when nothing comes by then. */
+    private static String tooltipAfterHover(JLabel line, long patience) throws Exception
     {
         Mouse.exit(line);
         Mouse.enter(line);
 
-        Components.waitFor(() -> line.getToolTipText() != null, 3000);
+        Components.waitFor(() -> line.getToolTipText() != null, patience);
 
         return line.getToolTipText();
     }

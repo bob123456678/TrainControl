@@ -510,8 +510,8 @@ final class EditorWindows
         // its copies and their names.  Not while trains are moving.
         ui.rebuildRunningLayoutFromSetup();
 
-        // The file is written AFTER the rebuild: capturing first would fold the pre-edit running layout over the
-        // configuration.
+        // The setup file is written when an editor closes, as on exit and on load (Adam's rule).  AFTER the rebuild:
+        // capturing first would fold the pre-edit running layout over the configuration.
         ui.captureRunningLayout();
     }
 

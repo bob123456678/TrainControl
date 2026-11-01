@@ -387,7 +387,6 @@ public class testTheGreyAppearsAtIdleToo
 
     // ---------------------------------------------------------------- and it is regenerated
 
-    /**
     /** A train's length changing regenerates the gray, with nothing running. */
     @Test
     public void testATrainLengthChangeRegeneratesTheGreyAtIdle()

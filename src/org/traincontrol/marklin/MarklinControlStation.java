@@ -866,7 +866,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // STOPPED OUTSIDE THE LOCK: stopLocomotives talks to the railway and waits on it, and nothing may queue behind
         // it.
-        // RETIRED, as a load retires the railway it replaces: a path's thread on the railway dropped stops its
+        // RETIRED, as a load retires the railway it replaces: a path's thread on the railway dropped stops its train at
+        // its next check, rather than drive on a train already stopped.
         Layout.retireEveryLayout();
 
         if (going != null)
