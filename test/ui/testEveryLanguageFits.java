@@ -75,9 +75,9 @@ public class testEveryLanguageFits
     }
 
     /**
-     * The rule can fail: a test whose check cannot be seen to fail tests nothing, and the eight-language walk cannot
-     * carry its own control (a real string could only be made too long by editing a bundle). So the RULE is controlled
-     * here, on a component this method owns: a short string in 80 pixels fits, the same label with a long one does not.
+     * The rule can fail: the eight-language walk cannot carry its own control (a real string could only be made too
+     * long by editing a bundle), so the RULE is controlled here, on a component this method owns: a short string in 80
+     * pixels fits, the same label with a long one does not.
      *
      * MUTATION: comparing `getPreferredSize().width` against `getWidth()` again fails the second assertion, because
      * `setPreferredSize` is how the fixture fixes the width and that is the case the old rule could not see.
@@ -348,12 +348,10 @@ public class testEveryLanguageFits
 
                 titles(ui[0].getContentPane(), found);
 
-                // No container-level checks: the per-component rule only catches a component whose width is FIXED,
-                // since a free layout grants the wider preferred size and the overflow lands elsewhere. Three container
-                // rules were tried and all came out: a panel wider than its parent (11 findings in English), the
-                // content pane wider than 1110px (never fired), and a component past the content pane's right edge (12
-                // findings in English, the function-key labels). They measure this form's own geometry, not translation
-                // length, and a check that reports findings every run is one nobody reads.
+                // No container-level checks: the per-component rule catches a component whose width is FIXED, since a
+                // free layout grants the wider preferred size and the overflow lands elsewhere.  Three container rules
+                // were tried and dropped: they measure this form's own geometry (11 and 12 findings in English), not
+                // translation length, and a check that reports findings every run is one nobody reads.
                 localised.put(language, textByPath(ui[0]));
             });
 
@@ -404,15 +402,12 @@ public class testEveryLanguageFits
     }
 
     /**
-     * How wide this component's TEXT actually is, rather than how wide the component asked to be. Comparing
-     * `getPreferredSize().width` against `getWidth()` cannot see two cases: a component whose preferred size was SET
-     * (`TrainControlUI` does so on 100 labels and buttons, so no translation can move the ask), and a free layout that
-     * grants the preferred width so the overflow lands on the panel or window.
-     *
-     * HTML text is left to the old rule: a markup label wraps in a view hierarchy, so the width of its characters is
-     * not its required width, and Swing's own preferred size is the best number available.
-     *
-     * Returns the width the text needs, including insets, icon and gap.
+     * How wide this component's TEXT actually is, rather than how wide the component asked to be.  Comparing
+     * `getPreferredSize().width` against `getWidth()` cannot see a component whose preferred size was SET
+     * (`TrainControlUI` does so on 100 labels and buttons) or a free layout that grants the preferred width so the
+     * overflow lands on the panel.  HTML text is left to the old rule: a markup label wraps in a view hierarchy, so
+     * Swing's own preferred size is the best number available.  Returns the width the text needs, including insets,
+     * icon and gap.
      */
     private static int requiredWidth(Component c, String text)
     {
