@@ -352,7 +352,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locStation.setToolTipText(I18n.t("autolayout.ui.tooltip.currentLocation"));
                 
                 // Sort the list
-                this.paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
+                java.util.IdentityHashMap<List<Edge>, String> key = new java.util.IdentityHashMap<>();
+
+                for (List<Edge> path : this.paths)
+                {
+                    key.put(path, Edge.pathToString(path));
+                }
+
+                this.paths.sort(java.util.Comparator.comparing(key::get));
                 
                 for (List<Edge> path : this.paths)
                 {
