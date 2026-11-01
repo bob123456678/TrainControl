@@ -4346,3 +4346,11 @@ kind: bug
 what: TileAnnotation: CLICKABLE draws a thick band in the selection's orange at the square's edge (paintToolBorder), under a tested route's line, and no wash; PICKED the blue wash and thin frame, on both ends of a tested path while its answer shows. Claims regression.testTrainMarkIsNotBlank.testTheClickableSquaresAreOrangeAndTheClickedOneBlue and regression.testPathTypeRedrawsTheTestInTheEditor.testTestAPathMarksTheStationsInBlue.
 state: -
 became: MT-863
+
+[receipt OB-396]
+seq: 543
+filed: 2026-10-31
+kind: bug
+what: RouteEditorFrame ConditionTable: C3 outlines with rule captions (click to switch), only Kind indented, drag handle, the R1 row (Add Condition, Group Selected, Ungroup, Split Here), the Automatically Fire warning with a triangle on the heading line and the reading under it, gray kept inside the outline, minimum width from the top line; ConditionOutline groupsOf, grouped (keeps the meaning), ungrouped, split. Claims in ui.testRouteEditorValidation and core.testConditionOutline.
+state: -
+became: MT-868

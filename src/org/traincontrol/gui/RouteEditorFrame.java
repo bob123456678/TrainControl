@@ -124,8 +124,21 @@ public class RouteEditorFrame extends JFrame
      */
     private final JComboBox<String> captureTarget = new JComboBox<>();
 
-    /** Says which way the joins nest, because that is the one thing a row list cannot show. */
+    /** Says which way the joins nest, in words. */
     private final JLabel readsAs = new JLabel(" ");
+
+    /** In red under the reading, while there are conditions and Automatically Fire is off. */
+    private final JLabel unasked = new JLabel(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
+
+    /** The row under the conditions (OB-396): Add Condition, then Group Selected and Ungroup. */
+    private JPanel conditionActions;
+    private JButton addConditionButton;
+    private JButton groupButton;
+    private JButton ungroupButton;
+    private JButton splitButton;
+
+    /** Name, Automatically Fire, S88 and Trigger: the line the window is never narrower than (OB-396). */
+    private JPanel topLine;
 
     /**
      * @param parent the main window, which owns the model and the route list
@@ -194,7 +207,104 @@ public class RouteEditorFrame extends JFrame
         if (parent != null) setAlwaysOnTop(parent.isAlwaysOnTop());
 
         pack();
+
+        // No narrower than the top line in full, the Trigger dropdown's longest choice included (OB-396).
+        setMinimumSize(new Dimension(narrowest(), getMinimumSize().height));
         setLocationRelativeTo(parent);
+    }
+
+    /** The window's width with the top line side by side at its preferred width, every field grayed or not. */
+    private int narrowest()
+    {
+        java.awt.Insets frame = getInsets();
+        java.awt.Insets content = ((JPanel) getContentPane()).getInsets();
+
+        return topLine.getPreferredSize().width + content.left + content.right + frame.left + frame.right;
+    }
+
+    /**
+     * A section's heading with a notice at the right of its line, and the reading on a line of its own under them
+     * (OB-396).  Where the line is too narrow for both, the notice goes under the heading, still at the right.
+     */
+    private static final class HeadingLine extends JPanel
+    {
+        private static final int GAP = 12;
+
+        private final java.awt.Component heading;
+        private final java.awt.Component notice;
+        private final java.awt.Component reading;
+
+        HeadingLine(java.awt.Component heading, java.awt.Component notice, java.awt.Component reading)
+        {
+            super(null);
+
+            this.heading = heading;
+            this.notice = notice;
+            this.reading = reading;
+
+            setOpaque(false);
+            add(heading);
+            add(notice);
+            add(reading);
+        }
+
+        /** The width it is laid out at, a BorderLayout's NORTH: its holder's inside the holder's insets. */
+        private int available()
+        {
+            java.awt.Container holder = getParent();
+
+            if (holder == null || holder.getWidth() <= 0) return Integer.MAX_VALUE;
+
+            java.awt.Insets in = holder.getInsets();
+
+            return holder.getWidth() - in.left - in.right;
+        }
+
+        private boolean oneLine(int width)
+        {
+            return !notice.isVisible()
+                || heading.getPreferredSize().width + GAP + notice.getPreferredSize().width <= width;
+        }
+
+        /** The height of the heading's line, or of the heading and the notice under it. */
+        private int lineHeight(boolean one)
+        {
+            int noticed = notice.isVisible() ? notice.getPreferredSize().height : 0;
+
+            return one ? Math.max(heading.getPreferredSize().height, noticed)
+                : heading.getPreferredSize().height + noticed;
+        }
+
+        /** Asked afresh each time: the height follows the width, which a cached size would not. */
+        @Override
+        public Dimension getPreferredSize()
+        {
+            Dimension read = reading.isVisible() ? reading.getPreferredSize() : new Dimension();
+            int widest = Math.max(heading.getPreferredSize().width, notice.getPreferredSize().width);
+
+            return new Dimension(Math.max(widest, read.width + 2), lineHeight(oneLine(available())) + read.height + 4);
+        }
+
+        @Override
+        public Dimension getMinimumSize()
+        {
+            return getPreferredSize();
+        }
+
+        @Override
+        public void doLayout()
+        {
+            int width = getWidth();
+            boolean one = oneLine(width);
+            int line = lineHeight(one);
+            Dimension head = heading.getPreferredSize();
+            Dimension note = notice.getPreferredSize();
+
+            heading.setBounds(0, one ? (line - head.height) / 2 : 0, Math.min(head.width, width), head.height);
+            notice.setBounds(Math.max(0, width - note.width), one ? (line - note.height) / 2 : head.height,
+                Math.min(note.width, width), note.height);
+            reading.setBounds(2, line + 2, Math.max(0, width - 2), reading.getPreferredSize().height);
+        }
     }
 
     /**
@@ -219,7 +329,9 @@ public class RouteEditorFrame extends JFrame
         content.setBackground(java.awt.Color.WHITE);
         content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        content.add(header(), BorderLayout.NORTH);
+        topLine = header();
+
+        content.add(topLine, BorderLayout.NORTH);
 
         JPanel middle = new JPanel(new GridLayout(2, 1, 0, 8)
         {
@@ -267,15 +379,30 @@ public class RouteEditorFrame extends JFrame
 
         JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions);
 
+        // The table and its row of actions scroll as one white area (OB-396).
+        JScrollPane conditionScroll = (JScrollPane) ((BorderLayout) conditionSection.getLayout())
+            .getLayoutComponent(BorderLayout.CENTER);
+
+        conditionScroll.setViewportView(conditionArea());
+        conditionScroll.setColumnHeaderView(conditions.getTableHeader());
+
         readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
         readsAs.setForeground(new java.awt.Color(90, 90, 90));
 
         readsAs.setVerticalAlignment(JLabel.TOP);
 
+        unasked.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        unasked.setForeground(new java.awt.Color(0xC6, 0x28, 0x28));
+        unasked.setIcon(RowIcons.warning(16));
+        unasked.setIconTextGap(6);
+        unasked.setVisible(false);
+
         // The selected condition is bold in the reading, so an edit shows where it now sits in the sentence (FR-147).
         conditions.getSelectionModel().addListSelectionListener(e ->
         {
             if (!locked && !e.getValueIsAdjusting()) updateReadsAs();
+
+            if (!e.getValueIsAdjusting()) refreshConditionActions();
         });
 
         // Answers whether the route would fire right now, which a condition list cannot show.
@@ -307,8 +434,11 @@ public class RouteEditorFrame extends JFrame
 
         below.setBackground(java.awt.Color.WHITE);
 
-        // The reading goes above the table, as a subtitle restating the whole condition (MT-108).
-        conditionSection.add(readsAs, BorderLayout.NORTH);
+        // The notice on the heading's line, at its right; the reading on a line of its own under them (OB-396).
+        java.awt.Component heading = ((BorderLayout) conditionSection.getLayout())
+            .getLayoutComponent(BorderLayout.NORTH);
+
+        conditionSection.add(new HeadingLine(heading, unasked, readsAs), BorderLayout.NORTH);
 
         below.add(buttonsOf(conditionSection), BorderLayout.SOUTH);
 
@@ -701,6 +831,161 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * The conditions' white area (OB-396): the table, directly under it its row of actions, and white to the bottom,
+     * where a press selects nothing and a right-click offers Add Condition.
+     */
+    private JPanel conditionArea()
+    {
+        final JPanel area = new ScrollingArea();
+
+        area.setBackground(java.awt.Color.WHITE);
+
+        JPanel stack = new JPanel(new BorderLayout());
+
+        stack.setOpaque(false);
+        stack.add(conditions, BorderLayout.CENTER);
+        stack.add(conditionActions(), BorderLayout.SOUTH);
+
+        area.add(stack, BorderLayout.NORTH);
+
+        area.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e)
+            {
+                if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
+
+                conditions.clearSelection();
+            }
+        });
+
+        area.addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+        {
+            @Override
+            protected void showPopup(java.awt.event.MouseEvent e)
+            {
+                offerConditionMenu(javax.swing.SwingUtilities.convertMouseEvent(area, e, conditions));
+            }
+        });
+
+        return area;
+    }
+
+    /** As wide as the scroll pane, and as tall as it where the conditions are fewer. */
+    private static final class ScrollingArea extends JPanel implements javax.swing.Scrollable
+    {
+        ScrollingArea()
+        {
+            super(new BorderLayout());
+        }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize()
+        {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(java.awt.Rectangle visible, int orientation, int direction)
+        {
+            return 24;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(java.awt.Rectangle visible, int orientation, int direction)
+        {
+            return Math.max(24, (orientation == javax.swing.SwingConstants.VERTICAL ? visible.height : visible.width) - 24);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight()
+        {
+            return getParent() instanceof javax.swing.JViewport && getParent().getHeight() > getPreferredSize().height;
+        }
+    }
+
+    /**
+     * Add Condition, a divider, Group Selected, Ungroup and Split Here (OB-396), flat as the table is, so they do not
+     * read as the buttons under the section.
+     */
+    private JPanel conditionActions()
+    {
+        conditionActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+        conditionActions.setOpaque(false);
+
+        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+
+        addConditionButton = flatButton("route.ui.menuAddCondition", RowIcons.plus(16), RowIcons.plus(16, gray),
+            "route.ui.tooltipAddCondition", () -> addTo(conditions));
+
+        groupButton = flatButton("route.ui.menuGroupSelected", RowIcons.group(16), RowIcons.group(16, gray),
+            "route.ui.tooltipGroupSelected", conditions::groupSelected);
+
+        ungroupButton = flatButton("route.ui.menuUngroup", RowIcons.ungroup(16), RowIcons.ungroup(16, gray),
+            "route.ui.tooltipUngroup", conditions::ungroupSelected);
+
+        splitButton = flatButton("route.ui.menuSplitHere", RowIcons.split(16), RowIcons.split(16, gray),
+            "route.ui.tooltipSplitHere", conditions::splitHere);
+
+        JPanel divider = new JPanel();
+
+        divider.setBackground(new java.awt.Color(0xE0, 0xE0, 0xE0));
+        divider.setPreferredSize(new Dimension(1, 18));
+
+        conditionActions.add(addConditionButton);
+        conditionActions.add(divider);
+        conditionActions.add(groupButton);
+        conditionActions.add(ungroupButton);
+        conditionActions.add(splitButton);
+
+        refreshConditionActions();
+
+        return conditionActions;
+    }
+
+    /** A toolbar button: no border until hovered (FlatLaf's toolBarButton), out of the tab order. */
+    private JButton flatButton(String key, javax.swing.Icon icon, javax.swing.Icon grayed, String tip,
+        final Runnable action)
+    {
+        JButton out = new JButton(I18n.t(key), icon);
+
+        out.setDisabledIcon(grayed);
+        out.putClientProperty("JButton.buttonType", "toolBarButton");
+        out.setFont(new java.awt.Font("Segoe UI", 0, 13));
+        out.setFocusable(false);
+        out.setToolTipText(I18n.t(tip));
+
+        out.addActionListener(e ->
+        {
+            if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
+
+            action.run();
+        });
+
+        return out;
+    }
+
+    /** Grays what does not apply to the selection, and hides the row on a route that cannot be changed. */
+    private void refreshConditionActions()
+    {
+        if (addConditionButton == null) return;
+
+        boolean editable = !locked && conditionsEditable;
+
+        conditionActions.setVisible(editable);
+        addConditionButton.setEnabled(editable);
+        groupButton.setEnabled(conditions.canGroupSelected());
+        ungroupButton.setEnabled(conditions.canUngroupSelected());
+        splitButton.setEnabled(conditions.canSplitHere());
+    }
+
+    /**
      * A cell editor that will only accept digits, refused as typed rather than at Save.
      *
      * @return the editor
@@ -943,9 +1228,6 @@ public class RouteEditorFrame extends JFrame
 
     /** For a line that says something the rest of its level does not agree with. */
     private static final java.awt.Color WRONG = new java.awt.Color(190, 30, 30);
-
-    /** Pale yellow for the lines an edit changed (FR-153). */
-    private static final java.awt.Color CHANGED_LINE = new java.awt.Color(255, 236, 140);
 
     /** Says how the two halves of this window fit together. */
     private void showHelp()
@@ -1320,10 +1602,11 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests (FR-068): move one condition row in or out, through the method the indent marks call.  The rule that
-     * a row may be at most one level deeper than the row above lives in `ConditionTable.indent` alone.
+     * For tests (FR-068): move one outline row in or out, which no gesture does (OB-396), to build an outline as a
+     * stored route can have it.  The rule that a row may be at most one level deeper than the row above lives
+     * in `ConditionTable.indent` alone.
      *
-     * @param row which line - conditions and joining words alike, since both carry a depth
+     * @param row which outline row - conditions and joining words alike, since both carry a depth
      * @param by 1 to indent, -1 to outdent
      */
     public void indentConditionForTest(int row, int by)
@@ -1342,14 +1625,14 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests: choose a kind in a condition line's Kind cell, as closing its drop-down does (through the model).
+     * For tests: choose a kind in a condition's Kind cell, as closing its drop-down does (through the model).
      *
-     * @param line which line
+     * @param line which outline row
      * @param kind what was chosen
      */
     public void setConditionKindForTest(int line, CommandRow.Kind kind)
     {
-        conditions.getModel().setValueAt(CommandRow.labelFor(kind), line, 4);
+        conditions.getModel().setValueAt(CommandRow.labelFor(kind), conditions.lineOf(line), ConditionTable.KIND);
     }
 
     /** For tests: adds an empty command row, the way the plus at the bottom of the table does. */
@@ -1386,26 +1669,32 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests: a condition line's word-or-kind cell as the table paints it, icon and tooltip included.
+     * For tests: a condition's Kind cell as the table paints it, icon and tooltip included; for a joining word, the
+     * caption of its group, where the word is shown (OB-396).
      *
-     * @param line which line
+     * @param line which outline row
      * @return the rendered label
      */
     public JLabel conditionCellForTest(int line)
     {
-        return conditionCellForTest(line, 4);
+        return conditionCellForTest(line, ConditionTable.KIND);
     }
 
     /**
-     * For tests: any cell of a condition line as the table paints it, tooltip included (FR-141).
+     * For tests: any cell of a condition as the table paints it, tooltip included (FR-141); for a joining word, its
+     * group's caption whatever the column.
      *
-     * @param line which line
-     * @param column which column
+     * @param line which outline row
+     * @param column which column: handle 0, Kind 1, Name/Address 2, Setting 3, Protocol 4, trash 5
      * @return the rendered label
      */
     public JLabel conditionCellForTest(int line, int column)
     {
-        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, column), line, column);
+        int shown = conditions.lineOf(line);
+
+        if (shown < 0) return conditions.captionOf(line);
+
+        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(shown, column), shown, column);
     }
 
     /** The color "Reads as" gives on, straight and green - the settings that let a train go. */
@@ -1436,10 +1725,10 @@ public class RouteEditorFrame extends JFrame
         return ADD_HERE.equals(commands.getValueAt(commands.getRowCount() - 1, UP));
     }
 
-    /** The same question of the condition list. */
+    /** The same question of the condition list: whether its Add Condition is showing and can be pressed. */
     public boolean offersToAddConditions()
     {
-        return ADD_HERE.equals(conditions.getValueAt(conditions.getRowCount() - 1, UP));
+        return conditionActions != null && conditionActions.isVisible() && addConditionButton.isEnabled();
     }
 
     /** How many conditions the list holds, so a test can see that a capture arrived. */
@@ -1461,24 +1750,11 @@ public class RouteEditorFrame extends JFrame
      */
     private void updateReadsAs()
     {
-        String reading = readingOfTheConditions();
+        readsAs.setText(readingOfTheConditions());
 
-        // Checked only when the route fires itself; a route run by hand ignores its conditions.  No warning triangle,
-        // which the font does not draw.
-        boolean unasked = !enabledBox.isSelected()
-            && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null);
-
-        if (!unasked)
-        {
-            readsAs.setText(reading);
-            return;
-        }
-
-        String below = reading.startsWith("<html>") && reading.endsWith("</html>")
-            ? reading.substring("<html>".length(), reading.length() - "</html>".length()) : marked(reading.trim());
-
-        readsAs.setText("<html><span style='color:#C62828'>" + marked(I18n.t("route.ui.frameConditionsNeedAutomaticFire"))
-            + "</span>" + (below.isEmpty() ? "" : "<br>" + below) + "</html>");
+        // Checked only when the route fires itself; a route run by hand ignores its conditions.
+        unasked.setVisible(!enabledBox.isSelected()
+            && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null));
     }
 
     /**
@@ -1488,11 +1764,11 @@ public class RouteEditorFrame extends JFrame
      */
     public boolean warnsTheConditionsAreUnaskedForTest()
     {
-        return readsAs.getText().contains(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
+        return unasked.isVisible() && unasked.getText().equals(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
     }
 
     /**
-     * How the conditions read, in words, as `updateReadsAs` shows them under the warning when there is one.
+     * How the conditions read, in words, as `updateReadsAs` shows them above the warning when there is one.
      *
      * @return the text, markup or plain, or a blank
      */
@@ -1574,21 +1850,6 @@ public class RouteEditorFrame extends JFrame
      * Copies a row, directly under it, beside the trash because the two are a pair: most of a route is near-repetition.
      */
     private static final int DUPLICATE = 10;
-
-    /** The conditions table is narrower, so its trash sits in a different column. */
-    private static final int CONDITION_DELETE = 8;
-
-    /** Indenting a condition nests it; outdenting brings it back out. */
-    private static final int INDENT = 2;
-    private static final int OUTDENT = 3;
-
-    private static final String INDENT_ROW = "indent";
-    private static final String OUTDENT_ROW = "outdent";
-
-    // The same two marks, drawn pale and doing nothing, when a line is as deep as the line above allows: a vanished
-    // control reads as a feature that stops, while a pale mark says "not from here".
-    private static final String INDENT_LIMIT = "indent-limit";
-    private static final String OUTDENT_LIMIT = "outdent-limit";
 
     // What a cell holds when it is one of those: values, so the renderer decides what a mark looks like.
     private static final String MOVE_UP = "up";
@@ -1785,21 +2046,23 @@ public class RouteEditorFrame extends JFrame
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
                 // OB-367: the setting is stored as the English word and shown in the user's language
-                if (column == 6 && shown instanceof String) shown = settingLabel((String) shown);
+                int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : 6;
+
+                if (column == settingColumn && shown instanceof String) shown = settingLabel((String) shown);
 
                 java.awt.Component out = was.getTableCellRendererComponent(which, shown, selected,
                     focused, row, column);
 
                 boolean editable = which.getModel().isCellEditable(row, column);
 
-                // A joining word's row is left alone: only its own column is editable, so shading would read as off.
-                if (which instanceof ConditionTable && ((ConditionTable) which).isJoinerRow(row))
+                // A group's caption line is left alone: it is the outline's, not a condition with nothing to fill in.
+                if (which instanceof ConditionTable && ((ConditionTable) which).isCaptionLine(row))
                 {
                     return unshaded(out, which, selected);
                 }
 
                 // So is the + row: it is the button that makes a row, and shading it would read as a row switched off.
-                if (row >= which.getRowCount() - 1) return unshaded(out, which, selected);
+                if (which instanceof CommandTable && row >= which.getRowCount() - 1) return unshaded(out, which, selected);
 
                 // Why Save would refuse this row, said as it is typed (OB-246): the target column offers locomotive
                 // names that Save refuses, so the row is marked and the choice stays.  Set on every cell, never
@@ -1823,7 +2086,9 @@ public class RouteEditorFrame extends JFrame
 
                     // A background, not only gray text: most of these cells are empty, and gray text in an empty cell
                     // shows nothing.  Not the position column, which is the row's number.
-                    if (!editable && column != POSITION && out instanceof javax.swing.JComponent)
+                    boolean position = which instanceof CommandTable && column == POSITION;
+
+                    if (!editable && !position && out instanceof javax.swing.JComponent)
                     {
                         ((javax.swing.JComponent) out).setOpaque(true);
                         out.setBackground(UNUSABLE);
@@ -1835,64 +2100,6 @@ public class RouteEditorFrame extends JFrame
                 }
 
                 return out;
-            }
-        });
-    }
-
-    /**
-     * Draws the two indent marks and makes them move a row in or out; only conditions have depth.
-     *
-     * @param table the conditions
-     */
-    private void actOnIndentMarks(final ConditionTable table)
-    {
-        final int mark = Math.max(12, table.getRowHeight() - 12);
-
-        javax.swing.table.DefaultTableCellRenderer marks =
-            new javax.swing.table.DefaultTableCellRenderer()
-        {
-            @Override
-            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
-                boolean selected, boolean focused, int row, int column)
-            {
-                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", selected,
-                    false, row, column);
-
-                out.setHorizontalAlignment(JLabel.CENTER);
-
-                java.awt.Color ink = selected ? which.getSelectionForeground() : null;
-
-                java.awt.Color pale = new java.awt.Color(215, 215, 215);
-
-                if (INDENT_ROW.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.indent(mark, true)
-                        : RowIcons.indent(mark, true, ink));
-                }
-                else if (OUTDENT_ROW.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.indent(mark, false)
-                        : RowIcons.indent(mark, false, ink));
-                }
-                else if (INDENT_LIMIT.equals(value)) out.setIcon(RowIcons.indent(mark, true, pale));
-                else if (OUTDENT_LIMIT.equals(value)) out.setIcon(RowIcons.indent(mark, false, pale));
-                else out.setIcon(null);
-
-                return out;
-            }
-        };
-
-        table.getColumnModel().getColumn(INDENT).setCellRenderer(marks);
-        table.getColumnModel().getColumn(OUTDENT).setCellRenderer(marks);
-
-        table.addMouseListener(new java.awt.event.MouseAdapter()
-        {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
-
-                pressIndentMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
         });
     }
@@ -1913,8 +2120,9 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The right-click menu on the conditions (FR-147): inserting beside a line, and the line's marks in words, each
-     * enabled exactly when its mark is drawn.  Below the lines, Add Condition.
+     * The right-click menu on the conditions (FR-147): inserting beside a condition, moving it, grouping (OB-396) and
+     * deleting, each enabled exactly when it would do something.  On a caption, Add Condition into its group; below
+     * the lines, Add Condition at the end of the outermost.
      */
     private void offerConditionMenu(java.awt.event.MouseEvent e)
     {
@@ -1925,42 +2133,39 @@ public class RouteEditorFrame extends JFrame
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
 
         final int line = table.rowAtPoint(e.getPoint());
+        final int row = table.rowOf(line);
 
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-        if (line < 0 || line >= table.rows.size())
+        if (row < 0)
         {
+            if (table.isCaptionLine(line)) table.selectGroup(line);
+            else table.clearSelection();
+
             menu.add(menuItem("route.ui.menuAddCondition", true, () -> addTo(table)));
         }
         else
         {
             if (!table.isRowSelected(line)) table.setRowSelectionInterval(line, line);
 
-            menu.add(menuItem("route.ui.menuInsertConditionAbove", true, () -> table.insertBeside(line, -1)));
-            menu.add(menuItem("route.ui.menuInsertConditionBelow", true, () -> table.insertBeside(line, 1)));
+            menu.add(menuItem("route.ui.menuInsertConditionAbove", true, () -> table.insertBeside(row, -1)));
+            menu.add(menuItem("route.ui.menuInsertConditionBelow", true, () -> table.insertBeside(row, 1)));
             menu.addSeparator();
-            menu.add(markItem(table, line, UP, MOVE_UP, "route.ui.menuMoveUp"));
-            menu.add(markItem(table, line, DOWN, MOVE_DOWN, "route.ui.menuMoveDown"));
-            menu.add(markItem(table, line, INDENT, INDENT_ROW, "route.ui.menuIndent"));
-            menu.add(markItem(table, line, OUTDENT, OUTDENT_ROW, "route.ui.menuOutdent"));
+            menu.add(menuItem("route.ui.menuMoveUp", ConditionOutline.canMove(table.rows, row, -1),
+                () -> table.shift(row, -1)));
+            menu.add(menuItem("route.ui.menuMoveDown", ConditionOutline.canMove(table.rows, row, 1),
+                () -> table.shift(row, 1)));
+            menu.add(menuItem("route.ui.menuGroupSelected", table.canGroupSelected(), table::groupSelected));
+            menu.add(menuItem("route.ui.menuUngroup", table.canUngroupSelected(), table::ungroupSelected));
+            menu.add(menuItem("route.ui.menuSplitHere", table.canSplitHere(), table::splitHere));
             menu.addSeparator();
-            menu.add(menuItem("ui.delete", DELETE_ROW.equals(table.getValueAt(line, CONDITION_DELETE)), () ->
+            menu.add(menuItem("ui.delete", true, () ->
             {
                 if (!locked) table.removeLines(line);
             }));
         }
 
         menu.show(table, e.getX(), e.getY());
-    }
-
-    private javax.swing.JMenuItem markItem(final ConditionTable table, final int line, final int column, String mark,
-        String key)
-    {
-        return menuItem(key, mark.equals(table.getValueAt(line, column)), () ->
-        {
-            if (column == INDENT || column == OUTDENT) pressIndentMark(table, line, column);
-            else pressRowMark(table, line, column);
-        });
     }
 
     private static javax.swing.JMenuItem menuItem(String key, boolean enabled, Runnable action)
@@ -1971,35 +2176,6 @@ public class RouteEditorFrame extends JFrame
         item.addActionListener(e -> action.run());
 
         return item;
-    }
-
-    /** What a press on an indent mark does: the mark's own value says whether it may. */
-    private void pressIndentMark(ConditionTable table, int row, int column)
-    {
-        if (row < 0 || column < 0 || locked) return;
-
-        Object value = table.getValueAt(row, column);
-
-        if (INDENT_ROW.equals(value)) table.indent(row, 1);
-        else if (OUTDENT_ROW.equals(value)) table.indent(row, -1);
-    }
-
-    /**
-     * A joining word as it is shown.
-     */
-    private static String joinerLabel(ConditionOutline.Joiner joiner)
-    {
-        return I18n.t(joiner == ConditionOutline.Joiner.OR ? "route.ui.joinOr" : "route.ui.joinAnd");
-    }
-
-    /**
-     * The joining word a label names, defaulting to AND - which is what a condition list has always
-     * meant when nobody said otherwise.
-     */
-    private static ConditionOutline.Joiner joinerFor(String label)
-    {
-        return I18n.t("route.ui.joinOr").equals(label)
-            ? ConditionOutline.Joiner.OR : ConditionOutline.Joiner.AND;
     }
 
     private int rowsOf(JTable table)
@@ -2016,7 +2192,7 @@ public class RouteEditorFrame extends JFrame
         if (locked) return;
 
         if (table == commands) commands.shift(row, by);
-        else conditions.shift(row, by);
+        else conditions.shift(conditions.rowOf(row), by);
     }
 
     private void deleteRow(JTable table, int row)
@@ -2024,7 +2200,7 @@ public class RouteEditorFrame extends JFrame
         if (locked) return;
 
         if (table == commands) commands.removeAt(row);
-        else conditions.removeAt(row);
+        else conditions.removeAt(conditions.rowOf(row));
     }
 
     /**
@@ -2077,7 +2253,10 @@ public class RouteEditorFrame extends JFrame
 
         if (saveButton != null) saveButton.setEnabled(false);
 
+        refreshConditionActions();
+
         readsAs.setText(I18n.t("route.ui.frameLockedExplains"));
+        unasked.setVisible(false);
     }
 
     /**
@@ -2332,12 +2511,12 @@ public class RouteEditorFrame extends JFrame
     /**
      * What a condition's locomotive cell would offer, for a test.
      *
-     * @param line which line of the conditions
+     * @param line which outline row of the conditions
      * @return the names offered, or null where the cell is not a list
      */
     public java.util.List<String> conditionTargetChoicesForTest(int line)
     {
-        return offeredBy(conditions, line, 5);
+        return offeredBy(conditions, conditions.lineOf(line), ConditionTable.TARGET);
     }
 
     /**
@@ -3512,34 +3691,190 @@ public class RouteEditorFrame extends JFrame
         }
     }
 
+    /** One line of the condition table: a group's caption (row -1), or the outline row of one condition. */
+    private static final class ConditionLine
+    {
+        final ConditionOutline.Group group;
+        final int row;
+
+        ConditionLine(ConditionOutline.Group group, int row)
+        {
+            this.group = group;
+            this.row = row;
+        }
+    }
+
     /**
-     * The conditions, as an indented list with the joining words on lines of their own; ConditionOutline holds the
-     * rule.
+     * The caption on a group's outline (OB-396): the group's rule, drawn as a small combo box sitting on the outline's
+     * top edge.  Painted, not placed: the table redraws its lines on every edit.
+     */
+    private static final class Caption extends JLabel
+    {
+        Caption()
+        {
+            setFont(new java.awt.Font("Segoe UI", 0, 12));
+            setBorder(BorderFactory.createEmptyBorder(0, 7, 0, 20));
+            setIconTextGap(4);
+        }
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(java.awt.Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.setColor(CAPTION_EDGE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+
+                int x = getWidth() - 13;
+                int y = getHeight() / 2 - 1;
+
+                g2.setColor(isEnabled() ? new java.awt.Color(110, 110, 110) : java.awt.Color.LIGHT_GRAY);
+                g2.setStroke(new java.awt.BasicStroke(1.3f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+                g2.drawPolyline(new int[]{x - 3, x, x + 3}, new int[]{y - 1, y + 2, y - 1}, 3);
+            }
+            finally
+            {
+                g2.dispose();
+            }
+
+            super.paintComponent(g);
+        }
+    }
+
+    /** A group's outline, and how far a nested one sits inside it (OB-396). */
+    private static final java.awt.Color OUTLINE = new java.awt.Color(0x9DB8D9);
+    private static final java.awt.Color CAPTION_EDGE = new java.awt.Color(0xC2C2C2);
+
+    /** The drag handle's ground and edge, and the mark on the lines the last edit changed (OB-396). */
+    private static final java.awt.Color HANDLE_GROUND = new java.awt.Color(0xF4F4F4);
+    private static final java.awt.Color HANDLE_EDGE = new java.awt.Color(0xE6E6E6);
+    private static final java.awt.Color CHANGED_MARK = new java.awt.Color(0xE0A526);
+
+    /** Where a drag would put what it holds. */
+    private static final class Drop
+    {
+        final ConditionOutline.Group group;
+        final int at;
+        final int level;
+        final int y;
+
+        Drop(ConditionOutline.Group group, int at, int level, int y)
+        {
+            this.group = group;
+            this.at = at;
+            this.level = level;
+            this.y = y;
+        }
+    }
+
+    /**
+     * The conditions as outlined groups (OB-396): each group of `ConditionOutline` inside a rounded outline with its
+     * rule on the top edge, a nested group's outline inside its parent's, and no line for a joining word.  The outline
+     * rows stay the model; the table's lines are made from them.
      */
     private final class ConditionTable extends JTable
     {
+        static final int HANDLE = 0;
+        static final int KIND = 1;
+        static final int TARGET = 2;
+        static final int SETTING = 3;
+        static final int PROTOCOL = 4;
+        static final int TRASH = 5;
+
+        /** A condition line's own height; a line where groups end is taller by GAP for each, for their bottom edges. */
+        private static final int LINE = 24;
+        private static final int GAP = 4;
+        private static final int CAPTION_LINE = 22;
+
+        /** How far in a nested outline sits: on the left, and on the right. */
+        private static final int INSET_LEFT = 14;
+        private static final int INSET_RIGHT = 6;
+
+        private final List<ConditionOutline.Row> rows = new ArrayList<>();
+
+        private ConditionOutline.Group top;
+        private final List<ConditionLine> lines = new ArrayList<>();
+        private final java.util.Map<ConditionOutline.Group, Integer> captionAt = new java.util.IdentityHashMap<>();
+        private final java.util.Map<ConditionOutline.Group, Integer> endsAt = new java.util.IdentityHashMap<>();
+
+        /** The word chosen for a group with nothing yet to join, by its first condition: it has no row to hold it. */
+        private final java.util.Map<RouteCommand, ConditionOutline.Joiner> chosenWord = new java.util.IdentityHashMap<>();
+
+        /** The lines whose word disagrees with its level, refreshed whenever anything changes. */
+        private java.util.Set<Integer> flagged = new java.util.LinkedHashSet<>();
+
+        /** Why each flagged line is flagged, for the warning on its group's caption. */
+        private java.util.Map<Integer, ConditionOutline.Problem> why = new java.util.LinkedHashMap<>();
+
+        /** The rows the last edit changed, by identity: their handles carry the mark until the next edit (OB-396). */
+        private java.util.Set<ConditionOutline.Row> changed = java.util.Collections.newSetFromMap(
+            new java.util.IdentityHashMap<ConditionOutline.Row, Boolean>());
+
+        private final Caption caption = new Caption();
+        private final javax.swing.CellRendererPane stamp = new javax.swing.CellRendererPane();
+
+        /** The outline rows a handle drag holds, from its press to its release; null when there is none. */
+        private java.util.Set<Integer> dragging;
+        private java.awt.Point pressedAt;
+        private Drop drop;
+
+        /** The line of a press that kept a selection of several for a drag; -1 once the pointer moves off. */
+        private int held = -1;
+
         /**
-         * Whether the row at this line is a joining word rather than a condition; asked by the renderer.
+         * Whether a line is a group's caption rather than a condition; asked by the renderers.
          *
-         * @param line the row
-         * @return whether it is a joiner
+         * @param line the table line
+         * @return whether it is a caption
          */
-        boolean isJoinerRow(int line)
+        boolean isCaptionLine(int line)
         {
-            return line >= 0 && line < conditions.rows.size() && conditions.rows.get(line).isJoiner();
+            return line >= 0 && line < lines.size() && lines.get(line).row < 0;
         }
 
-        /** A press on an indent mark inside a selection of several lines keeps it, so the mark acts on them all. */
+        /** @return the outline row a table line shows, or -1 for a caption */
+        int rowOf(int line)
+        {
+            return line >= 0 && line < lines.size() ? lines.get(line).row : -1;
+        }
+
+        /** @return the table line showing an outline row, or -1 for a joining word, which has none */
+        int lineOf(int row)
+        {
+            for (int line = 0; line < lines.size(); line++)
+            {
+                if (lines.get(line).row == row) return line;
+            }
+
+            return -1;
+        }
+
+        /** Selection paints Kind through Protocol only (OB-396): never the handle, the trash or a caption. */
         @Override
-        public void changeSelection(int row, int column, boolean toggle, boolean extend)
+        public boolean isCellSelected(int line, int column)
         {
-            if ((column == INDENT || column == OUTDENT) && !toggle && !extend && getSelectedRowCount() > 1
-                && isRowSelected(row)) return;
-
-            super.changeSelection(row, column, toggle, extend);
+            return column != HANDLE && column != TRASH && !isCaptionLine(line) && super.isCellSelected(line, column);
         }
 
-        /** The marks of a selection depend on all of it, so every change of selection redraws them. */
+        /**
+         * A press on a handle inside a selection of several lines keeps it, so the drag takes them all; a drag by the
+         * handle moves rows rather than selecting them.
+         */
+        @Override
+        public void changeSelection(int line, int column, boolean toggle, boolean extend)
+        {
+            if (dragging != null && extend) return;
+
+            if (column == HANDLE && !toggle && !extend && getSelectedRowCount() > 1 && isRowSelected(line)) return;
+
+            super.changeSelection(line, column, toggle, extend);
+        }
+
         @Override
         public void valueChanged(javax.swing.event.ListSelectionEvent e)
         {
@@ -3548,65 +3883,120 @@ public class RouteEditorFrame extends JFrame
             repaint();
         }
 
+        /** The content of a condition line is its top LINE pixels: a group's bottom edge is drawn in the rest. */
+        @Override
+        public java.awt.Rectangle getCellRect(int line, int column, boolean includeSpacing)
+        {
+            java.awt.Rectangle out = super.getCellRect(line, column, includeSpacing);
+
+            if (column != HANDLE && line >= 0 && line < lines.size() && lines.get(line).row >= 0)
+            {
+                out.height = Math.min(out.height, LINE);
+            }
+
+            return out;
+        }
+
+        /**
+         * A condition's Protocol cell is filled only inside its group's outline: its gray, or the selection, would
+         * otherwise run past the outline's right edge (OB-396).
+         */
+        @Override
+        public java.awt.Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int line, int column)
+        {
+            java.awt.Component out = super.prepareRenderer(renderer, line, column);
+
+            if (column == PROTOCOL && line >= 0 && line < lines.size() && lines.get(line).row >= 0
+                && out instanceof javax.swing.JComponent)
+            {
+                javax.swing.JComponent cell = (javax.swing.JComponent) out;
+
+                int beyond = columnX(PROTOCOL) + getColumnModel().getColumn(PROTOCOL).getWidth()
+                    - outlineRight(levelOf(lines.get(line).group)) + 2;
+
+                cell.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 0, beyond, getBackground()), cell.getBorder()));
+            }
+
+            return out;
+        }
+
+        /** Every change of the lines resets their heights, so they are set again. */
+        @Override
+        public void tableChanged(javax.swing.event.TableModelEvent e)
+        {
+            super.tableChanged(e);
+
+            if (lines == null) return;
+
+            for (int line = 0; line < lines.size() && line < getRowCount(); line++)
+            {
+                int height = lines.get(line).row < 0 ? CAPTION_LINE : LINE + GAP * endingAt(line);
+
+                if (getRowHeight(line) != height) setRowHeight(line, height);
+            }
+        }
+
+        /** How many groups end on this line. */
+        private int endingAt(int line)
+        {
+            int out = 0;
+
+            for (Integer end : endsAt.values()) if (end == line) out++;
+
+            return out;
+        }
+
         /**
          * What a cell shows, where that is more than what it holds (FR-141): a train-at-a-sensor line's setting is the
          * sensor's address, which a bare number under "Setting" would not say.  Only the painting changes.
          *
-         * @param line the row
+         * @param line the table line
          * @param column the column
          * @param value what the cell holds
          * @return what to paint
          */
         Object shownAs(int line, int column, Object value)
         {
-            return column == 6 && asksWhereATrainIs(line)
+            return column == SETTING && asksWhereATrainIs(line)
                 ? I18n.f("route.ui.frameSensorAddress", String.valueOf(value)) : value;
         }
 
         /**
          * The tooltip a cell carries to say what it means, or null for none (FR-141).
          *
-         * @param line the row
+         * @param line the table line
          * @param column the column
          * @return the explanation
          */
         String explains(int line, int column)
         {
-            return column == 6 && asksWhereATrainIs(line) ? I18n.t("route.ui.frameSensorAddressTip") : null;
+            return column == SETTING && asksWhereATrainIs(line) ? I18n.t("route.ui.frameSensorAddressTip") : null;
         }
 
         private boolean asksWhereATrainIs(int line)
         {
-            if (line < 0 || line >= rows.size() || rows.get(line).isJoiner()) return false;
+            int row = rowOf(line);
 
-            CommandRow term = CommandRow.of(rows.get(line).getCommand());
+            if (row < 0) return false;
+
+            CommandRow term = CommandRow.of(rows.get(row).getCommand());
 
             return term != null && CommandRow.asksWhereATrainIs(term.getKind());
         }
-
-        private final List<ConditionOutline.Row> rows = new ArrayList<>();
-
-        /** How many pixels one level of indentation is worth. */
-        private static final int STEP = 16;
-
-        /** The lines whose word disagrees with its level, refreshed whenever anything changes. */
-        private java.util.Set<Integer> flagged = new java.util.LinkedHashSet<>();
-
-        /** Why each flagged line is flagged, for the warning beside it. */
-        private java.util.Map<Integer, ConditionOutline.Problem> why = new java.util.LinkedHashMap<>();
 
         private final AbstractTableModel model = new AbstractTableModel()
         {
             @Override
             public int getRowCount()
             {
-                return rows.size() + 1;
+                return lines.size();
             }
 
             @Override
             public int getColumnCount()
             {
-                return 9;
+                return 6;
             }
 
             @Override
@@ -3614,10 +4004,10 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
-                    case 4: return I18n.t("route.ui.frameColKind");
-                    case 5: return I18n.t("route.ui.frameColTarget");
-                    case 6: return I18n.t("route.ui.frameColSetting");
-                    case 7: return I18n.t("route.ui.frameColProtocol");
+                    case KIND: return I18n.t("route.ui.frameColKind");
+                    case TARGET: return I18n.t("route.ui.frameColTarget");
+                    case SETTING: return I18n.t("route.ui.frameColSetting");
+                    case PROTOCOL: return I18n.t("route.ui.frameColProtocol");
                     default: return "";
                 }
             }
@@ -3625,61 +4015,22 @@ public class RouteEditorFrame extends JFrame
             @Override
             public Object getValueAt(int line, int column)
             {
-                if (line >= rows.size())
-                {
-                    // On the left, where a new line begins rather than where its kind will land
-                    return column == UP && conditionsEditable ? ADD_HERE : "";
-                }
+                int at = rowOf(line);
 
-                ConditionOutline.Row row = rows.get(line);
+                if (at < 0 || column == HANDLE) return "";
 
-                if (!conditionsEditable && (column <= OUTDENT || column == CONDITION_DELETE))
-                {
-                    return "";
-                }
+                if (column == TRASH) return conditionsEditable ? DELETE_ROW : "";
 
-                // Conditions only, where there is another condition that way to swap with; a word does not move by
-                // hand.
-                if (column == UP) return ConditionOutline.canMove(rows, line, -1) ? MOVE_UP : "";
-                if (column == DOWN) return ConditionOutline.canMove(rows, line, 1) ? MOVE_DOWN : "";
-
-                int[] chosen = column == INDENT || column == OUTDENT ? chosenLines() : null;
-
-                if (chosen != null && line >= chosen[0] && line <= chosen[1])
-                {
-                    boolean in = column == INDENT;
-
-                    return block(chosen[0], chosen[1], in ? 1 : -1) != null
-                        ? (in ? INDENT_ROW : OUTDENT_ROW) : (in ? INDENT_LIMIT : OUTDENT_LIMIT);
-                }
-
-                if (column == INDENT)
-                {
-                    // The rules `indent` applies, so the mark never offers a press that does nothing.
-                    if (line == 0) return rows.size() < 2 ? "" : row.getDepth() < 1 ? INDENT_ROW : INDENT_LIMIT;
-
-                    return row.getDepth() <= rows.get(line - 1).getDepth()
-                        ? INDENT_ROW : INDENT_LIMIT;
-                }
-
-                if (column == OUTDENT) return row.getDepth() > 0 ? OUTDENT_ROW : OUTDENT_LIMIT;
-
-                if (column == CONDITION_DELETE) return DELETE_ROW;
-
-                if (row.isJoiner())
-                {
-                    return column == 4 ? joinerLabel(row.getJoiner()) : "";
-                }
-
+                ConditionOutline.Row row = rows.get(at);
                 CommandRow term = asShown(CommandRow.of(row.getCommand()));
 
-                if (term == null) return column == 4 ? String.valueOf(row.getCommand()) : "";
+                if (term == null) return column == KIND ? String.valueOf(row.getCommand()) : "";
 
-                if (column == 4) return CommandRow.labelFor(term.getKind());
-                if (column == 5) return CommandRow.hasTarget(term.getKind()) ? term.getTarget() : "";
-                if (column == 6) return CommandRow.hasSetting(term.getKind()) ? term.getSetting() : "";
+                if (column == KIND) return CommandRow.labelFor(term.getKind());
+                if (column == TARGET) return CommandRow.hasTarget(term.getKind()) ? term.getTarget() : "";
+                if (column == SETTING) return CommandRow.hasSetting(term.getKind()) ? term.getSetting() : "";
 
-                if (column == 7)
+                if (column == PROTOCOL)
                 {
                     if (!CommandRow.hasProtocol(term.getKind())) return "";
 
@@ -3693,23 +4044,19 @@ public class RouteEditorFrame extends JFrame
             @Override
             public boolean isCellEditable(int line, int column)
             {
-                if (!conditionsEditable || line >= rows.size()) return false;
+                int at = rowOf(line);
 
-                if (column <= OUTDENT || column == CONDITION_DELETE) return false;
-
-                ConditionOutline.Row row = rows.get(line);
-
-                if (row.isJoiner()) return column == 4;
+                if (!conditionsEditable || at < 0 || column == HANDLE || column == TRASH) return false;
 
                 // As shown, not stored (asShown): a cell whose editability is decided from another kind than the one on
                 // screen argues with itself.
-                CommandRow term = asShown(CommandRow.of(row.getCommand()));
+                CommandRow term = asShown(CommandRow.of(rows.get(at).getCommand()));
 
                 if (term == null) return false;
 
-                if (column == 5) return CommandRow.hasTarget(term.getKind());
-                if (column == 6) return CommandRow.hasSetting(term.getKind());
-                if (column == 7) return CommandRow.hasProtocol(term.getKind());
+                if (column == TARGET) return CommandRow.hasTarget(term.getKind());
+                if (column == SETTING) return CommandRow.hasSetting(term.getKind());
+                if (column == PROTOCOL) return CommandRow.hasProtocol(term.getKind());
 
                 return true;
             }
@@ -3717,21 +4064,13 @@ public class RouteEditorFrame extends JFrame
             @Override
             public void setValueAt(Object value, int line, int column)
             {
-                if (line >= rows.size()) return;
+                int at = rowOf(line);
 
-                ConditionOutline.Row row = rows.get(line);
+                if (at < 0) return;
+
+                ConditionOutline.Row row = rows.get(at);
 
                 String text = value == null ? "" : value.toString();
-
-                if (row.isJoiner())
-                {
-                    if (column == 4) rows.set(line, row.joinedBy(joinerFor(text)));
-
-                    settle();
-                    fireTableDataChanged();
-
-                    return;
-                }
 
                 // As shown: picking "red" from a signal row must build a signal row, not an accessory row carrying
                 // "red"; what is stored is the same either way.
@@ -3741,7 +4080,7 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow edited;
 
-                if (column == 4)
+                if (column == KIND)
                 {
                     CommandRow.Kind became = CommandRow.kindFor(text);
 
@@ -3795,13 +4134,13 @@ public class RouteEditorFrame extends JFrame
                 else
                 {
                     edited = new CommandRow(term.getKind(),
-                        column == 5 ? text : term.getTarget(),
-                        column == 6 ? text : term.getSetting(),
-                        column == 7 ? protocolOf(text) : term.getProtocol(),
+                        column == TARGET ? text : term.getTarget(),
+                        column == SETTING ? text : term.getSetting(),
+                        column == PROTOCOL ? protocolOf(text) : term.getProtocol(),
                         term.getDelay());
 
                     // The address decides which of the two it is, as in the commands table.
-                    if (column == 5 && (edited.getKind() == CommandRow.Kind.ACCESSORY
+                    if (column == TARGET && (edited.getKind() == CommandRow.Kind.ACCESSORY
                         || edited.getKind() == CommandRow.Kind.SIGNAL))
                     {
                         CommandRow.Kind resolved = kindAtAddress(edited.getTarget(),
@@ -3816,9 +4155,11 @@ public class RouteEditorFrame extends JFrame
                     }
                 }
 
+                List<ConditionOutline.Row> before = new ArrayList<>(rows);
+
                 try
                 {
-                    rows.set(line, row.about(edited.toCommand()));
+                    rows.set(at, row.about(edited.toCommand()));
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -3829,23 +4170,21 @@ public class RouteEditorFrame extends JFrame
 
                 settle();
                 fireTableRowsUpdated(line, line);
+                showChanges(before);
             }
         };
 
         ConditionTable()
         {
             setModel(model);
-            setRowHeight(24);
+            setRowHeight(LINE);
             setBackground(java.awt.Color.WHITE);
 
-            // No vertical rules: the marks down either side are controls, not data.
-            setShowVerticalLines(false);
-            setGridColor(new java.awt.Color(228, 228, 228));
+            // No rules: the outlines are the structure (OB-396).
+            setShowGrid(false);
+            setIntercellSpacing(new Dimension(0, 0));
 
-            JComboBox<String> joiners = new JComboBox<>();
-
-            joiners.addItem(joinerLabel(ConditionOutline.Joiner.AND));
-            joiners.addItem(joinerLabel(ConditionOutline.Joiner.OR));
+            add(stamp);
 
             JComboBox<String> kinds = new JComboBox<>();
 
@@ -3854,9 +4193,7 @@ public class RouteEditorFrame extends JFrame
                 if (CommandRow.canBeACondition(kind)) kinds.addItem(CommandRow.labelFor(kind));
             }
 
-            // One column, two meanings, so the editor depends on the line
             this.kindEditor = new DefaultCellEditor(kinds);
-            this.joinerEditor = new DefaultCellEditor(joiners);
 
             JComboBox<String> protocols = new JComboBox<>();
 
@@ -3865,18 +4202,43 @@ public class RouteEditorFrame extends JFrame
                 protocols.addItem(type.toString());
             }
 
-            getColumnModel().getColumn(7).setCellEditor(new DefaultCellEditor(protocols));
+            getColumnModel().getColumn(PROTOCOL).setCellEditor(new DefaultCellEditor(protocols));
 
-            narrow(this, UP);
-            narrow(this, DOWN);
-            narrow(this, INDENT);
-            narrow(this, OUTDENT);
-            narrow(this, CONDITION_DELETE);
+            TableColumn handle = getColumnModel().getColumn(HANDLE);
 
-            getColumnModel().getColumn(4).setPreferredWidth(190);
+            handle.setPreferredWidth(30);
+            handle.setMinWidth(30);
+            handle.setMaxWidth(30);
 
-            getColumnModel().getColumn(4).setCellRenderer(
-                new javax.swing.table.DefaultTableCellRenderer()
+            narrow(this, TRASH);
+
+            getColumnModel().getColumn(KIND).setPreferredWidth(220);
+
+            getColumnModel().getColumn(HANDLE).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
+            {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                    boolean selected, boolean focused, int line, int column)
+                {
+                    JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, line, column);
+
+                    boolean condition = rowOf(line) >= 0;
+
+                    out.setOpaque(true);
+                    out.setBackground(HANDLE_GROUND);
+                    out.setHorizontalAlignment(JLabel.CENTER);
+                    out.setVerticalAlignment(JLabel.TOP);
+                    out.setIcon(condition && conditionsEditable ? RowIcons.grip(LINE) : null);
+                    out.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 0, 1, HANDLE_EDGE),
+                        BorderFactory.createMatteBorder(0, isMarked(line) ? 3 : 0, 0, 0, CHANGED_MARK)));
+                    out.setToolTipText(condition && conditionsEditable ? I18n.t("route.ui.tooltipConditionHandle") : null);
+
+                    return out;
+                }
+            });
+
+            getColumnModel().getColumn(KIND).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
             {
                 @Override
                 public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
@@ -3885,35 +4247,15 @@ public class RouteEditorFrame extends JFrame
                     JLabel out = (JLabel) super.getTableCellRendererComponent(which, value, selected,
                         focused, line, column);
 
-                    boolean joiner = line < rows.size() && rows.get(line).isJoiner();
-                    int depth = line < rows.size() ? rows.get(line).getDepth() : 0;
+                    // Only the kind indents (OB-396): the other columns start at one x at every depth.
+                    int level = line < lines.size() ? levelOf(lines.get(line).group) : 0;
 
-                    // The guides run down the joining words too, so a word and the conditions it joins share a level.
-                    out.setBorder(RowIcons.guides(depth, STEP));
+                    out.setBorder(BorderFactory.createEmptyBorder(0, 4 + level * INSET_LEFT + 10, 0, 0));
+                    out.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
+                    out.setIcon(null);
+                    out.setToolTipText(null);
 
-                    out.setFont(joiner
-                        ? new java.awt.Font("Segoe UI", java.awt.Font.ITALIC, 13)
-                        : new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
-
-                    // A warning triangle after a red word, with the reason on its tooltip.  This label is reused down
-                    // the column, so an unflagged line clears both.
-                    ConditionOutline.Problem problem = why.get(line);
-
-                    out.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
-                    out.setIconTextGap(6);
-                    out.setIcon(problem == null ? null : RowIcons.warning(14));
-                    out.setToolTipText(problem == null ? null : "<html><p style='width:300px'>"
-                        + marked(I18n.t(problem == ConditionOutline.Problem.DISAGREES
-                            ? "route.ui.conditionWordDisagrees" : "route.ui.conditionWordJoinsNothing"))
-                        + "</p></html>");
-
-                    if (!selected)
-                    {
-                        // Red where a word disagrees with the rest of its level: two words at one level are two
-                        // meanings.
-                        out.setForeground(flagged.contains(line) ? WRONG
-                            : joiner ? HEADING_BLUE : which.getForeground());
-                    }
+                    if (!selected) out.setForeground(which.getForeground());
 
                     return out;
                 }
@@ -3921,11 +4263,7 @@ public class RouteEditorFrame extends JFrame
 
             greyWhatCannotBeEdited(this);
 
-            actOnRowMarks(this, CONDITION_DELETE, UP, DOWN, UP);
-            actOnIndentMarks(this);
-
-            // To the bottom of its scroll pane, so a right-click below the last line reaches the menu (FR-147).
-            setFillsViewportHeight(true);
+            actOnRowMarks(this, TRASH, -1, -1, -1);
 
             addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
             {
@@ -3935,30 +4273,90 @@ public class RouteEditorFrame extends JFrame
                     offerConditionMenu(e);
                 }
             });
+
+            // After the table's own, so a press has already selected what the handle drags.
+            java.awt.event.MouseAdapter hands = new java.awt.event.MouseAdapter()
+            {
+                @Override
+                public void mousePressed(java.awt.event.MouseEvent e)
+                {
+                    pressed(e);
+                }
+
+                @Override
+                public void mouseDragged(java.awt.event.MouseEvent e)
+                {
+                    dragged(e.getPoint());
+                }
+
+                @Override
+                public void mouseReleased(java.awt.event.MouseEvent e)
+                {
+                    released();
+                }
+
+                @Override
+                public void mouseMoved(java.awt.event.MouseEvent e)
+                {
+                    int line = rowAtPoint(e.getPoint());
+
+                    if (!conditionsEditable) return;
+
+                    if (captionUnder(e.getPoint()) >= 0)
+                    {
+                        setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+                    }
+                    else if (rowOf(line) >= 0 && columnAtPoint(e.getPoint()) == HANDLE)
+                    {
+                        setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR));
+                    }
+                }
+            };
+
+            addMouseListener(hands);
+            addMouseMotionListener(hands);
+
+            keys("alt UP", "moveUp", () -> shiftChosen(-1));
+            keys("alt DOWN", "moveDown", () -> shiftChosen(1));
+            keys("ctrl G", "group", this::groupSelected);
+            keys("ctrl shift G", "ungroup", this::ungroupSelected);
+            keys("ctrl shift S", "split", this::splitHere);
+        }
+
+        private void keys(String stroke, String name, Runnable action)
+        {
+            getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(javax.swing.KeyStroke.getKeyStroke(stroke), name);
+            getActionMap().put(name, new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (isEditing()) getCellEditor().stopCellEditing();
+
+                    action.run();
+                }
+            });
         }
 
         private final javax.swing.table.TableCellEditor kindEditor;
-        private final javax.swing.table.TableCellEditor joinerEditor;
 
         @Override
         public javax.swing.table.TableCellEditor getCellEditor(int line, int column)
         {
-            if (line < 0 || line >= rows.size()) return super.getCellEditor(line, column);
+            int at = rowOf(line);
 
-            ConditionOutline.Row row = rows.get(line);
+            if (at < 0) return super.getCellEditor(line, column);
 
-            if (column == 4) return row.isJoiner() ? joinerEditor : kindEditor;
-
-            if (row.isJoiner()) return super.getCellEditor(line, column);
+            if (column == KIND) return kindEditor;
 
             // As shown, not stored: the cell displays "red", and a dropdown built from the stored kind would offer
             // "straight" and "turn", so a click in and out would commit its first entry (the mechanism asShown
             // describes).
-            CommandRow term = asShown(CommandRow.of(row.getCommand()));
+            CommandRow term = asShown(CommandRow.of(rows.get(at).getCommand()));
 
             if (term == null) return super.getCellEditor(line, column);
 
-            if (column == 6)
+            if (column == SETTING)
             {
                 String[] words = settingWords(term);
 
@@ -3967,7 +4365,7 @@ public class RouteEditorFrame extends JFrame
                 if (CommandRow.asksWhereATrainIs(term.getKind())) return digitsOnly();
             }
 
-            if (column == 5)
+            if (column == TARGET)
             {
                 if (CommandRow.asksWhereATrainIs(term.getKind()))
                 {
@@ -3980,22 +4378,533 @@ public class RouteEditorFrame extends JFrame
             return super.getCellEditor(line, column);
         }
 
+        /** How many outlines a group sits inside. */
+        private int levelOf(ConditionOutline.Group group)
+        {
+            int out = 0;
+
+            for (ConditionOutline.Group up = group == null ? null : group.getParent(); up != null; up = up.getParent())
+            {
+                out++;
+            }
+
+            return out;
+        }
+
+        /** The word a group joins by: its own, else the one chosen for it, else the other word than its parent's. */
+        ConditionOutline.Joiner wordOf(ConditionOutline.Group group)
+        {
+            if (group == null) return ConditionOutline.Joiner.AND;
+
+            if (group.getWord() != null) return group.getWord();
+
+            List<Integer> inside = group.getConditions();
+            ConditionOutline.Joiner chosen = inside.isEmpty() ? null : chosenWord.get(rows.get(inside.get(0)).getCommand());
+
+            if (chosen != null) return chosen;
+
+            return group.getParent() == null ? ConditionOutline.Joiner.AND
+                : ConditionOutline.opposite(wordOf(group.getParent()));
+        }
+
+        /** The table's lines, from the outline: a caption for each group that holds a condition, then its items. */
+        private void layOut()
+        {
+            lines.clear();
+            captionAt.clear();
+            endsAt.clear();
+
+            top = ConditionOutline.groupsOf(rows);
+
+            if (top != null && top.holdsACondition()) layOut(top);
+        }
+
+        private void layOut(ConditionOutline.Group group)
+        {
+            captionAt.put(group, lines.size());
+            lines.add(new ConditionLine(group, -1));
+
+            for (Object item : group.getItems())
+            {
+                if (item instanceof Integer) lines.add(new ConditionLine(group, (Integer) item));
+                else layOut((ConditionOutline.Group) item);
+            }
+
+            endsAt.put(group, lines.size() - 1);
+        }
+
+        /** The group drawn with a caption that holds an outline row, which a word nested where it joins nothing lacks. */
+        private ConditionOutline.Group shownGroupOf(int row)
+        {
+            ConditionOutline.Group group = ConditionOutline.holding(top, java.util.Collections.singleton(row));
+
+            while (group != null && !captionAt.containsKey(group)) group = group.getParent();
+
+            return group;
+        }
+
+        /** What `whatIsWrong` says of a group's words, or null when nothing. */
+        private ConditionOutline.Problem problemOf(ConditionOutline.Group group)
+        {
+            ConditionOutline.Problem out = null;
+
+            for (java.util.Map.Entry<Integer, ConditionOutline.Problem> each : why.entrySet())
+            {
+                if (shownGroupOf(each.getKey()) == group && out != ConditionOutline.Problem.DISAGREES)
+                {
+                    out = each.getValue();
+                }
+            }
+
+            return out;
+        }
+
+        /**
+         * The caption of a caption line, as it is painted, tooltip included.
+         *
+         * @param line a caption line
+         * @return the shared label, set up for it
+         */
+        JLabel captionFor(int line)
+        {
+            ConditionOutline.Group group = lines.get(line).group;
+            ConditionOutline.Problem problem = problemOf(group);
+
+            caption.setText(captionText(wordOf(group)));
+            caption.setEnabled(conditionsEditable);
+            caption.setForeground(problem != null ? WRONG : conditionsEditable ? java.awt.Color.BLACK : java.awt.Color.GRAY);
+            caption.setIcon(problem == null ? null : RowIcons.warning(14));
+            caption.setToolTipText(problem == null ? (conditionsEditable ? I18n.t("route.ui.tooltipConditionCaption") : null)
+                : "<html><p style='width:300px'>" + marked(I18n.t(problem == ConditionOutline.Problem.DISAGREES
+                    ? "route.ui.conditionWordDisagrees" : "route.ui.conditionWordJoinsNothing")) + "</p></html>");
+
+            return caption;
+        }
+
+        private String captionText(ConditionOutline.Joiner word)
+        {
+            return I18n.t(word == ConditionOutline.Joiner.OR ? "route.ui.conditionCaptionAny"
+                : "route.ui.conditionCaptionAll");
+        }
+
+        private int columnX(int column)
+        {
+            int x = 0;
+
+            for (int at = 0; at < column; at++) x += getColumnModel().getColumn(at).getWidth();
+
+            return x;
+        }
+
+        private int outlineLeft(int level)
+        {
+            return columnX(KIND) + 4 + level * INSET_LEFT;
+        }
+
+        private int outlineRight(int level)
+        {
+            return columnX(PROTOCOL) + getColumnModel().getColumn(PROTOCOL).getWidth() - 4 - level * INSET_RIGHT;
+        }
+
+        /** Where a caption line's caption is drawn, on its outline's top edge. */
+        java.awt.Rectangle captionBounds(int line)
+        {
+            java.awt.Rectangle row = super.getCellRect(line, KIND, true);
+            java.awt.Dimension size = captionFor(line).getPreferredSize();
+            int height = 18;
+
+            return new java.awt.Rectangle(outlineLeft(levelOf(lines.get(line).group)) + 8,
+                row.y + (row.height - height) / 2, size.width, height);
+        }
+
+        /** A caption line picks its group's lines (OB-396), so Ungroup, Add Condition and a drag reach all of it. */
+        void selectGroup(int line)
+        {
+            if (isCaptionLine(line)) setRowSelectionInterval(line, endsAt.get(lines.get(line).group));
+        }
+
+        /**
+         * The caption that shows an outline row's word, as painted.
+         *
+         * @param row a joining word's outline row
+         * @return the shared caption label, or null where no caption shows it
+         */
+        JLabel captionOf(int row)
+        {
+            ConditionOutline.Group group = shownGroupOf(row);
+
+            return group == null ? null : captionFor(captionAt.get(group));
+        }
+
+        /** @return the caption line whose caption is under a point, or -1 */
+        private int captionUnder(java.awt.Point point)
+        {
+            int line = rowAtPoint(point);
+
+            return isCaptionLine(line) && captionBounds(line).contains(point) ? line : -1;
+        }
+
+        @Override
+        public String getToolTipText(java.awt.event.MouseEvent e)
+        {
+            int line = captionUnder(e.getPoint());
+
+            return line >= 0 ? captionFor(line).getToolTipText() : super.getToolTipText(e);
+        }
+
+        /** The outlines, their captions, and where a drag would drop, over the cells. */
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            super.paintComponent(g);
+
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+                for (java.util.Map.Entry<ConditionOutline.Group, Integer> each : captionAt.entrySet())
+                {
+                    ConditionOutline.Group group = each.getKey();
+                    int level = levelOf(group);
+                    int last = endsAt.get(group);
+                    java.awt.Rectangle first = super.getCellRect(each.getValue(), KIND, true);
+                    java.awt.Rectangle end = super.getCellRect(last, KIND, true);
+                    int left = outlineLeft(level);
+                    int topEdge = first.y + first.height / 2;
+
+                    // Bottom edges apart where several groups end on one line, the innermost highest.
+                    int inner = 0;
+
+                    for (java.util.Map.Entry<ConditionOutline.Group, Integer> other : endsAt.entrySet())
+                    {
+                        if (other.getValue() == last && levelOf(other.getKey()) > level) inner++;
+                    }
+
+                    int bottom = end.y + LINE + 1 + GAP * inner;
+
+                    g2.setColor(OUTLINE);
+                    g2.drawRoundRect(left, topEdge, outlineRight(level) - left, bottom - topEdge, 6, 6);
+
+                    java.awt.Rectangle at = captionBounds(each.getValue());
+
+                    stamp.paintComponent(g2, captionFor(each.getValue()), this, at.x, at.y, at.width, at.height, true);
+                }
+
+                if (drop != null)
+                {
+                    int left = outlineLeft(drop.level) + 6;
+
+                    g2.setColor(getSelectionBackground());
+                    g2.fillRect(left, drop.y - 1, outlineRight(drop.level) - 6 - left, 2);
+                    g2.fillOval(left - 3, drop.y - 3, 6, 6);
+                }
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
+
+        private void pressed(java.awt.event.MouseEvent e)
+        {
+            if (!javax.swing.SwingUtilities.isLeftMouseButton(e) || locked || !conditionsEditable) return;
+
+            int line = rowAtPoint(e.getPoint());
+
+            if (captionUnder(e.getPoint()) >= 0)
+            {
+                offerWords(line);
+                return;
+            }
+
+            if (isCaptionLine(line) && !e.isShiftDown() && !e.isControlDown())
+            {
+                selectGroup(line);
+                return;
+            }
+
+            if (rowOf(line) < 0 || columnAtPoint(e.getPoint()) != HANDLE) return;
+
+            dragging = chosenRows();
+            pressedAt = e.getPoint();
+            held = dragging.size() > 1 && !e.isShiftDown() && !e.isControlDown() ? line : -1;
+        }
+
+        private void dragged(java.awt.Point point)
+        {
+            if (dragging == null) return;
+
+            if (drop == null && pressedAt.distance(point) < 4) return;
+
+            held = -1;
+            drop = dropAt(point);
+            repaint();
+        }
+
+        private void released()
+        {
+            Drop landing = drop;
+            java.util.Set<Integer> moving = dragging;
+            int clicked = held;
+
+            dragging = null;
+            drop = null;
+            held = -1;
+            repaint();
+
+            // No drag after all: the click selects its line alone, as a click anywhere else on a line does.
+            if (clicked >= 0) super.changeSelection(clicked, HANDLE, false, false);
+
+            if (landing != null && moving != null && !moving.isEmpty()) dropInto(moving, landing.group, landing.at);
+        }
+
+        /**
+         * Where a drag would land at a point (OB-396): the gap between the lines nearest it, and of the groups that
+         * gap is the edge of, the deepest whose outline the pointer is inside, as in an outliner.
+         *
+         * @return the drop, or null where there is nowhere the dragged rows can go
+         */
+        Drop dropAt(java.awt.Point point)
+        {
+            if (top == null || lines.isEmpty()) return null;
+
+            int gap = lines.size();
+
+            for (int line = 0; line < lines.size(); line++)
+            {
+                java.awt.Rectangle row = super.getCellRect(line, KIND, true);
+
+                if (point.y < row.y + row.height / 2)
+                {
+                    gap = line;
+                    break;
+                }
+            }
+
+            List<Drop> candidates = new ArrayList<>();
+            int y = gap < lines.size() ? super.getCellRect(gap, KIND, true).y
+                : super.getCellRect(lines.size() - 1, KIND, true).y + LINE + 1;
+
+            if (gap == 0)
+            {
+                candidates.add(new Drop(top, 0, 0, super.getCellRect(1, KIND, true).y));
+            }
+            else
+            {
+                ConditionOutline.Group inner = lines.get(gap - 1).group;
+
+                for (ConditionOutline.Group group = inner; group != null; group = group.getParent())
+                {
+                    if (gap < lines.size() && captionAt.get(group) < gap && endsAt.get(group) >= gap)
+                    {
+                        // The group both sides of the gap are in: before the item that starts after it
+                        int at = 0;
+
+                        for (Object item : group.getItems())
+                        {
+                            int start = item instanceof Integer ? lineOf((Integer) item)
+                                : captionAt.get((ConditionOutline.Group) item);
+
+                            if (start < gap) at++;
+                        }
+
+                        candidates.add(new Drop(group, at, levelOf(group), y));
+                        break;
+                    }
+
+                    candidates.add(new Drop(group, group.getItems().size(), levelOf(group), y));
+                }
+            }
+
+            candidates.removeIf(candidate -> !canLandIn(candidate.group));
+
+            if (candidates.isEmpty()) return null;
+
+            for (Drop candidate : candidates)
+            {
+                if (point.x >= outlineLeft(candidate.level) + 6) return candidate;
+            }
+
+            return candidates.get(candidates.size() - 1);
+        }
+
+        /** A group can take the dragged rows unless it, or a group round it, is among them. */
+        private boolean canLandIn(ConditionOutline.Group group)
+        {
+            for (ConditionOutline.Group at = group; at.getParent() != null; at = at.getParent())
+            {
+                if (dragging.containsAll(at.getConditions())) return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Moves these conditions into a group before its item `at`, taking its word (OB-396), and leaves them selected.
+         *
+         * @param moving outline rows of conditions
+         */
+        void dropInto(java.util.Set<Integer> moving, ConditionOutline.Group group, int at)
+        {
+            if (locked || !conditionsEditable) return;
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            List<RouteCommand> moved = commandsOf(moving);
+            List<ConditionOutline.Row> after = ConditionOutline.dropped(rows, moving, group, at, wordOf(group));
+
+            if (after == null || ConditionOutline.changed(before, after).isEmpty()) return;
+
+            replaceWith(after, moved, before);
+        }
+
+        /** The rows an edit made become the outline, the given conditions are selected, and the change is marked. */
+        private void replaceWith(List<ConditionOutline.Row> after, List<RouteCommand> chosen,
+            List<ConditionOutline.Row> before)
+        {
+            rows.clear();
+            rows.addAll(after);
+
+            settle();
+            model.fireTableDataChanged();
+            select(chosen);
+            showChanges(before);
+        }
+
+        private List<RouteCommand> commandsOf(java.util.Collection<Integer> outline)
+        {
+            List<RouteCommand> out = new ArrayList<>();
+
+            for (int row : outline) out.add(rows.get(row).getCommand());
+
+            return out;
+        }
+
+        /** The caption's menu: the two rules, the group's checked. */
+        private void offerWords(int line)
+        {
+            if (isEditing()) getCellEditor().stopCellEditing();
+
+            final ConditionOutline.Group group = lines.get(line).group;
+            javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+            for (final ConditionOutline.Joiner word : ConditionOutline.Joiner.values())
+            {
+                javax.swing.JRadioButtonMenuItem item = new javax.swing.JRadioButtonMenuItem(captionText(word),
+                    problemOf(group) == null && wordOf(group) == word);
+
+                item.addActionListener(e -> reword(group, word));
+                menu.add(item);
+            }
+
+            java.awt.Rectangle at = captionBounds(line);
+
+            menu.show(this, at.x, at.y + at.height);
+        }
+
+        /**
+         * Every word of a group becomes this one (OB-396), and its conditions are selected.  A group with one item has
+         * no word to change, so the choice is kept for the next condition it takes.
+         */
+        void reword(ConditionOutline.Group group, ConditionOutline.Joiner word)
+        {
+            if (locked || !conditionsEditable) return;
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            List<RouteCommand> inside = commandsOf(group.getConditions());
+
+            List<ConditionOutline.Row> after = ConditionOutline.reworded(rows, group, word);
+
+            if (group.getWord() == null && !inside.isEmpty()) chosenWord.put(inside.get(0), word);
+            else if (ConditionOutline.changed(before, after).isEmpty()) return;
+
+            replaceWith(after, inside, before);
+        }
+
+        /** @return the outline rows of the selected conditions, in order */
+        java.util.SortedSet<Integer> chosenRows()
+        {
+            java.util.SortedSet<Integer> out = new java.util.TreeSet<>();
+
+            for (int line : getSelectedRows())
+            {
+                if (rowOf(line) >= 0) out.add(rowOf(line));
+            }
+
+            return out;
+        }
+
+        /** Whether Group Selected applies (OB-396); `ConditionOutline.canGroup` holds the rule. */
+        boolean canGroupSelected()
+        {
+            return !locked && conditionsEditable && ConditionOutline.canGroup(rows, chosenRows());
+        }
+
+        /** Whether Ungroup applies (OB-396): the selection is inside a nested group. */
+        boolean canUngroupSelected()
+        {
+            return !locked && conditionsEditable && ConditionOutline.ungroupable(rows, chosenRows()) != null;
+        }
+
+        void groupSelected()
+        {
+            if (!canGroupSelected()) return;
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            java.util.SortedSet<Integer> chosen = chosenRows();
+
+            replaceWith(ConditionOutline.grouped(rows, chosen), commandsOf(chosen), before);
+        }
+
+        /** Whether Split Here applies (OB-396); `ConditionOutline.canSplit` holds the rule. */
+        boolean canSplitHere()
+        {
+            return !locked && conditionsEditable && ConditionOutline.canSplit(rows, chosenRows());
+        }
+
+        /** Split Here (OB-396): the selected condition's group cut just above it, the condition kept selected. */
+        void splitHere()
+        {
+            if (!canSplitHere()) return;
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            java.util.SortedSet<Integer> chosen = chosenRows();
+
+            replaceWith(ConditionOutline.split(rows, chosen), commandsOf(chosen), before);
+        }
+
+        void ungroupSelected()
+        {
+            if (!canUngroupSelected()) return;
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            java.util.SortedSet<Integer> chosen = chosenRows();
+            ConditionOutline.Group lifted = ConditionOutline.ungroupable(rows, chosen);
+
+            replaceWith(ConditionOutline.ungrouped(rows, chosen, wordOf(lifted.getParent())),
+                commandsOf(lifted.getConditions()), before);
+        }
+
+        /**
+         * Add Condition (OB-396): a new condition at the end of the innermost group holding the selection, by that
+         * group's word; with nothing selected, at the end of the outermost.
+         */
         void addRow()
         {
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
             RouteCommand fresh = freshCondition();
+            ConditionOutline.Group into = ConditionOutline.holding(top, chosenRows());
 
-            append(fresh);
+            if (into == null) into = top;
 
-            settle();
-            model.fireTableDataChanged();
-            select(fresh);
-            showChanges(before);
+            replaceWith(ConditionOutline.appended(rows, into, wordOf(into), fresh),
+                java.util.Collections.singletonList(fresh), before);
         }
 
         /**
          * Adds a condition and the word joining it to what is there, at the last condition's level and by that level's
-         * word, as Insert Condition Below does: Add Condition, the plus and a capture.
+         * word, as Insert Condition Below does: a capture.
          */
         void append(RouteCommand condition)
         {
@@ -4016,34 +4925,43 @@ public class RouteEditorFrame extends JFrame
             return RouteCommand.RouteCommandFeedback(1, true);
         }
 
-        /** A new condition above or below a line (FR-147) as `ConditionOutline.inserted` places it; by is -1 or 1. */
-        void insertBeside(int line, int by)
+        /** A new condition above or below an outline row (FR-147) as `ConditionOutline.inserted` places it; by is -1 or 1. */
+        void insertBeside(int row, int by)
         {
-            if (line < 0 || line >= rows.size()) return;
+            if (row < 0 || row >= rows.size()) return;
 
             RouteCommand fresh = freshCondition();
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            List<ConditionOutline.Row> after = ConditionOutline.inserted(rows, line, by, fresh);
 
-            rows.clear();
-            rows.addAll(after);
-
-            settle();
-            model.fireTableDataChanged();
-            select(fresh);
-            showChanges(before);
+            replaceWith(ConditionOutline.inserted(rows, row, by, fresh), java.util.Collections.singletonList(fresh),
+                before);
         }
 
-        /** Selects the line holding this very condition, so an edit leaves the changed one picked. */
-        private void select(RouteCommand command)
+        /**
+         * Selects the lines holding these very conditions, the first with the keyboard on its address (FR-151), so an
+         * edit leaves what it changed picked.
+         */
+        private void select(List<RouteCommand> chosen)
         {
-            for (int line = 0; line < rows.size(); line++)
+            boolean first = true;
+
+            for (int line = 0; line < lines.size(); line++)
             {
-                if (rows.get(line).getCommand() == command) pick(line);
+                int row = rowOf(line);
+
+                if (row < 0) continue;
+
+                for (RouteCommand command : chosen)
+                {
+                    if (rows.get(row).getCommand() != command) continue;
+
+                    if (first) pick(line);
+                    else addRowSelectionInterval(line, line);
+
+                    first = false;
+                }
             }
         }
-
-        private static final int ADDRESS = 5;
 
         /**
          * Selects a line with the keyboard on its address, as one click there does, so a digit starts editing it
@@ -4051,7 +4969,7 @@ public class RouteEditorFrame extends JFrame
          */
         private void pick(int line)
         {
-            changeSelection(line, ADDRESS, false, false);
+            changeSelection(line, TARGET, false, false);
             requestFocusInWindow();
         }
 
@@ -4064,7 +4982,7 @@ public class RouteEditorFrame extends JFrame
         {
             boolean editing = super.editCellAt(line, column, e);
 
-            if (editing && column == ADDRESS && e instanceof java.awt.event.KeyEvent
+            if (editing && column == TARGET && e instanceof java.awt.event.KeyEvent
                 && getEditorComponent() instanceof javax.swing.text.JTextComponent)
             {
                 ((javax.swing.text.JTextComponent) getEditorComponent()).selectAll();
@@ -4073,58 +4991,44 @@ public class RouteEditorFrame extends JFrame
             return editing;
         }
 
-        /** The lines the last edit changed, and how strongly they still show: 1 just after it, 0 once faded. */
-        private java.util.Set<Integer> changed = java.util.Collections.emptySet();
-        private float glow;
-
-        /** 25 steps of 40 ms: the highlight is gone a second after the edit. */
-        private final javax.swing.Timer fading = new javax.swing.Timer(40, e -> fade());
-
-        /** The renderer last tinted, cleared before the next cell: a table's renderer keeps a background it is given. */
-        private java.awt.Component tinted;
-
-        /** Lights the lines that differ from `before` and starts their fade (FR-153); a later edit restarts it. */
+        /**
+         * Marks the rows that differ from `before` (OB-396); the marks stay until the next edit.  A changed word marks
+         * its group's caption only where no condition changed: beside a moved or made condition it is noise.
+         */
         private void showChanges(List<ConditionOutline.Row> before)
         {
-            changed = ConditionOutline.changed(before, rows);
-            glow = 1f;
-            fading.restart();
-            repaint();
-        }
+            changed.clear();
 
-        private void fade()
-        {
-            glow = Math.max(0f, glow - 0.04f);
+            java.util.Set<Integer> differ = ConditionOutline.changed(before, rows);
+            boolean conditionsChanged = false;
 
-            if (glow == 0f) fading.stop();
+            for (int at : differ) conditionsChanged |= !rows.get(at).isJoiner();
 
-            repaint();
-        }
-
-        @Override
-        public java.awt.Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int line, int column)
-        {
-            if (tinted != null) tinted.setBackground(null);
-
-            tinted = null;
-
-            java.awt.Component out = super.prepareRenderer(renderer, line, column);
-
-            if (glow > 0f && changed.contains(line))
+            for (int at : differ)
             {
-                // Half as strong on the selection, whose light ink would vanish into the yellow.
-                float strength = isRowSelected(line) ? glow / 2 : glow;
-                java.awt.Color under = out.getBackground();
-
-                out.setBackground(new java.awt.Color(
-                    Math.round(CHANGED_LINE.getRed() * strength + under.getRed() * (1 - strength)),
-                    Math.round(CHANGED_LINE.getGreen() * strength + under.getGreen() * (1 - strength)),
-                    Math.round(CHANGED_LINE.getBlue() * strength + under.getBlue() * (1 - strength))));
-
-                tinted = out;
+                if (!conditionsChanged || !rows.get(at).isJoiner()) changed.add(rows.get(at));
             }
 
-            return out;
+            repaint();
+        }
+
+        /** A condition line whose row the last edit changed, or a caption whose group's words it did. */
+        private boolean isMarked(int line)
+        {
+            int row = rowOf(line);
+
+            if (row >= 0) return changed.contains(rows.get(row));
+
+            if (line < 0 || line >= lines.size()) return false;
+
+            ConditionOutline.Group group = lines.get(line).group;
+
+            for (int at = group.getFirst(); at <= group.getLast(); at++)
+            {
+                if (rows.get(at).isJoiner() && changed.contains(rows.get(at)) && shownGroupOf(at) == group) return true;
+            }
+
+            return false;
         }
 
         /** The conditions on the selected lines, by identity: two lines can ask the same thing. */
@@ -4133,32 +5037,24 @@ public class RouteEditorFrame extends JFrame
             java.util.Set<RouteCommand> out = java.util.Collections.newSetFromMap(
                 new java.util.IdentityHashMap<RouteCommand, Boolean>());
 
-            for (int line : getSelectedRows())
-            {
-                if (line < rows.size() && !rows.get(line).isJoiner()) out.add(rows.get(line).getCommand());
-            }
+            for (int row : chosenRows()) out.add(rows.get(row).getCommand());
 
             return out;
         }
 
-        void removeSelected()
-        {
-            removeAt(getSelectedRow());
-        }
-
         /**
-         * Removes a line, and whatever cannot stay behind without it.  A word taken out takes the term it joins on
-         * (OB-240, MT-469: "Any linked entries should also be deleted"): a wordless run is legal to `tidy()` and
+         * Removes an outline row, and whatever cannot stay behind without it.  A word taken out takes the term it joins
+         * on (OB-240, MT-469: "Any linked entries should also be deleted"): a wordless run is legal to `tidy()` and
          * `ConditionOutline.toExpression` folds it with AND, so deleting an `or` would silently turn it into an `and`,
          * a change to when the route fires that `whatIsWrong` does not flag.
          */
-        void removeAt(int line)
+        void removeAt(int row)
         {
-            if (line < 0 || line >= rows.size()) return;
+            if (row < 0 || row >= rows.size()) return;
 
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
 
-            cut(line, java.util.Collections.<ConditionOutline.Row>emptySet());
+            cut(row, java.util.Collections.<ConditionOutline.Row>emptySet());
 
             tidy(rows);
 
@@ -4168,16 +5064,18 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Delete from the menu (OB-382): inside a selection of several lines, every selected line goes, conditions
-         * first, as one edit, and the line now where the first was is selected; elsewhere, `removeAt`.
+         * Delete from the menu (OB-382): inside a selection of several lines, every selected condition goes, with each
+         * word between two of them, as one edit, and the line now where the first was is selected; elsewhere,
+         * `removeAt`.
          */
         void removeLines(int line)
         {
             int[] picked = getSelectedRows();
+            java.util.SortedSet<Integer> conditions = chosenRows();
 
-            if (picked.length < 2 || !isRowSelected(line))
+            if (conditions.size() < 2 || !isRowSelected(line))
             {
-                removeAt(line);
+                removeAt(rowOf(line));
                 return;
             }
 
@@ -4185,7 +5083,16 @@ public class RouteEditorFrame extends JFrame
             java.util.Set<ConditionOutline.Row> chosen = java.util.Collections.newSetFromMap(
                 new java.util.IdentityHashMap<ConditionOutline.Row, Boolean>());
 
-            for (int at : picked) if (at < rows.size()) chosen.add(rows.get(at));
+            for (int at : conditions) chosen.add(rows.get(at));
+
+            for (int at = 0; at < rows.size(); at++)
+            {
+                if (rows.get(at).isJoiner() && conditions.contains(nearestCondition(at, -1))
+                    && conditions.contains(nearestCondition(at, 1)))
+                {
+                    chosen.add(rows.get(at));
+                }
+            }
 
             // Conditions first: each takes a word beside it, a selected one where it can, so fewer words are left to
             // take their terms.
@@ -4204,9 +5111,44 @@ public class RouteEditorFrame extends JFrame
             settle();
             model.fireTableDataChanged();
 
-            if (!rows.isEmpty()) pick(Math.min(picked[0], rows.size() - 1));
+            if (!lines.isEmpty()) pickNear(picked[0]);
 
             showChanges(before);
+        }
+
+        /** The nearest condition row from a row, that way; -1 where there is none. */
+        private int nearestCondition(int row, int by)
+        {
+            for (int at = row + by; at >= 0 && at < rows.size(); at += by)
+            {
+                if (!rows.get(at).isJoiner()) return at;
+            }
+
+            return -1;
+        }
+
+        /** Picks the condition line at or nearest after a line, or before it at the end. */
+        private void pickNear(int line)
+        {
+            int at = Math.min(Math.max(0, line), lines.size() - 1);
+
+            for (int down = at; down < lines.size(); down++)
+            {
+                if (rowOf(down) >= 0)
+                {
+                    pick(down);
+                    return;
+                }
+            }
+
+            for (int up = at; up >= 0; up--)
+            {
+                if (rowOf(up) >= 0)
+                {
+                    pick(up);
+                    return;
+                }
+            }
         }
 
         /** Where this very row stands, or -1: two rows can be equal. */
@@ -4285,115 +5227,39 @@ public class RouteEditorFrame extends JFrame
             return ConditionOutline.problems(outline).size();
         }
 
+        /** Alt+Up and Alt+Down, and the menu's Move Up and Move Down, on the selected condition. */
+        private void shiftChosen(int by)
+        {
+            int row = rowOf(getSelectionModel().getLeadSelectionIndex());
+
+            if (row < 0 && !chosenRows().isEmpty()) row = chosenRows().first();
+
+            if (row >= 0) shift(row, by);
+        }
+
         /**
          * Moves a condition one place up or down by the rule `ConditionOutline.moved` holds, and keeps it selected.
          *
-         * @param line the row that was pressed
+         * @param row the outline row of the condition
          * @param by -1 for up, 1 for down
          */
-        void shift(int line, int by)
+        void shift(int row, int by)
         {
-            if (!ConditionOutline.canMove(rows, line, by)) return;
+            if (locked || !conditionsEditable || !ConditionOutline.canMove(rows, row, by)) return;
 
-            int landed = ConditionOutline.landing(rows, line, by);
-
+            RouteCommand moving = rows.get(row).getCommand();
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            List<ConditionOutline.Row> after = ConditionOutline.moved(rows, line, by);
-
-            rows.clear();
-            rows.addAll(after);
 
             // No tidy(): from an outline that reads, moved() gives one that reads.
-            settle();
-            model.fireTableDataChanged();
-
-            pick(landed);
-            showChanges(before);
+            replaceWith(ConditionOutline.moved(rows, row, by), java.util.Collections.singletonList(moving), before);
         }
 
-        /**
-         * The selected lines when there are several, so the indent marks act on all of them (FR-144).
-         *
-         * @return {first, last}, or null for one line or none
-         */
-        int[] chosenLines()
-        {
-            int[] picked = getSelectedRows();
-
-            if (picked.length < 2) return null;
-
-            return new int[]{Math.min(picked[0], picked[picked.length - 1]),
-                Math.max(picked[0], picked[picked.length - 1])};
-        }
-
-        /**
-         * The lines a block indent would move, or null where it would break the outline.  A word at either edge stays,
-         * as it joins the block to what is outside; the lines nested under the last one come along.
-         *
-         * @param first the first chosen line
-         * @param last the last chosen line
-         * @param by 1 to indent, -1 to outdent
-         * @return {first, last} of the lines to move
-         */
-        int[] block(int first, int last, int by)
-        {
-            last = Math.min(last, rows.size() - 1);
-
-            while (first <= last && rows.get(first).isJoiner()) first++;
-            while (last >= first && rows.get(last).isJoiner()) last--;
-
-            if (first < 0 || first > last) return null;
-
-            int top = Integer.MAX_VALUE;
-
-            for (int at = first; at <= last; at++) top = Math.min(top, rows.get(at).getDepth());
-
-            while (last + 1 < rows.size() && rows.get(last + 1).getDepth() > top) last++;
-
-            if (by < 0 && top == 0) return null;
-
-            if (by > 0)
-            {
-                int most = first == 0 ? 1 : rows.get(first - 1).getDepth() + 1;
-
-                if (rows.get(first).getDepth() + 1 > most) return null;
-            }
-
-            return new int[]{first, last};
-        }
-
+        /** Moves one outline row, and everything nested under it, a level in or out; only `indentConditionForTest` asks. */
         void indent(int line, int by)
         {
             if (line < 0 || line >= rows.size()) return;
 
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            int[] chosen = chosenLines();
-
-            if (chosen != null && line >= chosen[0] && line <= chosen[1])
-            {
-                int[] moving = block(chosen[0], chosen[1], by);
-
-                if (moving == null) return;
-
-                for (int at = moving[0]; at <= moving[1]; at++)
-                {
-                    rows.set(at, rows.get(at).atDepth(rows.get(at).getDepth() + by));
-                }
-
-                tidy(rows);
-
-                settle();
-                model.fireTableDataChanged();
-
-                if (!rows.isEmpty())
-                {
-                    setRowSelectionInterval(Math.min(moving[0], rows.size() - 1), Math.min(moving[1], rows.size() - 1));
-                }
-
-                showChanges(before);
-
-                return;
-            }
 
             int was = rows.get(line).getDepth();
             int depth = was + by;
@@ -4407,11 +5273,6 @@ public class RouteEditorFrame extends JFrame
             // it.
             if (line == 0 && depth > 1) return;
 
-            // A word may be indented past the condition after it (building a group one row at a time does that); left
-            // there, ConditionOutline.problems shows it red and Save refuses it.
-
-            // Everything nested under this line comes with it: moving only the top would take a group apart.
-            // Outdenting stops at the outermost level.
             int last = line;
 
             while (last + 1 < rows.size() && rows.get(last + 1).getDepth() > was) last++;
@@ -4427,7 +5288,9 @@ public class RouteEditorFrame extends JFrame
 
             settle();
             model.fireTableDataChanged();
-            setRowSelectionInterval(line, line);
+
+            if (lineOf(line) >= 0) setRowSelectionInterval(lineOf(line), lineOf(line));
+
             showChanges(before);
         }
 
@@ -4475,13 +5338,15 @@ public class RouteEditorFrame extends JFrame
 
         }
 
-        /** Works out which lines disagree with their level, and says what the outline means. */
+        /** Works out which lines disagree with their level, lays the lines out, and says what the outline means. */
         private void settle()
         {
             why = ConditionOutline.whatIsWrong(rows);
             flagged = new java.util.LinkedHashSet<>(why.keySet());
 
+            layOut();
             updateReadsAs();
+            refreshConditionActions();
         }
 
         /**

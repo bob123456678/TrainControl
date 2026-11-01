@@ -728,6 +728,30 @@ public class testConditionOutline
         return out;
     }
 
+    /**
+     * OB-396: a nested group with its parent's rule, which Group Selected now makes, survives the route's file: the
+     * outline read as an expression, written as JSON and read back, opens as the same outline, the group first or not.
+     *
+     * MUTATION: in `ConditionOutline.write`, write a NodeGroup's insides at `depth` rather than `depth + 1`, and the
+     * group comes back flattened into its parent.
+     */
+    @Test
+    public void testASameRuleGroupSurvivesTheRoutesFile() throws Exception
+    {
+        List<ConditionOutline.Row> inside = outline(condition(0, 21), joining(0, ConditionOutline.Joiner.AND),
+            condition(1, 22), joining(1, ConditionOutline.Joiner.AND), condition(1, 23),
+            joining(0, ConditionOutline.Joiner.AND), condition(0, 24));
+        List<ConditionOutline.Row> first = outline(condition(1, 21), joining(1, ConditionOutline.Joiner.OR),
+            condition(1, 22), joining(0, ConditionOutline.Joiner.OR), condition(0, 23));
+
+        for (List<ConditionOutline.Row> rows : java.util.Arrays.asList(inside, first))
+        {
+            NodeExpression saved = NodeExpression.fromJSON(ConditionOutline.toExpression(rows).toJSON());
+
+            assertEquals(levels(ConditionOutline.of(saved)), levels(rows), "the group did not survive the file");
+        }
+    }
+
     /** Each line as depth and sensor, or depth and word: " 1:1 1AND 0:4". */
     private static String levels(List<ConditionOutline.Row> rows)
     {
@@ -1040,5 +1064,47 @@ public class testConditionOutline
             java.util.Arrays.asList(3)),
             "two words side by side at one level still have to be flagged - that is a sentence with "
             + "two meanings, and it is the whole reason this check exists");
+    }
+
+    /**
+     * OB-396: the editor's edits read the outline as groups and write it back, so an edit to one group leaves every
+     * other line as it was, a step of two levels included: "3 or ((1 or 2) and 4)" opens its inner bracket two levels
+     * in.  Choosing "and" for the outer group changes its one word and nothing else; dropping 4 into the innermost
+     * group, before its 1, takes that group's "or" and leaves the "and" group of one item.
+     *
+     * MUTATION: in `ConditionOutline.parse`, read a deeper run at the row's own depth rather than `depth + 1`, and
+     * the inner bracket comes back one level up.
+     */
+    @Test
+    public void testAnEditToOneGroupLeavesTheRestAsItWas()
+    {
+        List<ConditionOutline.Row> rows = outline(condition(0, 3), joining(0, ConditionOutline.Joiner.OR),
+            condition(2, 1), joining(2, ConditionOutline.Joiner.OR), condition(2, 2),
+            joining(1, ConditionOutline.Joiner.AND), condition(1, 4));
+
+        assertEquals(levels(ConditionOutline.of(ConditionOutline.toExpression(rows))), levels(rows),
+            "precondition: the fixture is the outline `of` writes for 3 or ((1 or 2) and 4)");
+
+        ConditionOutline.Group top = ConditionOutline.groupsOf(rows);
+
+        List<ConditionOutline.Row> reworded = ConditionOutline.reworded(rows, top, ConditionOutline.Joiner.AND);
+
+        assertEquals(levels(reworded), " 0:3 0AND 2:1 2OR 2:2 1AND 1:4",
+            "choosing 'and' for the outer group changed more than its one word");
+
+        for (int at = 2; at < rows.size(); at++)
+        {
+            assertSame(reworded.get(at), rows.get(at), "line " + at + " of another group was rewritten");
+        }
+
+        ConditionOutline.Group inner = ConditionOutline.holding(top, new java.util.TreeSet<>(java.util.Arrays.asList(2, 4)));
+
+        assertEquals(inner.getDepth(), 2, "precondition: the innermost group holding 1 and 2 is two levels in");
+
+        List<ConditionOutline.Row> dropped = ConditionOutline.dropped(rows, java.util.Collections.singleton(6), inner,
+            0, ConditionOutline.Joiner.OR);
+
+        assertEquals(levels(dropped), " 0:3 0OR 2:4 2OR 2:1 2OR 2:2",
+            "4 dropped before 1 should join the (1 or 2) group by its 'or', leaving the 'and' group around it");
     }
 }

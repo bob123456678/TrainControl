@@ -30571,6 +30571,17 @@ text:
 | Validated on your *Works, with notes* of 2026-10-31; the notes are built (an answer you asked for stays until the next notice or its X; the strip shows up to four lines, and the room below the diagram's last row follows its height) and tested by MT-865.
 |
 
+[comment MT-867 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Superseded by MT-868 before testing: step 4 selected the group's caption for Ungroup, which needs a condition inside the group, and expected the reading never to change, which holds for Group Selected only.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24
@@ -30624,4 +30635,15 @@ text:
 | **Claude, 2026-10-31.**
 |
 | The + row chosen 2026-10-31. Adam, in chat: "R1, because then we can add to groups." R1: "+ Add Condition", a thin divider, then "Group Selected" and "Ungroup", icon and word, flat in the table's style, on the table's last row; an action that does not apply is grayed out.
+|
+
+[comment OB-396 2]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Built as C3 with the R1 row, plus Split Here, Group Selected keeping the meaning, a minimum window width, and the Automatically Fire warning (shortened, with a warning triangle) on the heading line. Tested by MT-868.
 |

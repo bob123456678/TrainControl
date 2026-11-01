@@ -34171,3 +34171,97 @@ body:
 tail:
 | ---
 |
+
+[test MT-867]
+ordinal: 866
+anchor: mt-867
+date: 2026-10-31
+title: The route editor shows condition groups as outlines you can split, group, ungroup and drag
+disposition: superseded
+from: OB-396
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-867"></a>
+| ### MT-867 - 2026-10-31 - The route editor shows condition groups as outlines you can split, group, ungroup and drag
+|
+| **Disposition:** superseded
+| **From:** OB-396
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Press **Add Route**, leave **Automatically Fire** unticked, and press **Add Condition** three times. Make the conditions S88 sensors 1, 2 and 3, all **on**.
+| 2. Look at the **Only When These Conditions are Met** heading line and the lines under it.
+| 3. Select sensor 3 alone and press **Split Here**.
+| 4. Select sensors 1 and 2 together and press **Group Selected**. Then select the group's caption and press **Ungroup**.
+| 5. Click a group's caption and choose the other rule.
+| 6. Drag sensor 3 by its handle (the six dots) to the top. Then select it and press Alt+Down.
+| 7. Select a condition inside a group and press **Add Condition**.
+| 8. Select one condition, then look at where the selection color and the gray Protocol cells end at each depth.
+| 9. Make the window as narrow as it will go.
+| 10. Press **Save**, then open the route again.
+|
+| **Expected**
+|
+| - Step 2: in red, at the right end of the heading line, a warning triangle and "Automatically Fire is not selected, so conditions are ignored." Under the heading, the "Reads as" sentence, then the table. The conditions sit in one outline captioned "All of these must be true", with no and/or rows. Ticking Automatically Fire hides the warning.
+| - Step 3: sensors 1 and 2 are now in an inner "All of these must be true" group, and the outer group says "At least one must be true". The reading is (S88 #1 on and S88 #2 on) or S88 #3 on.
+| - Step 4: Group Selected adds an outline round sensors 1 and 2, and the reading does not change. Ungroup takes that outline away, and again the reading does not change.
+| - Step 5: the caption, the reading and the meaning switch between "all" and "at least one".
+| - Step 6: sensor 3 moves to the top, then back down one place. The amber mark on the handle shows which condition you last changed.
+| - Step 7: the new condition appears at the end of that group.
+| - Step 8: the selection runs from Kind to Protocol only. At every depth, the gray stops inside the outline, and only the Kind text is indented.
+| - Step 9: the top line (Name, Automatically Fire, S88, Trigger) stays whole; the window will not go narrower.
+| - Step 10: the groups, their rules and the reading come back as you saved them.
+|
+tail:
+| ---
+|
+
+[test MT-868]
+ordinal: 867
+anchor: mt-868
+date: 2026-10-31
+title: The route editor shows condition groups as outlines you can split, group, ungroup and drag
+disposition: needs test
+from: OB-396
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-868"></a>
+| ### MT-868 - 2026-10-31 - The route editor shows condition groups as outlines you can split, group, ungroup and drag
+|
+| **Disposition:** needs test
+| **From:** OB-396
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Press **Add Route**, leave **Automatically Fire** unticked, and press **Add Condition** three times. Make the conditions S88 sensors 1, 2 and 3, all **on**.
+| 2. Look at the **Only When These Conditions are Met** heading line and the lines under it.
+| 3. Select sensors 1 and 2 together and press **Group Selected**. Then select sensor 1 alone and press **Ungroup**.
+| 4. Select sensor 3 alone and press **Split Here**.
+| 5. Click a group's caption and choose the other rule.
+| 6. Drag sensor 3 by its handle (the six dots) to the top. Then select it and press Alt+Down.
+| 7. Select a condition inside a group and press **Add Condition**.
+| 8. Select one condition, then look at where the selection color and the gray Protocol cells end at each depth.
+| 9. Make the window as narrow as it will go.
+| 10. Press **Save**, then open the route again.
+|
+| **Expected**
+|
+| - Step 2: in red, at the right end of the heading line, a warning triangle and "Automatically Fire is not selected, so conditions are ignored." Under the heading, the "Reads as" sentence, then the table. The conditions sit in one outline captioned "All of these must be true", with no and/or rows. Ticking Automatically Fire hides the warning.
+| - Step 3: Group Selected adds an outline round sensors 1 and 2, and the reading does not change. Ungroup takes that outline away, and the three are back in one group, joined by "all".
+| - Step 4: sensors 1 and 2 are now in an inner "All of these must be true" group, and the outer group says "At least one must be true". The reading is (S88 #1 on and S88 #2 on) or S88 #3 on.
+| - Step 5: the caption, the reading and the meaning switch between "all" and "at least one".
+| - Step 6: sensor 3 moves to the top, then back down one place. The amber mark on the handle shows which condition you last changed.
+| - Step 7: the new condition appears at the end of that group.
+| - Step 8: the selection runs from Kind to Protocol only. At every depth, the gray stops inside the outline, and only the Kind text is indented.
+| - Step 9: the top line (Name, Automatically Fire, S88, Trigger) stays whole; the window will not go narrower.
+| - Step 10: the groups, their rules and the reading come back as you saved them.
+|
+tail:
+| ---
+|

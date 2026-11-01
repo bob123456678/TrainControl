@@ -253,6 +253,139 @@ public final class RowIcons
     }
 
     /**
+     * Six dots in two columns, the grip a row is dragged by.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon grip(final int size)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(new Color(150, 150, 150));
+
+                for (int column = -1; column <= 1; column += 2)
+                {
+                    for (int row = -1; row <= 1; row++)
+                    {
+                        g.fill(new java.awt.geom.Ellipse2D.Float(width / 2f + column * 2.5f - 1.1f,
+                            height / 2f + row * 4f - 1.1f, 2.2f, 2.2f));
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Two lines inside a rounded outline: put rows in a group of their own.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon group(final int size)
+    {
+        return group(size, QUIET);
+    }
+
+    /**
+     * The same, in a given color.
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon group(final int size, final Color colour)
+    {
+        return outlined(size, colour, false);
+    }
+
+    /**
+     * The same two lines with the outline broken: take a group apart.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon ungroup(final int size)
+    {
+        return ungroup(size, QUIET);
+    }
+
+    /**
+     * The same, in a given color.
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon ungroup(final int size, final Color colour)
+    {
+        return outlined(size, colour, true);
+    }
+
+    /**
+     * Two small outlines one above the other, a line in each: cut a group in two (OB-396).
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon split(final int size)
+    {
+        return split(size, QUIET);
+    }
+
+    /**
+     * The same, in a given color.
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon split(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                int half = (height - 3) / 2;
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(1.2f));
+
+                for (int part = 0; part < 2; part++)
+                {
+                    int y = 1 + part * (half + 1);
+
+                    g.drawRoundRect(1, y, width - 3, half - 1, 4, 4);
+                    g.drawLine(width / 4 + 1, y + half / 2, width * 3 / 4 - 1, y + half / 2);
+                }
+            }
+        };
+    }
+
+    private static Icon outlined(final int size, final Color colour, final boolean broken)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(colour);
+                g.setStroke(broken ? new BasicStroke(1.2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 1f,
+                    new float[]{2.5f, 2f}, 0f) : new BasicStroke(1.2f));
+                g.drawRoundRect(1, 2, width - 3, height - 5, 4, 4);
+
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(width / 4 + 1, height * 2 / 5, width * 3 / 4 - 1, height * 2 / 5);
+                g.drawLine(width / 4 + 1, height * 3 / 5 + 1, width * 3 / 4 - 1, height * 3 / 5 + 1);
+            }
+        };
+    }
+
+    /**
      * A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong.
      *
      * @param size how many pixels square
