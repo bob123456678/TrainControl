@@ -71,9 +71,8 @@ final class AutonomyLifecycle
     {
         org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
-        // Above the no-session return: these concern the Layout menu, not a session, and a Central Station layout
-        // always has a null `session`, so below it the guard, the data-source label and the headings would never exist
-        // for it.
+        // Above the no-session return: a Central Station layout always has a null `session`, and these concern the
+        // Layout menu, not a session.
         ui.layoutMenus.mountLayoutHeadings();
         ui.layoutMenus.mountManagePages();
         ui.layoutMenus.mountRecentLayouts();
@@ -98,8 +97,7 @@ final class AutonomyLifecycle
             });
         }
 
-        // For every layout, and above the return: built after it, the menu never existed for a window that started on a
-        // Central Station layout, where it opens onto the download offer and Documentation.
+        // For every layout, and above the return: a window that started on a Central Station layout needs the menu too.
         mountAutonomyMenu();
 
         // No local copy, no setup (OB-254): the menu above is what such a layout gets.
@@ -110,8 +108,7 @@ final class AutonomyLifecycle
             ui.autonomyViewerPanel = new AutonomyViewerPanel(session, ui);
         }
 
-        // Built but not shown: it stays as the home of the actions the Autonomy menu runs (a few hundred lines of
-        // dialogs and file handling).
+        // Built but not shown: it stays as the home of the actions the Autonomy menu runs.
 
         ui.layoutMenus.mountEditPageMenu();
     }
@@ -169,9 +166,8 @@ final class AutonomyLifecycle
     {
         if (!ui.isLocalLayout()) return null;
 
-        // Not while an editor holds the setup (OB-076): the editor's Cancel restores autonomyAsOpened and saves it,
-        // silently reverting an edit made here.  No menu rather than a grayed one, because this menu IS the autonomy
-        // surface here.
+        // Not while an editor holds the setup (OB-076): its Cancel restores autonomyAsOpened and saves it, silently
+        // reverting an edit made here.  No menu rather than a grayed one: this menu IS the autonomy surface here.
         if (ui.isLayoutEditorOpen()) return null;
 
         final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
@@ -208,8 +204,7 @@ final class AutonomyLifecycle
 
             ui.autonomyTileMenus.setDialogOwner(ui);
 
-            // This panel is never added to anything, so its walk up the window tree finds no main window (see
-            // parentWindow).
+            // This panel is never added to anything, so its walk up the window tree finds no main window.
             ui.autonomyTileMenus.setMainWindow(ui);
 
             // The two items that want a second click hand themselves to the editor instead.
@@ -261,8 +256,8 @@ final class AutonomyLifecycle
         // Nothing in the main window may hold the keyboard: bare key presses drive locomotives
         AutonomyViewerPanel.unfocusable(strip);
 
-        // Above the scroll pane, not inside it (OB-148): a column header scrolls with the view and flickered on a wide
-        // diagram.  Swapped in at runtime because the layout comes from the generated form.
+        // Above the scroll pane, not inside it (OB-148): a column header scrolls with the view.  Swapped in at runtime
+        // because the layout comes from the generated form.
         java.awt.Container home = ui.layoutArea().getParent();
 
         if (home != null && home.getLayout() instanceof javax.swing.GroupLayout)
@@ -314,9 +309,8 @@ final class AutonomyLifecycle
 
             session.open(pages);
 
-            // A setup left mid-edit is put back to how it was before the edit (OB-108), after open (pages known) and
-            // before anything can save.  Not while the layout editor is open: `resetAutonomySession` throws the session
-            // away, and the note that editor wrote on the way in would be acted on mid-edit.
+            // A setup left mid-edit is put back to how it was (OB-108), after open and before anything can save.  Not
+            // while the layout editor is open: `resetAutonomySession` throws the session away mid-edit.
             boolean editorOpen = ui.openEditor != null && ui.openEditor.isDisplayable();
 
             if (!editorOpen && session.revertUnfinishedEdit())
@@ -329,12 +323,10 @@ final class AutonomyLifecycle
                 ui.getModel().logf("autosetup.log.unfinishedEditNoteUnusable");
             }
 
-            // The pages it rewrote are logged: captions leave the `.cs2` one-way, so an older version finds them gone
-            // (`saveChanges` keeps a `.cs2.bak` the first time).
+            // The pages it rewrote are logged: captions leave the `.cs2` one-way (`saveChanges` keeps a `.cs2.bak`).
             if (!session.getMigratedPages().isEmpty())
             {
-                // The setup is saved before any page is written, so a page whose write throws still has its labels on
-                // disk.
+                // The setup is saved before any page is written, so a page whose write throws keeps its labels on disk.
                 ui.getModel().logf("autosetup.log.captionsMigrated",
                     String.join(", ", session.getMigratedPages()),
                     session.getMigratedCaptions());
@@ -346,8 +338,7 @@ final class AutonomyLifecycle
                 ui.getModel().log(line);
             }
 
-            // A page that could not be rewritten keeps its old labels and migrates again next time; the user is told,
-            // since that page carries text the editor no longer manages.
+            // A page that could not be rewritten keeps its old labels and migrates again next time; the user is told.
             if (!session.getMigrationFailures().isEmpty())
             {
                 final String pagesLeft = String.join(", ", session.getMigrationFailures());
@@ -389,10 +380,8 @@ final class AutonomyLifecycle
     /** Drops the setup so the next request reads it again; called when the layout changes underneath it. */
     void resetAutonomySession()
     {
-        // Save BEFORE forgetting: with activeDiagramConfiguration nulled the exit-path capture (gated on it) would skip
-        // everything, and a re-download would drop every placement, home and setting made since the last save.  While
-        // an edit waits this saves what the railway owns, which Open Layout on the folder in use and Combine Linked
-        // Pages leave unfolded.
+        // Save BEFORE forgetting: with activeDiagramConfiguration nulled the exit-path capture (gated on it) skips
+        // everything, and a re-download would drop every placement, home and setting made since the last save.
         ui.captureRunningLayout();
 
         ui.autonomySession = null;
@@ -400,8 +389,8 @@ final class AutonomyLifecycle
         // The driver holds indexes derived from the old session and would light tiles from a stale graph.
         if (ui.diagramMonitorDriver != null) ui.diagramMonitorDriver.stop();
 
-        // A replaced diagram reuses the registry's page-and-coordinate keys for different track, and register() would
-        // replay the old badges and arrows onto the new labels.
+        // A replaced diagram reuses the registry's page-and-coordinate keys for different track; register() would
+        // replay the old badges and arrows.
         if (ui.diagramTileRegistry != null) ui.diagramTileRegistry.reset();
 
         setAutonomyDependentTabs(false);
@@ -455,7 +444,7 @@ final class AutonomyLifecycle
 
             ui.gracefulStopRequested = true;
 
-            // Counts a stop first, which every dispatched journey obeys; then autonomy stops choosing; then every train
+            // Counts a stop first (every dispatched journey obeys it), then autonomy stops choosing, then every train
             // stops.
             ui.getModel().getAutoLayout().stopEveryTrainWhereItIs();
         }
@@ -470,9 +459,8 @@ final class AutonomyLifecycle
         // The session already built, not the lazy getter, which would create a setup out of nothing and then save it.
         org.traincontrol.automationui.AutonomySession session = ui.autonomySession;
 
-        // The paused-trains record of how the railway was built and the edit session's folds also name locomotives
-        // (OB-343); the fold applies them by name to the setup's list, so a stale name pauses the wrong train or
-        // restores a deleted one.
+        // The paused-trains record and the edit session's folds also name locomotives (OB-343); the fold applies them
+        // by name to the setup's list, so a stale name pauses the wrong train.
         if (ui.settingsAsBuilt != null) org.traincontrol.automationui.AutonomyCompanionStore.repairLocomotiveInPausedList(
             ui.settingsAsBuilt, from, to);
 
@@ -522,10 +510,9 @@ final class AutonomyLifecycle
                 ui.openEditor.autonomyLocomotiveRenamed(from, to);
             }
 
-            // The window still shows the old name (MT-153): station labels and the locomotive panel repaint only when
-            // called.  Posted, not called: this runs on the event thread inside a rename dialog, and
-            // updateVisiblePoints is synchronized on the main window and reaches into the layout, so taking both locks in
-            // that order here deadlocks.
+            // The window still shows the old name (MT-153).  Posted, not called: this runs on the event thread inside a
+            // rename dialog, and updateVisiblePoints is synchronized on the main window and reaches into the layout, so
+            // taking both locks in that order deadlocks.
             javax.swing.SwingUtilities.invokeLater(() ->
             {
                 ui.updateVisiblePoints();
@@ -565,8 +552,8 @@ final class AutonomyLifecycle
             ui.autonomyDiagramStrip.repaint();
         }
 
-        // No setup (getAutonomySession() builds a session for any local layout), or none loaded (OB-029): a finding is
-        // about the configuration being run, and the banner's offer to load one is all worth saying then.
+        // No setup, or none loaded (OB-029): a finding is about the configuration being run, and the banner's offer to
+        // load one is all worth saying then.
         if (session == null || session.getReducer() == null || !session.exists()
             || ui.activeDiagramConfiguration == null)
         {
@@ -717,8 +704,7 @@ final class AutonomyLifecycle
 
         ui.writeTheTurnsOwed();
 
-        // Folded before it is cleared: the reset below asks the model for its railway, which Unload empties first, so
-        // nothing would be folded.  A train under way is written on the one point it is kept at.
+        // Folded before it is cleared: the reset asks the model for its railway, which Unload empties first.
         ui.captureRunningLayout(true);
 
         ui.getModel().clearAutoLayout();
