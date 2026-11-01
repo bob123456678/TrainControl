@@ -26,10 +26,9 @@ import support.SourceOf;
  * which state matters most - "autonomy state, routes, and home locomotives are the most sensitive."
  *
  * A locomotive is held two ways.  Things that hold the OBJECT survive a rename for free but have to be swept on a
- * delete; things that hold the NAME are the reverse.  Neither announces itself, and the sweep is a list (`locDeleted`'s
- * own comment: "A sweep over everything that names this locomotive is a list, and a list is a thing one can be missing
- * from.").  The source guard at the bottom is the part that lasts: it fails the build when the running layout grows a
- * new collection of locomotives that the deletion sweep says nothing about.
+ * delete; things that hold the NAME are the reverse.  Neither announces itself, and a sweep is a list one can be
+ * missing from.  The source guard at the bottom is the part that lasts: it fails the build when the running layout
+ * grows a new collection of locomotives that the deletion sweep says nothing about.
  *
  * @author Adam
  */
@@ -241,13 +240,11 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * A CONDITION naming a deleted locomotive is reported and left alone.
-     *
-     * Conditions are combined with AND, so removing the dead term makes a route that fires on what is LEFT, a weaker
-     * condition than the operator agreed to, and these routes throw switches and signals ahead of moving trains.  A
-     * route that has quietly stopped firing is safe; one that quietly starts firing is not.  So the condition stays and
-     * the operator is told.  The test above builds its route with null conditions, so it could not catch a missing
-     * conditions sweep.
+     * A CONDITION naming a deleted locomotive is reported and left alone.  Conditions are combined with AND, so
+     * removing the dead term makes a route that fires on what is LEFT, a weaker condition than the operator agreed to,
+     * and these routes throw switches and signals ahead of moving trains.  A route that has quietly stopped firing is
+     * safe; one that quietly starts firing is not.  The test above builds its route with null conditions, so it could
+     * not catch a missing conditions sweep.
      */
     @Test
     public void testARouteConditionNamingADeletedLocomotiveIsReportedNotRemoved() throws Exception
@@ -299,10 +296,9 @@ public class testLocomotiveIdentityPropagates
     // the guard that outlasts all of the above
 
     /**
-     * Every collection of locomotives in the running layout is named in the deletion sweep.
-     *
-     * Nothing connected "a new field holding locomotives" to "the sweep that has to let go of them".  Source-level,
-     * like the store's collections guard: the fault is textual and invisible to a test that drives the model.
+     * Every collection of locomotives in the running layout is named in the deletion sweep.  Source-level, like the
+     * store's collections guard: nothing connected "a new field holding locomotives" to "the sweep that has to let go
+     * of them", and the fault is textual and invisible to a test that drives the model.
      */
     @Test
     public void testEveryLocomotiveHolderIsNamedInTheSweep() throws Exception
@@ -631,10 +627,9 @@ public class testLocomotiveIdentityPropagates
      * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does.
      *
      * Both rename doors call `updateVisiblePoints()` and `repaintTimetable()`; the delete door called neither.
-     * `refreshUI()` is not the same thing: the station captions are written only by `updateVisiblePoints` (OB-081), so
-     * a deleted locomotive's caption stayed until something unrelated repainted it.  A source rule, because the
-     * caption is drawn by a window and the door calling the method that draws it is the property worth pinning
-     * (MT-149's fix went to the guard inside `repaintTimetable` and never to the doors).
+     * `refreshUI()` is not the same: the station captions are written only by `updateVisiblePoints` (OB-081).  A source
+     * rule, because the caption is drawn by a window and the door calling the method that draws it is the property
+     * worth pinning (MT-149's fix went to the guard inside `repaintTimetable` and never to the doors).
      *
      * MUTATION, stated exactly: removing `updateVisiblePoints()` from the delete door fails the first assertion, and
      * removing `repaintTimetable()` fails the second.
