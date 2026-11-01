@@ -176,6 +176,13 @@ refuse_if_test_jvms all
 # BATTERY IS ALREADY RUNNING" did not.
 take_every_slot
 
+# A RUNNING BATTERY SAYS SO beside its slots: the Claude Code hook (docs/tools/hooks/README.md) reads it and asks before a
+# .java edit lands in the tree mid-run.  It comes down in release_the_lock.
+BATTERY_MARKER="$SLOT_BASE.battery"
+
+printf "%s
+" "$SLOT_PID" > "$BATTERY_MARKER"
+
 # A battery refused above (the probe, or a held slot) has left a "waiting for every slot" marker (slots.sh), which holds
 # off new single-slot runs so the slots drain and this run gets in on a retry (2026-10-19).  It came down in
 # take_every_slot, and comes down again in the exit trap below.
@@ -213,6 +220,9 @@ BUILD="$S/build/battery-$$"
 release_the_lock()
 {
     release_all_slots
+
+    if [ "$(cat "${BATTERY_MARKER:-}" 2>/dev/null | tr -d '
+ ')" = "${SLOT_PID:-}" ]; then rm -f "$BATTERY_MARKER"; fi
 
     # A run that waited for every slot and got them has taken its marker down already; this is the second chance.
     clear_waiting_marker
@@ -921,11 +931,48 @@ else
 fi
 
 # THE COUNT, in name order, from the verdicts: the summary reads as it always did.
+# ONE RERUN OF EACH FAILED CLASS, alone, so a flake reads as a flake and not as a failure.  A class that fails, then
+# passes, is "flaky": listed apart, not counted green, and not an exit 1.  Each such class, and each that fails both
+# times, gets a line in docs/tools/flakes.tsv (TC_FLAKES moves it), which `python docs/tools/flakes.py` adds up per
+# class.  More than TC_RERUN_MAX failures (10) is the tree or the machine, not flakes, and is not rerun; TC_RERUN=0
+# turns it off.
+mkdir -p "$WORK/first"
+
+firsts=0
+
+for cls in $(cat "$WORK/classes")
+do
+    if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" = fail ]; then firsts=$((firsts + 1)); fi
+done
+
+if [ "${TC_RERUN:-1}" != 0 ] && [ "$firsts" -gt 0 ] && [ "$firsts" -le "${TC_RERUN_MAX:-10}" ]
+then
+    for cls in $(cat "$WORK/classes")
+    do
+        if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" != fail ]; then continue; fi
+
+        mv "$WORK/verdicts/$cls" "$WORK/first/$cls"
+
+        rm -rf "$S/tng-run/$cls.first"
+
+        if [ -d "$S/tng-run/$cls" ]; then mv "$S/tng-run/$cls" "$S/tng-run/$cls.first"; fi
+
+        echo "rerun: $cls"
+
+        run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
+    done
+fi
+
+FLAKES="${TC_FLAKES:-docs/tools/flakes.tsv}"
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null)
+
 pass=0
 fail=0
 skip=0
+flaky=0
 failed=""
 skipped=""
+flakies=""
 
 for cls in $(cat "$WORK/classes")
 do
@@ -938,6 +985,24 @@ do
 
     kind=$(sed -n 1p "$WORK/verdicts/$cls")
     said=$(sed -n 2p "$WORK/verdicts/$cls")
+
+    if [ -f "$WORK/first/$cls" ]
+    then
+        first=$(sed -n 2p "$WORK/first/$cls" | tr '	' ' ')
+
+        if [ "$kind" = pass ]; then outcome=flaky; else outcome=failed-twice; fi
+
+        printf "%s	%s	%s	%s	%s
+" "$(date +%Y-%m-%d)" "$COMMIT" "$cls" "$outcome" "$first" >> "$FLAKES"
+
+        if [ "$kind" = pass ]
+        then
+            flaky=$((flaky+1)); flakies="$flakies
+  $first (passed on its rerun)"
+
+            continue
+        fi
+    fi
 
     case "$kind" in
         pass) pass=$((pass+1)) ;;
@@ -985,6 +1050,12 @@ fi
 
 echo "classes green: $pass   classes with failures: $fail   classes that tested nothing: $skip"
 echo -e "$failed"
+
+if [ "$flaky" -gt 0 ]
+then
+    echo "classes that failed, then passed alone (flaky, in $FLAKES): $flaky"
+    echo -e "$flakies"
+fi
 
 if [ "$skip" -gt 0 ]
 then
