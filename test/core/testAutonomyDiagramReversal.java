@@ -495,12 +495,19 @@ public class testAutonomyDiagramReversal
 
     private GraphReducer reduce(LayoutDiagram page, final Set<TileKey> stations)
     {
+        return reduceWith(page, this::names, stations::contains);
+    }
+
+    /**
+     * The page reduced with the given names and stations, every route opened both ways: switches default to
+     * base-to-forks, which would give the sensor ONE arrival side and never split, so only the split is asserted.
+     */
+    private GraphReducer reduceWith(LayoutDiagram page, final java.util.function.Function<TileKey, String> pointName,
+        final java.util.function.Predicate<TileKey> station)
+    {
         TileGraph graph = new TileGraph(
             new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
 
-        // Switches default to base-to-forks (out of the toe only), which would admit trains from the east only, so the
-        // sensor would have ONE arrival side and never split.  Everything is opened both ways, so that what is asserted
-        // is the split and nothing else.
         for (TileKey tile : graph.getTiles().keySet())
         {
             for (RouteId routeId : graph.getRoutes(tile).keySet())
@@ -514,13 +521,13 @@ public class testAutonomyDiagramReversal
             @Override
             public String getPointName(TileKey tile)
             {
-                return names(tile);
+                return pointName.apply(tile);
             }
 
             @Override
             public boolean isStation(TileKey tile)
             {
-                return stations.contains(tile);
+                return station.test(tile);
             }
 
             @Override
@@ -773,40 +780,6 @@ public class testAutonomyDiagramReversal
      */
     private GraphReducer reduceWithNames(LayoutDiagram page, final Map<TileKey, String> authored)
     {
-        TileGraph graph = new TileGraph(
-            new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
-
-        for (TileKey tile : graph.getTiles().keySet())
-        {
-            for (RouteId routeId : graph.getRoutes(tile).keySet())
-            {
-                graph.setDirection(tile, routeId, Direction.BOTH);
-            }
-        }
-
-        GraphReducer reducer = new GraphReducer(graph, new GraphReducer.Authored()
-        {
-            @Override
-            public String getPointName(TileKey tile)
-            {
-                return authored.get(tile);
-            }
-
-            @Override
-            public boolean isStation(TileKey tile)
-            {
-                return false;
-            }
-
-            @Override
-            public int getTileLength(TileKey tile)
-            {
-                return 0;
-            }
-        });
-
-        reducer.reduce();
-
-        return reducer;
+        return reduceWith(page, authored::get, tile -> false);
     }
 }

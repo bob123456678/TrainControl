@@ -754,9 +754,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] carried = priorityTheFileCarries(session, MT491);
 
@@ -959,9 +957,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             String before = session.getStore().getConfiguration(inUse).toString();
             List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
@@ -1035,9 +1031,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             String before = session.getStore().getConfiguration(inUse).toString();
             List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
@@ -1097,9 +1091,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final TileKey edited = aStationTheFileGivesNoPriority(session, MT491);
 
@@ -1173,9 +1165,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
@@ -1264,9 +1254,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
@@ -1328,19 +1316,9 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
+            final String inUse = theConfigurationRunning(ui[0], session);
 
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
-
-            importFromTheMenu(ui[0], MT491, "MT-491 other");
-
-            session = ui[0].getAutonomySession();
-
-            assertTrue(session.getStore().getConfigurationNames().contains("MT-491 other"), "precondition: the import made"
-                + " no second configuration");
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: the import changed the configuration"
-                + " running");
+            session = importASecondConfiguration(ui[0], inUse);
 
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
@@ -1409,9 +1387,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
@@ -1475,9 +1451,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
@@ -1547,9 +1521,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
@@ -1677,9 +1649,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] edit = editWaits ? anEditWaits(ui[0], session, inUse) : null;
 
@@ -1820,19 +1790,9 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
+            final String inUse = theConfigurationRunning(ui[0], session);
 
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
-
-            importFromTheMenu(ui[0], MT491, "MT-491 other");
-
-            session = ui[0].getAutonomySession();
-
-            assertTrue(session.getStore().getConfigurationNames().contains("MT-491 other"), "precondition: the import made"
-                + " no second configuration");
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: the import changed the configuration"
-                + " running");
+            session = importASecondConfiguration(ui[0], inUse);
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
@@ -1910,9 +1870,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             importFromTheMenu(ui[0], MT491, "MT-491 other");
 
@@ -2029,9 +1987,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
@@ -2401,9 +2357,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
@@ -2646,9 +2600,7 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            final String inUse = session.getStore().getActiveConfiguration();
-
-            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+            final String inUse = theConfigurationRunning(ui[0], session);
 
             final Object[] edit = anEditWaits(ui[0], session, inUse);
 
@@ -4294,6 +4246,32 @@ public class testTheImportDoorReadsAnOldFile
 
         assertEquals(where.getName(), move[2], move[0] + ", moved by the run to " + move[2] + ", is back on " + move[1] + " "
             + when + " - the square it stands on reads free");
+    }
+
+    /** The configuration the session has active, after asserting the window shows it running. */
+    private static String theConfigurationRunning(TrainControlUI ui, AutonomySession session)
+    {
+        final String inUse = session.getStore().getActiveConfiguration();
+
+        assertEquals(ui.getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+        return inUse;
+    }
+
+    /** Imports MT-491's file as a second configuration, asserting `inUse` still runs; the session after the import. */
+    private static AutonomySession importASecondConfiguration(TrainControlUI ui, String inUse) throws Exception
+    {
+        importFromTheMenu(ui, MT491, "MT-491 other");
+
+        final AutonomySession session = ui.getAutonomySession();
+
+        assertTrue(session.getStore().getConfigurationNames().contains("MT-491 other"), "precondition: the import made"
+            + " no second configuration");
+
+        assertEquals(ui.getActiveDiagramConfiguration(), inUse, "precondition: the import changed the configuration"
+            + " running");
+
+        return session;
     }
 
     static List<String> answeringYes(Runnable onTheEventThread) throws Exception

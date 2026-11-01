@@ -701,13 +701,7 @@ public class testTrainTailClearsEdges
      */
     private static String runWithTheLengthChanged(int base, boolean clear) throws Exception
     {
-        org.traincontrol.marklin.MarklinFeedback[] f = new org.traincontrol.marklin.MarklinFeedback[6];
-
-        for (int i = 0; i < 6; i++)
-        {
-            f[i] = model.newFeedback(base + i, null);
-            model.setFeedbackState(f[i].getName(), false);
-        }
+        org.traincontrol.marklin.MarklinFeedback[] f = sixFreeSensors(base);
 
         final Locomotive x = model.getLocByName(model.getLocList().get(clear ? 3 : 4));
         final Locomotive y = model.getLocByName(model.getLocList().get(5));
@@ -759,15 +753,7 @@ public class testTrainTailClearsEdges
             driving.setDaemon(true);
             driving.start();
 
-            long until = System.currentTimeMillis() + 10000;
-
-            while (!(x.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-            {
-                Thread.sleep(20);
-            }
-
-            assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the 4-unit train was not dispatched: "
-                + Layout.getLastError());
+            awaitDispatch(rail, x, 4);
 
             model.setFeedbackState(f[1].getName(), true);
             Thread.sleep(700);
@@ -787,17 +773,7 @@ public class testTrainTailClearsEdges
         }
         finally
         {
-            for (int i = 0; i < 3; i++) model.setFeedbackState(f[i].getName(), false);
-
-            model.setFeedbackState(f[3].getName(), true);
-
-            if (driving != null) driving.join(10000);
-
-            for (org.traincontrol.marklin.MarklinFeedback each : f) model.setFeedbackState(each.getName(), false);
-
-            x.setSpeed(0);
-            x.setTrainLength(xWas);
-            y.setTrainLength(yWas);
+            endTheRun(f, driving, x, y, xWas, yWas);
         }
     }
 
@@ -829,13 +805,7 @@ public class testTrainTailClearsEdges
      */
     private static String runPastASharedSensor(int base, boolean shared) throws Exception
     {
-        org.traincontrol.marklin.MarklinFeedback[] f = new org.traincontrol.marklin.MarklinFeedback[6];
-
-        for (int i = 0; i < 6; i++)
-        {
-            f[i] = model.newFeedback(base + i, null);
-            model.setFeedbackState(f[i].getName(), false);
-        }
+        org.traincontrol.marklin.MarklinFeedback[] f = sixFreeSensors(base);
 
         final Locomotive x = model.getLocByName(model.getLocList().get(shared ? 6 : 7));
         final Locomotive y = model.getLocByName(model.getLocList().get(8));
@@ -889,15 +859,7 @@ public class testTrainTailClearsEdges
             driving.setDaemon(true);
             driving.start();
 
-            long until = System.currentTimeMillis() + 10000;
-
-            while (!(x.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-            {
-                Thread.sleep(20);
-            }
-
-            assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the 5-unit train was not dispatched: "
-                + Layout.getLastError());
+            awaitDispatch(rail, x, 5);
 
             // THE HEAD ENTERS B'S SQUARE: its sensor reads occupied, and stays so while the train runs over the contact
             model.setFeedbackState(f[1].getName(), true);
@@ -910,17 +872,52 @@ public class testTrainTailClearsEdges
         }
         finally
         {
-            for (int i = 0; i < 3; i++) model.setFeedbackState(f[i].getName(), false);
-
-            model.setFeedbackState(f[3].getName(), true);
-
-            if (driving != null) driving.join(10000);
-
-            for (org.traincontrol.marklin.MarklinFeedback each : f) model.setFeedbackState(each.getName(), false);
-
-            x.setSpeed(0);
-            x.setTrainLength(xWas);
-            y.setTrainLength(yWas);
+            endTheRun(f, driving, x, y, xWas, yWas);
         }
+    }
+
+    /** Six new sensors numbered from `base`, all free. */
+    private static org.traincontrol.marklin.MarklinFeedback[] sixFreeSensors(int base)
+    {
+        org.traincontrol.marklin.MarklinFeedback[] f = new org.traincontrol.marklin.MarklinFeedback[6];
+
+        for (int i = 0; i < 6; i++)
+        {
+            f[i] = model.newFeedback(base + i, null);
+            model.setFeedbackState(f[i].getName(), false);
+        }
+
+        return f;
+    }
+
+    /** Waits until `x` is driving at 30 on `rail`, and asserts it was dispatched. */
+    private static void awaitDispatch(Layout rail, Locomotive x, int units) throws Exception
+    {
+        long until = System.currentTimeMillis() + 10000;
+
+        while (!(x.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(20);
+        }
+
+        assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the " + units + "-unit train was not dispatched: "
+            + Layout.getLastError());
+    }
+
+    /** Ends a run: the train over the last sensor, the driving thread joined, the sensors free, the lengths put back. */
+    private static void endTheRun(org.traincontrol.marklin.MarklinFeedback[] f, Thread driving, Locomotive x,
+        Locomotive y, Integer xWas, Integer yWas) throws InterruptedException
+    {
+        for (int i = 0; i < 3; i++) model.setFeedbackState(f[i].getName(), false);
+
+        model.setFeedbackState(f[3].getName(), true);
+
+        if (driving != null) driving.join(10000);
+
+        for (org.traincontrol.marklin.MarklinFeedback each : f) model.setFeedbackState(each.getName(), false);
+
+        x.setSpeed(0);
+        x.setTrainLength(xWas);
+        y.setTrainLength(yWas);
     }
 }

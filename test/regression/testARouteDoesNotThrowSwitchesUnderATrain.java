@@ -1904,12 +1904,17 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
     private static MarklinRoute route(int id)
     {
+        return oneCommandRoute("RG route ", id, SWITCH_ADDRESS, true);
+    }
+
+    /** A route of the name followed by its id, with one command: the accessory at the address, thrown or not. */
+    private static MarklinRoute oneCommandRoute(String name, int id, int address, boolean throwIt)
+    {
         List<RouteCommand> commands = new ArrayList<>();
 
-        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
-            Accessory.accessoryDecoderType.MM2, true));
+        commands.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, throwIt));
 
-        return new MarklinRoute(model, "RG route " + id, id, commands, 0,
+        return new MarklinRoute(model, name + id, id, commands, 0,
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
     }
 
@@ -1922,13 +1927,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      */
     private static MarklinRoute switchRoute(int id, boolean turn)
     {
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
-            Accessory.accessoryDecoderType.MM2, turn));
-
-        return new MarklinRoute(model, "RG switch " + id, id, commands, 0,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        return oneCommandRoute("RG switch ", id, SWITCH_ADDRESS, turn);
     }
 
     /** A second protecting signal, which no path holds. */
@@ -1944,12 +1943,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      */
     private static MarklinRoute accessoryRoute(int id, int address, boolean throwIt)
     {
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, throwIt));
-
-        return new MarklinRoute(model, "RG accessory " + id, id, commands, 0,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        return oneCommandRoute("RG accessory ", id, address, throwIt);
     }
 
     /**
@@ -1961,13 +1955,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      */
     private static MarklinRoute signalRoute(int id, boolean red)
     {
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandAccessory(SIGNAL_ADDRESS,
-            Accessory.accessoryDecoderType.MM2, red));
-
-        return new MarklinRoute(model, "RG signal " + id, id, commands, 0,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        return oneCommandRoute("RG signal ", id, SIGNAL_ADDRESS, red);
     }
 
     /** The dispatched locomotive, by the name executePath wants. */
