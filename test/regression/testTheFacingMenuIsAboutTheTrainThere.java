@@ -627,10 +627,8 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
     /**
      * The first square with a free turning copy and a free plain copy facing different ways, and a free station with an
-     * edge to both (the approach).
-     *
-     * @param twoFacings whether the square must offer two facings to flip between, reached from a square with one
-     * @return the square's points; the claim fails when there is none
+     * edge to both.  With `twoFacings` the square must offer two facings and the station's square one; none: the claim
+     * fails.
      */
     private static MayTurn aFreeMayTurnSquare(Layout running, boolean twoFacings)
     {

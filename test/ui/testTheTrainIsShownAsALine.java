@@ -776,10 +776,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * Paints each square the train covers that lies beside a covered one and has a side whose square the train does not
-     * reach, at the large size, and gives it to the look.
-     *
-     * @return how many squares it gave
+     * Gives the look each covered square beside a covered one that has a side the train does not reach, painted at the
+     * large size; returns how many it gave.
      */
     private static int eachEndSquareOfTheTrain(EndSquare look) throws Exception
     {

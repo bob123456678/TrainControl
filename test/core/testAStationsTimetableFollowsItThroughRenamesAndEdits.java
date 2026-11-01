@@ -691,12 +691,8 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * A page of four feedback squares with straights between, opened in the session as the stations Alpha, Beta, Gamma
-     * and Delta.
-     *
-     * @param address the first feedback square's address; the others follow it
-     * @param configuration the configuration the session starts
-     * @return the page
+     * A page of four feedback squares with straights between (addresses run on from `address`), opened in the session
+     * under a new configuration as the stations Alpha, Beta, Gamma and Delta.
      */
     private LayoutDiagram aRowOfFourNamedStations(int address, String configuration) throws Exception
     {
