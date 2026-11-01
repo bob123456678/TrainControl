@@ -23,8 +23,8 @@ import java.util.Set;
  * "1 and (2 or 3)", read from where each word sits, without a precedence rule or a bracket.
  *
  * The one rule: EVERY WORD AT A LEVEL MUST BE THE SAME WORD.  "and" and "or" side by side at one level is a sentence
- * with two meanings; the class says so (`problems()`, drawn red by the editor) and lets the reader indent the part they
- * meant to group.
+ * with two meanings; the class says so (`problems()`, drawn red by the editor) and the reader settles it by choosing
+ * the group's rule.
  */
 public final class ConditionOutline
 {
@@ -116,7 +116,7 @@ public final class ConditionOutline
 
     /**
      * The lines whose word disagrees with the rest of its level.  The editor shows them in red rather than choosing;
-     * indenting one of the conditions settles it.
+     * choosing the group's rule settles it.
      *
      * The FIRST word at a level is taken as the one meant.  A word deeper than a condition beside it is flagged too: it
      * joins nothing at its own depth.  That is a guess about which is the mistake, but it marks one line rather than
@@ -313,7 +313,7 @@ public final class ConditionOutline
         return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
     }
 
-    /** Whether a move that way changes anything; the editor draws the arrow only then. */
+    /** Whether a move that way changes anything. */
     public static boolean canMove(List<Row> rows, int line, int by)
     {
         return plan(rows, line, by) != null;
@@ -321,7 +321,9 @@ public final class ConditionOutline
 
     /**
      * Moves several conditions one place together (MT-868): each by the rule of `moved`, the one leading the way first,
-     * so a run keeps its order.  Where the leading one has nowhere to go, none moves.
+     * so a run keeps its order.  Where the leading one has nowhere to go, none moves.  A selection holding a whole
+     * nested group moves by pieces instead, as a drag does: each condition or whole group one item along its own group,
+     * so no group merges into its neighbor.
      *
      * @param chosen line indices of the conditions; words among them are ignored
      * @param by -1 for up, 1 for down
@@ -330,6 +332,16 @@ public final class ConditionOutline
     public static List<Row> movedTogether(List<Row> rows, java.util.Collection<Integer> chosen, int by)
     {
         if (rows == null || chosen == null || by == 0) return null;
+
+        Group top = groupsOf(rows);
+        List<Object> blocks = new ArrayList<>();
+
+        if (top != null) blocks(top, new java.util.HashSet<>(chosen), blocks);
+
+        for (Object block : blocks)
+        {
+            if (block instanceof Group) return movedByPieces(top, blocks, by);
+        }
 
         List<RouteCommand> moving = new ArrayList<>();
 
@@ -352,6 +364,77 @@ public final class ConditionOutline
         }
 
         return out == rows ? null : out;
+    }
+
+    /** Each piece one item along its own group, the leading one first; null where the leading one is at the end. */
+    private static List<Row> movedByPieces(Group top, List<Object> blocks, int by)
+    {
+        List<Object> order = new ArrayList<>(blocks);
+
+        if (by > 0) java.util.Collections.reverse(order);
+
+        boolean moved = false;
+
+        for (Object block : order)
+        {
+            Group from = block instanceof Group ? ((Group) block).parent : holderOf(top, block);
+            List<Object> items = itemsOf(from);
+            int next = items.indexOf(block) + (by < 0 ? -1 : 1);
+
+            if (next < 0 || next >= items.size() || order.contains(items.get(next)))
+            {
+                if (!moved) return null;
+
+                continue;
+            }
+
+            java.util.Collections.swap(from.elements, from.elements.indexOf(block), from.elements.indexOf(items.get(next)));
+            moved = true;
+        }
+
+        return lines(top);
+    }
+
+    /**
+     * The outline less these conditions: each, or each whole group of them, goes with one word of its own group, and a
+     * group left empty goes too, so no other group's word changes.
+     *
+     * @param conditions line indices of the conditions; words among them are ignored
+     * @return a new list
+     */
+    public static List<Row> removed(List<Row> rows, Set<Integer> conditions)
+    {
+        Group top = groupsOf(rows);
+
+        if (top == null || conditions == null || conditions.isEmpty())
+        {
+            return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+        }
+
+        List<Object> pieces = new ArrayList<>();
+
+        blocks(top, conditions, pieces);
+
+        for (Object piece : pieces)
+        {
+            // A condition standing before a group whose first line is a word, as a stored route can have it (FR-147):
+            // that word is the condition's own, and the word before it joins what stays.
+            Group from = piece instanceof Group ? null : holderOf(top, piece);
+            int at = from == null ? -1 : from.elements.indexOf(piece);
+            Object next = at >= 0 && at + 1 < from.elements.size() ? from.elements.get(at + 1) : null;
+
+            if (next instanceof Group && !((Group) next).elements.isEmpty() && isWord(((Group) next).elements.get(0)))
+            {
+                ((Group) next).elements.remove(0);
+                from.elements.remove(at);
+            }
+            else
+            {
+                takeOut(top, piece, null);
+            }
+        }
+
+        return lines(top);
     }
 
     /** The line holding this very condition, by identity: two lines can ask the same thing; -1 where none does. */

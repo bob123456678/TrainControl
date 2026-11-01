@@ -1004,7 +1004,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
     /**
      * Why Not Moving? answers for the tier Path Type names, and switching the radio answers again (OB-225).  The answer
-     * stays until the next notice, never fading on a timer (MT-864: "seems to disappear on its own after a while").
+     * stays until the next notice, never fading on a timer (MT-864: "seems to disappear on its own after a while"), and
+     * closes when the user goes back to editing: the tool's button pressed again, or Escape.
+     *
+     * MUTATION: in `AutonomyEditorPanel.backToEditing`, always say the editing hint, and the answer is replaced but the
+     * strip stays up.
      *
      * On Auto the answer files the stations autonomy is told to leave alone under "will never choose"; on Manual a
      * person may send a train to every one of them, so neither that heading nor autonomy's reason belongs in the
@@ -1095,6 +1099,31 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             assertTrue(shown(panel).contains(neverHeading),
                 "switching back to Auto did not bring autonomy's answer back: " + shown(panel));
+
+            // BACK TO EDITING CLOSES THE ANSWER: the tool's button pressed again, or Escape putting the tools down.
+            final java.awt.Component strip = (java.awt.Component) field(panel, "messageBanner");
+
+            assertTrue(support.Components.onTheEventThread(strip::isVisible), "precondition: the strip is not showing the answer");
+
+            SwingUtilities.invokeAndWait(why::doClick);
+
+            assertFalse(support.Components.onTheEventThread(strip::isVisible),
+                "Why Not Moving? pressed again leaves its answer on the strip: " + shown(panel));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                why.doClick();
+                panel.tileClicked(standing, page.getComponent(standing.getX(), standing.getY()), false);
+            });
+
+            answered(panel);
+
+            assertTrue(support.Components.onTheEventThread(strip::isVisible), "precondition: the second answer is not on the strip");
+
+            SwingUtilities.invokeAndWait(panel::putToolsDown);
+
+            assertFalse(support.Components.onTheEventThread(strip::isVisible),
+                "Escape putting the tools down leaves the answer on the strip: " + shown(panel));
         }
         finally
         {

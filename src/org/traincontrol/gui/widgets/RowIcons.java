@@ -204,55 +204,6 @@ public final class RowIcons
     }
 
     /**
-     * An arrow into or out of an indent, drawn as a bar and a chevron pointing at it.
-     *
-     * @param size how many pixels square
-     * @param inward true to indent, false to bring back out
-     * @return the icon
-     */
-    public static Icon indent(final int size, final boolean inward)
-    {
-        return indent(size, inward, QUIET);
-    }
-
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param inward true to indent
-     * @param colour what to draw it in
-     * @return the icon
-     */
-    public static Icon indent(final int size, final boolean inward, final Color colour)
-    {
-        return new Painted(size)
-        {
-            @Override
-            void draw(Graphics2D g, int width, int height)
-            {
-                g.setColor(colour);
-                g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-
-                int pad = width / 5;
-                int middle = height / 2;
-
-                // The bar the row moves towards
-                int bar = inward ? width - pad : pad;
-
-                g.drawLine(bar, pad, bar, height - pad);
-
-                // And the chevron pointing at it
-                int tip = inward ? bar - pad : bar + pad;
-                int tail = inward ? pad : width - pad;
-
-                g.drawLine(tail, middle, tip, middle);
-                g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle - pad);
-                g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle + pad);
-            }
-        };
-    }
-
-    /**
      * Six dots in two columns, the grip a row is dragged by.
      *
      * @param size how many pixels square
@@ -478,54 +429,6 @@ public final class RowIcons
                 g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g.draw(new java.awt.geom.Line2D.Float(middle, height * 0.38f, middle, height * 0.64f));
                 g.fill(new java.awt.geom.Ellipse2D.Float(middle - 0.95f, height * 0.73f, 1.9f, 1.9f));
-            }
-        };
-    }
-
-    /**
-     * The faint vertical lines that show how deep a row sits: indentation alone is a distance and hard to count, a line
-     * per level is countable.
-     *
-     * @param depth how many levels in
-     * @param step how many pixels one level is worth
-     * @return a border that draws them and leaves room for the text
-     */
-    public static javax.swing.border.Border guides(final int depth, final int step)
-    {
-        return new javax.swing.border.Border()
-        {
-            @Override
-            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height)
-            {
-                Graphics2D g2 = (Graphics2D) g.create();
-
-                try
-                {
-                    g2.setColor(new Color(200, 200, 200));
-
-                    for (int at = 0; at < depth; at++)
-                    {
-                        int line = x + 6 + at * step;
-
-                        g2.drawLine(line, y, line, y + height - 1);
-                    }
-                }
-                finally
-                {
-                    g2.dispose();
-                }
-            }
-
-            @Override
-            public java.awt.Insets getBorderInsets(Component c)
-            {
-                return new java.awt.Insets(0, 6 + depth * step + 4, 0, 0);
-            }
-
-            @Override
-            public boolean isBorderOpaque()
-            {
-                return false;
             }
         };
     }

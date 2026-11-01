@@ -459,79 +459,6 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).  An orphan changes when the
-     * route fires: `tidy()` allows a run with no word and `toExpression` folds it with AND.  Two shapes, `1 or 2` and
-     * `1 or (2 and 3)`, since the term after a word may be a whole group.
-     *
-     * MUTATION: put back the bare `rows.remove(line)` for a joiner and the first pair of claims goes red
-     * with `And(x,x)`; keep the single-line removal but drop the group loop and the second does.
-     */
-    @Test
-    public void testDeletingAJoiningWordTakesTheTermItJoinsWithIt() throws Exception
-    {
-        needsADisplay();
-
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
-
-        try
-        {
-            final java.util.List<org.traincontrol.base.ConditionOutline.Row> pair =
-                new java.util.ArrayList<>();
-
-            pair.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(1)));
-            pair.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
-                org.traincontrol.base.ConditionOutline.Joiner.OR));
-            pair.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(2)));
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(pair));
-
-            assertTrue(reads(frame).startsWith("Or("),
-                "the fixture does not start as an OR of two conditions, so nothing below is about an OR: "
-                + reads(frame));
-
-            // THE WORD ITSELF, which is row 1.
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(1));
-
-            assertEquals(frame.conditionRowsForTest().size(), 1,
-                "deleting the joining word left " + frame.conditionRowsForTest().size() + " lines behind."
-                + "  The word joined two conditions and one of them has nothing to be joined to any more"
-                + " - Adam's orphan entry (OB-240)");
-
-            assertFalse(reads(frame).contains("And("),
-                "deleting the OR left both conditions with nothing between them, and a wordless run is"
-                + " folded with AND - so the route now fires only when BOTH sensors are on, which is the"
-                + " opposite of what was typed and nothing says so: " + reads(frame));
-
-            // AND THE GROUP, where the term after the word is three lines rather than one.
-            final java.util.List<org.traincontrol.base.ConditionOutline.Row> group =
-                new java.util.ArrayList<>();
-
-            group.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(1)));
-            group.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
-                org.traincontrol.base.ConditionOutline.Joiner.OR));
-            group.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(2)));
-            group.add(org.traincontrol.base.ConditionOutline.Row.joining(1,
-                org.traincontrol.base.ConditionOutline.Joiner.AND));
-            group.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(3)));
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(group));
-
-            assertTrue(reads(frame).contains("Or("),
-                "the second fixture is not an OR in front of a group: " + reads(frame));
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(1));
-
-            assertEquals(frame.conditionRowsForTest().size(), 1,
-                "deleting the word in front of a bracketed group left part of the group behind: "
-                + frame.conditionRowsForTest() + ", reading " + reads(frame));
-        }
-        finally
-        {
-            close(frame);
-        }
-    }
-
-    /**
      * FR-068 (MT-320): a nested group that is NOT the first term can be built, with Group Selected (OB-396).  Four
      * conditions joined by "or" become `3 or (4 and (1 or 2))`: grouping 4, 1 and 2 and choosing All on the new
      * caption nests them under "and", and grouping 1 and 2 inside that and choosing At least one nests them under "or"
@@ -646,11 +573,12 @@ public class testRouteEditorValidation
 
         try
         {
+            // 2 or 3 with the OR alone one level in, as a stored route can have it.
             final java.util.List<org.traincontrol.base.ConditionOutline.Row> typed = flat(2, "OR", 3);
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
+            typed.set(1, typed.get(1).atDepth(1));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.indentConditionForTest(1, 1));
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
 
             assertEquals(depths(frame), " 0? 1OR 0?",
                 "precondition: indenting the OR on its own did not put it one level in, so there is no stranded word"
@@ -834,10 +762,11 @@ public class testRouteEditorValidation
             // 2 or 3 with the OR alone indented, as a stored route can have it: it joins nothing.
             final java.util.List<org.traincontrol.base.ConditionOutline.Row> stranded = flat(2, "OR", 3);
 
+            stranded.set(1, stranded.get(1).atDepth(1));
+
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 frame.setConditionRowsForTest(stranded);
-                frame.indentConditionForTest(1, 1);
                 cell[0] = new Painted(frame.conditionCellForTest(1));
             });
 
@@ -1315,12 +1244,15 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-382: a selection across a group boundary, 22 and 24 of "(21 and 22) or (24 and 25)", leaves "(21 and 25)":
-     * the word between two selected conditions goes with them, each condition taking a selected word beside it where
-     * that flags nothing.  21 and 22 of "21 or (22 and 23)" leave 23.
+     * OB-382: a delete changes no word but those of the conditions it takes.  22 and 24 of "(21 and 22) or (24 and 25)"
+     * leave "(21) or (25)", not "21 and 25"; 22 and 23 of "(21 or 22) and (23 or 24)", by the Delete key, leave
+     * "(21) and (24)"; 21 and 22 of "21 or (22 and 23)" leave 23.  And a delete outside a group whose first item is a
+     * group keeps that group's word: 4 of "3 or ((1 or 2) and 4)" leaves "3 or ((1 or 2))".
      *
-     * MUTATION: in `ConditionTable.cut`, drop the preference for a selected word, and the first selection leaves 21
-     * alone.
+     * MUTATION: in `ConditionOutline.removed`, take each piece out of `top` with `top.elements.remove`, and 22 and 24
+     * are left in place.
+     * MUTATION: in `ConditionTable.removeRows`, flatten every row deeper than the row above plus one, as the old tidy
+     * did, and "(1 or 2)" reads "1 and 2".
      */
     @Test
     public void testDeletingASelectionAcrossAGroupBoundaryLeavesAValidOutline() throws Exception
@@ -1343,10 +1275,19 @@ public class testRouteEditorValidation
             selectLines(table, 2, 4);
             rightClickAndChoose(table, 2, "ui.delete");
 
-            assertEquals(levels(frame), " 1:21 1AND 1:25",
-                "deleting 22 and 24 should leave (21 and 25); Reads as: " + plainReading(frame));
+            assertEquals(levels(frame), " 1:21 0OR 1:25",
+                "deleting 22 and 24 should leave (21) or (25); Reads as: " + plainReading(frame));
             assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "the outline the delete left is flagged: " + levels(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24")));
+
+            selectLines(table, 2, 4);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
+
+            assertEquals(levels(frame), " 1:21 0AND 1:24",
+                "the Delete key on 22 and 23 should leave (21) and (24); Reads as: " + plainReading(frame));
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
                 fromLevels(" 0:21 0OR 1:22 1AND 1:23")));
@@ -1356,6 +1297,17 @@ public class testRouteEditorValidation
 
             assertEquals(levels(frame), " 1:23",
                 "deleting 21 and 22 of 21 or (22 and 23) should leave 23; Reads as: " + plainReading(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 0:3 0OR 2:1 2OR 2:2 1AND 1:4")));
+
+            clickCondition(table, 6, DELETE_MARK, 0);
+
+            assertEquals(levels(frame), " 0:3 0OR 2:1 2OR 2:2",
+                "the trash on 4 of 3 or ((1 or 2) and 4) should leave 3 or ((1 or 2)); Reads as: "
+                + plainReading(frame));
+            assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
+                "the outline the trash left is flagged: " + levels(frame));
         }
         finally
         {
@@ -3148,6 +3100,7 @@ public class testRouteEditorValidation
      *
      * MUTATION: in `ConditionTable.showChanges`, drop the `remember(before)` call, and Undo has nothing to take back.
      * MUTATION: in `ConditionTable.step`, drop `to.push(before)`, and Redo has nothing to make again.
+     * MUTATION: in the conditions' `setValueAt`, drop the return for a line built as it was, and Undo is offered.
      */
     @Test
     public void testUndoAndRedoWalkThroughEveryEdit() throws Exception
@@ -3170,6 +3123,11 @@ public class testRouteEditorValidation
 
             assertFalse(enabled(frame, "route.ui.menuUndo"), "Undo is offered on a route just loaded");
             assertFalse(enabled(frame, "route.ui.menuRedo"), "Redo is offered on a route just loaded");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                table.getModel().setValueAt("21", (Integer) call(table, "lineOf", 0), ADDRESS));
+
+            assertFalse(enabled(frame, "route.ui.menuUndo"), "an address committed as it was is an edit to undo");
 
             seen.add(levels(frame));
 
@@ -3288,12 +3246,14 @@ public class testRouteEditorValidation
 
     /**
      * MT-868: the trash on a line inside a selection of several deletes every selected condition, as one edit that one
-     * Undo brings back; the trash on a line outside the selection deletes that line alone.  The Delete key deletes the
+     * Undo brings back; the trash on a line outside the selection deletes that line alone, and with Shift or Ctrl held
+     * it only selects.  The Delete key deletes the
      * selection too, but not while a cell is being edited.
      *
      * MUTATION: in `ConditionTable.changeSelection`, drop `|| column == TRASH`, and the press selects its line alone,
      * so the trash on 22 deletes 22 only.
      * MUTATION: in `ConditionTable.deleteSelected`, return at once, and the Delete key deletes nothing.
+     * MUTATION: in `actOnRowMarks`, drop the Shift-or-Ctrl return, and a Shift press on the trash deletes the range.
      */
     @Test
     public void testTheTrashAndTheDeleteKeyTakeTheWholeSelection() throws Exception
@@ -3326,6 +3286,12 @@ public class testRouteEditorValidation
             clickCondition(table, 6, DELETE_MARK, 0);
 
             assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23", "the trash on 24, outside the selection");
+
+            selectLines(table, 0, 0);
+            clickCondition(table, 4, DELETE_MARK, java.awt.event.InputEvent.SHIFT_DOWN_MASK);
+            clickCondition(table, 4, DELETE_MARK, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23", "the trash pressed with Shift, then Ctrl");
 
             selectLines(table, 2, 4);
             support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
@@ -3605,9 +3571,12 @@ public class testRouteEditorValidation
 
     /**
      * MT-868: Alt+Down and Alt+Up move every selected condition, together, and they stay selected; where the first
-     * has nowhere to go, none moves.
+     * has nowhere to go, none moves.  A whole group selected moves past its neighbor as one, as a drag moves it, and
+     * does not merge into it.
      *
      * MUTATION: in `ConditionTable.shiftChosen`, move only `chosen.first()`, and Alt+Down on 21 and 22 moves 21 alone.
+     * MUTATION: in `ConditionOutline.movedTogether`, drop the return through `movedByPieces`, and the group (23 or 24)
+     * merges into (21 or 22).
      */
     @Test
     public void testAltUpAndDownMoveTheWholeSelection() throws Exception
@@ -3639,6 +3608,20 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:24",
                 "Alt+Up twice on 21 and 22: back, then nowhere to go");
             assertEquals(selectedRows(table), "[0, 2]", "21 and 22 stay selected at the top");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
+                fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24")));
+
+            selectLines(table, 4, 6);
+            chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+            assertEquals(levels(frame), " 1:23 1OR 1:24 0AND 1:21 1OR 1:22",
+                "Alt+Up on the whole group (23 or 24) should move it past (21 or 22), not into it; Reads as: "
+                + plainReading(frame));
+
+            chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+            assertEquals(levels(frame), " 1:23 1OR 1:24 0AND 1:21 1OR 1:22", "and at the top it goes nowhere");
         }
         finally
         {
@@ -4276,12 +4259,13 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
         org.traincontrol.gui.TrainControlUI ui = null;
 
         try
         {
+            sandbox = support.LayoutSandbox.open();
             model = support.TestStation.simulatedWithWindowInDebug();
             model.setNetworkCommState(false);
             ui = (org.traincontrol.gui.TrainControlUI) model.getGUI();
@@ -4464,7 +4448,7 @@ public class testRouteEditorValidation
 
             if (model != null) model.stop();
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

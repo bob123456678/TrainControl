@@ -5,7 +5,7 @@ Adam, 2026-08-25: "for the triage app, lets convert it to use a database and the
 file dispositions/cases. then you dont need to scan with regexes or use other tricks."  The first version put a
 database in front of the markdown and left the markdown the record, so every reader had to sync first, and a stale copy
 erased nine of his comments on 2026-09-15.  On 2026-10-19 he asked "why aren't we storing all tests in a database, why
-have md files at all?" and chose "DB only, plus a text dump" (FR-136, Phase 1c).
+have md files at all?" (FR-136, Phase 1c).
 
 
 THE RECORD IS triage.db
@@ -311,10 +311,16 @@ def connect(path=DB_FILE, timeout=BUSY_SECONDS):
     """
 
     conn = sqlite3.connect(path, timeout=timeout)
-    conn.row_factory = sqlite3.Row
-    conn.executescript(FINDING_SCHEMA + RECORD_SCHEMA)
 
-    add_later_columns(conn)
+    # Closed on failure: on Windows an open connection keeps the file from being removed.
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.executescript(FINDING_SCHEMA + RECORD_SCHEMA)
+
+        add_later_columns(conn)
+    except BaseException:
+        conn.close()
+        raise
 
     return conn
 
@@ -1661,11 +1667,12 @@ def store_at(where):
     """A store to compare: the one on disk, a .db file, or the store as a git revision holds it.
 
     :param where: None for the store on disk, a path to a .db file, or a git revision (HEAD, a commit, a branch)
-    :return: a context giving an open connection; a revision's copy is a temporary file, removed afterwards
+    :return: a context giving an open connection; a .db file or a revision is read from a temporary copy, removed
+        afterwards, since opening a store adds any table or column it lacks
     """
 
-    if where is None or os.path.isfile(where):
-        conn = connect(where or DB_FILE)
+    if where is None:
+        conn = connect(DB_FILE)
         try:
             yield conn
         finally:
@@ -1675,19 +1682,25 @@ def store_at(where):
     import subprocess
     import tempfile
 
-    root = os.path.dirname(os.path.dirname(HERE))
-    path = os.path.relpath(DB_FILE, root).replace("\\", "/")
-    got = subprocess.run(["git", "show", "%s:%s" % (where, path)], cwd=root, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    if os.path.isfile(where):
+        with open(where, "rb") as fh:
+            content = fh.read()
+    else:
+        root = os.path.dirname(os.path.dirname(HERE))
+        path = os.path.relpath(DB_FILE, root).replace("\\", "/")
+        got = subprocess.run(["git", "show", "%s:%s" % (where, path)], cwd=root, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
 
-    if got.returncode != 0:
-        raise ValueError("no store at %s: %s" % (where, got.stderr.decode("utf-8", "replace").strip()))
+        if got.returncode != 0:
+            raise ValueError("no store at %s: %s" % (where, got.stderr.decode("utf-8", "replace").strip()))
+
+        content = got.stdout
 
     handle, temp = tempfile.mkstemp(suffix=".db")
 
     try:
         with os.fdopen(handle, "wb") as fh:
-            fh.write(got.stdout)
+            fh.write(content)
 
         conn = connect(temp)
 

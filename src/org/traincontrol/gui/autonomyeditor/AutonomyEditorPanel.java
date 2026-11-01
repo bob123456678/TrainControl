@@ -495,6 +495,8 @@ public class AutonomyEditorPanel extends JPanel
     /** Wraps a sentence to the panel's width. */
     void say(JLabel label, String text)
     {
+        answering = false;
+
         // To the window's banner, which has the width; the label is the fallback for a panel mounted without one.
         if (messageBanner != null && label == hint)
         {
@@ -509,6 +511,8 @@ public class AutonomyEditorPanel extends JPanel
     /** Says something that must stay until the user acts, such as a prompt for a second click. */
     void waitFor(String text)
     {
+        answering = false;
+
         if (messageBanner != null) messageBanner.showUntilChanged(text);
         else say(hint, text);
     }
@@ -525,6 +529,8 @@ public class AutonomyEditorPanel extends JPanel
     /** The same, for mark-up this class builds itself, never user text (say() escapes it). */
     private void sayRich(JLabel label, String html)
     {
+        answering = false;
+
         if (messageBanner != null && label == hint)
         {
             messageBanner.show("<html>" + html + "</html>");
@@ -544,6 +550,28 @@ public class AutonomyEditorPanel extends JPanel
         if (messageBanner != null) messageBanner.showUntilChanged(rich ? "<html>" + text + "</html>" : text);
         else if (rich) sayRich(hint, text);
         else say(hint, text);
+
+        answering = messageBanner != null;
+    }
+
+    /** Whether the strip shows an answer, which no notice has replaced since. */
+    private boolean answering;
+
+    /**
+     * Back to editing with no tool down: an answer on the strip closes with its tool (MT-864), and otherwise the strip
+     * says what a click does now.
+     */
+    private void backToEditing()
+    {
+        if (answering)
+        {
+            answering = false;
+            messageBanner.hideUntilNextNotice();
+        }
+        else
+        {
+            say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
+        }
     }
 
     /** The tools column, a BoxLayout: a GridLayout gives every row the tallest one's height. */
@@ -840,7 +868,7 @@ public class AutonomyEditorPanel extends JPanel
         if (whyButton != null) whyButton.setSelected(false);
         if (oneWayButton != null) oneWayButton.setSelected(false);
 
-        say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
+        backToEditing();
 
         refresh();
     }
@@ -870,10 +898,10 @@ public class AutonomyEditorPanel extends JPanel
 
             clearGesture();
 
-            say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
+            if (tool == Tool.NONE) backToEditing();
+            else say(hint, tool == Tool.TEST ? I18n.t("autosetup.ui.promptTestStart")
                 : tool == Tool.WHY ? I18n.t("autosetup.ui.promptWhy")
-                : tool == Tool.ONE_WAY ? I18n.t("autosetup.ui.promptOneWayFrom")
-                : I18n.t("autosetup.ui.hintClickToCycle"));
+                : I18n.t("autosetup.ui.promptOneWayFrom"));
 
             refresh();
         });
@@ -924,7 +952,7 @@ public class AutonomyEditorPanel extends JPanel
 
         clearGesture();
 
-        say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
+        backToEditing();
 
         refresh();
 

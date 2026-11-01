@@ -292,6 +292,12 @@ public class AutonomyBanner extends JPanel
         showOrHide();
     }
 
+    /** Closes the strip as its X does, until the next notice. */
+    public void hideUntilNextNotice()
+    {
+        dismiss();
+    }
+
     /**
      * Shown while it has something to say or to offer and the user has not closed it.
      */

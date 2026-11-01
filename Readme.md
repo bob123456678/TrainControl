@@ -127,7 +127,7 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 In addition to all Central Station functionality, complex logical expressions are supported.
 
-![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
+![TrainControl's route editor: each command a row of dropdowns, and its conditions in outlined groups, each with its rule written on its outline](assets/ui_route3.png?raw=true)
 
 **Keyboard**
 
@@ -408,7 +408,7 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
-            - In the autonomy editor, the answers of `Test a path` and `Why not Moving?` stay until the next message or until you close them, in a strip up to four lines tall.
+            - In the autonomy editor, the answers of `Test a path` and `Why not Moving?` stay until the next message, until you close them, or until you click the button again or press Escape, in a strip up to four lines tall.
         - Interface
             - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with a tooltip, items whose name says what they do have none, and a few tooltips are shorter and clearer.
         - Routes

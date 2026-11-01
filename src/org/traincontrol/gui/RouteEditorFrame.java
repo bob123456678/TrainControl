@@ -215,13 +215,25 @@ public class RouteEditorFrame extends JFrame
         setLocationRelativeTo(parent);
     }
 
-    /** The window's width with the top line side by side at its preferred width, every field grayed or not. */
+    /**
+     * The window's width with the top line side by side at its preferred width, every field grayed or not, and no
+     * narrower than the conditions' actions in one row: a FlowLayout would wrap the last of them out of sight.
+     */
     private int narrowest()
     {
         java.awt.Insets frame = getInsets();
         java.awt.Insets content = ((JPanel) getContentPane()).getInsets();
 
-        return topLine.getPreferredSize().width + content.left + content.right + frame.left + frame.right;
+        int actions = conditionActions.getPreferredSize().width;
+
+        for (java.awt.Container around = conditionActions.getParent(); around != null && around != getContentPane();
+            around = around.getParent())
+        {
+            actions += around.getInsets().left + around.getInsets().right;
+        }
+
+        return Math.max(topLine.getPreferredSize().width, actions) + content.left + content.right
+            + frame.left + frame.right;
     }
 
     /**
@@ -464,8 +476,8 @@ public class RouteEditorFrame extends JFrame
 
         content.add(middle, BorderLayout.CENTER);
 
-        // Save in the bottom right corner, Cancel just left of it (OB-018).  Cancel is added first: a right-aligned
-        // FlowLayout lays out left to right, so the last one added sits in the corner.
+        // Save, then Cancel, at the bottom right (OB-018): a right-aligned FlowLayout lays out left to right, so
+        // Cancel, added last, sits in the corner.
         JPanel buttons = new JPanel(new BorderLayout());
 
         buttons.setBackground(java.awt.Color.WHITE);
@@ -1625,26 +1637,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * For tests: delete one condition row, through the same door the trash can uses.
+     * For tests: delete one condition row, as the trash does on a line outside a selection.
      *
      * @param row which row
      */
     public void deleteConditionForTest(int row)
     {
         conditions.removeAt(row);
-    }
-
-    /**
-     * For tests (FR-068): move one outline row in or out, which no gesture does (OB-396), to build an outline as a
-     * stored route can have it.  The rule that a row may be at most one level deeper than the row above lives
-     * in `ConditionTable.indent` alone.
-     *
-     * @param row which outline row - conditions and joining words alike, since both carry a depth
-     * @param by 1 to indent, -1 to outdent
-     */
-    public void indentConditionForTest(int row, int by)
-    {
-        conditions.indent(row, by);
     }
 
     /**
@@ -1991,6 +1990,9 @@ public class RouteEditorFrame extends JFrame
                 // A right-click on the conditions opens their menu rather than working the mark under it.
                 if (table instanceof ConditionTable && !javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
 
+                // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
+                if (table instanceof ConditionTable && (e.isShiftDown() || e.isControlDown())) return;
+
                 pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
         });
@@ -2223,7 +2225,6 @@ public class RouteEditorFrame extends JFrame
         if (locked) return;
 
         if (table == commands) commands.shift(row, by);
-        else conditions.shift(conditions.rowOf(row), by);
     }
 
     private void deleteRow(JTable table, int row)
@@ -3960,6 +3961,16 @@ public class RouteEditorFrame extends JFrame
             return out;
         }
 
+        /**
+         * Every repaint takes whole lines: the table paints a line in the rectangle of its first column painted, and
+         * only the handle's is the full line that `prepareRenderer`'s bottom matte is measured for.
+         */
+        @Override
+        public void repaint(long tm, int x, int y, int width, int height)
+        {
+            super.repaint(tm, 0, y, getWidth(), height);
+        }
+
         /** Every change of the lines resets their heights, so they are set again. */
         @Override
         public void tableChanged(javax.swing.event.TableModelEvent e)
@@ -4195,10 +4206,11 @@ public class RouteEditorFrame extends JFrame
                 }
 
                 List<ConditionOutline.Row> before = new ArrayList<>(rows);
+                RouteCommand built;
 
                 try
                 {
-                    rows.set(at, row.about(edited.toCommand()));
+                    built = edited.toCommand();
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -4206,6 +4218,16 @@ public class RouteEditorFrame extends JFrame
                     // line that cannot be built, and names it
                     return;
                 }
+
+                // A cell left as it was is no edit, and Undo would have nothing to undo.
+                if (row.getCommand() != null && built.toLine(null).equals(row.getCommand().toLine(null))) return;
+
+                // A one-condition group's rule is kept by its condition, which is now this command.
+                ConditionOutline.Joiner word = chosenWord.remove(row.getCommand());
+
+                if (word != null) chosenWord.put(built, word);
+
+                rows.set(at, row.about(built));
 
                 settle();
                 fireTableRowsUpdated(line, line);
@@ -5137,35 +5159,20 @@ public class RouteEditorFrame extends JFrame
             return out;
         }
 
-        /**
-         * Removes an outline row, and whatever cannot stay behind without it.  A word taken out takes the term it joins
-         * on (OB-240, MT-469: "Any linked entries should also be deleted"): a wordless run is legal to `tidy()` and
-         * `ConditionOutline.toExpression` folds it with AND, so deleting an `or` would silently turn it into an `and`,
-         * a change to when the route fires that `whatIsWrong` does not flag.
-         */
+        /** Removes one condition, by `removeRows`. */
         void removeAt(int row)
         {
-            if (row < 0 || row >= rows.size()) return;
+            if (row < 0 || row >= rows.size() || rows.get(row).isJoiner()) return;
 
-            List<ConditionOutline.Row> before = new ArrayList<>(rows);
-
-            cut(row, java.util.Collections.<ConditionOutline.Row>emptySet());
-
-            tidy(rows);
-
-            settle();
-            model.fireTableDataChanged();
-            showChanges(before);
+            removeRows(java.util.Collections.singleton(row), -1);
         }
 
         /**
-         * Delete from the menu (OB-382): inside a selection of several lines, every selected condition goes, with each
-         * word between two of them, as one edit, and the line now where the first was is selected; elsewhere,
-         * `removeAt`.
+         * Delete from the menu (OB-382): inside a selection of several lines, every selected condition goes as one edit,
+         * and the line now where the first was is selected; elsewhere, `removeAt`.
          */
         void removeLines(int line)
         {
-            int[] picked = getSelectedRows();
             java.util.SortedSet<Integer> conditions = chosenRows();
 
             if (conditions.size() < 2 || !isRowSelected(line))
@@ -5174,52 +5181,27 @@ public class RouteEditorFrame extends JFrame
                 return;
             }
 
+            removeRows(conditions, getSelectedRows()[0]);
+        }
+
+        /**
+         * Takes conditions out as `ConditionOutline.removed` does, each with a word of its own group, so no other
+         * group's word changes; then selects the condition nearest a line, unless that is -1.
+         */
+        private void removeRows(java.util.Set<Integer> conditions, int near)
+        {
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            java.util.Set<ConditionOutline.Row> chosen = java.util.Collections.newSetFromMap(
-                new java.util.IdentityHashMap<ConditionOutline.Row, Boolean>());
+            List<ConditionOutline.Row> after = ConditionOutline.removed(rows, conditions);
 
-            for (int at : conditions) chosen.add(rows.get(at));
-
-            for (int at = 0; at < rows.size(); at++)
-            {
-                if (rows.get(at).isJoiner() && conditions.contains(nearestCondition(at, -1))
-                    && conditions.contains(nearestCondition(at, 1)))
-                {
-                    chosen.add(rows.get(at));
-                }
-            }
-
-            // Conditions first: each takes a word beside it, a selected one where it can, so fewer words are left to
-            // take their terms.
-            for (boolean words : new boolean[]{false, true})
-            {
-                for (ConditionOutline.Row row : before)
-                {
-                    int at = indexOf(row);
-
-                    if (at >= 0 && row.isJoiner() == words && chosen.contains(row)) cut(at, chosen);
-                }
-            }
-
-            tidy(rows);
+            rows.clear();
+            rows.addAll(after);
 
             settle();
             model.fireTableDataChanged();
 
-            if (!lines.isEmpty()) pickNear(picked[0]);
+            if (near >= 0 && !lines.isEmpty()) pickNear(near);
 
             showChanges(before);
-        }
-
-        /** The nearest condition row from a row, that way; -1 where there is none. */
-        private int nearestCondition(int row, int by)
-        {
-            for (int at = row + by; at >= 0 && at < rows.size(); at += by)
-            {
-                if (!rows.get(at).isJoiner()) return at;
-            }
-
-            return -1;
         }
 
         /** Picks the condition line at or nearest after a line, or before it at the end. */
@@ -5244,82 +5226,6 @@ public class RouteEditorFrame extends JFrame
                     return;
                 }
             }
-        }
-
-        /** Where this very row stands, or -1: two rows can be equal. */
-        private int indexOf(ConditionOutline.Row row)
-        {
-            for (int at = 0; at < rows.size(); at++) if (rows.get(at) == row) return at;
-
-            return -1;
-        }
-
-        /**
-         * `removeAt`'s removal, without the tidy.  A condition takes a word in `chosen` beside it, rather than the one
-         * the rule picks, where the outline is flagged no more for it.
-         */
-        private void cut(int line, java.util.Set<ConditionOutline.Row> chosen)
-        {
-            boolean joiner = rows.get(line).isJoiner();
-
-            // Before the removal, because the term a word joins on is found by comparing depths with it.
-            int depth = rows.get(line).getDepth();
-
-            rows.remove(line);
-
-            if (!joiner)
-            {
-                // Between two words the deeper goes, the one before on a tie: deleting the 2 of `1 or (2 and 3)` takes
-                // the `and`, and an outdented first row of a group has its group's word after it, joining nothing,
-                // where taking the `or` would merge two groups with nothing flagged.  A single word at another depth is
-                // left for `tidy()`.
-                boolean wordBefore = line - 1 >= 0 && rows.get(line - 1).isJoiner();
-                boolean wordAfter = line < rows.size() && rows.get(line).isJoiner();
-                int word = -1;
-
-                if (wordBefore && wordAfter)
-                {
-                    word = rows.get(line).getDepth() > rows.get(line - 1).getDepth() ? line : line - 1;
-                }
-                else if (wordBefore && rows.get(line - 1).getDepth() == depth) word = line - 1;
-                else if (wordAfter && rows.get(line).getDepth() == depth) word = line;
-
-                for (int other : new int[]{wordBefore ? line - 1 : -1, wordAfter ? line : -1})
-                {
-                    if (other >= 0 && other != word && chosen.contains(rows.get(other))
-                        && (word < 0 || !chosen.contains(rows.get(word))) && flaggedWithout(other) <= flaggedWithout(word))
-                    {
-                        word = other;
-                    }
-                }
-
-                if (word >= 0) rows.remove(word);
-            }
-            else if (line < rows.size())
-            {
-                // The whole term, which may be a group: ConditionOutline.write puts a group's rows one level in, and
-                // removing only the first line would leave the rest behind with its own leading word.
-                if (rows.get(line).getDepth() > depth)
-                {
-                    while (line < rows.size() && rows.get(line).getDepth() > depth) rows.remove(line);
-                }
-                else
-                {
-                    rows.remove(line);
-                }
-            }
-        }
-
-        /** How many lines would be flagged with this word gone, tidied; -1 removes nothing. */
-        private int flaggedWithout(int word)
-        {
-            List<ConditionOutline.Row> outline = new ArrayList<>(rows);
-
-            if (word >= 0) outline.remove(word);
-
-            tidy(outline);
-
-            return ConditionOutline.problems(outline).size();
         }
 
         /**
@@ -5415,107 +5321,6 @@ public class RouteEditorFrame extends JFrame
             {
                 restoring = false;
             }
-        }
-
-        /**
-         * Moves a condition one place up or down by the rule `ConditionOutline.moved` holds, and keeps it selected.
-         *
-         * @param row the outline row of the condition
-         * @param by -1 for up, 1 for down
-         */
-        void shift(int row, int by)
-        {
-            if (locked || !conditionsEditable || !ConditionOutline.canMove(rows, row, by)) return;
-
-            RouteCommand moving = rows.get(row).getCommand();
-            List<ConditionOutline.Row> before = new ArrayList<>(rows);
-
-            // No tidy(): from an outline that reads, moved() gives one that reads.
-            replaceWith(ConditionOutline.moved(rows, row, by), java.util.Collections.singletonList(moving), before);
-        }
-
-        /** Moves one outline row, and everything nested under it, a level in or out; only `indentConditionForTest` asks. */
-        void indent(int line, int by)
-        {
-            if (line < 0 || line >= rows.size()) return;
-
-            List<ConditionOutline.Row> before = new ArrayList<>(rows);
-
-            int was = rows.get(line).getDepth();
-            int depth = was + by;
-
-            if (depth < 0) return;
-
-            // One level deeper than the line above, at most: a nesting with a hole can be neither drawn nor meant.
-            if (line > 0 && depth > rows.get(line - 1).getDepth() + 1) return;
-
-            // The first line may go one level in: a condition that starts with a group, "(2 or 3) and (1 or 4)", needs
-            // it.
-            if (line == 0 && depth > 1) return;
-
-            int last = line;
-
-            while (last + 1 < rows.size() && rows.get(last + 1).getDepth() > was) last++;
-
-            for (int at = line; at <= last; at++)
-            {
-                int moved = rows.get(at).getDepth() + by;
-
-                rows.set(at, rows.get(at).atDepth(Math.max(0, moved)));
-            }
-
-            tidy(rows);
-
-            settle();
-            model.fireTableDataChanged();
-
-            if (lineOf(line) >= 0) setRowSelectionInterval(lineOf(line), lineOf(line));
-
-            showChanges(before);
-        }
-
-        /** Pulls an outline back into a shape it can have, afterwards, rather than refusing a move. */
-        private void tidy(List<ConditionOutline.Row> rows)
-        {
-            for (int at = 0; at < rows.size(); at++)
-            {
-                // Row 0 keeps its own depth: a condition that begins with a bracketed group legitimately starts one
-                // level in (`(A or B) and C` is `[A(1), or(1), B(1), and(0), C(0)]`).  Flattening it after deleting the
-                // unrelated `C` would read back as `A and B`, flag nothing, and change when the route fires.  Row 0 has
-                // no row above to be measured against.
-                int most = at == 0 ? rows.get(0).getDepth() : rows.get(at - 1).getDepth() + 1;
-
-                if (rows.get(at).getDepth() > most)
-                {
-                    rows.set(at, rows.get(at).atDepth(most));
-                }
-            }
-
-            // A word with nothing on one side of it, or two in a row
-            boolean again = true;
-
-            while (again)
-            {
-                again = false;
-
-                for (int at = 0; at < rows.size(); at++)
-                {
-                    if (!rows.get(at).isJoiner()) continue;
-
-                    boolean nothingBefore = at == 0;
-                    boolean nothingAfter = at == rows.size() - 1;
-                    boolean doubled = (at > 0 && rows.get(at - 1).isJoiner())
-                        || (at < rows.size() - 1 && rows.get(at + 1).isJoiner());
-
-                    if (nothingBefore || nothingAfter || doubled)
-                    {
-                        rows.remove(at);
-                        again = true;
-                        break;
-                    }
-                }
-            }
-
         }
 
         /** Works out which lines disagree with their level, lays the lines out, and says what the outline means. */
