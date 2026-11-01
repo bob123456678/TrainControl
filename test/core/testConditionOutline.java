@@ -512,6 +512,67 @@ public class testConditionOutline
     }
 
     /**
+     * OB-382: a delete takes each condition, or each whole group of them, with one word of its own group, and changes no
+     * other group's word: across a group boundary, in a two-level step, before a group whose first line is a word
+     * (FR-147), and in outlines already flagged, where a word left with nothing on one side goes too.
+     *
+     * MUTATION: in `ConditionOutline.cutOut`, set `carriesItsWord` false, and "(1 and 24) or 26" less 24 reads
+     * "1 and 26".
+     * MUTATION: in `ConditionOutline.removed`, drop the loop that takes a trailing word, and "2 or 3" less 3 keeps the
+     * "or".
+     */
+    @Test
+    public void testADeleteChangesNoOtherGroupsWord()
+    {
+        String[][] cases = {
+            {" 1:21 1OR 1:22 0AND 1:23 1OR 1:24", "22 23", " 1:21 0AND 1:24", "two groups less the conditions either side of the and"},
+            {" 1:21 1AND 1:22 0OR 1:24 1AND 1:25", "22 24", " 1:21 0OR 1:25", "two groups less the conditions either side of the or"},
+            {" 0:3 0OR 2:1 2OR 2:2 1AND 1:4", "4", " 0:3 0OR 2:1 2OR 2:2", "a two-level step less its last condition"},
+            {" 0:20 0OR 0:21 0OR 2:22 2OR 2:23 1AND 1:24", "20", " 0:21 0OR 2:22 2OR 2:23 1AND 1:24", "a delete away from the step"},
+            {" 1:21 1AND 1:22 0OR 0:1 1AND 1:24 1AND 1:25", "1", " 1:21 1AND 1:22 0OR 1:24 1AND 1:25", "a condition before a group whose first line is a word"},
+            {" 1:21 1OR 1:22 0AND 0:23 0AND 0:24", "21 22", " 0:23 0AND 0:24", "a whole group"},
+            {" 0:1 1AND 1:24 0OR 0:26", "24", " 0:1 0OR 0:26", "an outdented first condition's group emptied"},
+            {" 0:2 1OR 0:3", "3", " 0:2", "a word indented alone, the condition after it gone"},
+            {" 0:21 0AND 0:22", "21 22", "", "everything"},
+        };
+
+        for (String[] each : cases)
+        {
+            List<ConditionOutline.Row> rows = fromLevels(each[0]);
+            java.util.Set<Integer> chosen = new java.util.TreeSet<>();
+
+            for (String address : each[1].split(" "))
+            {
+                for (int at = 0; at < rows.size(); at++)
+                {
+                    if (!rows.get(at).isJoiner() && rows.get(at).getCommand().getAddress() == Integer.parseInt(address))
+                    {
+                        chosen.add(at);
+                    }
+                }
+            }
+
+            assertEquals(levels(ConditionOutline.removed(rows, chosen)), each[2], each[3] + ": " + each[0] + " less " + each[1]);
+        }
+    }
+
+    /** The outline written as `levels` writes it: " depth:address" for a condition, " depthWORD" for a word. */
+    private static List<ConditionOutline.Row> fromLevels(String levels)
+    {
+        List<ConditionOutline.Row> out = new java.util.ArrayList<>();
+
+        for (String part : levels.trim().split(" "))
+        {
+            int depth = part.charAt(0) - '0';
+
+            out.add(part.charAt(1) == ':' ? condition(depth, Integer.parseInt(part.substring(2)))
+                : joining(depth, ConditionOutline.Joiner.valueOf(part.substring(1))));
+        }
+
+        return out;
+    }
+
+    /**
      * OB-379: "(1 and 2 and 3) or (7 and 4 and 5 and 6)" with 7 moved up is "(1 and 2 and 3 and 7) or (4 and 5 and 6)":
      * at its group's edge a condition joins the group past the shallower word, at that group's near end and by its
      * word, and moving it down goes back.

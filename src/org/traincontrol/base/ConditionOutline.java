@@ -132,7 +132,7 @@ public final class ConditionOutline
     /**
      * The lines `problems` flags, each with the reason (Adam: "a warning triangle icon with a tooltip explaining what's
      * wrong").  A word deeper than a condition beside it is reported as joining nothing even where it also differs from
-     * its level's word: indenting a condition, the remedy for a disagreement, does not help it.
+     * its level's word: choosing the group's rule, the remedy for a disagreement, does not help it.
      *
      * @return line index to reason, in the order the lines are found; empty when the outline reads
      */
@@ -299,7 +299,7 @@ public final class ConditionOutline
      *
      * A condition at the edge of its group, where the word beside it is shallower, crosses into the neighboring group
      * at its own level (OB-379): "(A and B) or (C and D)" with C moved up is "(A and B and C) or (D)".  With no group
-     * at its level across the edge it does not move: outdenting is how a condition leaves a group.
+     * at its level across the edge it does not move: a drag is how a condition leaves a group.
      *
      * @param by -1 for up, 1 for down
      * @return a new list in the new order, or a copy unchanged where there is nowhere to go
@@ -430,11 +430,44 @@ public final class ConditionOutline
             }
             else
             {
-                takeOut(top, piece, null);
+                cutOut(top, piece);
             }
         }
 
-        return lines(top);
+        // A word with nothing before or after it joins nothing, as an outline that was already flagged can leave one.
+        List<Row> out = lines(top);
+
+        while (!out.isEmpty() && out.get(0).isJoiner()) out.remove(0);
+
+        while (!out.isEmpty() && out.get(out.size() - 1).isJoiner()) out.remove(out.size() - 1);
+
+        return out;
+    }
+
+    /**
+     * Takes a piece out with one word beside it, the one before first, and a group left with no condition after it.  A
+     * group whose first line is a word goes with that word alone: it joined the group to what stands before it.
+     */
+    private static void cutOut(Group top, Object piece)
+    {
+        Group from = piece instanceof Group ? ((Group) piece).parent : holderOf(top, piece);
+
+        if (from == null) return;
+
+        List<Object> elements = from.elements;
+        int at = elements.indexOf(piece);
+
+        if (at < 0) return;
+
+        elements.remove(at);
+
+        boolean carriesItsWord = piece instanceof Group && !((Group) piece).elements.isEmpty()
+            && isWord(((Group) piece).elements.get(0));
+
+        if (!carriesItsWord && at - 1 >= 0 && isWord(elements.get(at - 1))) elements.remove(at - 1);
+        else if (!carriesItsWord && at < elements.size() && isWord(elements.get(at))) elements.remove(at);
+
+        if (from.parent != null && !from.holdsACondition()) cutOut(top, from);
     }
 
     /** The line holding this very condition, by identity: two lines can ask the same thing; -1 where none does. */

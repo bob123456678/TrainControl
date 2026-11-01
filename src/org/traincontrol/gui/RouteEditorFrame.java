@@ -4222,8 +4222,9 @@ public class RouteEditorFrame extends JFrame
                 // A cell left as it was is no edit, and Undo would have nothing to undo.
                 if (row.getCommand() != null && built.toLine(null).equals(row.getCommand().toLine(null))) return;
 
-                // A one-condition group's rule is kept by its condition, which is now this command.
-                ConditionOutline.Joiner word = chosenWord.remove(row.getCommand());
+                // A one-condition group's rule is kept by its condition, which is now this command; the old one keeps
+                // it too, for an Undo.
+                ConditionOutline.Joiner word = chosenWord.get(row.getCommand());
 
                 if (word != null) chosenWord.put(built, word);
 

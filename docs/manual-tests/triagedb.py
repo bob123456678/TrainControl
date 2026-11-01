@@ -2709,6 +2709,18 @@ def selftest():
                                    % record_counts(head)["tests"], record_counts(head)["tests"] > 0)
                 except ValueError as bad:
                     skip("no store at HEAD to open (%s)" % bad)
+
+                # Opening a store adds the tables it lacks, so a .db named for reading is read from a copy.
+                bare = os.path.join(work, "bare.db")
+
+                sqlite3.connect(bare).close()
+
+                bare_was = open(bare, "rb").read()
+
+                with store_at(bare) as named:
+                    check_that("a .db named for reading opens", record_counts(named)["tests"] == 0)
+
+                check_that("and is left as it was", open(bare, "rb").read() == bare_was)
             finally:
                 real_store.close()
 

@@ -563,15 +563,12 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void backToEditing()
     {
-        if (answering)
-        {
-            answering = false;
-            messageBanner.hideUntilNextNotice();
-        }
-        else
-        {
-            say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
-        }
+        boolean showing = answering && messageBanner.isVisible();
+
+        answering = false;
+
+        if (showing) messageBanner.hideUntilNextNotice();
+        else say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
     }
 
     /** The tools column, a BoxLayout: a GridLayout gives every row the tallest one's height. */

@@ -348,10 +348,10 @@ public class testRouteEditorValidation
         }
     }
     /**
-     * Deleting an unrelated condition does not turn a leading "or" into "and": `tidy()` once forced row 0 flat, so
-     * `(A or B) and C` minus `C` read as `A and B` with nothing in red, and Save wrote the changed meaning.
+     * Deleting an unrelated condition does not turn a leading "or" into "and": `(A or B) and C` minus `C` is still
+     * `(A or B)`, a group one level in, not `A and B` with nothing in red.
      *
-     * MUTATION: restoring `at == 0 ? 0` fails the second assertion.
+     * MUTATION: in `ConditionOutline.removed`, put the first row of the result at depth 0, and the OR reads as AND.
      */
     @Test
     public void testDeletingAConditionDoesNotChangeTheGroupAboveIt() throws Exception
@@ -399,8 +399,8 @@ public class testRouteEditorValidation
      * `1 or (2 and 3)` once removed the `or`, changing when the route fires and leaving the word red.  The word that
      * belongs to a row is the adjacent joiner at the SAME depth.
      *
-     * MUTATION: put `if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);` back
-     * without the depth test and the second claim goes red, reading `And(x,x)`.
+     * MUTATION: in `ConditionOutline.removed`, call `cutOut` on the group holding the piece rather than the piece,
+     * and the 3 goes with it.
      */
     @Test
     public void testDeletingTheFirstConditionOfAGroupKeepsTheOuterWord() throws Exception
@@ -1141,8 +1141,8 @@ public class testRouteEditorValidation
      * FR-147: deleting a condition standing before a group with the group's word after it, as a stored route can
      * have it, takes the "and" that now joins nothing, not the "or": "(21 and 22) or (24 and 25)" is left.
      *
-     * MUTATION: in `ConditionTable.removeAt`, always take the word before a condition at its own depth, and the "or"
-     * goes.
+     * MUTATION: in `ConditionOutline.removed`, drop the branch for a condition before a group whose first line is a
+     * word, and the "or" goes.
      */
     @Test
     public void testDeletingAnOutdentedConditionKeepsTheWordBetweenTheGroups() throws Exception
