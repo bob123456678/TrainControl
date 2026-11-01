@@ -798,6 +798,22 @@ public class testLocMappingPages
         return first < 0 ? null : new int[] {first, last};
     }
 
+    /** Fills the picture with the background, then paints the component over it, on the event thread. */
+    private static void paintOver(final java.awt.image.BufferedImage image, final java.awt.Color background,
+        final java.awt.Component component, final java.awt.Dimension box) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(background);
+            g.fillRect(0, 0, box.width, box.height);
+
+            component.paint(g);
+            g.dispose();
+        });
+    }
+
     /**
      * Whether every pixel in this box is the page's words' color on the background or a blend of the two - which, over a
      * magenta background and navy words, is every pixel whose green is nothing.  A gray, a white or a neutral edge has
@@ -823,16 +839,7 @@ public class testLocMappingPages
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(box.width, box.height,
             java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            java.awt.Graphics2D g = image.createGraphics();
-
-            g.setColor(java.awt.Color.MAGENTA);
-            g.fillRect(0, 0, box.width, box.height);
-
-            row.paint(g);
-            g.dispose();
-        });
+        paintOver(image, java.awt.Color.MAGENTA, row, box);
 
         return image;
     }
@@ -1306,16 +1313,7 @@ public class testLocMappingPages
 
             final int none = java.awt.Color.MAGENTA.getRGB() & 0xFFFFFF;
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                java.awt.Graphics2D g = image.createGraphics();
-
-                g.setColor(java.awt.Color.MAGENTA);
-                g.fillRect(0, 0, box.width, box.height);
-
-                row.paint(g);
-                g.dispose();
-            });
+            paintOver(image, java.awt.Color.MAGENTA, row, box);
 
             Object at = geometry(row, box.width, box.height);
 
@@ -1475,16 +1473,7 @@ public class testLocMappingPages
             java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(box.width, box.height,
                 java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                java.awt.Graphics2D g = image.createGraphics();
-
-                g.setColor(java.awt.Color.WHITE);
-                g.fillRect(0, 0, box.width, box.height);
-
-                row.paint(g);
-                g.dispose();
-            });
+            paintOver(image, java.awt.Color.WHITE, row, box);
 
             Object at = geometry(row, box.width, box.height);
 
