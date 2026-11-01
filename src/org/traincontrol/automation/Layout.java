@@ -2124,17 +2124,11 @@ public class Layout
      */
     public List<Edge> getNeighbors(Point p)
     {
-        List<Edge> neighbors = new LinkedList<>();
-        
-        if (this.adjacency.containsKey(p.getName()))
-        {
-            for (Edge e : this.adjacency.get(p.getName()))
-            {
-                neighbors.add(e);
-            }
-        }
+        List<Edge> out = this.adjacency.get(p.getName());
+        List<Edge> neighbors = out == null ? new ArrayList<>() : new ArrayList<>(out);
 
         // Randomize order to allow for variation in paths
+        // Collections.shuffle draws the same random numbers whatever the list type.
         Collections.shuffle(neighbors);
 
         return neighbors;
