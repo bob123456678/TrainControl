@@ -226,14 +226,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             assertNotNull(page, "precondition: no page " + PLATFORM.getPage());
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                editor[0] = new LayoutEditor(page, 30, ui, 0);
-                editor[0].render();
-                editor[0].setAutonomyMode(session);
-            });
-
-            settle();
+            openTheEditor(editor, page);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
@@ -247,12 +240,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
         finally
         {
-            if (editor[0] != null)
-            {
-                final LayoutEditor closing = editor[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+            closeTheEditor(editor);
 
             putBack(asFound, copy);
         }
@@ -280,63 +268,17 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             assertFalse(session.getRoutes(tunnel).values().iterator().next().touches(Side.E), "precondition: Tunnel's"
                 + " track runs east");
 
-            // No train there on the railway, and this class's in the setup, recorded facing east
-            Layout running = model.getAutoLayout();
-
-            for (String name : session.getStationIndex().pointNamesAt(tunnel))
-            {
-                Point copy = running.getPoint(name);
-
-                if (copy != null) copy.setLocomotive(null);
-            }
-
-            session.placeLocomotive(tunnel, OUR_TRAIN);
-            session.setFacing(tunnel, Side.E);
-
-            // The railway built from that setup, which cannot stand the train: no copy of Tunnel faces east
-            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-            settle();
-
-            assertTrue(session.trainsOnNoPoint().containsKey(tunnel), "precondition: the railway stands the train at Tunnel"
-                + " on a Point, so the diagram does not draw it as a train on no Point");
-
-            final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                driver.bind(session);
-                driver.setEnabled(true);
-                driver.start();
-            });
-
-            TileOverlay shown = null;
-
-            for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
-            {
-                settle();
-
-                shown = ui.getDiagramTileRegistry().overlayAt(tunnel);
-
-                if (shown == null || !shown.hasTrain()) Thread.sleep(100);
-            }
-
-            assertTrue(shown != null && shown.hasTrain(), "precondition: the diagram shows no train at Tunnel: " + shown);
+            // No train there on the railway, and this class's in the setup, recorded facing east; the railway built
+            // from that setup cannot stand the train: no copy of Tunnel faces east
+            TileOverlay shown = standItOffTheTrackAndLook(tunnel, "precondition: the railway stands the train at Tunnel"
+                + " on a Point, so the diagram does not draw it as a train on no Point",
+                "precondition: the diagram shows no train at Tunnel: ");
 
             assertTrue(shown.getFacing() == Side.N || shown.getFacing() == Side.S, "the locomotive at Tunnel, which the"
                 + " railway cannot stand with east recorded, faces " + shown.getFacing() + " on track that runs north and"
                 + " south - Adam: \"it must be N/S or a N/S track\" (V348C-C1)");
 
-            final org.traincontrol.base.LayoutDiagram page = model.getLayout(PAGE);
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                editor[0] = new LayoutEditor(page, 30, ui, 0);
-                editor[0].render();
-                editor[0].setAutonomyMode(session);
-            });
-
-            settle();
+            openTheEditor(editor, model.getLayout(PAGE));
 
             final String[] caption = new String[1];
             final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
@@ -366,18 +308,9 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
         finally
         {
-            if (editor[0] != null)
-            {
-                final LayoutEditor closing = editor[0];
+            closeTheEditor(editor);
 
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            session.restoreSetup(asFound);
-
-            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-            settle();
+            putBack(asFound, null);
         }
     }
 
@@ -450,57 +383,10 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             assertFalse(session.getRoutes(square).values().iterator().next().touches(Side.E), "precondition:"
                 + " TunnelRightPark's track runs east");
 
-            Layout running = model.getAutoLayout();
+            final TileOverlay shown = standItOffTheTrackAndLook(square, "precondition: the railway stands the train at"
+                + " TunnelRightPark on a Point", "precondition: no train shown at TunnelRightPark: ");
 
-            for (String name : session.getStationIndex().pointNamesAt(square))
-            {
-                Point copy = running.getPoint(name);
-
-                if (copy != null) copy.setLocomotive(null);
-            }
-
-            session.placeLocomotive(square, OUR_TRAIN);
-            session.setFacing(square, Side.E);
-
-            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-            settle();
-
-            assertTrue(session.trainsOnNoPoint().containsKey(square), "precondition: the railway stands the train at"
-                + " TunnelRightPark on a Point");
-
-            final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                driver.bind(session);
-                driver.setEnabled(true);
-                driver.start();
-            });
-
-            TileOverlay shown = null;
-
-            for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
-            {
-                settle();
-
-                shown = ui.getDiagramTileRegistry().overlayAt(square);
-
-                if (shown == null || !shown.hasTrain()) Thread.sleep(100);
-            }
-
-            assertTrue(shown != null && shown.hasTrain(), "precondition: no train shown at TunnelRightPark: " + shown);
-
-            final org.traincontrol.base.LayoutDiagram page = model.getLayout(PAGE);
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                editor[0] = new LayoutEditor(page, 30, ui, 0);
-                editor[0].render();
-                editor[0].setAutonomyMode(session);
-            });
-
-            settle();
+            openTheEditor(editor, model.getLayout(PAGE));
 
             final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
 
@@ -524,18 +410,9 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
         finally
         {
-            if (editor[0] != null)
-            {
-                final LayoutEditor closing = editor[0];
+            closeTheEditor(editor);
 
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            session.restoreSetup(asFound);
-
-            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-            settle();
+            putBack(asFound, null);
         }
     }
 
@@ -558,11 +435,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             placeByTheDiagram();
 
-            assertEquals(standingOn(), byTheEditor[0], "the track diagram's Place stood the train on another Point of"
-                + " TunnelLeftPark, which no track leads out of, than the editor's Place does (OB-350)");
-
-            assertEquals(session.getFacing(PLATFORM), byTheEditor[1], "the track diagram's Place recorded another facing"
-                + " on TunnelLeftPark than the editor's Place does (OB-350)");
+            assertPlacedWhereTheEditorDid(byTheEditor, "the track diagram's Place");
         }
         finally
         {
@@ -615,11 +488,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             assertEquals(handled[0], Boolean.TRUE, "Control+V over TunnelLeftPark was not taken");
 
-            assertEquals(standingOn(), byTheEditor[0], "Control+V stood the train on another Point of TunnelLeftPark,"
-                + " which no track leads out of, than the editor's Place does (OB-350)");
-
-            assertEquals(session.getFacing(PLATFORM), byTheEditor[1], "Control+V recorded another facing on"
-                + " TunnelLeftPark than the editor's Place does (OB-350)");
+            assertPlacedWhereTheEditorDid(byTheEditor, "Control+V");
         }
         finally
         {
@@ -730,6 +599,16 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
     }
 
+    /** The train stands on the Point the editor's Place chose, with its facing recorded; `how` names the door. */
+    private static void assertPlacedWhereTheEditorDid(Object[] byTheEditor, String how)
+    {
+        assertEquals(standingOn(), byTheEditor[0], how + " stood the train on another Point of TunnelLeftPark,"
+            + " which no track leads out of, than the editor's Place does (OB-350)");
+
+        assertEquals(session.getFacing(PLATFORM), byTheEditor[1], how + " recorded another facing on"
+            + " TunnelLeftPark than the editor's Place does (OB-350)");
+    }
+
     /** The train the setup on disk stands on TunnelLeftPark, read from the file as a configuration load reads it. */
     private static String placedOnDisk() throws Exception
     {
@@ -833,16 +712,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         session.placeLocomotive(PLATFORM, null);
 
-        for (RouteId road : session.getRoutes(BELOW).keySet()) session.setDirection(BELOW, road, Direction.NONE);
-
-        session.setFacing(PLATFORM, Side.S);
-
-        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-        settle();
-
-        assertTrue(session.facingChoices(PLATFORM).isEmpty(), "precondition: TunnelLeftPark still has a way out: "
-            + session.facingChoices(PLATFORM));
+        closeOffTheWayOut(Side.S);
 
         assertNull(session.getLocomotiveNameAt(PLATFORM), "precondition: the setup still places a train on"
             + " TunnelLeftPark");
@@ -998,19 +868,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     private static <T> T find(java.awt.Container container, Class<T> type)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 
     /**
@@ -1046,17 +904,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             throw new AssertionError("TunnelLeftPark does not run north to south on this snapshot");
         }
 
-        // Both arrows at 8,7 red
-        for (RouteId road : session.getRoutes(BELOW).keySet()) session.setDirection(BELOW, road, Direction.NONE);
-
-        session.setFacing(PLATFORM, recorded);
-
-        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-        settle();
-
-        assertTrue(session.facingChoices(PLATFORM).isEmpty(), "precondition: TunnelLeftPark still has a way out: "
-            + session.facingChoices(PLATFORM));
+        closeOffTheWayOut(recorded);
 
         assertEquals(session.getFacing(PLATFORM), recorded, "precondition: the setup does not record the facing given");
 
@@ -1112,6 +960,99 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             + " standing on TunnelLeftPark: " + seen);
 
         return seen;
+    }
+
+    /**
+     * Makes both arrows of 8,7 red, records TunnelLeftPark facing the way given, builds the railway from the setup and
+     * checks no way out is left.
+     */
+    private static void closeOffTheWayOut(Side recorded) throws Exception
+    {
+        for (RouteId road : session.getRoutes(BELOW).keySet()) session.setDirection(BELOW, road, Direction.NONE);
+
+        session.setFacing(PLATFORM, recorded);
+
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+        settle();
+
+        assertTrue(session.facingChoices(PLATFORM).isEmpty(), "precondition: TunnelLeftPark still has a way out: "
+            + session.facingChoices(PLATFORM));
+    }
+
+    /**
+     * Takes the train off the railway's copies of the square, stands it there in the setup facing east, builds the
+     * railway from the setup (which cannot stand it) and starts the diagram; returns what the diagram shows on the
+     * square once it shows a train.  `notOnAPoint` and `notShown` begin the messages of the two preconditions.
+     */
+    private static TileOverlay standItOffTheTrackAndLook(TileKey square, String notOnAPoint, String notShown)
+        throws Exception
+    {
+        Layout running = model.getAutoLayout();
+
+        for (String name : session.getStationIndex().pointNamesAt(square))
+        {
+            Point copy = running.getPoint(name);
+
+            if (copy != null) copy.setLocomotive(null);
+        }
+
+        session.placeLocomotive(square, OUR_TRAIN);
+        session.setFacing(square, Side.E);
+
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+        settle();
+
+        assertTrue(session.trainsOnNoPoint().containsKey(square), notOnAPoint);
+
+        final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            driver.bind(session);
+            driver.setEnabled(true);
+            driver.start();
+        });
+
+        TileOverlay shown = null;
+
+        for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
+        {
+            settle();
+
+            shown = ui.getDiagramTileRegistry().overlayAt(square);
+
+            if (shown == null || !shown.hasTrain()) Thread.sleep(100);
+        }
+
+        assertTrue(shown != null && shown.hasTrain(), notShown + shown);
+
+        return shown;
+    }
+
+    /** Builds an editor over the page in autonomy mode on the event thread, into `editor[0]`, and lets the window settle. */
+    private static void openTheEditor(LayoutEditor[] editor, org.traincontrol.base.LayoutDiagram page) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new LayoutEditor(page, 30, ui, 0);
+            editor[0].render();
+            editor[0].setAutonomyMode(session);
+        });
+
+        settle();
+    }
+
+    /** Disposes the editor `openTheEditor` made, if it got that far. */
+    private static void closeTheEditor(LayoutEditor[] editor) throws Exception
+    {
+        if (editor[0] != null)
+        {
+            final LayoutEditor closing = editor[0];
+
+            SwingUtilities.invokeAndWait(() -> closing.dispose());
+        }
     }
 
     /** Takes the train off and puts the setup back as it was found. */

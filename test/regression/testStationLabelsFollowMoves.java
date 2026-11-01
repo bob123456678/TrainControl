@@ -40,24 +40,22 @@ public class testStationLabelsFollowMoves
     @Test
     public void testTheLabelSurvivesAMoveToEveryNeighbouringSquare()
     {
-        for (int dx = -1; dx <= 1; dx++)
-        {
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                if (dx == 0 && dy == 0) continue;
-
-                check(at(4, 4), at(4, 5), at(4 + dx, 4 + dy));
-            }
-        }
+        checkEveryMoveBy(-1, 1);
     }
 
     /** And to squares further off, in case something ever special-cases the adjacent ones. */
     @Test
     public void testTheLabelSurvivesALongerMoveToo()
     {
-        for (int dx = 0; dx <= 3; dx++)
+        checkEveryMoveBy(0, 3);
+    }
+
+    /** Checks the platform at (4, 4) with its label below it moved by every offset from `low` to `high` in x and y. */
+    private static void checkEveryMoveBy(int low, int high)
+    {
+        for (int dx = low; dx <= high; dx++)
         {
-            for (int dy = 0; dy <= 3; dy++)
+            for (int dy = low; dy <= high; dy++)
             {
                 if (dx == 0 && dy == 0) continue;
 
@@ -206,10 +204,7 @@ public class testStationLabelsFollowMoves
         store.setPointName(at(2, 3), "Platform3");
         store.setCaption(at(7, 3), at(2, 3));
 
-        support.TileLine plan =
-            support.TileLine.of(PAGE, true, 2, 7, 6, occupied(3), true);
-
-        store.moveTiles(plan.moves, plan.builtOver);
+        moveColumnTwoToSeven(store, 6, occupied(3));
 
         assertEquals(store.getCaptionTarget(at(7, 3)), at(7, 3),
             "the label was in the column being written over, so it was dropped - and the station it "
@@ -227,10 +222,7 @@ public class testStationLabelsFollowMoves
         store.setStation(at(2, 3), true);
         store.setCaption(at(7, 3), at(9, 9));
 
-        support.TileLine plan =
-            support.TileLine.of(PAGE, true, 2, 7, 6, occupied(3), true);
-
-        store.moveTiles(plan.moves, plan.builtOver);
+        moveColumnTwoToSeven(store, 6, occupied(3));
 
         assertNull(store.getCaptionTarget(at(7, 3)),
             "a label naming a square nothing in this edit touched has been built over, and is still "
@@ -254,10 +246,7 @@ public class testStationLabelsFollowMoves
         // (2, 8), not the station it names
         store.setCaption(at(7, 8), at(2, 3));
 
-        support.TileLine plan =
-            support.TileLine.of(PAGE, true, 2, 7, 10, occupied(3, 8), true);
-
-        store.moveTiles(plan.moves, plan.builtOver);
+        moveColumnTwoToSeven(store, 10, occupied(3, 8));
 
         assertNull(store.getCaptionTarget(at(7, 8)),
             "a label was spared because the station it names happened to be moving somewhere - and "
@@ -364,6 +353,14 @@ public class testStationLabelsFollowMoves
         move.put(from, to);
 
         return move;
+    }
+
+    /** Moves column 2 to column 7 on the page, which is `rows` squares tall and occupied at the given rows. */
+    private static void moveColumnTwoToSeven(AutonomyCompanionStore store, int rows, Set<Integer> occupied)
+    {
+        support.TileLine plan = support.TileLine.of(PAGE, true, 2, 7, rows, occupied, true);
+
+        store.moveTiles(plan.moves, plan.builtOver);
     }
 
     private static Set<Integer> occupied(Integer... indices)
