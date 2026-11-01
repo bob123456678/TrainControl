@@ -7,3 +7,4 @@
 # (found by the battery, 2026-09-03).  The test strips carriage returns as well; this stops a fresh
 # clone needing it.
 test/baseline/** text eol=lf
+docs/tools/hooks/pre-commit text eol=lf
