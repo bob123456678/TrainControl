@@ -320,13 +320,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         TileKey mainA = square(session, "BottomMainA");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
 
         session.setFacingAndMove(mainA, Side.W);
 
@@ -437,13 +431,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
             TileKey mainA = square(session, "BottomMainA");
 
-            final Layout running = build(session);
-
-            session.setRunningLayoutSource(() -> running);
-
-            stoodFacing(session, running, mainA, Side.E);
-
-            session.placeLocomotive(mainA, PROBE);
+            final Layout running = theProbeStoodFacing(session, mainA, Side.E);
 
             // WHAT THE SETUP HAS, which is not the railway's answer: nothing, or another train's facing.
             session.setFacing(mainA, lastSaid);
@@ -478,13 +466,7 @@ public class testATrainIsPutOnlyWhereItCanStart
         TileKey mainA = square(session, "BottomMainA");
         TileKey post = square(session, "BottomMainPost");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
         session.setFacingAndMove(mainA, Side.W);
 
         Point standing = standingOn(running);
@@ -596,13 +578,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         TileKey mainA = square(session, "BottomMainA");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
         session.setFacingAndMove(mainA, Side.W);
 
         try
@@ -637,13 +613,7 @@ public class testATrainIsPutOnlyWhereItCanStart
         TileKey mainA = square(session, "BottomMainA");
         TileKey post = square(session, "BottomMainPost");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
         session.setFacingAndMove(mainA, Side.W);
 
         org.traincontrol.base.Locomotive train = model.getLocByName(PROBE);
@@ -754,13 +724,7 @@ public class testATrainIsPutOnlyWhereItCanStart
             assertFalse(session.terminiWithTwoWaysIn().containsKey(mainA), "precondition: BottomMainA made a compulsory"
                 + " turn is already the terminus error, so its east side is not barred");
 
-            final Layout running = build(session);
-
-            session.setRunningLayoutSource(() -> running);
-
-            stoodFacing(session, running, mainA, Side.W);
-
-            session.placeLocomotive(mainA, PROBE);
+            final Layout running = theProbeStoodFacing(session, mainA, Side.W);
 
             session.flipFacing(PROBE, running);
 
@@ -832,6 +796,20 @@ public class testATrainIsPutOnlyWhereItCanStart
             + " left facing west by a placement (OB-284: \"for barred departure directions, turn it\")");
         assertTrue(placed == null || session.homeFacingsFor(mainA).contains(placed), "turned, it faces " + placed
             + ", which is not a way trains may arrive in (OB-284)");
+    }
+
+    /** The railway built, serving the session, with the probe train stood facing that way on the square and placed there. */
+    private static Layout theProbeStoodFacing(AutonomySession session, TileKey square, Side facing) throws Exception
+    {
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        stoodFacing(session, running, square, facing);
+
+        session.placeLocomotive(square, PROBE);
+
+        return running;
     }
 
     private static Point stoodFacing(AutonomySession session, Layout running, TileKey square, Side facing)

@@ -161,37 +161,60 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+            org.json.JSONObject held = pointHolding(built, "C7 curve train");
 
-            String standing = null;
+            assertNotNull(held, "precondition: the train placed on the curve is on no Point");
 
-            for (Object o : built.getJSONArray("points"))
-            {
-                org.json.JSONObject point = (org.json.JSONObject) o;
-
-                sensorOf.put(point.getString("name"), point.optInt("s88"));
-
-                org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
-
-                if (held != null && "C7 curve train".equals(held.optString("name", null))) standing = point.getString("name");
-            }
-
-            assertNotNull(standing, "precondition: the train placed on the curve is on no Point");
+            String standing = held.getString("name");
 
             int ahead = facing == org.traincontrol.automationui.TilePorts.Side.N ? 70 : 72;
 
-            List<Integer> reached = new ArrayList<>();
-
-            for (Object o : built.getJSONArray("edges"))
-            {
-                org.json.JSONObject edge = (org.json.JSONObject) o;
-
-                if (standing.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
-            }
+            List<Integer> reached = sensorsReachedFrom(built, standing);
 
             assertEquals(reached, Arrays.asList(ahead), "the train placed on the curve facing " + facing + " is not"
                 + " offered exactly the station that way (RSA2-C7): " + reached);
         }
+    }
+
+    /** The last Point of a build that holds the locomotive, or null. */
+    private static org.json.JSONObject pointHolding(org.json.JSONObject built, String locomotive)
+    {
+        org.json.JSONObject found = null;
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            if (held != null && locomotive.equals(held.optString("name", null))) found = point;
+        }
+
+        return found;
+    }
+
+    /** The sensors of the Points a build has an edge to from one Point, in the edges' order. */
+    private static List<Integer> sensorsReachedFrom(org.json.JSONObject built, String start)
+    {
+        java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            sensorOf.put(point.getString("name"), point.optInt("s88"));
+        }
+
+        List<Integer> reached = new ArrayList<>();
+
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject edge = (org.json.JSONObject) o;
+
+            if (start.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
+        }
+
+        return reached;
     }
 
     private void awayOnly(TileKey straight, org.traincontrol.automationui.TilePorts.Side towards)
@@ -249,41 +272,19 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+            org.json.JSONObject held = pointHolding(built, "C7 train");
 
-            String standing = null;
-            String itsFacing = null;
+            assertNotNull(held, "precondition: the train placed on the middle square is on no Point");
 
-            for (Object o : built.getJSONArray("points"))
-            {
-                org.json.JSONObject point = (org.json.JSONObject) o;
-
-                sensorOf.put(point.getString("name"), point.optInt("s88"));
-
-                org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
-
-                if (held != null && "C7 train".equals(held.optString("name", null)))
-                {
-                    standing = point.getString("name");
-                    itsFacing = point.optString(AutonomyBuilder.COPY_FACING, null);
-                }
-            }
-
-            assertNotNull(standing, "precondition: the train placed on the middle square is on no Point");
+            String standing = held.getString("name");
+            String itsFacing = held.optString(AutonomyBuilder.COPY_FACING, null);
 
             assertEquals(itsFacing, facing.name(), "the train placed facing " + facing + " stands on a copy that records"
                 + " no facing, or another (RSA2-C7)");
 
             int ahead = facing == org.traincontrol.automationui.TilePorts.Side.E ? 66 : 64;
 
-            List<Integer> reached = new ArrayList<>();
-
-            for (Object o : built.getJSONArray("edges"))
-            {
-                org.json.JSONObject edge = (org.json.JSONObject) o;
-
-                if (standing.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
-            }
+            List<Integer> reached = sensorsReachedFrom(built, standing);
 
             assertFalse(reached.isEmpty(), "precondition: the train facing " + facing + " has no way out at all");
 

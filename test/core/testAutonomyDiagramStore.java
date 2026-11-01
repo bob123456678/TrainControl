@@ -92,8 +92,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getTileDirection(crossing, straight), Direction.TOWARD_A,
             "the direction of route 1,3 came back wrong - the route half of the key did not survive "
@@ -158,8 +157,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertTrue(reloaded.isTileLengthAnswered(answered), "the deliberate 0 did not survive a save and a load");
         assertEquals(reloaded.getTileLength(answered), 0);
@@ -198,8 +196,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getPointName(station), "Track 14 entrance");
         assertTrue(reloaded.isStation(station));
@@ -296,8 +293,7 @@ public class testAutonomyDiagramStore
         store.setStation(new TileKey("main", 2, 3), true);
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getConfigurationNames().size(), 2, "precondition: both were written");
 
@@ -346,8 +342,7 @@ public class testAutonomyDiagramStore
         store.renameConfiguration("Morning", "Evening");
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getConfigurationNames().size(), 1);
         assertEquals(reloaded.getConfigurationNames().get(0), "Evening");
@@ -405,8 +400,7 @@ public class testAutonomyDiagramStore
 
         // no save: this is the window a failing save leaves open
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getConfigurationNames().size(), 1,
             "the configuration is on disk under neither name, so a rename followed by a failed save "
@@ -601,8 +595,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testRenamingAPageCostsNothingBecauseIdsAreStored() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Old Name", "2");
+        java.util.Map<String, String> before = pageIds("Old Name", "2");
 
         store.setPageIds(before);
 
@@ -617,12 +610,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // the same page, renamed: same id, new name
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("New Name", "2");
+        java.util.Map<String, String> after = pageIds("New Name", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         TileKey renamed = new TileKey("New Name", 4, 7);
 
@@ -647,8 +637,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAPageRenamedElsewhereIsNotMissing() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Old Name", "2");
+        java.util.Map<String, String> before = pageIds("Old Name", "2");
 
         store.setPageIds(before);
         store.setPointName(new TileKey("Old Name", 4, 7), "Yard throat");
@@ -656,12 +645,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // the same page, renamed somewhere else: same id, new name
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("New Name", "2");
+        java.util.Map<String, String> after = pageIds("New Name", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertEquals(reloaded.getPointName(new TileKey("New Name", 4, 7)), "Yard throat",
             "precondition: the renamed page did not keep its settings, so this is not the rename case");
@@ -686,21 +672,16 @@ public class testAutonomyDiagramStore
     @Test
     public void testARenumberedPageThatDidNotLoadIsStillMissing() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
+        java.util.Map<String, String> before = pageIds("Yard", "2");
 
         store.setPageIds(before);
         store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
         store.createConfiguration("Default", null);
         store.save();
 
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertFalse(reloaded.getPageIdConflicts().isEmpty(), "precondition: the renumber was not read as one");
 
@@ -720,8 +701,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAPageRenumberIsReportedRatherThanAdopted() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
+        java.util.Map<String, String> before = pageIds("Yard", "2");
 
         store.setPageIds(before);
         store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
@@ -730,13 +710,9 @@ public class testAutonomyDiagramStore
 
         // id 2 now belongs to a different page - and crucially "Yard" is STILL THERE, under another id.
         // That is what separates a renumber from a rename: after a rename the old name is simply gone.
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertFalse(reloaded.getPageIdConflicts().isEmpty(),
             "an id belonging to a different page must be reported");
@@ -753,8 +729,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testARenumberedPagesSettingsFollowTheNameNotTheNumber() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
+        java.util.Map<String, String> before = pageIds("Yard", "2");
 
         store.setPageIds(before);
 
@@ -768,13 +743,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // "Yard" is still here, under a different id - a renumber, not a rename
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertEquals(reloaded.getPointName(tile), "Yard throat",
             "the settings of a renumbered page did not follow it - they were read through whatever "
@@ -800,9 +771,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAnExcludedPageStaysExcludedAcrossARenumber() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
-        before.put("Main Line", "3");
+        java.util.Map<String, String> before = pageIds("Yard", "2", "Main Line", "3");
 
         store.setPageIds(before);
         store.setPageExcluded("Yard", true);
@@ -810,13 +779,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // the two pages swap numbers
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertTrue(reloaded.getExcludedPages().contains("Yard"),
             "the excluded page rejoined autonomy because its exclusion was read by number");
@@ -1136,6 +1101,35 @@ public class testAutonomyDiagramStore
 
         assertTrue(written.contains("somethingNewer"),
             "a field from a newer version must not be dropped:\n" + written);
+    }
+
+    /** A page index in the order given: each page's name, then its id. */
+    private static java.util.Map<String, String> pageIds(String... nameThenId)
+    {
+        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
+
+        for (int i = 0; i < nameThenId.length; i += 2) ids.put(nameThenId[i], nameThenId[i + 1]);
+
+        return ids;
+    }
+
+    /** A second store on the same folder, loaded under a page index. */
+    private AutonomyCompanionStore reloadedUnder(java.util.Map<String, String> ids) throws IOException
+    {
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(ids);
+        reloaded.load();
+
+        return reloaded;
+    }
+
+    /** A second store on the same folder, loaded. */
+    private AutonomyCompanionStore reloadedStore() throws IOException
+    {
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        return reloaded;
     }
 
     private Set<TileKey> only(TileKey... tiles)
@@ -1589,8 +1583,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testACaptionResolvesAfterAReloadUnderPageIds() throws IOException
     {
-        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
-        ids.put("1 - Main", "1");
+        java.util.Map<String, String> ids = pageIds("1 - Main", "1");
 
         store.setPageIds(ids);
 
@@ -1604,9 +1597,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(ids);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(ids);
 
         assertEquals(reloaded.getCaptionTarget(where), station,
             "the caption does not resolve by page name after a reload, so the diagram has nothing to "
@@ -1625,8 +1616,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testACaptionOnItsOwnStationResolvesAfterAReload() throws IOException
     {
-        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
-        ids.put("1 - Main", "1");
+        java.util.Map<String, String> ids = pageIds("1 - Main", "1");
 
         store.setPageIds(ids);
 
@@ -1639,9 +1629,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(ids);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(ids);
 
         assertEquals(reloaded.getCaptionTarget(station), station,
             "a station captioned on its own square does not resolve after a reload");
@@ -1659,9 +1647,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAnExcludedPageIsStillExcludedAfterItIsRenamed() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Scenery", "3");
-        before.put("Old Name", "2");
+        java.util.Map<String, String> before = pageIds("Scenery", "3", "Old Name", "2");
 
         store.setPageIds(before);
 
@@ -1670,13 +1656,9 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Scenery", "3");
-        after.put("New Name", "2");
+        java.util.Map<String, String> after = pageIds("Scenery", "3", "New Name", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertTrue(reloaded.getExcludedPages().contains("New Name"),
             "the renamed page is no longer excluded, so it has silently rejoined autonomy - and on the "
@@ -1693,8 +1675,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAnExcludedPageWithNoIdKeepsItsName() throws IOException
     {
-        java.util.Map<String, String> known = new java.util.LinkedHashMap<>();
-        known.put("Known", "2");
+        java.util.Map<String, String> known = pageIds("Known", "2");
 
         store.setPageIds(known);
 
@@ -1703,9 +1684,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(known);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(known);
 
         assertTrue(reloaded.getExcludedPages().contains("Not in the index"),
             "a page with no id in the index lost its exclusion. Files written before this change hold "
@@ -1822,8 +1801,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testImportingABundleFromARenumberedLayoutLandsOnTheRightPages() throws IOException
     {
-        java.util.Map<String, String> theirs = new java.util.LinkedHashMap<>();
-        theirs.put("Yard", "2");
+        java.util.Map<String, String> theirs = pageIds("Yard", "2");
 
         AutonomyCompanionStore exporter =
             new AutonomyCompanionStore(java.nio.file.Files.createTempDirectory("tc-export").toFile());
@@ -1838,9 +1816,7 @@ public class testAutonomyDiagramStore
 
         // Here, id 2 is a different page - and the page THEY called Yard is my id 3.  That is a
         // renumber: adopting their keys would put their siding on my "Main".
-        java.util.Map<String, String> mine = new java.util.LinkedHashMap<>();
-        mine.put("Main", "2");
-        mine.put("Yard", "3");
+        java.util.Map<String, String> mine = pageIds("Main", "2", "Yard", "3");
 
         store.setPageIds(mine);
         store.setPointName(new TileKey("Main", 1, 1), "Mine");
@@ -2294,8 +2270,7 @@ public class testAutonomyDiagramStore
         assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"),
             "the setup on disk was not found, so nothing below tests anything");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         org.json.JSONObject point = reloaded.getConfiguration("Only")
             .getJSONObject("points").getJSONObject("1:4,4");
@@ -2327,8 +2302,7 @@ public class testAutonomyDiagramStore
         assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null),
             "the setup on disk was not found, so nothing below tests anything");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         org.json.JSONObject point = reloaded.getConfiguration("Only")
             .getJSONObject("points").getJSONObject("1:4,4");
@@ -2398,9 +2372,7 @@ public class testAutonomyDiagramStore
 
         assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"));
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(twoPages());
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(twoPages());
 
         assertEquals(reloaded.getPointName(square), "Platform",
             "repairing a locomotive lost the point names");
@@ -2488,16 +2460,12 @@ public class testAutonomyDiagramStore
             "in memory, immediately after the rename");
 
         // the save, and the load
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Mainline", "1");
-        after.put("Yard", "2");
+        java.util.Map<String, String> after = pageIds("Mainline", "1", "Yard", "2");
 
         store.setPageIds(after);
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         // and the check again
         assertEverythingIsWhereItShouldBe(reloaded, renamed, renamedPlaque, renamedDoor, elsewhere,
@@ -2550,13 +2518,9 @@ public class testAutonomyDiagramStore
         assertTrue(AutonomyCompanionStore.renamePageOnDisk(layout, "Main", "Mainline"),
             "the setup on disk was not found, so nothing below tests anything");
 
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Mainline", "1");
-        after.put("Yard", "2");
+        java.util.Map<String, String> after = pageIds("Mainline", "1", "Yard", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertEverythingIsWhereItShouldBe(reloaded,
             new TileKey("Mainline", 4, 4), new TileKey("Mainline", 4, 5),
@@ -2634,12 +2598,9 @@ public class testAutonomyDiagramStore
             "the setup on disk was not found, so nothing below tests anything");
 
         // reloaded under the numbering that survives the delete
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main", "1");
+        java.util.Map<String, String> after = pageIds("Main", "1");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertFalse(reloaded.getConfiguration("Only").getJSONObject("points").has("Yard:1,1"),
             "the deleted page is still placed in the configuration");
@@ -2686,8 +2647,7 @@ public class testAutonomyDiagramStore
         // save, load, and check again
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(legOf(reloaded, 0), "New Name",
             "the timetable leg still names the old locomotive after a save and a load. The loader "
@@ -2715,8 +2675,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         org.json.JSONArray legs = reloaded.getConfiguration("Only")
             .getJSONObject("globals").getJSONArray("timetable");

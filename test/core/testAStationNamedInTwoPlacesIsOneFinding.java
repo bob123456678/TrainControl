@@ -179,8 +179,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
             "the finding does not point at both caption squares");
 
         // What the reader is told, as the editor renders it: {0} the station, {1} the finding's subject, {2} the count
-        String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), edited.describeTile(finding.getAbout()),
-            finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
+        String said = sentenceOf(edited, finding);
 
         assertTrue(said.contains("Hauptbahnhof"), "the sentence does not name the station: " + said);
         assertTrue(said.contains("(1,2)") && said.contains("(1,3)"), "the sentence does not name both squares: " + said);
@@ -480,8 +479,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         assertEquals(finding.getTile(), thereOne, "the finding is not filed on the first square the name is drawn on");
         assertEquals(finding.getAbout(), station, "the finding is not about the station");
 
-        String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), session.describeTile(finding.getAbout()),
-            finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
+        String said = sentenceOf(session, finding);
 
         assertTrue(said.contains("Hauptbahnhof"), "the sentence does not name the station: " + said);
         assertTrue(said.contains("second 3,2") && said.contains("second 3,3"), "the sentence does not name the squares: " + said);
@@ -1009,6 +1007,13 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
         assertEquals(session.captionsFor(same), new LinkedHashSet<>(Arrays.asList(new TileKey("main", 4, 2))),
             "the import captioned a station that is captioned on its own page");
+    }
+
+    /** What the reader is told, as the editor renders it: {0} the station, {1} the finding's subject, {2} the count. */
+    private static String sentenceOf(AutonomySession from, org.traincontrol.automationui.AutonomyChecks.Finding finding)
+    {
+        return org.traincontrol.util.I18n.f(finding.getMessageKey(), from.describeTile(finding.getAbout()),
+            finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
     }
 
     /** The setup check's findings that a station's name is drawn in more than one place. */

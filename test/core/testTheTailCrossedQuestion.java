@@ -127,15 +127,7 @@ public class testTheTailCrossedQuestion
         s.setArrivedFrom("W");
         loc.setTrainLength(5);
 
-        TailCrossedPrompt.answerForTests("TQ_C");
-
-        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 5, loc.getName(), null, null).getRoad();
-
-        assertNotNull(road, "the answer TQ_C gave no road");
-
-        s.setArrivedAlong(road);
-
-        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> covered = coveredAfterAnswering(layout, s, "TQ_C", 5, "the answer TQ_C gave no road");
 
         assertTrue(covered.containsKey(layout.getEdge("TQ_C", "TQ_J")),
             "TQ_C was chosen as the farthest sensor the tail crossed, and the road from it, C -> J, is not covered."
@@ -162,15 +154,8 @@ public class testTheTailCrossedQuestion
         s.setArrivedFrom("W");
         loc.setTrainLength(3);
 
-        TailCrossedPrompt.answerForTests("TQ_A");
-
-        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 3, loc.getName(), null, null).getRoad();
-
-        assertNotNull(road, "the answer towards TQ_A gave no road");
-
-        s.setArrivedAlong(road);
-
-        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> covered = coveredAfterAnswering(layout, s, "TQ_A", 3,
+            "the answer towards TQ_A gave no road");
 
         assertTrue(covered.containsKey(layout.getEdge("TQ_A", "TQ_J")),
             "the tail was said to lie towards TQ_A, and A -> J is not covered.  Covered: " + covered.keySet());
@@ -348,15 +333,8 @@ public class testTheTailCrossedQuestion
 
         assertTrue(TailCrossedPrompt.wouldAsk(layout, s, "W", 5), "precondition: the fork behind the platform is not asked about");
 
-        TailCrossedPrompt.answerForTests("TQ_L");
-
-        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 5, loc.getName(), null, null).getRoad();
-
-        assertNotNull(road, "precondition: the answer TQ_L gave no road");
-
-        s.setArrivedAlong(road);
-
-        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> covered = coveredAfterAnswering(layout, s, "TQ_L", 5,
+            "precondition: the answer TQ_L gave no road");
 
         assertTrue(covered.containsKey(layout.getEdge("TQ_L", "TQ_S")),
             "TQ_L was answered and the rail from it, right behind the platform, is not covered - the walk's first hop"
@@ -744,6 +722,21 @@ public class testTheTailCrossedQuestion
         model.parseAuto(session.buildConfiguration());
 
         return model.getAutoLayout();
+    }
+
+    /** The tail laid along the road the answer names, and the edges the standing trains cover then; fails on no road. */
+    private static Map<Edge, Locomotive> coveredAfterAnswering(Layout layout, Point s, String answer, int length,
+        String noRoadMessage)
+    {
+        TailCrossedPrompt.answerForTests(answer);
+
+        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", length, loc.getName(), null, null).getRoad();
+
+        assertNotNull(road, noRoadMessage);
+
+        s.setArrivedAlong(road);
+
+        return layout.edgesCoveredByStandingTrains();
     }
 
     /** The sensors offered as crossed - leaving out the ways towards one the tail has not reached (MT-477). */

@@ -534,38 +534,16 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         return new int[] {first, last};
     }
 
+    /** Whether a color is one of the annotation's green arrows. */
+    private static boolean isGreen(Color c)
+    {
+        return c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140;
+    }
+
     /** How many pixels of exactly this color an annotation paints on black. */
     private static int pixelsOf(TileAnnotation annotation, Color colour)
     {
-        int size = 48;
-
-        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-
-        Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, size, size);
-
-            annotation.paint(g, size, size, false);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        int count = 0;
-
-        for (int x = 0; x < size; x++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                if ((shot.getRGB(x, y) & 0xFFFFFF) == (colour.getRGB() & 0xFFFFFF)) count++;
-            }
-        }
-
-        return count;
+        return support.Pixels.count(paintedOnBlack(annotation, 48), rgb -> (rgb & 0xFFFFFF) == (colour.getRGB() & 0xFFFFFF));
     }
 
     /**
@@ -716,40 +694,14 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /** An annotation painted on black: how many of its pixels are green, and how many red. */
     private static int[] greenAndRed(TileAnnotation annotation)
     {
-        int size = 48;
+        BufferedImage shot = paintedOnBlack(annotation, 48);
 
-        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-
-        Graphics2D g = shot.createGraphics();
-
-        try
+        return new int[] {support.Pixels.count(shot, rgb -> isGreen(new Color(rgb))), support.Pixels.count(shot, rgb ->
         {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, size, size);
+            Color c = new Color(rgb);
 
-            annotation.paint(g, size, size, false);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        int green = 0;
-        int red = 0;
-
-        for (int x = 0; x < size; x++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                Color c = new Color(shot.getRGB(x, y));
-
-                if (c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140) green++;
-
-                if (c.getRed() > 150 && c.getGreen() < 80 && c.getBlue() < 80) red++;
-            }
-        }
-
-        return new int[] {green, red};
+            return c.getRed() > 150 && c.getGreen() < 80 && c.getBlue() < 80;
+        })};
     }
 
     /**
@@ -797,37 +749,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     /** An annotation painted on black: how many of its pixels are green, and the color of its corner. */
     private static int[] greenAndCorner(TileAnnotation annotation)
     {
-        int size = 48;
+        BufferedImage shot = paintedOnBlack(annotation, 48);
 
-        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-
-        Graphics2D g = shot.createGraphics();
-
-        try
-        {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, size, size);
-
-            annotation.paint(g, size, size, false);
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        int green = 0;
-
-        for (int x = 0; x < size; x++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                Color c = new Color(shot.getRGB(x, y));
-
-                if (c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140) green++;
-            }
-        }
-
-        return new int[] {green, shot.getRGB(1, 1)};
+        return new int[] {support.Pixels.count(shot, rgb -> isGreen(new Color(rgb))), shot.getRGB(1, 1)};
     }
 
     /**
