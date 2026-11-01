@@ -174,15 +174,10 @@ public class testAdvancedRoutes
     // The autoloc condition driving a function command
 
     /**
-     * A route command parses whatever case it is typed in.
-     *
-     * `Feedback` was matched through `toLowerCase()` and every other command name with `equals`, so
-     * "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list, typed
-     * by the same person. A format that accepts one spelling of one word and not another is a format
-     * nobody can learn.
-     *
-     * **The canonical casing is what this program writes**, so no existing route changes meaning - the
-     * lower-case forms below parse instead of failing with "unrecognised".
+     * A route command parses whatever case it is typed in: `Feedback` was matched through `toLowerCase()` and every
+     * other command name with `equals`, so "feedback 12,1" parsed and "emergency stop" did not.  The canonical casing
+     * is what this program writes, so no existing route changes meaning; the lower-case forms below parse instead of
+     * failing with "unrecognised".
      *
      * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
      *
@@ -222,23 +217,14 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Asking about an accessory must not create one (C13).
+     * Asking about an accessory must not create one (C13).  `Route.evaluate` reads an accessory condition through
+     * `getAccessoryState`, whose miss branch calls `newSwitch`, so merely EVALUATING a condition against an address the
+     * Central Station has never mentioned registers that address as a switch, and it persists into the database and
+     * onto the keyboard.  Conditions are evaluated on a timer while a route waits.
      *
-     * `Route.evaluate` reads an accessory condition through `getAccessoryState`, whose miss branch
-     * calls `newSwitch` - so merely EVALUATING a condition against an address the Central Station has
-     * never mentioned registers that address as a switch, and it persists into the database and onto
-     * the keyboard.  Conditions are evaluated on a timer while a route waits, so one condition naming
-     * a typo’d address invents an accessory the operator never made and cannot account for.
-     *
-     * The same fault was found and fixed in `NodeExpression`, whose comment says the fix was for
-     * "this display path" - the evaluate path was beside it and was not swept.  That is this
-     * project’s most reliable defect shape: one site fixed, the sibling left, with a comment on the
-     * fixed one describing what is still wrong next door.
-     *
-     * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then
-     * returns false, so an unknown address has always read as "not switched" and routes have always
-     * fired on that.  Removing the side effect must not also flip when a route fires, which is why
-     * this asserts the answer as well as the absence.
+     * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then returns false, so an
+     * unknown address has always read as "not switched" and routes have always fired on that.  Removing the side effect
+     * must not also flip when a route fires, which is why this asserts the answer as well as the absence.
      *
      * @throws Exception on a failure to build
      */
@@ -247,19 +233,12 @@ public class testAdvancedRoutes
     {
         final Accessory.accessoryDecoderType proto = Accessory.accessoryDecoderType.MM2;
 
-        // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory
-        // database is open, and it holds every MM2 address from 1 to 320 and every DCC address from 1
-        // to 2048.  Adam: **"there�s no reason to
-        // delete an accessory, since we just track their actuations.  them being in the database
-        // doesn’t otherwise harm anything."**  So those rows are not damage and nothing here is
-        // cleaning them up.
-        //
-        // They do mean every in-range address is taken, and a taken address makes every assertion
-        // below vacuous rather than red - so the search runs past 320, per Adam’s other instruction:
-        // pick one that is not on any track diagram.  An address above the protocol’s range is still
-        // an address a route condition can carry and still one getAccessoryState would register, which
-        // is the mechanism under test; being unreachable by a real decoder is what makes it certainly
-        // free.
+        // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory database is open and
+        // holds every MM2 address from 1 to 320 and every DCC address from 1 to 2048; those rows are not damage and
+        // nothing here cleans them up.  They do mean every in-range address is taken, which would make every assertion
+        // below vacuous rather than red, so the search runs past 320 to an address on no track diagram.  An address
+        // above the protocol's range is still one a route condition can carry and getAccessoryState would register,
+        // which is the mechanism under test.
         int free = -1;
 
         for (int candidate = 1; candidate <= 4096 && free < 0; candidate++)
@@ -641,14 +620,9 @@ public class testAdvancedRoutes
 
     /**
      * Renaming a locomotive repairs the routes whose CONDITION names it, not only their commands.
-     *
-     * Route.locomotiveRenamed sweeps the command list, and renameLoc runs it over every route - its own
-     * comment names routes as one of the two stores that hold locomotives by name and therefore need
-     * repairing.  Conditions are held separately, on MarklinRoute, and nothing swept them.
-     *
-     * The consequence is silent, which is what makes it worth a test: evaluate asks getLocByName for a
-     * name that no longer exists, gets null, and returns false forever.  The monitor thread keeps
-     * running and keeps logging "condition failed", so the route looks alive and never fires again.
+     * `Route.locomotiveRenamed` sweeps the command list; conditions are held separately, on MarklinRoute.  The
+     * consequence of missing them is silent: evaluate asks getLocByName for a name that no longer exists, gets null,
+     * and returns false forever, so the route looks alive and never fires again.
      */
     @Test
     public void testARenameReachesConditionsAndNotOnlyCommands() throws Exception
@@ -691,14 +665,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Capturing a command keeps one entry per locomotive, not one per kind of command.
-     *
-     * The filter keyed on everything before the first comma.  For an accessory line - "name,setting" -
-     * that is the accessory, which is right.  For a locomotive line - "prefix,name,value" - it is just
-     * "locspeed", so every locomotive in the route collapsed onto one key and only the last survived.
-     *
-     * The user sees this as a line vanishing from the middle of the text area while they click a
-     * turnout somewhere else, and saving persists the shortened route.
+     * Capturing a command keeps one entry per locomotive, not one per kind of command.  The filter keyed on everything
+     * before the first comma, which for a locomotive line - "prefix,name,value" - is just "locspeed", so every
+     * locomotive in the route collapsed onto one key and only the last survived.
      */
     @Test
     public void testCapturingKeepsEveryLocomotivesCommands() throws Exception
@@ -714,11 +683,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * The same filter still collapses repeated writes to one accessory, keeping the last.
-     *
-     * The precondition that makes the test above meaningful: a key wide enough to separate locomotives
-     * must not have become so wide that nothing dedupes any more.  Captured three-way pairs depend on
-     * this - rewriting an accessory moves it to the end, and that ordering is load-bearing.
+     * The same filter still collapses repeated writes to one accessory, keeping the last: a key wide enough to separate
+     * locomotives must not have become so wide that nothing dedupes any more.  Captured three-way pairs depend on this,
+     * since rewriting an accessory moves it to the end.
      */
     @Test
     public void testCapturingStillCollapsesRepeatedAccessoryWrites() throws Exception
@@ -734,11 +701,8 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A name routes can carry survives the text format; one they cannot does not.
-     *
-     * The guard exists because the format cannot express these names, so the test proves that rather
-     * than restating the predicate - a test that only asserted isNameUsable("a,b") is false would pass
-     * against a rule invented for no reason.
+     * A name routes can carry survives the text format; one they cannot does not.  The test proves that the format
+     * cannot express these names rather than restating the predicate.
      */
     @Test
     public void testANameRoutesCanCarrySurvivesTheTextFormat() throws Exception
@@ -775,20 +739,12 @@ public class testAdvancedRoutes
     /**
      * A name with a bracket is allowed, and survives the way routes are actually stored.
      *
-     * Adam: *"bracketed loc names should just be allowed"*.
+     * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a line break to
+     * find the grouping.  That mattered while conditions were stored as TEXT; they are not: `MarklinRoute.fromJSON`
+     * reads them through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
      *
-     * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a
-     * line break to find the grouping, so a condition naming `SBB 460 (2)` was torn into pieces. That
-     * mattered while conditions were stored as TEXT. They are not: `MarklinRoute.fromJSON` reads them
-     * through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
-     *
-     * So the guard outlived its reason, and what it cost was real - a 2.7.4c route naming such a
-     * locomotive could not be saved at all, not even to change the route's own name.
-     *
-     * **Both halves are asserted**, because the interesting fact is that they now disagree: the text
-     * form still cannot carry the name, and the JSON form can. That is what makes allowing it safe,
-     * and if the text form ever became load-bearing again this test would still be telling the truth
-     * about it.
+     * **Both halves are asserted**, because they now disagree: the text form still cannot carry the name, and the JSON
+     * form can.  That is what makes allowing it safe.
      *
      * MUTATION: putting the bracket back into `isNameUsable` fails the first assertion.
      */
@@ -838,12 +794,8 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route refused for having a duplicate name does not leave its monitor running.
-     *
-     * The complete constructor arms the s88 monitor as soon as the route is enabled and has a sensor -
-     * before the object has been offered to any database - so an import carrying two routes of the
-     * same name left the rejected one watching its sensor forever, firing turnouts for a route the UI
-     * has no handle on and only a restart could stop.
+     * A route refused for having a duplicate name does not leave its monitor running: the complete constructor arms the
+     * s88 monitor as soon as the route is enabled and has a sensor, before the object has been offered to any database.
      */
     @Test
     public void testARefusedRouteDoesNotKeepItsMonitorRunning() throws Exception
@@ -878,9 +830,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route started again while it runs says so in the log.  The sensor that triggers a route can fire again
-     * before the route has finished; the second start is dropped, as it always was, and said nothing - the window's own
-     * doors say a route is already running (`route.ui.infoAlreadyRunning`), and this door, the one a sensor uses, did not.
+     * A route started again while it runs says so in the log.  The sensor that triggers a route can fire again before
+     * the route has finished; the window's own doors say a route is already running (`route.ui.infoAlreadyRunning`),
+     * and this door, the one a sensor uses, said nothing.
      *
      * MUTATION: drop the line and this fails.
      *
@@ -954,13 +906,10 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route finishes its commands even if the locomotive it names is deleted while it runs.
-     *
-     * `deleteLoc` takes every command that drives that locomotive out of every route, through `Iterator.remove()`,
-     * from the event thread - while `execRoute` is part-way along the same list on its own thread with 200 ms between
-     * commands.  Both list kinds are fail-fast, so that thread died mid-route and everything after the command being
-     * sent was never sent: in one measurement three of eight turnouts were thrown, the road left half set, and
-     * nothing in the log to say so - the route reports itself finished either way.
+     * A route finishes its commands even if the locomotive it names is deleted while it runs: `deleteLoc` takes every
+     * command that drives that locomotive out of every route, through `Iterator.remove()`, from the event thread, while
+     * `execRoute` is part-way along the same list with 200 ms between commands.  Both list kinds are fail-fast, so
+     * that thread died mid-route and the road was left half set with nothing in the log.
      *
      * The model half is here; the door half - the UI refusing the delete while such a route runs - is
      * `runningRouteDriving`, asserted below.
@@ -1055,24 +1004,15 @@ public class testAdvancedRoutes
     /**
      * A running route about to CHAIN to another one is driving what that other route drives (MT-464).
      *
-     * **What Adam did**: *"I made Route 1, that fires a loc a route that fires a loc
-     * function after 10000ms.  Then I tried deleting alco UP (the target loc) from the loc db browser,
-     * and it went through on deleting ALCO UP."*
+     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and it asked each
+     * executing route about its OWN command list.  A route whose command is another ROUTE drives every locomotive that
+     * route drives, seconds later, on a thread nobody has started yet.  The window is as long as the delays sitting
+     * ahead of the chain command: here one accessory command with a four-second pause.
      *
-     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and
-     * it asked each executing route about its OWN command list.  A route whose command is another ROUTE
-     * drives every locomotive that route drives, seconds later, on a thread nobody has started yet - so
-     * the running route answered no, the delete was allowed, and the function was then sent for a
-     * locomotive the database no longer has.
+     * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and passes
+     * `limit - 1` down, so a route fired BY a route cannot fire a third.
      *
-     * The window is as long as the delays sitting ahead of the chain command.  Here it is one accessory
-     * command with a four-second pause, which is the shape of his ten-second one.
-     *
-     * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and
-     * passes `limit - 1` down, so a route fired BY a route cannot fire a third.
-     *
-     * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim
-     * below goes red.
+     * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim below goes red.
      *
      * @throws Exception from the route thread
      */
@@ -1152,14 +1092,11 @@ public class testAdvancedRoutes
 
     /**
      * A route is not edited while it runs, so afterwards it is still running and still drives what it drove.
-     *
-     * `editRoute` edits by deleting the route and adding a new object under the same id.  It carries across whether
-     * autonomy selected the route and whether it is locked, and not whether it is EXECUTING, which lives on the object:
-     * the new one read idle while the old one's thread went on sending its commands.  So `runningRouteDriving` lost it,
-     * and every door that refuses to edit or delete a locomotive a running route drives stood open; the route tile
-     * stopped showing it running; and its guard against being started again on top of itself was gone.
-     *
-     * The flag is set as `MarklinRoute.execRoute` sets it, with no thread, so nothing is sent and nothing is waited for.
+     * `editRoute` edits by deleting the route and adding a new object under the same id, and what a route is doing
+     * (EXECUTING) lives on the object: the new one would read idle while the old one's thread went on sending, so
+     * `runningRouteDriving` would lose it, the route tile would stop showing it running, and its guard against being
+     * started again on top of itself would be gone.  The flag is set as `MarklinRoute.execRoute` sets it, with no
+     * thread.
      *
      * MUTATION: take the refusal out of `MarklinControlStation.editRoute`, and this fails.
      *
@@ -1211,17 +1148,12 @@ public class testAdvancedRoutes
 
     /**
      * A Central Station sync does not replace a route while it runs, so afterwards it is still running and still
-     * drives what it drove (in the sync).
+     * drives what it drove.  Where the station's definition differs from the one held, the sync does the delete-and-add
+     * `editRoute` does, which refuses while the route runs, because what a route is doing lives on its object.
      *
-     * Where the station's definition of a route differs from the one held, the sync deletes the held route and adds
-     * the station's as a new object under the same id - the delete-and-add `editRoute` does, which refuses while the
-     * route runs, because what a route is doing lives on its object.  Replacing it would leave the new object reading
-     * idle while the old one's thread goes on sending its commands, so `runningRouteDriving` would lose it, and every
-     * door that refuses to edit or delete a locomotive a running route drives would stand open.
-     *
-     * The sync's per-route step is asked directly, with the station's description of the same route carrying one
-     * more command, because the whole sync needs a station on the network.  The flag is set as `MarklinRoute.execRoute`
-     * sets it, with no thread, so nothing is sent and nothing is waited for.
+     * The sync's per-route step is asked directly, with the station's description of the same route carrying one more
+     * command, because the whole sync needs a station on the network.  The flag is set as `MarklinRoute.execRoute`
+     * sets it, with no thread.
      *
      * MUTATION: take the running-route refusal out of `MarklinControlStation.adoptCentralStationRoute`, and this
      * fails.
@@ -1280,11 +1212,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Nor where the station has a route of the same NAME under another id (in the sync): the held route is
-     * deleted to make room for it, and a running one is not - the station's waits for the next sync.
-     *
-     * The sync's other replacing branch.  The station's route cannot be added beside the running one under the same
-     * name, so the step adds nothing, and the running route is still the one the model holds by that name.
+     * Nor where the station has a route of the same NAME under another id: the held route is deleted to make room for
+     * it, and a running one is not - the station's waits for the next sync.  The station's route cannot be added beside
+     * the running one under the same name, so the step adds nothing.
      *
      * MUTATION: take the running-route refusal out of the same-name branch of
      * `MarklinControlStation.adoptCentralStationRoute`, and this fails.
@@ -1340,12 +1270,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them.
-     *
-     * Adam's ruling: deleting a route removes the other routes' commands that run it, and the delete's
-     * question says how many routes call it - as deleting a locomotive removes the commands that drive it.  Left behind,
-     * a command naming a deleted route did nothing until somebody made a route of that name, and from then on ran it: a
-     * route nobody had put into the first one.
+     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them.  The
+     * delete's question says how many routes call it, as deleting a locomotive removes the commands that drive it.
+     * Left behind, a command naming a deleted route ran any route later made under that name.
      *
      * Through the door's own model method, `deleteRouteAndItsCalls`.  The model's `deleteRoute` is left as it is,
      * because `editRoute` deletes and re-adds through it, and an edit must not strip a route's callers.
@@ -1409,12 +1336,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route whose name carries a leading or trailing space can still be found and deleted.
-     *
-     * The two file parsers build a `MarklinRoute` with the name exactly as the file has it; `newRoute` then indexed
-     * it under the trimmed name while `deleteRoute` deleted by the route's own - so such a route could be neither
-     * deleted nor re-read by a sync, and `changeRouteId` put it into the database under both ids.  Central Station
-     * route names are typed by people, and a trailing space is invisible.
+     * A route whose name carries a leading or trailing space can still be found and deleted.  The two file parsers keep
+     * the name exactly as the file has it; `newRoute` indexed it under the trimmed name while `deleteRoute` deleted by
+     * the route's own.  Central Station route names are typed by people, and a trailing space is invisible.
      *
      * @throws Exception from the model
      */
@@ -1443,13 +1367,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A route tile on the diagram runs the route the database holds now, not the one it was wired to.
-     *
-     * `wireComponents` hands the tile the route OBJECT, and `LayoutDiagramComponent.execSwitching` runs whatever it
-     * was handed.  Every door that changes a route replaces that object - `editRoute` deletes and re-adds, the sync
-     * re-reads a station route that changed, an import replaces the lot - and only a full re-wire re-bound the
-     * tiles.  With the Central Station as the diagram source that happens once a session, so the tile went on
-     * running last session's commands, and a deleted route still fired from its tile.
+     * A route tile on the diagram runs the route the database holds now, not the one it was wired to.  `wireComponents`
+     * hands the tile the route OBJECT and every door that changes a route replaces that object, so only a full re-wire
+     * re-bound the tiles; with the Central Station as the diagram source that happens once a session.
      *
      * @throws Exception from the model
      */
@@ -1513,10 +1433,8 @@ public class testAdvancedRoutes
         {
             try { model.deleteRoute(name); } catch (Exception ignored) { }
 
-            // AND THE PAGE COMES OUT AGAIN.  It was put into the model's own page database by
-            // reflection a few statements up, and left there - so every class that ran after this one in
-            // the same JVM saw a page the layout never had, and anything that counts pages or walks them
-            // counted it.
+            // AND THE PAGE COMES OUT AGAIN: it was put into the model's own page database by reflection, and left
+            // there, every later class in the JVM would see a page the layout never had.
             try { layouts.delete(page.getName()); } catch (Exception ignored) { }
         }
     }
