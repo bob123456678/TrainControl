@@ -221,10 +221,10 @@ public class AutonomyChecks
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
     /**
-     * A station whose name the track diagram draws in more than one place on one page (OB-341).  What counts is what is
-     * DRAWN, by the rule the diagram uses (`AutonomySession.isCaptionDrawn`), and PER PAGE.  An ERROR, as an unlabeled
-     * station is.  One finding per station, filed on the first square its name is drawn twice on and ABOUT the station
-     * (`Finding.getAbout`), those squares as its related ones and their number as its count.
+     * A station whose name the track diagram draws in more than one place on one page (OB-341), by the rule the diagram
+     * uses (`AutonomySession.isCaptionDrawn`).  An ERROR, as an unlabeled station is.  One finding per station, filed
+     * on the first square its name is drawn twice on and ABOUT the station (`Finding.getAbout`), those squares as its
+     * related ones and their number as its count.
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
 
@@ -265,7 +265,7 @@ public class AutonomyChecks
 
     /**
      * An entry guard no route into its station commands.  A NOTICE, as all four guard notices: the setup is the
-     * operator's to get right.  `AutonomySession.guardNotices` reads all four off the built railway.
+     * operator's to get right (`AutonomySession.guardNotices` reads all four off the built railway).
      */
     public static final String GUARD_OFF_THE_WAY_IN = "autosetup.ui.checkGuardOffTheWayIn";
 
@@ -296,9 +296,8 @@ public class AutonomyChecks
     /**
      * A station every train must turn round at, with track reaching it from more than one side (MT-361).  An ERROR: a
      * square marked "must turn round" is emitted as one Point per arrival side, each leaving the way it came, so two
-     * ways in become two termini.  STATIONS ONLY: a must-turn square that is not a station is a plain reversing point
-     * (the `BACK_mid` of `core.testNonReversibleTrains`).  Barred arrivals do not count (shutting a side is one of the
-     * remedies); counted as sides, not arriving edges, since two edges can reach one square by the same side.
+     * ways in become two termini.  STATIONS ONLY: a must-turn square that is not a station is a plain reversing point.
+     * Barred arrivals do not count (shutting a side is one of the remedies); counted as sides, not arriving edges.
      */
     public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
 
@@ -360,8 +359,8 @@ public class AutonomyChecks
 
     /**
      * A berth whose approach is measured in part and not in whole.  A WARNING, because the berth rule judges as soon as
-     * anything on the approach is measured and so CAN refuse a train that fits: only where a lock edge shares a claimed
-     * place, and `whyABerthCannotHoldIt` returns at once for a locomotive with no train length.
+     * anything on the approach is measured and so CAN refuse a train that fits (only where a lock edge shares a claimed
+     * place, and `whyABerthCannotHoldIt` returns at once for a locomotive with no train length).
      */
     public static final String HALF_MEASURED_APPROACH = "autosetup.ui.checkHalfMeasuredApproach";
 
@@ -662,10 +661,9 @@ public class AutonomyChecks
         reversing.addAll(mustTurn);
 
         // SOMEWHERE AUTONOMY WOULD ACTUALLY SEND A TRAIN, not merely a station: `Layout.isSendableDestination` requires
-        // `isActive() && isAutoDestination() && !isReversing()`, and the set handed in asks the two a SQUARE can
-        // answer (the runtime's other clause takes a locomotive, and this notice is drawn with no train in the
-        // question, FR-058).  A reversing point whose only reachable station is a parking berth is useless in the run.
-        // A notice, the one severity that can carry the many non-destination squares without drowning the list.
+        // `isActive() && isAutoDestination() && !isReversing()`, and the set handed in asks the two a SQUARE can answer
+        // (the other clause takes a locomotive, FR-058).  A reversing point whose only reachable station is a parking
+        // berth is useless in the run.  A notice, the one severity that can carry the many non-destination squares.
         Set<TileKey> stationTiles = new LinkedHashSet<>();
 
         for (ReducedPoint point : reducer.getPoints().values())
@@ -794,9 +792,8 @@ public class AutonomyChecks
     /**
      * A square trains reverse at, whose track has no recorded length.  A train reversing into a berth shorter than
      * itself stands across the switch behind it, and `isPathClear` refuses that only where the track has been measured.
-     * The squares are decided by the session (`AutonomySession.reversalsWithoutLength`).  Only on a layout that
-     * measures track at all.  A WARNING, not an error: the guard simply cannot protect this square until it is
-     * measured.
+     * Decided by the session (`AutonomySession.reversalsWithoutLength`), only on a layout that measures track.  A
+     * WARNING: the guard cannot protect this square until it is measured.
      */
     private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
         Map<TileKey, Integer> reversalsWithoutLength)
@@ -824,8 +821,7 @@ public class AutonomyChecks
 
     /**
      * A square that emits an arrival copy nothing can leave, or nothing can reach.  Every other check asks about the
-     * SQUARE, so none catch it: a square can pass every reachability test while one copy is a trap.  ALL THREE ARE
-     * WARNINGS: `errorCount() > 0` refuses to start autonomy at all.
+     * SQUARE, so none catch it.  ALL THREE ARE WARNINGS: `errorCount() > 0` refuses to start autonomy at all.
      *
      * @param key which of the two messages to report
      */
@@ -855,9 +851,8 @@ public class AutonomyChecks
      * and has to back out, which nothing in the software will ask.  The wording is about backing out, not being
      * refused.
      *
-     * ONLY AT A PARKING BERTH NO ROUTE CAN BACK A TRAIN INTO (MT-552): at a berth a train can be backed into (rested
-     * first on another terminus, or turned at a reversing point on the way) non-reversible trains can still be backed
-     * in.
+     * ONLY AT A PARKING BERTH NO ROUTE CAN BACK A TRAIN INTO (MT-552): non-reversible trains can still be backed into a
+     * berth a route can back them into (rested first on another terminus, or turned at a reversing point on the way).
      *
      * @param notAutoDestinations the stations autonomy never chooses - the parking berths
      * @param berthsBackedInto the squares a route can back a train into; null where the setup does not build, and then
@@ -890,9 +885,9 @@ public class AutonomyChecks
     }
 
     /**
-     * Squares a train can reach and then not leave: a train arriving is pointing away from where it came from, so a
-     * square whose only way on is back is the end of its day unless trains may turn round there.  Usually the square IS
-     * a terminus and wants marking, or a branch off it is shut that should be open.
+     * Squares a train can reach and then not leave: a train arriving points away from where it came from, so a square
+     * whose only way on is back is the end of its day unless trains may turn round there.  Usually the square IS a
+     * terminus and wants marking, or a branch off it is shut that should be open.
      *
      * @param closable the squares whose trapped sides the arrivals menu can close, the only ones told to
      */
@@ -905,11 +900,10 @@ public class AutonomyChecks
         {
             TileKey tile = square.getKey();
 
-            // A STATION'S, as `AutonomySession` gathers them: "could not go on" warns about a place a train can be SENT
-            // and then be stuck, and nothing is sent to a plain point (OB-361).  The subject is the SIDE the train
-            // comes in by, in words (OB-201): the square is {0} wherever a finding is shown, and the side is {1}.
-            // Closing arrivals is offered only where the editor can do it: on a station, for sides that are not its
-            // last open way in; there the advice is the other two.
+            // A STATION'S, as `AutonomySession` gathers them: nothing is sent to a plain point (OB-361).  The subject
+            // is the SIDE the train comes in by, in words (OB-201): the square is {0} and the side {1}.  Closing
+            // arrivals is offered only on a station, for sides that are not its last open way in; there the advice is
+            // the other two.
             findings.add(new Finding(Severity.WARNING,
                 closable != null && closable.contains(tile) ? ARRIVAL_TRAPPED : ARRIVAL_TRAPPED_NO_CLOSING,
                 sidesInWords(square.getValue()), tile));
@@ -990,9 +984,8 @@ public class AutonomyChecks
         return findings;
     }
     /**
-     * Trains with no length, and stations with no maximum (FR-046).  Handed the answers as sets of squares, as every
-     * other check here is: the maximum is a point property the session holds and a train's length is on the
-     * Locomotive, which nothing in this class can reach.
+     * Trains with no length, and stations with no maximum (FR-046).  Handed the answers as sets of squares: the maximum
+     * is a point property the session holds and a train's length is on the Locomotive, which nothing here can reach.
      */
     private static List<Finding> checkLengths(GraphReducer reducer, Map<TileKey, String> withoutTrainLength,
         Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom,
@@ -1023,8 +1016,8 @@ public class AutonomyChecks
 
         for (Map.Entry<TileKey, String> train : withoutTrainLength.entrySet())
         {
-            // Named, because "a train has no length" sends the reader looking at seven of them: the name says which
-            // train to measure (the one standing there, which after a run is not always the one recorded).
+            // Named, because "a train has no length" sends the reader looking at seven of them; after a run the train
+            // standing there is not always the one recorded.
             TileKey square = train.getKey();
 
             String standing = train.getValue();
@@ -1040,8 +1033,8 @@ public class AutonomyChecks
                 nameOf(reducer, square), square));
         }
 
-        // And the two disagreeing, the case where both are filled in: the stated maximum first (the number the reader
-        // typed), the measured room second (the one that will actually refuse the train).
+        // And the two disagreeing: the stated maximum first (the number the reader typed), the measured room second
+        // (the one that will actually refuse the train).
         if (shortRunIns != null)
         {
             for (Map.Entry<TileKey, int[]> station : shortRunIns.entrySet())
@@ -1087,7 +1080,7 @@ public class AutonomyChecks
 
     /**
      * Is any locomotive recorded as standing in two places?  The running layout enforces one place per locomotive when
-     * a train MOVES, but the configuration is a different store, so a hand placement could sit beside an import's, and
+     * a train MOVES, but the configuration is a different store, so a hand placement could sit beside an import's and
      * fromJSON refuses the whole layout.  Reported against the SECOND square and any after it: the check cannot tell
      * which is the leftover, and listing all would say the setup has two problems when it has one.
      */
@@ -1148,8 +1141,8 @@ public class AutonomyChecks
             ReducedPoint point = reducer == null ? null : reducer.getPoints().get(entry.getKey());
 
             // INFORMATION, not an error (MT-078): barring every side stops AUTONOMY sending a train here but not a
-            // person driving one in, so blocking the setup would be wrong.  Nothing can come in ANY way is a different
-            // condition and already has POINT_ISOLATED.
+            // person driving one in.  Nothing can come in ANY way is a different condition and already has
+            // POINT_ISOLATED.
             findings.add(new Finding(Severity.INFO, NO_ARRIVALS_LEFT,
                 point == null || point.getName() == null || point.getName().trim().isEmpty()
                     ? entry.getKey().toString() : point.getName(),
@@ -1253,7 +1246,7 @@ public class AutonomyChecks
             {
                 // A terminus that cannot be left is the specific case worth naming: a train sent there is stuck.  A
                 // COMPULSORY TURN IS A TERMINUS HERE: `isTerminus` reads the authored flag, which setting a square's
-                // flags clears, and falls back to "nothing leaves it", never true of a compulsory turn.
+                // flags clears.
                 findings.add(new Finding(Severity.WARNING,
                     isTerminus(reducer, station, termini) || mustTurn.contains(station.getTile())
                         ? TERMINUS_STRANDED : STATION_REACHES_NOTHING,
