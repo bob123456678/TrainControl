@@ -22,19 +22,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-192: the window froze while autonomy ran; the trains kept moving but nothing repainted.
  *
- * The event thread was blocked on a lock someone else held.  `Layout.java`'s comment above `getEdges` names the
- * deadlock; one test per half: the railway must not take the window's monitor while holding its own
+ * The event thread was blocked on a lock someone else held (`Layout.java`'s comment above `getEdges` names the
+ * deadlock); one test per half: the railway must not take the window's monitor while holding its own
  * (`testADrivingThreadNeverWaitsForTheWindowsMonitor`), and the window must never take the railway's, nor on the event
- * thread at all (`testTheDiagramRefreshDoesNotWaitOnTheRailway`).  The measured doors are here;
- * `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the census of the rest.
+ * thread at all (this class).  The measured doors are here; `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the
+ * census of the rest.
  *
  * Bounded: a helper's monitor is released on a timer and every wait is a `Future.get(timeout)`, so a failure is a
  * message, not a hang.  The free cost of a refresh is measured first, so a red result is attributable.
  *
- * MUTATION: put the blocking call back - have `refreshCoveredTrack` ask
- * `getAutonomySession().tilesBlockedByStandingTrains(this.model.getAutoLayout())` on the event thread
- * - and `testTheDiagramRefreshDoesNotWaitOnTheRailway` goes red, timing out with the event thread
- * parked on `Layout.edgesCoveredByStandingTrains`.
+ * MUTATION: have `refreshCoveredTrack` ask `getAutonomySession().tilesBlockedByStandingTrains(...)` on the event thread
+ * again and `testTheDiagramRefreshDoesNotWaitOnTheRailway` times out with the event thread parked on
+ * `Layout.edgesCoveredByStandingTrains`.
  *
  * @author Adam
  */
@@ -327,10 +326,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The fourth door: the caption rule asks the railway whether autonomy can choose each station.
-     *
-     * `captionIsActive` reached `Layout.isChoosableByAutonomy` once per captioned square, from three event-thread
-     * paths.  The answer is now worked out on `CoveredTrackRenderer` and read off a volatile field.
+     * The fourth door: the caption rule asks the railway whether autonomy can choose each station (`captionIsActive`
+     * reached `Layout.isChoosableByAutonomy` once per captioned square, from three event-thread paths; the answer is
+     * worked out on `CoveredTrackRenderer` and read off a volatile field).
      *
      * MUTATION: put the `for (Point point : ...) if (railway.isChoosableByAutonomy(point))` loop back
      * into `captionIsActive` and this times out with the event thread parked on the railway's monitor.
@@ -387,11 +385,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The fifth door: the diagram's right-click menu is built on the event thread.
      *
-     * The constructor used to ask `Layout.getPossiblePaths` (synchronized, a whole-graph search); `showFor` now
-     * gathers the answers on a worker and hands them in, so the constructor must build a menu about a square with a
-     * train on it without asking the railway anything.  A train is placed first (the path section exists only for
-     * a square with a locomotive), and `gatherPathOptions` is called first on this thread, as `showFor`'s worker does,
-     * so a search put back inside the constructor would show.
+     * The constructor must build a menu about a square with a train on it without asking the railway anything:
+     * `showFor` gathers the answers (`Layout.getPossiblePaths`, synchronized, a whole-graph search) on a worker and
+     * hands them in.  A train is placed first (the path section exists only for a square with a locomotive), and
+     * `gatherPathOptions` is called first on this thread, as `showFor`'s worker does, so a search put back inside the
+     * constructor would show.
      *
      * MUTATION: move the `getPossiblePaths` call back out of `gatherPathOptions` into the constructor
      * and this times out.
@@ -440,10 +438,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The sixth door: the autonomy editor's "why is this train not moving" tool.
      *
-     * `AutonomyEditorPanel.applyWhy` asked `Layout.explainDestinations` (synchronized, a whole-graph walk per
-     * candidate) straight from the click.  The editor cannot be open while autonomy runs (OB-047), but
+     * `AutonomyEditorPanel.applyWhy` must not ask `Layout.explainDestinations` (synchronized, a whole-graph walk per
+     * candidate) straight from the click: the editor cannot be open while autonomy runs (OB-047), but
      * `AutoLocomotiveStatus.findPaths` can hold the monitor with nothing running, as this fixture does.  The question
-     * now goes to `WhyRenderer` and the answer is painted by an `invokeLater`; the capture stays on the event thread
+     * goes to `WhyRenderer` and the answer is painted by an `invokeLater`; the capture stays on the event thread
      * because `layoutSource.get()` and `getStationIndex` may build state.
      *
      * MUTATION: call `composeWhy` directly from `applyWhy` instead of submitting it, and this times
@@ -488,12 +486,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * What the tool says is the railway's own answer, not a shape that happens to be there (OB-191: it painted the
-     * paths and said nothing).
+     * What the tool says is the railway's own answer, not a shape that happens to be there (OB-191).
      *
-     * The railway is the oracle, asked from this thread: a train that cannot start names the reason, and one that
-     * can names the stations it may go to or says there are none.  Where the reduction finds a run to an offered
-     * station, `traces` must not be empty, which a `paintWhy` that dropped the worker's map would fail.
+     * The railway is the oracle, asked from this thread: a train that cannot start names the reason, and one that can
+     * names the stations it may go to or says there are none.  Where the reduction finds a run to an offered station,
+     * `traces` must not be empty, which a `paintWhy` that dropped the worker's map would fail.
      */
     @Test
     public void testTheWhyToolSaysWhatTheRailwaySays() throws Exception
