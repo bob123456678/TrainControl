@@ -34,7 +34,7 @@ import support.Mouse;
 
 /**
  * The track diagram editor, driven as the user drives it: the Edit button, the pointer over a square, the keys, the
- * right-click menu, clicks and drags, and the answers given to its dialogs (FR-136 Phase 6).
+ * right-click menu, clicks and drags, and the answers given to its dialogs.
  *
  * Each claim reads its outcome from one of three places: the page file written by Save and read back by a fresh
  * parser, the editor's undo stack as its own menu shows it, or the page the window holds after the editor closes.
