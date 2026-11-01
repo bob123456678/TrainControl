@@ -30,32 +30,26 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The turn a train makes at its destination reaches the setup, and reaches it the right way round.
+ * The turn a train makes at its destination reaches the setup, and reaches it the right way round (OB-190 / OB-189).
+ * Adam sends a train to a square trains may turn at, answers **"no, do not keep the direction"**, the locomotive
+ * physically turns, and the diagram must not go on drawing it facing the way it set off.
  *
- * OB-190 / OB-189.  Adam: he sends a train to a square trains may turn at, answers **"no, do not keep the direction"**,
- * the locomotive physically turns, and the diagram goes on drawing it facing the way it set off.
+ * `TrainControlUI.reconcileFacingWhenIdle` is the drain that carries a destination turn from the railway into the
+ * setup; `testADirectionChangeIsNotSwallowed` only reads `TrainControlUI.java` as a STRING.  This class runs a real
+ * journey on a sandbox copy of the railway (OB-111), turns the train at its destination the way the manual door does,
+ * drains, and asks the SETUP and the RUNNING LAYOUT what they now believe.
  *
- * `TrainControlUI.reconcileFacingWhenIdle`, the drain that carries a destination turn from the railway into the setup,
- * was reached by no executed test: `testADirectionChangeIsNotSwallowed` reads `TrainControlUI.java` as a STRING, so the
- * statement it proves is present is the one the defect lives in.  This class runs a real journey on Adam's own railway
- * (sandbox copy, OB-111), turns the train at its destination the way the manual door does, drains, and asks the SETUP
- * and the RUNNING LAYOUT what they now believe.
- *
- * Two ways it went wrong, which are the two journeys below.  Both come from the drain pivoting on
- * `AutonomySession.getFacing(tile)`, the setup's STORED facing for the arrival square, which
- * behaviour/editing-while-running.md 6a declares stale at that moment (and `captureFromLayout` never clears it, so an
- * empty square carries the last occupant's answer):
+ * Both failures come from the drain pivoting on `AutonomySession.getFacing(tile)`, the setup's STORED facing for the
+ * arrival square, which behaviour/editing-while-running.md 6a declares stale at that moment:
  *
  * 1. The turn is lost.  No stored facing means `flipFacing` returns null, and the drain removed the pending record
  *    anyway, so no later refresh can heal it.
- * 2. The turn is written backwards.  A stored facing that is the POST-turn side (the systematic case at a terminus)
- * flips
- *    to the PRE-turn side, and `moveOntoFacingCopy` stands the locomotive on the copy for the wrong facing.
+ * 2. The turn is written backwards.  A stored facing that is the POST-turn side flips to the PRE-turn side, and
+ *    `moveOntoFacingCopy` stands the locomotive on the copy for the wrong facing.
  *
- * What is reliable at that moment is behaviour/facing.md 4: a train faces the way it will leave, and once turned round
- * the two point the same way while the carriages have not moved.  So the facing of a train that has just turned at its
- * destination IS the side it arrived by, which the arrival wrote down itself: an absolute answer that needs no record
- * in sync.  The third test is the other half: a turn the drain could NOT write must still be owed.
+ * What is reliable is behaviour/facing.md 4: a train faces the way it will leave, so the facing of a train that has
+ * just turned at its destination IS the side it arrived by, which the arrival wrote down itself.  The third test is
+ * the other half: a turn the drain could NOT write must still be owed.
  *
  * @author Adam
  */
@@ -108,9 +102,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     public static void setUpClass() throws Exception
     {
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): the window opens
-        // whatever the layout preference names, which on Adam's machine is his real railway.  The SHAPE is what this
-        // class is about; where his trains stand and how long they are move, and a fixture that moves makes every class
-        // over it say something different every week.
+        // whatever the layout preference names.  The SHAPE is what this class is about; where his trains stand and how
+        // long they are move, and a fixture that moves makes every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // showUI, because `reconcileFacingWhenIdle` is a method of the window; debug on, because
@@ -147,10 +140,9 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
 
         assertNotNull(train, "this fixture has no locomotive to drive");
 
-        // AND IT HAS TO BE ABLE TO TURN, or there is no turn to record (MT-368).  A train that cannot reverse is never
-        // turned where turning is OPTIONAL, so the first locomotive in the database (not reversible) could not be
-        // turned at BottomMainB and `TURN_IT_ROUND` would describe a state the interface cannot produce.  Saved and put
-        // back in the teardown, as the locomotive database is shared with the rest of the suite.
+        // AND IT HAS TO BE ABLE TO TURN, or there is no turn to record (MT-368): a train that cannot reverse is never
+        // turned where turning is OPTIONAL, so `TURN_IT_ROUND` would describe a state the interface cannot produce.
+        // Saved and put back in the teardown, as the locomotive database is shared with the rest of the suite.
         reversibleWas = train.isReversible();
 
         train.setReversible(true);
@@ -228,15 +220,11 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     }
 
     /**
-     * A stale facing does not send the turn the wrong way.
-     *
-     * Case 2.  `FACING` is never cleared, so the arrival square commonly carries the previous occupant's answer, and
-     * these squares are exactly the ones whose occupants alternate facing.  Where that stale value is the POST-turn
-     * side, flipping it writes the PRE-turn side as the correction, and `moveOntoFacingCopy` moves the locomotive off
-     * the copy that was right.
-     *
-     * The stale value is seeded BEFORE the run: the window refreshes off the run's own completion announcement, so a
-     * value written afterwards can be overtaken by the drain.
+     * A stale facing does not send the turn the wrong way.  Case 2.  `FACING` is never cleared, so the arrival square
+     * commonly carries the previous occupant's answer; where that stale value is the POST-turn side, flipping it
+     * writes the PRE-turn side as the correction, and `moveOntoFacingCopy` moves the locomotive off the copy that was
+     * right.  The stale value is seeded BEFORE the run: the window refreshes off the run's own completion
+     * announcement, so a value written afterwards can be overtaken by the drain.
      *
      * MUTATION, run: pivoting on `getFacing(tile)` fails this with the facing left on the plain copy's
      * side and the locomotive standing on the plain copy.
@@ -265,11 +253,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     }
 
     /**
-     * A turn the drain could not write is still owed afterwards.
-     *
-     * The other half: the drain removed the pending record whether or not anything was written, so every way of failing
-     * to write destroyed the record of a turn the railway really made.  The unwritable case is manufactured: a name
-     * owed a turn at a Point that does not exist is exactly the shape of "the write cannot be made".
+     * A turn the drain could not write is still owed afterwards.  The drain removed the pending record whether or not
+     * anything was written.  The unwritable case is manufactured: a name owed a turn at a Point that does not exist.
      *
      * MUTATION, run: removing the pending entry unconditionally - the shipped behavior - fails this.
      */
