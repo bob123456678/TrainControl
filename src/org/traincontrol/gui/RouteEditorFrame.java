@@ -2222,7 +2222,7 @@ public class RouteEditorFrame extends JFrame
         if (locked) return;
 
         if (table == commands) commands.removeAt(row);
-        else conditions.removeAt(conditions.rowOf(row));
+        else conditions.removeLines(row);
     }
 
     /**
@@ -3892,7 +3892,10 @@ public class RouteEditorFrame extends JFrame
         {
             if (dragging != null && extend) return;
 
-            if (column == HANDLE && !toggle && !extend && getSelectedRowCount() > 1 && isRowSelected(line)) return;
+            // A press on the handle or the trash of a line in a selection keeps the selection: the drag, or the delete,
+            // takes all of it (MT-868).
+            if ((column == HANDLE || column == TRASH) && !toggle && !extend && getSelectedRowCount() > 1
+                && isRowSelected(line)) return;
 
             super.changeSelection(line, column, toggle, extend);
         }
@@ -4350,6 +4353,25 @@ public class RouteEditorFrame extends JFrame
             keys("ctrl shift S", "split", this::splitHere);
             keys("ctrl Z", "undo", this::undo);
             keys("ctrl Y", "redo", this::redo);
+
+            // On the table itself, not its editor: Delete in a cell being edited is the cell's own.
+            getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke("DELETE"), "deleteSelected");
+            getActionMap().put("deleteSelected", new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (!isEditing()) deleteSelected();
+                }
+            });
+        }
+
+        /** The Delete key (MT-868): every selected condition goes, as the menu's Delete takes them. */
+        void deleteSelected()
+        {
+            if (locked || !conditionsEditable || chosenRows().isEmpty()) return;
+
+            removeLines(lineOf(chosenRows().first()));
         }
 
         private void keys(String stroke, String name, Runnable action)
@@ -4869,10 +4891,10 @@ public class RouteEditorFrame extends JFrame
             return !locked && conditionsEditable && ConditionOutline.canGroup(rows, chosenRows());
         }
 
-        /** Whether Ungroup applies (OB-396): the selection is inside a nested group. */
+        /** Whether Ungroup applies (OB-396): a selected condition is inside a nested group. */
         boolean canUngroupSelected()
         {
-            return !locked && conditionsEditable && ConditionOutline.ungroupable(rows, chosenRows()) != null;
+            return !locked && conditionsEditable && !ConditionOutline.ungroupables(rows, chosenRows()).isEmpty();
         }
 
         void groupSelected()
@@ -4902,16 +4924,45 @@ public class RouteEditorFrame extends JFrame
             replaceWith(ConditionOutline.split(rows, chosen), commandsOf(chosen), before);
         }
 
+        /**
+         * Ungroup (MT-868): every group `ConditionOutline.ungroupables` names is lifted into its parent, by the parent's
+         * word, as one edit, and their conditions are selected.
+         */
         void ungroupSelected()
         {
             if (!canUngroupSelected()) return;
 
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            java.util.SortedSet<Integer> chosen = chosenRows();
-            ConditionOutline.Group lifted = ConditionOutline.ungroupable(rows, chosen);
+            List<List<RouteCommand>> lifting = new ArrayList<>();
+            List<ConditionOutline.Joiner> words = new ArrayList<>();
+            List<RouteCommand> shown = new ArrayList<>();
 
-            replaceWith(ConditionOutline.ungrouped(rows, chosen, wordOf(lifted.getParent())),
-                commandsOf(lifted.getConditions()), before);
+            // The words first, from the outline as it stands: a lift moves the lines the next group is found by.
+            for (ConditionOutline.Group group : ConditionOutline.ungroupables(rows, chosenRows()))
+            {
+                lifting.add(commandsOf(group.getConditions()));
+                words.add(wordOf(group.getParent()));
+                shown.addAll(commandsOf(group.getConditions()));
+            }
+
+            List<ConditionOutline.Row> after = new ArrayList<>(rows);
+
+            for (int at = 0; at < lifting.size(); at++)
+            {
+                java.util.Set<Integer> lines = new java.util.TreeSet<>();
+
+                for (int line = 0; line < after.size(); line++)
+                {
+                    for (RouteCommand command : lifting.get(at))
+                    {
+                        if (after.get(line).getCommand() == command) lines.add(line);
+                    }
+                }
+
+                after = ConditionOutline.ungrouped(after, lines, words.get(at));
+            }
+
+            replaceWith(after, shown, before);
         }
 
         /**

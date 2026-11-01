@@ -34336,3 +34336,42 @@ body:
 tail:
 | ---
 |
+
+[test MT-871]
+ordinal: 870
+anchor: mt-871
+date: 2026-11-01
+title: The trash, the Delete key and Ungroup take the whole selection of conditions
+disposition: needs test
+from: MT-868
+written: 2026-11-01
+reopened: no
+body:
+| <a id="mt-871"></a>
+| ### MT-871 - 2026-11-01 - The trash, the Delete key and Ungroup take the whole selection of conditions
+|
+| **Disposition:** needs test
+| **From:** MT-868
+|
+| **Written:** 2026-11-01
+|
+| **Steps**
+|
+| 1. Press **Add Route** and press **Add Condition** four times. Select the first two conditions and click the trash on one of them.
+| 2. Press **Undo**. Select the first two again, then click the trash on the fourth condition.
+| 3. Select two conditions and press the Delete key. Then double-click an address to edit it and press Delete inside it.
+| 4. Press **Cancel**, then **Add Route**, and press **Add Condition** five times: call them A to E. Select B and C, press **Group Selected**, and choose "At least one must be true" on its caption; do the same for D and E. Then select B, C and D and press **Ungroup**.
+| 5. Press **Undo**. Select A, B and C and press **Ungroup**.
+| 6. Press **Undo**. Select C alone and press **Add Condition**; select C and the new condition and press **Group Selected**. Then click the (B or C) group's caption to select it and press **Ungroup**.
+|
+| **Expected**
+|
+| - Step 1: both selected conditions are deleted. Step 2's Undo brings both back at once; the trash on the fourth deletes only that one.
+| - Step 3: both selected conditions are deleted. Inside the address being edited, Delete removes a character and no condition goes.
+| - Step 4: both groups are lifted, in one change, into the outer group, joined by its rule.
+| - Step 5: only the (B or C) group is lifted; A was in no group, and (D or E) stays.
+| - Step 6: the group whose caption you clicked is lifted; the group inside it stays a group.
+|
+tail:
+| ---
+|

@@ -3275,6 +3275,128 @@ public class testRouteEditorValidation
     }
 
     /**
+     * MT-868: the trash on a line inside a selection of several deletes every selected condition, as one edit that one
+     * Undo brings back; the trash on a line outside the selection deletes that line alone.  The Delete key deletes the
+     * selection too, but not while a cell is being edited.
+     *
+     * MUTATION: in `ConditionTable.changeSelection`, drop `|| column == TRASH`, and the press selects its line alone,
+     * so the trash on 22 deletes 22 only.
+     * MUTATION: in `ConditionTable.deleteSelected`, return at once, and the Delete key deletes nothing.
+     */
+    @Test
+    public void testTheTrashAndTheDeleteKeyTakeTheWholeSelection() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            selectLines(table, 0, 2);
+            clickCondition(table, 2, DELETE_MARK, 0);
+
+            assertEquals(levels(frame), " 0:23 0AND 0:24", "the trash on 22, with 21 and 22 selected");
+
+            press(frame, "route.ui.menuUndo");
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:24", "one Undo after the trash");
+
+            selectLines(table, 0, 2);
+            clickCondition(table, 6, DELETE_MARK, 0);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23", "the trash on 24, outside the selection");
+
+            selectLines(table, 2, 4);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
+
+            assertEquals(levels(frame), " 0:21", "the Delete key, with 22 and 23 selected");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22")));
+
+            selectLines(table, 0, 2);
+            javax.swing.SwingUtilities.invokeAndWait(() -> table.editCellAt((Integer) call(table, "lineOf", 0), ADDRESS));
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22", "the Delete key while an address is being edited");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * MT-868: Ungroup lifts every nested group a selected condition is in, as one edit: conditions in two sibling
+     * groups lift both, and a condition at the top level beside a group's conditions lifts that group.  A group inside
+     * another one selected stays a group.
+     *
+     * MUTATION: in `ConditionOutline.ungroupables`, return only the first group, and of two sibling groups only the
+     * first is lifted.
+     * MUTATION: in `ConditionOutline.ungroupables`, add every touched group, and lifting an outer group picked by its
+     * caption lifts its inner group too.
+     */
+    @Test
+    public void testUngroupLiftsEveryGroupTheSelectionTouches() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final String twoGroups = " 0:21 0AND 1:22 1OR 1:23 0AND 1:24 1OR 1:25";
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(twoGroups));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            selectLines(table, 2, 6);
+            press(frame, "route.ui.menuUngroup");
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:24 0AND 0:25",
+                "Ungroup with 22, 23 and 24 selected, in two groups");
+
+            press(frame, "route.ui.menuUndo");
+
+            assertEquals(levels(frame), twoGroups, "one Undo after Ungroup of two groups");
+
+            selectLines(table, 0, 4);
+            press(frame, "route.ui.menuUngroup");
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 1:24 1OR 1:25",
+                "Ungroup with 21, 22 and 23 selected: 21 is in no group to lift");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24")));
+
+            selectLines(table, 2, 6);
+            press(frame, "route.ui.menuUngroup");
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 1:23 1AND 1:24",
+                "Ungroup with all of (22 or (23 and 24)) selected keeps (23 and 24) a group");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
      * MT-868: Alt+Down and Alt+Up move every selected condition, together, and they stay selected; where the first
      * has nowhere to go, none moves.
      *

@@ -1264,15 +1264,41 @@ public final class ConditionOutline
     }
 
     /**
-     * The nested group Ungroup would lift: the innermost one holding these lines.
+     * The nested groups Ungroup lifts for a selection (MT-868): the group directly holding each selected condition,
+     * leaving out the top level and any group inside another of them, so a group picked by its caption is lifted whole
+     * and its own nested groups stay groups.
      *
-     * @return it, or null where they are not inside a nested group
+     * @param chosen line indices of the selected conditions; words among them are ignored
+     * @return the groups, in order; empty where there is nothing to lift
      */
-    public static Group ungroupable(List<Row> rows, Set<Integer> chosen)
+    public static List<Group> ungroupables(List<Row> rows, java.util.Collection<Integer> chosen)
     {
-        Group group = holding(groupsOf(rows), chosen);
+        List<Group> out = new ArrayList<>();
 
-        return group == null || group.parent == null ? null : group;
+        if (rows == null || chosen == null) return out;
+
+        Group top = groupsOf(rows);
+        List<Group> touched = new ArrayList<>();
+
+        for (int at : new java.util.TreeSet<>(chosen))
+        {
+            if (at < 0 || at >= rows.size() || rows.get(at).isJoiner()) continue;
+
+            Group group = holding(top, java.util.Collections.singleton(at));
+
+            if (group != null && group.parent != null && !touched.contains(group)) touched.add(group);
+        }
+
+        for (Group group : touched)
+        {
+            boolean inner = false;
+
+            for (Group up = group.parent; up != null; up = up.parent) inner |= touched.contains(up);
+
+            if (!inner) out.add(group);
+        }
+
+        return out;
     }
 
     /**
@@ -1280,7 +1306,7 @@ public final class ConditionOutline
      * the parent's word (OB-396).
      *
      * @param word the parent's word, which a parent of one item has nowhere to say
-     * @return a new list, or a copy unchanged where `ungroupable` finds nothing
+     * @return a new list, or a copy unchanged where these lines are not inside a nested group
      */
     public static List<Row> ungrouped(List<Row> rows, Set<Integer> chosen, Joiner word)
     {
