@@ -1831,11 +1831,6 @@ public class TileAnnotation
             : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
             : mustTurnShape(h, turning, large);
 
-        java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
-
-        java.awt.geom.Rectangle2D needs =
-            java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
-
         double scale = 1;
 
         // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (MT-710): a chord across a corner
@@ -1843,10 +1838,23 @@ public class TileAnnotation
         // them.
         boolean spills = known && bends;
 
-        // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved toward the middle as far as it needs, and made
-        // smaller only where even there it would not fit.
-        double[] at = spills ? new double[] {centre[0], centre[1], scale}
-            : fitInside(needs, scale, centre[0], centre[1], width, height);
+        double[] at;
+
+        if (spills)
+        {
+            at = new double[] {centre[0], centre[1], scale};
+        }
+        else
+        {
+            java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
+
+            java.awt.geom.Rectangle2D needs =
+                java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
+
+            // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved toward the middle as far as it needs, and made
+            // smaller only where even there it would not fit.
+            at = fitInside(needs, scale, centre[0], centre[1], width, height);
+        }
 
         scale = at[2];
 
