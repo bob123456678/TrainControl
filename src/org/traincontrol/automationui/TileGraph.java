@@ -29,9 +29,8 @@ public class TileGraph
 {
     /**
      * Something a setup collection is keyed by: always a square, sometimes a square plus more.  Keys are typed, never
-     * the string "page:x,y#state,index": erasure makes {@code Map<String, T>} and {@code Map<TileKey, T>} the same
-     * signature.  The self type lets the move-a-square, rename-a-page and drop-a-key helpers be written once over both
-     * kinds.
+     * the string "page:x,y#state,index" (erasure makes {@code Map<String, T>} and {@code Map<TileKey, T>} the same
+     * signature).  The self type lets the move, rename and drop helpers be written once over both kinds.
      *
      * @param <K> the implementing type itself
      */
@@ -423,10 +422,9 @@ public class TileGraph
 
     /**
      * A switch or signal that must be commanded to be passed, drawn without an address behind it.  Blocking by ruling:
-     * routing over one would mean trusting it to already lie the right way, which is what CUSTOM_PERM_* exists to
-     * declare.  Only fires when autonomy is being built (a diagram may contain address-less tiles and still work as
-     * one), so keep this check out of layout parsing and anything that runs on load.  A page that carries such tiles
-     * deliberately can be excluded from autonomy instead.
+     * routing over one would mean trusting it to already lie the right way (what CUSTOM_PERM_* exists to declare).
+     * Only fires when autonomy is being built, so keep this check out of layout parsing and anything that runs on load.
+     * A page that carries such tiles deliberately can be excluded from autonomy instead.
      */
     public static final String ERROR_NO_ADDRESS = "autosetup.ui.errorTileHasNoAddress";
 
@@ -439,16 +437,15 @@ public class TileGraph
 
     /**
      * Track running into a route button from three sides, one of which is silently dropped (OB-160): transparentRoutes
-     * joins N to S and E to W where both face, so the odd arm is severed.  Ambiguous rather than wrong: three arms
-     * cannot be a crossing, so there is no honest guess.  Four is a crossing and is not reported.
+     * joins N to S and E to W where both face, so the odd arm is severed.  Ambiguous rather than wrong; four is a
+     * crossing and is not reported.
      */
     public static final String ERROR_ROUTE_TILE_THREE_WAY = "autosetup.ui.errorRouteTileThreeWay";
 
     /**
      * The route id a link is traversed under, deliberately not one getRoutes will return: a link's own route is a stub
      * (the same side twice), listed as (0,0), and this is (0,-1) so the two never collide.  A link cannot carry a
-     * direction (a stub has one side, so directionAllows would compare it with itself), so AutonomyEditorPanel offers
-     * none on a link tile (testALinkIsNotOfferedADirection pins that).
+     * direction, so AutonomyEditorPanel offers none on a link tile (testALinkIsNotOfferedADirection pins that).
      */
     private static final RouteId PORTAL_ROUTE = new RouteId(0, -1);
 
@@ -771,11 +768,10 @@ public class TileGraph
 
     /**
      * Makes the two halves of each two-square crossing's track agree where the directions applied to them do not
-     * (OB-320).  Halves can disagree when answers were set while the squares were permanent turnouts, as in an older
-     * setup; they are then read as a turnout's, the same on both halves: towards the toe is the way the blades run and
-     * restricted nothing, so the track runs both ways; towards a leg is how a permanent turnout was closed, so the
-     * track is closed if either half was.  The graph's directions only: the setup keeps what was set, and the first
-     * edit sets both halves anew.
+     * (OB-320).  Halves can disagree when answers were set while the squares were permanent turnouts (an older setup);
+     * they are then read as a turnout's: towards the toe is the way the blades run and restricted nothing, so the track
+     * runs both ways; towards a leg is how a permanent turnout was closed, so the track is closed if either half was.
+     * The graph's directions only: the setup keeps what was set, and the first edit sets both halves anew.
      */
     public void settleCrossingHalves()
     {
@@ -1027,11 +1023,9 @@ public class TileGraph
             boolean unpairable = leadsOutsideAutonomy(entry.getValue());
 
             // A link track runs into is blocking (OB-150).  Adam: "there should also be an error if there exist ANY
-            // active (not excluded/disabled) links not linked to anything."
-            //
-            // The unreachable case, an arrow drawn on its own with no track joined, stays a warning: a diagram imported
-            // from a Central Station carries page-jump arrows nobody has paired.  It keeps its own message even when
-            // its destination is excluded, since nothing runs into it.
+            // active (not excluded/disabled) links not linked to anything."  An arrow drawn on its own with no track
+            // joined stays a warning (a diagram imported from a Central Station carries page-jump arrows nobody has
+            // paired), with its own message even when its destination is excluded, since nothing runs into it.
             String key;
 
             if (!reachable) key = WARN_PORTAL_UNREACHABLE;
@@ -1322,8 +1316,7 @@ public class TileGraph
 
             // Adjacent buttons that reach track at both ends.  Adam: "Only if they are connected to something else on
             // the graph"; a run touching track at one end connects nothing.  Counted over the whole run: three in a row
-            // is the same fault as two.  A straight north-south beyond the far button presents no face, so it is not a
-            // splice.
+            // is the same fault as two.
             if (runReachesTrackOnBothSides(tile))
             {
                 problems.add(new Problem(tile, ERROR_ADJACENT_ROUTE_TILES, true));
@@ -1412,9 +1405,8 @@ public class TileGraph
     /**
      * Whether a direction can be chosen for this route at all, given what the hardware allows.  The walk's half is
      * `directionAllows`: an authored direction ANDs with the hardware's restriction, so one the hardware refuses
-     * restricts nothing, and offering it is a control for an action the guard will not honor (OB-057, OB-090).  On a
-     * permanent turnout every route is directed at the toe, so "toward the fork" and "both ways" are not answers;
-     * `NONE` is always a real answer.
+     * restricts nothing, and offering it would be a control the guard will not honor (OB-057).  On a permanent turnout
+     * every route is directed at the toe, so "toward the fork" and "both ways" are not answers; `NONE` always is.
      */
     public static boolean directionIsPossible(Direction direction, Route route)
     {
@@ -1726,12 +1718,11 @@ public class TileGraph
 
     /**
      * Every run of plain track, keyed by the tile that speaks for it.  A run has one direction, not eleven: setting it
-     * tile by tile is busywork and a run that disagrees with itself is a silent trap (the arrows look set and no train
-     * can pass), so one tile in each run is set and the rest follow.  Computed from the diagram alone (tile types and
-     * which sides face which), never from the reduction: edges come and go as directions are set, so a derived run
-     * would regroup every time a route closed and the graying would move under the user.  A run tile is plain track:
-     * exactly one route through it, not a sensor, not something autonomy ignores; a switch, crossing or sensor ends the
-     * run.
+     * tile by tile is busywork and a run that disagrees with itself is a silent trap, so one tile in each run is set
+     * and the rest follow.  Computed from the diagram alone (tile types and which sides face which), never from the
+     * reduction: edges come and go as directions are set, so a derived run would regroup every time a route closed and
+     * the graying would move under the user.  A run tile is plain track: exactly one route through it, not a sensor,
+     * not something autonomy ignores; a switch, crossing or sensor ends the run.
      */
     public Map<TileKey, Run> runs()
     {
@@ -1985,10 +1976,9 @@ public class TileGraph
     /**
      * Brings every run of two or more squares to one direction, its narrowest (OB-361; Adam: *"Any disagreement should
      * be corrected so that the viewer displays the source of truth, and the editor flags issues, rather than surprising
-     * the user."*): a square that lets trains along it more ways than the run as a whole is given the run's way.  A
-     * train passes every square of a run, so no train's behavior changes; every square just says it.  A run whose
-     * squares point opposite ways is left as it is (`runsPointingOppositeWays`).  The result is also kept for
-     * `getNormalizedRuns`.
+     * the user."*): a square that lets trains along it more ways than the run as a whole is given the run's way.  No
+     * train's behavior changes; every square just says it.  A run whose squares point opposite ways is left as it is
+     * (`runsPointingOppositeWays`).  The result is also kept for `getNormalizedRuns`.
      */
     public Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> normalizeRuns()
     {

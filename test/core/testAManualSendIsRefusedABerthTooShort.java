@@ -28,14 +28,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * ruling was to refuse the send.
  *
  * The room rule was fenced off from most of the railway: `Layout.isPathClear` asked `measuredRoomToReverseInto` only
- * where the path ended somewhere the train would turn round (`ending.isTerminus() || ending.isReversing()`), so a plain
- * through platform was never judged on the track leading into it.  But a train always comes to rest with its head at
- * the destination sensor, so its tail extends back over the run in any kind of station; `edgesCoveredByStandingTrains`
- * models it that way and is not fenced on terminus (Adam's example is a THROUGH platform: "bottommainc should currently
- * be blocked since a train of length 4 is standing at bottommainb, which has a length of 1 leading up to its switch.").
+ * where the path ended somewhere the train would turn round, so a plain through platform was never judged on the track
+ * leading into it.  But a train always comes to rest with its head at the destination sensor, so its tail extends back
+ * over the run in any kind of station (`edgesCoveredByStandingTrains` models it that way; Adam's example is a THROUGH
+ * platform: "bottommainc should currently be blocked since a train of length 4 is standing at bottommainb, which has a
+ * length of 1 leading up to its switch.").
  *
- * The second half is the explanation: `explainDestinations` asks `barredFromAutonomy` first and returns its answer, so
- * a berth marked "not an automatic destination" - a parking track, the place a person sends a train by hand - reported
+ * The second half is the explanation: `explainDestinations` asked `barredFromAutonomy` first and returned its answer,
+ * so a berth marked "not an automatic destination" (a parking track, where a person sends a train by hand) reported
  * "Set not to be chosen automatically." and nothing else.
  *
  * MUTATION: putting the `isTerminus() || isReversing()` fence back around the room rule in
@@ -229,13 +229,12 @@ public class testAManualSendIsRefusedABerthTooShort
      *
      * MT-262's ruling is that a physical refusal outranks a preference, and there are two: the train does not fit down
      * the route, and the train fits but its body would lie across a road something else uses.  `isPathClear` asks both,
-     * and so does the staging planner; this branch asked only the first, so a berth the railway refuses on the second
-     * was reported as "Set not to be chosen automatically.".
+     * and so does the staging planner; this branch asked only the first.
      *
      * The fixture separates the two: fifty units of room after the switch, so the length rule admits the train, and a
      * two-unit train whose body claims the neck of the berth, metal a second road shares.  The assertion is agreement
-     * with `whyABerthCannotHoldIt` itself rather than a copy of its sentence, since a second spelling of a rule is this
-     * project's most repeated defect.
+     * with `whyABerthCannotHoldIt` itself rather than a copy of its sentence (a second spelling of a rule is this
+     * project's most repeated defect).
      *
      * MUTATION: drop the berth arm from `whyNoRouteFitsTo` and the reason falls back to the standing bar.
      */

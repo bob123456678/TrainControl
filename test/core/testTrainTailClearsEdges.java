@@ -22,15 +22,14 @@ import support.SourceOf;
  *
  * Adam: "I added train lengths to the layout, so make some tests that include various size trains."
  *
- * `Locomotive.trainLength` defaults to zero and no earlier test that executed a path set it, so the holding branch was
- * never entered.  There is ONE rule, and "cannot be known" means "assume the train is still there": `clearedEdges` is
- * read by `Layout.getActiveAccs`, which `MarklinRoute.heldReason` consults per command, and with atomicRoutes on
- * (Adam's configuration) being reported clear is the ONLY thing that drops an edge's protection.  An early clear lets
- * a route throw a TURNOUT on track the train is still standing on.  The single escape that is not a guess about this
- * train is a path with no measured lengths anywhere, where holding would hold until the route ended.
+ * There is ONE rule, and "cannot be known" means "assume the train is still there": `clearedEdges` is read by
+ * `Layout.getActiveAccs`, which `MarklinRoute.heldReason` consults per command, and with atomicRoutes on (Adam's
+ * configuration) being reported clear is the ONLY thing that drops an edge's protection, so an early clear lets a route
+ * throw a TURNOUT on track the train is still standing on.  The single escape that is not a guess about this train is a
+ * path with no measured lengths anywhere, where holding would hold until the route ended.
  *
- * The rule is asked directly, since asking it any other way needs a railway, a locomotive with a length and a path
- * with some measured edges; the call site is checked separately, the half that is usually forgotten.
+ * The rule is asked directly (asking it any other way needs a railway, a locomotive with a length and a path with some
+ * measured edges); the call site is checked separately, the half that is usually forgotten.
  *
  * @author Adam
  */
@@ -144,8 +143,7 @@ public class testTrainTailClearsEdges
         }
 
         // THE UNMEASURED FIRST EDGE: the escape once read "how much has the head covered so far", zero at the start of
-        // every run, so on edges [0, 100, 100] with a 250 train edge 0 went back at the first step.  Only the head had
-        // not reached a measured edge yet.
+        // every run, so on edges [0, 100, 100] with a 250 train edge 0 went back at the first step.
         assertFalse(Layout.tailHasProvablyPassed(false, 0, 250),
             "a path that has measured edges is treated as unmeasured because the head has not reached "
             + "one yet, so the first edge is handed back with the whole train on it - which on a "
@@ -173,10 +171,8 @@ public class testTrainTailClearsEdges
             + "happens on the railway");
 
         // THE WHOLE CALL, not the argument alone: a whole-file `contains` of `loc.getTrainLength()` stopped being
-        // unique once the reversal-room rule read the same length, so the clearing loop's argument could be deleted and
-        // it stayed green.  WHITESPACE-INSENSITIVE, because the file's line endings are git's to choose
-        // (`core.autocrlf=true`): a pinned newline finds nothing in a CRLF checkout, and the assertion then passes on a
-        // file it could not read.
+        // unique once the reversal-room rule read the same length.  WHITESPACE-INSENSITIVE, because the file's line
+        // endings are git's to choose (`core.autocrlf=true`): a pinned newline finds nothing in a CRLF checkout.
         String call = source.replaceAll("\\s+", " ");
 
         // THE LENGTH AS THE JOURNEY WAS DISPATCHED: read once, so a length written while the train runs
@@ -293,12 +289,11 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * An edge a non-atomic run gave back on the way is not given back again when the run ends.
-     *
-     * `unlockPath` skips the edges a run recorded in `releasedEarly`.  Every other claim seeds that record by
-     * reflection, so deleting the line that writes it left the suite green, and the unlock then released each
-     * early-given-back edge a second time, taking away the claim of whichever train had locked it since.  This runs a
-     * real path, non-atomic and unmeasured, and has another train claim the first edge at the route's end.
+     * An edge a non-atomic run gave back on the way is not given back again when the run ends.  `unlockPath` skips the
+     * edges a run recorded in `releasedEarly`; every other claim seeds that record by reflection, so deleting the line
+     * that writes it left the suite green and the unlock released each early-given-back edge a second time, taking away
+     * the claim of whichever train had locked it since.  This runs a real path, non-atomic and unmeasured, and has
+     * another train claim the first edge at the route's end.
      *
      * MUTATION: stop recording the early release (`released.add(givenBack)`) and this fails.
      */
@@ -374,12 +369,10 @@ public class testTrainTailClearsEdges
     }
 
     /**
-     * An edge is handed back at the sensor where the train's tail has passed it, not one sensor later.
-     *
-     * When the sensor at the end of edge i answers, the head has entered that sensor's square, so edge i-1 is behind it
-     * by edge i less that square (all of edge i where the edges record no squares, as in a hand-written configuration).
-     * The run counted edge i-1's length instead, so on a path of three edges or fewer the first was held to the end of
-     * the run whatever the train's length.
+     * An edge is handed back at the sensor where the train's tail has passed it, not one sensor later.  When the sensor
+     * at the end of edge i answers, the head has entered that sensor's square, so edge i-1 is behind it by edge i less
+     * that square (all of edge i where the edges record no squares, as in a hand-written configuration).  The run
+     * counted edge i-1's length instead, so on a path of three edges or fewer the first was held to the end.
      *
      * A-B-C-D, ten units an edge.  At C the head is ten units past the end of A-B, so a five-unit train is clear of it,
      * and a ten-unit one too (`tailHasProvablyPassed` reads `>=`).  At B nothing behind the head has been passed yet.
@@ -468,8 +461,7 @@ public class testTrainTailClearsEdges
      * A-B-C-D, ten units an edge.  An eleven-unit train at C still has a unit on A-B, which is held to the end.  With
      * no sensor at C the head has only been seen at B, so even a five-unit train's A-B is held at C (at D the run ends
      * and gives everything back).  The control is the same no-sensor path with nothing measured, where the unmeasured
-     * escape hands A-B back at C whatever the length.  Green before the fix as after it: the old arithmetic was late,
-     * never early.
+     * escape hands A-B back at C whatever the length.
      *
      * MUTATION: move `headSeenAt` at a Point with no sensor too (drop the `seenHere` test), and this fails.
      */

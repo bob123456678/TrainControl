@@ -64,43 +64,23 @@ public class testParseCS2Layout
     }
     
     /**
-     * A page edit keeps the parts of the index TrainControl does not model.
-     *
-     * **Silent modification of a file the user did not ask to change.** The page exporter was given
-     * a rule - *"what TrainControl does not understand it is not entitled to throw away"* - and the
-     * INDEX never got it. `writeLayoutIndex` regenerates the whole header from four hardcoded lines,
-     * so any block a Central Station put there that this program has no name for is deleted by the
-     * first page add, rename, delete or duplicate.
-     *
-     * The genuine CS2 export this repository ships carries exactly one such block: `zuletztBenutzt`,
-     * the station remembering which page you were last looking at. Adam never sees this because his
-     * files are already TrainControl-normalized; a new user who downloads their layout from the
-     * station and then names one station gets an index the station never wrote.
-     *
-     * **And the latent half.** `readLayoutIndexIds` walked the file for `.name=` lines and called
-     * every one of them a page - so `zuletztBenutzt`'s own name was read as a page at position 0.
-     * Harmless only because the same name always reappears further down as a real `seite` and the map
-     * overwrites it. Preserving the block is what makes that luck expire, so both halves are here.
+     * A page edit keeps the parts of the index TrainControl does not model.  `writeLayoutIndex` regenerates the whole
+     * header, so a block a Central Station put there that this program has no name for (the shipped export carries
+     * `zuletztBenutzt`, the last-viewed page) was deleted by the first page add, rename, delete or duplicate.  Also
+     * `readLayoutIndexIds` called every `.name=` line a page, so that block's own name was read as a page at position
+     * 0, harmless only while the same name reappears as a real `seite`.
      *
      * MUTATION: remove the `readLayoutIndexExtras` loop from `writeLayoutIndex` and the first
      * assertion fails; remove the `inPage` guard from the id reader and the third does.
      */
     /**
-     * A block name the station capitalized is still a block.
+     * A block name the station capitalized is still a block.  The Central Station writes `Version` with a capital V and
+     * `readLayoutIndexIds` matches block names without regard to case; `CS2File.parseFile` did not (`^[a-z]+$`), so a
+     * page block spelled `Seite` was no block and the parser returned **zero pages and zero failures**: nothing threw,
+     * the "a page could not be read" guard stayed silent, and the operator got an empty diagram.
      *
-     * The Central Station writes `Version` with a capital V, and `LayoutDiagram.readLayoutIndexIds`
-     * has matched block names without regard to case - the test below this one exists
-     * for exactly that. `CS2File.parseFile` did not: its block-name arm was `^[a-z]+$`, so a page
-     * block spelled `Seite` was not a block, its `.name=` and `.id=` lines were attached to whatever
-     * came before, and the parser returned **zero pages and zero failures**.
-     *
-     * That combination is the quiet one. Nothing threw, so the "a page could not be read" count was 0
-     * and the guard that reverts to the Central Station stayed silent; the operator got an empty
-     * diagram, no message, and the layout-folder override kept.
-     *
-     * **Both halves, in one test, because the defect is that they disagreed.** The index reader and
-     * the page parser are asked about the same bytes: if one of them ever stops matching the other's
-     * spelling again, the two numbers move apart here.
+     * The index reader and the page parser are asked about the same bytes, so if one stops matching the other's
+     * spelling the two numbers move apart here.
      *
      * MUTATION: narrow the block-name arm in `parseFile` back to `^[a-z]+$` and the parser's count
      * falls to zero while the index reader still says two.
@@ -184,18 +164,14 @@ public class testParseCS2Layout
 
             assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
 
-            // An index in the shape the shipped CS2 export has: the station's own last-used-page
-            // memory first, then the pages.  `.id=` deliberately does NOT start at 1, so an id that
-            // is merely a position cannot pass for one that was kept.
-            // The block names a page that is NOT in the list below, on purpose.  Named after one
-            // that is, the buggy reader puts it in at position 0 and the real page overwrites it a
-            // few lines later - so the assertion passes either way and proves nothing.  That is what
-            // "benign by luck" means, and it is also what makes it untestable if copied literally.
+            // An index in the shape the shipped CS2 export has: the station's own last-used-page memory first, then the
+            // pages.  `.id=` deliberately does NOT start at 1, so an id that is merely a position cannot pass for one
+            // that was kept.  The block names a page that is NOT in the list below, on purpose: named after one that
+            // is, the buggy reader puts it in at position 0 and the real page overwrites it, so the assertion passes
+            // either way and proves nothing.
             String original = "[gleisbild]\n"
-                // CAPITAL V, as the shipped `sample_layout/config/gleisbild.cs2` spells it, and the
-                // whole reason the first version of this test could not fail.  Spelled the
-                // way the WRITER spells it, the block is matched, skipped, and regenerated - so a
-                // case-sensitive match looks correct.  The genuine export is the case that breaks.
+                // CAPITAL V, as the shipped `sample_layout/config/gleisbild.cs2` spells it.  Spelled the way the WRITER
+                // spells it, the block is matched, skipped and regenerated, so a case-sensitive match looks correct.
                 + "Version\n .major=1\n"
                 + "zuletztBenutzt\n .name=Retired Page\n"
                 + "groesse\n"
@@ -246,13 +222,10 @@ public class testParseCS2Layout
             assertEquals(after.split("zuletztBenutzt", -1).length - 1, 1,
                 "the block appears more than once - carried over AND regenerated:\n" + after);
 
-            // AND THE MODELED HEADER TOO, which is the assertion that was missing.
-            //
-            // The one above is on a block that is genuinely unmodeled, so it can only catch a
-            // duplicate of something the writer never emits.  The duplicate that actually happened
-            // was of `version` - regenerated by the writer AND carried over by the reader, because
-            // the reader matched case-sensitively and the file says `Version`.  Asserting the
-            // interesting one is not the same as asserting the one that cannot go wrong.
+            // AND THE MODELED HEADER TOO: the assertion above is on a block that is genuinely unmodeled, so it can only
+            // catch a duplicate of something the writer never emits.  The duplicate that actually happened was of
+            // `version`, regenerated by the writer AND carried over by the reader, which matched case-sensitively while
+            // the file says `Version`.
             int versions = 0;
 
             for (String line : after.split("\n"))
@@ -293,11 +266,8 @@ public class testParseCS2Layout
         file.delete();
     }
     /**
-     * The page id from gleisbild.cs2 reaches the parsed layout.
-     *
-     * Autonomy stores its setup against this id rather than the page name, because a name is what a user
-     * renames and an id is not.  Nothing else in TrainControl reads it, so nothing else would notice if
-     * parsing stopped carrying it - hence a test.
+     * The page id from gleisbild.cs2 reaches the parsed layout.  Autonomy stores its setup against it (a name is what
+     * a user renames); nothing else reads it, so nothing else would notice if parsing stopped carrying it.
      */
     @Test
     public void testPageIdIsParsed()
@@ -308,12 +278,9 @@ public class testParseCS2Layout
     }
 
     /**
-     * Reading the index must not change which pages come back, or in what order.
-     *
-     * parseLayoutList was rewritten to keep the page id alongside the name.  An index keyed by name
-     * would have been the obvious shape and is wrong: two pages may share a name, and collapsing them
-     * would silently drop one from every caller - including the download that writes the files back
-     * out.  So the list is one entry per page, in file order, duplicates and all.
+     * Reading the index must not change which pages come back, or in what order.  The list is one entry per page, in
+     * file order, duplicates and all: an index keyed by name would silently drop one of two pages sharing a name from
+     * every caller, including the download that writes the files back out.
      */
     @Test
     public void testEveryPageInTheIndexComesBackInFileOrder() throws Exception
@@ -340,19 +307,14 @@ public class testParseCS2Layout
     }
 
     /**
-     * The page list a user sees is sorted, and stays sorted.
+     * The page list a user sees is sorted, and stays sorted.  File order is what parsing returns; lexicographic order
+     * is what the layout selector shows.
      *
-     * File order is what parsing returns; lexicographic order is what the layout selector shows.  The
-     * two are different on purpose, and the parsing change must not have quietly swapped one for the
-     * other.
-     *
-     * Driven against three names added directly to the model's layout database in a scrambled order,
-     * rather than against whatever model.getLayoutList() already returns: that list comes from
-     * LAYOUT_OVERRIDE_PATH_PREF, a machine preference, not from this test's own fixture, and comparing it with a
-     * sorted copy of itself is trivially true at 0 or 1 pages.  RemoteDeviceCollection stores names
-     * in a plain HashMap, whose iteration order is neither insertion order nor alphabetical, so three
-     * names added as Zulu, Alpha, Mike coming back as Alpha, Mike, Zulu is real evidence that
-     * getLayoutList()'s own Collections.sort ran, not a coincidence of insertion order.
+     * Driven against three names added directly to the model's layout database in a scrambled order, not against
+     * whatever model.getLayoutList() returns (that list comes from LAYOUT_OVERRIDE_PATH_PREF, a machine preference, and
+     * comparing it with a sorted copy of itself is trivially true at 0 or 1 pages).  RemoteDeviceCollection stores
+     * names in a plain HashMap, so Zulu, Alpha, Mike coming back as Alpha, Mike, Zulu is real evidence that
+     * getLayoutList()'s own Collections.sort ran.
      */
     @Test
     public void testTheLayoutListIsStillSortedLexicographically() throws Exception
@@ -405,10 +367,8 @@ public class testParseCS2Layout
     }
 
     /**
-     * A parsed layout still writes back out as valid CS2 text.
-     *
-     * The page id lives in the index file rather than in a page, so exporting a page must be unchanged
-     * by carrying it - and this is the path a diagram edit saves through.
+     * A parsed layout still writes back out as valid CS2 text: carrying the page id (which lives in the index file)
+     * must leave a page export unchanged, and a diagram edit saves through this path.
      */
     @Test
     public void testAParsedLayoutStillExportsAsCS2Text() throws Exception
@@ -711,13 +671,9 @@ public class testParseCS2Layout
     }
 
     /**
-     * A component TrainControl has never heard of survives being saved.
-     *
-     * Saving regenerates the whole page from the model, and an element whose type the parser cannot map
-     * never entered the model - so writing the file deleted it.  That is not a save the user asked for:
-     * naming one station writes its page out, and renaming a point writes out every page showing that
-     * name.  A diagram with one unrecognized element on it lost that element the first time somebody
-     * typed a station name.
+     * A component TrainControl has never heard of survives being saved.  Saving regenerates the whole page from the
+     * model, and an element whose type the parser cannot map never entered the model, so writing the file deleted it:
+     * naming one station writes its page out, and renaming a point writes every page showing that name.
      */
     @Test
     public void testAnUnrecognisedElementSurvivesASave() throws Exception
@@ -750,20 +706,11 @@ public class testParseCS2Layout
     }
 
     /**
-     * The `page=` line at the top of a page file survives a save.
-     *
-     * **A line deleted from every page the application has ever saved.**  `parseFileContents` knew
-     * three shapes of line - a block name, a `" .key=value"`, a `" .key"` array header - and the second
-     * line of a genuine Central Station page export is none of them: `page=1`, at the left margin, with
-     * an equals sign.  It became no item, so it reached neither `addUnmodelledBlock` nor
-     * `addUnmodelledElement`, and the exporter regenerates the whole file from the model.
-     *
-     * Measured on this repository's own exports before the fix: the four pages of `cs2_sample_layout`
-     * the application works on had lost it, and `5 - Test.cs2`, which nothing edits, still had it.
-     *
-     * This is the third instance of one rule - *"what TrainControl does not understand it is not
-     * entitled to throw away"* - which had a keeper for a block and a keeper for an element, and this
-     * shape is neither.
+     * The `page=` line at the top of a page file survives a save.  `parseFileContents` knew three shapes of line (a
+     * block name, a `" .key=value"`, a `" .key"` array header) and the second line of a genuine Central Station page
+     * export is none of them: `page=1`, at the left margin.  It reached neither `addUnmodelledBlock` nor
+     * `addUnmodelledElement`, and the exporter regenerates the whole file from the model.  The third instance of one
+     * rule: *"what TrainControl does not understand it is not entitled to throw away"*.
      *
      * MUTATION: delete the fourth arm of `parseFileContents`, or the `bareKeys` loop in
      * `exportToCS2TextFormat`, and the first assertion fails.
@@ -805,11 +752,9 @@ public class testParseCS2Layout
     }
 
     /**
-     * A page file that is nothing but a header and its key does not lose the key.
-     *
-     * The keys are held until a block opens, because that is where the file puts them and the exporter
-     * has to write them back in that order.  A file with no block at all - which a truncated or
-     * hand-edited page is - would otherwise reach the end of the read still holding them.
+     * A page file that is nothing but a header and its key does not lose the key.  The keys are held until a block
+     * opens, so a file with no block at all (a truncated or hand-edited page) would reach the end of the read still
+     * holding them.
      *
      * MUTATION: delete the flush in `parseFileContents`'s final pass and this fails while the test
      * above still passes.
@@ -825,15 +770,9 @@ public class testParseCS2Layout
     }
 
     /**
-     * What the station wrote INSIDE a page's own block survives a page edit.
-     *
-     * `readLayoutIndexExtras` keeps whole blocks it has no name for and declares `seite` modeled.
-     * That is true of the two keys the writer emits - `.id` and `.name` - and false of the block: a
-     * Central Station writes the page's scroll position into it as `.xoffset` and `.yoffset`.  So the
-     * index kept `zuletztBenutzt` at the top of the file, as the earlier version intended, and still
-     * deleted what sat inside each page.
-     *
-     * The same rule as the test above, one file up.
+     * What the station wrote INSIDE a page's own block survives a page edit.  `readLayoutIndexExtras` keeps whole
+     * blocks it has no name for and declares `seite` modeled, true of the two keys the writer emits (`.id`, `.name`)
+     * and false of the block: a Central Station writes the page's scroll position into it as `.xoffset` and `.yoffset`.
      *
      * MUTATION: remove either `appendPageExtras` call from `writeLayoutIndex` and this fails.
      */
@@ -899,26 +838,14 @@ public class testParseCS2Layout
     /**
      * Each page keeps the unmodeled keys the file states for it, even when two pages claim one id.
      *
-     * **The ambiguity was in the map key, not in the file.** `readLayoutIndexPageExtras` was keyed by
-     * page id, and two pages can resolve to one: a map keeps the last, and `writeLayoutIndex` reissues
-     * the LATER page's id - so the page that kept the id inherited the keys of the page that lost it.
-     * That much was real.
+     * `readLayoutIndexPageExtras` is keyed by page NAME, not id: two pages can resolve to one id, and
+     * `writeLayoutIndex` reissues the LATER page's id, so keyed by id the page that kept the id would inherit the keys
+     * of the one that lost it.  Withdrawing the contested id instead threw away a real page's keys: `Oles kreds`, the
+     * genuine export in this repository, opens with a `seite` carrying `.xoffset=1`, `.yoffset=3` and no `.id`, which
+     * resolves to position 1 while the page after it states `.id=1`.
      *
-     * **Its fix withdrew the contested id, and that threw away a real page's keys.** `Oles kreds` - the
-     * genuine Central Station export in this repository - opens with a `seite` that carries
-     * `.xoffset=1`, `.yoffset=3` and no `.id`, which resolves to its position, 1, while the page after it
-     * states `.id=1`. Withdrawing id 1 deleted the offsets the file states for the first page
-     * unambiguously. Nothing was gained: `writeLayoutIndex` computes a reissued id as one above every id
-     * in the file, so a reissued page can never find anything in a map keyed by ids read from that same
-     * file - the misattribution needs the keys to sit on the page that LOSES, and the loser is the later
-     * one in name order, which is the synthetic shape below and not the real one.
-     *
-     * So the lines are keyed by the page's NAME, which identifies a page everywhere else in this program
-     * and which the file states on every block.
-     *
-     * **Both shapes, because only one of them was ever tested.** Alpha/Beta is the synthetic pair that
-     * the first fix was written against; Gamma/Delta is the shape in the repository, where the first page
-     * states no id at all.
+     * Both shapes: Alpha/Beta is the synthetic pair, Gamma/Delta the shape in the repository (the first page states no
+     * id at all).
      *
      * MUTATION: key the map by `pageIdOrPosition(idText, position)` again and the first case puts Beta's
      * offsets on Alpha; add the withdrawal back and the second case loses Gamma's entirely.
@@ -997,10 +924,8 @@ public class testParseCS2Layout
     }
 
     /**
-     * The control: ONE page claiming an id still keeps its keys.
-     *
-     * Withdrawing on a collision must not withdraw on every page, which is what a guard written as
-     * "an id that has been seen" rather than "an id claimed twice" would do.
+     * The control: ONE page claiming an id still keeps its keys.  Withdrawing on a collision must not withdraw on every
+     * page, as a guard written as "an id that has been seen" would.
      */
     @Test
     public void testOnePageClaimingAnIdStillKeepsItsKeys() throws Exception
@@ -1040,13 +965,10 @@ public class testParseCS2Layout
     }
 
     /**
-     * A page with NO id keeps what the station wrote inside its block.
-     *
-     * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -
-     * opens with exactly this: a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id` at all.
-     * An absent id is ZERO (Adam) - which is what `pageIdOrPosition` says and what
-     * `readLayoutIndexIds` does with the same file - so a reader that insisted on a stated id would
-     * drop the offsets of the one page in the shipped export that has any.
+     * A page with NO id keeps what the station wrote inside its block.  The genuine export in this repository
+     * (`Oles kreds/config/gleisbild.cs2`) opens with a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id`.  An
+     * absent id is ZERO (Adam), as `pageIdOrPosition` and `readLayoutIndexIds` say, so a reader that insisted on a
+     * stated id would drop the offsets of the one page in the shipped export that has any.
      *
      * MUTATION: make `readLayoutIndexPageExtras` skip a page whose `.id` is absent and this fails
      * while the two tests above pass.
@@ -1097,11 +1019,9 @@ public class testParseCS2Layout
     }
 
     /**
-     * A renamed page keeps what the station wrote inside its block.
-     *
-     * The reason the extras are keyed by id.  A rename is the one operation where the writer is
-     * holding a name the index has never seen, and by-name bookkeeping would drop the offsets of
-     * exactly the page the operator just touched.
+     * A renamed page keeps what the station wrote inside its block.  A rename is the one operation where the writer
+     * holds a name the index has never seen, so by-name bookkeeping would drop the offsets of exactly the page the
+     * operator just touched.
      *
      * MUTATION: key `readLayoutIndexPageExtras` by name and this fails while the test above passes.
      */
@@ -1147,10 +1067,8 @@ public class testParseCS2Layout
     }
 
     /**
-     * A key on a component the model DOES understand, but has no field for, survives too.
-     *
-     * The same loss one level down: the component is kept, and everything the file said about it that
-     * this program has no variable for is dropped on the way out.
+     * A key on a component the model DOES understand, but has no field for, survives too (the same loss one level
+     * down).
      */
     @Test
     public void testAnUnknownKeyOnAKnownComponentSurvivesASave() throws Exception
@@ -1238,15 +1156,11 @@ public class testParseCS2Layout
     }
 
     /**
-     * A signal keeps the exact type and rotation the file gave it.
-     *
-     * The type mapping is many-to-one - fifteen signal words all become SIGNAL - while the export wrote
-     * one canonical word back, so every variant the file distinguished collapsed the first time a page
-     * was saved.  Worse for a semaphore: the parser turns any type whose word contains "_f_" by a
-     * quarter to correct the artwork, and "signal" does not contain it, so the correction was baked into
-     * the file and the signal came back turned a step further on every save.
-     *
-     * Autonomy saved pages unasked during its migration, so this was not a theoretical round trip.
+     * A signal keeps the exact type and rotation the file gave it.  The type mapping is many-to-one (fifteen signal
+     * words all become SIGNAL) while the export wrote one canonical word back, so every variant collapsed on the first
+     * save.  Worse for a semaphore: the parser turns any type whose word contains "_f_" by a quarter to correct the
+     * artwork, and "signal" does not contain it, so the correction was baked into the file and the signal came back
+     * turned a step further on every save.  Autonomy saved pages unasked during its migration.
      */
     @Test
     public void testASignalKeepsItsExactTypeAndRotation() throws Exception
@@ -1271,13 +1185,10 @@ public class testParseCS2Layout
     }
 
     /**
-     * An element carrying a CS2 array comes back as an array, not as one line with braces in it.
-     *
-     * The parser folds a key and its " ..sub=value" lines into a single map entry holding
-     * "{a=b}|{c=d}".  Writing that back as one " .key=..." line keeps the text and loses the shape - a
-     * parser would read it as a scalar that happens to contain braces.  The whole reason unmodeled
-     * content is kept is that a later firmware\u2019s file should survive a round trip, and this is the
-     * shape most likely to BE a later firmware\u2019s.
+     * An element carrying a CS2 array comes back as an array, not as one line with braces in it.  The parser folds a
+     * key and its " ..sub=value" lines into one map entry holding "{a=b}|{c=d}"; writing that back as one " .key=..."
+     * line keeps the text and loses the shape.  Unmodeled content is kept so a later firmware’s file survives a round
+     * trip, and this is the shape most likely to BE a later firmware’s.
      */
     @Test
     public void testAnArrayInAnUnmodelledElementKeepsItsShape() throws Exception
@@ -1306,17 +1217,13 @@ public class testParseCS2Layout
     }
 
     /**
-     * A semaphore the file gave no rotation at all still means the same thing after a save.
+     * A semaphore the file gave no rotation at all still means the same thing after a save.  The parser turns any type
+     * whose word contains "_f_" back by a quarter, to correct artwork the CS2 draws rotated; a file with no ".drehung"
+     * means rotation 0, so such a signal parses to orientation 3, and the export wrote that 3 back under the very word
+     * that triggers the correction, so the next load read it as 2.
      *
-     * The parser turns any type whose word contains "_f_" back by a quarter, to correct artwork the CS2
-     * draws rotated.  A file with no ".drehung" means rotation 0, so such a signal parses to
-     * orientation 3 - and the export wrote that 3 back out, under the very word that triggers the
-     * correction, so the next load read it as 2.  A quarter turn lost to pressing Save, on the diagram
-     * and on the Central Station both.
-     *
-     * Asserting on the re-parsed orientation rather than on the text is deliberate: the number in the
-     * file is only correct relative to the word beside it, and a test that reads one without the other
-     * cannot tell a right answer from a wrong one.
+     * Asserting on the re-parsed orientation rather than on the text is deliberate: the number in the file is only
+     * correct relative to the word beside it.
      */
     @Test
     public void testASemaphoreWithNoRotationDoesNotDriftOnSave() throws Exception
@@ -1339,16 +1246,10 @@ public class testParseCS2Layout
     }
 
     /**
-     * A semaphore the user turns in the editor comes back turned the way they left it.
-     *
-     * Same asymmetry as the test above, reached from the other side.  Once the orientation no longer
-     * matches the file's number the export falls back to writing the CORRECTED orientation - still
-     * under the preserved "_f_" word - so the correction is applied a second time on the next load.
-     *
-     * Before the type word was preserved this case worked, at the price of collapsing the word to a
-     * canonical "signal": the canonical word contains no "_f_", so nothing corrected it on the way
-     * back.  Preserving the word without accounting for the correction traded a known loss for a
-     * quieter one.
+     * A semaphore the user turns in the editor comes back turned the way they left it.  Same asymmetry as the test
+     * above from the other side: once the orientation no longer matches the file's number the export writes the
+     * CORRECTED orientation under the preserved "_f_" word, so the correction is applied a second time on the next
+     * load.  (Writing the canonical "signal" word instead avoided that but collapsed the type.)
      */
     @Test
     public void testATurnedSemaphoreComesBackTurnedTheSameWay() throws Exception
@@ -1374,17 +1275,10 @@ public class testParseCS2Layout
     }
 
     /**
-     * A copied component writes the same file text as the one it was copied from.
-     *
-     * The copy constructor took the modeled fields and the label, which is everything the editor
-     * needs to DRAW a tile and not everything the file needs to survive one.  It carried over neither
-     * the original type word, nor the original rotation, nor the keys this program cannot model - so
-     * every copy was a component with the verbatim record stripped out.
-     *
-     * That matters because the editor snapshots through this constructor: deepCopyLayout builds undo
-     * states with it, and undo then replaces every component on the page with a stripped copy.  Place
-     * a tile, press undo, press Save, and every unmodeled key on a page that has never touched
-     * autonomy is gone - from a gesture nobody would think of as destructive.
+     * A copied component writes the same file text as the one it was copied from.  The copy constructor took the
+     * modeled fields and the label, enough to DRAW a tile but not for the file to survive one: it dropped the original
+     * type word, rotation and unmodeled keys.  The editor snapshots through it (deepCopyLayout builds undo states), so
+     * place a tile, press undo, press Save, and every unmodeled key on a page that never touched autonomy is gone.
      */
     @Test
     public void testACopiedComponentStillKnowsWhatTheFileSaid() throws Exception
@@ -1410,18 +1304,14 @@ public class testParseCS2Layout
     }
 
     /**
-     * Renaming a page to the same letters in different case keeps the page.
+     * Renaming a page to the same letters in different case keeps the page.  saveChanges writes the new filename and
+     * then deletes the old one, correct only while they are two files; on Windows and macOS "Main" and "MAIN" are one
+     * file, so the delete removed the only copy.  The UI's duplicate check is a case-sensitive list lookup, so the
+     * rename proceeds, and nothing on the Central Station could put the page back (renaming is local only).
      *
-     * saveChanges writes the new filename and then deletes the old one, which is correct only while
-     * they are two files.  On Windows and macOS "Main" and "MAIN" are one file: the writer reopened
-     * and rewrote the original, and the delete then removed the only copy.  The UI does not catch it
-     * either - its duplicate check is a case-sensitive list lookup, so "MAIN" does not collide with
-     * "Main" and the rename proceeds.  Renaming is offered only for local layouts, so nothing on the
-     * Central Station could put the page back.
-     *
-     * Counting the files rather than asking for one by name is what makes this meaningful on both
-     * kinds of filesystem: where the two names are distinct the old file must be gone, and where they
-     * are the same file it must still be there.  Either way exactly one page survives, with content.
+     * Counting the files rather than asking for one by name is meaningful on both kinds of filesystem: where the two
+     * names are distinct the old file must be gone, where they are the same file it must still be there.  Either way
+     * exactly one page survives, with content.
      */
     @Test
     public void testACaseOnlyRenameDoesNotDeleteThePage() throws Exception
