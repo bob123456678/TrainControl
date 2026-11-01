@@ -72,10 +72,9 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What the arrival-side question calls the square: its name, not the copy's.  A split square's Points are named
-     * with a heading ("BottomMainB (eastbound)") and this question is ABOUT direction, so the copy's name put an
-     * arbitrary answer in the question.  The facing question after it names the square the same way (`TrainControlUI`'s
-     * paste door).
+     * What the arrival-side question calls the square: its name, not the copy's.  A split square's Points carry a
+     * heading ("BottomMainB (eastbound)") and this question is ABOUT direction, so the copy's name put an arbitrary
+     * answer in it.  The facing question after it names the square the same way (`TrainControlUI`'s paste door).
      *
      * @param at the Point the train is being put on
      * @return the name the question shows
@@ -119,12 +118,12 @@ public class ArrivalSidePrompt
      * can use as a visible starting value.
      *
      * - **A terminus** has one way in: `sides` holds one entry and it is the answer.  A square with no track answers
-     * null.  - **An ordinary station** is answered by the heading (it faces the way it will leave and arrived from
-     * behind), out
-     *   of the sides this square actually has.
+     *   null.
+     * - **An ordinary station** is answered by the heading (it faces the way it will leave, so it came from behind),
+     *   out of the sides this square actually has.
      * - **A may-reverse station** answers NULL, because turning round is what those squares are for.  `forPlacement`
-     *   sends it to the operator; a form can pass `mayReverse` false to get the assumption as a starting value the
-     *   operator can see and correct, which a guess inside a popup is not (`GraphLocAssign` does).
+     *   sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting value
+     *   (`GraphLocAssign` does).
      *
      * @param layout the running layout
      * @param at the point the train is being put down on
@@ -154,10 +153,9 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * The sides a placement here may be recorded as having come from: the BUILD'S SIDES when the caller has them
-     * (every caller in the application).  The fallback for a caller with no session reads `Layout.entrySideOf` too, so
-     * hand-built test Layouts get the geometry they always got.  One place, because the dialog's buttons, the combo's
-     * entries and `wouldAsk` all read this list and would drift silently if assembled separately.
+     * The sides a placement here may be recorded as having come from: the BUILD'S SIDES when the caller has them (every
+     * caller in the application), else `Layout.entrySideOf` for hand-built test Layouts.  One place, because the
+     * dialog's buttons, the combo's entries and `wouldAsk` all read this list and would drift if assembled separately.
      *
      * @param layout the running layout
      * @param at the point
@@ -176,8 +174,7 @@ public class ArrivalSidePrompt
     /**
      * Behind a train that drove in forwards, named in the vocabulary the tail walk compares against.  The sides are
      * given and the facing chooses between them, not the other way about: "the opposite of the facing" is a compass
-     * answer, which on a curve names a side no edge carries (OB-182 moved the offered sides, the written arrival side
-     * and the walk onto the build's entry sides, and this branch was missed).
+     * answer, which on a curve names a side no edge carries (OB-182).
      *
      * - **One way in that is not the way it is pointing** - the whole answer on a two-sided square, straight or curved.
      * - **Otherwise the compass assumption (it drove straight through), but only where the build enters by that side.**
@@ -220,8 +217,7 @@ public class ArrivalSidePrompt
 
     /**
      * Whether a placement here would actually put a question to the operator.  `forPlacement` returns null in three
-     * situations and only one is "the operator said no"; the paste door read all three as a dismissal and silently
-     * refused every paste on a square with no placeable sides.  So the door asks this, the exact condition under which
+     * situations and only one is "the operator said no", so the paste door asks this, the exact condition under which
      * `forPlacement` reaches `ask`, rather than inferring it from a null.
      *
      * @param layout the running layout
@@ -330,8 +326,8 @@ public class ArrivalSidePrompt
      * graph runs traffic into this point along it or out.
      *
      * **Through `Layout.entrySideOf`, the ONE definition.**  `sideTowards` named where the neighboring POINT lies,
-     * which on a curve is a side the metal does not leave by.  `entrySideOf` is the build's answer where an edge
-     * carries one and that geometry otherwise, so hand-built test Layouts get what they always got.
+     * which on a curve is a side the metal does not leave by; `entrySideOf` is the build's answer where an edge carries
+     * one and that geometry otherwise.
      *
      * @param layout the layout
      * @param at the point
@@ -353,10 +349,9 @@ public class ArrivalSidePrompt
 
     /**
      * The sides track actually reaches this square by, as the BUILD has them.  The geometric form above answers with
-     * the compass direction of the neighboring POINT, the far end of a reduced edge that may turn corners: a rail
-     * leaving north and curving east gives "E" while the metal leaves by "N".  The builder already knows the answer
-     * (`arrivalSides` to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`, each reduced edge's ENTRY SIDE); this is
-     * the same door `facingChoices` was moved onto.
+     * the compass direction of the neighboring POINT, the far end of a reduced edge that may turn corners (a rail
+     * leaving north and curving east gives "E" while the metal leaves by "N"); the builder already knows the answer
+     * (`arrivalSides` to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`).
      *
      * @param sides the arrival sides from the session, as the build split them
      * @return their names, in the build's own order

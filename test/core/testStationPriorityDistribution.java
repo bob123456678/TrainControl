@@ -286,8 +286,8 @@ public class testStationPriorityDistribution
         }
 
         // EVERY OTHER TRAIN IS TAKEN OFF THE RAILWAY FIRST: the snapshot has locomotives parked all over it, and a
-        // train standing anywhere along the way makes isPathClear refuse the route whatever the priorities say
-        // (BottomMainC was reachable by bfs and never chosen for that reason).  The train under test keeps its place.
+        // train standing anywhere along the way makes isPathClear refuse the route whatever the priorities say.  The
+        // train under test keeps its place.
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
             if (!FROM.equals(point.getName())) point.setLocomotive(null);

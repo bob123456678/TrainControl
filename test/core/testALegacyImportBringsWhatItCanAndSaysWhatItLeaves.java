@@ -676,12 +676,10 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
 
     /**
-     * Running again over a settled setup changes nothing.  The excluded pages are SHARED, not per-configuration, so
-     * anything that re-asserted itself would fight the user.
-     *
-     * Not promised: a page the user switches back on WOULD be shut again by another run, as the method keeps no record
-     * of being overruled.  The two callers protect that choice (OB-130), and Adam ruled the import may override: "yes,
-     * it may override."
+     * Running again over a settled setup changes nothing: the excluded pages are SHARED, so anything that re-asserted
+     * itself would fight the user.  Not promised: a page the user switches back on WOULD be shut again by another run,
+     * as the method keeps no record of being overruled.  The two callers protect that choice (OB-130), and Adam ruled
+     * the import may override: "yes, it may override."
      */
     @Test
     public void testRunningAgainOverASettledSetupChangesNothing() throws Exception
@@ -1319,8 +1317,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertNull(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signalbox 4"),
             "a user-named accessory that merely begins with the word is not a signal");
 
-        // The name this program generates for anything not on the implicit protocol: `Accessory.getNameWithProtocol`
-        // appends the decoder ("Signal 116 DCC"), and parsing the whole remainder as a number returned null for all of
+        // The name this program generates for anything not on the implicit protocol (`Accessory.getNameWithProtocol`
+        // appends the decoder: "Signal 116 DCC"); parsing the whole remainder as a number returned null for all of
         // them.
         assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 116 DCC"),
             Integer.valueOf(116), "a DCC signal is a signal");
@@ -1392,8 +1390,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
     /**
      * A modern export coming back through the legacy door is spotted by each of its three keys (`detectImportFormat`
-     * calls any file whose `points` is an ARRAY legacy).  Each key is asserted separately: one check once asked for
-     * `blocks` where the key is `block`, and a test of only `autoDestination` would have passed.
+     * calls any file whose `points` is an ARRAY legacy).  Each key is asserted separately: a test of only
+     * `autoDestination` would pass on a wrong key name.
      *
      * MUTATION: renaming any of the three keys in `whatALegacyImportLeaves` fails its own assertion
      * here.

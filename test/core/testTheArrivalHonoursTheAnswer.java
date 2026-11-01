@@ -17,8 +17,8 @@ import org.traincontrol.marklin.MarklinFeedback;
 /**
  * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).
  *
- * The arrival once read `arrived.isTerminus() || shouldReverseAt(...)`, and `AutonomyBuilder` emits the turning copy of
- * a MAY-turn square with `terminus: true`, so the dialog's answer was collected and thrown away. The decision is now
+ * `AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`, so a decision written as
+ * `arrived.isTerminus() || shouldReverseAt(...)` would throw the dialog's answer away.  The decision is
  * `Layout.turnsOnArrival`, and this class asks it what it DOES, not what its source says.
  *
  * MUTATION: restore the `||` and the first claim fails; drop the `asksAbout` branch and it fails too; make the branch

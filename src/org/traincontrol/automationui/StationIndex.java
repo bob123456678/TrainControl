@@ -158,10 +158,10 @@ public final class StationIndex
     /**
      * Whether a name ends the way the builder names one direction of a square, and so cannot be told from one by
      * anything that reads it back: a lowercase `(northbound)`, `(southbound)`, `(eastbound)` or `(westbound)` at the
-     * very end, with a comma and anything after it allowed inside the bracket (`, reverse` is the builder's own), as
-     * `withoutArrivalSuffix` reads the heading up to the comma.  Loosen this and the two stop agreeing.  Adam:
-     * *"refuse and close, but make sure the words are uncommon."*  So "Yard (old)" and "Main Line (Northbound)" are
-     * still names a person may give; "Main (eastbound)" is not.
+     * very end, with a comma and anything after it allowed inside the bracket, as `withoutArrivalSuffix` reads the
+     * heading up to the comma (loosen this and the two stop agreeing).  Adam: *"refuse and close, but make sure the
+     * words are uncommon."*  So "Yard (old)" and "Main Line (Northbound)" are still names a person may give; "Main
+     * (eastbound)" is not.
      *
      * @param name a name somebody typed
      * @return true when it ends in the builder's heading
@@ -192,11 +192,11 @@ public final class StationIndex
 
     /**
      * What a Point is called, as a place rather than as a copy: `describe`'s implementation.  Both fall back to
-     * `withoutArrivalSuffix` when the index has never heard of a Point.  A blank base counts as no answer.
+     * `withoutArrivalSuffix` when the index has never heard of a Point; a blank base counts as no answer.
      *
      * @param pointName an emitted Point name
-     * @return the base name behind a copy, the name with its arrival side removed when the index
-     *         cannot answer, and null only for null
+     * @return the base name behind a copy, or the name with its arrival side removed when the index cannot answer; null
+     *         only for null
      */
     public String baseNameOf(String pointName)
     {
@@ -320,7 +320,6 @@ public final class StationIndex
     }
 
     /**
-    /**
      * The Points of a square that are actually holding a locomotive.  More than one is possible: two trains can be
      * sent to one platform from opposite ends, each on the copy that faces its own way.
      *
@@ -341,10 +340,9 @@ public final class StationIndex
     }
 
     /**
-     * The same list with each locomotive appearing once.  Locking a path reserves every point along it for that train
-     * without taking it off anywhere else, so a path through two copies of one square puts the train on both: right
-     * for the model, wrong for a caption.  Two trains on one platform is real; one train shown as two is a mistake.
-     * The first copy is kept.
+     * The same list with each locomotive appearing once.  Locking a path reserves every point along it for that train,
+     * so a path through two copies of one square puts the train on both: right for the model, wrong for a caption (two
+     * trains on one platform is real; one train shown as two is not).  The first copy is kept.
      *
      * @param points occupied Points, in emission order
      * @return the same, with duplicates of one locomotive removed
@@ -368,7 +366,6 @@ public final class StationIndex
         return out;
     }
 
-    /**
     /**
      * The one Point that speaks for a square: an occupied copy in preference to an empty one, else a destination
      * copy, else the first.  The first is a choice, not an equivalence (copies differ in whether a train may stop on
