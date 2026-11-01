@@ -461,14 +461,7 @@ public class testControlStationFaults
         set(ui, "model", java.lang.reflect.Proxy.newProxyInstance(org.traincontrol.model.ViewListener.class.getClassLoader(),
             new Class<?>[]{ org.traincontrol.model.ViewListener.class }, (proxy, method, args) ->
             {
-                Class<?> type = method.getReturnType();
-
-                if (type == boolean.class) return false;
-                if (type == int.class) return 0;
-                if (type == long.class) return 0L;
-                if (type == double.class) return 0.0;
-
-                return null;
+                return doesNothing(method);
             }));
         set(ui, "buttonMapping", new java.util.HashMap<Integer, javax.swing.JButton>());
         set(ui, "pageNames", new java.util.HashMap<Integer, String>());
@@ -1179,6 +1172,19 @@ public class testControlStationFaults
         return window.getLong(null) / 1000000L;
     }
 
+    /** What a proxy that does nothing answers to `method`: false, zero, or null. */
+    private static Object doesNothing(java.lang.reflect.Method method)
+    {
+        Class<?> type = method.getReturnType();
+
+        if (type == boolean.class) return false;
+        if (type == int.class) return 0;
+        if (type == long.class) return 0L;
+        if (type == double.class) return 0.0;
+
+        return null;
+    }
+
     /** A view that records what it is asked to resync about and answers as told; every other call does nothing. */
     private static org.traincontrol.model.View recordingView(java.util.List<String> asked, boolean[] answer)
     {
@@ -1193,14 +1199,7 @@ public class testControlStationFaults
                     return answer[0];
                 }
 
-                Class<?> type = method.getReturnType();
-
-                if (type == boolean.class) return false;
-                if (type == int.class) return 0;
-                if (type == long.class) return 0L;
-                if (type == double.class) return 0.0;
-
-                return null;
+                return doesNothing(method);
             });
     }
 

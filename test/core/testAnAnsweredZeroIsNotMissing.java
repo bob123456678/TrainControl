@@ -415,15 +415,8 @@ public class testAnAnsweredZeroIsNotMissing
         // The road as it was measured, nothing on it answered (FR-136), and put back after.
         java.util.Map<TileKey, Integer> road = squares(ROAD);
 
-        java.util.Map<TileKey, Integer> roadWas = new java.util.LinkedHashMap<>();
-        java.util.Set<TileKey> roadAnswered = new java.util.LinkedHashSet<>();
-
-        for (TileKey square : road.keySet())
-        {
-            roadWas.put(square, session.getStore().getTileLength(square));
-
-            if (session.getStore().isTileLengthAnswered(square)) roadAnswered.add(square);
-        }
+        java.util.Map<TileKey, Integer> roadWas = lengthsOf(road.keySet());
+        java.util.Set<TileKey> roadAnswered = answeredAmong(road.keySet());
 
         session.setTileLengths(road);
 
@@ -433,12 +426,7 @@ public class testAnAnsweredZeroIsNotMissing
         }
         finally
         {
-            for (java.util.Map.Entry<TileKey, Integer> square : roadWas.entrySet())
-            {
-                if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
-                else if (roadAnswered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
-                else session.setTileLength(square.getKey(), 0);
-            }
+            putTheLengthsBack(roadWas, roadAnswered);
         }
     }
 
@@ -449,17 +437,10 @@ public class testAnAnsweredZeroIsNotMissing
 
         assertNotNull(hop, "precondition: the frozen railway no longer runs BottomSecondary -> TunnelPre");
 
-        java.util.Map<TileKey, Integer> was = new java.util.LinkedHashMap<>();
-        java.util.Set<TileKey> wasAnswered = new java.util.LinkedHashSet<>();
+        java.util.List<TileKey> hopSquares = squaresOf(hop.getPlaceIds());
 
-        for (String id : hop.getPlaceIds())
-        {
-            TileKey square = squareOf(id);
-
-            was.put(square, session.getStore().getTileLength(square));
-
-            if (session.getStore().isTileLengthAnswered(square)) wasAnswered.add(square);
-        }
+        java.util.Map<TileKey, Integer> was = lengthsOf(hopSquares);
+        java.util.Set<TileKey> wasAnswered = answeredAmong(hopSquares);
 
         assertTrue(hop.getLength() == 2, "precondition: BottomSecondary -> TunnelPre measures " + hop.getLength());
 
@@ -522,12 +503,7 @@ public class testAnAnsweredZeroIsNotMissing
         }
         finally
         {
-            for (java.util.Map.Entry<TileKey, Integer> square : was.entrySet())
-            {
-                if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
-                else if (wasAnswered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
-                else session.setTileLength(square.getKey(), 0);
-            }
+            putTheLengthsBack(was, wasAnswered);
 
             train.setTrainLength(length);
         }
@@ -546,17 +522,10 @@ public class testAnAnsweredZeroIsNotMissing
     {
         Edge approach = approach(layoutNow());
 
-        java.util.Map<TileKey, Integer> lengths = new java.util.LinkedHashMap<>();
-        java.util.Set<TileKey> answered = new java.util.LinkedHashSet<>();
+        java.util.List<TileKey> approachSquares = squaresOf(approach.getPlaceIds());
 
-        for (String id : approach.getPlaceIds())
-        {
-            TileKey square = squareOf(id);
-
-            lengths.put(square, session.getStore().getTileLength(square));
-
-            if (session.getStore().isTileLengthAnswered(square)) answered.add(square);
-        }
+        java.util.Map<TileKey, Integer> lengths = lengthsOf(approachSquares);
+        java.util.Set<TileKey> answered = answeredAmong(approachSquares);
 
         Integer length = train.getTrainLength();
 
@@ -579,12 +548,7 @@ public class testAnAnsweredZeroIsNotMissing
         }
         finally
         {
-            for (java.util.Map.Entry<TileKey, Integer> square : lengths.entrySet())
-            {
-                if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
-                else if (answered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
-                else session.setTileLength(square.getKey(), 0);
-            }
+            putTheLengthsBack(lengths, answered);
 
             train.setTrainLength(length);
         }
@@ -598,6 +562,50 @@ public class testAnAnsweredZeroIsNotMissing
         for (int[] square : measured) out.put(new TileKey("1 - Main", square[0], square[1]), square[2]);
 
         return out;
+    }
+
+    /** The squares the place identifiers name, in order. */
+    private static java.util.List<TileKey> squaresOf(java.util.List<String> ids)
+    {
+        java.util.List<TileKey> squares = new java.util.ArrayList<>();
+
+        for (String id : ids) squares.add(squareOf(id));
+
+        return squares;
+    }
+
+    /** Each square's length as the setup holds it now, in order. */
+    private static java.util.Map<TileKey, Integer> lengthsOf(Iterable<TileKey> squares)
+    {
+        java.util.Map<TileKey, Integer> was = new java.util.LinkedHashMap<>();
+
+        for (TileKey square : squares) was.put(square, session.getStore().getTileLength(square));
+
+        return was;
+    }
+
+    /** Those of the squares whose length has been answered, in order. */
+    private static java.util.Set<TileKey> answeredAmong(Iterable<TileKey> squares)
+    {
+        java.util.Set<TileKey> answered = new java.util.LinkedHashSet<>();
+
+        for (TileKey square : squares)
+        {
+            if (session.getStore().isTileLengthAnswered(square)) answered.add(square);
+        }
+
+        return answered;
+    }
+
+    /** Puts each square back to the length `lengthsOf` read, an answered 0 where it was one. */
+    private static void putTheLengthsBack(java.util.Map<TileKey, Integer> was, java.util.Set<TileKey> answered)
+    {
+        for (java.util.Map.Entry<TileKey, Integer> square : was.entrySet())
+        {
+            if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
+            else if (answered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
+            else session.setTileLength(square.getKey(), 0);
+        }
     }
 
     /** The square a place identifier names - the tile, before any `/route` of an overpass. */

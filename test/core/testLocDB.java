@@ -180,51 +180,35 @@ public class testLocDB
     {
         // Target locomotive
         String targetName = "TargetLoc";
-        model.newMFXLocomotive(targetName, 20);
-        Locomotive target = model.getLocByName(targetName);
-        target.setStructuredNotes(1950, 1970, "PKP", "Target notes");
+        Locomotive target = aLocomotiveWithNotes(targetName, 20, 1950, 1970, "PKP", "Target notes");
 
         // Candidate: full overlap
         String fullOverlapName = "FullOverlap";
-        model.newMFXLocomotive(fullOverlapName, 21);
-        Locomotive fullOverlap = model.getLocByName(fullOverlapName);
-        fullOverlap.setStructuredNotes(1960, 1965, "PKP", "Full overlap");
+        Locomotive fullOverlap = aLocomotiveWithNotes(fullOverlapName, 21, 1960, 1965, "PKP", "Full overlap");
 
         // Candidate: partial overlap
         String partialOverlapName = "PartialOverlap";
-        model.newMFXLocomotive(partialOverlapName, 22);
-        Locomotive partialOverlap = model.getLocByName(partialOverlapName);
-        partialOverlap.setStructuredNotes(1965, 1980, "PKP", "Partial overlap");
+        Locomotive partialOverlap = aLocomotiveWithNotes(partialOverlapName, 22, 1965, 1980, "PKP", "Partial overlap");
 
         // Candidate: no overlap
         String noOverlapName = "NoOverlap";
-        model.newMFXLocomotive(noOverlapName, 23);
-        Locomotive noOverlap = model.getLocByName(noOverlapName);
-        noOverlap.setStructuredNotes(1980, 1990, "PKP", "No overlap");
+        Locomotive noOverlap = aLocomotiveWithNotes(noOverlapName, 23, 1980, 1990, "PKP", "No overlap");
 
         // Candidate: no end year
         String noEndName = "NoEndYear";
-        model.newMFXLocomotive(noEndName, 24);
-        Locomotive noEnd = model.getLocByName(noEndName);
-        noEnd.setStructuredNotes(1960, 0, "PKP", "No end year");
+        Locomotive noEnd = aLocomotiveWithNotes(noEndName, 24, 1960, 0, "PKP", "No end year");
 
         // Candidate: no start year
         String noStartName = "NoStartYear";
-        model.newMFXLocomotive(noStartName, 25);
-        Locomotive noStart = model.getLocByName(noStartName);
-        noStart.setStructuredNotes(0, 1970, "PKP", "No start year");
+        Locomotive noStart = aLocomotiveWithNotes(noStartName, 25, 0, 1970, "PKP", "No start year");
 
         // Candidate: both years missing
         String noYearsName = "NoYears";
-        model.newMFXLocomotive(noYearsName, 26);
-        Locomotive noYears = model.getLocByName(noYearsName);
-        noYears.setStructuredNotes(0, 0, "PKP", "No years");
+        Locomotive noYears = aLocomotiveWithNotes(noYearsName, 26, 0, 0, "PKP", "No years");
 
         // Candidate: wrong railway
         String wrongRailwayName = "WrongRailway";
-        model.newMFXLocomotive(wrongRailwayName, 27);
-        Locomotive wrongRailway = model.getLocByName(wrongRailwayName);
-        wrongRailway.setStructuredNotes(1960, 1970, "DB", "Wrong railway");
+        Locomotive wrongRailway = aLocomotiveWithNotes(wrongRailwayName, 27, 1960, 1970, "DB", "Wrong railway");
 
         List<String> railroads = Arrays.asList("PKP");
         List<Locomotive> allLocs = new ArrayList<>(model.getLocomotives());
@@ -303,5 +287,18 @@ public class testLocDB
     @AfterMethod
     public void tearDownMethod() throws Exception
     {
+    }
+
+    /** A new MFX locomotive of that name and address, with structured notes of the years, railway and text. */
+    private static Locomotive aLocomotiveWithNotes(String name, int address, int from, int to, String railway,
+        String notes)
+    {
+        model.newMFXLocomotive(name, address);
+
+        Locomotive loc = model.getLocByName(name);
+
+        loc.setStructuredNotes(from, to, railway, notes);
+
+        return loc;
     }
 }

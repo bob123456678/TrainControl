@@ -99,12 +99,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportBringsTheSettingsAboveThePoints() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Settings", null);
-        session.getStore().setActiveConfiguration("Settings");
+        LayoutDiagram page = openOnAConfigurationCalled("Settings");
 
         org.json.JSONArray points = new org.json.JSONArray();
 
@@ -211,12 +206,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportPutsTheLocomotivesBack() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
         org.json.JSONObject standing = new org.json.JSONObject();
         standing.put("name", "Q 343");
@@ -258,12 +248,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportPlacesEvenWhereTheNameIsKept() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
         TileKey tile = new TileKey("main", 1, 1);
 
@@ -300,12 +285,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportRestoresTerminiAndReversingPoints() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
         org.json.JSONObject terminus = new org.json.JSONObject();
         terminus.put("name", "BottomMainCTerm");
@@ -352,12 +332,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportDoesNotOverrideReversingAlreadySet() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
         TileKey tile = new TileKey("main", 1, 1);
 
@@ -394,12 +369,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportCarriesThePerPointSettings() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
         org.json.JSONArray excluded = new org.json.JSONArray();
         excluded.put("ER 2035 DSB");
@@ -455,12 +425,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testALegacyImportDoesNotOverrideSettingsAlreadySet() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
         TileKey tile = new TileKey("main", 1, 1);
 
@@ -1422,5 +1387,18 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             new java.util.ArrayList<String>(),
             "a genuine 2.8.1 file was reported as a modern export, which would put a warning on every "
             + "supported migration");
+    }
+
+    /** The page on disk, opened in the session with a configuration of that name made and active. */
+    private LayoutDiagram openOnAConfigurationCalled(String name) throws IOException
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration(name, null);
+        session.getStore().setActiveConfiguration(name);
+
+        return page;
     }
 }
