@@ -488,17 +488,76 @@ public class testRouteEditorLocked
      * FR-147: a right-click on a locked route's conditions opens no menu; on an ordinary route's it opens one, or the
      * locked half would pass on a window with no menu at all.
      *
-     * MUTATION: in `offerConditionMenu`, drop `locked || !conditionsEditable ||`, and the locked route offers Add
+     * MUTATION: in `offerRowMenu`, drop `!table.handlesWork() ||`, and the locked route offers Add
      * Condition.
      */
     @Test
     public void testALockedRoutesConditionsOfferNoMenu() throws Exception
     {
+        onBothRoutes(false, "ConditionTable", "condition table", (frame, conditions, owned) ->
+            offersAMenuUnlessOwned(conditions, new java.awt.Point(60, 60), owned, "conditions",
+                ", offering changes the station undoes on the next sync"));
+    }
+
+    /**
+     * FR-162: a locked route's commands draw no grip, do not move by a drag on the handle, and offer no right-click
+     * menu; an ordinary route's do all three, or the locked half would pass on a table without them.
+     *
+     * MUTATION: in `offerRowMenu`, drop `!table.handlesWork() ||`, and the locked route's commands offer a menu.
+     */
+    @Test
+    public void testALockedRoutesCommandsNeitherMoveNorOfferAMenu() throws Exception
+    {
+        onBothRoutes(true, "CommandTable", "command table", (frame, commands, owned) ->
+        {
+            final boolean grip = support.Components.onTheEventThread(() ->
+                ((javax.swing.JLabel) frame.commandCellForTest(0, 0)).getIcon() != null);
+
+            assertEquals(grip, !owned, owned ? "a locked route's command draws a grip to drag it by"
+                : "an ordinary route's command draws no grip, so the locked half proves nothing");
+
+            // The first command's handle pressed, and let go over the lower half of the second.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                java.awt.Rectangle first = commands.getCellRect(0, 0, true);
+                int[] ids = {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_DRAGGED,
+                    java.awt.event.MouseEvent.MOUSE_DRAGGED, java.awt.event.MouseEvent.MOUSE_RELEASED};
+                int[] ys = {first.y + 12, first.y + 20, first.y + first.height * 2 - 2, first.y + first.height * 2 - 2};
+                long now = System.currentTimeMillis();
+
+                for (int step = 0; step < ids.length; step++)
+                {
+                    boolean up = ids[step] == java.awt.event.MouseEvent.MOUSE_RELEASED;
+
+                    commands.dispatchEvent(new java.awt.event.MouseEvent(commands, ids[step], now + step,
+                        up ? 0 : java.awt.event.InputEvent.BUTTON1_DOWN_MASK, first.x + 15, ys[step], 1, false,
+                        ids[step] == java.awt.event.MouseEvent.MOUSE_DRAGGED
+                            ? java.awt.event.MouseEvent.NOBUTTON : java.awt.event.MouseEvent.BUTTON1));
+                }
+            });
+
+            assertEquals(frame.commandsAsSaved().get(0).getAddress(), owned ? 80 : 81, owned
+                ? "a drag moved a command of a route belonging to the Central Station"
+                : "a drag on an ordinary route's handle moved nothing, so the locked half proves nothing");
+
+            offersAMenuUnlessOwned(commands, new java.awt.Point(80, 12), owned, "commands", "");
+        });
+    }
+
+    private interface LockedClaim
+    {
+        void run(org.traincontrol.gui.RouteEditorFrame frame, javax.swing.JTable table, boolean owned) throws Exception;
+    }
+
+    /** A claim on an ordinary route and then on a locked one, each in a window of its own, showing the table named. */
+    private static void onBothRoutes(boolean twoCommands, String kind, String noun, LockedClaim claim) throws Exception
+    {
         needsADisplay();
 
         for (boolean owned : new boolean[]{false, true})
         {
-            final org.traincontrol.gui.RouteEditorFrame frame = open(locked(owned));
+            final org.traincontrol.gui.RouteEditorFrame frame = open(twoCommands ? lockedWithTwoCommands(owned)
+                : locked(owned));
 
             try
             {
@@ -508,28 +567,16 @@ public class testRouteEditorLocked
                     frame.setVisible(true);
                 });
 
-                javax.swing.JTable conditions = null;
+                javax.swing.JTable found = null;
 
                 for (javax.swing.JTable table : tablesIn(frame.getContentPane()))
                 {
-                    if ("ConditionTable".equals(table.getClass().getSimpleName())) conditions = table;
+                    if (kind.equals(table.getClass().getSimpleName())) found = table;
                 }
 
-                assertNotNull(conditions, "the route editor has no condition table");
+                assertNotNull(found, "the route editor has no " + noun);
 
-                javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(conditions, new java.awt.Point(60, 60),
-                    owned ? 500 : 5000);
-
-                if (owned)
-                {
-                    assertNull(menu, "a right-click on a route belonging to the Central Station opened a menu on its"
-                        + " conditions, offering changes the station undoes on the next sync");
-                }
-                else
-                {
-                    assertNotNull(menu, "a right-click on an ordinary route's conditions opened no menu, so the locked"
-                        + " half proves nothing");
-                }
+                claim.run(frame, found, owned);
             }
             finally
             {
@@ -537,6 +584,24 @@ public class testRouteEditorLocked
 
                 close(frame);
             }
+        }
+    }
+
+    /** A right-click on a table opens a menu on an ordinary route, and none on a locked one. */
+    private static void offersAMenuUnlessOwned(javax.swing.JTable table, java.awt.Point at, boolean owned, String what,
+        String why)
+    {
+        javax.swing.JPopupMenu menu = support.Mouse.rightClickAt(table, at, owned ? 500 : 5000);
+
+        if (owned)
+        {
+            assertNull(menu, "a right-click on a route belonging to the Central Station opened a menu on its " + what
+                + why);
+        }
+        else
+        {
+            assertNotNull(menu, "a right-click on an ordinary route's " + what + " opened no menu, so the locked half"
+                + " proves nothing");
         }
     }
 

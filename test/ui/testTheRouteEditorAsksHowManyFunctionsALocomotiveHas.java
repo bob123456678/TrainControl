@@ -28,7 +28,8 @@ import org.testng.annotations.Test;
  *
  * Not a claim in `testRouteEditorValidation`: that class builds `new RouteEditorFrame(null, null)`, and `problemsWith`
  * returns before any per-row rule when the parent is null.  This one pays for a real window and a real locomotive
- * database, and goes through the CELL, not a built row (column 5 rebuilds the setting as `number + ":" + state`).
+ * database, and goes through the CELL, not a built row (the number column rebuilds the setting as
+ * `number + ":" + state`).
  *
  * The command table also marks the row (OB-246): the same answer `everythingWrong` gives at Save, said while the
  * choice is still in front of the user; the third claim below is about it.
@@ -249,9 +250,9 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
             SwingUtilities.invokeAndWait(() ->
             {
-                frame.commandCellForTest(0, 4);
+                frame.commandCellForTest(0, 3);
 
-                java.awt.Component cell = frame.commandCellForTest(plus, 4);
+                java.awt.Component cell = frame.commandCellForTest(plus, 3);
 
                 onPlus[0] = cell instanceof javax.swing.JComponent
                     ? ((javax.swing.JComponent) cell).getToolTipText() : null;
@@ -283,7 +284,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     {
         final java.awt.Color[] ink = new java.awt.Color[1];
 
-        SwingUtilities.invokeAndWait(() -> ink[0] = frame.commandCellForTest(row, 4).getForeground());
+        SwingUtilities.invokeAndWait(() -> ink[0] = frame.commandCellForTest(row, 3).getForeground());
 
         return ink[0];
     }
@@ -297,7 +298,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
         SwingUtilities.invokeAndWait(() ->
         {
-            java.awt.Component cell = frame.commandCellForTest(row, 4);
+            java.awt.Component cell = frame.commandCellForTest(row, 3);
 
             why[0] = cell instanceof javax.swing.JComponent
                 ? ((javax.swing.JComponent) cell).getToolTipText() : null;
@@ -315,7 +316,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * away.  Where the target is not a locomotive this database has, a typed number is still taken, so the editor
      * stays usable for a route whose locomotive is not on this railway.
      *
-     * MUTATION: put `column == 5` back on the `digitsOnly()` line and the first claim goes red; drop
+     * MUTATION: put `column == NUMBER` back on the `digitsOnly()` line and the first claim goes red; drop
      * the "keep what is there" clause from `functionsOffered` and the second does.
      */
     @Test

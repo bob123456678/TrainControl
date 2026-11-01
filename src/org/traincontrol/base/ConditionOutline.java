@@ -1507,6 +1507,86 @@ public final class ConditionOutline
         return lines(top);
     }
 
+    /**
+     * The outline with copies of these conditions directly after the last of them, as one run in their order (FR-162).
+     * The pieces are those `movedTogether` moves: a nested group all of whose conditions are chosen is copied whole,
+     * its rule and words with it.  The copies join the group holding the last piece, by its word, as a drop does.
+     *
+     * @param chosen line indices of the conditions; words among them are ignored
+     * @param word the word of the group `copiedInto` names
+     * @param copy makes each condition's copy, in order
+     * @return a new list, or null where no condition is chosen
+     */
+    public static List<Row> duplicated(List<Row> rows, Set<Integer> chosen, Joiner word,
+        java.util.function.UnaryOperator<RouteCommand> copy)
+    {
+        Group top = groupsOf(rows);
+        List<Object> pieces = top == null || chosen == null ? new ArrayList<Object>() : piecesOf(top, chosen);
+
+        if (pieces.isEmpty()) return null;
+
+        Object last = pieces.get(pieces.size() - 1);
+        Group into = holderOfPiece(top, last);
+        List<Object> copies = new ArrayList<>();
+
+        for (Object piece : pieces) copies.add(copyOf(piece, into, copy));
+
+        List<Object> landing = joined(copies, word);
+
+        landing.add(0, new Line(Row.joining(0, word), -1));
+        into.elements.addAll(into.elements.indexOf(last) + 1, landing);
+
+        return lines(top);
+    }
+
+    /**
+     * The group `duplicated` puts the copies in: the one holding the last chosen piece.
+     *
+     * @param top the outline's groups, from `groupsOf`
+     * @return that group, or null where no condition is chosen
+     */
+    public static Group copiedInto(Group top, Set<Integer> chosen)
+    {
+        List<Object> pieces = top == null || chosen == null ? new ArrayList<Object>() : piecesOf(top, chosen);
+
+        return pieces.isEmpty() ? null : holderOfPiece(top, pieces.get(pieces.size() - 1));
+    }
+
+    private static List<Object> piecesOf(Group top, Set<Integer> chosen)
+    {
+        List<Object> out = new ArrayList<>();
+
+        blocks(top, chosen, out);
+
+        return out;
+    }
+
+    private static Group holderOfPiece(Group top, Object piece)
+    {
+        return piece instanceof Group ? ((Group) piece).parent : holderOf(top, piece);
+    }
+
+    /** A piece made anew: a condition by `copy`, a group with its words and a copy of each piece inside. */
+    private static Object copyOf(Object piece, Group parent, java.util.function.UnaryOperator<RouteCommand> copy)
+    {
+        if (piece instanceof Line)
+        {
+            Row row = ((Line) piece).row;
+
+            return new Line(row.isJoiner() ? row : row.about(copy.apply(row.getCommand())), -1);
+        }
+
+        Group was = (Group) piece;
+        Group out = new Group(was.depth, parent);
+
+        for (Object element : was.elements) out.elements.add(copyOf(element, out, copy));
+
+        // A word leading the group joined it to what stood before; the copy is joined by the word put before it.
+        while (!out.elements.isEmpty() && isWord(out.elements.get(0))) out.elements.remove(0);
+
+        return out;
+    }
+
     /** The largest pieces that move whole: a condition, or a nested group every condition of which moves. */
     private static void blocks(Group group, Set<Integer> moving, List<Object> into)
     {

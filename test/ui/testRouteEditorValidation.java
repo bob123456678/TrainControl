@@ -959,7 +959,8 @@ public class testRouteEditorValidation
             assertNotNull(menu, "a right-click on condition 22 opened no menu");
 
             assertEquals(offered(menu), "+route.ui.menuInsertConditionAbove +route.ui.menuInsertConditionBelow"
-                + " +route.ui.menuMoveUp -route.ui.menuMoveDown -route.ui.menuGroupSelected +route.ui.menuUngroup"
+                + " +route.ui.menuMoveUp -route.ui.menuMoveDown +route.ui.menuDuplicate -route.ui.menuGroupSelected"
+                + " +route.ui.menuUngroup"
                 + " +route.ui.menuSplitHere +ui.delete", "the menu on 22 in (21 or 22) and 23 and 1, enabled (+) or not"
                 + " (-)");
 
@@ -1173,7 +1174,7 @@ public class testRouteEditorValidation
      * with the words between them, and selects the line now where the first one was; outside the selection, and from
      * a line's own trash mark, it removes that one condition.
      *
-     * MUTATION: in `offerConditionMenu`, have Delete call `removeAt(row)`, and only the line clicked goes.
+     * MUTATION: in `offerRowMenu`, have Delete call `table.removeAt(row)`, and only the line clicked goes.
      */
     @Test
     public void testDeleteFromTheMenuRemovesEverySelectedLine() throws Exception
@@ -1385,8 +1386,8 @@ public class testRouteEditorValidation
      * FR-150, OB-396: a group's word shows on its caption, so a right-click on a caption offers Add Condition into that
      * group, joined by its word: on "(21 and 22) or (24 and 25)", each caption's group gains one at its end.
      *
-     * MUTATION: in `offerConditionMenu`, clear the selection on a caption as below the lines, and every case adds to
-     * the outermost group.
+     * MUTATION: in `ConditionTable.chooseOffARow`, clear the selection on a caption as below the lines, and every
+     * case adds to the outermost group.
      */
     @Test
     public void testInsertOnAWordLineJoinsByThatWord() throws Exception
@@ -1794,7 +1795,7 @@ public class testRouteEditorValidation
      * FR-147: a right-click inside a selection of several conditions keeps the selection (Insert Below then selects
      * the new line alone); outside it, it picks the line clicked.
      *
-     * MUTATION: in `offerConditionMenu`, always select the line clicked, and the selection of two is lost.
+     * MUTATION: in `offerRowMenu`, always select the line clicked, and the selection of two is lost.
      */
     @Test
     public void testInsertFromAWordLineOrASelection() throws Exception
@@ -1964,10 +1965,16 @@ public class testRouteEditorValidation
 
     private static javax.swing.JTable conditionTable(org.traincontrol.gui.RouteEditorFrame frame)
     {
-        javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
-            t -> "ConditionTable".equals(t.getClass().getSimpleName()));
+        return table(frame, "ConditionTable");
+    }
 
-        assertNotNull(table, "the route editor has no condition table");
+    /** The route editor's table of one class, by its simple name. */
+    private static javax.swing.JTable table(org.traincontrol.gui.RouteEditorFrame frame, final String kind)
+    {
+        javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
+            t -> kind.equals(t.getClass().getSimpleName()));
+
+        assertNotNull(table, "the route editor has no " + kind);
 
         return table;
     }
@@ -2079,8 +2086,9 @@ public class testRouteEditorValidation
     private static String offered(final javax.swing.JPopupMenu menu)
     {
         String[] keys = {"route.ui.menuInsertConditionAbove", "route.ui.menuInsertConditionBelow",
-            "route.ui.menuAddCondition", "route.ui.menuMoveUp", "route.ui.menuMoveDown", "route.ui.menuGroupSelected",
-            "route.ui.menuUngroup", "route.ui.menuSplitHere", "ui.delete"};
+            "route.ui.menuAddCondition", "route.ui.menuInsertCommandAbove", "route.ui.menuInsertCommandBelow",
+            "route.ui.menuAddCommand", "route.ui.menuMoveUp", "route.ui.menuMoveDown", "route.ui.menuDuplicate",
+            "route.ui.menuGroupSelected", "route.ui.menuUngroup", "route.ui.menuSplitHere", "ui.delete"};
 
         StringBuilder out = new StringBuilder();
 
@@ -2195,7 +2203,7 @@ public class testRouteEditorValidation
                 frame.setConditionRowsForTest(rows);
 
                 cells[0] = frame.conditionCellForTest(0, 3).getText();
-                cells[1] = ((javax.swing.JLabel) frame.commandCellForTest(0, 6)).getText();
+                cells[1] = ((javax.swing.JLabel) frame.commandCellForTest(0, 5)).getText();
                 cells[2] = frame.readsAsForTest();
             });
 
@@ -2250,7 +2258,7 @@ public class testRouteEditorValidation
 
             assertNotNull(table, "the route editor has no command table");
 
-            clickCell(table, 0, 6, 0);
+            clickCell(table, 0, 5, 0);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -2798,7 +2806,7 @@ public class testRouteEditorValidation
      * OB-396: a selected condition is painted in the selection's colors from Kind to Protocol only, never on its
      * handle or trash, and a caption line in the selection is never painted as selected.
      *
-     * MUTATION: in `ConditionTable.isCellSelected`, drop `column != HANDLE && column != TRASH &&`, and the handle is
+     * MUTATION: in `HandledTable.isCellSelected`, drop `column != HANDLE && !isMark(column) &&`, and the handle is
      * blue.
      */
     @Test
@@ -3158,7 +3166,7 @@ public class testRouteEditorValidation
      * it only selects.  The Delete key deletes the
      * selection too, but not while a cell is being edited.
      *
-     * MUTATION: in `ConditionTable.changeSelection`, drop `|| column == TRASH`, and the press selects its line alone,
+     * MUTATION: in `HandledTable.changeSelection`, drop `|| isMark(column)`, and the press selects its line alone,
      * so the trash on 22 deletes 22 only.
      * MUTATION: in `ConditionTable.deleteSelected`, return at once, and the Delete key deletes nothing.
      * MUTATION: in `actOnRowMarks`, drop the Shift-or-Ctrl return, and a Shift press on the trash deletes the range.
@@ -3678,7 +3686,7 @@ public class testRouteEditorValidation
      * OB-396: a press on a handle inside a selection of several keeps them for a drag, which takes them all; let go
      * without a drag, it was a click, and the line is selected alone, so a Shift-click then reaches from it.
      *
-     * MUTATION: in `ConditionTable.released`, drop the `changeSelection` of the clicked line, and the click leaves all
+     * MUTATION: in `HandledTable.released`, drop the `changeSelection` of the clicked line, and the click leaves all
      * three selected.
      */
     @Test
@@ -3720,6 +3728,285 @@ public class testRouteEditorValidation
         {
             close(frame);
         }
+    }
+
+    /**
+     * FR-162: the commands have the conditions' handles.  A grip with its tooltip at the left of every row, and no
+     * arrows; a selection painted on the row's own cells, never the handle or the marks; a drag by a handle in a
+     * selection moves every selected row to where it is let go, and one outside it moves its own row, each left
+     * selected; and the trash on a row in a selection deletes the selection.
+     *
+     * MUTATION: in `CommandTable.chosenRows`, answer only `getSelectedRow()`, and the drag from 12 in the selection of
+     * 12 and 13 moves 12 alone.
+     */
+    @Test
+    public void testCommandsMoveByTheirHandles() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame, 11, 12, 13, 14);
+
+            final javax.swing.JLabel handle = support.Components.onTheEventThread(() ->
+                (javax.swing.JLabel) frame.commandCellForTest(0, HANDLE));
+
+            assertNotNull(handle.getIcon(), "a command row has no grip in its handle");
+            assertEquals(handle.getToolTipText(), I18n.t("route.ui.tooltipCommandHandle"), "the command handle's tooltip");
+
+            selectLines(table, 1, 2);
+
+            // Per column of a selected row: + where it holds a mark of the selection, an arrow's name where it holds one.
+            String painted = support.Components.onTheEventThread(() ->
+            {
+                StringBuilder out = new StringBuilder();
+
+                for (int column = 0; column < table.getColumnCount(); column++)
+                {
+                    Object value = table.getValueAt(1, column);
+                    boolean arrow = org.traincontrol.gui.RouteEditorFrame.markMoveUp().equals(value)
+                        || org.traincontrol.gui.RouteEditorFrame.markMoveDown().equals(value);
+
+                    out.append(arrow ? value : table.isCellSelected(1, column) ? "+" : "-");
+                }
+
+                return out.toString();
+            });
+
+            assertEquals(painted, "-+++++++--", "a selected command is painted from # to Delay, never on the handle, the"
+                + " trash or the copy mark, and has no arrows");
+
+            final java.awt.Rectangle last = support.Components.onTheEventThread(() -> table.getCellRect(3, 1, true));
+
+            drag(table, 1, new java.awt.Point(60, last.y + last.height - 2));
+
+            assertEquals(state(frame, table), " 11 14 12 13 [2, 3]", "12 and 13, dragged from 12's handle below 14,"
+                + " should land there and stay selected");
+
+            drag(table, 0, new java.awt.Point(60, last.y + 3));
+
+            assertEquals(state(frame, table), " 14 12 11 13 [2]", "11, outside the selection, dragged above 13, should"
+                + " land there alone and be selected");
+
+            selectLines(table, 0, 1);
+            clickCell(table, 1, COMMAND_TRASH, 0);
+
+            assertEquals(targets(frame), " 11 13", "the trash on 12 in the selection of 14 and 12 should delete both");
+        });
+    }
+
+    /**
+     * FR-162: Duplicate in the commands' menu copies every selected command directly below the last of them, as one
+     * run in their order, and selects the copies; so does the copy mark on a row in the selection, and on a row
+     * outside it the mark copies that row alone, directly under it.
+     *
+     * MUTATION: in `CommandTable.isMark`, answer `column == DELETE` alone, and the copy mark on 12 selects 12 alone, so
+     * only it is copied.
+     */
+    @Test
+    public void testDuplicateCopiesTheSelectedCommands() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame, 11, 12, 13, 14);
+
+            selectLines(table, 0, 1);
+            clickCondition(table, 3, NOTHING_TO_EDIT, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+            assertEquals(selectedRows(table), "[0, 1, 3]", "precondition: Ctrl-click adds 14 to 11 and 12");
+
+            rightClickAndChoose(table, 3, "route.ui.menuDuplicate");
+
+            assertEquals(state(frame, table), " 11 12 13 14 11 12 14 [4, 5, 6]", "Duplicate on 11, 12 and 14 should"
+                + " copy them below 14, in their order, and select the copies");
+
+            clickCell(table, 5, COMMAND_COPY, 0);
+
+            assertEquals(state(frame, table), " 11 12 13 14 11 12 14 11 12 14 [7, 8, 9]", "the copy mark on 12 in the"
+                + " selection should copy the selection below it");
+
+            clickCell(table, 0, COMMAND_COPY, 0);
+
+            assertEquals(state(frame, table), " 11 11 12 13 14 11 12 14 11 12 14 [1]", "the copy mark on 11, outside"
+                + " the selection, should copy 11 alone, under it");
+        });
+    }
+
+    /**
+     * FR-162: a right-click on a command offers Insert Command Above and Below, Move Up, Move Down, Duplicate and
+     * Delete, each enabled exactly where it does something; Insert puts a new command beside the row and selects it,
+     * and the moves take the selection together and leave it selected.  Below the rows it offers Add Command.
+     *
+     * MUTATION: in `CommandTable.canShiftChosen`, answer `!locked && !chosen.isEmpty()`, and Move Up is offered on the
+     * first command.
+     */
+    @Test
+    public void testTheCommandMenuOffersWhatEachRowCanDo() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame, 11, 12, 13);
+
+            javax.swing.JPopupMenu menu = rightClickBelow(table);
+
+            assertNotNull(menu, "a right-click below the commands opened no menu");
+            assertEquals(offered(menu), "+route.ui.menuAddCommand", "the menu below the commands");
+
+            support.Mouse.choose(item(menu, "route.ui.menuAddCommand"));
+
+            assertEquals(targets(frame), " 11 12 13 _", "Add Command adds one at the end");
+
+            String first = offered(rightClickCell(table, 0, NOTHING_TO_EDIT));
+
+            support.Mouse.closeMenus();
+
+            menu = rightClickCell(table, 3, NOTHING_TO_EDIT);
+
+            assertEquals(first + " | " + offered(menu), "+route.ui.menuInsertCommandAbove"
+                + " +route.ui.menuInsertCommandBelow -route.ui.menuMoveUp +route.ui.menuMoveDown +route.ui.menuDuplicate"
+                + " +ui.delete | +route.ui.menuInsertCommandAbove +route.ui.menuInsertCommandBelow +route.ui.menuMoveUp"
+                + " -route.ui.menuMoveDown +route.ui.menuDuplicate +ui.delete", "the menus on the first command and the"
+                + " last, enabled (+) or not (-)");
+
+            support.Mouse.choose(item(menu, "ui.delete"));
+            rightClickAndChoose(table, 1, "route.ui.menuInsertCommandAbove");
+
+            assertEquals(state(frame, table), " 11 _ 12 13 [1]", "Delete takes the command right-clicked; Insert"
+                + " Command Above puts a new command above 12, selected");
+
+            rightClickAndChoose(table, 2, "route.ui.menuInsertCommandBelow");
+            clickCondition(table, 1, NOTHING_TO_EDIT, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+            assertEquals(state(frame, table), " 11 _ 12 _ 13 [1, 3]", "Insert Command Below puts a new command under"
+                + " 12, selected");
+
+            rightClickAndChoose(table, 3, "ui.delete");
+            selectLines(table, 1, 2);
+            rightClickAndChoose(table, 2, "route.ui.menuMoveUp");
+
+            assertEquals(state(frame, table), " 12 13 11 [0, 1]", "Delete inside the selection takes both new"
+                + " commands; Move Up on 12 and 13 moves both above 11, still selected");
+
+            menu = rightClickCell(table, 1, NOTHING_TO_EDIT);
+
+            assertTrue(offered(menu).contains("-route.ui.menuMoveUp"), "Move Up is offered with the selection at the top: "
+                + offered(menu));
+
+            support.Mouse.choose(item(menu, "route.ui.menuMoveDown"));
+
+            assertEquals(state(frame, table), " 11 12 13 [1, 2]", "Move Down on 12 and 13 should move both below 11");
+        });
+    }
+
+    /**
+     * FR-162: Duplicate in the conditions' menu copies the selected conditions directly below the last of them, in
+     * that one's group and joined by its word, selects the copies, and Undo takes them back.  A whole group selected is
+     * copied as a group, as a move takes it whole.
+     *
+     * MUTATION: in `ConditionOutline.duplicated`, add the copies at the end of `into`, and 21 and 22 copied land after
+     * 23.
+     */
+    @Test
+    public void testDuplicateCopiesTheSelectedConditions() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            showRows(frame, fromLevels(" 0:21"));
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            assertEquals(duplicated(frame, table, " 0:21 0AND 0:22 0AND 0:23", 0, 2) + selectedRows(table),
+                " 0:21 0AND 0:22 0AND 0:21 0AND 0:22 0AND 0:23[4, 6]", "Duplicate on 21 and 22 should copy both below"
+                + " 22, in order, and select the copies");
+
+            ctrl(table, java.awt.event.KeyEvent.VK_Z);
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23", "Undo takes the copies back");
+            assertEquals(duplicated(frame, table, " 1:21 1OR 1:22 0AND 0:23", 0, 2),
+                " 1:21 1OR 1:22 0AND 1:21 1OR 1:22 0AND 0:23", "the whole group (21 or 22) should be copied as a group,"
+                + " below it");
+            assertEquals(duplicated(frame, table, " 0:21 0AND 1:22 1OR 1:23", 2, 2), " 0:21 0AND 1:22 1OR 1:22 1OR 1:23",
+                "22 should be copied into its 'or' group, under it, joined by 'or'");
+        });
+    }
+
+    /** An outline, these outline rows selected, Duplicate chosen on the last: the outline it leaves. */
+    private static String duplicated(org.traincontrol.gui.RouteEditorFrame frame, javax.swing.JTable table,
+        String outline, int first, int last) throws Exception
+    {
+        setRows(frame, fromLevels(outline));
+        selectLines(table, first, last);
+        rightClickAndChoose(table, last, "route.ui.menuDuplicate");
+
+        return levels(frame);
+    }
+
+    /** A claim on a route editor of its own, its menus and the window closed after. */
+    private static void inAnEditor(EditorClaim claim) throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            claim.run(frame);
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+
+            close(frame);
+        }
+    }
+
+    private interface EditorClaim
+    {
+        void run(org.traincontrol.gui.RouteEditorFrame frame) throws Exception;
+    }
+
+    private static final int COMMAND_TRASH = 8;
+    private static final int COMMAND_COPY = 9;
+
+    /** The frame with accessory commands at these addresses, packed and showing; its command table. */
+    private static javax.swing.JTable showCommands(org.traincontrol.gui.RouteEditorFrame frame, int... addresses)
+        throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (int address : addresses)
+            {
+                frame.appendCommand(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, true)
+                    .toLine(null).trim());
+            }
+
+            frame.pack();
+            frame.setVisible(true);
+        });
+
+        return table(frame, "CommandTable");
+    }
+
+    /** Each command's target in order, " 11 12" , a new one's as "_". */
+    private static String targets(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        return support.Components.onTheEventThread(() ->
+        {
+            StringBuilder out = new StringBuilder();
+
+            for (int row = 0; row < frame.commandRowCountForTest(); row++)
+            {
+                String target = frame.commandRowForTest(row).getTarget();
+
+                out.append(" ").append(target == null || target.isEmpty() ? "_" : target);
+            }
+
+            return out.toString();
+        });
+    }
+
+    /** The commands' targets and the selected rows: " 11 12 [1]". */
+    private static String state(org.traincontrol.gui.RouteEditorFrame frame, javax.swing.JTable table)
+    {
+        return targets(frame) + " " + selectedRows(table);
     }
 
     /** Presses an outline row's handle, drags to a point of the table and lets go there, as the mouse sends it. */

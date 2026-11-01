@@ -27,10 +27,10 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 128;
+    private static final int GROUPS_ALLOWED = 127;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 278798;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 278788;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -126,7 +126,6 @@ public class testNoNewCopies
         "RouteCommand:2 (109)",
         "RouteCommand:2 (64)",
         "RouteEditorFrame:2 (73)",
-        "RouteEditorFrame:2 (65)",
         "RouteEditorFrame:2 (65)",
         "RowIcons:2 (64)",
         "StationCaption:2 (86)",

@@ -375,6 +375,18 @@ public class RouteEditorFrame extends JFrame
 
         JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands);
 
+        // Below the rows, the commands' menu offers Add Command (FR-162).
+        final java.awt.Component belowCommands = commands.getParent();
+
+        belowCommands.addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+        {
+            @Override
+            protected void showPopup(java.awt.event.MouseEvent e)
+            {
+                offerCommandMenu(javax.swing.SwingUtilities.convertMouseEvent(belowCommands, e, commands));
+            }
+        });
+
         captureBox.setToolTipText(I18n.t("route.ui.tooltipCapture"));
 
         // Not in the tab order (OB-271, from MT-446): clicking one of these mid-typing would take the keyboard, so the next Enter
@@ -1555,17 +1567,17 @@ public class RouteEditorFrame extends JFrame
      */
     public void setCommandKindForTest(int row, CommandRow.Kind kind)
     {
-        commands.getModel().setValueAt(CommandRow.labelFor(kind), row, 3);
+        commands.getModel().setValueAt(CommandRow.labelFor(kind), row, CommandTable.KIND);
     }
 
     public void setCommandTargetForTest(int row, String target)
     {
-        commands.getModel().setValueAt(target, row, 4);
+        commands.getModel().setValueAt(target, row, CommandTable.TARGET);
     }
 
     public void setCommandSettingForTest(int row, String setting)
     {
-        commands.getModel().setValueAt(setting, row, 6);
+        commands.getModel().setValueAt(setting, row, CommandTable.SETTING);
     }
 
     /**
@@ -1577,7 +1589,7 @@ public class RouteEditorFrame extends JFrame
      */
     public void setCommandFunctionNumberForTest(int row, String number)
     {
-        commands.getModel().setValueAt(number, row, 5);
+        commands.getModel().setValueAt(number, row, CommandTable.NUMBER);
     }
 
     /**
@@ -1598,8 +1610,9 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The three marks at the end of a command row, driven the way a click drives them (MT-029).  The marks are
-     * painted values, so there is no component to click; this calls the methods the cell editor calls.
+     * The marks at the end of a command row, driven the way a click drives them (MT-029).  The marks are painted
+     * values, so there is no component to click; this calls the methods the click calls.  MOVE_UP and MOVE_DOWN move
+     * the one row, as the menu's Move Up and Move Down do (FR-162).
      *
      * @param row which row
      * @param mark MOVE_UP, MOVE_DOWN, DELETE_ROW or COPY_ROW
@@ -1754,7 +1767,7 @@ public class RouteEditorFrame extends JFrame
      */
     public boolean offersToAddCommands()
     {
-        return ADD_HERE.equals(commands.getValueAt(commands.getRowCount() - 1, UP));
+        return ADD_HERE.equals(commands.getValueAt(commands.getRowCount() - 1, HandledTable.HANDLE));
     }
 
     /** The same question of the condition list: whether its Add Condition is showing and can be pressed. */
@@ -1867,23 +1880,21 @@ public class RouteEditorFrame extends JFrame
         return "";
     }
 
-    // Which column is which, for the three that are pressed rather than typed in.
-    private static final int UP = 0;
-    private static final int DOWN = 1;
     /** The row's number, which is read rather than filled in. */
-    private static final int POSITION = 2;
+    private static final int POSITION = 1;
 
     /** The shade a cell takes when its kind has no use for it. */
     private static final java.awt.Color UNUSABLE = new java.awt.Color(242, 242, 242);
 
-    private static final int DELETE = 9;
+    private static final int DELETE = 8;
 
     /**
      * Copies a row, directly under it, beside the trash because the two are a pair: most of a route is near-repetition.
      */
-    private static final int DUPLICATE = 10;
+    private static final int DUPLICATE = 9;
 
-    // What a cell holds when it is one of those: values, so the renderer decides what a mark looks like.
+    // What a cell holds when it is one of those: values, so the renderer decides what a mark looks like.  The two moves
+    // are no cell's (FR-162): they name the menu's Move Up and Move Down to `clickCommandMarkForTest`.
     private static final String MOVE_UP = "up";
     private static final String MOVE_DOWN = "down";
     private static final String DELETE_ROW = "delete";
@@ -1910,16 +1921,14 @@ public class RouteEditorFrame extends JFrame
      * cells, because this table reorders and deletes rows constantly and would have to keep live components in step.
      *
      * @param table the table
-     * @param delete the delete column, or -1
-     * @param up the move-up column, or -1
-     * @param down the move-down column, or -1
-     * @param addOn the column the plus sits under on the last row
+     * @param addOn the column the plus sits under on the last row, or -1
+     * @param marked the columns that hold a mark
      */
-    private void actOnRowMarks(final JTable table, final int delete, final int up, final int down,
-        final int addOn, final int... alsoMarked)
+    private void actOnRowMarks(final JTable table, final int addOn, final int... marked)
     {
         final int mark = Math.max(12, table.getRowHeight() - 10);
 
+        // Never in the selection's colors: a press on a mark keeps the selection, so the mark is not part of it.
         final javax.swing.table.DefaultTableCellRenderer marks =
             new javax.swing.table.DefaultTableCellRenderer()
         {
@@ -1927,71 +1936,28 @@ public class RouteEditorFrame extends JFrame
             public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
                 boolean selected, boolean focused, int row, int column)
             {
-                boolean isMark = MOVE_UP.equals(value) || MOVE_DOWN.equals(value)
-                    || DELETE_ROW.equals(value) || ADD_HERE.equals(value)
-                    || COPY_ROW.equals(value);
-
-                // Only a MARK is drawn as one: this renderer also covers the position column, and blanking it would
-                // take the row numbers with it.
-                JLabel out = (JLabel) super.getTableCellRendererComponent(which,
-                    isMark ? "" : value, selected, false, row, column);
+                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, row, column);
 
                 out.setHorizontalAlignment(JLabel.CENTER);
-
-                java.awt.Color ink = selected ? which.getSelectionForeground() : null;
-
-                if (MOVE_UP.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.arrow(mark, true)
-                        : RowIcons.arrow(mark, true, ink));
-                }
-                else if (MOVE_DOWN.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.arrow(mark, false)
-                        : RowIcons.arrow(mark, false, ink));
-                }
-                // In the selection's own ink when the row is picked: a mid-green plus is nearly invisible on the
-                // selection blue.
-                else if (DELETE_ROW.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.trash(mark) : RowIcons.trash(mark, ink));
-                }
-                else if (COPY_ROW.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.copy(mark) : RowIcons.copy(mark, ink));
-                }
-                else if (ADD_HERE.equals(value))
-                {
-                    out.setIcon(ink == null ? RowIcons.plus(mark) : RowIcons.plus(mark, ink));
-                }
-                else out.setIcon(null);
+                out.setIcon(DELETE_ROW.equals(value) ? RowIcons.trash(mark)
+                    : COPY_ROW.equals(value) ? RowIcons.copy(mark) : null);
 
                 return out;
             }
         };
 
-        for (int column : new int[]{up, down, delete, addOn})
-        {
-            if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
-        }
-
-        // Further mark columns get the renderer and the pointer but NOT a second copy of the listener below: it
-        // dispatches on the value under the pointer, so two copies would both act on every click.
-        for (int column : alsoMarked)
-        {
-            if (column >= 0) table.getColumnModel().getColumn(column).setCellRenderer(marks);
-        }
+        for (int column : marked) table.getColumnModel().getColumn(column).setCellRenderer(marks);
 
         table.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
             public void mousePressed(java.awt.event.MouseEvent e)
             {
-                // A right-click on the conditions opens their menu rather than working the mark under it.
-                if (table instanceof ConditionTable && !javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
+                // A right-click opens the table's menu rather than working the mark under it.
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
 
                 // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
-                if (table instanceof ConditionTable && (e.isShiftDown() || e.isControlDown())) return;
+                if (e.isShiftDown() || e.isControlDown()) return;
 
                 pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
             }
@@ -2005,22 +1971,24 @@ public class RouteEditorFrame extends JFrame
                 int row = table.rowAtPoint(e.getPoint());
                 int column = table.columnAtPoint(e.getPoint());
 
-                boolean marked = column == up || column == down || column == delete
-                    || (row >= rowsOf(table) && column == addOn);
-
-                for (int also : alsoMarked)
-                {
-                    if (column == also) marked = true;
-                }
-
                 boolean live = row >= 0 && column >= 0
                     && !"".equals(String.valueOf(table.getValueAt(row, column)))
-                    && marked;
+                    && ((row >= rowsOf(table) && column == addOn) || isAmong(column, marked));
 
                 table.setCursor(java.awt.Cursor.getPredefinedCursor(
                     live ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
             }
         });
+    }
+
+    private static boolean isAmong(int column, int... columns)
+    {
+        for (int each : columns)
+        {
+            if (each == column) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -2081,7 +2049,7 @@ public class RouteEditorFrame extends JFrame
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
                 // OB-367: the setting is stored as the English word and shown in the user's language
-                int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : 6;
+                int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : CommandTable.SETTING;
 
                 if (column == settingColumn && shown instanceof String) shown = settingLabel((String) shown);
 
@@ -2144,53 +2112,66 @@ public class RouteEditorFrame extends JFrame
     {
         if (row < 0 || column < 0) return;
 
-        // Only where there is a mark: an empty cell (the top row has no way up) stays empty.
+        // Only where there is a mark: an empty cell stays empty.
         Object value = table.getValueAt(row, column);
 
-        if (MOVE_UP.equals(value)) moveRow(table, row, -1);
-        else if (MOVE_DOWN.equals(value)) moveRow(table, row, 1);
-        else if (DELETE_ROW.equals(value)) deleteRow(table, row);
+        if (DELETE_ROW.equals(value)) deleteRow(table, row);
         else if (COPY_ROW.equals(value)) duplicateRow(table, row);
         else if (ADD_HERE.equals(value)) addTo(table);
     }
 
     /**
-     * The right-click menu on the conditions (FR-147): inserting beside a condition, moving it, grouping (OB-396) and
-     * deleting, each enabled exactly when it would do something.  On a caption, Add Condition into its group; below
-     * the lines, Add Condition at the end of the outermost.
+     * The right-click menu on the conditions (FR-147): inserting beside a condition, moving it, grouping (OB-396),
+     * duplicating and deleting, each enabled exactly when it would do something.  On a caption, Add Condition into its
+     * group; below the lines, Add Condition at the end of the outermost.
      */
     private void offerConditionMenu(java.awt.event.MouseEvent e)
     {
-        final ConditionTable table = conditions;
+        offerRowMenu(conditions, e);
+    }
 
-        if (locked || !conditionsEditable || !table.isShowing()) return;
+    /** The right-click menu on the commands (FR-162): the conditions' without grouping; below the rows, Add Command. */
+    private void offerCommandMenu(java.awt.event.MouseEvent e)
+    {
+        offerRowMenu(commands, e);
+    }
+
+    /**
+     * Either table's right-click menu (FR-147, FR-162): on a row, inserting beside it, moving the selection, the
+     * table's own items, duplicating and deleting; elsewhere, adding one at the end.
+     */
+    private void offerRowMenu(final HandledTable table, java.awt.event.MouseEvent e)
+    {
+        if (!table.handlesWork() || !table.isShowing()) return;
 
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
 
         final int line = table.rowAtPoint(e.getPoint());
         final int row = table.rowOf(line);
+        final String[] keys = table.menuKeys();
 
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
         if (row < 0)
         {
-            if (table.isCaptionLine(line)) table.selectGroup(line);
-            else table.clearSelection();
+            table.chooseOffARow(line);
 
-            menu.add(menuItem("route.ui.menuAddCondition", true, () -> addTo(table)));
+            menu.add(menuItem(keys[2], true, () -> addTo(table)));
         }
         else
         {
             if (!table.isRowSelected(line)) table.setRowSelectionInterval(line, line);
 
-            menu.add(menuItem("route.ui.menuInsertConditionAbove", true, () -> table.insertBeside(row, -1)));
-            menu.add(menuItem("route.ui.menuInsertConditionBelow", true, () -> table.insertBeside(row, 1)));
+            menu.add(menuItem(keys[0], true, () -> table.insertBeside(row, -1)));
+            menu.add(menuItem(keys[1], true, () -> table.insertBeside(row, 1)));
             menu.addSeparator();
             menu.add(menuItem("route.ui.menuMoveUp", table.canShiftChosen(-1), () -> table.shiftChosen(-1)));
             menu.add(menuItem("route.ui.menuMoveDown", table.canShiftChosen(1), () -> table.shiftChosen(1)));
-            menu.add(menuItem("route.ui.menuGroupSelected", table.canGroupSelected(), table::groupSelected));
-            menu.add(menuItem("route.ui.menuUngroup", table.canUngroupSelected(), table::ungroupSelected));
-            menu.add(menuItem("route.ui.menuSplitHere", table.canSplitHere(), table::splitHere));
+            menu.add(menuItem("route.ui.menuDuplicate", !table.chosenRows().isEmpty(),
+                () -> table.duplicateRows(table.chosenRows())));
+
+            table.addOwnItems(menu);
+
             menu.addSeparator();
             menu.add(menuItem("ui.delete", true, () ->
             {
@@ -2231,13 +2212,12 @@ public class RouteEditorFrame extends JFrame
     {
         if (locked) return;
 
-        if (table == commands) commands.removeAt(row);
-        else conditions.removeLines(row);
+        ((HandledTable) table).removeLines(row);
     }
 
     /**
      * Puts a copy of a row directly under it: a route's order is its meaning, and the copy is nearly always wanted
-     * next.
+     * next.  On a row in a selection, of the selection (FR-162).
      */
     private void duplicateRow(JTable table, int row)
     {
@@ -2245,7 +2225,7 @@ public class RouteEditorFrame extends JFrame
 
         if (row < 0 || row >= commands.rows.size()) return;
 
-        commands.duplicateAt(row);
+        commands.duplicateLines(row);
     }
 
     private void addTo(JTable table)
@@ -2254,6 +2234,22 @@ public class RouteEditorFrame extends JFrame
 
         if (table == commands) commands.addRow();
         else if (conditionsEditable) conditions.addRow();
+    }
+
+    /**
+     * A new command saying the same as this one, so a copy is told from its original by identity (FR-162); one that
+     * cannot be rebuilt is shared.
+     */
+    private static RouteCommand copied(RouteCommand command)
+    {
+        try
+        {
+            return RouteCommand.fromJSON(command.toJSON());
+        }
+        catch (ReflectiveOperationException | RuntimeException e)
+        {
+            return command;
+        }
     }
 
     /**
@@ -2526,7 +2522,7 @@ public class RouteEditorFrame extends JFrame
     public java.util.List<String> functionChoicesForTest(int row)
     {
         // Through the cell editor the table would use, not functionsOffered: the editor decides what can be typed.
-        return offeredBy(commands, row, 5);
+        return offeredBy(commands, row, CommandTable.NUMBER);
     }
 
     /**
@@ -2537,7 +2533,7 @@ public class RouteEditorFrame extends JFrame
      */
     public java.util.List<String> targetChoicesForTest(int row)
     {
-        return offeredBy(commands, row, 4);
+        return offeredBy(commands, row, CommandTable.TARGET);
     }
 
     /**
@@ -3214,6 +3210,329 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * What the command and condition tables share (FR-162): a drag handle down the left, a selection that a press on a
+     * handle or a mark keeps, a drag by the handle that moves the selection, marks that act on the selection, and the
+     * right-click menu.  Each table says what its rows are and how they move.
+     */
+    private abstract class HandledTable extends JTable
+    {
+        static final int HANDLE = 0;
+
+        /** A row's own height, which the grip is drawn for. */
+        static final int LINE = 24;
+
+        /** The rows a handle drag holds, from its press to its release; null when there is none. */
+        java.util.Set<Integer> dragging;
+        private java.awt.Point pressedAt;
+        private Drop drop;
+
+        /** The line of a press that kept a selection of several for a drag; -1 once the pointer moves off. */
+        private int held = -1;
+
+        /** @return whether the rows may be changed */
+        abstract boolean handlesWork();
+
+        /** @return the row a table line shows, or -1 for a line that shows none */
+        abstract int rowOf(int line);
+
+        /** @return the table line showing a row, or -1 */
+        abstract int lineOf(int row);
+
+        /** @return whether a column holds a mark that acts on its row */
+        abstract boolean isMark(int column);
+
+        /** @return the rows of the selected lines, in order */
+        abstract java.util.SortedSet<Integer> chosenRows();
+
+        abstract String handleTip();
+
+        /** @return the menu's message keys for Insert Above, Insert Below and Add, in that order */
+        abstract String[] menuKeys();
+
+        /** @return where a drag would land at a point, or null where the dragged rows can go nowhere */
+        abstract Drop dropAt(java.awt.Point point);
+
+        /** Moves the dragged rows to where the drag let go, and leaves them selected. */
+        abstract void land(java.util.Set<Integer> moving, Drop landing);
+
+        abstract int dropLeft(Drop landing);
+
+        abstract int dropRight(Drop landing);
+
+        /** A new row above or below a row; by is -1 or 1. */
+        abstract void insertBeside(int row, int by);
+
+        abstract boolean canShiftChosen(int by);
+
+        /** The menu's Move Up and Move Down: the selected rows one place together, and still selected. */
+        abstract void shiftChosen(int by);
+
+        /** Copies these rows directly below the last of them, as one run in their order, and selects the copies. */
+        abstract void duplicateRows(java.util.SortedSet<Integer> chosen);
+
+        abstract void removeAt(int row);
+
+        /** Takes these rows out as one edit, then selects the row nearest a line, unless that is -1. */
+        abstract void removeRows(java.util.Set<Integer> chosen, int near);
+
+        /** A right-click off every row: what it leaves selected. */
+        void chooseOffARow(int line)
+        {
+            clearSelection();
+        }
+
+        /** The table's own items in its menu, after Duplicate. */
+        void addOwnItems(javax.swing.JPopupMenu menu)
+        {
+        }
+
+        /** Whether a line's handle carries the mark of the last edit. */
+        boolean isMarked(int line)
+        {
+            return false;
+        }
+
+        /** A press the table answers before its handles, as on a caption; true when it did. */
+        boolean pressedBeside(java.awt.event.MouseEvent e, int line)
+        {
+            return false;
+        }
+
+        /** @return the pointer over a point, or null to leave the one the marks set */
+        java.awt.Cursor cursorAt(java.awt.Point point)
+        {
+            return rowOf(rowAtPoint(point)) >= 0 && columnAtPoint(point) == HANDLE
+                ? java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR) : null;
+        }
+
+        /** Paints over the cells, under where a drag would drop. */
+        void paintOver(java.awt.Graphics2D g2)
+        {
+        }
+
+        /** Selection paints a row's own cells only (OB-396): never the handle or a mark. */
+        @Override
+        public boolean isCellSelected(int line, int column)
+        {
+            return column != HANDLE && !isMark(column) && rowOf(line) >= 0 && super.isCellSelected(line, column);
+        }
+
+        /**
+         * A press on a handle or a mark inside a selection of several lines keeps it, so the drag, or the mark, takes
+         * them all (MT-868); a drag by the handle moves rows rather than selecting them.
+         */
+        @Override
+        public void changeSelection(int line, int column, boolean toggle, boolean extend)
+        {
+            if (dragging != null && extend) return;
+
+            if ((column == HANDLE || isMark(column)) && !toggle && !extend && getSelectedRowCount() > 1
+                && isRowSelected(line)) return;
+
+            super.changeSelection(line, column, toggle, extend);
+        }
+
+        @Override
+        public void valueChanged(javax.swing.event.ListSelectionEvent e)
+        {
+            super.valueChanged(e);
+
+            repaint();
+        }
+
+        /** The handle column, as narrow as its grip; on an adding row, the plus. */
+        void handleColumn()
+        {
+            TableColumn handle = getColumnModel().getColumn(HANDLE);
+
+            handle.setPreferredWidth(30);
+            handle.setMinWidth(30);
+            handle.setMaxWidth(30);
+
+            handle.setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
+            {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                    boolean selected, boolean focused, int line, int column)
+                {
+                    JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, line, column);
+
+                    boolean movable = rowOf(line) >= 0 && handlesWork();
+                    boolean adds = ADD_HERE.equals(value);
+
+                    out.setOpaque(true);
+                    out.setBackground(adds ? which.getBackground() : HANDLE_GROUND);
+                    out.setHorizontalAlignment(JLabel.CENTER);
+                    out.setVerticalAlignment(adds ? JLabel.CENTER : JLabel.TOP);
+                    out.setIcon(movable ? RowIcons.grip(LINE) : adds ? RowIcons.plus(LINE - 10) : null);
+                    out.setBorder(adds ? null : BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 0, 1, HANDLE_EDGE),
+                        BorderFactory.createMatteBorder(0, isMarked(line) ? 3 : 0, 0, 0, CHANGED_MARK)));
+                    out.setToolTipText(movable ? handleTip() : null);
+
+                    return out;
+                }
+            });
+        }
+
+        /** The right-click menu and the handles' drag: after the table's own listener, so a press has selected first. */
+        void listen()
+        {
+            addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+            {
+                @Override
+                protected void showPopup(java.awt.event.MouseEvent e)
+                {
+                    offerRowMenu(HandledTable.this, e);
+                }
+            });
+
+            java.awt.event.MouseAdapter hands = new java.awt.event.MouseAdapter()
+            {
+                @Override
+                public void mousePressed(java.awt.event.MouseEvent e)
+                {
+                    pressed(e);
+                }
+
+                @Override
+                public void mouseDragged(java.awt.event.MouseEvent e)
+                {
+                    dragged(e.getPoint());
+                }
+
+                @Override
+                public void mouseReleased(java.awt.event.MouseEvent e)
+                {
+                    released();
+                }
+
+                @Override
+                public void mouseMoved(java.awt.event.MouseEvent e)
+                {
+                    if (!handlesWork()) return;
+
+                    java.awt.Cursor over = cursorAt(e.getPoint());
+
+                    if (over != null) setCursor(over);
+                }
+            };
+
+            addMouseListener(hands);
+            addMouseMotionListener(hands);
+        }
+
+        private void pressed(java.awt.event.MouseEvent e)
+        {
+            if (!javax.swing.SwingUtilities.isLeftMouseButton(e) || !handlesWork()) return;
+
+            int line = rowAtPoint(e.getPoint());
+
+            if (pressedBeside(e, line)) return;
+
+            if (rowOf(line) < 0 || columnAtPoint(e.getPoint()) != HANDLE) return;
+
+            dragging = chosenRows();
+            pressedAt = e.getPoint();
+            held = dragging.size() > 1 && !e.isShiftDown() && !e.isControlDown() ? line : -1;
+        }
+
+        private void dragged(java.awt.Point point)
+        {
+            if (dragging == null) return;
+
+            if (drop == null && pressedAt.distance(point) < 4) return;
+
+            held = -1;
+            drop = dropAt(point);
+            repaint();
+        }
+
+        private void released()
+        {
+            Drop landing = drop;
+            java.util.Set<Integer> moving = dragging;
+            int clicked = held;
+
+            dragging = null;
+            drop = null;
+            held = -1;
+            repaint();
+
+            // No drag after all: the click selects its line alone, as a click anywhere else on a line does.
+            if (clicked >= 0) super.changeSelection(clicked, HANDLE, false, false);
+
+            if (landing != null && moving != null && !moving.isEmpty()) land(moving, landing);
+        }
+
+        /** The cells, what the table paints over them, and where a drag would drop. */
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            super.paintComponent(g);
+
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+                paintOver(g2);
+
+                if (drop != null)
+                {
+                    int left = dropLeft(drop);
+
+                    g2.setColor(getSelectionBackground());
+                    g2.fillRect(left, drop.y - 1, dropRight(drop) - left, 2);
+                    g2.fillOval(left - 3, drop.y - 3, 6, 6);
+                }
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
+
+        int columnX(int column)
+        {
+            int x = 0;
+
+            for (int at = 0; at < column; at++) x += getColumnModel().getColumn(at).getWidth();
+
+            return x;
+        }
+
+        /**
+         * The trash, and Delete from the menu (OB-382): inside a selection of several lines, every selected row goes as
+         * one edit, and the line now where the first was is selected; elsewhere, `removeAt`.
+         */
+        void removeLines(int line)
+        {
+            java.util.SortedSet<Integer> chosen = chosenRows();
+
+            if (chosen.size() < 2 || !isRowSelected(line))
+            {
+                removeAt(rowOf(line));
+                return;
+            }
+
+            removeRows(chosen, getSelectedRows()[0]);
+        }
+
+        /** The copy mark (FR-162): on a line in the selection, every selected row; elsewhere, its own. */
+        void duplicateLines(int line)
+        {
+            int row = rowOf(line);
+
+            if (row < 0) return;
+
+            duplicateRows(isRowSelected(line) ? chosenRows()
+                : new java.util.TreeSet<>(java.util.Collections.singleton(row)));
+        }
+    }
+
+    /**
      * The columns every command shares: what kind, which one, what to do, and - for the kinds that
      * have them - which decoder speaks to it and how long to wait afterwards.
      *
@@ -3221,8 +3540,15 @@ public class RouteEditorFrame extends JFrame
      * from DCC, and a dropped delay is what holds a slow point motor apart from the command behind it.  A
      * cell the kind cannot use is grayed rather than hidden, so the table stays one shape.
      */
-    private final class CommandTable extends JTable
+    private final class CommandTable extends HandledTable
     {
+        static final int KIND = 2;
+        static final int TARGET = 3;
+        static final int NUMBER = 4;
+        static final int SETTING = 5;
+        static final int PROTOCOL = 6;
+        static final int DELAY = 7;
+
         private final List<Entry> rows = new ArrayList<>();
 
         /**
@@ -3244,7 +3570,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 11;
+                return 10;
             }
 
             @Override
@@ -3252,23 +3578,18 @@ public class RouteEditorFrame extends JFrame
             {
                 switch (column)
                 {
-                    // Move, position and delete live in the row: a button under the table acts on whichever row is
-                    // selected.
-                    case UP: return "";
-                    case DOWN: return "";
-
                     // The position: order is the whole meaning of a route.
-                    case 2: return "#";
-                    case 3: return I18n.t("route.ui.frameColKind");
-                    case 4: return I18n.t("route.ui.frameColTarget");
+                    case POSITION: return "#";
+                    case KIND: return I18n.t("route.ui.frameColKind");
+                    case TARGET: return I18n.t("route.ui.frameColTarget");
 
                     // The function NUMBER, which only one kind has; kept out of the "3:on" cell so on/off can be a
                     // dropdown.
-                    case 5: return I18n.t("route.ui.frameColNumber");
+                    case NUMBER: return I18n.t("route.ui.frameColNumber");
 
-                    case 6: return I18n.t("route.ui.frameColSetting");
-                    case 7: return I18n.t("route.ui.frameColProtocol");
-                    case 8: return I18n.t("route.ui.frameColDelay");
+                    case SETTING: return I18n.t("route.ui.frameColSetting");
+                    case PROTOCOL: return I18n.t("route.ui.frameColProtocol");
+                    case DELAY: return I18n.t("route.ui.frameColDelay");
                     default: return "";
                 }
             }
@@ -3276,49 +3597,48 @@ public class RouteEditorFrame extends JFrame
             @Override
             public Object getValueAt(int row, int column)
             {
-                // The adding row: a plus under the position column and nothing else
+                // The adding row: a plus where the handles are, and nothing else
                 if (row >= rows.size())
                 {
-                    return column == UP && !locked ? ADD_HERE : "";
+                    return column == HANDLE && !locked ? ADD_HERE : "";
                 }
 
                 Entry entry = rows.get(row);
 
                 // No marks on a route that is not ours to change: a mark that declines reads as a fault.
-                if (column == UP) return row > 0 && !locked ? MOVE_UP : "";
-                if (column == DOWN) return row < rows.size() - 1 && !locked ? MOVE_DOWN : "";
+                if (column == HANDLE) return "";
                 if (column == DELETE) return locked ? "" : DELETE_ROW;
                 if (column == DUPLICATE) return locked ? "" : COPY_ROW;
 
-                if (column == 2) return String.valueOf(row + 1);
+                if (column == POSITION) return String.valueOf(row + 1);
 
                 // A kept command has no columns to fill, so it reads as its own stored line in the
                 // first one.  Better an unfamiliar line than a blank row doing something unexplained.
                 if (!entry.isEditable())
                 {
-                    return column == 3 ? entry.describe() : "";
+                    return column == KIND ? entry.describe() : "";
                 }
 
                 CommandRow at = entry.getRow();
 
                 switch (column)
                 {
-                    case 3: return CommandRow.labelFor(at.getKind());
+                    case KIND: return CommandRow.labelFor(at.getKind());
 
                     // Blank where the kind has no such thing: a grayed cell with a stale address reads as a value in
                     // use.
-                    case 4: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
+                    case TARGET: return CommandRow.hasTarget(at.getKind()) ? at.getTarget() : "";
 
-                    case 5: return CommandRow.isFunction(at.getKind())
+                    case NUMBER: return CommandRow.isFunction(at.getKind())
                         ? functionNumberOf(at.getSetting()) : "";
 
-                    case 6:
+                    case SETTING:
                         if (!CommandRow.hasSetting(at.getKind())) return "";
 
                         return CommandRow.isFunction(at.getKind())
                             ? functionStateOf(at.getSetting()) : at.getSetting();
 
-                    case 7:
+                    case PROTOCOL:
                         if (!CommandRow.hasProtocol(at.getKind())) return "";
                         return (at.getProtocol() == null
                             ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : at.getProtocol()).toString();
@@ -3339,11 +3659,10 @@ public class RouteEditorFrame extends JFrame
             {
                 if (locked) return false;
 
-                // The adding row, and the three columns that are pressed rather than typed in
+                // The adding row, and the columns that are pressed or read rather than typed in
                 if (row >= rows.size()) return false;
 
-                if (column == UP || column == DOWN || column == DELETE || column == DUPLICATE
-                    || column == 2)
+                if (column == HANDLE || column == DELETE || column == DUPLICATE || column == POSITION)
                 {
                     return false;
                 }
@@ -3358,15 +3677,14 @@ public class RouteEditorFrame extends JFrame
                 // FEEDBACK), and a non-editable JComboBox refuses an item not in its model, so one click would write
                 // another kind back (an s88 command becoming an emergency stop).  Read-only, so the guard and the
                 // affordance ask one question.
-                if (column == 3) return CommandRow.canBeACommand(at.getKind());
+                if (column == KIND) return CommandRow.canBeACommand(at.getKind());
 
-                if (column == 4) return CommandRow.hasTarget(at.getKind());
-                if (column == 5) return CommandRow.isFunction(at.getKind());
-                if (column == 6) return CommandRow.hasSetting(at.getKind());
-                if (column == 7) return CommandRow.hasProtocol(at.getKind());
-                if (column == 8) return CommandRow.hasDelay(at.getKind());
+                if (column == TARGET) return CommandRow.hasTarget(at.getKind());
+                if (column == NUMBER) return CommandRow.isFunction(at.getKind());
+                if (column == SETTING) return CommandRow.hasSetting(at.getKind());
+                if (column == PROTOCOL) return CommandRow.hasProtocol(at.getKind());
 
-                return true;
+                return column != DELAY || CommandRow.hasDelay(at.getKind());
             }
 
             @Override
@@ -3382,21 +3700,21 @@ public class RouteEditorFrame extends JFrame
 
                 String text = value == null ? "" : value.toString().trim();
 
-                CommandRow.Kind kind = column == 3 ? CommandRow.kindFor(text) : at.getKind();
+                CommandRow.Kind kind = column == KIND ? CommandRow.kindFor(text) : at.getKind();
 
                 // A different kind starts empty: the setting vocabularies do not overlap, and neither does the target's
                 // meaning, so carrying it over would turn "Accessory 3" into a command for a locomotive called "3".
-                boolean became = column == 3 && kind != at.getKind();
+                boolean became = column == KIND && kind != at.getKind();
 
-                String target = column == 4 ? text : at.getTarget();
+                String target = column == TARGET ? text : at.getTarget();
 
                 // Changing the kind replaces the setting with one the new kind accepts, or Save would refuse a cell the
                 // user never touched.  A function's two halves are stored as one value, which is the model's business.
                 String setting = at.getSetting();
 
-                if (column == 3 && kind != at.getKind()) setting = CommandRow.defaultSettingFor(kind);
-                else if (column == 5) setting = text + ":" + functionStateOf(at.getSetting());
-                else if (column == 6) setting = CommandRow.isFunction(kind)
+                if (column == KIND && kind != at.getKind()) setting = CommandRow.defaultSettingFor(kind);
+                else if (column == NUMBER) setting = text + ":" + functionStateOf(at.getSetting());
+                else if (column == SETTING) setting = CommandRow.isFunction(kind)
                     ? functionNumberOf(at.getSetting()) + ":" + text : text;
 
                 // Every rebuild carries protocol and delay forward, or editing the SETTING of a DCC accessory would
@@ -3404,8 +3722,8 @@ public class RouteEditorFrame extends JFrame
                 Accessory.accessoryDecoderType protocol = at.getProtocol();
                 int delay = at.getDelay();
 
-                if (column == 7) protocol = protocolOf(text);
-                if (column == 8) delay = delayOf(text, at.getDelay());
+                if (column == PROTOCOL) protocol = protocolOf(text);
+                if (column == DELAY) delay = delayOf(text, at.getDelay());
 
                 if (became)
                 {
@@ -3416,7 +3734,7 @@ public class RouteEditorFrame extends JFrame
 
                 // The address decides which of the two it is, since only the layout knows which stands there.  Not done
                 // when the user has just chosen the kind by hand, nor for an address the layout has never heard of.
-                if (column == 4 && (kind == CommandRow.Kind.ACCESSORY
+                if (column == TARGET && (kind == CommandRow.Kind.ACCESSORY
                     || kind == CommandRow.Kind.SIGNAL))
                 {
                     CommandRow.Kind resolved = kindAtAddress(target, protocol, kind);
@@ -3469,7 +3787,7 @@ public class RouteEditorFrame extends JFrame
                 if (CommandRow.canBeACommand(kind)) kinds.addItem(CommandRow.labelFor(kind));
             }
 
-            getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(kinds));
+            getColumnModel().getColumn(KIND).setCellEditor(new DefaultCellEditor(kinds));
 
             JComboBox<String> protocols = new JComboBox<>();
 
@@ -3478,27 +3796,26 @@ public class RouteEditorFrame extends JFrame
                 protocols.addItem(type.toString());
             }
 
-            getColumnModel().getColumn(7).setCellEditor(new DefaultCellEditor(protocols));
+            getColumnModel().getColumn(PROTOCOL).setCellEditor(new DefaultCellEditor(protocols));
 
-            narrow(this, UP);
-            narrow(this, DOWN);
             narrow(this, DELETE);
             narrow(this, DUPLICATE);
 
-            TableColumn positionColumn = getColumnModel().getColumn(2);
+            handleColumn();
+
+            TableColumn positionColumn = getColumnModel().getColumn(POSITION);
             positionColumn.setPreferredWidth(30);
             positionColumn.setMaxWidth(40);
 
-            TableColumn kindColumn = getColumnModel().getColumn(3);
+            TableColumn kindColumn = getColumnModel().getColumn(KIND);
             kindColumn.setPreferredWidth(170);
 
-            getColumnModel().getColumn(5).setPreferredWidth(60);
-            getColumnModel().getColumn(7).setPreferredWidth(70);
-            getColumnModel().getColumn(8).setPreferredWidth(70);
+            getColumnModel().getColumn(NUMBER).setPreferredWidth(60);
+            getColumnModel().getColumn(PROTOCOL).setPreferredWidth(70);
+            getColumnModel().getColumn(DELAY).setPreferredWidth(70);
 
-            // The duplicate column is named here: a second call would register a second mouse listener, and both would
-            // act on every click.
-            actOnRowMarks(this, DELETE, UP, DOWN, UP, DUPLICATE);
+            // Both marks in one call: a second would register a second mouse listener, and both would act on every click.
+            actOnRowMarks(this, HANDLE, DELETE, DUPLICATE);
 
             // Kept commands are drawn grayed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking
@@ -3551,6 +3868,8 @@ public class RouteEditorFrame extends JFrame
             // Wrapped around the renderer above, after it, because setDefaultRenderer replaces what was set: gray text
             // in an empty cell shows nothing, so it adds a wash and exempts the + row.
             greyWhatCannotBeEdited(this);
+
+            listen();
         }
 
         /**
@@ -3565,7 +3884,7 @@ public class RouteEditorFrame extends JFrame
                 return super.getCellEditor(row, column);
             }
 
-            if (column == 6)
+            if (column == SETTING)
             {
                 String[] words = settingWords(rows.get(row).getRow());
 
@@ -3573,12 +3892,12 @@ public class RouteEditorFrame extends JFrame
             }
 
             // A number where a number is meant: refused as typed, not at Save.
-            if (column == 8) return digitsOnly();
+            if (column == DELAY) return digitsOnly();
 
             // And the functions that locomotive actually has (MT-464: "there is no validation of the function count on
             // mm2 locomotives in the route view, F32 was accepted").  The control that offers a value asks the guard's
             // question (OB-057, OB-090); a locomotive the database lacks takes a typed number.
-            if (column == 5)
+            if (column == NUMBER)
             {
                 String[] functions = functionsOffered(rows.get(row).getRow());
 
@@ -3587,7 +3906,7 @@ public class RouteEditorFrame extends JFrame
 
             // And the target, wherever the answer comes from a list this application already has: typing invites a typo
             // found only when the route misbehaves.
-            if (column == 4)
+            if (column == TARGET)
             {
                 CommandRow.Kind kind = rows.get(row).getRow().getKind();
 
@@ -3620,24 +3939,206 @@ public class RouteEditorFrame extends JFrame
             return super.getCellEditor(row, column);
         }
 
-        /**
-         * Copies a row and puts the copy under it; a kept command is copied as it stands, not turned into something
-         * shown.
-         */
-        void duplicateAt(int at)
+        /** A kept command is copied as it stands, not turned into something shown. */
+        private Entry copyOf(Entry was)
         {
-            if (at < 0 || at >= rows.size()) return;
-
-            Entry was = rows.get(at);
-
-            rows.add(at + 1, was.isEditable()
+            return was.isEditable()
                 ? Entry.of(new CommandRow(was.getRow().getKind(), was.getRow().getTarget(),
                     was.getRow().getSetting(), was.getRow().getProtocol(), was.getRow().getDelay()))
-                : Entry.of(was.toCommand()));
+                : Entry.of(was.toCommand());
+        }
+
+        @Override
+        void duplicateRows(java.util.SortedSet<Integer> chosen)
+        {
+            if (locked || chosen.isEmpty() || chosen.last() >= rows.size()) return;
+
+            List<Entry> copies = new ArrayList<>();
+
+            for (int at : chosen) copies.add(copyOf(rows.get(at)));
+
+            int first = chosen.last() + 1;
+
+            rows.addAll(first, copies);
+            fireTableDataChanged();
+
+            setRowSelectionInterval(first, first + copies.size() - 1);
+        }
+
+        @Override
+        boolean handlesWork()
+        {
+            return !locked;
+        }
+
+        @Override
+        int rowOf(int line)
+        {
+            return line >= 0 && line < rows.size() ? line : -1;
+        }
+
+        @Override
+        int lineOf(int row)
+        {
+            return rowOf(row);
+        }
+
+        @Override
+        boolean isMark(int column)
+        {
+            return column == DELETE || column == DUPLICATE;
+        }
+
+        @Override
+        java.util.SortedSet<Integer> chosenRows()
+        {
+            java.util.SortedSet<Integer> out = new java.util.TreeSet<>();
+
+            for (int line : getSelectedRows())
+            {
+                if (rowOf(line) >= 0) out.add(line);
+            }
+
+            return out;
+        }
+
+        @Override
+        String handleTip()
+        {
+            return I18n.t("route.ui.tooltipCommandHandle");
+        }
+
+        @Override
+        String[] menuKeys()
+        {
+            return new String[]{"route.ui.menuInsertCommandAbove", "route.ui.menuInsertCommandBelow",
+                "route.ui.menuAddCommand"};
+        }
+
+        /** The gap between the rows nearest a point; below the last row, after it. */
+        @Override
+        Drop dropAt(java.awt.Point point)
+        {
+            if (rows.isEmpty()) return null;
+
+            int gap = rows.size();
+
+            for (int at = 0; at < rows.size(); at++)
+            {
+                java.awt.Rectangle row = getCellRect(at, POSITION, true);
+
+                if (point.y < row.y + row.height / 2)
+                {
+                    gap = at;
+                    break;
+                }
+            }
+
+            java.awt.Rectangle edge = getCellRect(Math.min(gap, rows.size() - 1), POSITION, true);
+
+            return new Drop(null, gap, 0, Math.max(1, gap < rows.size() ? edge.y : edge.y + edge.height));
+        }
+
+        /** The dragged rows go, in their order, into the gap the drop names. */
+        @Override
+        void land(java.util.Set<Integer> moving, Drop landing)
+        {
+            if (locked) return;
+
+            List<Entry> taken = new ArrayList<>();
+            List<Entry> after = new ArrayList<>();
+            int to = 0;
+
+            for (int at = 0; at < rows.size(); at++)
+            {
+                if (moving.contains(at)) taken.add(rows.get(at));
+                else
+                {
+                    if (at < landing.at) to++;
+
+                    after.add(rows.get(at));
+                }
+            }
+
+            after.addAll(to, taken);
+
+            if (after.equals(rows)) return;
+
+            rows.clear();
+            rows.addAll(after);
+            fireTableDataChanged();
+
+            setRowSelectionInterval(to, to + taken.size() - 1);
+        }
+
+        @Override
+        int dropLeft(Drop landing)
+        {
+            return columnX(POSITION) + 6;
+        }
+
+        @Override
+        int dropRight(Drop landing)
+        {
+            return columnX(DELETE) - 6;
+        }
+
+        /** A new command above or below a row (FR-162), selected. */
+        @Override
+        void insertBeside(int row, int by)
+        {
+            if (locked || row < 0 || row >= rows.size()) return;
+
+            int at = by < 0 ? row : row + 1;
+
+            rows.add(at, Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
+            fireTableDataChanged();
+
+            setRowSelectionInterval(at, at);
+        }
+
+        /** Whether the selected rows can move one place that way: none moves where the leading one cannot. */
+        @Override
+        boolean canShiftChosen(int by)
+        {
+            java.util.SortedSet<Integer> chosen = chosenRows();
+
+            return !locked && !chosen.isEmpty() && (by < 0 ? chosen.first() > 0 : chosen.last() < rows.size() - 1);
+        }
+
+        @Override
+        void shiftChosen(int by)
+        {
+            if (!canShiftChosen(by)) return;
+
+            List<Integer> order = new ArrayList<>(chosenRows());
+
+            // The one leading the way first, so each passes the row beside the run rather than another chosen one.
+            if (by > 0) java.util.Collections.reverse(order);
+
+            for (int at : order) rows.add(at + by, rows.remove(at));
 
             fireTableDataChanged();
 
-            setRowSelectionInterval(at + 1, at + 1);
+            for (int at : order) addRowSelectionInterval(at + by, at + by);
+        }
+
+        @Override
+        void removeRows(java.util.Set<Integer> chosen, int near)
+        {
+            List<Integer> going = new ArrayList<>(new java.util.TreeSet<>(chosen));
+
+            java.util.Collections.reverse(going);
+
+            for (int at : going)
+            {
+                if (at >= 0 && at < rows.size()) rows.remove(at);
+            }
+
+            fireTableDataChanged();
+
+            if (near >= 0 && !rows.isEmpty()) setRowSelectionInterval(Math.min(near, rows.size() - 1),
+                Math.min(near, rows.size() - 1));
         }
 
         void addRow()
@@ -3809,17 +4310,15 @@ public class RouteEditorFrame extends JFrame
      * rule on the top edge, a nested group's outline inside its parent's, and no line for a joining word.  The outline
      * rows stay the model; the table's lines are made from them.
      */
-    private final class ConditionTable extends JTable
+    private final class ConditionTable extends HandledTable
     {
-        static final int HANDLE = 0;
         static final int KIND = 1;
         static final int TARGET = 2;
         static final int SETTING = 3;
         static final int PROTOCOL = 4;
         static final int TRASH = 5;
 
-        /** A condition line's own height; a line where groups end is taller by GAP for each, for their bottom edges. */
-        private static final int LINE = 24;
+        /** A line where groups end is taller than LINE by GAP for each, for their bottom edges. */
         private static final int GAP = 4;
         private static final int CAPTION_LINE = 22;
 
@@ -3850,14 +4349,6 @@ public class RouteEditorFrame extends JFrame
         private final Caption caption = new Caption();
         private final javax.swing.CellRendererPane stamp = new javax.swing.CellRendererPane();
 
-        /** The outline rows a handle drag holds, from its press to its release; null when there is none. */
-        private java.util.Set<Integer> dragging;
-        private java.awt.Point pressedAt;
-        private Drop drop;
-
-        /** The line of a press that kept a selection of several for a drag; -1 once the pointer moves off. */
-        private int held = -1;
-
         /**
          * Whether a line is a group's caption rather than a condition; asked by the renderers.
          *
@@ -3870,12 +4361,14 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** @return the outline row a table line shows, or -1 for a caption */
+        @Override
         int rowOf(int line)
         {
             return line >= 0 && line < lines.size() ? lines.get(line).row : -1;
         }
 
         /** @return the table line showing an outline row, or -1 for a joining word, which has none */
+        @Override
         int lineOf(int row)
         {
             for (int line = 0; line < lines.size(); line++)
@@ -3886,36 +4379,45 @@ public class RouteEditorFrame extends JFrame
             return -1;
         }
 
-        /** Selection paints Kind through Protocol only (OB-396): never the handle, the trash or a caption. */
         @Override
-        public boolean isCellSelected(int line, int column)
+        boolean handlesWork()
         {
-            return column != HANDLE && column != TRASH && !isCaptionLine(line) && super.isCellSelected(line, column);
-        }
-
-        /**
-         * A press on a handle inside a selection of several lines keeps it, so the drag takes them all; a drag by the
-         * handle moves rows rather than selecting them.
-         */
-        @Override
-        public void changeSelection(int line, int column, boolean toggle, boolean extend)
-        {
-            if (dragging != null && extend) return;
-
-            // A press on the handle or the trash of a line in a selection keeps the selection: the drag, or the delete,
-            // takes all of it (MT-868).
-            if ((column == HANDLE || column == TRASH) && !toggle && !extend && getSelectedRowCount() > 1
-                && isRowSelected(line)) return;
-
-            super.changeSelection(line, column, toggle, extend);
+            return !locked && conditionsEditable;
         }
 
         @Override
-        public void valueChanged(javax.swing.event.ListSelectionEvent e)
+        boolean isMark(int column)
         {
-            super.valueChanged(e);
+            return column == TRASH;
+        }
 
-            repaint();
+        @Override
+        String handleTip()
+        {
+            return I18n.t("route.ui.tooltipConditionHandle");
+        }
+
+        @Override
+        String[] menuKeys()
+        {
+            return new String[]{"route.ui.menuInsertConditionAbove", "route.ui.menuInsertConditionBelow",
+                "route.ui.menuAddCondition"};
+        }
+
+        /** On a caption, its group (Add Condition goes into it); below the lines, nothing. */
+        @Override
+        void chooseOffARow(int line)
+        {
+            if (isCaptionLine(line)) selectGroup(line);
+            else clearSelection();
+        }
+
+        @Override
+        void addOwnItems(javax.swing.JPopupMenu menu)
+        {
+            menu.add(menuItem("route.ui.menuGroupSelected", canGroupSelected(), this::groupSelected));
+            menu.add(menuItem("route.ui.menuUngroup", canUngroupSelected(), this::ungroupSelected));
+            menu.add(menuItem("route.ui.menuSplitHere", canSplitHere(), this::splitHere));
         }
 
         /** The content of a condition line is its top LINE pixels: a group's bottom edge is drawn in the rest. */
@@ -4266,39 +4768,11 @@ public class RouteEditorFrame extends JFrame
 
             getColumnModel().getColumn(PROTOCOL).setCellEditor(new DefaultCellEditor(protocols));
 
-            TableColumn handle = getColumnModel().getColumn(HANDLE);
-
-            handle.setPreferredWidth(30);
-            handle.setMinWidth(30);
-            handle.setMaxWidth(30);
+            handleColumn();
 
             narrow(this, TRASH);
 
             getColumnModel().getColumn(KIND).setPreferredWidth(220);
-
-            getColumnModel().getColumn(HANDLE).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
-            {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
-                    boolean selected, boolean focused, int line, int column)
-                {
-                    JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, line, column);
-
-                    boolean condition = rowOf(line) >= 0;
-
-                    out.setOpaque(true);
-                    out.setBackground(HANDLE_GROUND);
-                    out.setHorizontalAlignment(JLabel.CENTER);
-                    out.setVerticalAlignment(JLabel.TOP);
-                    out.setIcon(condition && conditionsEditable ? RowIcons.grip(LINE) : null);
-                    out.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 0, 1, HANDLE_EDGE),
-                        BorderFactory.createMatteBorder(0, isMarked(line) ? 3 : 0, 0, 0, CHANGED_MARK)));
-                    out.setToolTipText(condition && conditionsEditable ? I18n.t("route.ui.tooltipConditionHandle") : null);
-
-                    return out;
-                }
-            });
 
             getColumnModel().getColumn(KIND).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
             {
@@ -4325,58 +4799,9 @@ public class RouteEditorFrame extends JFrame
 
             greyWhatCannotBeEdited(this);
 
-            actOnRowMarks(this, TRASH, -1, -1, -1);
+            actOnRowMarks(this, -1, TRASH);
 
-            addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
-            {
-                @Override
-                protected void showPopup(java.awt.event.MouseEvent e)
-                {
-                    offerConditionMenu(e);
-                }
-            });
-
-            // After the table's own, so a press has already selected what the handle drags.
-            java.awt.event.MouseAdapter hands = new java.awt.event.MouseAdapter()
-            {
-                @Override
-                public void mousePressed(java.awt.event.MouseEvent e)
-                {
-                    pressed(e);
-                }
-
-                @Override
-                public void mouseDragged(java.awt.event.MouseEvent e)
-                {
-                    dragged(e.getPoint());
-                }
-
-                @Override
-                public void mouseReleased(java.awt.event.MouseEvent e)
-                {
-                    released();
-                }
-
-                @Override
-                public void mouseMoved(java.awt.event.MouseEvent e)
-                {
-                    int line = rowAtPoint(e.getPoint());
-
-                    if (!conditionsEditable) return;
-
-                    if (captionUnder(e.getPoint()) >= 0)
-                    {
-                        setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-                    }
-                    else if (rowOf(line) >= 0 && columnAtPoint(e.getPoint()) == HANDLE)
-                    {
-                        setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR));
-                    }
-                }
-            };
-
-            addMouseListener(hands);
-            addMouseMotionListener(hands);
+            listen();
 
             keys("alt UP", "moveUp", () -> shiftChosen(-1));
             keys("alt DOWN", "moveDown", () -> shiftChosen(1));
@@ -4569,15 +4994,6 @@ public class RouteEditorFrame extends JFrame
                 : "route.ui.conditionCaptionAll");
         }
 
-        private int columnX(int column)
-        {
-            int x = 0;
-
-            for (int at = 0; at < column; at++) x += getColumnModel().getColumn(at).getWidth();
-
-            return x;
-        }
-
         private int outlineLeft(int level)
         {
             return columnX(KIND) + 4 + level * INSET_LEFT;
@@ -4634,112 +5050,81 @@ public class RouteEditorFrame extends JFrame
             return line >= 0 ? captionFor(line).getToolTipText() : super.getToolTipText(e);
         }
 
-        /** The outlines, their captions, and where a drag would drop, over the cells. */
+        /** The outlines and their captions, over the cells. */
         @Override
-        protected void paintComponent(java.awt.Graphics g)
+        void paintOver(java.awt.Graphics2D g2)
         {
-            super.paintComponent(g);
-
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
-
-            try
+            for (java.util.Map.Entry<ConditionOutline.Group, Integer> each : captionAt.entrySet())
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                ConditionOutline.Group group = each.getKey();
+                int level = levelOf(group);
+                int last = endsAt.get(group);
+                java.awt.Rectangle first = super.getCellRect(each.getValue(), KIND, true);
+                java.awt.Rectangle end = super.getCellRect(last, KIND, true);
+                int left = outlineLeft(level);
+                int topEdge = first.y + first.height / 2;
 
-                for (java.util.Map.Entry<ConditionOutline.Group, Integer> each : captionAt.entrySet())
+                // Bottom edges apart where several groups end on one line, the innermost highest.
+                int inner = 0;
+
+                for (java.util.Map.Entry<ConditionOutline.Group, Integer> other : endsAt.entrySet())
                 {
-                    ConditionOutline.Group group = each.getKey();
-                    int level = levelOf(group);
-                    int last = endsAt.get(group);
-                    java.awt.Rectangle first = super.getCellRect(each.getValue(), KIND, true);
-                    java.awt.Rectangle end = super.getCellRect(last, KIND, true);
-                    int left = outlineLeft(level);
-                    int topEdge = first.y + first.height / 2;
-
-                    // Bottom edges apart where several groups end on one line, the innermost highest.
-                    int inner = 0;
-
-                    for (java.util.Map.Entry<ConditionOutline.Group, Integer> other : endsAt.entrySet())
-                    {
-                        if (other.getValue() == last && levelOf(other.getKey()) > level) inner++;
-                    }
-
-                    int bottom = end.y + LINE + 1 + GAP * inner;
-
-                    g2.setColor(OUTLINE);
-                    g2.drawRoundRect(left, topEdge, outlineRight(level) - left, bottom - topEdge, 6, 6);
-
-                    java.awt.Rectangle at = captionBounds(each.getValue());
-
-                    stamp.paintComponent(g2, captionFor(each.getValue()), this, at.x, at.y, at.width, at.height, true);
+                    if (other.getValue() == last && levelOf(other.getKey()) > level) inner++;
                 }
 
-                if (drop != null)
-                {
-                    int left = outlineLeft(drop.level) + 6;
+                int bottom = end.y + LINE + 1 + GAP * inner;
 
-                    g2.setColor(getSelectionBackground());
-                    g2.fillRect(left, drop.y - 1, outlineRight(drop.level) - 6 - left, 2);
-                    g2.fillOval(left - 3, drop.y - 3, 6, 6);
-                }
-            }
-            finally
-            {
-                g2.dispose();
+                g2.setColor(OUTLINE);
+                g2.drawRoundRect(left, topEdge, outlineRight(level) - left, bottom - topEdge, 6, 6);
+
+                java.awt.Rectangle at = captionBounds(each.getValue());
+
+                stamp.paintComponent(g2, captionFor(each.getValue()), this, at.x, at.y, at.width, at.height, true);
             }
         }
 
-        private void pressed(java.awt.event.MouseEvent e)
+        @Override
+        int dropLeft(Drop landing)
         {
-            if (!javax.swing.SwingUtilities.isLeftMouseButton(e) || locked || !conditionsEditable) return;
+            return outlineLeft(landing.level) + 6;
+        }
 
-            int line = rowAtPoint(e.getPoint());
+        @Override
+        int dropRight(Drop landing)
+        {
+            return outlineRight(landing.level) - 6;
+        }
 
+        /** A press on a caption offers its words; on a caption line, it selects the group. */
+        @Override
+        boolean pressedBeside(java.awt.event.MouseEvent e, int line)
+        {
             if (captionUnder(e.getPoint()) >= 0)
             {
                 offerWords(line);
-                return;
+                return true;
             }
 
             if (isCaptionLine(line) && !e.isShiftDown() && !e.isControlDown())
             {
                 selectGroup(line);
-                return;
+                return true;
             }
 
-            if (rowOf(line) < 0 || columnAtPoint(e.getPoint()) != HANDLE) return;
-
-            dragging = chosenRows();
-            pressedAt = e.getPoint();
-            held = dragging.size() > 1 && !e.isShiftDown() && !e.isControlDown() ? line : -1;
+            return false;
         }
 
-        private void dragged(java.awt.Point point)
+        @Override
+        java.awt.Cursor cursorAt(java.awt.Point point)
         {
-            if (dragging == null) return;
-
-            if (drop == null && pressedAt.distance(point) < 4) return;
-
-            held = -1;
-            drop = dropAt(point);
-            repaint();
+            return captionUnder(point) >= 0 ? java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR)
+                : super.cursorAt(point);
         }
 
-        private void released()
+        @Override
+        void land(java.util.Set<Integer> moving, Drop landing)
         {
-            Drop landing = drop;
-            java.util.Set<Integer> moving = dragging;
-            int clicked = held;
-
-            dragging = null;
-            drop = null;
-            held = -1;
-            repaint();
-
-            // No drag after all: the click selects its line alone, as a click anywhere else on a line does.
-            if (clicked >= 0) super.changeSelection(clicked, HANDLE, false, false);
-
-            if (landing != null && moving != null && !moving.isEmpty()) dropInto(moving, landing.group, landing.at);
+            dropInto(moving, landing.group, landing.at);
         }
 
         /**
@@ -4748,6 +5133,7 @@ public class RouteEditorFrame extends JFrame
          *
          * @return the drop, or null where there is nowhere the dragged rows can go
          */
+        @Override
         Drop dropAt(java.awt.Point point)
         {
             if (top == null || lines.isEmpty()) return null;
@@ -4905,6 +5291,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** @return the outline rows of the selected conditions, in order */
+        @Override
         java.util.SortedSet<Integer> chosenRows()
         {
             java.util.SortedSet<Integer> out = new java.util.TreeSet<>();
@@ -5039,6 +5426,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** A new condition above or below an outline row (FR-147) as `ConditionOutline.inserted` places it; by is -1 or 1. */
+        @Override
         void insertBeside(int row, int by)
         {
             if (row < 0 || row >= rows.size()) return;
@@ -5048,6 +5436,31 @@ public class RouteEditorFrame extends JFrame
 
             replaceWith(ConditionOutline.inserted(rows, row, by, fresh), java.util.Collections.singletonList(fresh),
                 before);
+        }
+
+        /**
+         * Duplicate (FR-162): copies directly below the last selected piece, in its group and by that group's word, as
+         * `ConditionOutline.duplicated` places them; a whole selected group is copied as a group.  One edit, for Undo.
+         */
+        @Override
+        void duplicateRows(java.util.SortedSet<Integer> chosen)
+        {
+            if (locked || !conditionsEditable) return;
+
+            List<ConditionOutline.Row> before = new ArrayList<>(rows);
+            List<RouteCommand> copies = new ArrayList<>();
+            ConditionOutline.Joiner word = wordOf(ConditionOutline.copiedInto(top, chosen));
+
+            List<ConditionOutline.Row> after = ConditionOutline.duplicated(rows, chosen, word, command ->
+            {
+                RouteCommand copy = copied(command);
+
+                copies.add(copy);
+
+                return copy;
+            });
+
+            if (after != null) replaceWith(after, copies, before);
         }
 
         /**
@@ -5131,7 +5544,8 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** A condition line whose row the last edit changed, or a caption whose group's words it did. */
-        private boolean isMarked(int line)
+        @Override
+        boolean isMarked(int line)
         {
             int row = rowOf(line);
 
@@ -5161,6 +5575,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** Removes one condition, by `removeRows`. */
+        @Override
         void removeAt(int row)
         {
             if (row < 0 || row >= rows.size() || rows.get(row).isJoiner()) return;
@@ -5169,27 +5584,11 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Delete from the menu (OB-382): inside a selection of several lines, every selected condition goes as one edit,
-         * and the line now where the first was is selected; elsewhere, `removeAt`.
-         */
-        void removeLines(int line)
-        {
-            java.util.SortedSet<Integer> conditions = chosenRows();
-
-            if (conditions.size() < 2 || !isRowSelected(line))
-            {
-                removeAt(rowOf(line));
-                return;
-            }
-
-            removeRows(conditions, getSelectedRows()[0]);
-        }
-
-        /**
          * Takes conditions out as `ConditionOutline.removed` does, each with a word of its own group, so no other
          * group's word changes; then selects the condition nearest a line, unless that is -1.
          */
-        private void removeRows(java.util.Set<Integer> conditions, int near)
+        @Override
+        void removeRows(java.util.Set<Integer> conditions, int near)
         {
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
             List<ConditionOutline.Row> after = ConditionOutline.removed(rows, conditions);
@@ -5233,6 +5632,7 @@ public class RouteEditorFrame extends JFrame
          * Alt+Up and Alt+Down, and the menu's Move Up and Move Down: the selected conditions move together, by the rule
          * `ConditionOutline.movedTogether` holds (MT-868), and stay selected.
          */
+        @Override
         void shiftChosen(int by)
         {
             if (!canShiftChosen(by)) return;
@@ -5243,6 +5643,7 @@ public class RouteEditorFrame extends JFrame
             replaceWith(ConditionOutline.movedTogether(rows, chosen, by), commandsOf(chosen), before);
         }
 
+        @Override
         boolean canShiftChosen(int by)
         {
             return !locked && conditionsEditable && ConditionOutline.movedTogether(rows, chosenRows(), by) != null;
