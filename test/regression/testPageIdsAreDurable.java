@@ -447,8 +447,8 @@ public class testPageIdsAreDurable
      * An index written in the platform's encoding is read, not refused.
      *
      * `writeLayoutIndex` once used a default-encoding `FileWriter`, so a page called "Bahnhof Süd" written by an
-     * older build on Windows is not valid UTF-8.  Refusing to renumber on a failed read made the index permanently
-     * unwritable, so this asserts both that the ids survive the read and that the write goes through.
+     * older build on Windows is not valid UTF-8.  Refusing to renumber on a failed read left the index unwritable, so
+     * this asserts both that the ids survive the read and that the write goes through.
      */
     @Test
     public void testAnIndexInThePlatformEncodingIsStillReadableAndWritable() throws IOException
@@ -534,8 +534,7 @@ public class testPageIdsAreDurable
      *
      * OB-092: renaming "Test" to "5" made the page holding id 5 (Main) excluded from autonomy.  `renamePage` left the
      * store's own numbering stale, so the next save wrote the bare NAME into `excludedPages`, which `untranslatePages`
-     * reads as an ID.  No earlier rename test used a numeric page name, so the collision could not arise.  Every
-     * collection is checked, and the OTHER page as hard as the renamed one.
+     * reads as an ID.  Every collection is checked, and the OTHER page as hard as the renamed one.
      */
     @Test
     public void testRenamingAPageToAnotherPagesIdMovesOnlyThatPage() throws IOException
@@ -665,8 +664,8 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * Deleting a page forgets that page's setup, and only that page's.  `renamePage` has had a caller since OB-049;
-     * `deletePage` never had one, so the setup kept everything keyed to the deleted page.
+     * Deleting a page forgets that page's setup, and only that page's; otherwise the setup keeps everything keyed to
+     * the deleted page.
      */
     @Test
     public void testDeletingAPageForgetsItsSetupAndNothingElse() throws IOException
@@ -815,11 +814,9 @@ public class testPageIdsAreDurable
      *   2. The OTHER absent page keeps everything.
      *   3. Entries on the gone page go, and the live page's own settings stay.
      *
-     * MUTATIONS, all three run and all three fail this test: checking only the key and not the value
-     * leaves the caption behind; clearing the hold outright rather than filtering it takes the other
-     * absent page with it; and dropping the `pageNamesWhenWritten` removal leaves the deleted page
-     * still reported as one that is merely not loaded, so the operator would be asked about it again
-     * on every save for ever.
+     * MUTATIONS, each fails this test: checking only the key and not the value leaves the caption behind; clearing the
+     * hold outright rather than filtering it takes the other absent page with it; dropping the `pageNamesWhenWritten`
+     * removal leaves the deleted page reported as merely not loaded, so the operator is asked about it on every save.
      */
     @Test
     public void testAPageSaidToBeGoneStopsBeingHeld() throws IOException
@@ -956,9 +953,9 @@ public class testPageIdsAreDurable
     /**
      * A deleted page stops being reported as one that merely did not load.
      *
-     * `deletePage` left the setup's record of what that page id was CALLED, which survives every reload, so
-     * `pagesNotLoaded` named the deleted page for ever, `AutonomySession.pagesSafeToJudge` stayed false, and every
-     * editor save raised a warning about it.  FR-018 cannot clear it: a deleted page is not in the index.
+     * The setup's record of what that page id was CALLED survives every reload, so unless `deletePage` clears it,
+     * `pagesNotLoaded` names the deleted page for ever, `AutonomySession.pagesSafeToJudge` stays false, and every
+     * editor save raises a warning about it.  FR-018 cannot clear it: a deleted page is not in the index.
      *
      * MUTATION: removing the `pageNameToId` / `pageIdToName` removals from `deletePage` fails this.
      *
@@ -1003,9 +1000,9 @@ public class testPageIdsAreDurable
     /**
      * A page named after another page's id keeps its own held settings when that other page goes.
      *
-     * `forgetHeldPages` matched held keys against both page NAMES and the ids written for them, so declaring the page
-     * NAMED "5" gone deleted every held entry of the page with ID 5.  Names can never match a legitimate held key
-     * (`pageIsHere` answers true for any bare unrecognized name), so that half only produced this false positive.
+     * `forgetHeldPages` matches held keys against the ids written for the pages, not their NAMES: declaring the page
+     * NAMED "5" gone would delete every held entry of the page with ID 5, and names can never match a legitimate held
+     * key (`pageIsHere` answers true for any bare unrecognized name).
      *
      * MUTATION: putting the page names back into `parts` fails this test.
      */

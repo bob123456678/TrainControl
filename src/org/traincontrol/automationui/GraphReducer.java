@@ -583,7 +583,7 @@ public class GraphReducer
 
             // A DOUBLE-CURVE SENSOR IS NOT REPORTED: the reduction makes ONE Point of its two curves, with one s88, and
             // which curve carries the contact is not in the diagram (the .cs2 records one tile), so a check could only
-            // say "I do not know whether that matters" of every such square.  Adam: "No warning needed otherwise."
+            // say "I do not know whether that matters" of every such square.
 
             String name = authored.getPointName(tile);
 
@@ -813,11 +813,10 @@ public class GraphReducer
     /**
      * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set.
      *
-     * A permanent turnout is still the last switch (OB-233): nothing can throw it, but a train standing across it
-     * fouls the merge as it would a throwable one.  So it is `isSwitch()` plus the declared permanent types;
-     * `isSwitch()` is left alone because some of its call sites offer an accessory address, which a permanent turnout
-     * has none of.  A TWO-SQUARE CROSSING is a crossing (OB-320): nothing merges at its squares, so it does not end
-     * the room.
+     * A permanent turnout is still the last switch (OB-233): nothing can throw it, but a train standing across it fouls
+     * the merge as a throwable one would.  So it is `isSwitch()` plus the declared permanent types; `isSwitch()` stays
+     * as it is because some call sites offer an accessory address, which a permanent turnout has none of.  A TWO-SQUARE
+     * CROSSING is a crossing (OB-320): nothing merges at its squares, so it does not end the room.
      *
      * @return true when the room ends here
      */
@@ -831,9 +830,8 @@ public class GraphReducer
 
     /**
      * The track between the last switch on this edge and the square it ends at, endpoint included, the switch tile
-     * itself NOT counted: the train comes to rest clear of the points.  Adam's ruling: the room is measured "between
-     * the switch and the station", and *"for the switches, for simplicity, let's use any direction, that way we are
-     * guaranteed to be safe"*, so which way the path crosses the points does not enter into it.
+     * itself NOT counted: the train comes to rest clear of the points.  The room is measured between the switch and the
+     * station, taking any direction across the switches to be safe, so which way the path crosses them does not matter.
      *
      * "A switch" is what `boundsTheRoom` says.  Walks backwards and stops at the first switch, the binding one: a train
      * that fits between the last switch and the station fits between any earlier one.
@@ -851,8 +849,7 @@ public class GraphReducer
         // Unmeasured tiles contribute nothing (only positive lengths are determinate, as in the protrusion walk and the
         // berth rule); a stretch where NOTHING is measured still answers -1, which is genuinely no information.  This
         // UNDER-states the room by however much is unmeasured, the safe direction: it refuses a train that might have
-        // fitted rather than admitting one that does not.  The editor names the unmeasured tiles
-        // (`unmeasuredAfterTheLastSwitch`, just below).
+        // fitted rather than admitting one that does not.  The editor names them (`unmeasuredAfterTheLastSwitch`).
         int atTheEnd = authored.getTileLength(end);
 
         int room = Math.max(0, atTheEnd);

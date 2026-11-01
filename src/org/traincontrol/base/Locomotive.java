@@ -45,8 +45,7 @@ public abstract class Locomotive
      * How long a dispatched train may be on its way to a sensor before the user is told it has not arrived: five
      * minutes, since a long block can legitimately take a while and crying wolf is worse than silence.  Nothing acts on
      * it and it does not end the wait: there is no safe automatic answer to "the train has not reached its sensor", and
-     * the Central Station re-reports the s88 bus on its next poll.  The usual causes are a locomotive that never
-     * started and one that took a different route.
+     * the Central Station re-reports the s88 bus on its next poll.
      *
      * Only the dispatch path in Layout asks for it, via the three-argument wait; a route's trigger monitor waits on its
      * sensor for as long as the layout runs.
@@ -399,7 +398,7 @@ public abstract class Locomotive
                 if (powerOn)
                 {
                     // Only a real transition starts the clock: the Central Station broadcasts GO on every press, and
-                    // restarting a running locomotive's clock discarded the time since its real start.
+                    // restarting a running locomotive's clock would discard the time since its real start.
                     if (!wasOn)
                     {
                         this.lastStartTime = System.currentTimeMillis();
@@ -435,8 +434,8 @@ public abstract class Locomotive
             if (speed >= 0 && speed <= 100)
             {
                 // Update total runtime stat
-                // Only when the track is live, as the branch below also asks: with power off a speed command wrote a
-                // "ran today" record for a locomotive that had not moved.
+                // Only when the track is live, as the branch below also asks: with power off a speed command would
+                // record a "ran today" for a locomotive that had not moved.
                 if (speed > 0 && this.speed == 0 && powerState)
                 {
                     this.lastStartTime = System.currentTimeMillis();
@@ -596,8 +595,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }   
@@ -658,8 +656,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }
@@ -690,8 +687,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }
@@ -812,8 +808,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }  
@@ -882,8 +877,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }  

@@ -275,9 +275,8 @@ final class DiagramLocGestures
                         : point.getCurrentLocomotive().getName(),
                     ui.getModel() == null ? null : ui.getModel().getAutoLayout());
 
-            // AND THE HEADING FROM THE LAST DRAG GOES WITH IT.  This branch clears a square
-            // rather than filling one, so it leaves no heading behind - and a value left over from a
-            // previous placement would be read as this one as by whatever comes next.
+            // AND THE HEADING FROM THE LAST DRAG GOES WITH IT.  This branch clears a square rather than filling one, so
+            // it leaves no heading behind, and a leftover value would be read as this placement's.
             ui.facingAtTheLanding = null;
             ui.tailAtTheLanding = null;
 
