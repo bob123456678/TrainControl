@@ -408,11 +408,21 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
+            - In the autonomy editor, the answers of `Test a path` and `Why not Moving?` stay until the next message or until you close them, in a strip up to four lines tall.
         - Interface
             - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with a tooltip, items whose name says what they do have none, and a few tooltips are shorter and clearer.
+        - Routes
+            - The route editor shows a route's conditions in outlined groups. Each group's rule is written on its outline, `All of these must be true` or `At least one must be true`; click it to change the rule.
+            - Drag a condition by its handle to move it, into another group or out of one, or move the selected conditions with Alt+Up and Alt+Down.
+            - Under the conditions are `Add Condition`, `Group Selected`, `Ungroup`, `Split Here`, `Undo` and `Redo`, always at the bottom of the box. `Group Selected` keeps what the conditions mean, and `Split Here` turns `A and B and C` into `(A and B) or C` in one click. Their shortcuts are Ctrl+G, Ctrl+Shift+G, Ctrl+Shift+S, Ctrl+Z and Ctrl+Y.
+            - The trash, the Delete key, `Move Up`, `Move Down` and `Ungroup` act on every selected condition.
+            - The plain words reading of the conditions is above the table, and the warning that conditions are ignored while `Automatically Fire` is not selected sits on the conditions' heading, with a warning sign.
+            - `Save` now comes before `Cancel` at the bottom of the route editor, and the window can no longer be made narrower than its top line.
     - Bug Fixes
         - Autonomy
             - `Why not Moving?` colors a station purple only when the train could be sent there by hand; one it cannot be sent to is gray. Its lines now follow the routes the train would actually take, including a purple line to each purple station, and no stretch of track is drawn twice.
+        - Track Diagram
+            - `Save Current Track Diagram as a Picture` now asks "What diagram size do you want to save?"
 * v3.0.6 [10/30/2026]
     - New Features
         - Autonomy
