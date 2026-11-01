@@ -468,8 +468,8 @@ public class testSwitchingToACentralStationLayout
 
     /**
      * A class is exempt from the count rule only when its own sandbox is in a setup method.  A file-wide @Before, or a
-     * fixed lookback that reaches over the previous method's body, let a plain test with three windows and one sandbox
-     * through.
+     * fixed lookback that reaches over the previous method's body, would let a plain test with three windows and one
+     * sandbox through.
      *
      * MUTATION: putting back a fixed-distance lookback fails the first assertion; bounding it so
      * tightly that a method's own annotations fall outside fails the second.
@@ -544,16 +544,12 @@ public class testSwitchingToACentralStationLayout
             String code = body.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
 
             // THE WINDOW is a hard rule: it has no offenders, and it writes the folder and can raise a modal dialog
-            // into the middle of a battery.  The MODEL is a ratchet instead, below: 56 pre-existing violations would
+            // into the middle of a battery.  The MODEL is a ratchet instead, below: its pre-existing violations would
             // make a hard rule one somebody deletes rather than obeys.
             //
-            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST: seven of the sixteen windowed classes write
-            // `new org.traincontrol.gui.TrainControlUI()`, and a class with several test methods needs each window
-            // checked.
-            //
-            // THE RAW SOURCE, blanked of strings and comments by one scanner in the order the compiler reads: a regex
-            // that strips comments first loses the closing quote of `"file:///" + x`, and this method's own needles are
-            // string literals.
+            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST: a class with several test methods needs each
+            // window checked.  THE RAW SOURCE, blanked of strings and comments by one scanner in the order the compiler
+            // reads: a regex that strips comments first loses the closing quote of `"file:///" + x`.
             String scan = withoutStringsAndComments(body);
 
             java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
@@ -594,10 +590,9 @@ public class testSwitchingToACentralStationLayout
             }
         }
 
-        // A scan that matched nothing would pass while proving nothing, so the number is exact, not a floor: a class
-        // that builds a window opens the operator's railway if it gets the sandbox wrong, so each new one is worth a
-        // moment of somebody's attention.  If this fails because a class was legitimately added or removed, change the
-        // number in the commit.  The model half pins NAMES for the same reason.
+        // A scan that matched nothing would pass while proving nothing, so the number is exact, not a floor: each new
+        // window class is worth a moment of somebody's attention.  If this fails because a class was legitimately
+        // added or removed, change the number in the commit.  The model half pins NAMES for the same reason.
 
         // AND THE MODEL HALF, ratcheted: it cannot raise a dialog and there are too many to fix at once, so the
         // number can only fall (repairing one lowers MODELS_WITHOUT_A_SANDBOX by one).
@@ -904,10 +899,8 @@ public class testSwitchingToACentralStationLayout
 
     /**
      * Start-up shows the notice on its own window (FR-041), and never hides that window on the way in: the call that
-     * takes the notice down sat in the `finally` of the window build, so it ran on the success path too.
-     *
-     * Read rather than run: a test that put a start-up notice on the screen would do it on every battery.  Every test
-     * builds its model with showUI false, and the gate below keeps it that way.
+     * takes the notice down sat in the `finally` of the window build, so it ran on the success path too.  Read rather
+     * than run: a test that put a start-up notice on the screen would do it on every battery.
      *
      * MUTATION this catches: putting `connectingFailed()` back in the finally after `latch.countDown()`.
      */
@@ -987,13 +980,11 @@ public class testSwitchingToACentralStationLayout
 
     /**
      * A sandbox is opened inside a `try`.  Weaker than "closed on every path": it buys a handler to put the close in,
-     * and no early return between the open and that handler can skip it.  It does not check that a `close()` is
-     * present.
-     *
-     * `close()` returns the machine-global layout preference to whatever the operator had.  Easy-to-miss ways out: a
-     * window constructor that throws, `MarklinControlStation.init` failing to bind its port, an assertion in the
-     * set-up part of a test, and `SkipException`.  Setup methods are exempt because their
-     * `@AfterClass(alwaysRun = true)` teardown runs even when the set-up threw.
+     * and no early return between the open and that handler can skip it.  `close()` returns the machine-global layout
+     * preference to whatever the operator had; the easy-to-miss ways out are a window constructor that throws,
+     * `MarklinControlStation.init` failing to bind its port, an assertion in the set-up part of a test, and
+     * `SkipException`.  Setup methods are exempt because their `@AfterClass(alwaysRun = true)` teardown runs even when
+     * the set-up threw.
      *
      * MUTATION: moving any of these opens back above its `try` fails this.
      */
