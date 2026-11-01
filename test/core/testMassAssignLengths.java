@@ -64,8 +64,7 @@ public class testMassAssignLengths
     public void testHowManySharedSquaresHisOwnMainPageAsksAbout() throws Exception
     {
         // Opened inside the try (OB-111): the open redirects the machine-global layout preference, and anything
-        // throwing before the try, even a SkipException, would leave it pointing under %TEMP%, the railway opened next
-        // start.
+        // throwing before the try would leave it pointing under %TEMP%.
         support.LayoutSandbox sandbox = null;
 
         try
@@ -441,8 +440,8 @@ public class testMassAssignLengths
     /**
      * The walk's prompt comes back where it was left, and a new round starts it afresh (Adam, MT-454: *"make sure it
      * remembers its location unless I reopen a new mass assignment round from the right click menu."*).  Asked of the
-     * real walk: the test moves the prompt, presses Skip, reads where the next prompt opened, then presses Cancel and
-     * starts a second round, whose first prompt must NOT open where the first round left it.
+     * real walk: move the prompt, press Skip, read where the next prompt opened, then Cancel and start a second round,
+     * whose first prompt must NOT open where the first round left it.
      */
     @Test
     public void testTheWalkPromptStaysWhereItWasLeftUntilANewRound() throws Exception
@@ -504,8 +503,8 @@ public class testMassAssignLengths
      * The number field has the keyboard focus, and Enter after typing a number submits it and moves on (Adam, MT-454:
      * *"make sure the entry field is focused, and when I hit enter after typing the number, it submits and goes to the
      * next one"*).  `JOptionPane` gives the focus to the OK button when the dialog gains it, so the field takes it once
-     * the dialog is on screen.  A desktop that never lets the test's window take focus says so as a skip, which is why
-     * this is the ONLY test here that presses Enter: `NotifyAction` acts on the focused text component.
+     * the dialog is on screen.  A desktop that never gives the window focus says so as a skip, which is why this is the
+     * ONLY test here that presses Enter.
      */
     @Test
     public void testTheNumberFieldHasFocusAndEnterSubmits() throws Exception
@@ -1298,8 +1297,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * Closes every dialog still showing, as Escape closes it, until none is left.  Asked after the event thread has
-     * come back each time: a walk that has just had a refusal closed asks its question again a moment later.
+     * Closes every dialog still showing, as Escape closes it, until none is left; a walk asks again a moment after a
+     * refusal.
      */
     private static void closeEveryDialog() throws Exception
     {
@@ -1742,8 +1741,7 @@ public class testMassAssignLengths
 
     /**
      * The reducer never names a route tile as the unmeasured track after the last switch (OB-273): that list feeds the
-     * "trains turn round here and its track has no length recorded" notice, which would ask for a length the tile does
-     * not take.
+     * "no length recorded" notice, which would ask for a length the tile does not take.
      */
     @Test
     public void testTheReducerNeverAsksForARouteTilesLength() throws IOException
@@ -1807,7 +1805,7 @@ public class testMassAssignLengths
     /**
      * A route tile's place reaches the railway as answered, so a leg answered 0 around it counts as measured there
      * (*"0 lengths count as measures"*; OB-273).  A route tile is never asked, so a leg whose every other square was
-     * answered 0 still had one place with no answer, and the Atomic Routes gate counted it as unmeasured track.
+     * answered 0 still had one place with no answer.
      *
      * MUTATION: mark only the squares answered 0, and this fails.
      */
@@ -1980,9 +1978,8 @@ public class testMassAssignLengths
 
     /**
      * A route tile's length is folded into the track beside it when the setup is opened, keeping the total (*"Fold
-     * them, they were likely auto set during the mass assignment run."*).  Five route tiles on his railway held a
-     * length of 1 from before OB-273, so the piece they sat in measured a unit less than he had given it.  Written to
-     * the file and read back, because the fold is what opening a setup does.
+     * them, they were likely auto set during the mass assignment run."*).  Written to the file and read back, because
+     * the fold is what opening a setup does.
      *
      * MUTATION: dropping the fold from `open` leaves the route tile's length where it was.
      */
@@ -2222,8 +2219,8 @@ public class testMassAssignLengths
 
         awaitNoPrompt(TRAINS);
 
-        // The last prompt closing is not the walk ending: the answer is written on the event thread after the modal
-        // loop returns.  An empty task queued behind the walk runs only once the walk has returned.
+        // The last prompt closing is not the walk ending: an empty task queued behind the walk runs only once it
+        // returned.
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
         assertEquals(lengths.written, Arrays.asList("Alpha=3"),
@@ -2270,8 +2267,8 @@ public class testMassAssignLengths
 
         awaitNoPrompt(TRAINS);
 
-        // The last prompt closing is not the walk ending: the answer is written on the event thread after the modal
-        // loop returns.  An empty task queued behind the walk runs only once the walk has returned.
+        // The last prompt closing is not the walk ending: an empty task queued behind the walk runs only once it
+        // returned.
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
         assertEquals(lengths.written, Arrays.asList("Alpha=4"), "the length typed after the refusals was not written once");
@@ -2626,8 +2623,8 @@ public class testMassAssignLengths
     /**
      * The door the main window supplies asks the list the Atomic Routes refusal names, and writes through the one
      * train-length door (FR-094).  Read from the source because the window is the half these claims replace with a
-     * stand-in: the walk must ask the SAME list the refusal names, and `applyTrainLength` is where the findings and the
-     * gray are told, so a walk that set the field itself would leave both describing the length before last.
+     * stand-in: `applyTrainLength` is where the findings and the gray are told, so a walk that set the field itself
+     * would leave both describing the length before last.
      */
     @Test
     public void testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor() throws Exception
@@ -3012,10 +3009,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * A square with no length between a berth and its switch does not end the count - the berth walk passes it for
-     * nothing (MT-552): the berth's own square 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.
-     * A three-unit train is spent at 22,9, short of the switch, and nothing refuses it.  What the count does stop at is
-     * the switch: the walk refuses a train whose spending reaches track another road runs over.
+     * A square with no length between a berth and its switch does not end the count (MT-552): the berth's own square
+     * 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.  A three-unit train is spent at 22,9,
+     * short of the switch, and nothing refuses it; the count does stop at the switch.
      *
      * MUTATION: stop the count at a square with no length again, or let it run on past the switch, and this fails.
      */
@@ -3049,9 +3045,7 @@ public class testMassAssignLengths
 
     /**
      * The count stops where the berth rule does: at a permanent turnout (OB-233) and at a crossing, as well as at a
-     * switch.  The room behind a platform ends at `boundsTheRoom`, and the berth rule refuses as soon as a place it
-     * claims is on another road.  Run on past either, the count left quiet a berth whose longest train the rule
-     * refuses.
+     * switch.  Run on past either, the count left quiet a berth whose longest train the rule refuses.
      *
      * MUTATION: stop the count at a switch only, and this fails.
      */
@@ -3463,10 +3457,10 @@ public class testMassAssignLengths
     }
 
     /**
-     * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch: it must
-     * not quote the room back to the switch (the room rule's number).  With every square measured and 2 of them before
-     * the crossing, a berth set to take a train of 3 refuses it, and 6 of room to the switch is not short of 3.  A
-     * platform autonomy may choose is not judged by the berth rule, and keeps the room rule's number.
+     * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch, and does
+     * not quote the room back to the switch.  With every square measured and 2 of them before the crossing, a berth set
+     * to take a train of 3 refuses it, and 6 of room to the switch is not short of 3.  A platform autonomy may choose
+     * keeps the room rule's number.
      *
      * MUTATION: take the room to the switch alone again, and this fails.
      */
@@ -4064,9 +4058,8 @@ public class testMassAssignLengths
 
     /**
      * A leg that runs over one square twice - a figure of eight - is cut at it too.  The rule counts how often a
-     * crossing is run OVER rather than how many legs run over it, because a single leg that uses both of a crossing's
-     * roads reads that square twice and its answer would be counted twice.  The fixture is one leg between two sensors
-     * that goes east through the crossing, round a loop, and back through it southbound.
+     * crossing is run OVER rather than how many legs run over it, because a single leg using both of a crossing's roads
+     * reads that square twice.
      */
     @Test
     public void testALegThatCrossesItsOwnSquareTwiceIsCutAtIt() throws IOException
@@ -4166,8 +4159,8 @@ public class testMassAssignLengths
      * A berth whose approach is half measured is warned about, and a whole one is not (*"As long as lengths are
      * specified on the berth, it will work, right?  We want clear warnings to the user if so, then it's fine."*).  Half
      * measured is the trap: the room walk judges as soon as anything is measured, so the berth takes no train at all.
-     * It is the state Mass Assign Lengths leaves between sittings (MT-454).  Three states: nothing measured (no
-     * warning), the switch measured and the piece not (warned), everything measured (no warning).
+     * Three states: nothing measured (no warning), the switch measured and the piece not (warned), everything measured
+     * (no warning).
      */
     @Test
     public void testAHalfMeasuredApproachIsWarnedAbout() throws IOException
