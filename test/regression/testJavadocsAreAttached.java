@@ -29,11 +29,7 @@ import org.testng.annotations.Test;
  * **In a codebase where the comment IS the safety mechanism, a comment attached to the wrong member is
  * the same kind of defect as a guard on the wrong branch.**
  *
- * **A ratchet, not a clean sheet.** There are over a hundred, most of them harmless - two descriptions
- * of the same method stacked above it still describe it accurately. Fixing them all is a day of
- * reading with a real chance of moving a paragraph onto the wrong thing, which is the defect itself.
- * So this pins the number and requires it to go DOWN, never up: a new one fails the build with the
- * file named, and every one that gets fixed can be banked by lowering the cap.
+ * None stands in src or test, and a new one fails the build with its file named.
  *
  * @author Adam
  */
@@ -42,7 +38,7 @@ public class testJavadocsAreAttached
     /**
      * What was there when this test was written. Lower it whenever some are fixed; never raise it.
      */
-    private static final int ALLOWED = 8;
+    private static final int ALLOWED = 0;
 
     /**
      * WHICH files carry the orphans, not just how many.
@@ -51,25 +47,12 @@ public class testJavadocsAreAttached
      * fix one, break another, and 96 stays 96 while this stays green. Pinning the per-file breakdown
      * means a swap fails and names both files - the one that improved and the one that regressed.
      */
-    private static final String[] ORPHANS_BY_FILE = {
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "base" + File.separator + "CommandRow.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "base" + File.separator + "RouteCommand.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "autonomy" + File.separator + "AutoLocomotiveStatus.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "LayoutLabel.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "TrainControlUI.java (4)",
-    };
+    private static final String[] ORPHANS_BY_FILE = {};
 
     /** The same two pins for `test/`, apart from `src/` so a fix in one cannot pay for a new orphan in the other. */
-    private static final int TEST_ALLOWED = 1;
+    private static final int TEST_ALLOWED = 0;
 
-    private static final String[] TEST_ORPHANS_BY_FILE = {
-        "test" + File.separator + "core" + File.separator + "testATrainTooLongIsRefusedTheBerth.java (1)",
-    };
+    private static final String[] TEST_ORPHANS_BY_FILE = {};
 
     @Test
     public void testNoNewOrphanedJavadocs() throws Exception

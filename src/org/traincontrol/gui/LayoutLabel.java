@@ -880,10 +880,6 @@ public final class LayoutLabel extends JLabel
     }
     
     /**
-     * Refreshes the tile's image
-     * @param highlight
-     */
-    /**
      * Whether this tile belongs to the diagram editor rather than an operating view: the editor draws autonomy from the
      * panel beside it, the operating views from the setup on disk, so one must not publish over the other.
      * @return
@@ -1902,6 +1898,10 @@ public final class LayoutLabel extends JLabel
     }
 
 
+    /**
+     * Refreshes the tile's image
+     * @param highlight
+     */
     public void updateImage(boolean highlight)
     {
         // TODO improve the way highlighting is done, delete global variables

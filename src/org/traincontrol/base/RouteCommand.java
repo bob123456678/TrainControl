@@ -609,11 +609,6 @@ public class RouteCommand implements java.io.Serializable
     }
     
     /**
-     * Returns a simple string representation of this command
-     * @param linkedAccessory the accessory object linked to this command's address - so that we can pretty print the accessory type
-     * @return 
-     */
-    /**
      * Whether a locomotive name can survive this class's text format: a command is written as "prefix,name,value" and
      * read back by splitting on commas, so a name carrying one comes back as a different locomotive; that is all this
      * refuses.  Brackets are allowed ("bracketed loc names should just be allowed"), since conditions are no longer
@@ -630,6 +625,11 @@ public class RouteCommand implements java.io.Serializable
         return !name.contains(",");
     }
 
+    /**
+     * Returns a simple string representation of this command
+     * @param linkedAccessory the accessory object linked to this command's address - so that we can pretty print the accessory type
+     * @return 
+     */
     public String toLine(Accessory linkedAccessory)
     {
         if (this.isFeedback())

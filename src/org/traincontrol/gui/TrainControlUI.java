@@ -1177,9 +1177,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.PrevLocMapping.setVisible(!this.showPageTabsPreference.isSelected());
     }
     
-    /**
-     * Registers a track diagram label as showing the station on a square.
-     */
     /** Hands back the caption labels of every page in the grid cache; called just before the cache is emptied. */
     @SuppressWarnings("unchecked")
     private void forgetCachedPageLabels()
@@ -1229,6 +1226,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    /**
+     * Registers a track diagram label as showing the station on a square.
+     */
     public void addLayoutStation(org.traincontrol.automationui.TileGraph.TileKey station, JLabel value)
     {
         addLayoutStation(station, value, null);
@@ -2073,13 +2073,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
+    /** True when the UI state file is there but would not read (not a first launch); the next real save clears it. */
+    private boolean uiStateLoadFailed = false;
+
     /**
      * Restores list of initialized components from a file
      * @return 
      */
-    /** True when the UI state file is there but would not read (not a first launch); the next real save clears it. */
-    private boolean uiStateLoadFailed = false;
-
     public final List<Map<Integer,String>> restoreState()
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
@@ -2126,13 +2126,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return instance;
     }
     
-    /**
-     * Returns a reference to the image cache.
-     *
-     * No longer synchronized: the field is final and initialized with the class, so there is nothing
-     * left to guard, and this is called once per tile per repaint.
-     * @return
-     */
     /** True when there is a local layout folder to keep a setup in; autonomy is unavailable without one. */
     public boolean canUseAutonomy()
     {
@@ -4685,6 +4678,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     final DiagramTileRegistry diagramTileRegistry = new DiagramTileRegistry();
 
+    /**
+     * Returns a reference to the image cache.
+     *
+     * No longer synchronized: the field is final and initialized with the class, so there is nothing
+     * left to guard, and this is called once per tile per repaint.
+     * @return
+     */
     public static Map<String,Image> getImageCache()
     {
         return imageCache;
@@ -16727,10 +16727,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Called externally
-     * @throws Exception 
-     */
-    /**
      * Whether Start would be accepted, so a menu can gray the item rather than refuse (OB-050).  Not the button's
      * enabled state alone: that stays enabled and explains at press time; `isRemoteLayout` is the guard's first
      * question.
@@ -16819,6 +16815,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return session == null ? 0 : session.errorCount();
     }
 
+    /**
+     * Called externally
+     * @throws Exception 
+     */
     public void requestStartAutonomy() throws Exception
     {
         if (this.startAutonomy.isEnabled())

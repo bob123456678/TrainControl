@@ -145,10 +145,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Refreshes the available routes shown in the UI
-     * @param someLoc 
-     */
-    /**
      * The path search, on its own so it can be done off the event thread: getPossiblePaths is synchronized on the
      * Layout and searches it whole, once per locomotive panel, and on the EDT that stalls the interface and can block
      * on a monitor a driving thread holds.  Touches no Swing state.
@@ -191,6 +187,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private boolean haveGatheredTimetableStart;
 
+    /**
+     * Refreshes the available routes shown in the UI
+     * @param someLoc 
+     */
     public void updateState(Locomotive someLoc)
     {
         updateState(someLoc, null, false);

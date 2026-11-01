@@ -462,15 +462,7 @@ public final class CommandRow
     }
 
     /**
-     * True for the first word, false for the second, and a refusal for anything else.
-     *
-     * The setting column is typed rather than chosen, so a direction typo such as "backwards" must be refused (as
-     * RouteCommand.fromLine does) rather than quietly read as FORWARD with the table still showing what the user typed.
-     *
-     * @throws IllegalArgumentException when the text is neither
-     */
-    /**
-     * The same, with a second name for each state: a signal's red is a switch's turn, so both are accepted and the
+     * `oneOf`, with a second name for each state: a signal's red is a switch's turn, so both are accepted and the
      * editor offers whichever belongs to the thing at that address.
      *
      * @return the state, or a refusal naming what was expected
@@ -486,6 +478,14 @@ public final class CommandRow
         return oneOf(setting, whenTrue, whenFalse);
     }
 
+    /**
+     * True for the first word, false for the second, and a refusal for anything else.
+     *
+     * The setting column is typed rather than chosen, so a direction typo such as "backwards" must be refused (as
+     * RouteCommand.fromLine does) rather than quietly read as FORWARD with the table still showing what the user typed.
+     *
+     * @throws IllegalArgumentException when the text is neither
+     */
     private static boolean oneOf(String setting, String whenTrue, String whenFalse)
     {
         String text = setting == null ? "" : setting.trim();
