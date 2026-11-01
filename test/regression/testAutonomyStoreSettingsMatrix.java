@@ -228,9 +228,8 @@ public class testAutonomyStoreSettingsMatrix
      * Every setting is forgotten when the page it is on is deleted.
      *
      * `deletePage` gathers the page's squares by naming every collection, so testStoreCollectionsAreHandledEverywhere's
-     * textual guard governs it; but that guard only requires the NAME to appear, and a loop that mentions
-     * `disabledPortals` and gathers nothing reads as covered.  The setting would then survive the page and, by page-id
-     * reuse (testPageIdsAreDurable), go to whatever page arrives next.
+     * textual guard governs it; but that guard only requires the NAME to appear.  The setting would then survive the
+     * page and, by page-id reuse (testPageIdsAreDurable), go to whatever page arrives next.
      *
      * MUTATION: in `AutonomyCompanionStore.deletePage`, neuter one gathering loop while still naming its collection
      * (`for (TileKey key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);` becomes
@@ -520,11 +519,9 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting survives its page being RENUMBERED while the file sits on disk.
-     *
-     * The save-and-load test above translates through the same numbering both ways, so a store that wrote names would
-     * still pass it.  This one changes the numbers between the save and the load, which is what page ids exist for (the
-     * MT-135 loss in miniature).
+     * Every setting survives its page being RENUMBERED while the file sits on disk.  The save-and-load test above
+     * translates through the same numbering both ways, so a store that wrote names would still pass it; this one
+     * changes the numbers between the save and the load (the MT-135 loss in miniature).
      *
      * MUTATION: making `fromStored` return its argument unchanged fails this test and NOT the save-and-load test above.
      */
@@ -578,16 +575,12 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting survives its page being RENAMED while the file sits on disk.
+     * Every setting survives its page being RENAMED while the file sits on disk.  The rename is driven as the
+     * application drives it - `renamePage` in memory, then a save, then a load under the new name.
      *
-     * A setup written with page names round-trips under renumbering, so the "written raw" defect needs a rename to
-     * show.  The rename is driven as the application drives it - `renamePage` in memory, then a save, then a load under
-     * the new name - because this matrix checks the real path.
-     *
-     * Skipping the in-memory `renamePage` and reloading under the new index passes for eleven of the twelve settings
-     * and fails "what a configuration says about the square": the eleven live in setup.json, keyed by page ID, while
-     * the configurations are keyed by page NAME on disk and never translated, so a rename by any path that does not
-     * call `renamePage` orphans the configuration and nothing else.
+     * Skipping the in-memory `renamePage` and reloading under the new index fails "what a configuration says about the
+     * square": the configurations are keyed by page NAME on disk and never translated, so a rename by any path that
+     * does not call `renamePage` orphans the configuration and nothing else.
      *
      * MUTATION: this test does NOT catch `toStored` returning its argument unchanged (the class then reports one
      * failure, `testEveryIdKeyedSettingSurvivesARenameNothingSaw`): renaming IN MEMORY first puts the new name in the
@@ -647,15 +640,12 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every id-keyed setting survives a rename that happened while nothing was running.
+     * Every id-keyed setting survives a rename that happened while nothing was running: the column that catches a raw
+     * write, since the other three rename IN MEMORY first.  setup.json holds keys under the OLD name, the index offers
+     * only the new one, and only the id can reunite them.
      *
-     * The column that catches a raw write: the other three rename IN MEMORY first, so by the save the names are already
-     * the new ones.  This is a rename the application never saw (TrainControl closed, another machine, the Central
-     * Station): setup.json holds keys under the OLD name, the index offers only the new one, and only the id can
-     * reunite them.
-     *
-     * The configuration row is excluded by name: it is keyed by page NAME on disk and never translated, which is no
-     * defect today (every path that renames a page rekeys the configurations first) but a dependency nothing stated.
+     * The configuration row is excluded by name: it is keyed by page NAME on disk and never translated, a dependency
+     * nothing stated (every path that renames a page rekeys the configurations first).
      *
      * MUTATION: making `toStored` return its argument unchanged fails this test on the eleven id-keyed settings, and
      * none of the other three columns.

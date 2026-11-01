@@ -76,19 +76,15 @@ public final class ManualReversalPrompt
         first = destinationAskedAbout(asking, railway, path);
 
         // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (MT-368): a square that MAY turn is a preference, and a
-        // locomotive that may not run backwards has no preference to express.
-        //
-        // Only where the turn is optional, which is what `asksAbout` already means (`mayTurnTiles()`); a terminus is
-        // not reached by this line, and must not be, as backing in is how a non-reversible train gets there (MT-245).
-        // `Layout.turnsOnArrival` carries the matching rule: the policy returned here says "no opinion" rather than
-        // "no".
+        // locomotive that may not run backwards has no preference to express.  Only where the turn is optional
+        // (`asksAbout`); a terminus is not reached by this line, as backing in is how a non-reversible train gets there
+        // (MT-245).  `Layout.turnsOnArrival` carries the matching rule.
         //
         // THE TWO HALVES ASK DIFFERENT QUESTIONS.  This half fires on `asksAbout`, the SETUP's `mayTurnTiles()`; the
-        // arrival's half fires on `hasAWayThrough`, the GRAPH's "some copy of this square is neither a terminus nor a
+        // arrival's half on `hasAWayThrough`, the GRAPH's "some copy of this square is neither a terminus nor a
         // reversing point".  They differ at a square marked `canReverse` where an arriving train has nowhere to go but
-        // back (`AutonomyBuilder` emits no plain copy there): the train IS turned, as a dead end must turn it (MT-245),
-        // while this line has decided not to ask.  Unreachable on Adam's railway, and kept as two rules because the
-        // setup is what the operator edited.
+        // back (`AutonomyBuilder` emits no plain copy there): kept as two rules because the setup is what the operator
+        // edited.
         if (first != null && loc != null && !loc.isReversible()) return KEEP_DIRECTION;
 
         // Nothing on this journey turns anybody, so nothing is asked and nothing is carried.
@@ -252,12 +248,10 @@ public final class ManualReversalPrompt
      * **NOTHING STOPS THE TRAIN BEFORE THIS IS CALLED, so it must not be reached from inside a run.**  A train is
      * stopped only when the rule says it is about to be turned, and that rule is evaluated BEFORE the stop, so the
      * train keeps running at line speed while the dialog stands.  It is safe today only because both doors ask at
-     * departure and hand `executePath` a constant answer; `forOperator` is public, and a caller that hands it straight
-     * to `executePath` gets that failure back.
+     * departure and hand `executePath` a constant answer.
      *
      * **Defaults to KEEPING the direction**, which is Yes and changes nothing: an interruption, a headless run or
-     * anything that goes wrong here leaves the train pointing the way it already does, and turning a train because a
-     * dialog failed is the worse mistake.
+     * anything that goes wrong here leaves the train as it is.
      *
      * @param parent what to center the dialog on
      * @param train the locomotive

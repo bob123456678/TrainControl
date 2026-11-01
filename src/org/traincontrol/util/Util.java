@@ -379,9 +379,9 @@ public class Util
 
     /**
      * Writes a set of files and folders into one zip (FR-015).  One archive rather than a folder of copies: the
-     * autonomy setup is keyed by page id, defined by `config/gleisbild.cs2`, so the pieces mean nothing apart and only
-     * an archive cannot be half-copied or half-restored.  A source that does not exist is skipped, not an error: a
-     * layout held on the Central Station has no local config folder, and a first run has no UI state.
+     * autonomy setup is keyed by page id, so the pieces mean nothing apart and only an archive cannot be half-copied or
+     * half-restored.  A source that does not exist is skipped, not an error (a layout held on the Central Station has
+     * no local config folder).
      *
      * @param zip where to write
      * @param sources entry name inside the archive -> file or folder on disk
@@ -555,9 +555,8 @@ public class Util
     }
 
     /**
-     * Makes a page name safe to use as a local filename.  Page names are free text (the Central Station index, the
-     * rename box), and one with a path separator or a forbidden character could land the write outside the layouts
-     * folder or leave a half-written layout.
+     * Makes a page name safe to use as a local filename.  Page names are free text, and one with a path separator or a
+     * forbidden character could land the write outside the layouts folder or leave a half-written layout.
      *
      * Applied on both sides on purpose: the local read locates a page by the name in the index.  Here rather than on
      * CS2File because LayoutDiagram, in base, must not reach into the Marklin package; CS2File.sanitizeFilename
@@ -574,11 +573,10 @@ public class Util
     }
 
     /**
-     * Writes a file without ever leaving the target truncated: opening a file for writing empties it at once, so a
-     * crash or failed write mid-way would silently lose the operator's work (the locomotive database, the UI state,
-     * autonomy.json).  The content is staged in a sibling file and moved into place only once complete, as downloadFile
-     * does.  A failed write deletes the staging file and leaves the previous contents.  REPLACE_EXISTING rather than
-     * ATOMIC_MOVE, which is not supported everywhere and whose window is nanoseconds against seconds.
+     * Writes a file without ever leaving the target truncated: a crash or failed write mid-way would silently lose the
+     * operator's work.  The content is staged in a sibling file and moved into place only once complete, as
+     * downloadFile does; a failed write deletes the staging file and leaves the previous contents.  REPLACE_EXISTING
+     * rather than ATOMIC_MOVE, which is not supported everywhere.
      *
      * @param target the file to end up with
      * @param body writes the content to the stream it is given; need not close it
@@ -607,8 +605,7 @@ public class Util
         }
 
         // The staging file goes either way: a failed move (a target held open on Windows) must not leave a
-        // `LocDB.data.part` beside a corrupt target.  Deleted, not kept as a recovery artifact: nothing reads it, and
-        // the caller is told the save failed.
+        // `LocDB.data.part` beside a corrupt target.  Deleted, not kept as a recovery artifact: nothing reads it.
         try
         {
             Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -706,7 +703,7 @@ public class Util
     /**
      * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0), found by the number
      * rather than by the letter: a name with no "v", or another "v" ("TrainControl Preview v3.0.0"), must not throw or
-     * hand back a piece of the name, which would hide a real update.  Release names are typed by hand at tag time.
+     * hand back a piece of the name.  Release names are typed by hand at tag time.
      *
      * @param gitHubReleaseInfo
      * @return the version, or null when the name carries no number
@@ -716,9 +713,8 @@ public class Util
         String name = gitHubReleaseInfo.getString("name");
 
         // The number after the "v" first: matching the first number outright gives "2026" for "TrainControl 2026
-        // Edition v3.0.0".  The "v" must be the tag marker (a left boundary), not the end of a word ("Nov2026 build"),
-        // and the longest anchored match wins, so "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0" does not
-        // report 2.6.
+        // Edition v3.0.0".  The "v" must be the tag marker (a left boundary), and the longest anchored match wins, so
+        // "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0" does not report 2.6.
         java.util.regex.Matcher tagged = java.util.regex.Pattern
             .compile("(?<![A-Za-z0-9])[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
 
