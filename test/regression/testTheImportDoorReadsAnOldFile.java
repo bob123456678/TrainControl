@@ -191,9 +191,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The import's report is its counts and where they went, with what it could not do in a scrolling Details list under
-     * them and in the log, in a popup no wider than about 640 px.  His MT-491 file leaves points with no sensor and things
-     * it does not bring, which made a report of over 100 words.
+     * The import's report is its counts and where they went, with what it could not do in a scrolling Details list
+     * under them and in the log, in a popup no wider than about 640 px (his MT-491 file made a report of over 100
+     * words).
      *
      * MUTATION: put the left-behind lines back into the report's text, and this fails.
      *
@@ -5339,8 +5339,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * What a message says: its text or, for a message that is a panel (OB-349), the text of each label and each line of
-     * each list in it, one to a line.
+     * What a message says: its text or, for a panel message (OB-349), each label and list line in it, one to a line.
      */
     static String textOf(Object message)
     {
