@@ -29,9 +29,6 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Facing is the Point, not the square: a square entered from two directions is one Point per arrival side, and which
  * copy a train stands on IS its facing, so "the same direction" is asserted as the same Point.
  *
- * It is registered in build.xml and was written red until Return Home staged this arrangement: a test for something
- * that does not work belongs in the battery being red, not in an exclusion table being quiet.
- *
  * It runs against a frozen copy (`test/operator_layout`, Adam: "let's get the current diagram frozen in the test"), not
  * the live `cs2_sample_layout`, which is his real railway and would make the test say something different on every run.
  * To refresh it, copy the folder over and say so in the commit.  `LayoutSandbox.open(folder)` copies whatever it is
@@ -189,10 +186,10 @@ public class testTrainsComeHomeToTheirPlatforms
 
             if (!plan.isPossible()) System.out.println(reachability());
 
-            // NO BRANCH HERE: an earlier attempt asked `canReachAnyDestination` per train and asserted no plan when one
-            // was trapped.  That predicate is the full-autonomy one (it requires `isAutoDestination`, which Return Home
-            // ignores), a trapped train and an impossible plan are independent facts, and the early return skipped the
-            // facing check.  A test that absorbs its own failures reads as green while proving nothing.
+            // NO BRANCH HERE: `canReachAnyDestination` is the full-autonomy predicate (it requires `isAutoDestination`,
+            // which Return Home ignores), a trapped train and an impossible plan are independent facts, and an early
+            // return would skip the facing check.  A test that absorbs its own failures reads as green while proving
+            // nothing.
             assertTrue(plan.isPossible(),
                 "no way home from " + arrangement + " (outcome " + plan.getOutcome()
                 + ", blocked " + plan.getBlocked() + ").  Five trains that set off from ordinary "
