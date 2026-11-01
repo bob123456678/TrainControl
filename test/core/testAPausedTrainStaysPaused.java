@@ -34,9 +34,7 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A paused train stays paused, and is kept out of what Adam said it is kept out of (FR-117; Adam: "in autonomy configs,
- * track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab", and asked
- * what a paused train is kept out of, "Autonomy and Return Home").
+ * A paused train stays paused, and is kept out of Autonomy and Return Home (FR-117).
  *
  * On a ring of four stations of this class's own, with two locomotives of its own: the railway's file says which trains
  * are paused and a file read back says it again; Return Home leaves a paused train where it stands and moves it out of
@@ -179,8 +177,7 @@ public class testAPausedTrainStaysPaused
 
     /**
      * A configuration that lists paused trains names them in the log as it loads, an import's load among them, and one
-     * that lists nobody says nothing about pauses (Adam: "Make sure the log shows what locomotive are paused when the
-     * autonomy import happens").
+     * that lists nobody says nothing about pauses.
      *
      * MUTATION: drop the line, or write it for a configuration that pauses nobody, and this fails.
      */
@@ -843,9 +840,8 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * A station's maximum train length is said once as a configuration loads, by the station's name, however many copies
-     * its square builds into (OB-362; Adam: "dedupe by station name, rather than showing all copies
-     * (eastbound/westbound)").
+     * A station's maximum train length is said once as a configuration loads, by the station's name, however many
+     * copies its square builds into (OB-362).
      *
      * MUTATION: log it per copy again, or by the copy's name, and this fails.
      */
