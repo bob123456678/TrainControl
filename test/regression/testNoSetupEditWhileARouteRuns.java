@@ -37,10 +37,8 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
  * No setup edit is made while a route runs with autonomy idle, at any door that refuses one while autonomy is busy
  * (Adam: *"There should be no setup edit possible during a run"*; of a route: *"yes, refuse"*).  One question,
  * `TrainControlUI.somethingIsRunning` (FR-129), and each door keeps its own way of refusing: grayed, hidden, or said at
- * the click.
- *
- * On the live snapshot's window, with a route marked running as `MarklinRoute.execRoute` marks it, so nothing is sent;
- * each door is asked again at rest, where it does not refuse.
+ * the click.  On the live snapshot's window, with a route marked running as `MarklinRoute.execRoute` marks it, so
+ * nothing is sent; each door is asked again at rest, where it does not refuse.
  *
  * @author Adam
  */
@@ -573,7 +571,7 @@ public class testNoSetupEditWhileARouteRuns
     /**
      * A control grayed because a run holds the setup says, as its tooltip, the sentence its own door gives when driven
      * (Adam: "make tooltips match"): the track editor's Autonomy tab, the timetable's right-click menu, the Layout and
-     * Autonomy menus, and, with autonomy busy, the Auto tab's settings - autonomy busy and a route running alike.
+     * Autonomy menus, and the Auto tab's settings.
      *
      * MUTATION: give any of them another sentence again (`whyTheSetupIsHeld`, or the wait sentence on a setting), and
      * this fails naming the control.
@@ -835,12 +833,9 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * The configuration doors, Import, Delete Everything, a page ticked out, and the page doors refuse while a route runs,
-     * saying why before anything is asked, and none of them changes the setup or the pages; at rest they ask their own
-     * questions instead.
-     *
-     * Each says "Edits are not allowed while autonomy or routes are running." (OB-370).  Five of the Layouts menu's
-     * items are clicked; Rename and Switch to the Central Station's Layout are called at their doors.
+     * The configuration doors, Import, Delete Everything, a page ticked out, and the page doors refuse while a route
+     * runs, saying why before anything is asked, and none of them changes the setup or the pages; at rest they ask
+     * their own questions instead.  Each says "Edits are not allowed while autonomy or routes are running." (OB-370).
      *
      * MUTATION: let any of them ask autonomy alone again, and this fails naming it; so does
      * `RunGates.refuseWhileARunHoldsTheSetup` giving a door another sentence.
@@ -1650,9 +1645,8 @@ public class testNoSetupEditWhileARouteRuns
      * Every door a user loads a configuration through, and Export, refuse while a route runs with autonomy idle, saying
      * why before anything is asked: the enable button, the Autonomy menu's list, and the diagram's Load this
      * configuration.  The railway is the same object afterwards, the route is still running, and nothing was exported;
-     * at rest each one goes ahead.  A load rebuilds the railway and switches the routes it activates, and Export first
-     * folds the running railway into the setup.  While autonomy itself is busy the loads keep their offer to stop the
-     * trains, and Export says the wait sentence.  Unload, which also replaces the railway, is refused the same way.
+     * at rest each one goes ahead.  While autonomy itself is busy the loads keep their offer to stop the trains, and
+     * Export says the wait sentence.  Unload, which also replaces the railway, is refused the same way.
      *
      * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
      * `isAutonomyBusy` alone, and this fails naming the door.
@@ -2021,11 +2015,10 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * A route that begins after the press and before the dispatch still stops the run: the last-moment question every run
-     * door asks (`refusedForAnEditorOnItsWay`, which Start, Execute Timetable, Return Home and a hand send ask) says a route
-     * is running and refuses, and answers no at rest.  Execute Timetable end to end: pressed with no route running, so the
-     * gate passes, with the route begun in the same event before its posted body asks again - which refuses, says so, gives
-     * the button back and runs nothing.
+     * A route that begins after the press and before the dispatch still stops the run: the last-moment question every
+     * run door asks (`refusedForAnEditorOnItsWay`) says a route is running and refuses, and answers no at rest.
+     * Execute Timetable end to end: pressed with no route running, with the route begun in the same event before its
+     * posted body asks again - which refuses, says so, gives the button back and runs nothing.
      *
      * MUTATION: take the route question out of `refusedForAnEditorOnItsWay`, and this fails.
      *
