@@ -94,11 +94,9 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * Every number sits over its own square, even where the squares are not a tile apart (FR-057; Adam: "the axis
-     * numbers drift and are out of alignment").  Positions worked out as `column * size` are right only while every
-     * cell is exactly one tile wide; with the gray grid on each square wears a border, the pitch is a pixel or two
-     * more, and the error is cumulative.  This gives the ruler cells thirty-one pixels apart and thirty wide and reads
-     * back where the ink landed.
+     * Every number sits over its own square, even where the squares are not a tile apart (FR-057).  Positions worked
+     * out as `column * size` are right only while every cell is exactly one tile wide; with the gray grid on each
+     * square wears a border and the error is cumulative.  Cells here are thirty-one pixels apart and thirty wide.
      *
      * MUTATION this catches: going back to `column * size`, or centring on the pitch rather than on the cell.
      */
@@ -133,10 +131,9 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * A column keeps its number when the one cell the ruler measured is not there (OB-172).  The ruler measured one
-     * cell per column (the top row) and one per row, and `paintBorder` skips on `cell == null || cell.width <= 0`, so
-     * one absent square deleted the label for the whole column.  Whether this was the mechanism Adam saw is MT-268;
-     * this closes the class of fault.
+     * A column keeps its number when the one cell the ruler measured is not there (OB-172): `paintBorder` skips on
+     * `cell == null || cell.width <= 0`, so one absent square used to delete the label for the whole column (MT-268
+     * checks it by hand).
      *
      * MUTATION: going back to a single source per column fails the second assertion, and the first assertion is what
      * stops that mutation passing by drawing nothing at all.
@@ -178,9 +175,8 @@ public class testTheDiagramPrintsItsCoordinates
     }
 
     /**
-     * A two-pixel spacer does not get to answer for a row that has a real cell (OB-172).  Rows were handed a cell two
-     * pixels tall against a fourteen-pixel font, so `paintBorder` skipped them; a spacer is not empty, so "first
-     * non-empty" let it through.  Every candidate describes the same row, so taking the largest is free.
+     * A two-pixel spacer does not get to answer for a row that has a real cell (OB-172).  Every candidate describes the
+     * same row, so taking the largest is free.
      *
      * MUTATION: returning the first usable candidate instead of the largest fails this.
      */
@@ -207,9 +203,8 @@ public class testTheDiagramPrintsItsCoordinates
             "with nothing else to offer, the spacer is the honest answer");
     }
     /**
-     * A zero-sized cell falls through to the next place to look (OB-172).  A square that exists but has not been laid
-     * out is a `Rectangle` of no size, and `paintBorder` refuses it as it refuses null, so `firstUsable` must refuse
-     * both.
+     * A zero-sized cell falls through to the next place to look (OB-172): `paintBorder` refuses it as it refuses null,
+     * so `firstUsable` must refuse both.
      *
      * MUTATION: testing only `found != null` fails this.
      */
@@ -235,10 +230,8 @@ public class testTheDiagramPrintsItsCoordinates
     }
     /**
      * A child standing in the gutter does not rub out the number underneath it (OB-172).  `JComponent.paint` calls
-     * `paintBorder` and THEN `paintChildren`, so any child reaching into the gutter is drawn over the number: a
-     * `StationCaption` is 38 pixels tall and up to 55 wide against a 30-pixel cell.  `LayoutGrid.newDiagramContainer`
-     * paints the ruler again at the end of its `paint()` override, which is after background, border and children
-     * (the end of `paintChildren` did not work: Swing hands each child its own graphics there).
+     * `paintBorder` and THEN `paintChildren`, so `LayoutGrid.newDiagramContainer` paints the ruler again at the end of
+     * its `paint()` override (the end of `paintChildren` did not work: Swing hands each child its own graphics there).
      *
      * MUTATION: removing that block fails this.  The first assertion is what stops the mutation passing by painting
      * nothing at all.
@@ -490,11 +483,10 @@ public class testTheDiagramPrintsItsCoordinates
         return true;
     }
     /**
-     * The diagram container tells Swing its children overlap, so a repaint goes through the parent (OB-172).
-     * `isOptimizedDrawingEnabled` defaults to TRUE, promising that no two children overlap, so a dirty child is
-     * repainted DIRECTLY and a caption reaching into the gutter painted over the numbers with nothing to put them back.
-     * Asserted apart from the paint test above, which proves the ruler is drawn last WHEN the container paints; this
-     * proves the container is what paints.
+     * The diagram container tells Swing its children overlap, so a repaint goes through the parent (OB-172):
+     * `isOptimizedDrawingEnabled` defaults to TRUE, so a dirty caption reaching into the gutter was repainted directly,
+     * over the numbers.  Asserted apart from the paint test above, which proves the ruler is drawn last WHEN the
+     * container paints; this proves the container is what paints.
      *
      * MUTATION: removing the override, so the default true comes back, fails this.
      */
