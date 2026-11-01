@@ -680,37 +680,13 @@ public class testTheEditorSaysWhatItsToolsDo
 
     private static javax.swing.JOptionPane optionPaneIn(java.awt.Container container)
     {
-        for (java.awt.Component child : container instanceof javax.swing.JDialog
-            ? ((javax.swing.JDialog) container).getContentPane().getComponents() : container.getComponents())
-        {
-            if (child instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) child;
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JOptionPane found = optionPaneIn((java.awt.Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container instanceof javax.swing.JDialog
+            ? ((javax.swing.JDialog) container).getContentPane() : container, javax.swing.JOptionPane.class);
     }
 
     private static javax.swing.JTextField textFieldIn(java.awt.Container container)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.JTextField) return (javax.swing.JTextField) child;
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JTextField found = textFieldIn((java.awt.Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JTextField.class);
     }
 
     /** A popup's words, as read - and the popup answered, as OK answers it. */
@@ -871,22 +847,8 @@ public class testTheEditorSaysWhatItsToolsDo
 
     private static javax.swing.AbstractButton buttonIn(java.awt.Container container, String text)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.AbstractButton && text.equals(((javax.swing.AbstractButton) child).getText()))
-            {
-                return (javax.swing.AbstractButton) child;
-            }
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.AbstractButton found = buttonIn((java.awt.Container) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.AbstractButton.class,
+            button -> text.equals(button.getText()));
     }
 
     private static javax.swing.JDialog awaitWindowTitled(String title, javax.swing.JDialog notThisOne) throws Exception

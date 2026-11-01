@@ -386,13 +386,12 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = built();
 
-        Locomotive driven = model.getLocByName(model.getLocList().get(0));
-        Locomotive other = model.getLocByName(model.getLocList().get(1));
+        Locomotive driven = aTrain(0);
+        Locomotive other = aTrain(1);
 
         layout.getPoint("BK A").setLocomotive(driven);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK A", "BK B"));
+        List<Edge> path = pathOver(layout, "BK A", "BK B");
 
         assertTrue(layout.isPathClear(path, driven, false),
             "the path is refused before anything is standing anywhere, so nothing below tests anything");
@@ -423,13 +422,12 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = built();
 
-        Locomotive driven = model.getLocByName(model.getLocList().get(0));
-        Locomotive other = model.getLocByName(model.getLocList().get(1));
+        Locomotive driven = aTrain(0);
+        Locomotive other = aTrain(1);
 
         layout.getPoint("BK A").setLocomotive(driven);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK A", "BK B"));
+        List<Edge> path = pathOver(layout, "BK A", "BK B");
 
         // Not auto running is what a hand dispatch looks like to this rule.
         layout.stopLocomotives();
@@ -460,12 +458,11 @@ public class testStationBlockedByAnotherPoint
             "a restriction naming a point that does not exist was kept. It can never be satisfied or "
             + "cleared, and it is written back out on every save");
 
-        Locomotive driven = model.getLocByName(model.getLocList().get(0));
+        Locomotive driven = aTrain(0);
 
         layout.getPoint("BK A").setLocomotive(driven);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK A", "BK B"));
+        List<Edge> path = pathOver(layout, "BK A", "BK B");
 
         assertTrue(layout.isPathClear(path, driven, false),
             "and the station is still usable - renaming a point should not quietly retire a platform");
@@ -477,14 +474,13 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = built();
 
-        Locomotive driven = model.getLocByName(model.getLocList().get(0));
-        Locomotive other = model.getLocByName(model.getLocList().get(1));
+        Locomotive driven = aTrain(0);
+        Locomotive other = aTrain(1);
 
         layout.getPoint("BK A").setLocomotive(driven);
         layout.getPoint("BK YARD TWIN").setLocomotive(other);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK A", "BK B"));
+        List<Edge> path = pathOver(layout, "BK A", "BK B");
 
         assertFalse(layout.isPathClear(path, driven, false),
             "a train on the OTHER copy of the watched square did not count. The two are one piece of "
@@ -533,12 +529,11 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = builtWithAnApproachFromTheYard();
 
-        Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+        Locomotive leaving = aTrain(0);
 
         layout.getPoint("BK YARD").setLocomotive(leaving);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK YARD", "BK B"));
+        List<Edge> path = pathOver(layout, "BK YARD", "BK B");
 
         assertTrue(layout.isPathClear(path, leaving, false),
             "the train standing on the watched point was refused the station that point holds back - "
@@ -555,14 +550,13 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = builtWithAnApproachFromTheYard();
 
-        Locomotive driven = model.getLocByName(model.getLocList().get(0));
-        Locomotive standing = model.getLocByName(model.getLocList().get(1));
+        Locomotive driven = aTrain(0);
+        Locomotive standing = aTrain(1);
 
         layout.getPoint("BK A").setLocomotive(driven);
         layout.getPoint("BK YARD").setLocomotive(standing);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK A", "BK B"));
+        List<Edge> path = pathOver(layout, "BK A", "BK B");
 
         assertFalse(layout.isPathClear(path, driven, false),
             "somebody ELSE is standing on the watched point and the station was still offered - the "
@@ -579,13 +573,12 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = builtWithAnApproachFromTheYard();
 
-        Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+        Locomotive leaving = aTrain(0);
 
         // The TWIN, not the point named in the restriction
         layout.getPoint("BK YARD TWIN").setLocomotive(leaving);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK YARD", "BK B"));
+        List<Edge> path = pathOver(layout, "BK YARD", "BK B");
 
         assertTrue(layout.isPathClear(path, leaving, false),
             "the train is standing on the other Point of the watched block - the same track - and was "
@@ -612,16 +605,7 @@ public class testStationBlockedByAnotherPoint
             + "],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
 
-        theApproachHoldsTheTrainsUsedHere();
-
-        Layout layout = Layout.fromJSON(json, model);
-
-        assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
-        assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
-
-        layout.runLocomotives();
-
-        return layout;
+        return runningFrom(json);
     }
 
     private Layout built() throws Exception
@@ -644,8 +628,8 @@ public class testStationBlockedByAnotherPoint
             "the fixture must be auto-running: the substitution this is about only happens then, and "
             + "so does the FR-001 rule itself");
 
-        Locomotive loc = model.getLocByName(model.getLocList().get(0));
-        Locomotive other = model.getLocByName(model.getLocList().get(1));
+        Locomotive loc = aTrain(0);
+        Locomotive other = aTrain(1);
 
         // setLocomotive, as every other test here does: moveLocomotive refuses while autonomy is running, the state
         // this rule needs.
@@ -686,16 +670,7 @@ public class testStationBlockedByAnotherPoint
             + "\"edges\": [{\"start\": \"BK A\", \"end\": \"BK B\", \"length\": " + APPROACH + "}],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
 
-        theApproachHoldsTheTrainsUsedHere();
-
-        Layout layout = Layout.fromJSON(json, model);
-
-        assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
-        assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
-
-        layout.runLocomotives();
-
-        return layout;
+        return runningFrom(json);
     }
 
     /**
@@ -710,13 +685,12 @@ public class testStationBlockedByAnotherPoint
     {
         Layout layout = passingThrough();
 
-        Locomotive driven = model.getLocByName(model.getLocList().get(0));
-        Locomotive other = model.getLocByName(model.getLocList().get(1));
+        Locomotive driven = aTrain(0);
+        Locomotive other = aTrain(1);
 
         layout.getPoint("BK A").setLocomotive(driven);
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("BK A", "BK P"));
+        List<Edge> path = pathOver(layout, "BK A", "BK P");
         path.add(layout.getEdge("BK P", "BK B"));
 
         assertTrue(layout.isPathClear(path, driven, false),
@@ -752,16 +726,7 @@ public class testStationBlockedByAnotherPoint
             + "  {\"start\": \"BK P\", \"end\": \"BK B\", \"length\": " + APPROACH + "}],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
 
-        theApproachHoldsTheTrainsUsedHere();
-
-        Layout layout = Layout.fromJSON(json, model);
-
-        assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
-        assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
-
-        layout.runLocomotives();
-
-        return layout;
+        return runningFrom(json);
     }
 
     /**
@@ -788,6 +753,36 @@ public class testStationBlockedByAnotherPoint
                 + " at " + APPROACH + ", so the berth-room rule refuses every path below before the"
                 + " rule this file is about is ever asked.  Raise APPROACH");
         }
+    }
+
+    /** The layout a fixture's JSON describes, valid and with autonomy running; the claim fails when it is not. */
+    private static Layout runningFrom(String json) throws Exception
+    {
+        theApproachHoldsTheTrainsUsedHere();
+
+        Layout layout = Layout.fromJSON(json, model);
+
+        assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
+        assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
+
+        layout.runLocomotives();
+
+        return layout;
+    }
+
+    /** The nth locomotive of the operator's database. */
+    private static Locomotive aTrain(int n)
+    {
+        return model.getLocByName(model.getLocList().get(n));
+    }
+
+    /** A path of one edge. */
+    private static List<Edge> pathOver(Layout layout, String from, String to)
+    {
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge(from, to));
+
+        return path;
     }
 
     private static MarklinControlStation model;

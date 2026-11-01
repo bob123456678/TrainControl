@@ -1268,39 +1268,12 @@ public class testWhereHisTrainsMayBeSent
 
     private static javax.swing.JCheckBox checkBoxIn(java.awt.Container container, String text)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.JCheckBox && text.equals(((javax.swing.JCheckBox) child).getText()))
-            {
-                return (javax.swing.JCheckBox) child;
-            }
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JCheckBox found = checkBoxIn((java.awt.Container) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JCheckBox.class, box -> text.equals(box.getText()));
     }
 
     private static <T> T find(java.awt.Container container, Class<T> type)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 
     private static javax.swing.JDialog awaitDialogTitled(String title) throws Exception
