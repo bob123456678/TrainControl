@@ -992,9 +992,13 @@ public class TileAnnotation
         // them apart.
         java.util.Map<java.util.Set<Side>, Integer> corners = new java.util.HashMap<>();
 
+        java.util.List<java.util.Set<Side>> cornerOfArrival = new ArrayList<>();
+
         for (Arrival arrival : arrivals)
         {
             java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+
+            cornerOfArrival.add(corner);
 
             if (corner != null) corners.put(corner, corners.containsKey(corner) ? corners.get(corner) + 1 : 1);
         }
@@ -1002,13 +1006,15 @@ public class TileAnnotation
         g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-        for (Arrival arrival : arrivals)
+        for (int i = 0; i < arrivals.size(); i++)
         {
+            Arrival arrival = arrivals.get(i);
+
             int[] at = midpoint(arrival.getSide(), width, height);
 
             if (at == null) continue;
 
-            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+            java.util.Set<Side> corner = cornerOfArrival.get(i);
 
             double along = corner != null && corners.get(corner) > 1 ? span / 5.0 : offset;
 
