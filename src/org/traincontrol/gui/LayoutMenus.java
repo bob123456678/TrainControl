@@ -45,9 +45,8 @@ final class LayoutMenus
             if (child == localHeading || child == centralStationHeading) continue;
 
             // Taken away, never handed back: `repaintPathLabel` owns the Central Station items and grays them when none
-            // is reachable (OB-098), which IS their guard (the switch action checks no connection).
-            // initializeLocalLayoutMenuItem likewise: its listener disables it before createAndApplyEmptyLayout runs
-            // off the EDT, and only the completion callback re-enables it.
+            // is reachable (OB-098), which IS their guard.  initializeLocalLayoutMenuItem likewise: only its completion
+            // callback re-enables it.
             if (child == ui.switchCSLayoutMenuItem() || child == ui.downloadCSLayoutMenuItem()
                 || child == ui.initializeLocalLayoutMenuItem())
             {
@@ -68,8 +67,8 @@ final class LayoutMenus
         {
             boolean workable = ui.layoutCanBeEdited();
 
-            // Manage Pages is not set here: this menu, opening on its own schedule, disagreed with the owner,
-            // `applyLayoutEditingAvailability`, during a layout database rebuild.
+            // Manage Pages is left to `applyLayoutEditingAvailability`: this menu opens on its own schedule and
+            // disagreed with it during a rebuild.
             if (ui.editPageMenu != null) ui.editPageMenu.setEnabled(workable && ui.isLayoutLoaded());
 
             refreshRecentLayouts();
@@ -82,15 +81,13 @@ final class LayoutMenus
 
             if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(loaded);
 
-            // Its own question: excluded from the loop above, and its only other writer never re-enables it, so opening
-            // this menu once with an editor open grayed it for the session on a CS3.
+            // Its own question: excluded from the loop above, and its only other writer never re-enables it.
             if (ui.openCS3AppMenuItem() != null) ui.openCS3AppMenuItem().setEnabled(
                 ui.getModel() != null && ui.getModel().isCS3());
         }
 
         // While autonomy runs or a route holds the setup (`aRunHoldsTheSetup`), what changes the diagram or the folder
-        // is grayed with the reason (each also refuses on the click, MT-141); the folder, pop-outs, picture and CS3 app
-        // stay.
+        // is grayed with the reason (each also refuses on the click, MT-141).
         boolean running = ui.isAutonomyBusy() || (ui.getModel() != null && ui.getModel().isAutonomyRunning())
             || ui.aRunHoldsTheSetup();
 
@@ -168,9 +165,9 @@ final class LayoutMenus
     private javax.swing.JMenuItem centralStationHeading;
 
     /**
-     * Preferences > Debug, in debug and simulation only.  Echo Sent Commands is `DEBUG_SIMULATE_PACKETS`: a simulation
-     * then answers every command as a Central Station would, so the window can follow a throttle reversal (MT-488).
-     * An unattended test sets the flag in code, so there the stored choice is neither read into it nor written from it.
+     * Preferences > Debug, in debug and simulation only.  Echo Sent Commands is `DEBUG_SIMULATE_PACKETS`, so a
+     * simulation answers every command as a Central Station would (MT-488).  An unattended test sets the flag in code,
+     * so there the stored choice is neither read into it nor written from it.
      */
     void mountDebugMenu()
     {
@@ -178,8 +175,8 @@ final class LayoutMenus
 
         if (ui.interfaceMenu() == null) return;
 
-        // On in every simulation: otherwise it answers nothing it sends (power, switch, route) and autonomy cannot run.
-        // Turned on at each start and said where the stored choice was off; the menu item still turns it off.
+        // On in every simulation: otherwise it answers nothing it sends and autonomy cannot run; the menu item turns it
+        // off.
         if (!TrainControlUI.isUnattended())
         {
             boolean wasOn = TrainControlUI.getPrefs().getBoolean(TrainControlUI.ECHO_COMMANDS_PREF, false);
@@ -232,8 +229,7 @@ final class LayoutMenus
 
     /**
      * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward, with its Manage
-     * Pages menu open (FR-146).  It stands in for the Manage Pages menu, hidden on Adam's word: to bring that back,
-     * drop its `setVisible(false)` here and this item.
+     * Pages menu open (FR-146).  It stands in for the Manage Pages menu, hidden on Adam's word.
      */
     void mountManagePages()
     {
@@ -345,7 +341,7 @@ final class LayoutMenus
 
     /**
      * Empties the track diagram panel when there is no longer a diagram (OB-128), as a grayed tab holding the last
-     * railway looks live.  The page cache stays: its grids belong to pages that may come back with their captions.
+     * railway looks live.  The page cache stays: its pages may come back with their captions.
      */
     void clearLayoutPanel()
     {
@@ -367,8 +363,7 @@ final class LayoutMenus
 
         String source;
 
-        // isLayoutLoaded(), not the raw getLayoutList().isEmpty() (see the layoutLoaded field), so this item cannot
-        // disagree with guardLayoutMenu's during a refreshLayouts() rebuild.
+        // isLayoutLoaded(), not the raw getLayoutList().isEmpty(), so this item cannot disagree with guardLayoutMenu's.
         if (ui.getModel() == null || !ui.isLayoutLoaded())
         {
             source = I18n.t("ui.main.toolbar.dataSourceNone");
@@ -454,8 +449,7 @@ final class LayoutMenus
     }
 
     /**
-     * The three settings that decide what an autonomy setup DRAWS on the ordinary track diagram.  None needs a setup
-     * loaded: `showStaticAutonomyLayer` returns when there is no session, graph or configuration.
+     * The three settings that decide what an autonomy setup DRAWS on the ordinary track diagram; none needs a setup.
      */
     void buildDiagramDrawingMenu()
     {
@@ -546,9 +540,7 @@ final class LayoutMenus
         autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
     }
 
-    /**
-     * "Save diagram as a picture", on the Layout menu; built by hand so the feature is one method and one class.
-     */
+    /** "Save diagram as a picture", on the Layout menu; built by hand so the feature is one method and one class. */
     void buildDiagramExportMenu()
     {
         if (ui.layoutMenu() == null) return;
@@ -572,10 +564,8 @@ final class LayoutMenus
     }
 
     /**
-     * The diagram page currently on screen, or null when there is none.
-     *
-     * The selector's own answer rather than a remembered one, so it cannot disagree with what the
-     * user is looking at.
+     * The diagram page currently on screen, or null; the selector's own answer, so it cannot disagree with the user's
+     * view.
      */
     private String activeLayoutPage()
     {
@@ -607,8 +597,7 @@ final class LayoutMenus
             return;
         }
 
-        // A page that is no longer there - a rename or a reload between opening the menu and choosing
-        // from it - falls back to asking rather than exporting the wrong thing or nothing
+        // A page renamed or reloaded between opening the menu and choosing falls back to asking.
         if (page != null && !pages.contains(page)) page = null;
 
         if (page == null)
@@ -765,10 +754,10 @@ final class LayoutMenus
     private static final int RECENT_LABEL_MOST = 50;
 
     /**
-     * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many of
-     * its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.  Cut in
-     * the middle past `RECENT_LABEL_MOST`, the head running past where it first differs from another item's, and not cut
-     * at all where the cut would still read like another item's.
+     * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many
+     * of its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.  Cut
+     * in the middle past `RECENT_LABEL_MOST`, the head running past where it first differs from another item's, and not
+     * cut where the cut would still read like another item's.
      * @param path the folder
      * @param shown every folder listed with it
      * @return the label
