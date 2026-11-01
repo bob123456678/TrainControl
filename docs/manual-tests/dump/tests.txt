@@ -34375,3 +34375,37 @@ body:
 tail:
 | ---
 |
+
+[test MT-872]
+ordinal: 871
+anchor: mt-872
+date: 2026-11-01
+title: The row of condition actions stays at the foot of the conditions' frame
+disposition: needs test
+from: OB-396
+written: 2026-11-01
+reopened: no
+body:
+| <a id="mt-872"></a>
+| ### MT-872 - 2026-11-01 - The row of condition actions stays at the foot of the conditions' frame
+|
+| **Disposition:** needs test
+| **From:** OB-396
+|
+| **Written:** 2026-11-01
+|
+| **Steps**
+|
+| 1. Press **Add Route**. Look at where the row with **Add Condition**, the grouping buttons, **Undo** and **Redo** sits.
+| 2. Press **Add Condition** several times, then delete some of the conditions again.
+| 3. Add conditions until the table scrolls.
+|
+| **Expected**
+|
+| - Step 1: the row is at the bottom of the conditions' frame, inside its border, with a thin line above it.
+| - Step 2: the row stays where it is; only the table above it changes.
+| - Step 3: the conditions scroll above the row, and the row stays in sight.
+|
+tail:
+| ---
+|

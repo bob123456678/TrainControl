@@ -381,12 +381,26 @@ public class RouteEditorFrame extends JFrame
 
         JPanel conditionSection = section(I18n.t("route.ui.frameConditions"), conditions);
 
-        // The table and its row of actions scroll as one white area (OB-396).
         JScrollPane conditionScroll = (JScrollPane) ((BorderLayout) conditionSection.getLayout())
             .getLayoutComponent(BorderLayout.CENTER);
 
         conditionScroll.setViewportView(conditionArea());
         conditionScroll.setColumnHeaderView(conditions.getTableHeader());
+
+        // The row of actions at the foot of the conditions' frame, inside its border: it stays put as conditions come
+        // and go, and in sight when they scroll.
+        JPanel framed = new JPanel(new BorderLayout());
+        JPanel foot = conditionActions();
+
+        framed.setBorder(conditionScroll.getBorder());
+        conditionScroll.setBorder(BorderFactory.createEmptyBorder());
+        foot.setOpaque(true);
+        foot.setBackground(java.awt.Color.WHITE);
+        foot.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(0xE0, 0xE0, 0xE0)));
+
+        framed.add(conditionScroll, BorderLayout.CENTER);
+        framed.add(foot, BorderLayout.SOUTH);
+        conditionSection.add(framed, BorderLayout.CENTER);
 
         readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
         readsAs.setForeground(new java.awt.Color(90, 90, 90));
@@ -833,8 +847,8 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The conditions' white area (OB-396): the table, directly under it its row of actions, and white to the bottom,
-     * where a press selects nothing and a right-click offers Add Condition.
+     * The conditions' white area (OB-396): the table, and white to the bottom, where a press selects nothing and a
+     * right-click offers Add Condition.
      */
     private JPanel conditionArea()
     {
@@ -842,13 +856,7 @@ public class RouteEditorFrame extends JFrame
 
         area.setBackground(java.awt.Color.WHITE);
 
-        JPanel stack = new JPanel(new BorderLayout());
-
-        stack.setOpaque(false);
-        stack.add(conditions, BorderLayout.CENTER);
-        stack.add(conditionActions(), BorderLayout.SOUTH);
-
-        area.add(stack, BorderLayout.NORTH);
+        area.add(conditions, BorderLayout.NORTH);
 
         area.addMouseListener(new java.awt.event.MouseAdapter()
         {

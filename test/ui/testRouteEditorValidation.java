@@ -1764,7 +1764,7 @@ public class testRouteEditorValidation
 
             final int[] packed = support.Components.onTheEventThread(() -> new int[]{frame.getHeight(),
                 commands.getParent().getHeight(), room.getHeight(),
-                section(commands).getHeight(), section(conditions).getHeight()});
+                section(commands, conditions).getHeight(), section(conditions, commands).getHeight()});
 
             assertEquals(packed[3], packed[4], "at the packed size the two sections are not as tall as each other");
 
@@ -1799,9 +1799,14 @@ public class testRouteEditorValidation
         }
     }
 
-    private static java.awt.Container section(javax.swing.JTable table)
+    /** The section holding a table: its ancestor that sits beside the other table's section. */
+    private static java.awt.Container section(javax.swing.JTable table, javax.swing.JTable other)
     {
-        return javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, table).getParent();
+        java.awt.Container out = table.getParent();
+
+        while (out.getParent() != null && !out.getParent().isAncestorOf(other)) out = out.getParent();
+
+        return out;
     }
 
     /**
@@ -3236,12 +3241,19 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Ctrl and a letter, pressed on the table as the keyboard sends it: with its extended key code.  `support.Keys`
-     * leaves that code 0, and on a table that has the focus, Swing looks the code-0 stroke up first, finds no binding,
-     * and starts editing the selected cell, so the shortcut never runs.
-     */
+    /** Ctrl and a letter, pressed on the table as the keyboard sends it: see `chord`. */
     private static void ctrl(final javax.swing.JTable table, final int letter) throws Exception
+    {
+        chord(table, letter, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+    }
+
+    /**
+     * A key with modifiers, pressed on the table as the keyboard sends it: with its extended key code.  `support.Keys`
+     * leaves that code 0, and on a table that has the focus, Swing looks the code-0 stroke up first, finds no binding,
+     * and starts editing the selected cell: a Ctrl shortcut then never runs, and after Alt+Up a cell editor is left
+     * open that the next button commits as an edit of its own.
+     */
+    private static void chord(final javax.swing.JTable table, final int code, final int modifiers) throws Exception
     {
         final java.lang.reflect.Field extended = java.awt.event.KeyEvent.class.getDeclaredField("extendedKeyCode");
 
@@ -3253,12 +3265,12 @@ public class testRouteEditorValidation
 
             for (int id : new int[]{java.awt.event.KeyEvent.KEY_PRESSED, java.awt.event.KeyEvent.KEY_RELEASED})
             {
-                java.awt.event.KeyEvent key = new java.awt.event.KeyEvent(table, id, now,
-                    java.awt.event.InputEvent.CTRL_DOWN_MASK, letter, (char) letter);
+                java.awt.event.KeyEvent key = new java.awt.event.KeyEvent(table, id, now, modifiers, code,
+                    java.awt.event.KeyEvent.CHAR_UNDEFINED);
 
                 try
                 {
-                    extended.setLong(key, letter);
+                    extended.setLong(key, code);
                 }
                 catch (IllegalAccessException e)
                 {
@@ -3389,6 +3401,201 @@ public class testRouteEditorValidation
 
             assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 1:23 1AND 1:24",
                 "Ungroup with all of (22 or (23 and 24)) selected keeps (23 and 24) a group");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * MT-868: the row of actions under the conditions sits at the foot of their frame, so adding or deleting a condition
+     * leaves it where it was.
+     *
+     * MUTATION: in `build`, add `foot` to `framed` at `BorderLayout.NORTH`, and the row is not at the frame's foot.
+     */
+    @Test
+    public void testTheActionsStayAtTheFootOfTheFrame() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+            final javax.swing.AbstractButton add = support.Components.withText(frame,
+                I18n.t("route.ui.menuAddCondition"));
+            final java.awt.Container framed = javax.swing.SwingUtilities.getAncestorOfClass(
+                javax.swing.JScrollPane.class, table).getParent();
+
+            final java.util.concurrent.Callable<int[]> where = () -> new int[]{
+                javax.swing.SwingUtilities.convertPoint(add, 0, 0, frame.getRootPane()).y,
+                javax.swing.SwingUtilities.convertPoint(add.getParent(), 0, add.getParent().getHeight(),
+                    framed).y, framed.getHeight() - framed.getInsets().bottom};
+
+            final int[] two = support.Components.onTheEventThread(where);
+
+            assertEquals(two[1], two[2], "with two conditions, the row of actions does not end at the frame's foot");
+
+            press(frame, "route.ui.menuAddCondition");
+            press(frame, "route.ui.menuAddCondition");
+            press(frame, "route.ui.menuAddCondition");
+
+            final int[] five = support.Components.onTheEventThread(where);
+
+            assertEquals(five[0], two[0], "Add Condition moved when three conditions were added");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(0));
+
+            assertEquals(support.Components.onTheEventThread(where)[0], two[0],
+                "Add Condition moved when a condition was deleted");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-396: a new condition added to a complex one, then moved to the top.  "21 and (22 or (23 and 24) or
+     * 25) and 26" with Add Condition, nothing selected, reads "... and 1"; Alt+Up takes 1 to the top a step at a time,
+     * past the group whole rather than into it, the meaning the same at every step, and no further.  Undo puts it back
+     * at the end, and a drag by its handle to the gap above 21 takes it to the top in one go.
+     *
+     * MUTATION: in `ConditionOutline.plan`, skip the group-beside branch (`if (false)`), and 1 does not move past the
+     * group as a whole.
+     */
+    @Test
+    public void testANewConditionAddedToAComplexOneMovesToTheTop() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26"));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+            final org.traincontrol.base.NodeExpression meant = both(both(both(on(21),
+                either(either(on(22), both(on(23), on(24))), on(25))), on(26)), on(1));
+
+            press(frame, "route.ui.menuAddCondition");
+
+            assertEquals(levels(frame), " 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26 0AND 0:1",
+                "Add Condition with nothing selected");
+            assertEquivalent(heldBy(frame), meant, null, "after Add Condition");
+
+            final String[] steps = {
+                " 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:1 0AND 0:26",
+                " 0:21 0AND 0:1 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26",
+                " 0:1 0AND 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26",
+                " 0:1 0AND 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26"};
+
+            for (int at = 0; at < steps.length; at++)
+            {
+                chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+                assertEquals(levels(frame), steps[at], "Alt+Up " + (at + 1) + " on the new condition");
+                assertEquivalent(heldBy(frame), meant, null, "after Alt+Up " + (at + 1));
+            }
+
+            press(frame, "route.ui.menuUndo");
+            press(frame, "route.ui.menuUndo");
+            press(frame, "route.ui.menuUndo");
+
+            assertEquals(levels(frame), " 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26 0AND 0:1",
+                "three Undos after the moves");
+
+            final int top = support.Components.onTheEventThread(() ->
+                table.getCellRect((Integer) call(table, "lineOf", 0), 1, true).y + 2);
+
+            // Alone: a press on a handle inside a selection of several drags them all.
+            clickCondition(table, 12, NOTHING_TO_EDIT, 0);
+            drag(table, 12, new java.awt.Point(8, top));
+
+            assertEquals(levels(frame), steps[2], "the new condition dragged to the gap above 21");
+            assertEquivalent(heldBy(frame), meant, null, "after the drag");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-396: "a or b or c or d" made "(a and b) or (c and d)", both ways the editor offers.  Group Selected
+     * on a and b, then "All of these must be true" on its caption, and the same for c and d; or "All of these must be
+     * true" on the outer caption, then Split Here at c.  Both give the same outline and the same truth table, and Undo
+     * walks the second way back to where it began.
+     *
+     * MUTATION: in `ConditionOutline.split`, join the two parts by `word` rather than `opposite(word)`, and Split Here
+     * gives "(a and b) and (c and d)".
+     */
+    @Test
+    public void testAOrBOrCOrDBecomesTwoAndGroups() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final String anyOfFour = " 0:21 0OR 0:22 0OR 0:23 0OR 0:24";
+            final String pairs = " 1:21 1AND 1:22 0OR 1:23 1AND 1:24";
+            final org.traincontrol.base.NodeExpression meant = either(both(on(21), on(22)), both(on(23), on(24)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(fromLevels(anyOfFour));
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            selectLines(table, 0, 2);
+            press(frame, "route.ui.menuGroupSelected");
+            chooseRule(table, 1, "route.ui.conditionCaptionAll");
+
+            assertEquals(levels(frame), " 1:21 1AND 1:22 0OR 0:23 0OR 0:24", "a and b grouped, then made 'all'");
+
+            selectLines(table, 4, 6);
+            press(frame, "route.ui.menuGroupSelected");
+            chooseRule(table, 2, "route.ui.conditionCaptionAll");
+
+            assertEquals(levels(frame), pairs, "c and d grouped, then made 'all'");
+            assertEquivalent(heldBy(frame), meant, null, "by Group Selected and the captions");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(fromLevels(anyOfFour)));
+
+            chooseRule(table, 0, "route.ui.conditionCaptionAll");
+
+            assertEquals(levels(frame), " 0:21 0AND 0:22 0AND 0:23 0AND 0:24", "the outer caption made 'all'");
+
+            clickCondition(table, 4, NOTHING_TO_EDIT, 0);
+            press(frame, "route.ui.menuSplitHere");
+
+            assertEquals(levels(frame), pairs, "Split Here at c");
+            assertEquivalent(heldBy(frame), meant, null, "by the outer caption and Split Here");
+
+            press(frame, "route.ui.menuUndo");
+            press(frame, "route.ui.menuUndo");
+
+            assertEquals(levels(frame), anyOfFour, "two Undos after the caption and Split Here");
         }
         finally
         {
