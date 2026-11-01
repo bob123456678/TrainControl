@@ -2293,10 +2293,12 @@ public class Layout
             }
 
             // The same edge going in the opposite direction
-            if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
+            Edge opposite = this.getEdge(e.getOppositeName());
+
+            if (opposite != null && opposite.isOccupied(loc))
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(this.getEdge(e.getOppositeName())))
+                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(opposite))
                 );
                 return false;
             }
