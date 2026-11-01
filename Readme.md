@@ -113,6 +113,10 @@ You need S88 sensors (at least one per station) and digital switches; signals ar
 
 The track diagram shows each running train's route, the track it is holding, and where every train is standing.  While trains are stopped, you can right-click a station to place a train there.
 
+When a train is not moving, `Why not Moving?` in the autonomy editor shows where it can go, with the route it would take to each station, and why it cannot go to the others.
+
+![Why not Moving? on BR 218 at Bramley: it can go to Ashby and Carlton, both marked green with the routes to them drawn in yellow, while Thornbury, where ICE 3 is standing, is marked gray](assets/automation/08-why-not-moving.png?raw=true)
+
 You can set home stations and have TrainControl automatically route all your trains back to where they started. You can also record timetables and play them back, with the same protections as autonomous operation.
 
 <img src="assets/timetable3.png?raw=true" alt="The timetable in TrainControl: a captured sequence of journeys, played back in order" width="600">
