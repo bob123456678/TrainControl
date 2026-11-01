@@ -24,10 +24,10 @@ import support.SourceOf;
  * An error stops the setup running, and everything that offers to run it asks the same question (OB-090).
  *
  * Adam: "the setup refuses to run when there are errors.  it runs on warnings, but on errors it should say fix it."
- * Starting autonomy is refused on any ERROR finding (OB-057), but the diagram strip decided what to show from
- * hasBlockingProblems(), which asks the GRAPH only and knows nothing of the CHECKS, so four unnamed stations (four
- * errors, no blocking problem) left a live Start button that every press refused.  There is now ONE definition of
- * broken, AutonomySession.errorCount(), which both the refusal and the strip ask.
+ * Starting autonomy is refused on any ERROR finding (OB-057), so the diagram strip must not decide what to show from
+ * hasBlockingProblems(), which asks the GRAPH only and knows nothing of the CHECKS: four unnamed stations (four errors,
+ * no blocking problem) must not leave a live Start button.  There is ONE definition of broken,
+ * AutonomySession.errorCount(), which both the refusal and the strip ask.
  *
  * The sample layout is parsed with no Central Station, so every switch is unaddressed and all its errors are blocking
  * graph problems; the state "graph builds cleanly, setup still must not run" cannot be reached.  So the gap is shown
@@ -221,11 +221,10 @@ public class testErrorsStopTheSetupRunning
             "the strip asks the guard's question and then decides on something else, which is OB-090 "
             + "with the fix's own words still in the file.  The decision reads: " + decision);
 
-        // THE MENU'S HALF, AND IT NO LONGER COUNTS FOR ITSELF (MT-263): the tooltip moved onto
-        // `whyAutonomyWillNotStart()`, which holds the wording AND the counting.  The pair is asked of the things that
-        // now carry it: the item's ENABLED state comes from the guard's own question, its REASON from the one rule, and
-        // the one rule reaches the number.  WITHOUT COMMENTS, over the constructor that builds the item, whose prose
-        // mentions `autonomyErrorCount` twice.
+        // THE MENU'S HALF (MT-263): the tooltip is carried by `whyAutonomyWillNotStart()`, which holds the wording AND
+        // the counting.  The pair is asked of the things that carry it: the item's ENABLED state comes from the guard's
+        // own question, its REASON from the one rule, and the one rule reaches the number.  WITHOUT COMMENTS, over the
+        // constructor that builds the item, whose prose mentions `autonomyErrorCount` twice.
         String menuCode = code("private LayoutRightclickAutonomyMenu(");
 
         assertTrue(menuCode.contains("canStartAutonomy()"),
@@ -358,8 +357,8 @@ public class testErrorsStopTheSetupRunning
      *
      * Adam: "the button disappears rather than being greyed out prior to replacement by the start button. make it get
      * greyed out and then replaced."  The strip mirrors whichever real button is ENABLED; Graceful Stop disables itself
-     * at once while autonomy keeps running, so for that window "neither enabled" meant hide.  The rule is exercised
-     * rather than the panel, which needs a window; `testTheStripAsksThatQuestion` is the other half.
+     * at once while autonomy keeps running, so for that window "neither enabled" must not mean hide.  The rule is
+     * exercised rather than the panel, which needs a window; `testTheStripAsksThatQuestion` is the other half.
      *
      * The case that must NOT change is the last one: "neither enabled" has causes unrelated to stopping, and a grayed
      * Graceful Stop shown to somebody who has never run anything would be worse than the gap.
@@ -426,12 +425,11 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The autonomy strip is not the scroll pane's column header (OB-148).
-     *
-     * Adam: "if a track diagram is wide, the header above a track diagram flickers while scrolling sideways".  A column
-     * header is as wide as the view and scrolls with it, so every sideways step repainted a panel as wide as the
-     * diagram.  The swap is made at runtime through GroupLayout.replace (a hand-edited GEN block is how cropOverlay
-     * disappeared twice), so this checks that the swap is still there and the column header is not being set again.
+     * The autonomy strip is not the scroll pane's column header (OB-148): a column header is as wide as the view and
+     * scrolls with it, so every sideways step would repaint a panel as wide as the diagram (Adam: "if a track diagram
+     * is wide, the header above a track diagram flickers while scrolling sideways").  The swap is made at runtime
+     * through GroupLayout.replace (a hand-edited GEN block is how cropOverlay disappeared twice), so this checks that
+     * the swap is still there and the column header is not being set again.
      */
     @Test
     public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
@@ -466,8 +464,8 @@ public class testErrorsStopTheSetupRunning
      *
      * The guard refuses on `hasErrors()`, which covers a graph that will not build at all, where `autonomyErrorCount()`
      * is **zero**; a message splitting on the count alone falls through to "wait for trains" that never run.  The
-     * guard has the third arm; its twins, the API's exception and the grayed right-click item's tooltip, once did not.
-     * Asked of the source, since no test can read a tooltip back out of a menu that needs a running model.
+     * guard, the API's exception and the grayed right-click item's tooltip all need the third arm.  Asked of the
+     * source, since no test can read a tooltip back out of a menu that needs a running model.
      *
      * MUTATION this catches: deleting the `autonomyHasErrors()` arm from any one of the three.
      */
