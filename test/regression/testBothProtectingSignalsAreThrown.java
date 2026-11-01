@@ -162,18 +162,9 @@ public class testBothProtectingSignalsAreThrown
     @Test
     public void testProtectionReassertsAfterSomethingElseMovesTheSignal() throws Exception
     {
-        for (int address : new int[]{47423, 47424, 47425, 47426})
-        {
-            if (!model.isFeedbackSet(Integer.toString(address))) model.newFeedback(address, null);
+        clearFeedbacks("47423", "47424", "47425", "47426");
 
-            model.setFeedbackState(Integer.toString(address), false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("MP A", true, "47423");
         layout.createPoint("MP B", true, "47424");
@@ -183,8 +174,7 @@ public class testBothProtectingSignalsAreThrown
         layout.getPoint("MP P").setProtectingSignal(near.getName());
         layout.getPoint("MP Q").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("MP A", "MP B"));
+        List<Edge> path = createEdgesAlong(layout, "MP A", "MP B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
         Locomotive first = model.getLocByName(model.getLocList().get(1));
@@ -261,18 +251,9 @@ public class testBothProtectingSignalsAreThrown
     @Test
     public void testADispatchLeavesAnUnrelatedSignalAlone() throws Exception
     {
-        for (String feedback : new String[] {"47451", "47452", "47453"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47451", "47452", "47453");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("UN A", true, "47451");
         layout.createPoint("UN B", true, "47452");
@@ -281,8 +262,7 @@ public class testBothProtectingSignalsAreThrown
         // The protected platform has nothing to do with the dispatch, and nobody is standing on it.
         layout.getPoint("UN P").setProtectingSignal(far.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("UN A", "UN B"));
+        List<Edge> path = createEdgesAlong(layout, "UN A", "UN B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
 
@@ -320,18 +300,9 @@ public class testBothProtectingSignalsAreThrown
     @Test
     public void testAPassingTrainLeavesAStationsGuardsAlone() throws Exception
     {
-        for (String feedback : new String[] {"47461", "47462", "47463"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47461", "47462", "47463");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         // A, then M, a station the train only passes, then B where it stops
         layout.createPoint("PT A", true, "47461");
@@ -341,9 +312,7 @@ public class testBothProtectingSignalsAreThrown
         layout.getPoint("PT M").setProtectingSignal(near.getName());
         layout.getPoint("PT M").setEntrySignals(java.util.Collections.singletonList(far.getName()));
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("PT A", "PT M"));
-        path.add(layout.createEdge("PT M", "PT B"));
+        List<Edge> path = createEdgesAlong(layout, "PT A", "PT M", "PT B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
 
@@ -426,9 +395,7 @@ public class testBothProtectingSignalsAreThrown
         layout.createPoint("HO M", true, "47465");
         layout.createPoint("HO B", true, "47466");
 
-        final List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("HO A", "HO M"));
-        path.add(layout.createEdge("HO M", "HO B"));
+        final List<Edge> path = createEdgesAlong(layout, "HO A", "HO M", "HO B");
 
         final Locomotive train = model.getLocByName(model.getLocList().get(0));
 
@@ -503,18 +470,9 @@ public class testBothProtectingSignalsAreThrown
     {
         // Its OWN addresses: a simulated dispatch clears its feedback from a DETACHED thread, so a sibling's addresses
         // (47431-47433) may not be clear yet.
-        for (String feedback : new String[] {"47441", "47442", "47443"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47441", "47442", "47443");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         // The two the dispatch runs between, and a third where somebody is already standing.
         layout.createPoint("HD A", true, "47441");
@@ -525,8 +483,7 @@ public class testBothProtectingSignalsAreThrown
         // account for the signal moving.
         layout.getPoint("HD P").setProtectingSignal(far.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("HD A", "HD B"));
+        List<Edge> path = createEdgesAlong(layout, "HD A", "HD B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
         Locomotive standing = model.getLocByName(model.getLocList().get(1));
@@ -582,25 +539,16 @@ public class testBothProtectingSignalsAreThrown
     {
         // Created before they are set: setFeedbackState refuses a feedback the station has never
         // heard of, and 47421/47422 are this class's own - testAutonomySimulationSanity has 47411/2.
-        if (!model.isFeedbackSet("47421")) model.newFeedback(47421, null);
-        if (!model.isFeedbackSet("47422")) model.newFeedback(47422, null);
+        clearFeedbacks("47421", "47422");
 
-        model.setFeedbackState("47421", false);
-        model.setFeedbackState("47422", false);
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("MD A", true, "47421");
         layout.createPoint("MD B", true, "47422");
 
         layout.getPoint("MD B").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("MD A", "MD B"));
+        List<Edge> path = createEdgesAlong(layout, "MD A", "MD B");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
@@ -647,25 +595,16 @@ public class testBothProtectingSignalsAreThrown
     @Test
     public void testARefusedDispatchCommandsNothing() throws Exception
     {
-        if (!model.isFeedbackSet("47425")) model.newFeedback(47425, null);
-        if (!model.isFeedbackSet("47426")) model.newFeedback(47426, null);
+        clearFeedbacks("47425", "47426");
 
-        model.setFeedbackState("47425", false);
-        model.setFeedbackState("47426", false);
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("RD A", true, "47425");
         layout.createPoint("RD B", true, "47426");
 
         layout.getPoint("RD B").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("RD A", "RD B"));
+        List<Edge> path = createEdgesAlong(layout, "RD A", "RD B");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
@@ -824,8 +763,7 @@ public class testBothProtectingSignalsAreThrown
 
         assertTrue(layout.moveLocomotive(loc.getName(), "EG A", false), "precondition - the train must start at A");
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("EG A", "EG B"));
+        List<Edge> path = edgesAlong(layout, "EG A", "EG B");
 
         try
         {
@@ -860,9 +798,7 @@ public class testBothProtectingSignalsAreThrown
 
         assertTrue(layout.moveLocomotive(loc.getName(), "EG A", false), "precondition - the train must start at A");
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("EG A", "EG B"));
-        path.add(layout.getEdge("EG B", "EG C"));
+        List<Edge> path = edgesAlong(layout, "EG A", "EG B", "EG C");
 
         try
         {
@@ -914,18 +850,9 @@ public class testBothProtectingSignalsAreThrown
     /** A line A - B - C, this class's own feedbacks 47461-47463, simulated and with no delays. */
     private Layout entryGuardLine() throws Exception
     {
-        for (String feedback : new String[] {"47461", "47462", "47463"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47461", "47462", "47463");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("EG A", true, "47461");
         layout.createPoint("EG B", true, "47462");
@@ -972,35 +899,22 @@ public class testBothProtectingSignalsAreThrown
         final Object[] heldAt = {"not read"};
         final Object[] heldAfter = {"not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
         {
             atDeparture[0] = aspectOver(layout, "TX T", loc, near);
 
             heldAt[0] = layout.getActiveAccSettings().get(near);
-
-            startWas.accept(l);
         });
 
         // The first start is the run being registered; the second, the train at TX M
-        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
-
-        layout.setCallback("OB-340 watcher", (edges, l, started) ->
+        readAtTheSecondStart(layout, "OB-340 watcher", () ->
         {
-            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
-
             onTheWay[0] = aspectOver(layout, "TX T", loc, near);
 
             heldAfter[0] = layout.getActiveAccSettings().get(near);
-
-            return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1069,9 +983,7 @@ public class testBothProtectingSignalsAreThrown
             return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX B", "TX M"));
-        path.add(layout.getEdge("TX M", "TX T"));
+        List<Edge> path = edgesAlong(layout, "TX B", "TX M", "TX T");
 
         try
         {
@@ -1126,37 +1038,24 @@ public class testBothProtectingSignalsAreThrown
         final Object[] farHeld = {"not read"};
         final String[] farAskedAgain = {"not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
         {
             atDeparture[0] = aspects();
 
             farHeld[0] = layout.getActiveAccSettings().get(far);
-
-            startWas.accept(l);
         });
 
-        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
-
-        layout.setCallback("OB-340 through watcher", (edges, l, started) ->
+        readAtTheSecondStart(layout, "OB-340 through watcher", () ->
         {
-            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
-
             onTheWay[0] = aspects();
 
             // every guard asked again, the journey still holding the platform
             layout.refreshAllProtectingSignals();
 
             farAskedAgain[0] = far.isSwitched() ? "RED" : "GREEN";
-
-            return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1271,34 +1170,19 @@ public class testBothProtectingSignalsAreThrown
 
         final String[] read = {"not read", "not read", "not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
-            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        leaving.setCallback(Layout.CB_ROUTE_START, l ->
-        {
-            read[0] = aspectOver(layout, "TX T", leaving, near);
-
-            startWas.accept(l);
-        });
-
-        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(leaving, l ->
+            read[0] = aspectOver(layout, "TX T", leaving, near));
 
         // At TX M, the first edge still held: P's occupancy changes and back, which asks protection again
-        layout.setCallback("OB-340 shared watcher", (edges, l, started) ->
+        readAtTheSecondStart(layout, "OB-340 shared watcher", () ->
         {
-            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
-
             layout.getPoint("TX P").setLocomotive(null);
             layout.getPoint("TX P").setLocomotive(standing);
 
             read[1] = aspectOver(layout, "TX T", leaving, near);
-
-            return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1368,23 +1252,11 @@ public class testBothProtectingSignalsAreThrown
     {
         String[] names = {"FE T", "FE M", "FE N", "FE O", "FE B", "FE P"};
 
-        final Layout layout = new Layout(model);
+        final Layout layout = instantLayout();
 
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
         layout.setAtomicRoutes(atomic);
 
-        for (int i = 0; i < names.length; i++)
-        {
-            String feedback = Integer.toString(47481 + i);
-
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(47481 + i, null);
-
-            model.setFeedbackState(feedback, false);
-
-            layout.createPoint(names[i], true, feedback);
-        }
+        createPointsOnClearFeedbacks(layout, names, 47481);
 
         layout.getPoint("FE T").setTerminus(true);
         layout.getPoint("FE T").setProtectingSignal(near.getName());
@@ -1406,15 +1278,8 @@ public class testBothProtectingSignalsAreThrown
 
         final String[] read = {"not read", "not read", "not read", "not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
-            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        leaving.setCallback(Layout.CB_ROUTE_START, l ->
-        {
-            read[0] = aspectOver(layout, "FE T", leaving, near);
-
-            startWas.accept(l);
-        });
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(leaving, l ->
+            read[0] = aspectOver(layout, "FE T", leaving, near));
 
         final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
 
@@ -1560,30 +1425,16 @@ public class testBothProtectingSignalsAreThrown
     {
         String[] names = {"RR S", "RR M", "RR N", "RR P", "RR X", "RR Y"};
 
-        final Layout layout = new Layout(model);
+        final Layout layout = instantLayout();
 
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
         layout.setAtomicRoutes(atomic);
 
-        for (int i = 0; i < names.length; i++)
-        {
-            String feedback = Integer.toString(47491 + i);
-
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(47491 + i, null);
-
-            model.setFeedbackState(feedback, false);
-
-            layout.createPoint(names[i], true, feedback);
-        }
+        createPointsOnClearFeedbacks(layout, names, 47491);
 
         layout.getPoint("RR S").setProtectingSignal(near.getName());
         layout.getPoint("RR P").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("RR S", "RR M"));
-        path.add(layout.createEdge("RR M", "RR N"));
+        List<Edge> path = createEdgesAlong(layout, "RR S", "RR M", "RR N");
 
         if (edgeCommandsIt) path.get(0).addConfigCommand(near.getName(), Accessory.accessorySetting.GREEN);
 
@@ -1631,10 +1482,7 @@ public class testBothProtectingSignalsAreThrown
 
         near.setState(Accessory.accessorySetting.RED);
 
-        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
-            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        leaving.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(leaving, l ->
         {
             handedOver.set(true);
 
@@ -1662,8 +1510,6 @@ public class testBothProtectingSignalsAreThrown
             }
 
             read[1] = aspectOver(layout, "RR S", leaving, near);
-
-            startWas.accept(l);
         });
 
         final Object[] ran = {"not finished"};
@@ -1860,20 +1706,13 @@ public class testBothProtectingSignalsAreThrown
 
         final Object[] read = {"not read", "not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
         {
             read[0] = near.isSwitched() ? "RED" : "GREEN";
             read[1] = layout.getActiveAccSettings().get(near);
-
-            startWas.accept(l);
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1996,18 +1835,9 @@ public class testBothProtectingSignalsAreThrown
      */
     private String leaveACopy(boolean mustTurn) throws Exception
     {
-        for (String feedback : new String[] {"47475", "47476", "47477", "47478"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47475", "47476", "47477", "47478");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        final Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        final Layout layout = instantLayout();
 
         layout.createPoint("CP 1", true, "47475");
         layout.createPoint("CP 2", !mustTurn, "47476");
@@ -2045,19 +1875,10 @@ public class testBothProtectingSignalsAreThrown
 
         final String[] atDeparture = {"not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
+            atDeparture[0] = aspectOver(layout, from, loc, near));
 
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
-        {
-            atDeparture[0] = aspectOver(layout, from, loc, near);
-
-            startWas.accept(l);
-        });
-
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge(from, "CP M"));
-        path.add(layout.getEdge("CP M", "CP B"));
+        List<Edge> path = edgesAlong(layout, from, "CP M", "CP B");
 
         try
         {
@@ -2091,24 +1912,106 @@ public class testBothProtectingSignalsAreThrown
         return "near " + (near.isSwitched() ? "RED" : "GREEN") + ", far " + (far.isSwitched() ? "RED" : "GREEN");
     }
 
+    /** The layout's existing edges from each point to the next, in order. */
+    private static List<Edge> edgesAlong(Layout layout, String... points)
+    {
+        List<Edge> path = new LinkedList<>();
+
+        for (int i = 0; i + 1 < points.length; i++) path.add(layout.getEdge(points[i], points[i + 1]));
+
+        return path;
+    }
+
+    /** The edges created from each point to the next, in order. */
+    private static List<Edge> createEdgesAlong(Layout layout, String... points) throws Exception
+    {
+        List<Edge> path = new LinkedList<>();
+
+        for (int i = 0; i + 1 < points.length; i++) path.add(layout.createEdge(points[i], points[i + 1]));
+
+        return path;
+    }
+
+    /** Makes each feedback exist, if the station has not heard of it, and clear. */
+    private static void clearFeedbacks(String... feedbacks)
+    {
+        for (String feedback : feedbacks)
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+    }
+
+    /** A new layout that simulates its dispatches and waits no time between steps. */
+    private static Layout instantLayout() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        return layout;
+    }
+
+    /** Creates a point for each name on consecutive feedbacks from `first`, each feedback made clear just before. */
+    private static void createPointsOnClearFeedbacks(Layout layout, String[] names, int first) throws Exception
+    {
+        for (int i = 0; i < names.length; i++)
+        {
+            String feedback = Integer.toString(first + i);
+
+            clearFeedbacks(feedback);
+
+            layout.createPoint(names[i], true, feedback);
+        }
+    }
+
+    /**
+     * Runs `reading` when the locomotive's route starts, ahead of the start callback it had; returns that callback, to
+     * put back.
+     */
+    private static java.util.function.Consumer<Locomotive> readAtRouteStart(Locomotive loc,
+        java.util.function.Consumer<Locomotive> reading)
+    {
+        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
+            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            reading.accept(l);
+
+            startWas.accept(l);
+        });
+
+        return startWas;
+    }
+
+    /** Runs `reading` at the second start the layout announces; the first is the run being registered. */
+    private static void readAtTheSecondStart(Layout layout, String name, Runnable reading)
+    {
+        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+
+        layout.setCallback(name, (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
+
+            reading.run();
+
+            return null;
+        });
+    }
+
     /**
      * T, M, B in a line, joined both ways, and P apart: this class's own feedbacks 47471-47474, simulated, no delays
      * (OB-340); `terminus`: whether T is a terminus.
      */
     private Layout terminusLine(boolean terminus) throws Exception
     {
-        for (String feedback : new String[] {"47471", "47472", "47473", "47474"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47471", "47472", "47473", "47474");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("TX T", true, "47471");
         layout.createPoint("TX M", true, "47472");

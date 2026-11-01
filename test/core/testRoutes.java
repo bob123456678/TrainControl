@@ -1943,11 +1943,7 @@ public class testRoutes
     {
         final int a = 8841, p = 8842, q = 8843, b = 8844;
 
-        for (int s : new int[] {a, p, q, b})
-        {
-            model.newFeedback(s, null);
-            model.setFeedbackState(String.valueOf(s), false);
-        }
+        newClearFeedbacks(a, p, q, b);
 
         model.parseAuto("{"
             + "\"points\": ["
@@ -1981,6 +1977,41 @@ public class testRoutes
         runAndAsk(rail, x, new String[] {"O250 B", "O250 Q", "O250 P", "O250 A"}, new int[] {b, q, p, a});
     }
 
+    /** Creates each of the feedbacks, new to the station, and sets it clear. */
+    private static void newClearFeedbacks(int... sensors)
+    {
+        for (int s : sensors)
+        {
+            model.newFeedback(s, null);
+            model.setFeedbackState(String.valueOf(s), false);
+        }
+    }
+
+    /**
+     * Starts the train along the path on a daemon thread named `name`, waits up to `waitMs` for it to be under way, and
+     * returns the thread; `off` finishes the message "the train did not set ..." if it never is.
+     */
+    private static Thread startRun(final org.traincontrol.automation.Layout rail, final org.traincontrol.base.Locomotive x,
+        final List<org.traincontrol.automation.Edge> path, String name, long waitMs, String off) throws Exception
+    {
+        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), name);
+
+        run.setDaemon(true);
+        run.start();
+
+        long until = System.currentTimeMillis() + waitMs;
+
+        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set "
+            + off + ": " + org.traincontrol.automation.Layout.getLastError());
+
+        return run;
+    }
+
     /**
      * Runs the train along four Points, asking where it is before it reaches the second: at the first, and at neither the
      * third nor the fourth.
@@ -1993,20 +2024,7 @@ public class testRoutes
 
         assertFalse(path.contains(null), "precondition: no path from " + at[0] + " to " + at[3]);
 
-        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "OB-250 " + at[0] + " to " + at[3]);
-
-        run.setDaemon(true);
-        run.start();
-
-        long until = System.currentTimeMillis() + 10000;
-
-        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-        {
-            Thread.sleep(50);
-        }
-
-        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
-            + " off from " + at[0] + ": " + org.traincontrol.automation.Layout.getLastError());
+        Thread run = startRun(rail, x, path, "OB-250 " + at[0] + " to " + at[3], 10000, "off from " + at[0]);
 
         try
         {
@@ -2053,11 +2071,7 @@ public class testRoutes
     {
         final int a = 8851, p = 8852, q = 8853, b = 8854;
 
-        for (int s : new int[] {a, p, q, b})
-        {
-            model.newFeedback(s, null);
-            model.setFeedbackState(String.valueOf(s), false);
-        }
+        newClearFeedbacks(a, p, q, b);
 
         model.parseAuto("{"
             + "\"points\": ["
@@ -2086,20 +2100,7 @@ public class testRoutes
         final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
             rail.getEdge("C1 A", "C1 P"), rail.getEdge("C1 P", "C1 Q"), rail.getEdge("C1 Q", "C1 B"));
 
-        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "RSA56-C1 run");
-
-        run.setDaemon(true);
-        run.start();
-
-        long until = System.currentTimeMillis() + 10000;
-
-        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-        {
-            Thread.sleep(50);
-        }
-
-        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
-            + " off: " + org.traincontrol.automation.Layout.getLastError());
+        Thread run = startRun(rail, x, path, "RSA56-C1 run", 10000, "off");
 
         try
         {
@@ -2160,11 +2161,7 @@ public class testRoutes
     {
         final int a = 8961, r = 8962, c = 8963;
 
-        for (int s : new int[] {a, r, c})
-        {
-            model.newFeedback(s, null);
-            model.setFeedbackState(String.valueOf(s), false);
-        }
+        newClearFeedbacks(a, r, c);
 
         model.parseAuto("{"
             + "\"points\": ["
@@ -2190,27 +2187,14 @@ public class testRoutes
         final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
             rail.getEdge("T57 A", "T57 R"), rail.getEdge("T57 R", "T57 C"));
 
-        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "RSA57-C1 run");
-
-        run.setDaemon(true);
-        run.start();
-
-        long until = System.currentTimeMillis() + 15000;
-
-        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-        {
-            Thread.sleep(50);
-        }
-
-        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
-            + " off: " + org.traincontrol.automation.Layout.getLastError());
+        Thread run = startRun(rail, x, path, "RSA57-C1 run", 15000, "off");
 
         try
         {
             // AT THE REVERSING POINT: the run records R, then turns, R still pending, for the two-second pause
             model.setFeedbackState(String.valueOf(r), true);
 
-            until = System.currentTimeMillis() + 3000;
+            long until = System.currentTimeMillis() + 3000;
 
             while (!String.valueOf(r).equals(rail.getLatestMilestoneS88(x)) && System.currentTimeMillis() < until)
             {
