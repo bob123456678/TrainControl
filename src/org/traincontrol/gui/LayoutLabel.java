@@ -1918,7 +1918,12 @@ public final class LayoutLabel extends JLabel
 
         for (java.util.Map.Entry<LayoutLabel, java.awt.Rectangle> spill : spilt.entrySet())
         {
-            if (spill.getKey() != this && spill.getValue().intersects(mine)) under = true;
+            if (spill.getKey() != this && spill.getValue().intersects(mine))
+            {
+                under = true;
+
+                break;
+            }
         }
 
         if (!under) return;
