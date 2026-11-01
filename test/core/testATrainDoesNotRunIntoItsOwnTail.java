@@ -22,18 +22,15 @@ import org.traincontrol.util.I18n;
 /**
  * A train is not sent round a loop into its own tail (OB-294).
  *
- * Adam: *"EN57-203 from bottomsecondary to lowerfront may run over its own tail.  make sure the model factors in
- * whether the train will clear the area before it crosses over.  right now, If I set the train length to 20, is still
- * allowed to go, even though it would likely hit its own tail."*  And on what must still run: *"the check should pass
- * if the train would be gone (i.e. if that one was only length 4, for example)."*
+ * Adam: *"make sure the model factors in whether the train will clear the area before it crosses over"* and
+ * *"the check should pass if the train would be gone (i.e. if that one was only length 4, for example)."*
  *
  * His railway's case: a train that came down RampDown and west along row 11 stands at BottomSecondary with its tail
- * back along that row, and every way to LowerFront comes back east along the same row.  Nothing asked, because a train
- * never blocks itself (behaviour/tail.md 5c): pulling forward off its tail is how a train leaves a berth; coming back
- * to it round a loop is not.
+ * back along that row, and every way to LowerFront comes back east along the same row.  A train never blocks itself
+ * (behaviour/tail.md 5c): pulling forward off its tail is how it leaves a berth; coming back to it round a loop is not.
  *
  * The frozen railway, because the loop is his and no hand-drawn fixture has one; LowerFront's size is raised for the
- * test, as he raised it for his, so the station's own limit does not refuse a long train.
+ * test so the station's own limit does not refuse a long train.
  *
  * MUTATION: leave the train's starting body out of the question, and the 20-unit claim fails.  Refuse at the gap
  * itself rather than past it, and the remedy claim fails.  Judge a train leaving over its own tail as though its body
@@ -324,9 +321,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
         assertTrue(tightest.contains("BottomMainAPre") && tightest.contains("BottomCrossover"), "the refusal does not name"
             + " BottomMainAPre -> BottomCrossover, where the way round comes back to the train (MT-571): " + tightest);
 
-        // THE FIGURE ITSELF, measured on the frozen railway: from BottomSecondary west round by the tunnel and
-        // back to row 11 at 14,11 - 11,8 and 11,7, 11,4 and 10,3, 7,4 and 7,5, 7,11 and 9,12, 12,12 are measured, one
-        // unit each.  A claim that the sentence agrees with itself would pass a rule that moved every figure alike.
+        // THE FIGURE ITSELF, measured on the frozen railway (one unit each place round by the tunnel and back to row
+        // 11).  A claim that the sentence agrees with itself would pass a rule that moved every figure alike.
         assertEquals(gap.intValue(), 9, "the way round from BottomSecondary back to its own tail measures 9 on the frozen"
             + " railway, and the refusal names " + gap);
 
@@ -386,15 +382,13 @@ public class testATrainDoesNotRunIntoItsOwnTail
      * A loop answered 0 all the way round is judged, and a train lying on it is not let round into its own body
      * (OB-300).  Every other length rule reads track answered 0 on purpose as measured track of no length
      * (behaviour/length.md 5b) and errs towards refusing; this one judged a return only where the route had run some
-     * length, so a loop answered 0 throughout let a train of any length go round into itself.  A way round is judged
-     * once it is measured: a length on it, or every place on it answered.  A loop nobody measured is still not judged -
-     * *"only apply if lengths are specified"* - nor is one answered everywhere but one square, a switch nobody has
-     * given a length, which `Edge.isMeasured` would not count either.
+     * length.  A way round is judged once it is measured: a length on it, or every place on it answered.  A loop nobody
+     * measured is not judged (*"only apply if lengths are specified"*), nor is one answered everywhere but one square,
+     * which `Edge.isMeasured` would not count either.
      *
-     * Built by hand with the Points' and edges' own constructors (a new `Layout` would retire the loaded railway), and
-     * the rule asked directly: a train of 3 lying on A's square, where the loop begins and ends - out by B and C and
-     * back onto it, every place 0.  It comes back onto its own body after 0 units, so it is refused at any length, and
-     * asks for nothing to be measured.
+     * Built by hand with the Points' and edges' own constructors (a new `Layout` would retire the loaded railway) and
+     * the rule asked directly: a train of 3 lying on A's square, where the loop begins and ends, out by B and C and
+     * back onto it, every place 0.  It meets its own body after 0 units, so it is refused at any length.
      *
      * MUTATION: judge a return only where the route has run some length again (drop the answered half of the test), and
      * this fails; count a way round as answered where any place on it is, not every place, and the control with one
@@ -485,11 +479,9 @@ public class testATrainDoesNotRunIntoItsOwnTail
     }
 
     /**
-     * A train turned at Tunnel, its tail to the south, leaves south over its own body - which moves with it - and is
-     * not refused for it.  Three units, so the body reaches past the first measured square on the way out: a rule that
-     * judged the body as though it were behind the train would find the way out re-entering it at two units, and
-     * refuse.  The square OB-285 turns a train at, because BottomSecondary is come into from one side and left by the
-     * other only.
+     * A train turned at Tunnel, its tail to the south, leaves south over its own body (which moves with it) and is not
+     * refused for it.  Three units, so a rule judging the body as though it were behind the train would find the way
+     * out re-entering it at two units and refuse.  The square OB-285 turns a train at.
      */
     @Test
     public void testATrainLeavingOverItsOwnTailIsNotRefusedForIt() throws Exception
@@ -562,9 +554,9 @@ public class testATrainDoesNotRunIntoItsOwnTail
     }
 
     /**
-     * A turn on the way is not a return to the train's own tail: after it the body is ahead, and drives back over the
-     * track it was lying on.  Asked of the rule directly, because on the frozen railway the room rule refuses a train
-     * this long at RampDown, its one turning square with routes through it.
+     * A turn on the way is not a return to the train's own tail: after it the body is ahead.  Asked of the rule
+     * directly, because on the frozen railway the room rule refuses a train this long at RampDown, its one turning
+     * square.
      *
      * MUTATION: judge the track after a turn against the track before it, and this fails.
      */
@@ -628,9 +620,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
     /**
      * Return Home plans no route the railway would refuse for the train's own tail.  The planner re-implements the
-     * runtime's rules rather than asking `isPathClear` (live sensors), so every rule the runtime gains it has to gain
-     * too, or the plan stops half way (OB-073).  Asked of its route search directly, as
-     * `testATurnedTrainIsNotSentIntoAnotherTail` asks its tail check.
+     * runtime's rules rather than asking `isPathClear` (live sensors), so it must gain every rule the runtime gains
+     * (OB-073).  Asked of its route search directly.
      *
      * MUTATION: leave the own-tail question out of the planner's search, and this fails.
      */
@@ -690,10 +681,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
     }
 
     /**
-     * Return Home judges a train it has already moved by the road it moved it along, not by what the railway records
-     * there: the plan's second move of a train starts where its first left it, and BottomSecondary is empty on the
-     * railway, so from the railway's record the body is nothing and the plan sends a twenty-unit train round into it
-     * (OB-073).
+     * Return Home judges a train it has already moved by the road it moved it along, not by the railway's record: the
+     * plan's second move starts where its first left it, and BottomSecondary is empty on the railway (OB-073).
      *
      * MUTATION: judge the moved train by the railway's record of its square, and this fails.
      */

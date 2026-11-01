@@ -428,9 +428,8 @@ public class testMessageBundles
 
         List<File> sources = javaSources(new File("src"));
 
-        // javaSources returns empty, not a failure, when listFiles() is null - run from anywhere but
-        // the project root and this scans zero files, indistinguishable from "no offenders".
-        // testJavadocsAreAttached and testNoSelfRecursiveWrappers guard the same hazard the same way.
+        // javaSources returns empty, not a failure, when listFiles() is null (run from anywhere but the project root),
+        // which would scan zero files, indistinguishable from "no offenders".  Two sibling tests guard it the same way.
         assertFalse(sources.isEmpty(),
             "precondition: nothing was scanned under src/ - run from the project root");
 
@@ -461,20 +460,14 @@ public class testMessageBundles
     /**
      * Every word of an English route-command kind starts with a capital (OB-142).
      *
-     * Adam: "the Kind dropdown in the route editor has inconsistent capitalization for its items.
-     * make all words start with capitals." It was a genuine mixture - "Locomotive Function" beside
-     * "Locomotive speed", "Three-way Switch" beside "Stop everything" - and the two sit next to each
-     * other in one dropdown, which is where inconsistency is most visible.
+     * Adam: "the Kind dropdown in the route editor has inconsistent capitalization for its items.  make all words start
+     * with capitals."  A hyphenated pair counts as two words ("Three-Way", not "Three-way"), the case the report was
+     * about.
      *
-     * **English only, deliberately.** This is a rule about English capitalization and applying it to
-     * the other seven would be wrong rather than merely unnecessary: French, Spanish, Italian, Dutch,
-     * Danish and Polish all use sentence case for interface labels, and German capitalizes nouns for
-     * reasons of its own that a rule about every word would trample. The bundles are checked for
-     * matching key sets, ASCII and placeholders elsewhere in this class; how a language capitalizes
-     * is that language's business.
-     *
-     * A word here is a run between spaces, and a hyphenated pair counts as two - "Three-Way", not
-     * "Three-way" - because that is the case the report was actually about.
+     * **English only, deliberately.**  French, Spanish, Italian, Dutch, Danish and Polish use sentence case for
+     * interface labels, and German capitalizes nouns for reasons of its own; how a language capitalizes is that
+     * language's business.  The bundles are checked for matching key sets, ASCII and placeholders elsewhere in this
+     * class.
      *
      * MUTATION: change any of these back to sentence case and this fails, naming the key.
      */
@@ -652,21 +645,17 @@ public class testMessageBundles
     /**
      * The terminus error names the menu that actually closes a side.
      *
-     * The rule was right the first time and the sentence was not.  It said *"Bar one way in with the
-     * arrows"*, and the arrows are the DEPARTURE setting - so Adam did what it told him and reported
-     * *"error shows, but clicking on it and making one outbound arrow red does not clear the error"*,
-     * then diagnosed it himself: *"can't arrive is different than can't depart.  Just make the message
-     * more explicit."*
+     * The sentence once said *"Bar one way in with the arrows"*, and the arrows are the DEPARTURE setting; Adam did
+     * what it told him and reported *"error shows, but clicking on it and making one outbound arrow red does not clear
+     * the error"*, then diagnosed it: *"can't arrive is different than can't depart.  Just make the message more
+     * explicit."*
      *
-     * **An error that stops the railway has to name a control the reader can find**, and the one that closes a side is
-     * not the departure arrows. So each bundle's sentence quotes its OWN
-     * `menuArrivalsGroup` label, and this is what keeps the two in step: rename the menu and the error
-     * goes on naming a control that is no longer there, which is the same fault in a slower form.
+     * **An error that stops the railway has to name a control the reader can find.**  Each bundle's sentence quotes its
+     * OWN `menuArrivalsGroup` label, and this keeps the two in step: rename the menu and the error goes on naming a
+     * control that is no longer there.  Compared without the trailing ellipsis, so a cosmetic change to the label does
+     * not fail this.
      *
-     * Compared without the trailing ellipsis, so that a cosmetic change to the label does not fail this.
-     *
-     * MUTATION: putting `menuConnections` in the message instead - which is the mistake that was made -
-     * fails every bundle.
+     * MUTATION: putting `menuConnections` in the message instead fails every bundle.
      */
     @Test
     public void testTheTerminusErrorNamesTheArrivalsMenu() throws Exception
@@ -695,8 +684,8 @@ public class testMessageBundles
                 offenders.add(bundle.getName() + " does not name \"" + arrivals + "\": " + error);
             }
 
-            // AND IT SAYS WHAT THE OTHER MENU IS NOT, which is the half that cost the time: naming the
-            // right control is not enough when the wrong one is the obvious thing to reach for.
+            // AND IT SAYS WHAT THE OTHER MENU IS NOT: naming the right control is not enough when the wrong one is the
+            // obvious thing to reach for.
             if (departures != null && !error.contains(departures))
             {
                 offenders.add(bundle.getName() + " does not say that \"" + departures + "\" is a"
@@ -710,11 +699,9 @@ public class testMessageBundles
     }
 
     /**
-     * The line a switch click leaves in the message strip names the menu its arms are ticked in, by the name that menu has
-     * in each language.
-     *
-     * It said "Connections and direction", a heading the square's menu no longer has: the arms are ticked under "Trains May
-     * Depart...".  Compared without the trailing ellipsis, as the terminus error's menu is.
+     * The line a switch click leaves in the message strip names the menu its arms are ticked in ("Trains May
+     * Depart...", not the old "Connections and direction"), by the name that menu has in each language.  Compared
+     * without the trailing ellipsis, as the terminus error's menu is.
      *
      * MUTATION: put the old heading back in any bundle, and this fails.
      */
@@ -763,24 +750,19 @@ public class testMessageBundles
     /**
      * The two train-length warnings name what they are about (OB-153, OB-154).
      *
-     * Adam, OB-153: "autosetup.ui.checkNoTrainLength is prefilled with the station name, not the train
-     * at that station name.  state both ({train} and {station} has no...)"  OB-154:
-     * "autosetup.ui.checkNoMaxTrainLength does not specify the station name".
+     * Adam, OB-153: "autosetup.ui.checkNoTrainLength is prefilled with the station name, not the train at that station
+     * name.  state both ({train} and {station} has no...)"  OB-154: "autosetup.ui.checkNoMaxTrainLength does not
+     * specify the station name".
      *
      * Both panels build a finding's text as
      *
      *     subject = finding.getTile() == null ? finding.getSubject() : describeTile(finding.getTile())
      *
-     * which is right for every finding whose subject IS the point it is about - an unnamed Point's name
-     * is its coordinate, and the tile's description is the more useful of the two. FR-046's
-     * train-length warning is the first whose subject is a LOCOMOTIVE, so that preference threw the
-     * train's name away and the warning named the station it was standing at.
+     * which is right for every finding whose subject IS the point it is about; FR-046's train-length warning is the
+     * first whose subject is a LOCOMOTIVE, so both panels pass BOTH, leaving {0} meaning what it always meant.
      *
-     * The fix passes BOTH, leaving {0} meaning what it always meant so no other message moved.
-     *
-     * BOTH HALVES, because either alone passes while the bug is present. A message that says {1} with
-     * nothing supplying it renders the literal text "{1}" - which is what the reader would see - and
-     * panels that pass an argument no message asks for change nothing at all.
+     * BOTH HALVES, because either alone passes while the bug is present: a message that says {1} with nothing supplying
+     * it renders the literal text "{1}", and panels that pass an argument no message asks for change nothing at all.
      */
     @Test
     public void testTheLengthWarningsNameTheTrainAndTheStation() throws Exception
@@ -811,17 +793,11 @@ public class testMessageBundles
 
         assertTrue(offenders.isEmpty(), "the length warnings do not name their subject: " + offenders);
 
-        // A FINDING THAT CARRIES A TILE MUST PUT ITS SENTENCE IN {1} (MT-223).
-        //
-        // Both panels build a finding's text as `tile == null ? getSubject() : describeTile(tile)` and
-        // pass that as {0}, with the finding's own subject as {1}. So {0} silently changes meaning the
-        // day somebody gives an existing finding a tile - which is what happened here, when the
-        // duplicate-sensor error gained a square to jump to and its sentence would have been swallowed
-        // by the tile description.
-        //
-        // Checked for the one finding that names its whole subject in a sentence. There is no way to
-        // ask a bundle which findings carry tiles, so this pins the one that changed rather than
-        // pretending to a general rule.
+        // A FINDING THAT CARRIES A TILE MUST PUT ITS SENTENCE IN {1} (MT-223).  Both panels build a finding's text as
+        // `tile == null ? getSubject() : describeTile(tile)` and pass that as {0}, with the finding's own subject as
+        // {1}, so {0} silently changes meaning the day an existing finding gains a tile and its sentence is swallowed
+        // by the tile description.  Checked for the one finding that names its whole subject in a sentence: no way to
+        // ask a bundle which findings carry tiles, so this pins the one that changed.
         for (File bundle : bundles())
         {
             String duplicate = valuesOf(bundle).getProperty("autosetup.ui.checkDuplicateSensorPage");
@@ -850,15 +826,13 @@ public class testMessageBundles
     /**
      * Nothing asks for a key the bundle does not have.
      *
-     * An audit counted 229 keys present in all eight bundles that nothing in `src/` asks for.  That is
-     * noise: it costs a reader time and nothing else.  **The direction that costs an OPERATOR
-     * something is the other one**, and it had no test - a key renamed in the bundle and not at its
-     * call site puts the raw key on screen, in the one place a person is being told what went wrong.
+     * A key present in the bundle that nothing asks for is noise.  **The direction that costs an OPERATOR something is
+     * the other one**: a key renamed in the bundle and not at its call site puts the raw key on screen, where a person
+     * is being told what went wrong.
      *
-     * Literal calls only, which is all a textual rule can see.  Six families are built by
-     * concatenation - a route kind, a setting word, a side, a facing, and two path preferences, each a
-     * name appended to a prefix - and they are listed here rather than skipped quietly, so that a seventh
-     * cannot be added without somebody noticing that this test would not see it.
+     * Literal calls only, which is all a textual rule can see.  Six families are built by concatenation (a route kind,
+     * a setting word, a side, a facing, and two path preferences, each a name appended to a prefix) and are listed here
+     * rather than skipped quietly, so a seventh cannot be added without noticing this test would not see it.
      *
      * MUTATION this catches: renaming any key in `messages.properties` without its call site.
      */
@@ -887,12 +861,9 @@ public class testMessageBundles
 
         List<File> sources = javaSources(new File("src"));
 
-        // A FLOOR, like the two other scans in this file.
-        //
-        // `javaSources` answers empty rather than failing when `listFiles()` returns null - run from
-        // anywhere but the project root and this scans nothing, which is indistinguishable from
-        // finding no offenders.  The two older scans here carry this guard with that reason written
-        // out; this one was added afterwards and did not get it.
+        // A FLOOR, like the two other scans in this file: `javaSources` answers empty rather than failing when
+        // `listFiles()` returns null (run from anywhere but the project root), which is indistinguishable from finding
+        // no offenders.
         assertFalse(sources.isEmpty(),
             "precondition: nothing was scanned under src/ - run from the project root");
 
@@ -924,18 +895,15 @@ public class testMessageBundles
      * Every message key a screen asks for is in every language, with a value - the mechanical half of MT-468; the
      * reading of the sentences is MT-291.
      *
-     * `testNothingAsksForAKeyThatIsNotThere` reads the `I18n.t` / `I18n.f` calls, in English.  The NetBeans-generated code
-     * of the older windows reads its labels another way - `bundle.getString("...")` and
-     * `ResourceBundle.getBundle(...).getString("...")` - from keys its `.form` files hold as ResourceString entries, and
-     * that scan does not see them.  A key missing there throws MissingResourceException when the window is built, which
-     * is MT-468's "an error about a missing resource"; a key whose value is empty in some language shows a blank where a
-     * label should be, which is the other thing its walk looked for.  Every bundle, every key a screen asks for, by any
-     * of the four roads - the fourth being a key held in a constant, `static final String X = "..."`, and handed to I18n
-     * by name: Routes > Import's own two messages and every setup check's sentence are asked for that way, and the other
-     * three did not see them.
+     * `testNothingAsksForAKeyThatIsNotThere` reads the `I18n.t` / `I18n.f` calls, in English.  The NetBeans-generated
+     * code of the older windows reads its labels another way (`bundle.getString("...")`,
+     * `ResourceBundle.getBundle(...).getString("...")`) from keys its `.form` files hold as ResourceString entries.  A
+     * key missing there throws MissingResourceException when the window is built; one whose value is empty in some
+     * language shows a blank label.  Every bundle, every key a screen asks for, by any of four roads: I18n, the
+     * generated reads, the form entries, and a key held in a constant (`static final String X = "..."`) and handed to
+     * I18n by name.
      *
-     * A key asked for by any other road - a ternary, a switch, a helper, the log - is not seen here; its value is held by
-     * `testEveryKeyHasAValueInEveryLanguage`, which asks every key of the bundle.
+     * A key asked for by any other road is not seen here; its value is held by `testEveryKeyHasAValueInEveryLanguage`.
      *
      * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
      * language, and this fails naming it.
@@ -1054,10 +1022,9 @@ public class testMessageBundles
     /**
      * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for.
      *
-     * The roads above find a key where it is the first argument of I18n, a generated read, a form entry or a constant;
-     * about 340 are asked another way - chosen by a ternary, returned from a switch, handed to a helper, or logged -
-     * among them the old-file import's two questions and every log line.  Asked of the bundle instead of the callers,
-     * none can be missed.  A plural ending may be nothing.
+     * The roads above find a key only as the first argument of I18n, a generated read, a form entry or a constant;
+     * about 340 are asked another way (a ternary, a switch, a helper, the log).  Asked of the bundle instead of the
+     * callers, none can be missed.  A plural ending may be nothing.
      *
      * MUTATION: give any key an empty value in one language, and this fails naming it.
      *
@@ -1267,9 +1234,8 @@ public class testMessageBundles
     }
 
     /**
-     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes* (Adam:
-     * *"rephrase "place all at their homes" to "place all trains at their homes" in the right click menu"*).  The other
-     * seven languages said trains already.
+     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes* (Adam: *"rephrase
+     * "place all at their homes" to "place all trains at their homes" in the right click menu"*).
      *
      * MUTATION: put the old words back, and this fails.
      *
@@ -1287,9 +1253,9 @@ public class testMessageBundles
 
     /**
      * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
-     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (Adam,
-     * asked: *"b, easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit,
-     * which saves nothing while anything runs, and say so).  It named the timetable and not the settings.
+     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (Adam: *"b,
+     * easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit, which saves nothing
+     * while anything runs, and say so).
      *
      * MUTATION: leave the settings out of the English sentence again, and this fails.
      *

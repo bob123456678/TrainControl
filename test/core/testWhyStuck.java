@@ -38,10 +38,10 @@ public class testWhyStuck
     /**
      * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is.
      *
-     * Adam, on MT-434, asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
-     * a hand-driven send.  `reversesAlongTheWay` is autonomy's rule - its own javadoc: *"NOT asked by isPathClear, so a
-     * hand-driven move ... can still use a headshunt"* - and `firstClearOrWhyNot` still asked it by hand, so a station
-     * the menu offers read as "cannot be sent" through a reversing station.
+     * Adam, on MT-434: Why Not Moving? should follow Path Type, and on Manual answer for a hand-driven send.
+     * `reversesAlongTheWay` is autonomy's rule (its javadoc: *"NOT asked by isPathClear, so a hand-driven move ... can
+     * still use a headshunt"*) and must not be asked by hand, or a station the menu offers reads as "cannot be sent"
+     * through a reversing station.
      *
      * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
      */
@@ -180,11 +180,10 @@ public class testWhyStuck
      * By hand, a station the right-click menu does not offer is not listed as somewhere to go.
      *
      * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
-     * route search does.  The menu itself asks one more question first - `isOfferableToOperator` - and leaves out two
-     * kinds of station: one that excludes this train (Adam: *"if it excludes the loc, don't even include it
-     * in the list"*), and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The
-     * Manual answer asked neither, so it said "may go" of stations the menu never offers - the button and the
-     * explanation answering one question two ways (OB-057).
+     * route search does.  The menu first asks `isOfferableToOperator` and leaves out two kinds of station: one that
+     * excludes this train (Adam: *"if it excludes the loc, don't even include it in the list"*), and a compulsory turn
+     * autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The button and the explanation must answer
+     * the one question the same way (OB-057).
      *
      * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
      */
@@ -291,10 +290,9 @@ public class testWhyStuck
     }
 
     /**
-     * A train with no length recorded is not an error against a station with a stated limit.
-     *
-     * `Point.validateTrainLength` unboxed the train's length, where every other reader of it treats null as nothing
-     * known.  Its callers ask it inside route checks, so a null reached a dispatch as a NullPointerException.
+     * A train with no length recorded is not an error against a station with a stated limit:
+     * `Point.validateTrainLength` must treat a null length as nothing known, as every other reader does (callers ask it
+     * inside route checks).
      */
     @Test
     public void testATrainWithNoLengthRecordedFitsAStationWithALimit() throws Exception
@@ -457,20 +455,14 @@ public class testWhyStuck
     /**
      * A station autonomy will never choose is reported as barred, and says WHY it is barred.
      *
-     * FR-017. The window groups the stations - "Order them by ones that can be chosen autonomously
-     * and ones that cannot, with the autonomous ones first" - and the grouping cannot be recovered
-     * from the reason strings: two of the standing bars are translated sentences that would have to
-     * be matched by value.  So the Layout answers it, and this pins that the answer exists and is
-     * about the right stations.
+     * FR-017. The window groups the stations - "Order them by ones that can be chosen autonomously and ones that
+     * cannot, with the autonomous ones first" - and the grouping cannot be recovered from the reason strings (two
+     * standing bars are translated sentences), so the Layout answers it and this pins that the answer is about the
+     * right stations.
      *
-     * The second half is the interesting one. `explainDestinations` used to test "occupied" FIRST, so
-     * a station barred from autonomy reported "occupied by X" whenever a train happened to be sitting
-     * on it - the answer to a question nobody asked, in place of the one they did.  It also made the
-     * reason disagree with the group the line was filed under: barred, and yet printed beside a
-     * heading saying autonomy could choose it.
-     *
-     * That is why the fixture puts a train on the barred station rather than leaving it empty.  With
-     * an empty one the test passes either way round, which would make it a test of nothing.
+     * The second half is the interesting one: `explainDestinations` must not test "occupied" FIRST, or a barred station
+     * reports "occupied by X" whenever a train sits on it, in disagreement with the group the line is filed under.  So
+     * the fixture puts a train on the barred station; with an empty one the test passes either way round.
      */
     @Test
     public void testAStationBarredFromAutonomySaysSoRatherThanThatItIsBusy() throws Exception
@@ -502,22 +494,15 @@ public class testWhyStuck
     /**
      * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed.
      *
-     * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of
-     * `Layout.barredFromAutonomy` - the rule is `synchronized` on the Layout and this runs on the event
-     * thread three times per repaint - so the two can only be kept together by a test that asks both.
+     * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of `Layout.barredFromAutonomy` (the
+     * rule is `synchronized` on the Layout and this runs on the event thread three times per repaint), so the two can
+     * only be kept together by a test that asks both.  A test that builds one case cannot notice a limb that was never
+     * written (`!isAutoDestination()` and `!isActive()` were missing once), so this compares the two ANSWERS over every
+     * case.  Both are reached by reflection: the copy is private, and the rule is private because everything public
+     * that reaches it takes the monitor this copy exists to avoid.
      *
-     * The previous version of this test exercised the TERMINUS limb and claimed in its own words to
-     * catch "removing any limb of the dash's predicate". It could not: a test that builds one case
-     * cannot notice a limb that was never written. Two were missing - `!isAutoDestination()` and
-     * `!isActive()` - and the first of them is how a modern parking berth is spelled, which is the very
-     * thing the dash's javadoc says it exists to mark.
-     *
-     * So this compares the two ANSWERS over every case instead of asserting a mark. Both are reached by
-     * reflection: the copy is private, and the rule is private because everything public that reaches
-     * it takes the monitor this copy exists to avoid.
-     *
-     * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one
-     * reason, and the clean case pins the other direction.
+     * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one reason, and the
+     * clean case pins the other direction.
      *
      * @throws Exception on a failure to reach either method
      */
@@ -602,10 +587,8 @@ public class testWhyStuck
     }
 
     /**
-     * Runs something that declares a checked exception, failing the test if it throws.
-     *
-     * `setReversing` and `setTerminus` both declare `Exception`, which a `Runnable` cannot carry, and
-     * wrapping each in its own try block would bury the cases above in ceremony.
+     * Runs something that declares a checked exception, failing the test if it throws: `setReversing` and `setTerminus`
+     * declare `Exception`, which a `Runnable` cannot carry.
      *
      * @param body what to run
      */
@@ -633,11 +616,9 @@ public class testWhyStuck
     }
 
     /**
-     * A station that is merely occupied is NOT barred.
-     *
-     * The other half of the pair, and the one that stops the fix above from being "call everything
-     * barred".  A station with a train on it is a candidate that is busy: it becomes available again
-     * when that train leaves, and it belongs in the group the user can do something about.
+     * A station that is merely occupied is NOT barred: the other half of the pair, which stops the fix above from being
+     * "call everything barred".  A station with a train on it is a busy candidate and belongs in the group the user can
+     * do something about.
      */
     @Test
     public void testAnOccupiedStationIsStillOneAutonomyCouldChoose() throws Exception
@@ -660,15 +641,14 @@ public class testWhyStuck
     }
 
     /**
-     * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299)
-     * - where Why not Moving? listed every station's own reason instead of the copy's, and the train sat there
-     * with nothing saying why.  Told to turn it round where the square's other copy reaches a station, since turning
-     * puts it on that copy; and where neither does, told what would help instead, since turning round would not.
+     * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299),
+     * not given every station's own reason.  Told to turn it round where the square's other copy reaches a station,
+     * since turning puts it on that copy; and where neither does, told what would help instead.
      *
      * By hand it is not a reason: a train sent by hand may go where autonomy never sends one.
      *
-     * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave the
-     * closed side out of the either-way sentence, and this fails.
+     * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave
+     * the closed side out of the either-way sentence, and this fails.
      *
      * @throws Exception from the railway
      */
@@ -708,10 +688,10 @@ public class testWhyStuck
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
             + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
 
-        // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH ITS EXCEPTION.  At a station trains pass
-        // through, a closed side is what keeps it out of reach, and switching it on and ticking - true there already - is
-        // no remedy; where every train turns round, opening it is the terminus error that refuses the whole
-        // setup.  The sentence does not know which station is meant, so it names the side with the exception.
+        // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH ITS EXCEPTION.  At a station trains pass through, a closed side
+        // keeps it out of reach and switching it on is no remedy; where every train turns round, opening it is the
+        // terminus error that refuses the whole setup.  The sentence does not know which station is meant, so it names
+        // the side with the exception.
         assertTrue(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
             "the either-way sentence gives only remedies already true of a station reached across a closed side (RLU4-C4,"
             + " RLU2-C10): " + stranded.explainCannotStart(loc));
@@ -725,10 +705,8 @@ public class testWhyStuck
 
     /**
      * Turning round is offered only onto a copy a train may be started from: where the square's other copy reaches a
-     * station but is switched off, the train is told what would help instead.
-     *
-     * Turned round onto a copy autonomy will not start a train from, the next Why not Moving? gave that copy's refusal,
-     * and turning back led to this sentence again.
+     * station but is switched off, the train is told what would help instead (turning onto that copy would give its
+     * refusal, and turning back this sentence again).
      *
      * MUTATION: offer turning round wherever another copy reaches a station, and this fails.
      *
@@ -760,12 +738,9 @@ public class testWhyStuck
     }
 
     /**
-     * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at - even
-     * where it reaches a station.
-     *
-     * The barred copy is the lead case: turned round onto it, the next Why not Moving? refuses it and sends
-     * the operator back.  The claim beside this one switches a copy off, which a built railway never does to one copy
-     * alone.
+     * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at -
+     * even where it reaches a station: turned round onto it, the next Why not Moving? refuses it and sends the operator
+     * back.  The claim beside this one switches a copy off, which a built railway never does to one copy alone.
      *
      * MUTATION: offer turning round onto any copy that reaches a station, and this fails.
      *
@@ -794,11 +769,8 @@ public class testWhyStuck
 
     /**
      * Where the other way reaches a station only across a side trains may not arrive by, and every train turns round at
-     * that square, the train is told that side is closed and not told to open it:
-     * opened there, a terminus reached from two sides is the error that refuses the whole setup.
-     *
-     * The claims beside this one build no square whose every copy turns a train, so the exception had no claim; and the
-     * sentence chosen here said only that autonomy starts no train that way, without the reason.
+     * that square, the train is told that side is closed and not told to open it: opened there, a terminus reached from
+     * two sides is the error that refuses the whole setup.
      *
      * MUTATION: offer "open that side" wherever the other copy is barred, or give the refusal without its reason, and
      * this fails.
@@ -907,20 +879,16 @@ public class testWhyStuck
     /**
      * A platform's several arrival sides are described by the platform, not by the model's spelling.
      *
-     * The index maps every emitted Point back to its square and that is the answer whenever it has
-     * one - but it does not always: a configuration built by a different run of the builder is not in
-     * the map, and the fallback must not be the internal name. "BottomMainA (northbound)" is not a place
-     * on anybody's railway. Adam met it in the hover that explains why a train is not moving, which is
-     * the worst place for it: somebody reading that is already confused.
-     *
-     * Only the suffixes the builder itself emits come off, which is the half worth testing - a station
-     * genuinely called "Yard (upper)" has to keep its name, or this fix quietly renames real places.
+     * The index maps every emitted Point back to its square, but a configuration built by a different run of the
+     * builder is not in the map, and the fallback must not be the internal name: "BottomMainA (northbound)" is not a
+     * place on anybody's railway, least of all in the hover that explains why a train is not moving.  Only the suffixes
+     * the builder itself emits come off: a station genuinely called "Yard (upper)" must keep its name.
      */
     @Test
     public void testAnArrivalSideIsDescribedByItsStation() throws Exception
     {
-        // EMPTY is the index with no builder behind it, which is exactly the degraded case the
-        // fallback exists for: nothing maps, so every answer comes from the name itself.
+        // EMPTY is the index with no builder behind it, the degraded case the fallback exists for: every answer comes
+        // from the name itself.
         org.traincontrol.automationui.StationIndex index =
             org.traincontrol.automationui.StationIndex.EMPTY;
 
