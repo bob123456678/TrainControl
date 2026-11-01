@@ -288,10 +288,7 @@ public class testSwingSpeaksOurLanguage
         }
         finally
         {
-            try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(base))
-            {
-                walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
-            }
+            deleteTree(base);
         }
     }
 
@@ -454,10 +451,7 @@ public class testSwingSpeaksOurLanguage
         {
             desktops.set(null, were);
 
-            try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(standIn))
-            {
-                walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
-            }
+            deleteTree(standIn);
         }
     }
 
@@ -585,5 +579,14 @@ public class testSwingSpeaksOurLanguage
         speak.setAccessible(true);
 
         speak.invoke(null);
+    }
+
+    /** Deletes a folder and everything in it. */
+    private static void deleteTree(java.nio.file.Path root) throws java.io.IOException
+    {
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(root))
+        {
+            walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+        }
     }
 }

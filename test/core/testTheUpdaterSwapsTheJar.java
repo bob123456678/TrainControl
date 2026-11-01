@@ -136,18 +136,7 @@ public class testTheUpdaterSwapsTheJar
     public void testAFailedMovePutsTheOldJarBack() throws Exception
     {
         // The rename aside works; the move of the new jar into the old one's name fails, as a held file would
-        final JarUpdater.Mover failsTheSecond = new JarUpdater.Mover()
-        {
-            private int calls;
-
-            @Override
-            public void move(Path from, Path to) throws java.io.IOException
-            {
-                if (++calls == 2) throw new java.io.IOException("refused by the test");
-
-                Files.move(from, to);
-            }
-        };
+        final JarUpdater.Mover failsTheSecond = failsTheCall(2, "refused by the test");
 
         List<String> started = new ArrayList<>();
 
@@ -250,18 +239,7 @@ public class testTheUpdaterSwapsTheJar
     public void testAHalfDoneUndoDoesNotSayPutBack() throws Exception
     {
         // Aside, then in; the undo's first move, the new jar back to its download name, fails
-        final JarUpdater.Mover failsTheThird = new JarUpdater.Mover()
-        {
-            private int calls;
-
-            @Override
-            public void move(Path from, Path to) throws java.io.IOException
-            {
-                if (++calls == 3) throw new java.io.IOException("held by the test");
-
-                Files.move(from, to);
-            }
-        };
+        final JarUpdater.Mover failsTheThird = failsTheCall(3, "held by the test");
 
         List<String> started = new ArrayList<>();
         List<List<String>> commands = new ArrayList<>();
@@ -879,5 +857,22 @@ public class testTheUpdaterSwapsTheJar
         {
             return "<" + e + ">";
         }
+    }
+
+    /** A mover that moves files, except that its nth call throws with the message. */
+    private static JarUpdater.Mover failsTheCall(final int nth, final String message)
+    {
+        return new JarUpdater.Mover()
+        {
+            private int calls;
+
+            @Override
+            public void move(Path from, Path to) throws java.io.IOException
+            {
+                if (++calls == nth) throw new java.io.IOException(message);
+
+                Files.move(from, to);
+            }
+        };
     }
 }
