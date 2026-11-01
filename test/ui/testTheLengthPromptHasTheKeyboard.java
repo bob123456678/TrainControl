@@ -434,14 +434,10 @@ public class testTheLengthPromptHasTheKeyboard
             javax.swing.JDialog refusal = awaitMessage(prompt, title, "\"" + taken[0] + "\", another square's name,"
                 + " was typed into Name Everything and no refusal appeared");
 
-            final String[] said = new String[1];
+            final String said = readAndClose(refusal);
 
-            SwingUtilities.invokeAndWait(() -> said[0] = String.valueOf(findPane(refusal.getContentPane()).getMessage()));
-
-            closeMessage(refusal);
-
-            assertTrue(said[0].contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
-                "Name Everything's refusal of a taken name does not say it is taken: " + said[0]);
+            assertTrue(said.contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
+                "Name Everything's refusal of a taken name does not say it is taken: " + said);
 
             javax.swing.JDialog again = awaitPrompt(prompt, title);
 
@@ -556,14 +552,10 @@ public class testTheLengthPromptHasTheKeyboard
             javax.swing.JDialog refusal = awaitMessage(prompt, prompt.getTitle(), "\"" + taken[0] + "\", another"
                 + " square's name, was typed into Rename... and no refusal appeared");
 
-            final String[] said = new String[1];
+            final String said = readAndClose(refusal);
 
-            SwingUtilities.invokeAndWait(() -> said[0] = String.valueOf(findPane(refusal.getContentPane()).getMessage()));
-
-            closeMessage(refusal);
-
-            assertTrue(said[0].contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
-                "Rename's refusal of a taken name does not say it is taken: " + said[0]);
+            assertTrue(said.contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
+                "Rename's refusal of a taken name does not say it is taken: " + said);
 
             final String[] now = new String[1];
 
@@ -792,6 +784,18 @@ public class testTheLengthPromptHasTheKeyboard
         fail(failure + ".  Showing now: " + showing());
 
         return null;
+    }
+
+    /** The message a refusal shows, read before the refusal is closed. */
+    private static String readAndClose(javax.swing.JDialog refusal) throws Exception
+    {
+        final String[] said = new String[1];
+
+        SwingUtilities.invokeAndWait(() -> said[0] = String.valueOf(findPane(refusal.getContentPane()).getMessage()));
+
+        closeMessage(refusal);
+
+        return said[0];
     }
 
     private static void closeMessage(javax.swing.JDialog message) throws Exception

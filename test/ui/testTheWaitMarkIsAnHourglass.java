@@ -193,15 +193,7 @@ public class testTheWaitMarkIsAnHourglass
         BufferedImage first = shoot(0);
         BufferedImage later = shoot(20);
 
-        int different = 0;
-
-        for (int y = 0; y < SIZE; y++)
-        {
-            for (int x = 0; x < SIZE; x++)
-            {
-                if (first.getRGB(x, y) != later.getRGB(x, y)) different++;
-            }
-        }
+        int different = support.Pixels.differing(first, later);
 
         assertTrue(different > 200, "the wait mark is not moving: " + different + " pixels differ");
     }
@@ -348,6 +340,17 @@ public class testTheWaitMarkIsAnHourglass
         assertEquals(LoadingSpinner.frameAt(-5), 0, "a clock that went backwards is not handled");
     }
 
+    /** Puts the mark in the window, 200 square, and shows it. */
+    private static void showInAWindow(final javax.swing.JFrame window, final LoadingSpinner mark) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            window.getContentPane().add(mark);
+            window.setSize(200, 200);
+            window.setVisible(true);
+        });
+    }
+
     /** The timer really does drive it: `shoot` advances frames by hand, so the tests above pass with a dead timer. */
     @Test(timeOut = 30000)
     public void testTheTimerActuallyRuns() throws Exception
@@ -357,12 +360,7 @@ public class testTheWaitMarkIsAnHourglass
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                window.getContentPane().add(mark);
-                window.setSize(200, 200);
-                window.setVisible(true);
-            });
+            showInAWindow(window, mark);
 
             int started = mark.currentFrame();
 
@@ -457,12 +455,7 @@ public class testTheWaitMarkIsAnHourglass
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                window.getContentPane().add(mark);
-                window.setSize(200, 200);
-                window.setVisible(true);
-            });
+            showInAWindow(window, mark);
 
             final int[] before = new int[1];
 
@@ -515,15 +508,7 @@ public class testTheWaitMarkIsAnHourglass
         BufferedImage firstCycle = shoot(midDrain);
         BufferedImage secondCycle = shoot(midDrain + CYCLE);
 
-        int different = 0;
-
-        for (int y = 0; y < SIZE; y++)
-        {
-            for (int x = 0; x < SIZE; x++)
-            {
-                if (firstCycle.getRGB(x, y) != secondCycle.getRGB(x, y)) different++;
-            }
-        }
+        int different = support.Pixels.differing(firstCycle, secondCycle);
 
         // A few pixels may differ from antialiasing; a rotated drain differs by far more than that.
         assertTrue(different < 60,
@@ -550,15 +535,7 @@ public class testTheWaitMarkIsAnHourglass
             BufferedImage before = shoot(seam[0]);
             BufferedImage after = shoot(seam[1]);
 
-            int different = 0;
-
-            for (int y = 0; y < SIZE; y++)
-            {
-                for (int x = 0; x < SIZE; x++)
-                {
-                    if (before.getRGB(x, y) != after.getRGB(x, y)) different++;
-                }
-            }
+            int different = support.Pixels.differing(before, after);
 
             // A few pixels may differ from antialiasing on the rotated path.
             assertTrue(different < 60,

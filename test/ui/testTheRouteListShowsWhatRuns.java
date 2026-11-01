@@ -1103,12 +1103,10 @@ public class testTheRouteListShowsWhatRuns
 
             renameElsewhere(route, renamed);
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+            try (support.Answering answering = answeringPressing("ui.yes"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the rename");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the rename");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteRenamed", route,
                     renamed));
@@ -1149,12 +1147,10 @@ public class testTheRouteListShowsWhatRuns
 
             final String before = model.getRoute(renamed).toCSV();
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            try (support.Answering answering = answeringPressing("ui.no"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the rename");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the rename");
 
                 settle();
             }
@@ -1189,12 +1185,10 @@ public class testTheRouteListShowsWhatRuns
 
             model.deleteRoute(route);
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+            try (support.Answering answering = answeringPressing("ui.yes"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the deleted route");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the deleted route");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteGoneSaveAsNew",
                     route));
@@ -1236,12 +1230,10 @@ public class testTheRouteListShowsWhatRuns
 
             final String theirs = model.getRoute(route).toCSV();
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            try (support.Answering answering = answeringPressing("ui.no"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the change made elsewhere");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the change made elsewhere");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                     "route.ui.confirmRouteChangedUnderneath", route));
@@ -1285,13 +1277,10 @@ public class testTheRouteListShowsWhatRuns
                 return null;
             });
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            try (support.Answering answering = answeringPressing("ui.no"))
             {
-                support.Components.press(support.Components.withText(editor,
-                    org.traincontrol.util.I18n.t("route.ui.frameCancel")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Cancel over a typed change asked nothing");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameCancel",
+                    "Cancel over a typed change asked nothing");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.confirmDiscardChanges"));
 
@@ -1347,6 +1336,21 @@ public class testTheRouteListShowsWhatRuns
 
         assertTrue(model.editRoute(route, renamed, r.getRoute(), r.getS88(), r.getTriggerType(), r.isEnabled(),
             r.getConditions()), "precondition: the route could not be renamed elsewhere");
+    }
+
+    /** An answerer that presses the dialog button the bundle key `buttonKey` labels. */
+    private static support.Answering answeringPressing(String buttonKey)
+    {
+        return support.Answering.start(message -> support.Answering.press(org.traincontrol.util.I18n.t(buttonKey)));
+    }
+
+    /** Presses the editor's button the key labels, and asserts the answerer was asked a question. */
+    private static void pressAndAwaitAQuestion(support.Answering answering, java.awt.Window editor, String buttonKey,
+        String nothingAsked) throws Exception
+    {
+        support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t(buttonKey)));
+
+        assertTrue(answering.awaitAsked(1, 10000), nothingAsked);
     }
 
     private static void closeTheEditors() throws Exception
