@@ -14,7 +14,7 @@ import org.traincontrol.marklin.MarklinRoute;
 
 /**
  * A route belonging to the Central Station opens to be read, and cannot be changed: the station sends it again on the
- * next sync.  Graying the tables was not enough, since the marks in the rows (plus, trash, arrows) are values the table
+ * next sync.  Graying the tables was not enough, since the marks in the rows (plus, trash, copy) are values the table
  * PAINTS and the click that works them belongs to the window.  Both halves of the rule are tested: the marks must not
  * be DRAWN, and the actions must REFUSE.
  */

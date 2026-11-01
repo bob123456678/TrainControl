@@ -420,6 +420,8 @@ Tab icons provided by Freepik.
             - Drag a condition by its handle to move it, into another group or out of one, or move the selected conditions with Alt+Up and Alt+Down.
             - Under the conditions are `Add Condition`, `Group Selected`, `Ungroup`, `Split Here`, `Undo` and `Redo`, always at the bottom of the box. `Group Selected` keeps what the conditions mean, and `Split Here` turns `A and B and C` into `(A and B) or C` in one click. Their shortcuts are Ctrl+G, Ctrl+Shift+G, Ctrl+Shift+S, Ctrl+Z and Ctrl+Y.
             - The trash, the Delete key, `Move Up`, `Move Down` and `Ungroup` act on every selected condition.
+            - A route's commands work like its conditions: drag a command by its handle to move it, the trash removes every selected command, and right-click a command for `Insert Command Above`, `Insert Command Below`, `Move Up`, `Move Down`, `Duplicate` and `Delete`. The up and down arrows are gone.
+            - `Duplicate` puts a copy of the selected commands or conditions directly below them. It is in both right-click menus, and the copy icon beside a selected command copies the whole selection.
             - The plain words reading of the conditions is above the table, and the warning that conditions are ignored while `Automatically Fire` is not selected sits on the conditions' heading, with a warning sign.
             - `Save` now comes before `Cancel` at the bottom of the route editor, and the window can no longer be made narrower than its top line.
     - Bug Fixes
