@@ -134,11 +134,9 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * Sand is conserved: what drains out of the top arrives in the bottom.
-     *
-     * Every other check here would still pass if the two bulbs ran on unrelated formulae.  The band is a twelfth,
-     * from measurement: over a real cycle the count spreads 4.4% (outline and stream count as ink); driving the
-     * lower bulb from its own level takes it to 20%.
+     * Sand is conserved: what drains out of the top arrives in the bottom.  Every other check here would still pass if
+     * the two bulbs ran on unrelated formulae.  The band is a twelfth: over a real cycle the count spreads 4.4%
+     * (outline and stream count as ink); driving the lower bulb from its own level takes it to 20%.
      *
      * MUTATION: replacing the lower bulb's rectangle with one on a level of its own (`bulbH * (1.0 - drained * 0.5)`
      * for `bulbH * remaining`) fails this test.
@@ -234,10 +232,9 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The window a dialog is placed against is the window itself, not what contains it (MT-182).
-     *
-     * `besideOwner` is right, but its caller asked getWindowAncestor(owner()), which walks UP and is null for a
-     * top-level frame, so the centering fallback ran.  Driven with real components; no dialog is shown.
+     * The window a dialog is placed against is the window itself, not what contains it (MT-182):
+     * getWindowAncestor(owner()) walks UP and is null for a top-level frame, so the centering fallback ran.  Driven
+     * with real components; no dialog is shown.
      */
     @Test
     public void testAWindowIsNotAskedWhatContainsIt() throws Exception
@@ -286,9 +283,7 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The signal window does not open over the middle of the diagram it describes (OB-107).
-     *
-     * It points at the diagram behind it, so centering hides the thing it points at.
+     * The signal window does not open over the middle of the diagram it describes, which it points at (OB-107).
      *
      * MUTATION: making besideOwner return the centered point fails this test.
      */
@@ -328,10 +323,8 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The frame is taken from the clock, so a coalesced tick lands where it should (OB-129).
-     *
-     * The timer coalesces when the event thread is busy; counting one frame per tick advanced the sand once for a
-     * second of ticks.
+     * The frame is taken from the clock, so a coalesced tick lands where it should (OB-129): counting one frame per
+     * tick advanced the sand once for a second of ticks.
      *
      * MUTATION: going back to a counter fails the third assertion; the first two pass either way.
      */
@@ -451,10 +444,8 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * A blocked event thread does not freeze the sand (OB-129).
-     *
-     * While a diagram build holds the thread the ticks coalesce, and a counter advances one frame for half a second;
-     * the frame must move by roughly the time that passed.
+     * A blocked event thread does not freeze the sand (OB-129): while a diagram build holds the thread the ticks
+     * coalesce, so the frame must move by roughly the time that passed.
      *
      * MUTATION: `frame = (frame + 1) % ...` in the timer passes every other test here and fails this one.
      */
@@ -509,14 +500,11 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The drain is drawn UPRIGHT in every cycle, not only the first.
+     * The drain is drawn UPRIGHT in every cycle, not only the first: a mid-drain frame in the second cycle must render
+     * exactly like the same point in the first.  Pixels are compared because a 180-degree rotation flips top and bottom
+     * AND reverses the fall, so "sand ends at the bottom" holds either way.
      *
-     * A mid-drain frame in the second cycle must render exactly like the same point in the first.  Pixels are
-     * compared because a 180-degree rotation flips top and bottom AND reverses the fall, so "sand ends at the
-     * bottom" holds either way.
-     *
-     * MUTATION: reintroducing a `turns`-dependent rotation into the drain branch fails this: far more than
-     * antialiasing's worth of pixels would differ.
+     * MUTATION: reintroducing a `turns`-dependent rotation into the drain branch fails this.
      */
     @Test
     public void testItRunsDownwardsAfterTheFlipToo() throws Exception
@@ -579,11 +567,9 @@ public class testTheWaitMarkIsAnHourglass
         }
     }
     /**
-     * The start-up notice is not a window (OB-170).
-     *
-     * Showing a top-level window spends Windows' one chance to put a window in the foreground, and the splash cost
-     * the main window its keyboard focus.  The notice goes on the main window; what must stay true is that nothing
-     * here can open a window, a fact about the source and about what `panel` returns.
+     * The start-up notice is not a window (OB-170): a top-level window spends Windows' one chance to put a window in
+     * the foreground and cost the main window its keyboard focus.  What must stay true is that nothing here can open a
+     * window, a fact about the source and about what `panel` returns.
      *
      * MUTATION: giving `StartupSplash` a `show()` that opens a JWindow again.
      */
