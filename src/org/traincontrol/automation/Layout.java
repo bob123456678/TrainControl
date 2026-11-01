@@ -2287,12 +2287,10 @@ public class Layout
             }
 
             // The same edge going in the opposite direction
-            Edge opposite = this.getEdge(e.getOppositeName());
-
-            if (opposite != null && opposite.isOccupied(loc))
+            if (this.getEdge(e.getOppositeName()) != null && this.getEdge(e.getOppositeName()).isOccupied(loc))
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(opposite))
+                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(this.getEdge(e.getOppositeName())))
                 );
                 return false;
             }
@@ -3892,14 +3890,9 @@ public class Layout
 
             left.add(current.at);
 
-            if (current.commands != null)
+            if (current.commands != null && !HomeStaging.alreadyReached(seen, current.at.getUniqueId(), current.commands))
             {
-                String id = current.at.getUniqueId();
-
-                if (!HomeStaging.alreadyReached(seen, id, current.commands))
-                {
-                    seen.computeIfAbsent(id, k -> new ArrayList<>()).add(current.commands);
-                }
+                seen.computeIfAbsent(current.at.getUniqueId(), k -> new ArrayList<>()).add(current.commands);
             }
 
             for (Edge next : this.getNeighbors(current.at))

@@ -17149,19 +17149,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** A three-quarter circle that turns a step each frame (FR-077). */
     static final class TurningArc implements javax.swing.Icon
     {
-        private static final java.awt.Color ARC_GRAY = new java.awt.Color(90, 90, 90);
-
         private final int size;
-        private final float strokeWidth;
-        private final java.awt.BasicStroke stroke;
         private int angle;
 
         TurningArc(int size)
         {
             this.size = size;
-            this.strokeWidth = Math.max(2f, size / 6f);
-            this.stroke = new java.awt.BasicStroke(strokeWidth,
-                java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND);
         }
 
         void advance()
@@ -17184,10 +17177,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
                     java.awt.RenderingHints.VALUE_STROKE_PURE);
 
-                g2.setStroke(stroke);
-                g2.setColor(ARC_GRAY);
+                float stroke = Math.max(2f, size / 6f);
 
-                double inset = strokeWidth / 2.0 + 0.5;
+                g2.setStroke(new java.awt.BasicStroke(stroke,
+                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+                g2.setColor(new java.awt.Color(90, 90, 90));
+
+                double inset = stroke / 2.0 + 0.5;
 
                 g2.draw(new java.awt.geom.Arc2D.Double(x + inset, y + inset, size - 2 * inset, size - 2 * inset,
                     angle, 270, java.awt.geom.Arc2D.OPEN));
