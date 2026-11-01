@@ -41,11 +41,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * @param deferSearch true to skip the route search this normally does while being built.
-     *
-     * The search is synchronized on the Layout and walks the whole graph, so doing it per panel while the list is
-     * rebuilt stalls the event thread and can block it on a monitor a driving thread holds.  A caller passing true
-     * promises to call findPaths off the event thread and hand the result back through updateState.
+     * @param deferSearch true to skip the route search this normally does while being built.  The search is
+     * synchronized on the Layout and walks the whole graph, so doing it per panel while the list is rebuilt can block
+     * the event thread on a monitor a driving thread holds.  A caller passing true promises to call findPaths off the
+     * event thread and hand the result back through updateState.
      */
     public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent, boolean deferSearch)
     {
@@ -99,8 +98,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     /**
      * The "there is a reason, hover me" mark: an image rather than a character, as U+24D8 has no glyph in the UI font
-     * on some machines (OB-063) and a font fallback makes what the user sees depend on the machine.  Loaded once; a
-     * null icon is harmless to setIcon.
+     * on some machines (OB-063).  Loaded once; a null icon is harmless to setIcon.
      */
     private static final javax.swing.ImageIcon INFO_ICON = loadInfoIcon();
 
@@ -187,8 +185,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * The timetable's starting point for this locomotive, read when the paths were: getTimetableStartingPoint is
      * synchronized on the Layout, which `configureAndLockPath` holds across its per-command sleeps, so taking it on the
-     * event thread (three reads per repaint) can freeze the interface.  Null when nothing was gathered, in which case
-     * the reads happen inline.
+     * event thread can freeze the interface.  Null when nothing was gathered, in which case the reads happen inline.
      */
     private Point gatheredTimetableStart;
 
@@ -220,9 +217,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                      
             // Assigned to this locomotive, the same question the graph outlines a station on, and deliberately not
             // getHomeStation: that answers with the positional fallback too, so with no assignments every placed
-            // locomotive would get a teal badge while the graph outlined nothing, and assigning one locomotive a home
-            // elsewhere would change the badges of locomotives nobody touched.  Reading the point the locomotive stands
-            // on answers only what was assigned, matches the graph exactly, and takes no lock (this runs on the EDT).
+            // locomotive would get a teal badge while the graph outlined nothing.  Reading the point the locomotive
+            // stands on matches the graph exactly and takes no lock (this runs on the EDT).
             final Point at = layout.getLocomotiveLocation(locomotive);
             // Identity: see the note in HomeStaging on why the name comparison this replaced kept
             // compiling and always answered false.
@@ -595,9 +591,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     /**
      * The whole list of stations and why each one is unavailable, in a window (FR-017).  Worked out OFF the event
-     * thread: `explainDestinations` takes the Layout's monitor, which a dispatch holds across its per-command sleeps.
-     * So the window opens at once saying it is working and fills in when the answer arrives; the dialog being modal
-     * runs its own event pump, which delivers the invokeLater below.
+     * thread (`explainDestinations` takes the Layout's monitor, which a dispatch holds across its per-command
+     * sleeps): the window opens at once and fills in when the answer arrives.
      */
     private void showWhyNot()
     {
@@ -932,11 +927,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     /**
      * Drops the destinations this train may not be sent to at all: `OB-205` put that rule in
-     * `Layout.isOfferableToOperator` and only the track diagram's menu asked it.  The dash and this filter are not the
-     * same question and both are wanted: the dash says autonomy will not choose this (true of a parking berth the
-     * operator may pick by hand), this says you may not send this train here (a terminus it could not leave again).
-     * This is the rule itself, not a copy: it runs where the path search runs, so nothing here can fall out of step,
-     * unlike the lock-free `notChosenByAutonomy` beside it.
+     * `Layout.isOfferableToOperator`.  The dash and this filter are not the same question and both are wanted: the dash
+     * says autonomy will not choose this (true of a parking berth the operator may pick by hand), this says you may
+     * not send this train here (a terminus it could not leave again).  This is the rule itself, not a copy, unlike the
+     * lock-free `notChosenByAutonomy` beside it.
      *
      * @param paths the paths the search returned
      * @return the ones the operator may actually choose
