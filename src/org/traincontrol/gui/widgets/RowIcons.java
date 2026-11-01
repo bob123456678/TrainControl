@@ -37,9 +37,7 @@ public final class RowIcons
         return trash(size, WARN);
     }
 
-    /**
-     * The same, in a color of the caller's choosing - see plus(int, Color).
-     */
+    /** The same, in a color of the caller's choosing - see plus(int, Color). */
     public static Icon trash(final int size, final Color colour)
     {
         return new Painted(size)
@@ -81,9 +79,7 @@ public final class RowIcons
         return copy(size, QUIET);
     }
 
-    /**
-     * The same, in a color of the caller's choosing - see plus(int, Color).
-     */
+    /** The same, in a color of the caller's choosing - see plus(int, Color). */
     public static Icon copy(final int size, final Color colour)
     {
         return new Painted(size)
@@ -99,9 +95,8 @@ public final class RowIcons
                 int h = front.height;
                 int gap = front.x - 1;
 
-                // The sheet behind, only where it shows (the front one hides its lower right corner), so the two read
-                // as two sheets.  Not by filling the front one white: on a selected row that was a solid white sheet
-                // (OB-258).
+                // The sheet behind, only where it shows (the front one hides its lower right corner).  Not by filling
+                // the front one white: on a selected row that was a solid white sheet (OB-258).
                 g.setColor(colour);
                 g.drawLine(1, 1, 1 + w, 1);
                 g.drawLine(1, 1, 1, 1 + h);
@@ -140,8 +135,8 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is very nearly invisible
-     * against the look-and-feel's selection blue, and that is the row whose mark is most likely to be reached for.
+     * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is nearly invisible against
+     * the look-and-feel's selection blue.
      *
      * @param colour what to draw it in
      * @return the icon
@@ -433,9 +428,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * An icon that paints itself, antialiased, on a graphics it is handed.
-     */
+    /** An icon that paints itself, antialiased, on a graphics it is handed. */
     private abstract static class Painted implements Icon
     {
         private final int size;
