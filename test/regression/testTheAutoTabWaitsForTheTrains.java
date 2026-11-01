@@ -35,12 +35,12 @@ public class testTheAutoTabWaitsForTheTrains
 {
 
     /**
-     * A Start that starts nothing gives Start and the Auto tab back: every train to run was skipped - here each
-     * with no speed, as on a station out of service - and the railway cleared its own flag and only logged it, so Start
-     * stayed grayed and Graceful Stop offered over nothing, and the Auto tab, which counts Graceful Stop offered as a run,
-     * stayed grayed saying to wait for trains that were not moving.
+     * A Start that starts nothing gives Start and the Auto tab back: every train to run was skipped (here each with no
+     * speed, as on a station out of service), and the railway must clear its own flag, or Start stays grayed with
+     * Graceful Stop offered over nothing and the Auto tab, which counts that offer as a run, says to wait for trains
+     * that are not moving.
      *
-     * And it says so (Adam: "the start says nothing"): the log alone said why.
+     * And it says so (Adam: "the start says nothing").
      *
      * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
      *
@@ -202,9 +202,9 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A hand send grays the Auto tab from its click, not once its train sets off: the dispatch sets the route
-     * first - seconds on a long one - and the railway's first refresh came only then, so for those seconds the settings,
-     * Execute Timetable and the capture toggle were offered and then refused.  Given back at the train's arrival.
+     * A hand send grays the Auto tab from its click, not once its train sets off: the dispatch sets the route first
+     * (seconds on a long one), and until the railway's first refresh the settings, Execute Timetable and the capture
+     * toggle would be offered and then refused.  Given back at the train's arrival.
      *
      * MUTATION: leave the Auto tab to the train's departure, or never count the hand send down, and this fails.
      *
@@ -446,14 +446,14 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * An editor stays one editor through its own switches, and is counted open until it closes.
      *
-     * Each switch hands over through the main window's own teardown - `autonomyEditorClosed` for the autonomy editor,
-     * the refresh's `layoutRefreshCompleteInternal` for the track editor - which gave Edit and Edit Autonomy Paths back,
-     * and the switch's posted arrival grayed them again.  A press in between opened a second editor; close the newer
-     * and the gate, which asked only the newest, let Start run trains with the other still open.  Open is asked of the
-     * editor windows now, so neither button is offered while one is there.
+     * Each switch hands over through the main window's own teardown (`autonomyEditorClosed` for the autonomy editor,
+     * the refresh's `layoutRefreshCompleteInternal` for the track editor), which gives Edit and Edit Autonomy Paths
+     * back, and the switch's posted arrival grays them again.  A press in between opens a second editor, and closing
+     * the newer leaves a gate that asked only the newest letting Start run trains with the other still open.  So open
+     * is asked of the editor windows, and neither button is offered while one is there.
      *
-     * Watched through Autonomy Setup to Track Diagram (with both buttons pressed in the hand-over's gap, the order
-     * RSA28's M14 found), back to Autonomy Setup, and a page switch; then the close gives both back.
+     * Watched through Autonomy Setup to Track Diagram (with both buttons pressed in the hand-over's gap), back to
+     * Autonomy Setup, and a page switch; then the close gives both back.
      *
      * MUTATION: ask the window's flag, not its editor windows, and this fails.
      *
@@ -659,9 +659,8 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap.
      *
-     * The save kept the undo point the window opened with, so until the switch arrived the window still thought it had
-     * unsaved work: a close then asked to *"throw away everything changed since you last saved"* - the opposite of what had
-     * just been done - with the window changing mode beneath the question.  The save takes the undo point again now.
+     * The save must take the undo point again, or until the switch arrives the window still thinks it has unsaved work
+     * and a close asks *"throw away everything changed since you last saved"* - the opposite of what was just done.
      *
      * MUTATION: keep the old undo point at a Save and Continue, and this fails.
      *
@@ -790,10 +789,9 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * An editor that fails to build leaves no frame behind.
      *
-     * `initComponents` makes the frame before the rest of the build runs, and a build that threw after it - a page gone
-     * in a reload of the pages, the one route found - left the frame there, never shown.  The main window counts every
-     * editor frame of its own, so Edit and Edit Autonomy Paths stayed grayed and the gate said "Close the editor
-     * first" for the session, with no editor on screen.  The build takes its frame with it now.
+     * `initComponents` makes the frame before the rest of the build runs.  The main window counts every editor frame of
+     * its own, so a frame left by a build that threw (a page gone in a reload, the one route found) keeps Edit and Edit
+     * Autonomy Paths grayed and the gate saying "Close the editor first" for the session.
      *
      * Driven through the real door with a page the model does not have, chosen in the page list with its listeners off.
      *
@@ -890,9 +888,8 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate.
      *
-     * The fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back - but it took only
-     * `Exception`, so an Error went past it: Edit stayed grayed, and every train was refused "Close the editor first" for
-     * the session, with no editor anywhere.
+     * The fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back; it must take an Error
+     * too, or Edit stays grayed and every train is refused "Close the editor first" for the session.
      *
      * Driven through the real door with a page the model has, whose first use raises an `AssertionError`, chosen in the
      * page list with its listeners off.
@@ -1016,12 +1013,12 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor whose posted build - the drawing, after the frame is made - raises an Error gives Edit back and opens the
-     * gate.
+     * An editor whose posted build - the drawing, after the frame is made - raises an Error gives Edit back and opens
+     * the gate.
      *
-     * `openLayoutEditor`'s catch takes Errors, which covers the construction; the drawing runs later, in
-     * `render`'s posted body, whose catch took only `RuntimeException` - so the hidden frame stayed counted, Edit and Edit
-     * Autonomy Paths stayed grayed, and every train was refused "Close the editor first" for the session.
+     * `openLayoutEditor`'s catch takes Errors, which covers the construction; the drawing runs later, in `render`'s
+     * posted body, whose catch must take them too, or the hidden frame stays counted and every train is refused "Close
+     * the editor first" for the session.
      *
      * Driven through the real door with a page whose size, asked by the drawing, raises an `AssertionError`.
      *
@@ -1138,10 +1135,9 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A page switch that raises an Error gives the window up, as one that throws an exception does.
-     *
-     * `arriveAt`'s catch took only `RuntimeException`, so an Error left the window half switched - showing one page and
-     * wired to another - and counted as an open editor for the session.
+     * A page switch that raises an Error gives the window up, as one that throws an exception does: `arriveAt` must
+     * catch more than `RuntimeException`, or the window is left half switched (one page shown, wired to another) and
+     * counted as an open editor for the session.
      *
      * The track editor opened on a page, then switched to a page whose size, asked by the drawing, raises an
      * `AssertionError`.
@@ -1271,11 +1267,11 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap.
      *
-     * The other half: the track editor asks a close about its undo history, which a save kept until the switch
-     * arrived - so a close then asked *"Are you sure you want to close the editor without saving changes?"* straight after
-     * the save.  The save clears it now, as the arrival does.
+     * The track editor asks a close about its undo history, which the save must clear as the arrival does, or a close
+     * right after the save asks *"Are you sure you want to close the editor without saving changes?"*.
      *
-     * A tile turned through the editor's own `rotate`, then Autonomy Setup, Save and Continue, and the close in the gap.
+     * A tile turned through the editor's own `rotate`, then Autonomy Setup, Save and Continue, and the close in the
+     * gap.
      *
      * MUTATION: keep the undo history at a Save and Continue, and this fails.
      *
@@ -1454,11 +1450,9 @@ public class testTheAutoTabWaitsForTheTrains
      * The strip above the track diagram holds its buttons to the page's own button height, at every display scaling
      * (OB-313).
      *
-     * Adam: *"The issue was on lower display scaling monitors, where the button looked too narrow
-     * vertically."*  The strip's Start (and the banner's Load) were held to its checkbox's height less three pixels, with
-     * no padding above or below.  The checkbox's font is the one that follows the display's scaling; the page's own
-     * buttons - Edit, Small, Large - are a fixed 24.  At 125% the two agreed; at 100% the checkbox is shorter and the
-     * strip's button came out a few pixels skinnier than the buttons beside it.
+     * Adam: *"The issue was on lower display scaling monitors, where the button looked too narrow vertically."*  The
+     * checkbox's font follows the display's scaling; the page's own buttons (Edit, Small, Large) are a fixed 24.  A
+     * strip button held to the checkbox's height agrees at 125% but comes out skinnier at 100%.
      *
      * Asked at the checkbox size a 100% display gives: the look and feel's own 12-point Segoe UI.
      *
@@ -1626,11 +1620,10 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * The turning mark turns about its own center (MT-650).
      *
-     * Adam: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
-     * Start's mark is Return Home's (FR-077), and it was drawn on whole pixels with Java's default stroke normalization,
-     * which moves an outline onto the pixel grid differently at each angle - so the ring's center stepped about as it
-     * turned, the more so on a scaled display.  Every frame, at the sizes the two buttons use and at 100% to 200%
-     * scaling: where the ink sits, turned back by the frame's angle, must be the same each time.
+     * Adam: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*  Start's mark
+     * is Return Home's (FR-077); drawn on whole pixels with Java's default stroke normalization, the ring's center
+     * steps about as it turns, the more so on a scaled display.  Every frame, at the sizes the two buttons use and at
+     * 100% to 200% scaling: where the ink sits, turned back by the frame's angle, must be the same each time.
      *
      * MUTATION: draw the arc with `drawArc` on whole pixels again, and this fails.
      *
@@ -1736,9 +1729,9 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * Closing the editor while it switches to Track Diagram gives Edit and Edit Autonomy Paths back (MT-649).
      *
-     * Adam: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is
-     * posted, and arrives after a close that lands in between - at a closed window, which it put back together out of
-     * sight, graying both buttons for the session.  The close wins now: a closed window is not arrived at.
+     * Adam: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is posted
+     * and arrives after a close that lands in between; a closed window is not arrived at, or it is put back together
+     * out of sight, graying both buttons for the session.
      *
      * MUTATION: drop the closed-window return from `LayoutEditor.arriveAt`, and this fails.
      *
