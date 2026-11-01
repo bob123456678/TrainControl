@@ -341,7 +341,7 @@ public class MarklinRoute extends Route
     /**
      * Whether this route cuts the power: an emergency stop anywhere in its commands, or a route it fires that is one
      * (`cutsThePowerAt`).  It is never asked about a conflict, since Cancel would call off a power cut the question
-     * never mentioned.  Adam: "emergency stop should never conflict or prompt."
+     * never mentioned.
      *
      * @return true when this route, or a route it fires, stops the railway
      */
@@ -594,9 +594,8 @@ public class MarklinRoute extends Route
                     // functions, lights, speeds and chained routes all run.
                     //
                     // Unless somebody has said to go ahead: a turnout that did not take the command is exactly when it
-                    // needs setting, and exactly when it is on a locked path.  A local, because the parameter is
-                    // captured by the thread this runs on and cannot be assigned; the mid-route question below moves
-                    // this one.
+                    // needs setting, and exactly when it is on a locked path.  A local, as the parameter cannot be
+                    // assigned inside the thread; the mid-route question below moves this one.
                     boolean override = overrideConflicts;
 
                     // Nothing is decided for the whole route here (MT-247): the per-command check below is the right
