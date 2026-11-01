@@ -29,16 +29,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.
  *
  * Adam: "instead of shading the entire tiles, we need to draw a line (let's say in orange) to show that the train is
- * there.  graying makes it look confusing on double curve tiles."  Asked whether the line joins the wash or replaces
- * it, he chose one indicator, not two: the line replaces the wash.  A double curve has two roads across the square,
- * and a wash says a train is on both.
+ * there.  graying makes it look confusing on double curve tiles."  He chose one indicator, not two: the line replaces
+ * the wash.
  *
  * Asserted in pixels, because neither fact can be read off the model: that a covered square is marked at all, and that
  * the mark is a LINE (most of the tile drawn exactly as it would be with nothing standing; the old wash was `fillRect`
- * over the whole icon).  So the same tile is painted with the train and without, and compared.
- *
- * The orange is recognized by hue, not by production's constant, which would pass for any color it was changed to,
- * gray included.
+ * over the whole icon).  So the same tile is painted with the train and without, and compared.  The orange is
+ * recognized by hue, not by production's constant, which would pass for any color it was changed to, gray included.
  *
  * MUTATION: put `ImageUtil.addCoveredOverlay` back and `testTheMarkIsALineAndNotAWash` fails with every pixel of the
  * tile changed.  Draw nothing at all and `testACoveredSquareIsMarkedInOrange` fails.
@@ -92,10 +89,9 @@ public class testTheTrainIsShownAsALine
             throw new SkipException("painting a tile needs a display");
         }
 
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111): `cs2_sample_layout`'s placements and lengths move
-        // as Adam runs trains on it, and a class that skips everything reads as a green one.  `live-snapshot` is the
-        // same railway with the clock stopped at `e6f4649c`.  `Scenario.folderFor` cannot spell its way out to the
-        // operator's own railway, and `LayoutSandbox` copies what it names before anything reads it.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111): `cs2_sample_layout` moves as Adam runs trains on
+        // it, and a class that skips everything reads as a green one.  `live-snapshot` is the same railway with the
+        // clock stopped, and `LayoutSandbox` copies what it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -216,13 +212,10 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * And the TRAIN mark is a LINE - it covers a small part of the square, not the whole of it.
-     *
-     * MEASURED IN ORANGE, not in changed pixels: a covered square that is an intermediate tile of a covered edge is
-     * also BLOCKED, so it carries the gray wash as well as the line, and counting every changed pixel gave 900 of 900
-     * and a false "drawn as a wash".  MT-309's complaint is about the TRAIN mark, so the population measured is the
-     * orange.  The wash is asserted whole-square by `ui.testBlockedTrackIsGreyWhileAutonomyRuns` and
-     * `ui.testTheGreyAppearsAtIdleToo`.
+     * And the TRAIN mark is a LINE - it covers a small part of the square, not the whole of it.  MEASURED IN ORANGE,
+     * not in changed pixels: a covered square that is an intermediate tile of a covered edge is also BLOCKED, so it
+     * carries the gray wash as well as the line.  The wash is asserted whole-square by
+     * `ui.testBlockedTrackIsGreyWhileAutonomyRuns` and `ui.testTheGreyAppearsAtIdleToo`.
      */
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheMarkIsALineAndNotAWash()
@@ -588,10 +581,9 @@ public class testTheTrainIsShownAsALine
     /**
      * A running train's line is the orange of a standing train's: the see-through orange laid over its own dark gray
      * run line came out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69).  Adam: "brighten the color
-     * of the orange train tail while running so that it more closely matches the normal stopped color".
-     *
-     * The covered square painted standing, and then running with the run's reached line along the road the tail lies
-     * on: the commonest orange of each within a few shades of the other.
+     * of the orange train tail while running so that it more closely matches the normal stopped color".  The covered
+     * square painted standing, and then running with the run's reached line along the road the tail lies on: the
+     * commonest orange of each within a few shades of the other.
      *
      * MUTATION: draw the line over the run in the standing orange again, and this fails.
      */
@@ -658,9 +650,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * A standing train's own square is one orange.  The line is drawn again over a run line, but the overlay of a
-     * standing train's own square has none, and drawn there the second line lay over the first: rgb(239,134,65) beside
-     * rgb(209,125,69) on the train's other squares.  The same on the part of a run's first or last square its run line
-     * does not reach.
+     * standing train's own square has none, and drawn there the second line lay over the first (rgb(239,134,65) beside
+     * rgb(209,125,69)).  The same on the part of a run's first or last square its run line does not reach.
      *
      * MUTATION: draw the second line over the whole of any square with an overlay again, and this fails.
      */
@@ -758,8 +749,7 @@ public class testTheTrainIsShownAsALine
      * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
      * edge, so the gaps fall at the joins on a curve as on a straight and no coach is cut short (T2 of the look's train
      * tails).  Adam: "Do T2 only if you can maintain shape continuity across curves rather than a jagged look when it
-     * straightens out".  A dash pattern would restart at every square and leave a stub wherever a square's road is not
-     * a whole number of dashes long; one coach to a square has none, so nothing orange reaches the edge.
+     * straightens out".  A dash pattern would restart at every square and leave a stub; one coach to a square has none.
      *
      * MUTATION: draw the line edge to edge again and this fails.
      */
