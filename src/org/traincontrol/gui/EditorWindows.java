@@ -85,8 +85,7 @@ final class EditorWindows
         if (ui.managePagesItem != null) ui.managePagesItem.setEnabled(layoutCanBeEdited());
 
         // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
-        // stay lit while an editor is open (OB-057).  Set here rather than at the four places that enable the layout
-        // button.
+        // stay lit while an editor is open (OB-057).
         if (ui.editAutonomyFromSettings() != null)
         {
             ui.editAutonomyFromSettings().setEnabled(live);
@@ -511,8 +510,8 @@ final class EditorWindows
         // its copies and their names.  Not while trains are moving.
         ui.rebuildRunningLayoutFromSetup();
 
-        // The file is written (Adam: "on exit or editor load or editor close, save to the setup file.").  AFTER the
-        // rebuild: capturing first would fold the pre-edit running layout over the configuration.
+        // The file is written AFTER the rebuild: capturing first would fold the pre-edit running layout over the
+        // configuration.
         ui.captureRunningLayout();
     }
 
