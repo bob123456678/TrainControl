@@ -12,10 +12,9 @@ import org.traincontrol.gui.TrainControlUI;
  * A station caption, drawn as a rounded pill instead of a rectangle of text (FR-028): the same badge as on the auto loc
  * panels in the autonomy tab.
  *
- * A JLabel subclass rather than a new kind of component, because the caption is registered, colored, re-texted and
- * clicked from a dozen places that all know it as a JLabel.  What changes is the painting: the fill comes from
- * `getBackground()`, so every color the running diagram already uses to say something still says it, through the tile
- * art (those colors carry their own alpha), and the text is legible on top of whatever the color turned out to be.
+ * A JLabel subclass, because the caption is registered, colored, re-texted and clicked from a dozen places that all
+ * know it as a JLabel.  What changes is the painting: the fill comes from `getBackground()`, so every color the running
+ * diagram already uses to say something still says it, and the text is legible on top of it.
  *
  * @author Adam
  */
@@ -23,27 +22,27 @@ public class StationCaption extends JLabel
 {
     /**
      * The blue of the station badge on an autonomy locomotive panel, and of the diagram's own station badges and route:
-     * the same value, so the three cannot drift apart.  The Auto tab's badge asks this constant.
+     * one value, so the three cannot drift apart.
      */
     public static final Color PILL = org.traincontrol.automationui.DiagramColours.STATION;
 
     /**
-     * The resting fill, with the diagram's own translucency: the tile art shows through, which stops a row of captions
-     * reading as holes punched in the diagram.
+     * The resting fill, with the diagram's own translucency, so a row of captions does not read as holes in the
+     * diagram.
      */
     public static final Color PILL_AT_REST =
         new Color(PILL.getRed(), PILL.getGreen(), PILL.getBlue(), LayoutGrid.LAYOUT_STATION_OPACITY);
 
     /**
-     * The other resting color: light gray, the default, for a diagram somebody wants quieter (FR-031); blue is the
-     * optional setting (`TrainControlUI.stationLabelsAreGrey`).  Light enough that readableOn makes the text black.
+     * The other resting color: light gray, the default, for a quieter diagram (FR-031); blue is the optional setting
+     * (`TrainControlUI.stationLabelsAreGrey`).
      */
     public static final Color PILL_GREY =
         new Color(196, 198, 202, LayoutGrid.LAYOUT_STATION_OPACITY);
 
     /**
-     * A running train's destination: `DiagramColours.DESTINATION`, solid rather than translucent.  A pill with this
-     * fill draws a ring in a dark orange.
+     * A running train's destination: `DiagramColours.DESTINATION`, solid rather than translucent; its pill draws a
+     * ring.
      */
     public static final Color DESTINATION_FILL = new Color(org.traincontrol.automationui.DiagramColours.DESTINATION.getRed(),
         org.traincontrol.automationui.DiagramColours.DESTINATION.getGreen(),
@@ -64,8 +63,8 @@ public class StationCaption extends JLabel
 
     /**
      * An outline round a pill, inside it by half its own width on every side.  Not `drawRoundRect(x, y, w - 1, h - 1)`:
-     * with anti-aliasing and stroke normalizing that puts the left and top half outside the fill and the right and
-     * bottom wholly inside it, so the pill looks heavier at the lower right.
+     * with anti-aliasing and stroke normalizing that puts the left and top half outside the fill, so the pill looks
+     * heavier at the lower right.
      */
     private static void outline(Graphics2D g, int x, int y, int w, int h, float width)
     {
@@ -85,8 +84,8 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * Whichever resting color the operator has chosen (FR-031).  Asked when a caption is colored rather than stored: a
-     * preference read once into a constant needs a restart.
+     * Whichever resting color the operator has chosen (FR-031), asked when a caption is colored: a preference read once
+     * into a constant needs a restart.
      *
      * @return the fill for a caption with nothing else to say
      */
@@ -95,16 +94,10 @@ public class StationCaption extends JLabel
         return TrainControlUI.stationLabelsAreGrey() ? PILL_GREY : PILL_AT_REST;
     }
 
-    /**
-     * Room at the ends, so the text does not run into the curve.  A fraction of the height, because the caption font is
-     * sized from the tile; kept small, as every non-text pixel covers somebody else's track.
-     */
+    /** Room at the ends, so the text does not run into the curve: a fraction of the height, kept small. */
     private static final double SIDE_PADDING = 0.27;
 
-    /**
-     * How much smaller a caption is than the diagram's other text: a pill is taller than its text, and rows are one
-     * tile apart.
-     */
+    /** How much smaller a caption is than the diagram's other text: a pill is taller than its text. */
     public static final float FONT_SCALE = 0.81f;
 
     /** The room above and below the letters in a pill on end, as a share of its text's size. */
@@ -118,20 +111,16 @@ public class StationCaption extends JLabel
 
     /**
      * How far LEFT of its own square the caption's cell was allowed to start, in pixels: centring a wide caption means
-     * starting left of its square, which insets cannot express, so the cell is moved back a column when the grid is
-     * built.  The left inset is measured back from it and never goes past what was bought.
+     * starting left of its square, which insets cannot express.  The left inset is measured back from it.
      */
     private int backShift = 0;
 
-    /**
-     * How far past its square's leading edge this caption sits - see captionOffset: down the square for a caption lying
-     * across it, right of it for one stood on end.
-     */
+    /** How far past its square's leading edge this caption sits - see captionOffset. */
     private int offset = 0;
 
     /**
-     * Whether this caption is stood on end, reading upwards, on north-south track: laid across the rail, a caption
-     * covered the track it named, and on a busy column its neighbors too.
+     * Whether this caption is stood on end, reading upwards, on north-south track: laid across the rail it covered the
+     * track.
      */
     private boolean rotated = false;
 
@@ -140,7 +129,7 @@ public class StationCaption extends JLabel
 
     /**
      * Turns this label into a pill, or back into ordinary text.  Opacity is taken over: the fill is painted here and
-     * the label itself left transparent, so callers go on setting a background color and it means the same thing.
+     * the label itself left transparent, so callers go on setting a background color.
      *
      * @param on whether to draw as a pill
      */
@@ -165,7 +154,7 @@ public class StationCaption extends JLabel
 
     /**
      * Whether this label's letters are drawn with a white halo round them, as an address's are, so writing laid over
-     * black track can be read.  For text that is not a pill: a pill has its own fill.
+     * black track can be read.  For text that is not a pill.
      *
      * @param on whether to draw the halo
      */
@@ -186,8 +175,8 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * The halo round the letters, where the label's own painter will draw them: a round-joined white stroke round each
-     * letter's outline.  Inside the label's bounds, so no row of the diagram moves (OB-115).
+     * The halo round the letters: a round-joined white stroke round each letter's outline, inside the label's bounds so
+     * no row of the diagram moves (OB-115).
      *
      * @param g the label's graphics
      */
@@ -197,8 +186,7 @@ public class StationCaption extends JLabel
 
         if (text == null || text.isEmpty() || getFont() == null) return;
 
-        // Writing set as HTML too (MT-716): on a square that also has track it is `<html><br>` and the words, which the
-        // plain-text path below would skip.
+        // Writing set as HTML too (MT-716): `<html><br>` and the words, which the plain-text path below would skip.
         if (javax.swing.plaf.basic.BasicHTML.isHTMLString(text))
         {
             paintHtmlHalo(g, text);
@@ -292,8 +280,7 @@ public class StationCaption extends JLabel
 
                 if (end < 0) end = words.length();
 
-                // From its first letter: the space HTML leaves after a <br> ends the line above, not this one, and
-                // measured from it the halo was drawn a line too high
+                // From its first letter: the space HTML leaves after a <br> ends the line above, not this one.
                 int first = start;
 
                 while (first < end && Character.isWhitespace(words.charAt(first))) first++;
@@ -353,10 +340,9 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * The text as it is actually DRAWN, with its arrows turned to match the caption: the rotation turns the arrows too,
-     * so a glyph is chosen for where it ends up (a quarter turn anticlockwise sends right to up, so north is drawn with
-     * the east glyph).  At drawing time, so `getText` still returns what the caller set.  Replaced in ONE pass:
-     * sequential replacements would send north to east and on to south.
+     * The text as it is actually DRAWN, with its arrows turned to match the caption (a quarter turn anticlockwise sends
+     * right to up, so north is drawn with the east glyph).  At drawing time, so `getText` still returns what the caller
+     * set.  Replaced in ONE pass: sequential replacements would send north to east and on to south.
      *
      * @return what to draw
      */
@@ -402,8 +388,8 @@ public class StationCaption extends JLabel
 
     /**
      * Puts the caption where it belongs on its square, from what it currently says.  Called on every change of text,
-     * because the width is the whole question (a dash at rest, a locomotive's name a moment later).  Measured from the
-     * font rather than getPreferredSize, which would ask the border that is about to be set.
+     * because the width is the whole question.  Measured from the font rather than getPreferredSize, which would ask
+     * the border that is about to be set.
      */
     private void place()
     {
@@ -412,20 +398,15 @@ public class StationCaption extends JLabel
         int wide = width();
 
         // Centered on the square, whichever way the difference goes (OB-118): an empty station shows a dash narrower
-        // than a tile, a locomotive name is wider, and one expression covers both:
-        //
-        //     left = backShift + (tile - wide) / 2
-        //
-        // The clamp stays because a caption cannot start before its own cell.
+        // than a tile, a locomotive name is wider, and one expression covers both: left = backShift + (tile - wide) /
+        // 2.  The clamp stays because a caption cannot start before its own cell.
         if (rotated)
         {
-            // Stood on end: centered along the rail, which now runs up the square, and set off to the side by the
-            // distance a flat caption is set below it.  The two clamps are the two shifts: insets cannot be negative,
-            // so a name longer than the room bought above the square starts at the top of it.
+            // Stood on end: centered along the rail, and set off to the side by the distance a flat caption is set
+            // below it.  The two clamps are the two shifts: insets cannot be negative.
             int top = Math.max(0, upShift + (tile - wide) / 2);
 
-            // Across: centered on the line between its square and the next (OB-327), the middle of the gap between
-            // badges.
+            // Across: centered on the line between its square and the next (OB-327).
             setBorder(javax.swing.BorderFactory.createEmptyBorder(top, Math.max(0, backShift + tile - thickness() / 2),
                 0, 0));
 
@@ -469,9 +450,8 @@ public class StationCaption extends JLabel
 
     /**
      * How far down its square a caption sits, in pixels from the top of the square.  A proportion of the tile size and
-     * line height, so the same rule holds at 20 pixels and at 80: one line past the rail through the middle, plus a
-     * nudge.  The one answer serves both orientations (stood on end, it is the distance to the right of a rail running
-     * up the square).  Public and taking numbers so it can be checked at 60 pixels without building a grid.
+     * line height, so the same rule holds at 20 pixels and at 80; the one answer serves both orientations.  Public and
+     * taking numbers so it can be checked at 60 pixels without building a grid.
      *
      * @param tile the tile size in pixels
      * @param line how tall one line of the caption's text is
@@ -485,9 +465,8 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * How far below where the geometry puts it a caption actually sits: nine pixels at the sixty-pixel view.  A
-     * fraction of the tile, as everything else about a caption is derived from the tile; applied to both orientations,
-     * since a caption hard against the track it names reads as sitting on the track.
+     * How far below where the geometry puts it a caption actually sits: a fraction of the tile, applied to both
+     * orientations, since a caption hard against the track it names reads as sitting on the track.
      *
      * @param tile the tile size in pixels
      * @return the extra offset
@@ -499,8 +478,7 @@ public class StationCaption extends JLabel
 
     /**
      * Black or white, whichever can be read on this fill: white on the blue pill is the look, white on a light fill is
-     * unreadable.  The weights are the usual perceived-brightness ones (the eye takes most of its brightness from
-     * green).
+     * unreadable.
      *
      * @param fill the pill color
      * @return the color to write on it
@@ -517,13 +495,9 @@ public class StationCaption extends JLabel
 
     /**
      * The font the diagram's labels are drawn in, and the four arrows that go in them (OB-116).  In Segoe UI the
-     * horizontal triangles (U+25BA and U+25C4, the only ones it can draw) are half the height of the vertical ones, and
-     * the geometric ones come out as empty boxes.  `Segoe UI Symbol` draws every word at exactly the same size and has
-     * the geometric triangles, so the four arrows become one matched set (U+25B2 up is 78.3 x 70.0, U+25B6 right the
-     * exact transpose).
-     *
-     * Chosen once, at class load, and guarded: on a machine without that font the pointers stay, since a squat arrow is
-     * better than an empty box.
+     * horizontal triangles are half the height of the vertical ones and the geometric ones come out as empty boxes;
+     * `Segoe UI Symbol` draws the four arrows as one matched set.  Chosen once, at class load, and guarded: on a
+     * machine without that font the pointers stay, since a squat arrow is better than an empty box.
      */
     public static final String LABEL_FONT;
 
@@ -545,8 +519,7 @@ public class StationCaption extends JLabel
     static
     {
         // Installed, and then able, in that order: `new Font("no such family", ...)` resolves to Dialog, and
-        // `canDisplay` then answers for Dialog.  The family list is the only thing that answers "is it installed"; read
-        // once here, as enumerating fonts can be slow.
+        // `canDisplay` then answers for Dialog.  The family list is the only thing that answers "is it installed".
         java.awt.Font symbol = new java.awt.Font(SYMBOL_FONT, java.awt.Font.PLAIN, 12);
 
         boolean installed = false;
@@ -581,9 +554,8 @@ public class StationCaption extends JLabel
 
     /**
      * Whether this arrow goes BEFORE the name rather than after it.  South and west lead: put in front, a direction
-     * that points back the way the text came from points at its own label, and on a caption stood on end (read from the
-     * bottom up) the start of the string is the bottom of the pill.  Asked of the glyph, because the two places that
-     * join a name to an arrow have the string and not the direction.
+     * that points back the way the text came from points at its own label, and on a caption stood on end the start of
+     * the string is the bottom of the pill.
      *
      * @param arrow the arrow, with or without the space it is usually carried with
      * @return whether it leads
@@ -598,8 +570,7 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * A name and its arrow, joined with the arrow on the side it points towards.  The one place that join happens, so a
-     * caption showing one train places the arrow as one showing two does.
+     * A name and its arrow, joined with the arrow on the side it points towards: the one place that join happens.
      *
      * @param name the station or locomotive name, already cut to length
      * @param arrow the arrow, or null or empty for none
@@ -616,10 +587,9 @@ public class StationCaption extends JLabel
 
     /**
      * The text color to use on a pill, keeping what the caller meant by the one it asked for.  Red (a station not yet
-     * reached) stays red, lightened or darkened until it can be read; forcing white would throw the distinction away.
-     * A neutral gray (a PLACEHOLDER: an unnamed station's em-dash, a yard name not for this editor) would otherwise
-     * fall through to `readableOn` and come back as the same color a name does, so it is the readable color carried
-     * part of the way back towards the pill: dimmer than a name on any fill, and still legible.
+     * reached) stays red, lightened or darkened until it can be read.  A neutral gray (a PLACEHOLDER) would otherwise
+     * come back as the same color a name does, so it is the readable color carried part of the way back towards the
+     * pill: dimmer than a name on any fill, and still legible.
      *
      * @param fill the pill color
      * @param wanted the color the caller asked for
@@ -639,7 +609,7 @@ public class StationCaption extends JLabel
         }
 
         // THE ROUTE'S BLUE: a station a running train has not reached yet, said in the color the route ahead is drawn
-        // in - itself on a light pill, lifted to a light blue on the blue one, where the route's own blue would disappear.
+        // in.
         if (wanted != null && wanted.getBlue() > 150 && wanted.getRed() < 80 && wanted.getGreen() < 80)
         {
             return dark ? new Color(165, 185, 255) : wanted;
@@ -647,8 +617,7 @@ public class StationCaption extends JLabel
 
         if (isNeutralGrey(wanted))
         {
-            // Still dimmer than a name, on whichever ground, but not so far towards the pill that it stops being
-            // readable on the navy and pale gray fills.
+            // Still dimmer than a name, but readable on the navy and pale gray fills.
             return blend(readable, fill, 0.45);
         }
 
@@ -656,9 +625,8 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * Whether a color is one of the grays the editors use to mean "this is a placeholder".  By the shape of the color,
-     * since the constant is written out longhand at four places in LayoutGrid; black and white are excluded, being the
-     * answer colors that a rule dimming them would dim on every ordinary caption.
+     * Whether a color is one of the grays the editors use to mean "this is a placeholder", by the shape of the color;
+     * black and white are excluded, being the answer colors a dimming rule would dim on every ordinary caption.
      *
      * @param wanted the color the caller asked for
      * @return whether it is a neutral gray
@@ -683,8 +651,7 @@ public class StationCaption extends JLabel
 
     /**
      * Where the pill is actually drawn, in this component's own coordinates: the single answer that painting,
-     * hit-testing and sizing all ask.  Flat, the pill is as wide as its text and one line tall; stood on end those
-     * swap, and the insets mean the same either way: how far past the leading edge of its square it sits.
+     * hit-testing and sizing all ask.  Stood on end, width and height swap.
      *
      * @return the drawn rectangle, or null when there is nothing drawn
      */
@@ -736,8 +703,7 @@ public class StationCaption extends JLabel
         if (rotated)
         {
             // Asked of the pill rather than of the text: super.getPreferredSize measures along the text, so a rotated
-            // caption would get a box one line tall and its name's length wide, then draw itself out of the bottom of
-            // it.
+            // caption would be drawn out of its box.
             java.awt.Insets pad = getInsets();
 
             return new java.awt.Dimension(
@@ -745,16 +711,14 @@ public class StationCaption extends JLabel
                 width() + (pad == null ? 0 : pad.top + pad.bottom));
         }
 
-        // Room at the ends measured from the LINE height, not the component height, which includes however far down the
-        // square the caption was pushed.
+        // Room at the ends measured from the LINE height, not the component height, which includes the top border.
         was.width += (int) Math.round(lineHeight() * SIDE_PADDING * 2);
 
         return was;
     }
 
     /**
-     * How tall one line of this caption's text is: the pill's own height, as distinct from the component's, which
-     * carries a top border.
+     * How tall one line of this caption's text is: the pill's own height, as distinct from the component's.
      *
      * @return the line height, or a sane guess before the font is known
      */
@@ -769,9 +733,8 @@ public class StationCaption extends JLabel
 
     /**
      * The font the text is DRAWN in: the caption's own, flat or stood on end, at full size (FR-118).  A pill on end is
-     * only as thick as its letters (`thickness`, OB-327), which leaves it room beside the station badges either side,
-     * no taller across their track than the sensor's contact (13 pixels at 30, 26 at 60):
-     * `testAPillOnEndClearsTheStationsBesideIt`.
+     * only as thick as its letters (`thickness`, OB-327), which leaves it room beside the station badges either side
+     * (`testAPillOnEndClearsTheStationsBesideIt`).
      *
      * @return the font
      */
@@ -781,8 +744,7 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * How thick the pill is across its text: the line's height flat, and on end as thick as the letters need (OB-327),
-     * since the font's line runs higher than any letter and was width spent against the stations either side.
+     * How thick the pill is across its text: the line's height flat, and on end as thick as the letters need (OB-327).
      *
      * @return the pill's thickness in pixels
      */
@@ -803,9 +765,8 @@ public class StationCaption extends JLabel
 
     /**
      * Only the pill takes the mouse - the room around it belongs to the diagram underneath.  A caption is placed with
-     * insets, which Swing hit-tests as part of the component, and this one is z-ordered in front of the tiles with
-     * click and hover listeners: without this its centring room took every click on the tile to its left, and, since
-     * the hover handler reports the STATION, a Ctrl+X cut the train off a platform instead of the tile pointed at.
+     * insets, which Swing hit-tests as part of the component: without this its centring room took every click on the
+     * tile to its left.
      *
      * @param x in this component's coordinates
      * @param y in this component's coordinates
@@ -823,9 +784,8 @@ public class StationCaption extends JLabel
 
     /**
      * Draws a caption that has been stood on end, here rather than by JLabel, which lays text out along its own width.
-     * The transform is a quarter turn anticlockwise (`rotate(-PI/2)`), sending local +x to screen up so the text reads
-     * from the bottom of the pill; translating to the bottom first puts the start of the text there, not off the top of
-     * the diagram.
+     * A quarter turn anticlockwise (`rotate(-PI/2)`) sends local +x to screen up so the text reads from the bottom of
+     * the pill; translating to the bottom first puts the start of the text there.
      */
     private void paintOnEnd(Graphics g, java.awt.Rectangle drawn)
     {
@@ -840,8 +800,7 @@ public class StationCaption extends JLabel
             g2.translate(drawn.x, drawn.y + drawn.height);
             g2.rotate(-Math.PI / 2);
 
-            // From here on this is the flat case exactly: a pill `drawn.height` long and `drawn.width`
-            // thick, with the text along it.
+            // From here on this is the flat case exactly: a pill `drawn.height` long and `drawn.width` thick.
             int len = drawn.height;
             int thick = drawn.width;
 
@@ -888,15 +847,14 @@ public class StationCaption extends JLabel
 
                 g2.setColor(getBackground());
 
-                // Inside the insets, which is what lets the caption be moved without being stretched: its place on the
-                // square is set with a top border (the cell runs to the bottom of the diagram), so a pill painted over
-                // the whole component would grow downwards from the top of the square instead of moving down it.
+                // Inside the insets, which lets the caption be moved without being stretched: its place on the square
+                // is set with a top border, so a pill painted over the whole component would grow downwards from the
+                // top.
                 java.awt.Rectangle drawn = pillBounds();
 
                 if (drawn == null) return;
 
-                // An arc as tall as the pill gives semicircular ends at any width; a fixed arc turns into a rounded
-                // rectangle once the name is long.
+                // An arc as tall as the pill gives semicircular ends at any width.
                 fillPill(g2, drawn.x, drawn.y, drawn.width, drawn.height);
 
                 if (isDestination(getBackground())) ring(g2, drawn.x, drawn.y, drawn.width, drawn.height);
@@ -909,8 +867,7 @@ public class StationCaption extends JLabel
         }
 
         // The pill's text is drawn here, in the middle of it: the label's own painter places it by the width measured
-        // for layout, and at a larger display scale (125 or 150 per cent) the glyphs come out wider, all of the
-        // difference landing at the right end.
+        // for layout, and at a larger display scale the glyphs come out wider.
         if (pill)
         {
             java.awt.Rectangle drawn = pillBounds();
@@ -945,10 +902,8 @@ public class StationCaption extends JLabel
             g2.setFont(drawnFont());
             g2.setColor(getForeground());
 
-            // Measured as drawn, in this graphics, which carries its scale.  Across by the ink, not the advance, which
-            // carries the first and last letters' side room.  Up and down by the capitals: the ascent includes room
-            // above them that no letter fills, so text centered by ascent and descent sat low (13 pixels of pill above
-            // "Carlton", 8 below).
+            // Measured as drawn, in this graphics, which carries its scale.  Across by the ink, not the advance; up and
+            // down by the capitals, since the ascent includes room above them that no letter fills.
             java.awt.font.FontRenderContext frc = g2.getFontRenderContext();
             java.awt.geom.Rectangle2D ink = drawnFont().createGlyphVector(frc, text).getVisualBounds();
             double capitals = drawnFont().createGlyphVector(frc, "H").getVisualBounds().getHeight();
@@ -966,7 +921,7 @@ public class StationCaption extends JLabel
 
     /**
      * Whether this caption names something - a train, a station - rather than holding a placeholder dash or an arrow
-     * alone.  Only these get the edge, so an empty station gets no louder.
+     * alone.  Only these get the edge.
      *
      * @return whether the text has a letter or a digit in it
      */
