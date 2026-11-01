@@ -21,12 +21,10 @@ import javax.swing.Timer;
  * An hourglass rather than a turning arc (FR-024).  Adam: "change the very large spinner shown on top of loading track
  * diagrams to a large gray hourglass icon instead.  animate if possible."
  *
- * Drawn rather than loaded from a GIF, which is one more asset to ship, scale for high-DPI and keep in step with the
- * theme.  The turn at the end of each cycle is free: an emptied hourglass turned through half a circle is pixel for
- * pixel a full one, so the sand never jumps back up the glass.  Only the turn rotates; the drain is drawn upright (see
- * the halfTurns comment in paintComponent).
- *
- * The timer runs only while the component is visible on screen.
+ * Drawn rather than loaded from a GIF (one more asset to scale for high-DPI and keep in step with the theme).  The
+ * turn at the end of each cycle is free: an emptied hourglass turned through half a circle is pixel for pixel a full
+ * one, so the sand never jumps back up.  Only the turn rotates; the drain is drawn upright.  The timer runs only while
+ * the component is visible on screen.
  */
 public class LoadingSpinner extends JPanel
 {
@@ -47,33 +45,26 @@ public class LoadingSpinner extends JPanel
     /** The sand, a shade lighter so it reads as a fill inside the outline rather than as more line. */
     private static final Color SAND_GREY = new Color(158, 158, 158);
 
-    /**
-     * How wide the glass is as a fraction of its height.  Wider and the bulbs read as a bow tie however they are drawn;
-     * the curved profile does most of the work and this stops the proportions undoing it.
-     */
+    /** How wide the glass is as a fraction of its height; wider and the bulbs read as a bow tie. */
     private static final double ASPECT = 0.5;
 
     /** How much of the space offered the glass actually takes, leaving it room to turn in. */
     private static final double FILL = 0.68;
 
-    /**
-     * The tallest the glass is ever drawn, whatever it is given room for (OB-129).  The component is now the size of
-     * the diagram it covers, so a fraction would grow it; a ceiling keeps the size asked for.
-     */
+    /** The tallest the glass is ever drawn (OB-129): the component is the size of the diagram it covers. */
     private static final double MAX_GLASS_H = 136.0;
 
     private final Timer timer;
 
     /**
-     * When the animation started, for working out which frame is due.  A Swing timer coalesces ticks when the event
+     * When the animation started, for working out which frame is due: a Swing timer coalesces ticks when the event
      * thread is busy, which a diagram build floods, so a per-tick counter made the sand crawl (OB-129).
      */
     private long startedAt;
 
     /**
      * Frames since the animation started, modulo two whole cycles.  The drain is drawn upright and only the twelve turn
-     * frames rotate, so frame `n` renders like `n + CYCLE_FRAMES` and the true period is one cycle; `frameAt` and
-     * `advanceOneFrame` still wrap at `CYCLE_FRAMES * 2`, harmlessly.
+     * frames rotate, so frame `n` renders like `n + CYCLE_FRAMES` and the true period is one cycle.
      */
     private int frame;
 
@@ -151,15 +142,13 @@ public class LoadingSpinner extends JPanel
 
             int at = frame % CYCLE_FRAMES;
 
-            // How much of the sand has run through, and how far round the glass has been turned.  The
-            // sand is all the way through before the turn starts, which is what makes the turn
-            // invisible.
+            // How much of the sand has run through, and how far round the glass has been turned.  The sand is all the
+            // way through before the turn starts, which is what makes the turn invisible.
             double drained;
 
             // The drain is always drawn upright, not rotated by `turns`: the sand is anchored at the bottom of each
-            // region, so rotating mid-fall inverts the anchors and the upper sand would hang from the top of the glass
-            // with a gap above the waist.  The rotation is for the TURN only, where it agrees with an upright glass at
-            // the endpoints (a full lower bulb rotated is a full upper bulb), so the seam is pixel for pixel.
+            // region, so rotating mid-fall would hang the upper sand from the top of the glass.  The rotation is for
+            // the TURN only, where it agrees with an upright glass at the endpoints, so the seam is pixel for pixel.
             double halfTurns = 0;
 
             if (at < DRAIN_FRAMES)
@@ -172,10 +161,9 @@ public class LoadingSpinner extends JPanel
                 halfTurns += (at - DRAIN_FRAMES + 1) / (double) TURN_FRAMES;
             }
 
-            // Centered on the VISIBLE part of this component: it is sized to the whole diagram page, and on a page
+            // Centered on the VISIBLE part of this component: it is sized to the whole diagram page, so on a page
             // bigger than the viewport the glass's true center is off whatever screenful the operator is scrolled to
-            // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane; the empty-rect guard
-            // covers the moment before the first layout.
+            // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane.
             java.awt.Rectangle visible = getVisibleRect();
 
             if (visible.isEmpty())
@@ -220,10 +208,8 @@ public class LoadingSpinner extends JPanel
 
         float line = (float) Math.max(1.5, glassW * 0.05);
 
-        // the silhouette: curved sides rather than two triangles, which read as a bow tie, and an outer frame drew a
-        // rectangle with an X in it.  One closed path, anticlockwise from the top left, so the same shape outlines the
-        // glass and bounds the sand.  Control points sit high and wide to stay close to the plate before turning in
-        // hard.
+        // the silhouette: curved sides rather than two triangles, which read as a bow tie.  One closed path,
+        // anticlockwise from the top left, so the same shape outlines the glass and bounds the sand.
         Path2D.Double glass = new Path2D.Double();
 
         glass.moveTo(-halfW, -bulbH);
@@ -234,9 +220,8 @@ public class LoadingSpinner extends JPanel
         glass.quadTo(halfW * 0.78, -bulbH * 0.12, halfW, -bulbH);
         glass.closePath();
 
-        // the sand, drawn first so the outline stays crisp over it.  Cut out of the silhouette rather than drawn as its
-        // own shape, so the profile is not restated in a second place.  The level goes as the square root of what is
-        // left because the bulb narrows toward the waist: the surface drops fast, then creeps, as real sand does.
+        // the sand, drawn first so the outline stays crisp over it, cut out of the silhouette so the profile is not
+        // restated.  The level goes as the square root of what is left because the bulb narrows toward the waist.
         double remaining = Math.sqrt(Math.max(0.0, 1.0 - drained));
 
         Area inside = new Area(glass);
