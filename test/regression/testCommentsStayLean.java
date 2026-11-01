@@ -204,8 +204,9 @@ public class testCommentsStayLean
     }
 
     /**
-     * A trimmed javadoc keeps its shape: one `/**` opener, and every `*` line one column right of it.  A trim that
-     * rewrites a block's body without its opener leaves a second opener and the body one column out.
+     * A trimmed javadoc keeps its shape: one `/**` opener on a line of its own, and every `*` line one column right of
+     * it.  A trim that rewrites a block's body without its opener leaves a second opener and the body one column out.
+     * A javadoc left over another is `testJavadocsAreAttached`'s.
      *
      * MUTATION: put a second `/**` line above any javadoc's first line, and this fails naming the file and line.
      */
@@ -225,6 +226,11 @@ public class testCommentsStayLean
 
                     for (int i = 0; i < lines.size(); i++)
                     {
+                        if (lines.get(i).matches("^\\s*[^\\s/*].*/\\*\\*\\s*$"))
+                        {
+                            found.add(path + ":" + (i + 1) + " an opener after code on its line");
+                        }
+
                         Matcher opener = Pattern.compile("^( *)/\\*\\*\\s*$").matcher(lines.get(i));
 
                         if (!opener.matches()) continue;

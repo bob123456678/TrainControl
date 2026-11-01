@@ -783,14 +783,10 @@ public class testTheGreyAppearsAtIdleToo
         return support.Pixels.count(image, testTheGreyAppearsAtIdleToo::isOrange);
     }
 
-
-
     private static double brightness(BufferedImage image)
     {
         return support.Rendered.brightness(image);
     }
-
-
 
     // ---------------------------------------------------------------- the fixture
 

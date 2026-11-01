@@ -1257,7 +1257,8 @@ public final class LayoutLabel extends JLabel
     /**
      * The orange a train is drawn in (MT-309).  Opaque, and the one strongly colored line on an ordinary diagram:
      * green and red already mean "trains may run this way" and "they may not", and yellow is the transient flash.  A
-     * square autonomy will not choose is gray, not orange (MT-492).
+     * square autonomy will not choose is gray (MT-492); the X on a square nothing can pass is a redder orange,
+     * `TileAnnotation.POINT_IMPASSABLE`.
      *
      * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
      * set otherwise.

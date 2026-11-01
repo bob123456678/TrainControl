@@ -161,11 +161,11 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            org.json.JSONObject held = pointHolding(built, "C7 curve train");
+            org.json.JSONObject standingOn = pointHolding(built, "C7 curve train");
 
-            assertNotNull(held, "precondition: the train placed on the curve is on no Point");
+            assertNotNull(standingOn, "precondition: the train placed on the curve is on no Point");
 
-            String standing = held.getString("name");
+            String standing = standingOn.getString("name");
 
             int ahead = facing == org.traincontrol.automationui.TilePorts.Side.N ? 70 : 72;
 
@@ -272,12 +272,12 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            org.json.JSONObject held = pointHolding(built, "C7 train");
+            org.json.JSONObject standingOn = pointHolding(built, "C7 train");
 
-            assertNotNull(held, "precondition: the train placed on the middle square is on no Point");
+            assertNotNull(standingOn, "precondition: the train placed on the middle square is on no Point");
 
-            String standing = held.getString("name");
-            String itsFacing = held.optString(AutonomyBuilder.COPY_FACING, null);
+            String standing = standingOn.getString("name");
+            String itsFacing = standingOn.optString(AutonomyBuilder.COPY_FACING, null);
 
             assertEquals(itsFacing, facing.name(), "the train placed facing " + facing + " stands on a copy that records"
                 + " no facing, or another (RSA2-C7)");

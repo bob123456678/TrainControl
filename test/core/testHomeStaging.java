@@ -220,7 +220,9 @@ public class testHomeStaging
         assertTrue(atStart.contains("return Layout.tailLiesOn(edge, train, places);"),
             "the planner's check of the tails of trains that have not moved does not ask by place, for every train"
             + " lying there (AUT-B1, AUT2-C2)");
-    }    /**
+    }
+
+    /**
      * And a placement that DOES carry a value still applies it: a legacy `autonomy.json` has these keys, and
      * importing one has to keep meaning what it meant.
      */
@@ -4957,17 +4959,6 @@ public class testHomeStaging
     }
 
     /**
-     * HS A - HS B - HS C in a line, plus a watched square emitted as TWO copies in one block, off on a
-     * siding of its own so nothing can leave it.
-     *
-     * HS B is the destination the test holds back; the watched square carries no sensor, which is the
-     * configuration in which the planner's sensor stand-in for a block covers nothing at all.
-     *
-     * @param locOnW2 a locomotive on the second copy of the watched square, or null
-     * @param locOnC the same locomotive on HS C instead - the control - or null
-     * @return the graph JSON
-     */
-    /**
      * HS A - HS P - HS B in a line, with a locomotive parked on the middle square.
      *
      * @param pIsAStation whether the middle square is a station, which is the only variable
@@ -5383,6 +5374,17 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
+    /**
+     * HS A - HS B - HS C in a line, plus a watched square emitted as TWO copies in one block, off on a
+     * siding of its own so nothing can leave it.
+     *
+     * HS B is the destination the test holds back; the watched square carries no sensor, which is the
+     * configuration in which the planner's sensor stand-in for a block covers nothing at all.
+     *
+     * @param locOnW2 a locomotive on the second copy of the watched square, or null
+     * @param locOnC the same locomotive on HS C instead - the control - or null
+     * @return the graph JSON
+     */
     private static String blockOfTwoWatching(String locOnW2, String locOnC)
     {
         return json("{'points': ["

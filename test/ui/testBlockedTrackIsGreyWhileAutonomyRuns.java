@@ -495,15 +495,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         return support.Pixels.count(image, testBlockedTrackIsGreyWhileAutonomyRuns::isOrange);
     }
 
-
-
-
     private static double brightness(BufferedImage image)
     {
         return support.Rendered.brightness(image);
     }
-
-
 
     // ---------------------------------------------------------------- the fixture
 

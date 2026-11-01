@@ -313,8 +313,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 List<List<Edge>> answer = haveFound ? found
                     : withoutGoingNowhere(layout.getPossiblePaths(locomotive, true));
 
-                // Paths found off the event thread can arrive after the train left its square: none are offered then.
+                // Paths found off the event thread for a train now on no square are not offered; one from a square it
+                // has since left is refused when sent.
                 this.paths = answer == null || at == null ? new java.util.LinkedList<>() : answer;
+
+                // The deferred build's "no answer yet": the second line waits for the search rather than say "no
+                // paths", with a reason to hover for, of a train that may have some.
+                final boolean noAnswerYet = haveFound && found == null;
 
                 if (!this.paths.isEmpty())
                 {
@@ -326,15 +331,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     );
                 }
                 else if (at != null)
-                {                    
+                {
                     // With the info mark, because a tooltip nobody knows about explains nothing.
-                    this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
+                    this.locDest.setText(noAnswerYet ? "" : I18n.t("autolayout.ui.noAvailPaths"));
 
                     // And WHY, on hover: a FLAG here, with the reasons worked out when the pointer stops on the label
                     // (see the mouse listener in the constructor).  Computing them here walks every candidate route to
                     // every station under the Layout's monitor (explainDestinations), once per panel on the event
                     // thread, and loading a configuration rebuilds every panel in this deferred branch.
-                    this.noPathsNow = true;
+                    this.noPathsNow = !noAnswerYet;
                     this.locStation.setText("@" +  stationName(at)
                         + (at.equals(timetableStart()) ? " *" : "")
                         + notChosenByAutonomy(at, locomotive)
@@ -375,6 +380,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             this.locDest.setIcon(markFor(atAssignedHome && at.isActive(), this.noPathsNow));
 
             this.locAvailPaths.setModel(pathList);
+
+            // A pointer already resting on the line gets the reasons again: the tooltip was cleared above, and only
+            // entering the line works them out.
+            if (this.noPathsNow && this.locDest.isShowing() && this.locDest.getMousePosition() != null) workOutWhy();
         }
     }
 
@@ -790,24 +799,31 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     return;
                 }
 
-                // Worked out OFF the event thread (OB-079): explainDestinations takes the Layout's monitor, which a
-                // dispatch holds across its per-command sleeps, so hovering while a train was being dispatched froze
-                // the window.  The tooltip arrives a moment later, and nothing is shown meanwhile because a tooltip
-                // that changes under the pointer reads as a glitch.
-                new Thread(() ->
-                {
-                    final String why = whyNotToolTip();
-
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                    {
-                        // Still in the STATE the answer was about: noPathsNow changes when a train is dispatched while
-                        // the reasons are worked out, and a tooltip explaining why there are no paths does not belong
-                        // on a label showing one.
-                        if (noPathsNow) locDest.setToolTipText(why);
-                    });
-                }).start();
+                workOutWhy();
             }
         });
+    }
+
+    /**
+     * Works out why the train has nowhere to go and puts it on the line as its tooltip.  OFF the event thread (OB-079):
+     * explainDestinations takes the Layout's monitor, which a dispatch holds across its per-command sleeps, so hovering
+     * while a train was being dispatched froze the window.  The tooltip arrives a moment later, and nothing is shown
+     * meanwhile because a tooltip that changes under the pointer reads as a glitch.
+     */
+    private void workOutWhy()
+    {
+        new Thread(() ->
+        {
+            final String why = whyNotToolTip();
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                // Still in the STATE the answer was about: noPathsNow changes when a train is dispatched while the
+                // reasons are worked out, and a tooltip explaining why there are no paths does not belong on a label
+                // showing one.
+                if (noPathsNow) locDest.setToolTipText(why);
+            });
+        }).start();
     }
 
     /**

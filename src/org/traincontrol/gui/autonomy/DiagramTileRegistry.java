@@ -182,9 +182,6 @@ public class DiagramTileRegistry
         new ConcurrentHashMap<>();
 
     /**
-     * @return how many squares are registered, for diagnostics
-     */
-    /**
      * The labels currently showing this square, if any.
      *
      * A copy, because the caller walks it while the grid may be rebuilding underneath.
@@ -211,6 +208,9 @@ public class DiagramTileRegistry
         return key == null ? null : lastPublished.get(key);
     }
 
+    /**
+     * @return how many squares are registered, for diagnostics
+     */
     public int size()
     {
         return tiles.size();

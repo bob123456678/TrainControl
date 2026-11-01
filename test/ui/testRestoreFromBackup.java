@@ -705,10 +705,6 @@ public class testRestoreFromBackup
     }
 
     /**
-     * Makes the sandbox's `config` a link to a copy of itself; skips, `config` untouched, where no folder link can be
-     * made.  Answers the linked folder, for `unlinkTheConfig`.
-     */
-    /**
      * Restores this layout's backup as another layout's folder, then restores the backup taken before that, checking
      * TrainControl is moved to the other layout and then back to this one; `backEnd` ends the message of the last check.
      */
@@ -757,6 +753,10 @@ public class testRestoreFromBackup
             + " restore did not take TrainControl back to the layout folder it left" + backEnd);
     }
 
+    /**
+     * Makes the sandbox's `config` a link to a copy of itself; skips, `config` untouched, where no folder link can be
+     * made.  Answers the linked folder, for `unlinkTheConfig`.
+     */
     private static Path linkTheConfig() throws Exception
     {
         Path config = new File(sandbox.getFolder(), "config").toPath();

@@ -206,6 +206,35 @@ public class testTheAutoTabSaysWhyATrainWaits
         });
     }
 
+    /**
+     * A card built before its search lands does not say its train has nowhere to go: no "No available paths" and no
+     * (i) for a train that has paths, until the answer says so.
+     *
+     * MUTATION: in `updateState`, take the deferred build's "no answer yet" for "no paths" (`noPathsNow = true` and
+     * the "No available paths" text), and the new card says it with the (i).
+     */
+    @Test
+    public void testACardWaitingForItsSearchDoesNotSayItHasNoPaths() throws Exception
+    {
+        onTheRailway("single-switch", () ->
+        {
+            final Locomotive mover = train(MOVER, true);
+
+            stand(MOVER, PLATFORM_X, PLATFORM_Y);
+
+            assertFalse(railway().getPossiblePaths(mover, true).isEmpty(), "precondition: the train has nowhere to go");
+
+            final AutoLocomotiveStatus[] card = new AutoLocomotiveStatus[1];
+
+            SwingUtilities.invokeAndWait(() -> card[0] = new AutoLocomotiveStatus(mover, ui, true));
+
+            assertNotEquals(secondLine(card[0]).getText(), I18n.t("autolayout.ui.noAvailPaths"),
+                "a card waiting for its search says the train has no available paths, and it has some");
+
+            assertNull(secondLine(card[0]).getIcon(), "a card waiting for its search offers a reason to hover for");
+        });
+    }
+
     /** What a card's private answer method says, asked on the event thread as the card asks it. */
     private static Object said(final AutoLocomotiveStatus card, String method) throws Exception
     {

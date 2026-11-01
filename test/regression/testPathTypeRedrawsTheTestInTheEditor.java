@@ -928,7 +928,6 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
     }
 
-    /** How many squares the Why answer marks at all. */
     /** The squares the answer marks this way, read on the event thread. */
     @SuppressWarnings("unchecked")
     private static java.util.List<TileKey> markedAs(AutonomyEditorPanel panel, TileAnnotation.ToolMark which)
@@ -950,6 +949,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
         return out;
     }
 
+    /** How many squares the Why answer marks at all. */
     private static int markedAtAll(AutonomyEditorPanel panel) throws Exception
     {
         int all = 0;

@@ -30,7 +30,7 @@ public class testNoNewCopies
     private static final int GROUPS_ALLOWED = 128;
 
     /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 274209;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 278798;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -169,14 +169,16 @@ public class testNoNewCopies
 
     /**
      * The copies in `test/` only go down, as one total: the tokens standing in a second or later copy, over every group.
-     * A total rather than pinned groups, since cutting a long copy in two leaves two shorter groups behind.
+     * A total rather than pinned groups, since cutting a long copy in two leaves two shorter groups behind.  Every run
+     * is paired however many places hold it: with the default cut-off, a copy past the fortieth would drop its group
+     * from the total.
      *
      * MUTATION: pasting a 70-token claim body into a second test class fails this.
      */
     @Test
     public void testTestCopiesOnlyGoDown() throws Exception
     {
-        List<CopyScan.Group> found = CopyScan.scan(new File("test"));
+        List<CopyScan.Group> found = CopyScan.scan(new File("test"), Integer.MAX_VALUE);
 
         long copied = 0;
 
@@ -195,7 +197,10 @@ public class testNoNewCopies
 
         for (int i = 0; i < Math.min(5, found.size()); i++)
         {
-            largest.append("\n  ").append(found.get(i).entry()).append(" in ").append(found.get(i).places);
+            List<String> places = found.get(i).places;
+
+            largest.append("\n  ").append(found.get(i).entry()).append(" in ")
+                .append(places.subList(0, Math.min(6, places.size()))).append(places.size() > 6 ? " ..." : "");
         }
 
         assertFalse(copied > TEST_COPIED_TOKENS_ALLOWED, "test copies rose: " + copied + " tokens stand in a second"

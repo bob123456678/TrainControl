@@ -538,7 +538,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The depths of the outline, for a failure message. */
     /**
      * A condition that starts with a group can be built (Adam: "the first condition for some reason cannot be indented
      * for proper grouping."), with Group Selected (OB-396): "2 and 3 and 1 and 4" becomes "(2 or 3) and (1 or 4)", each
@@ -2435,6 +2434,7 @@ public class testRouteEditorValidation
         return out;
     }
 
+    /** The depths of the outline, for a failure message. */
     private static String depths(org.traincontrol.gui.RouteEditorFrame frame)
     {
         StringBuilder out = new StringBuilder();

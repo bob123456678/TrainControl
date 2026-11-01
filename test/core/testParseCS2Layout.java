@@ -64,16 +64,6 @@ public class testParseCS2Layout
     }
     
     /**
-     * A page edit keeps the parts of the index TrainControl does not model.  `writeLayoutIndex` regenerates the whole
-     * header, so a block a Central Station put there that this program has no name for (the shipped export carries
-     * `zuletztBenutzt`, the last-viewed page) was deleted by the first page add, rename, delete or duplicate.  Also
-     * `readLayoutIndexIds` called every `.name=` line a page, so that block's own name was read as a page at position
-     * 0, harmless only while the same name reappears as a real `seite`.
-     *
-     * MUTATION: remove the `readLayoutIndexExtras` loop from `writeLayoutIndex` and the first
-     * assertion fails; remove the `inPage` guard from the id reader and the third does.
-     */
-    /**
      * A block name the station capitalized is still a block.  The Central Station writes `Version` with a capital V and
      * `readLayoutIndexIds` matches block names without regard to case; `CS2File.parseFile` did not (`^[a-z]+$`), so a
      * page block spelled `Seite` was no block and the parser returned **zero pages and zero failures**: nothing threw,
@@ -153,6 +143,16 @@ public class testParseCS2Layout
         }
     }
 
+    /**
+     * A page edit keeps the parts of the index TrainControl does not model.  `writeLayoutIndex` regenerates the whole
+     * header, so a block a Central Station put there that this program has no name for (the shipped export carries
+     * `zuletztBenutzt`, the last-viewed page) was deleted by the first page add, rename, delete or duplicate.  Also
+     * `readLayoutIndexIds` called every `.name=` line a page, so that block's own name was read as a page at position
+     * 0, harmless only while the same name reappears as a real `seite`.
+     *
+     * MUTATION: remove the `readLayoutIndexExtras` loop from `writeLayoutIndex` and the first
+     * assertion fails; remove the `inPage` guard from the id reader and the third does.
+     */
     @Test
     public void testAPageEditKeepsWhatTheStationWroteInTheIndex() throws Exception
     {

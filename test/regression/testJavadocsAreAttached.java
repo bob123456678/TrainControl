@@ -42,7 +42,7 @@ public class testJavadocsAreAttached
     /**
      * What was there when this test was written. Lower it whenever some are fixed; never raise it.
      */
-    private static final int ALLOWED = 9;
+    private static final int ALLOWED = 8;
 
     /**
      * WHICH files carry the orphans, not just how many.
@@ -59,17 +59,36 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "autonomy" + File.separator + "AutoLocomotiveStatus.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "autonomy" + File.separator + "DiagramTileRegistry.java (1)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutLabel.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "TrainControlUI.java (4)",
     };
 
+    /** The same two pins for `test/`, apart from `src/` so a fix in one cannot pay for a new orphan in the other. */
+    private static final int TEST_ALLOWED = 1;
+
+    private static final String[] TEST_ORPHANS_BY_FILE = {
+        "test" + File.separator + "core" + File.separator + "testATrainTooLongIsRefusedTheBerth.java (1)",
+    };
+
     @Test
     public void testNoNewOrphanedJavadocs() throws Exception
     {
-        File src = new File("src");
+        assertOrphansPinned("src", ALLOWED, ORPHANS_BY_FILE, "ALLOWED", "ORPHANS_BY_FILE");
+    }
+
+    /** A claim's javadoc left above another, as a method put in under it leaves it, documents no claim. */
+    @Test
+    public void testNoNewOrphanedJavadocsInTheTests() throws Exception
+    {
+        assertOrphansPinned("test", TEST_ALLOWED, TEST_ORPHANS_BY_FILE, "TEST_ALLOWED", "TEST_ORPHANS_BY_FILE");
+    }
+
+    /** The orphans under `tree` against their pins: no more in all, none fewer unbanked, and in the same files. */
+    private void assertOrphansPinned(String tree, int allowed, String[] byFile, String allowedName, String listName)
+        throws Exception
+    {
+        File src = new File(tree);
 
         assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
             + " - this test reads the source, so it has to run from the project root");
@@ -92,16 +111,16 @@ public class testJavadocsAreAttached
             if (here > 0) worst.add(path + " (" + here + ")");
         }
 
-        assertTrue(found <= ALLOWED,
-            "there are now " + found + " javadoc blocks that document nothing, up from " + ALLOWED
+        assertTrue(found <= allowed,
+            "there are now " + found + " javadoc blocks that document nothing, up from " + allowed
             + ". A javadoc immediately followed by another javadoc attaches to nothing, so whatever it "
             + "was written for is now undocumented and the text sits in the middle of the file looking "
             + "like it still applies. Files: " + worst);
 
         // And banked when they go, so the number cannot quietly drift back up to where it was
-        assertEquals(found, ALLOWED,
-            found + " orphaned javadocs remain, fewer than the " + ALLOWED + " recorded. Lower "
-            + "ALLOWED to " + found + " so the improvement is kept.");
+        assertEquals(found, allowed,
+            found + " orphaned javadocs remain, fewer than the " + allowed + " recorded. Lower "
+            + allowedName + " to " + found + " so the improvement is kept.");
 
         // The total alone can absorb a repair and a new orphan in the same round: fix one
         // file, break a different one, and 96 stays 96. Pin WHICH files carry them too, so a swap
@@ -109,13 +128,13 @@ public class testJavadocsAreAttached
         List<String> sortedWorst = new ArrayList<>(worst);
         java.util.Collections.sort(sortedWorst);
 
-        List<String> pinned = new ArrayList<>(java.util.Arrays.asList(ORPHANS_BY_FILE));
+        List<String> pinned = new ArrayList<>(java.util.Arrays.asList(byFile));
         java.util.Collections.sort(pinned);
 
         assertEquals(sortedWorst, pinned,
             "the per-file breakdown of orphaned javadocs has changed even though the total may not "
-            + "have. If a file was genuinely fixed, remove its line from ORPHANS_BY_FILE and lower "
-            + "ALLOWED; if a new file appeared, that file has a fresh orphan that the total alone "
+            + "have. If a file was genuinely fixed, remove its line from " + listName + " and lower "
+            + allowedName + "; if a new file appeared, that file has a fresh orphan that the total alone "
             + "would hide behind an unrelated fix elsewhere.");
     }
 

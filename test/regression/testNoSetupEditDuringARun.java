@@ -2241,7 +2241,7 @@ public class testNoSetupEditDuringARun
             // ITS LINK SWITCHED OFF FIRST: a pairing left pointing at a page out is blocking, and the reload then keeps
             // the railway running
             // AN ENTRY ON THE PAGE, and the railway built with it
-            String[] leg = aLegOnThePage(session, page);
+            String[] leg = switchOffTheLinkAndFindALegOn(session, page);
 
             org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
 
@@ -2291,31 +2291,46 @@ public class testNoSetupEditDuringARun
     }
 
     /** Switches off the link to the page, then returns the start and end of a leg of the railway built on that page. */
-    private static String[] aLegOnThePage(final AutonomySession session, final String page) throws Exception
+    private static String[] switchOffTheLinkAndFindALegOn(final AutonomySession session, final String page)
+        throws Exception
     {
-        final String[] refused = new String[1];
+        final TileKey link = new TileKey("1 - Main", 15, 5);
+
+        final boolean[] off = new boolean[1];
+
         SwingUtilities.invokeAndWait(() ->
         {
-            session.setPortalDisabled(new TileKey("1 - Main", 15, 5), true);
+            session.setPortalDisabled(link, true);
+
+            off[0] = session.isDisabledLink(link);
         });
-        assertEquals(refused[0], null, "precondition: the link to " + page + " could not be switched off");
+
+        assertTrue(off[0], "precondition: the link to " + page + " could not be switched off");
+
         org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
         java.util.Map<String, String> squareOf = new java.util.HashMap<>();
+
         for (Object o : built.getJSONArray("points"))
         {
             org.json.JSONObject p = (org.json.JSONObject) o;
+
             squareOf.put(p.getString("name"), p.optString("square", ""));
         }
+
         String[] leg = null;
+
         for (Object o : built.getJSONArray("edges"))
         {
             org.json.JSONObject e = (org.json.JSONObject) o;
+
             if (leg == null && String.valueOf(squareOf.get(e.getString("start"))).startsWith(page + ":")
                 && String.valueOf(squareOf.get(e.getString("end"))).startsWith(page + ":"))
             {
                 leg = new String[] {e.getString("start"), e.getString("end")};
             }
         }
+
         assertNotNull(leg, "precondition: no edge on " + page);
 
         return leg;
@@ -2780,7 +2795,7 @@ public class testNoSetupEditDuringARun
 
             // ITS LINK SWITCHED OFF FIRST, so the page can be ticked out
             // AN ENTRY ON THE PAGE, FIRST, for the train of the railway's own entry - which stands where that one starts
-            String[] leg = aLegOnThePage(session, page);
+            String[] leg = switchOffTheLinkAndFindALegOn(session, page);
 
             org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
 
