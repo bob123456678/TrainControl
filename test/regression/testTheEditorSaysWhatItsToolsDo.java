@@ -75,7 +75,7 @@ public class testTheEditorSaysWhatItsToolsDo
     @Test
     public void testTheGuardItemsSayWhatTheGuardsDo() throws Exception
     {
-        // "OCCUPIED", NOT "TAKEN" (Adam, on MT-569: *"station is taken" -> station is occupied*)
+        // "OCCUPIED", NOT "TAKEN" (MT-569)
         assertTrue(I18n.t("autosetup.ui.tooltipExitGuard").contains("while this station is occupied")
             && !I18n.t("autosetup.ui.tooltipExitGuard").contains("taken"), "the exit guard's tooltip does not say"
             + " \"occupied\" (MT-569): " + I18n.t("autosetup.ui.tooltipExitGuard"));
@@ -281,10 +281,9 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * On the frozen railway, a station's exit guard chosen as its entry guard is refused, with the sentence saying the
-     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504).
-     *
-     * Both guards are given as the steps give them: menu item, window, Click It on the Diagram, a click on the signal;
-     * the exit guard first, because the frozen railway has none.
+     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504).  Both
+     * guards are given as the steps give them (menu item, window, Click It on the Diagram, a click on the signal), the
+     * exit guard first, because the frozen railway has none.
      * `core.testASignalGuardsItsStationAndTheNoticeNamesIt.testAStationsEntryGuardIsNeverItsExitGuard` holds the
      * store's own refusal below this.
      *
@@ -363,10 +362,9 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * A signal refused as a guard is refused in a popup, not only on the gray line (MT-505).
-     *
-     * The guard window comes back the moment the click is answered and sits in front of the line that said why.  Both
-     * refusals a click can meet: a signal already on the list, and the station's other guard.
+     * A signal refused as a guard is refused in a popup, not only on the gray line (MT-505): the guard window comes
+     * back the moment the click is answered and sits in front of the line that said why.  Both refusals a click can
+     * meet: a signal already on the list, and the station's other guard.
      *
      * MUTATION: say either refusal on the gray line alone.
      */
@@ -416,9 +414,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * A click on a square that is not a signal, while a guard is being chosen, is refused in a popup, and the guard
-     * window comes back (MT-505, MT-588).
-     *
-     * The choice used to stay armed with no window; now the popup says why and the window is back, its list as it was.
+     * window comes back with its list as it was (MT-505, MT-588).
      *
      * MUTATION: say it on the gray line alone, or leave the window closed after it.
      */
@@ -1297,14 +1293,12 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * The guard notices follow the routes the built railway sets each guard by.
-     *
-     * The reduction knows a square and not which way a train faces on it, so walking it turned back at any plain
-     * sensor.  On the frozen railway: his nine exit guards get exactly two notices (Signals 86 and 87, which routes
-     * between the tunnel sidings and the station throats cross) and his six exit signals none; Signal 39 as
-     * BottomMainA's exit guard is noticed; a guard no route commands is told so, not that routes turn it green.  How
-     * far the notices should follow the routes the runtime runs (Signal 107) is Adam's to decide, so it is not
-     * asserted.
+     * The guard notices follow the routes the built railway sets each guard by.  The reduction knows a square and not
+     * which way a train faces on it, so walking it turned back at any plain sensor.  On the frozen railway: his nine
+     * exit guards get exactly two notices (Signals 86 and 87, which routes between the tunnel sidings and the station
+     * throats cross) and his six exit signals none; Signal 39 as BottomMainA's exit guard is noticed; a guard no route
+     * commands is told so, not that routes turn it green.  How far the notices should follow the routes the runtime
+     * runs (Signal 107) is not asserted.
      *
      * MUTATION: walk the built edges as the reduction was walked, every edge from a square whatever its copy, and this
      * fails on Signal 39; call every guard off its station's ways crossed, and it fails on the last.

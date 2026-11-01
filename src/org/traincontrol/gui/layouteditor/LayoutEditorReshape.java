@@ -21,12 +21,9 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether shiftUp would do anything.
-     *
-     * Public because the menu asks it before offering the item and the method asks it before acting: ONE predicate,
-     * asked in both places, so the two cannot drift.
-     *
-     * False on the edge, where there is no row below to move up into.
+     * Whether shiftUp would do anything.  Public because the menu asks it before offering the item and the method asks
+     * it before acting: ONE predicate, so the two cannot drift.  False on the edge, where there is no row below to move
+     * up into.
      *
      * @return true when there is a hovered square this can work from
      */
@@ -36,12 +33,10 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether the page has room to grow by this much.
-     *
-     * ONE predicate for every gesture that grows the page (growEdges, addRowsAndColumns, shiftDown, shiftRight and the
-     * right-click menu's Increase Size), asked by the menu before offering an item and by the methods before acting.
-     * Neither `LayoutDiagram.shiftDown`, which opens with `addRowsAndColumns(1, 0)`, nor the model's own grower knows
-     * the limit.
+     * Whether the page has room to grow by this much: ONE predicate for every gesture that grows the page (growEdges,
+     * addRowsAndColumns, shiftDown, shiftRight and the right-click menu's Increase Size), asked by the menu before
+     * offering an item and by the methods before acting.  Neither `LayoutDiagram.shiftDown` nor the model's own grower
+     * knows the limit.
      *
      * @param rows how many rows the gesture would add
      * @param columns how many columns it would add
@@ -60,12 +55,9 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether shiftLeft would do anything.
-     *
-     * Public because the menu asks it before offering the item and the method asks it before acting: ONE predicate,
-     * asked in both places, so the two cannot drift.
-     *
-     * False on the edge, where there is no column to its right to move left into.
+     * Whether shiftLeft would do anything.  Public because the menu asks it before offering the item and the method
+     * asks it before acting: ONE predicate, so the two cannot drift.  False on the edge, where there is no column to
+     * its right to move left into.
      *
      * @return true when there is a hovered square this can work from
      */
@@ -75,10 +67,8 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether shiftDown would do anything.
-     *
-     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to setEnabled.  It is nearly
-     * always true, because opening the popup sets the hovered position, but "nearly always" is not "never asked".
+     * Whether shiftDown would do anything.  Asked by addShift alongside canShiftUp and canShiftLeft, and the answer
+     * goes straight to setEnabled; nearly always true, because opening the popup sets the hovered position.
      *
      * @return true when there is a hovered square this can work from
      */
@@ -90,10 +80,7 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether shiftRight would do anything.
-     *
-     * Asked by addShift alongside canShiftUp and canShiftLeft, and the answer goes straight to setEnabled.  It is nearly
-     * always true, because opening the popup sets the hovered position, but "nearly always" is not "never asked".
+     * Whether shiftRight would do anything; asked as canShiftDown is.
      *
      * @return true when there is a hovered square this can work from
      */
@@ -104,16 +91,11 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Inserts a row or a column at the hovered square and pushes everything past it along.
-     *
-     * Dragging moves the squares you picked; this moves everything below or to the right of one square, which on a
-     * diagram of two hundred tiles is not a selection anybody wants to make by hand.
-     *
-     * Undoable: each one takes a snapshot first, so a mis-aimed shift is one Control+Z away.
-     *
-     * The autonomy setup FOLLOWS the shift.  Everything it holds about a page is keyed by SQUARE, so moving the track
-     * without moving those keys leaves every station, name, facing and restriction on coordinates the track has walked
-     * away from.
+     * Inserts a row or a column at the hovered square and pushes everything past it along: dragging moves the squares
+     * you picked; this moves everything below or to the right of one square.  Undoable: each one takes a snapshot
+     * first.  The autonomy setup FOLLOWS the shift: everything it holds about a page is keyed by SQUARE, so moving the
+     * track without moving those keys leaves every station, name, facing and restriction on coordinates the track has
+     * walked away from.
      */
     void shiftUp()
     {
@@ -130,11 +112,10 @@ final class LayoutEditorReshape
     void shiftDown()
     {
         // No range refusal here, unlike shiftUp and shiftLeft: LayoutDiagram normalizes an out-of-range start to the
-        // FIRST row or column in all four directions, but this pair calls addRowsAndColumns BEFORE the range is checked,
-        // so the page has already grown by one and the start cannot be out of range from a hover.  If that growth moves
-        // or becomes conditional, this needs shiftUp's guard.
-        // Guarded before the snapshot, which would otherwise push an undo entry for an edit that never happened,
-        // clearing the redo stack and making the editor ask about saving work nobody did.
+        // FIRST row or column in all four directions, but this pair calls addRowsAndColumns BEFORE the range is
+        // checked, so the start cannot be out of range from a hover.  If that growth moves or becomes conditional, this
+        // needs shiftUp's guard.  Guarded before the snapshot, which would otherwise push an undo entry for an edit
+        // that never happened, clearing the redo stack and making the editor ask about saving work nobody did.
         if (!canShiftDown()) return;
 
         this.editor.snapshotLayout();
@@ -215,18 +196,9 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Which squares a shift moves, and where to.
-     *
-     * The whole page from one row or column onwards, moved by one.  A square that is not in the
-     * range is left out entirely rather than mapped to itself, so moveTiles can tell the difference
-     * between a square that moved and a square something arrived on.
-     *
-     * @param across true to shift columns, false to shift rows
-     * @param from the first row or column that moves
-     * @param to the last one
-     * @param dx how far each moves horizontally
-     * @param dy and vertically
-     * @return the moves
+     * Which squares a shift moves, and where to: the whole page from row or column `from` to `to`, each moved by (`dx`,
+     * `dy`).  A square not in the range is left out rather than mapped to itself, so moveTiles can tell a square that
+     * moved from one something arrived on.
      */
     private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
         org.traincontrol.automationui.TileGraph.TileKey> setupShift(boolean across, int from, int to,
@@ -255,14 +227,11 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Grows the diagram by one: a column on the right and a row at the bottom.
-     *
-     * NOT a row at the top: that would move every tile down by one while everything autonomy knows about the page
-     * (stations, protecting signals, barred arrival sides, parking and reversing marks, home locomotives, station
-     * captions) is keyed by SQUARE and would not move, leaving every station one row above its platform with the
-     * diagram still looking right.  Doing it properly means rewriting every key the companion store holds for the
-     * page, a change with its own test suite.  Growing at the right and the bottom moves nothing, and keeps the mirror
-     * property that shrinkEdges takes away exactly these two.
+     * Grows the diagram by one: a column on the right and a row at the bottom.  NOT a row at the top: that would move
+     * every tile down by one while everything autonomy knows about the page is keyed by SQUARE and would not move,
+     * leaving every station one row above its platform; doing it properly means rewriting every key the companion store
+     * holds for the page.  Growing at the right and the bottom moves nothing, and keeps the mirror property that
+     * shrinkEdges takes away exactly these two.
      */
     void growEdges()
     {
@@ -323,11 +292,9 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Shrinks the diagram by one, undoing exactly what growEdges adds.
-     *
-     * Refused outright when either edge holds track. Trimming what it could would take a piece of
-     * railway off the diagram to save the user a scroll, which is not a trade anybody would accept if
-     * they were asked - so this asks, by refusing and saying why.
+     * Shrinks the diagram by one, undoing exactly what growEdges adds.  Refused outright when either edge holds track:
+     * trimming what it could would take a piece of railway off the diagram to save the user a scroll, so this asks, by
+     * refusing and saying why.
      */
     void shrinkEdges()
     {
@@ -342,11 +309,10 @@ final class LayoutEditorReshape
 
         try
         {
-            // The edge may hold a caption even when it holds no track: edgesAreEmpty looks at the grid, and a caption is
-            // placed on a blank square by preference.  Trimmed away beneath one, it would keep coordinates now off the
-            // page, drawn nowhere yet present, with no square left to click.  Forgotten rather than refused: the caption
-            // is where a name is DRAWN, not the name, so the station keeps its name, the check notices it has nowhere to
-            // show it and the user is offered it again.
+            // The edge may hold a caption even when it holds no track: edgesAreEmpty looks at the grid, and a caption
+            // is placed on a blank square by preference.  Trimmed away beneath one, it would keep coordinates now off
+            // the page.  Forgotten rather than refused: the caption is where a name is DRAWN, not the name, so the
+            // station keeps its name and the user is offered the caption again.
             forgetCaptionsOnTrimmedEdge();
 
             this.editor.layout.trimEdges();

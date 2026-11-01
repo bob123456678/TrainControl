@@ -21,10 +21,9 @@ public class Point
     /**
      * The side a train standing here came IN by, which is where its tail lies.
      *
-     * Facing cannot answer this: a train faces the way it will leave, and once turned round (arrived from the west,
-     * turned to face east) its tail points the same way it faces, so inferring the tail from the heading finds the
-     * wrong track.  A compass side rather than an edge, because an edge is directional and a tail is not.  Null when
-     * nothing has said.
+      * Facing cannot answer this: a train faces the way it will leave, and once turned round its tail points the same
+      * way it faces, so inferring the tail from the heading finds the wrong track.  A compass side rather than an edge,
+      * because an edge is directional and a tail is not.  Null when nothing has said.
      */
     private String arrivedFrom;
 
@@ -63,7 +62,7 @@ public class Point
     /** The key the mode is written under, beside `excludedLocs` - only when the list names the locomotives allowed. */
     public static final String EXCLUDED_LOCS_MODE = "excludedLocsMode";
 
-    /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed (Adam's word for it). */
+    /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed. */
     public static final String ALLOW_ONLY_LISTED = "whitelist";
 
     private double speedMultiplier = 1.0;
@@ -465,11 +464,10 @@ public class Point
     }
 
     /**
-     * The route the standing train arrived along, which its tail follows back past a junction (MT-335).
-     *
-     * `arrivedFrom` answers the first hop; past a junction the graph cannot say which road the train lies on, but the
-     * route of the train that drove there can.  Cleared on the same change of occupant as `arrivedFrom`; saved with
-     * the point, and a hand-placed train can be given one (FR-085, behaviour/tail.md 5c).
+     * The route the standing train arrived along, which its tail follows back past a junction (MT-335).  `arrivedFrom`
+     * answers the first hop; past a junction only the route of the train that drove there says which road it lies on.
+     * Cleared on the same change of occupant as `arrivedFrom`; saved with the point, and a hand-placed train can be
+     * given one (FR-085, behaviour/tail.md 5c).
      *
      * @return the edges in the order they were driven, or null when nothing was driven here
      */
@@ -493,9 +491,9 @@ public class Point
     {
         final Locomotive previousOccupant = this.getCurrentLocomotive();
         // One locomotive, one place, enforced here because this is the only door: it is swept off every other Point
-        // first.  The sweep runs BEFORE this Point's monitor is taken, since holding one Point's lock while taking
-        // another's can deadlock two placements.  It assumes one thread places a given locomotive at a time; sweep and
-        // assignment are not atomic, and the fix if that changes is a placement lock, not a wider monitor.
+        // first, BEFORE this Point's monitor is taken, since holding one Point's lock while taking another's can
+        // deadlock two placements.  Sweep and assignment are not atomic (one thread places a given locomotive at a
+        // time); if that changes, the fix is a placement lock, not a wider monitor.
         if (l != null && this.layout != null) this.layout.clearLocomotiveExcept(l, this);
 
         assign(l);
@@ -525,9 +523,6 @@ public class Point
      * Puts a locomotive on this Point without taking it off anywhere else: for RESERVING, where a locked path holds
      * every point along it at once and the sweep of `setLocomotive` would tear the reservation down.  Package-private:
      * only the layout locks and unlocks paths.
-     *
-     * @param l the locomotive reserving this point
-     * @return this
      */
     Point reserve(Locomotive l)
     {
@@ -677,9 +672,9 @@ public class Point
      * The square holding this one back, or null when none is (FR-001), asked of every square a route arrives at, not
      * only its destination (OB-295).  The one expression of the rule: callers supply only where to look for occupancy.
      *
-     * The train LEAVING the watched square is exempt (Adam: "The condition should not apply to trains leaving - only
-     * departing."), else a locomotive in the yard could never be sent to the platform the yard holds back.  Whether
-     * the rule is in force at all is the caller's business; no caller fences it, in any mode.
+      * The train LEAVING the watched square is exempt, else a locomotive in the yard could never be sent to the
+      * platform the yard holds back.  Whether the rule is in force at all is the caller's business; no caller fences
+      * it, in any mode.
      *
      * @param destination the square being arrived at - a route's destination or any square on the way (OB-295); a null
      *        square is held back by nothing
@@ -983,15 +978,11 @@ public class Point
 
     /**
      * The same, writing the given locomotive as the one standing here - or none, for null - rather than whichever this
-     * point records.  A train under way is recorded on every point of its locked path, and a fold writes it on
-     * the one point it is kept at.  The side it arrived by and its road are written only for the train this point
-     * records.
+     * point records.  A train under way is recorded on every point of its locked path, and a fold writes it on the one
+     * point it is kept at.  The side it arrived by and its road are written only for the train this point records.
      *
      * @param standing the locomotive to write as standing here, or null
      * @return the point
-     * @throws IllegalArgumentException from the JSON
-     * @throws IllegalAccessException from the JSON
-     * @throws NoSuchFieldException from the JSON
      */
     public JSONObject toJSON(Locomotive standing) throws IllegalArgumentException, IllegalAccessException,
         NoSuchFieldException

@@ -78,9 +78,6 @@ public class DiagramMonitor
     /**
      * Replaces what is being watched, after a rebuild.  Keyed by NAME, the only thing the running Layout and the
      * derived graph share: Edge.getName() is "start -> end" over Point names, which the builder wrote into the file.
-     *
-     * @param edgesByName
-     * @param pointTiles
      */
     public final void setEdges(Map<String, ReducedEdge> edgesByName, Map<String, TileKey> pointTiles)
     {
@@ -95,9 +92,8 @@ public class DiagramMonitor
     }
 
     /**
-     * Which way a train standing on each Point faces, for the icon of a parked one.
-     *
-     * @param facings Point name to the side of its square a train's front faces there
+     * Which way a train standing on each Point faces, for the icon of a parked one: Point name to the side of its
+     * square.
      */
     public void setFacings(Map<String, org.traincontrol.automationui.TilePorts.Side> facings)
     {
@@ -122,11 +118,7 @@ public class DiagramMonitor
             : new LinkedHashMap<>(trains);
     }
 
-    /**
-     * The same, none of them paused.
-     *
-     * @param trains square to the way the train faces
-     */
+    /** The same, none of them paused. */
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains)
     {
         setTrainsOnNoPoint(trains, null);
@@ -148,10 +140,7 @@ public class DiagramMonitor
         published = Collections.emptyMap();
     }
 
-    /**
-     * Registers with a layout, additively: other callbacks on the same layout are untouched.
-     * @param layout
-     */
+    /** Registers with a layout, additively: other callbacks on the same layout are untouched. */
     public void attach(Layout layout)
     {
         if (layout == null) return;
@@ -190,11 +179,9 @@ public class DiagramMonitor
 
     /**
      * Recomputes and publishes unconditionally, for when the grid was rebuilt and the tiles lost what they showed,
-     * which the layout would not fire about.
-     *
-     * Synchronized because the compare-against-published is a check then a set, called from both the timer thread and
-     * the event thread: overlapping calls could record the newer picture while the older is on screen.  Holds no other
-     * lock, so it cannot hold up the railway.
+     * which the layout would not fire about.  Synchronized because the compare-against-published is a check then a set,
+     * called from both the timer thread and the event thread: overlapping calls could record the newer picture while
+     * the older is on screen.  Holds no other lock, so it cannot hold up the railway.
      */
     public synchronized void refresh()
     {
@@ -500,12 +487,9 @@ public class DiagramMonitor
         if (tile == null) return;
 
         // Standing still it shows the locomotive facing its way, not the dot (OB-317); running, it is the run's own
-        // icon.
-        //
-        // It faces the way it will stand (MT-701): a train that kept its direction at a square it may turn at stops on
-        // the turning copy and is stood on the plain copy only once its run is done.  That copy is the one the
-        // caption's arrow asks (`AutonomySession.facingOnTheRailway`, OB-314), when it is another copy of the same
-        // square.
+        // icon.  It faces the way it will stand (MT-701): a train that kept its direction at a square it may turn at
+        // stops on the turning copy and is stood on the plain copy only once its run is done; that copy is the one the
+        // caption's arrow asks (`AutonomySession.facingOnTheRailway`, OB-314).
         Point facingCopy = will != null && will != at && will.isSamePlaceAs(at) ? will : at;
 
         org.traincontrol.automationui.TilePorts.Side facing = facings.get(facingCopy.getName());

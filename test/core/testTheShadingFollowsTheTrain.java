@@ -37,10 +37,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).
- *
- * Adam: **"when a train is manually moved to a new station in the track diagram viewer using control+X and V, its
- * former shaded icons are not reset."**
+ * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180): when a train was moved to
+ * a new station in the track diagram viewer, its former shaded icons were not reset.
  *
  * The model was never wrong about which squares a moved train had stopped covering
  * (`Layout.edgesCoveredByStandingTrains`, `AutonomySession.tilesCoveredByStandingTrains`); nothing REDREW them.  The
@@ -48,20 +46,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * test asserting only on the model passes with the defect present or repaired, so this one goes all the way to the
  * ICONS: real `LayoutLabel`s registered in the real `DiagramTileRegistry`, redrawn by the real `CoveredTrackView`
  * (reached through `TrainControlUI.refreshCoveredTrack`).  Every tile is PAINTED and looked at, since the mark is an
- * orange line along the road the train is on (MT-309): `support.Rendered.showsTheTrainMark` does it.
- *
- * The redraw itself is asked about, not only the paint (issue 19): painting a label is a redraw nobody else asked for,
- * so `support.RepaintRecorder` writes the repaints down, and a tile nothing has asked to repaint still shows the wash
- * it was drawn with.
+ * orange line along the road the train is on (MT-309): `support.Rendered.showsTheTrainMark` does it.  The redraw
+ * itself is asked about, not only the paint: `support.RepaintRecorder` writes the repaints down, and a tile nothing
+ * has asked to repaint still shows the wash it was drawn with.
  *
  * The fixture is Adam's own railway in a sandbox copy (OB-111), never the folder itself: the squares that gray are a
- * product of the diagram (`AutonomySession` needs a reducer and a station index to turn a runtime `Edge` into the tiles
- * lying along it), which a synthetic graph lacks.  Every tile of the reduced graph is measured at {@link #TILE_LENGTH},
- * as Adam asked, so the wash comes from the measurement and not from which squares he has measured.
+ * product of the diagram (`AutonomySession` needs a reducer and a station index to turn a runtime `Edge` into the
+ * tiles lying along it), which a synthetic graph lacks.  Every tile of the reduced graph is measured at
+ * {@link #TILE_LENGTH}, so the wash comes from the measurement and not from which squares he has measured.
  *
- * The train is driven by `executePath`, not `runLocomotives`: that is autonomy's own Start, whose threads pick their
- * own destinations and raced with the test.  `executePath` is what those threads call, so the switches are thrown, the
- * path locked, the sensors tripped and the arrival recorded exactly as under autonomy.
+ * The train is driven by `executePath`, not `runLocomotives` (autonomy's own Start, whose threads pick their own
+ * destinations and raced with the test): the switches are thrown, the path locked, the sensors tripped and the
+ * arrival recorded exactly as under autonomy.
  *
  * @author Adam
  */
@@ -98,7 +94,7 @@ public class testTheShadingFollowsTheTrain
     public static void setUpClass() throws Exception
     {
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): showUI opens
-        // whatever the layout preference names, and `cs2_sample_layout` changes as Adam runs trains on it.
+        // whatever the layout preference names, and `cs2_sample_layout` changes as he runs trains on it.
         // `Scenario.folderFor` cannot spell its way out to the operator's own railway, and `LayoutSandbox` copies what
         // it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -150,28 +146,25 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * The whole journey: standing, away, and home again, with the icons checked at each stop.
-     *
-     * One method rather than four: these are stages of one run on one railway and TestNG does not promise the order.
+     * The whole journey: standing, away, and home again, with the icons checked at each stop.  One method rather than
+     * four: these are stages of one run on one railway and TestNG does not promise the order.
      *
      * WHAT IT PINS, in order:
      *
-     * 1. A train standing somewhere covers track, and the labels for that track are drawn WITH the
-     *    wash.  Without this the rest is a test that nothing is ever shaded, which passes on a railway
-     *    where the feature does not work at all.
-     * 2. Once it has run to the next station, the squares behind where it stood are no longer
-     *    covered AND their labels have been redrawn without the wash.  That second half is OB-180: the
-     *    model was always right about this and the screen was not.
-     * 3. Where it is standing now covers something, so the wash moved rather than merely vanishing.
-     * 4. Sent home and round the SAME circuit a second time, the covered set and the icons come back
-     *    to exactly what they were after the first return, and are still not empty - the shading is a
-     *    function of where trains are standing, not a residue of where they have been.
+     * 1. A train standing somewhere covers track, and the labels for that track are drawn WITH the wash (else this is a
+     *    test that nothing is ever shaded, which passes on a railway where the feature does not work at all).
+     * 2. Once it has run to the next station, the squares behind where it stood are no longer covered AND their labels
+     *    have been redrawn without the wash.  That second half is OB-180: the model was always right and the screen was
+     *    not.
+     * 3. Where it is standing now covers something, so the wash moved rather than merely vanishing.  4. Sent home and
+     * round the SAME circuit a second time, the covered set and the icons come back to exactly what they
+     *    were after the first return, and are still not empty: the shading is a function of where trains are standing,
+     *    not a residue of where they have been.
      *
      * Stage 4 compares two returns rather than the start: the train comes home to the same square, facing the same way,
      * but its tail is on DIFFERENT track (two roads converge short of the platform; the setup's recorded arrival side
-     * names one and the route back drives the other, and `arrivedFrom` is what the tail walk follows).  The railway is
-     * right to shade the two states differently.  What Adam is buying - that a journey leaves the shading where it
-     * found it - is what the second circuit tests.
+     * names one and the route back drives the other, and `arrivedFrom` is what the tail walk follows), so the railway
+     * is right to shade the two states differently.
      *
      * MUTATIONS that fail it: deleting the `repaintTheWashWhereItChanged(...)` call from
      * `CoveredTrackView.workOutCoveredTrack` fails stage 2's screen assertion (the old squares were never asked to
@@ -456,11 +449,10 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * Registers a real tile for each square, so there is something on the diagram to redraw.
-     *
-     * These are production `LayoutLabel`s in the production registry, built from the real page's components and pointed
-     * at the real window.  Registered rather than found because which page the window shows is not something a test
-     * should depend on, and a square with no registered tile is silently skipped by the redraw.
+     * Registers a real tile for each square, so there is something on the diagram to redraw: production `LayoutLabel`s
+     * in the production registry, built from the real page's components and pointed at the real window.  Registered
+     * rather than found because which page the window shows is not something a test should depend on, and a square with
+     * no registered tile is silently skipped by the redraw.
      */
     private static List<LayoutLabel> labelsFor(Set<TileKey> squares) throws Exception
     {
@@ -521,10 +513,8 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * Whether this tile is drawing the mark that says a train is lying across it.
-     *
-     * Painted and looked at (MT-309): the mark is a line drawn over the icon, which is nowhere in the object;
-     * `support.Rendered.showsTheTrainMark` paints it and looks for the orange.
+     * Whether this tile is drawing the mark that says a train is lying across it: painted and looked at (MT-309), since
+     * the mark is a line drawn over the icon, which is nowhere in the object.
      */
     private static boolean isWashed(LayoutLabel label) throws Exception
     {
@@ -554,14 +544,14 @@ public class testTheShadingFollowsTheTrain
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * Leaves one train on the railway, which is what makes the assertions attributable: with four trains standing
-     * about, a square that stops being shaded could have stopped for a reason nothing in this test did.
-     *
-     * The one kept is the first found standing somewhere that records which way it came in (the tail walk needs that
-     * side to choose its first hop) and that actually covers something, which the railway is simply asked, with the
-     * length this class uses.  A recorded arrival side does not guarantee it: a locomotive at `1 - Main:0,11` recorded
-     * a side that leaves by track the graph cannot follow, so no edge was covered at all.
-     */
+     /**
+      * Leaves one train on the railway, which makes the assertions attributable: with four trains standing about, a
+      * square that stops being shaded could have stopped for a reason nothing in this test did.  The one kept is the
+      * first found standing somewhere that records which way it came in (the tail walk needs that side to choose its
+      * first hop) and that actually covers something, which the railway is simply asked, with the length this class
+      * uses.  A recorded arrival side does not guarantee it: a locomotive at `1 - Main:0,11` recorded a side that
+      * leaves by track the graph cannot follow, so no edge was covered at all.
+      */
     private static void oneTrainOnly()
     {
         Point keep = null;
@@ -570,8 +560,8 @@ public class testTheShadingFollowsTheTrain
         {
             if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
 
-            // AT A STATION AUTONOMY MAY CHOOSE: one it does not choose is drawn in the train mark's own orange (Adam:
-            // one orange means one thing), so its square reads as marked with no train on it.
+            // AT A STATION AUTONOMY MAY CHOOSE: one it does not choose is drawn in the train mark's own orange, so its
+            // square reads as marked with no train on it.
             if (!point.isAutoDestination()) continue;
 
             Locomotive candidate = point.getCurrentLocomotive();
@@ -609,11 +599,10 @@ public class testTheShadingFollowsTheTrain
     }
 
     /**
-     * Measures every tile of the reduced graph, because almost nothing on this railway carries a length.
-     *
-     * Adam: **"For testing, it should be 1 between BottomMainA and BottomMainPost ... It may not be realistic, but it
-     * will allow us whether the guards work correctly."**  The tail walk stops at the first segment without a positive
-     * length, so unmeasured track means nothing is ever covered.
+     * Measures every tile of the reduced graph, because almost nothing on this railway carries a length: the tail walk
+     * stops at the first segment without a positive length, so unmeasured track means nothing is ever covered (the
+     * guards are tested with 1 between BottomMainA and BottomMainPost, unrealistic but enough to show whether they
+     * work).
      *
      * Collected first and written afterwards: `setTileLength` rebuilds the reducer, so walking its own collections
      * while writing to them re-derives the graph under the iterator.

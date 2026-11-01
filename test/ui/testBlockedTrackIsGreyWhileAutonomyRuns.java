@@ -28,10 +28,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, third ruling: the drawing says "track is blocked" again, and says it in gray (Adam: *"'train is here' should
- * also mean 'track is blocked' - that is the whole point."*). The orange line as long as the train and the gray on the
- * tiles stand together, so the drawing and the guard agree: orange on a square (a train lies there), gray and no orange
- * (track a train's presence has made unusable), neither (free).
+  * MT-309, third ruling: the drawing says "track is blocked" again, and says it in gray ("train is here" also means
+  * "track is blocked").  The orange line as long as the train and the gray on the tiles stand together, so the drawing
+  * and the guard agree: orange on a square (a train lies there), gray and no orange (track a train's presence has made
+  * unusable), neither (free).
  *
  * The gray is not bounded to a run, as the refusal it draws never was; `ui.testTheGreyAppearsAtIdleToo` carries the
  * idle half. The blocked extent is worked out here from the railway, not asked of the window under test: what is drawn
@@ -115,9 +115,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
 
         // The frozen copy, not the railway he is operating (OB-111, and `test/layouts/live-snapshot`):
-        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains on it, and a class that skips
-        // everything reads as a green one. `Scenario.folderFor` is the only naming of a fixture folder that cannot
-        // spell its way out to the operator's own railway.
+        // `cs2_sample_layout`'s placements and lengths move as he runs trains on it, and a class that skips everything
+        // reads as green.  `Scenario.folderFor` cannot spell its way out to the operator's own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -277,9 +276,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     /**
      * And a stopped railway shows exactly the same gray: the mark is NOT bounded to a run. `Layout.isPathClear` sweeps
      * the covered edges in every tier at every time, because a tail lying across the rail is physical, so at idle a
-     * manual send across a parked train's tail was refused over track this drew as free. Adam: *"this greyout should
-     * appear at idle and be regenerated if a placement or train/track length is changed."*
-     * `ui.testTheGreyAppearsAtIdleToo` carries the regeneration.
+     * manual send across a parked train's tail was refused over track this drew as free.
+     * `ui.testTheGreyAppearsAtIdleToo` carries the regeneration when a placement or a train or track length changes.
      */
     @Test
     public void testAStoppedRailwayShowsTheSameGrey()
@@ -431,11 +429,11 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
                 }
             }
 
-            // A square that is gray and not orange no longer exists for a standing train, by Adam's ruling (MT-373:
-            // *"grey out the blocked path only if on a double curve.  otherwise, greyed out means either edge locked or
-            // path blocked."*). The gray's own meaning is EDGE LOCKED, a square an active route is holding with no
-            // train on it: that is `TileOverlay`'s wash, tested in `ui.testTheWashDoesNotStack`, and needs a running
-            // route this class does not have. The square this class claims is the one the train is on.
+            // A square that is gray and not orange no longer exists for a standing train (MT-373: the blocked path is
+            // greyed out only on a double curve; otherwise greyed out means edge locked or path blocked). The gray's
+            // own meaning is EDGE LOCKED, a square an active route is holding with no train on it: that is
+            // `TileOverlay`'s wash, tested in `ui.testTheWashDoesNotStack`, and needs a running route this class does
+            // not have. The square this class claims is the one the train is on.
             TileKey blockedOnly = onTheTrain;
 
             if (onTheTrain == null) continue;
