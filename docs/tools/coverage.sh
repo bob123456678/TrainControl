@@ -39,8 +39,9 @@ then
     python "$REPO/docs/tools/split-initcomponents.py" "$TREE/src/org/traincontrol/gui/TrainControlUI.java" || exit 1
     sh "$REPO/docs/tools/env.sh" "$TREE" "" "$OUT/scratch" > /dev/null || exit 1
 
-    # One exec file per class: battery.sh puts the class name where %s stands
-    (cd "$TREE" && TC_SCRATCH="$(cygpath -m "$OUT/scratch")" \
+    # One exec file per class: battery.sh puts the class name where %s stands.  Its flakes go to this checkout's log,
+    # not the throwaway one's.
+    (cd "$TREE" && TC_SCRATCH="$(cygpath -m "$OUT/scratch")" TC_FLAKES="$REPO/docs/tools/flakes.tsv" \
         TC_JVM_ARGS="-javaagent:$JACOCO/jacocoagent.jar=destfile=$(cygpath -m "$OUT/exec")/%s.exec,includes=org.traincontrol.*,excludes=org.traincontrol.gui.widgets.StartupSplash" \
         bash docs/tools/battery.sh)
 
