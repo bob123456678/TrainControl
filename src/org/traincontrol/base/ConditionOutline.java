@@ -450,24 +450,12 @@ public final class ConditionOutline
      */
     private static void cutOut(Group top, Object piece)
     {
-        Group from = piece instanceof Group ? ((Group) piece).parent : holderOf(top, piece);
-
-        if (from == null) return;
-
-        List<Object> elements = from.elements;
-        int at = elements.indexOf(piece);
-
-        if (at < 0) return;
-
-        elements.remove(at);
-
         boolean carriesItsWord = piece instanceof Group && !((Group) piece).elements.isEmpty()
             && isWord(((Group) piece).elements.get(0));
 
-        if (!carriesItsWord && at - 1 >= 0 && isWord(elements.get(at - 1))) elements.remove(at - 1);
-        else if (!carriesItsWord && at < elements.size() && isWord(elements.get(at))) elements.remove(at);
+        Group from = pullOut(top, piece, !carriesItsWord);
 
-        if (from.parent != null && !from.holdsACondition()) cutOut(top, from);
+        if (from != null && from.parent != null && !from.holdsACondition()) cutOut(top, from);
     }
 
     /** The line holding this very condition, by identity: two lines can ask the same thing; -1 where none does. */
@@ -1539,21 +1527,32 @@ public final class ConditionOutline
     /** Takes a piece out of its group with one word beside it; a group left with nothing goes too, but never `keep`. */
     private static void takeOut(Group top, Object piece, Group keep)
     {
+        Group from = pullOut(top, piece, true);
+
+        if (from != null && from.parent != null && !holdsOrIs(from, keep)) takeOut(top, from, keep);
+    }
+
+    /**
+     * Takes a piece out of the group holding it and, when `withAWord`, one word beside it, the one before first.
+     * Returns that group, or null when no group holds the piece.
+     */
+    private static Group pullOut(Group top, Object piece, boolean withAWord)
+    {
         Group from = piece instanceof Group ? ((Group) piece).parent : holderOf(top, piece);
 
-        if (from == null) return;
+        if (from == null) return null;
 
         List<Object> elements = from.elements;
         int at = elements.indexOf(piece);
 
-        if (at < 0) return;
+        if (at < 0) return null;
 
         elements.remove(at);
 
-        if (at - 1 >= 0 && isWord(elements.get(at - 1))) elements.remove(at - 1);
-        else if (at < elements.size() && isWord(elements.get(at))) elements.remove(at);
+        if (withAWord && at - 1 >= 0 && isWord(elements.get(at - 1))) elements.remove(at - 1);
+        else if (withAWord && at < elements.size() && isWord(elements.get(at))) elements.remove(at);
 
-        if (from.parent != null && !holdsOrIs(from, keep)) takeOut(top, from, keep);
+        return from;
     }
 
     private static boolean isWord(Object element)

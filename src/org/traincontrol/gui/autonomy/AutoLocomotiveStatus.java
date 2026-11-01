@@ -319,7 +319,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                 this.paths = answer == null ? new java.util.LinkedList<>() : answer;
                 
-                if (!this.paths.isEmpty())
+                // Paths found off the event thread can arrive after the train left its square.
+                if (!this.paths.isEmpty() && at != null)
                 {
                     this.locDest.setText(I18n.t("autolayout.ui.doubleClickExecute"));
                     this.locStation.setText("@" + stationName(at)
