@@ -33,23 +33,19 @@ import static regression.testTheImportDoorReadsAnOldFile.startAnsweringYes;
 
 /**
  * No setup edit is made while trains run, at any door (Adam: *"There should be no setup edit possible during a run"*),
- * and nothing written for a train under way moves it off its path.
- *
- * Its own class so the import door's class stays within its heap: every window a test opens keeps its threads.  The
- * window, dispatch and answering helpers are shared with that class.
+ * and nothing written for a train under way moves it off its path.  Its own class so the import door's class stays
+ * within its heap; the window, dispatch and answering helpers are shared with that class.
  *
  * @author Adam
  */
 public class testNoSetupEditDuringARun
 {
     /**
-     * The pages an old-file import says it left out stay out when the import then fails (OB-302).  The exclusion is the
+     * The pages an old-file import says it left out stay out when the import then fails (OB-302): the exclusion is the
      * setup's shared half, not the imported configuration, so the import's rollback must not undo it.
      *
-     * "4 - Combined" repeats "1 - Main"'s sensors; it is put back in here as a page nobody has decided about, the state
-     * the import acts on.  The file has a timetable that is not a list, broken as
-     * `testAFileItCannotReadLeavesTheSetupAsItWas` breaks it; here because the import door's class holds as many
-     * windows as its heap does.
+     * "4 - Combined" repeats "1 - Main"'s sensors and is put back in as a page nobody has decided about, the state the
+     * import acts on.  The timetable is broken as `testAFileItCannotReadLeavesTheSetupAsItWas` breaks it.
      *
      * MUTATION: take the snapshot before the exclusion again, and this fails.
      */
@@ -141,10 +137,6 @@ public class testNoSetupEditDuringARun
 
     /**
      * The store's own record of the pages somebody turned back on, which has no door to take a page off it (OB-302).
-     *
-     * @param session the session
-     * @return the live set
-     * @throws Exception from the reflection
      */
     @SuppressWarnings("unchecked")
     private static java.util.Set<String> keptDespiteRepeats(AutonomySession session) throws Exception
@@ -671,10 +663,8 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * Sends a standing train, on a square with two facings, off along a path away, and waits until it is under way; it
-     * waits on a sensor nothing here sets.
-     *
-     * @return the train and the thread driving it
+     * Sends a standing train on a square with two facings off along a path away, and waits until it is under way (on a
+     * sensor nothing here sets).  Returns the train and the thread driving it.
      */
     private static Object[] sendATrainFromASquareWithTwoFacings(org.traincontrol.automation.Layout railway,
         AutonomySession session) throws Exception
@@ -1242,12 +1232,9 @@ public class testNoSetupEditDuringARun
 
     /**
      * A send queued ahead of the editor's build is not sent.  The editor is asked for on the event thread and built in
-     * a task posted after it, and the gate asked only whether the editor's window existed.  The event thread is held
-     * here, as a slow refresh holds it, with an Auto tab double-click and the editor's request queued behind it.
-     *
-     * The send is queued AHEAD of the editor's request, so the gate finds no editor on its way; what refuses here is
-     * the editor's build, which looks at the railway again.  testTheGateRefusesWhileAnEditorIsOnItsWay reaches the
-     * gate.
+     * a task posted after it; the event thread is held, as a slow refresh holds it, with an Auto tab double-click and
+     * the editor's request queued behind it.  The gate finds no editor on its way, so what refuses is the editor's
+     * build, which looks at the railway again (testTheGateRefusesWhileAnEditorIsOnItsWay reaches the gate).
      *
      * MUTATION: let the editor's posted build skip its second look at the railway, with the gate seeing only an
      * editor already built, and this fails.
@@ -1353,12 +1340,10 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The one gate counts an editor on its way as open.  Edit Layout sets `editorOnItsWay` before it posts the editor's
+     * The one gate counts an editor on its way as open: Edit Layout sets `editorOnItsWay` before it posts the editor's
      * build, and until that build has run the gate must refuse every door in the editor's own words.  The build's
-     * second look does not make this redundant: a hand send hands its train to a thread, so the railway can still read
-     * idle.
-     *
-     * testASendQueuedAheadOfTheEditorsBuildIsNotSent cannot reach this: no editor is on its way when its gate is asked.
+     * second look is no substitute: a hand send hands its train to a thread, so the railway can still read idle.
+     * testASendQueuedAheadOfTheEditorsBuildIsNotSent cannot reach this.
      *
      * MUTATION: let the gate see only an editor already built, or let the editor's question forget the editor on its
      * way, and this fails.
@@ -1540,12 +1525,9 @@ public class testNoSetupEditDuringARun
 
     /**
      * Start pressed ahead of the editor's request does not run under the editor.  The worker comes back to the event
-     * thread for the atomic-routes gate before it starts the trains, behind an editor asked for in between, so it asks
-     * again there.
-     *
-     * In this claim's order the worker is back before the editor's build, and the build's own second look is what
-     * refuses; testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker on a question so that the build runs
-     * first.
+     * thread for the atomic-routes gate behind an editor asked for in between, so it asks again there.  In this order
+     * the build's own second look refuses; testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker on a
+     * question so that the build runs first.
      *
      * MUTATION: let Start's worker start the trains without asking again whether an editor has come, with the
      * editor's build skipping its second look, and this fails.
@@ -2652,13 +2634,7 @@ public class testNoSetupEditDuringARun
         }
     }
 
-    /**
-     * The Autonomy menu's top-level items as an opening builds them, by their text.
-     *
-     * @param ui the window
-     * @return each item by its text
-     * @throws Exception from the event thread
-     */
+    /** The Autonomy menu's top-level items as an opening builds them, by their text. */
     private static java.util.Map<String, javax.swing.JMenuItem> autonomyMenuItems(final TrainControlUI ui) throws Exception
     {
         final java.util.Map<String, javax.swing.JMenuItem> items = new java.util.LinkedHashMap<>();
@@ -3717,14 +3693,7 @@ public class testNoSetupEditDuringARun
         }
     }
 
-    /**
-     * Opens the Layout menu as the operator does, and says of each item named whether it is live and what its tooltip is.
-     *
-     * @param ui the window
-     * @param names the window's fields holding the items
-     * @return field name to {enabled, tooltip}
-     * @throws Exception from the event thread or a field
-     */
+    /** Opens the Layout menu as the operator does; for each item named, whether it is live and what its tooltip is. */
     private static java.util.Map<String, Object[]> layoutMenuAsOpened(final TrainControlUI ui, String[]... names)
         throws Exception
     {
@@ -5136,14 +5105,13 @@ public class testNoSetupEditDuringARun
     /**
      * The Auto tab's settings, Execute Timetable and the capture toggle are grayed while autonomy is busy, each saying
      * why, and given back with their own tooltips once it is not (Adam: "Implement the two grey usability fixes").  A
-     * click on a grayed setting says nothing: its handler listens for the mouse, which a grayed control still hears.
-     * Graceful Stop offered counts as busy, as Start leaves it before its run is counted; what Execute Timetable's own
-     * press grayed is not given back by the refresh.  Activate Routes is grayed the same way, and a control its owner
-     * grayed says why too.
+     * click on a grayed setting says nothing (its handler hears the mouse a grayed control still gets).  Graceful Stop
+     * offered counts as busy; what Execute Timetable's own press grayed is not given back by the refresh; Activate
+     * Routes is grayed the same way, and a control its owner grayed says why too.
      *
-     * MUTATION: gray nothing, leave the tooltips, put the refusal up on a grayed click or leave a slider where it was let
-     * go, ask the railway alone, give back what another owner grayed, gray Activate Routes with no reason, or leave an
-     * owner's gray saying nothing, and this fails.
+     * MUTATION: gray nothing, leave the tooltips, put the refusal up on a grayed click or leave a slider where it was
+     * let go, ask the railway alone, give back what another owner grayed, gray Activate Routes with no reason, or leave
+     * an owner's gray saying nothing, and this fails.
      */
     @Test
     public void testTheAutoTabIsGreyedWhileAutonomyIsBusy() throws Exception
