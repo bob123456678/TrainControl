@@ -340,6 +340,38 @@ public class testRouteEditorValidation
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
     }
 
+    /** The frame given these condition lines, packed and showing, on the event thread. */
+    private static void showRows(org.traincontrol.gui.RouteEditorFrame frame,
+        java.util.List<org.traincontrol.base.ConditionOutline.Row> rows) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            frame.setConditionRowsForTest(rows);
+            frame.pack();
+            frame.setVisible(true);
+        });
+    }
+
+    /** The frame given these condition lines, on the event thread. */
+    private static void setRows(org.traincontrol.gui.RouteEditorFrame frame,
+        java.util.List<org.traincontrol.base.ConditionOutline.Row> rows) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+    }
+
+    /** The English message bundle, read from the source folder. */
+    private static java.util.Properties englishBundle() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        return english;
+    }
+
     private static void needsADisplay()
     {
         if (GraphicsEnvironment.isHeadless())
@@ -422,7 +454,7 @@ public class testRouteEditorValidation
                 org.traincontrol.base.ConditionOutline.Joiner.AND));
             outline.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(3)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
+            setRows(frame, outline);
 
             // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the claim below is about
             // depth.
@@ -476,12 +508,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(flat(3, "OR", 4, "OR", 1, "OR", 2));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, flat(3, "OR", 4, "OR", 1, "OR", 2));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -529,12 +556,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(flat(2, "AND", 3, "AND", 1, "AND", 4));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, flat(2, "AND", 3, "AND", 1, "AND", 4));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -578,7 +600,7 @@ public class testRouteEditorValidation
 
             typed.set(1, typed.get(1).atDepth(1));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(typed));
+            setRows(frame, typed);
 
             assertEquals(depths(frame), " 0? 1OR 0?",
                 "precondition: indenting the OR on its own did not put it one level in, so there is no stranded word"
@@ -616,7 +638,7 @@ public class testRouteEditorValidation
             rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
                 org.traincontrol.base.RouteCommand.RouteCommandFeedback(3, true)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+            setRows(frame, rows);
 
             final String[] text = new String[1];
 
@@ -660,7 +682,7 @@ public class testRouteEditorValidation
             rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
             rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(5)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+            setRows(frame, rows);
 
             final String[] before = { shown(frame, 0), shown(frame, 2) };
 
@@ -699,7 +721,7 @@ public class testRouteEditorValidation
             rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
                 RouteCommand.RouteCommandAccessory(40, Accessory.accessoryDecoderType.MM2, true)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+            setRows(frame, rows);
 
             final String before = shown(frame, 0);
 
@@ -736,7 +758,7 @@ public class testRouteEditorValidation
             final java.util.List<org.traincontrol.base.ConditionOutline.Row> mixed =
                 fromLevels(" 1:2 1OR 1:3 1AND 1:4 0AND 1:5 1OR 1:6");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(mixed));
+            setRows(frame, mixed);
 
             // Each caption is read the moment it is painted: one label paints them all.  The flagged one goes first so
             // the second read is where a stale warning shows.
@@ -816,12 +838,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(flat(1, "OR", 2, "OR", 3, "AND", 4));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, flat(1, "OR", 2, "OR", 3, "AND", 4));
 
             assertFalse(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "precondition: 'or' and 'and' side by side at one level should be flagged");
@@ -875,12 +892,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 1:21 1AND 1:22 1AND 1:23 0OR 1:24 1AND 1:25 1AND 1:26"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -929,12 +941,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 1:21 1OR 1:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 1:21 1OR 1:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1001,12 +1008,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0OR 0:22"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1019,8 +1021,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 0:21 0OR 0:22 0OR 0:1", "Add Condition after \"21 or 22\" joins with its"
                 + " level's 'or'");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0AND 1:22 1OR 1:23")));
+            setRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
 
             clickCondition(table, 2, NOTHING_TO_EDIT, 0);
             press(frame, "route.ui.menuAddCondition");
@@ -1029,8 +1030,7 @@ public class testRouteEditorValidation
                 + " \"21 and (22 or 23)\", joins the group with its 'or'");
             assertEquals(selectedLine(table), 6, "and selects the new condition");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0AND 1:22 1OR 1:23")));
+            setRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
 
             press(frame, "route.ui.menuAddCondition");
 
@@ -1099,12 +1099,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(flat(21, "AND", 22, "AND", 23));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, flat(21, "AND", 22, "AND", 23));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1153,12 +1148,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 0:1 1AND 1:24 1AND 1:25"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 1:21 1AND 1:22 0OR 0:1 1AND 1:24 1AND 1:25"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1195,12 +1185,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 0:22 0OR 0:23 0OR 0:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0OR 0:22 0OR 0:23 0OR 0:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1211,8 +1196,7 @@ public class testRouteEditorValidation
                 "Delete inside the selection 22 and 23 should remove both, and the word between them");
             assertEquals(selectedRows(table), "[2]", "the line now where 22 was is selected");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 1:21 1OR 1:22 0AND 0:23 0AND 0:24")));
+            setRows(frame, fromLevels(" 1:21 1OR 1:22 0AND 0:23 0AND 0:24"));
 
             selectLines(table, 0, 2);
             rightClickAndChoose(table, 0, "ui.delete");
@@ -1220,8 +1204,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 0:23 0AND 0:24",
                 "deleting the whole group (21 or 22) should leave 23 and 24; Reads as: " + plainReading(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0OR 0:22 0OR 0:23 0OR 0:24")));
+            setRows(frame, fromLevels(" 0:21 0OR 0:22 0OR 0:23 0OR 0:24"));
 
             selectLines(table, 0, 2);
             rightClickAndChoose(table, 4, "ui.delete");
@@ -1263,12 +1246,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 1:21 1AND 1:22 0OR 1:24 1AND 1:25"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1280,8 +1258,7 @@ public class testRouteEditorValidation
             assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "the outline the delete left is flagged: " + levels(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24")));
+            setRows(frame, fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24"));
 
             selectLines(table, 2, 4);
             support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
@@ -1289,8 +1266,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 1:21 0AND 1:24",
                 "the Delete key on 22 and 23 should leave (21) and (24); Reads as: " + plainReading(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0OR 1:22 1AND 1:23")));
+            setRows(frame, fromLevels(" 0:21 0OR 1:22 1AND 1:23"));
 
             selectLines(table, 0, 2);
             rightClickAndChoose(table, 2, "ui.delete");
@@ -1298,8 +1274,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 1:23",
                 "deleting 21 and 22 of 21 or (22 and 23) should leave 23; Reads as: " + plainReading(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:3 0OR 2:1 2OR 2:2 1AND 1:4")));
+            setRows(frame, fromLevels(" 0:3 0OR 2:1 2OR 2:2 1AND 1:4"));
 
             clickCondition(table, 6, DELETE_MARK, 0);
 
@@ -1378,12 +1353,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1437,18 +1407,13 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(twoGroups));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(twoGroups));
 
             final javax.swing.JTable table = conditionTable(frame);
 
             for (Object[] c : cases)
             {
-                javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(fromLevels(twoGroups)));
+                setRows(frame, fromLevels(twoGroups));
 
                 int caption = captionLines(table).get((Integer) c[0]);
                 java.awt.Rectangle line = support.Components.onTheEventThread(() -> table.getCellRect(caption, 3, true));
@@ -1492,12 +1457,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(three));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(three));
 
             final javax.swing.JTable table = conditionTable(frame);
             final javax.swing.JTextField elsewhere = support.Components.find(frame, javax.swing.JTextField.class,
@@ -1577,12 +1537,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1777,12 +1732,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -1856,12 +1806,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -2555,12 +2500,7 @@ public class testRouteEditorValidation
     @Test
     public void testTheTrainAtASensorKindsSayAutonomyAndWhichWayRound() throws Exception
     {
-        java.util.Properties english = new java.util.Properties();
-
-        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
-        {
-            english.load(in);
-        }
+        java.util.Properties english = englishBundle();
 
         assertEquals(english.getProperty("route.kind." + CommandRow.Kind.AUTO_LOCOMOTIVE.name()),
             "Autonomy: Train At A Sensor", "the at kind does not say it is autonomy's");
@@ -2585,7 +2525,7 @@ public class testRouteEditorValidation
             rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
                 RouteCommand.RouteCommandAutoLocomotive("BR 212", 22, false)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+            setRows(frame, rows);
 
             final String[] text = new String[1];
 
@@ -2633,7 +2573,7 @@ public class testRouteEditorValidation
             rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
                 RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+            setRows(frame, rows);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 frame.setConditionKindForTest(0, CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT));
@@ -2664,12 +2604,7 @@ public class testRouteEditorValidation
     @Test
     public void testATrainAtASensorsSettingSaysItIsTheSensorAddress() throws Exception
     {
-        java.util.Properties english = new java.util.Properties();
-
-        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
-        {
-            english.load(in);
-        }
+        java.util.Properties english = englishBundle();
 
         assertEquals(english.getProperty("route.ui.frameSensorAddress"), "Sensor address: {0}",
             "the setting of a train-at-a-sensor line does not say it is the sensor address");
@@ -2690,7 +2625,7 @@ public class testRouteEditorValidation
             rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
             rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(5)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+            setRows(frame, rows);
 
             final String[][] cell = new String[3][2];
 
@@ -2745,12 +2680,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -2802,12 +2732,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -2885,12 +2810,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
             final int line = screen(table, 2);
@@ -2941,8 +2861,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0OR 1:22 1AND 1:23")));
+            setRows(frame, fromLevels(" 0:21 0OR 1:22 1AND 1:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -2998,12 +2917,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 1:23 0AND 0:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23 0AND 0:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3012,8 +2926,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 0:21 0OR 1:22 1OR 1:23 0OR 0:24",
                 "choosing At least one on the outer caption should make both of its words 'or', the nested one kept");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0OR 0:22 0AND 0:23")));
+            setRows(frame, fromLevels(" 0:21 0OR 0:22 0AND 0:23"));
 
             chooseRule(table, 0, "route.ui.conditionCaptionAll");
 
@@ -3021,7 +2934,7 @@ public class testRouteEditorValidation
             assertTrue(org.traincontrol.base.ConditionOutline.problems(frame.conditionRowsForTest()).isEmpty(),
                 "a mixed group is still flagged after its rule was chosen: " + levels(frame));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(fromLevels(" 0:21")));
+            setRows(frame, fromLevels(" 0:21"));
 
             chooseRule(table, 0, "route.ui.conditionCaptionAny");
 
@@ -3111,12 +3024,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
             final java.util.List<String> seen = new java.util.ArrayList<>();
@@ -3264,12 +3172,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3334,12 +3237,7 @@ public class testRouteEditorValidation
         {
             final String twoGroups = " 0:21 0AND 1:22 1OR 1:23 0AND 1:24 1OR 1:25";
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(twoGroups));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(twoGroups));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3389,12 +3287,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22"));
 
             final javax.swing.JTable table = conditionTable(frame);
             final javax.swing.AbstractButton add = support.Components.withText(frame,
@@ -3448,12 +3341,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24 1OR 1:25 0AND 0:26"));
 
             final javax.swing.JTable table = conditionTable(frame);
             final org.traincontrol.base.NodeExpression meant = both(both(both(on(21),
@@ -3524,12 +3412,7 @@ public class testRouteEditorValidation
             final String pairs = " 1:21 1AND 1:22 0OR 1:23 1AND 1:24";
             final org.traincontrol.base.NodeExpression meant = either(both(on(21), on(22)), both(on(23), on(24)));
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(anyOfFour));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(anyOfFour));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3546,7 +3429,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), pairs, "c and d grouped, then made 'all'");
             assertEquivalent(heldBy(frame), meant, null, "by Group Selected and the captions");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(fromLevels(anyOfFour)));
+            setRows(frame, fromLevels(anyOfFour));
 
             chooseRule(table, 0, "route.ui.conditionCaptionAll");
 
@@ -3587,12 +3470,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23 0AND 0:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3609,8 +3487,7 @@ public class testRouteEditorValidation
                 "Alt+Up twice on 21 and 22: back, then nowhere to go");
             assertEquals(selectedRows(table), "[0, 2]", "21 and 22 stay selected at the top");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24")));
+            setRows(frame, fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24"));
 
             selectLines(table, 4, 6);
             chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
@@ -3648,12 +3525,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3680,8 +3552,7 @@ public class testRouteEditorValidation
             assertEquivalent(org.traincontrol.base.ConditionOutline.toExpression(frame.conditionRowsForTest()), before,
                 null, "Group Selected on 22 and 23 of 21 and 22 and 23");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0OR 0:22 0OR 0:23")));
+            setRows(frame, fromLevels(" 0:21 0OR 0:22 0OR 0:23"));
 
             final org.traincontrol.base.NodeExpression either =
                 org.traincontrol.base.ConditionOutline.toExpression(frame.conditionRowsForTest());
@@ -3721,12 +3592,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0OR 1:22 1AND 2:23 2OR 2:24 1AND 1:25"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0OR 1:22 1AND 2:23 2OR 2:24 1AND 1:25"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3772,12 +3638,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 1:22 1OR 1:23 0AND 0:24"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23 0AND 0:24"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -3790,8 +3651,7 @@ public class testRouteEditorValidation
                 "24 dragged above 23 should join the 'or' group, joined by 'or'");
             assertEquals(selectedRows(table), "[4]", "the dragged condition stays selected");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0AND 1:22 1OR 1:23")));
+            setRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
 
             final java.awt.Rectangle last = support.Components.onTheEventThread(() ->
                 table.getCellRect(table.getRowCount() - 1, ADDRESS, true));
@@ -3801,8 +3661,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 1:22 1OR 1:23 0AND 0:21",
                 "21 dropped below the last line at the handle should land at the end of the outer group");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0AND 1:22 1OR 1:23")));
+            setRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
 
             drag(table, 0, new java.awt.Point(last.x + 10, last.y + last.height - 2));
 
@@ -3831,12 +3690,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -4140,12 +3994,7 @@ public class testRouteEditorValidation
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                frame.setConditionRowsForTest(fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
-                frame.pack();
-                frame.setVisible(true);
-            });
+            showRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             final javax.swing.JTable table = conditionTable(frame);
 
@@ -4167,8 +4016,7 @@ public class testRouteEditorValidation
             assertEquivalent(heldBy(frame), either(both(on(21), on(22)), on(23)), null, "21 and 22 and 23 split at 23");
             assertEquals(selectedRows(table), "[4]", "23 stays selected");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0AND 0:22 0AND 0:23")));
+            setRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
 
             clickCondition(table, 2, HANDLE, 0);
             support.Keys.press(table, java.awt.event.KeyEvent.VK_S,
@@ -4177,8 +4025,7 @@ public class testRouteEditorValidation
             assertEquals(levels(frame), " 0:21 0OR 1:22 1AND 1:23", "Ctrl+Shift+S at 22 of 21 and 22 and 23");
             assertEquivalent(heldBy(frame), either(on(21), both(on(22), on(23))), null, "21 and 22 and 23 split at 22");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0OR 1:22 1AND 1:23 1AND 1:24")));
+            setRows(frame, fromLevels(" 0:21 0OR 1:22 1AND 1:23 1AND 1:24"));
 
             clickCondition(table, 2, HANDLE, 0);
 
@@ -4191,8 +4038,7 @@ public class testRouteEditorValidation
             assertEquivalent(heldBy(frame), either(on(21), either(both(on(22), on(23)), on(24))), null,
                 "21 or (22 and 23 and 24) split at 24");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(
-                fromLevels(" 0:21 0AND 1:22 1AND 1:23 1AND 1:24")));
+            setRows(frame, fromLevels(" 0:21 0AND 1:22 1AND 1:23 1AND 1:24"));
 
             clickCondition(table, 4, HANDLE, 0);
             press(frame, "route.ui.menuSplitHere");

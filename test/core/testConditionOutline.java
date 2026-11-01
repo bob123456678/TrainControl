@@ -79,12 +79,7 @@ public class testConditionOutline
     @Test
     public void testAnIndentedWordJoinsTheIndentedThings()
     {
-        NodeExpression parsed = ConditionOutline.toExpression(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3)));
+        NodeExpression parsed = ConditionOutline.toExpression(fromLevels(" 0:1 0AND 1:2 1OR 1:3"));
 
         assertTrue(parsed instanceof NodeAnd,
             "1 and (2 or 3) - the AND is at the outer level, so it is the top of the tree.  An OR "
@@ -98,12 +93,7 @@ public class testConditionOutline
     @Test
     public void testTheOuterWordIsTheTopOfTheTree()
     {
-        NodeExpression parsed = ConditionOutline.toExpression(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.OR),
-            condition(0, 2),
-            joining(0, ConditionOutline.Joiner.OR),
-            condition(0, 3)));
+        NodeExpression parsed = ConditionOutline.toExpression(fromLevels(" 0:1 0OR 0:2 0OR 0:3"));
 
         assertTrue(parsed instanceof NodeOr, "all three at one level, joined by one word");
     }
@@ -115,12 +105,7 @@ public class testConditionOutline
     @Test
     public void testMixedWordsAtOneLevelAreFlagged()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 2),
-            joining(0, ConditionOutline.Joiner.OR),
-            condition(0, 3));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:1 0AND 0:2 0OR 0:3");
 
         java.util.Set<Integer> flagged = ConditionOutline.problems(rows);
 
@@ -139,14 +124,7 @@ public class testConditionOutline
     @Test
     public void testAWordDeeperThanAConditionBesideItIsFlagged()
     {
-        java.util.Set<Integer> flagged = ConditionOutline.problems(outline(
-            condition(0, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(0, 3),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 1),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 4)));
+        java.util.Set<Integer> flagged = ConditionOutline.problems(fromLevels(" 0:2 1OR 0:3 0AND 1:1 1OR 1:4"));
 
         assertTrue(flagged.contains(1),
             "the OR one level deeper than both conditions it sits between was not flagged - so it is read as"
@@ -161,14 +139,7 @@ public class testConditionOutline
     @Test
     public void testEachFlagSaysWhy()
     {
-        java.util.List<ConditionOutline.Row> rows = outline(
-            condition(0, 2),
-            joining(0, ConditionOutline.Joiner.OR),
-            condition(0, 3),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 4),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(0, 5));
+        java.util.List<ConditionOutline.Row> rows = fromLevels(" 0:2 0OR 0:3 0AND 0:4 1OR 0:5");
 
         java.util.Map<Integer, ConditionOutline.Problem> why = ConditionOutline.whatIsWrong(rows);
 
@@ -186,14 +157,7 @@ public class testConditionOutline
     @Test
     public void testAWordJoiningTwoGroupsIsNotFlagged()
     {
-        assertTrue(ConditionOutline.problems(outline(
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 1),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 4))).isEmpty(),
+        assertTrue(ConditionOutline.problems(fromLevels(" 1:2 1OR 1:3 0AND 1:1 1OR 1:4")).isEmpty(),
             "(2 or 3) and (1 or 4) was flagged - the AND sits shallower than both its neighbours, which is exactly"
             + " how an outline joins two groups");
     }
@@ -202,12 +166,7 @@ public class testConditionOutline
     @Test
     public void testIndentingResolvesTheDisagreement()
     {
-        assertTrue(ConditionOutline.problems(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3))).isEmpty(),
+        assertTrue(ConditionOutline.problems(fromLevels(" 0:1 0AND 1:2 1OR 1:3")).isEmpty(),
             "one AND at the outer level and one OR at the inner one - each level agrees with itself, "
             + "which is the whole rule");
     }
@@ -216,24 +175,15 @@ public class testConditionOutline
     @Test
     public void testOneWordManyTimesIsFine()
     {
-        assertTrue(ConditionOutline.problems(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 2),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 3))).isEmpty(), "three conditions, all required");
+        assertTrue(ConditionOutline.problems(fromLevels(
+            " 0:1 0AND 0:2 0AND 0:3")).isEmpty(), "three conditions, all required");
     }
 
     /** And the same word at different levels is not a disagreement. */
     @Test
     public void testLevelsAreJudgedSeparately()
     {
-        assertTrue(ConditionOutline.problems(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.OR),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.AND),
-            condition(1, 3))).isEmpty(),
+        assertTrue(ConditionOutline.problems(fromLevels(" 0:1 0OR 1:2 1AND 1:3")).isEmpty(),
             "an OR outside and an AND inside is exactly what indenting is for - judging them together "
             + "would make the feature useless");
     }
@@ -255,12 +205,7 @@ public class testConditionOutline
     @Test
     public void testAnExistingConditionSurvivesBeingShownAsAnOutline()
     {
-        NodeExpression original = ConditionOutline.toExpression(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3)));
+        NodeExpression original = ConditionOutline.toExpression(fromLevels(" 0:1 0AND 1:2 1OR 1:3"));
 
         List<ConditionOutline.Row> shown = ConditionOutline.of(original);
 
@@ -311,12 +256,7 @@ public class testConditionOutline
     @Test
     public void testTheOrdinaryCaseDoesNotDrift()
     {
-        NodeExpression original = ConditionOutline.toExpression(outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 2),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 3)));
+        NodeExpression original = ConditionOutline.toExpression(fromLevels(" 0:1 0AND 0:2 0AND 0:3"));
 
         List<ConditionOutline.Row> shown = ConditionOutline.of(original);
 
@@ -337,16 +277,7 @@ public class testConditionOutline
     @Test
     public void testNestingGoesAsDeepAsItIsAsked()
     {
-        List<ConditionOutline.Row> deep = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(2, 3),
-            joining(2, ConditionOutline.Joiner.AND),
-            condition(3, 4),
-            joining(3, ConditionOutline.Joiner.OR),
-            condition(3, 5));
+        List<ConditionOutline.Row> deep = fromLevels(" 0:1 0AND 1:2 1OR 2:3 2AND 3:4 3OR 3:5");
 
         assertTrue(ConditionOutline.problems(deep).isEmpty(),
             "every level agrees with itself, so nothing should be flagged");
@@ -376,10 +307,7 @@ public class testConditionOutline
     @Test
     public void testMovingAConditionKeepsTheWordThatJoinsIt()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 2));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:1 0AND 0:2");
 
         List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 2, -1);
 
@@ -399,12 +327,7 @@ public class testConditionOutline
     @Test
     public void testMovingAConditionDoesNotDeformTheNesting()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:1 0AND 1:2 1OR 1:3");
 
         List<ConditionOutline.Row> moved = ConditionOutline.moved(rows, 4, -1);
 
@@ -421,23 +344,9 @@ public class testConditionOutline
     @Test
     public void testAConditionMovesPastAWholeGroup()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(1, 1),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 4));
+        List<ConditionOutline.Row> rows = fromLevels(" 1:1 1OR 1:2 1OR 1:3 0AND 0:4");
 
-        List<ConditionOutline.Row> expected = outline(
-            condition(0, 4),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 1),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3));
+        List<ConditionOutline.Row> expected = fromLevels(" 0:4 0AND 1:1 1OR 1:2 1OR 1:3");
 
         assertEquals(ConditionOutline.landing(rows, 6, -1), 0, "4 lands on the first line");
 
@@ -463,10 +372,7 @@ public class testConditionOutline
     @Test
     public void testThereIsNothingToMoveAtTheEnds()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 2));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:1 0AND 0:2");
 
         assertFalse(ConditionOutline.canMove(rows, 0, -1), "nothing above the first condition");
         assertFalse(ConditionOutline.canMove(rows, 2, 1), "nor below the last");
@@ -488,14 +394,7 @@ public class testConditionOutline
     @Test
     public void testSelectedConditionsMoveTogether()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 2),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 3),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 4));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:1 0AND 0:2 0AND 0:3 0AND 0:4");
 
         java.util.Set<Integer> first = new java.util.TreeSet<>(java.util.Arrays.asList(0, 2));
         java.util.Set<Integer> second = new java.util.TreeSet<>(java.util.Arrays.asList(2, 6));
@@ -582,13 +481,7 @@ public class testConditionOutline
     @Test
     public void testAConditionMovedPastItsGroupsEdgeJoinsTheNextGroup()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
-            joining(1, ConditionOutline.Joiner.AND), condition(1, 3),
-            joining(0, ConditionOutline.Joiner.OR),
-            condition(1, 7), joining(1, ConditionOutline.Joiner.AND), condition(1, 4),
-            joining(1, ConditionOutline.Joiner.AND), condition(1, 5), joining(1, ConditionOutline.Joiner.AND),
-            condition(1, 6));
+        List<ConditionOutline.Row> rows = fromLevels(" 1:1 1AND 1:2 1AND 1:3 0OR 1:7 1AND 1:4 1AND 1:5 1AND 1:6");
 
         List<ConditionOutline.Row> up = ConditionOutline.moved(rows, 6, -1);
 
@@ -600,12 +493,7 @@ public class testConditionOutline
         assertEquals(ConditionOutline.landing(up, 6, 1), 6, "landing on its old line");
 
         // Nested deeper, and a group left with one condition: "1 or (2 and (3 or 4) and (5 or 6))", 5 moved up.
-        List<ConditionOutline.Row> deep = outline(
-            condition(0, 1), joining(0, ConditionOutline.Joiner.OR),
-            condition(1, 2), joining(1, ConditionOutline.Joiner.AND),
-            condition(2, 3), joining(2, ConditionOutline.Joiner.OR), condition(2, 4),
-            joining(1, ConditionOutline.Joiner.AND),
-            condition(2, 5), joining(2, ConditionOutline.Joiner.OR), condition(2, 6));
+        List<ConditionOutline.Row> deep = fromLevels(" 0:1 0OR 1:2 1AND 2:3 2OR 2:4 1AND 2:5 2OR 2:6");
 
         List<ConditionOutline.Row> joined = ConditionOutline.moved(deep, 8, -1);
 
@@ -626,14 +514,7 @@ public class testConditionOutline
     @Test
     public void testNoArrowWhereThereIsNoGroupAcrossTheEdge()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(0, 1),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 2),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 3),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 4));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:1 0AND 1:2 1OR 1:3 0AND 0:4");
 
         assertFalse(ConditionOutline.canMove(rows, 2, -1), "2 offered a way up out of its group: " + levels(rows));
         assertFalse(ConditionOutline.canMove(rows, 4, 1), "3 offered a way down out of its group: " + levels(rows));
@@ -657,12 +538,7 @@ public class testConditionOutline
         List<List<ConditionOutline.Row>> outlines = new ArrayList<>();
 
         // "(a and b and c) or (d and e and f)" with g added at the end
-        outlines.add(outline(
-            condition(1, 1), joining(1, ConditionOutline.Joiner.AND), condition(1, 2),
-            joining(1, ConditionOutline.Joiner.AND), condition(1, 3), joining(0, ConditionOutline.Joiner.OR),
-            condition(1, 4), joining(1, ConditionOutline.Joiner.AND), condition(1, 5),
-            joining(1, ConditionOutline.Joiner.AND), condition(1, 6), joining(1, ConditionOutline.Joiner.AND),
-            condition(1, 7)));
+        outlines.add(fromLevels(" 1:1 1AND 1:2 1AND 1:3 0OR 1:4 1AND 1:5 1AND 1:6 1AND 1:7"));
 
         // Typed a row at a time, and as `of` writes a route's condition (which steps two levels at a time)
         for (int tries = 0; tries < 200000 && outlines.size() < 600; tries++)
@@ -834,11 +710,8 @@ public class testConditionOutline
     @Test
     public void testASameRuleGroupSurvivesTheRoutesFile() throws Exception
     {
-        List<ConditionOutline.Row> inside = outline(condition(0, 21), joining(0, ConditionOutline.Joiner.AND),
-            condition(1, 22), joining(1, ConditionOutline.Joiner.AND), condition(1, 23),
-            joining(0, ConditionOutline.Joiner.AND), condition(0, 24));
-        List<ConditionOutline.Row> first = outline(condition(1, 21), joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 22), joining(0, ConditionOutline.Joiner.OR), condition(0, 23));
+        List<ConditionOutline.Row> inside = fromLevels(" 0:21 0AND 1:22 1AND 1:23 0AND 0:24");
+        List<ConditionOutline.Row> first = fromLevels(" 1:21 1OR 1:22 0OR 0:23");
 
         for (List<ConditionOutline.Row> rows : java.util.Arrays.asList(inside, first))
         {
@@ -870,12 +743,7 @@ public class testConditionOutline
     @Test
     public void testAConditionThatStartsWithAGroupKeepsTheRest()
     {
-        List<ConditionOutline.Row> rows = outline(
-            condition(1, 1),
-            joining(1, ConditionOutline.Joiner.OR),
-            condition(1, 2),
-            joining(0, ConditionOutline.Joiner.AND),
-            condition(0, 3));
+        List<ConditionOutline.Row> rows = fromLevels(" 1:1 1OR 1:2 0AND 0:3");
 
         assertEquals(describe(ConditionOutline.toExpression(rows)), "and((or(1,2)),3)",
             "everything after the leading group was dropped, which is a route that fires on half "
@@ -1028,15 +896,6 @@ public class testConditionOutline
             ((org.traincontrol.base.NodeRouteCommand) node).getRouteCommand().getAddress());
     }
 
-    private static List<ConditionOutline.Row> outline(ConditionOutline.Row... rows)
-    {
-        List<ConditionOutline.Row> out = new ArrayList<>();
-
-        for (ConditionOutline.Row row : rows) out.add(row);
-
-        return out;
-    }
-
     private static ConditionOutline.Row condition(int depth, int sensor)
     {
         return ConditionOutline.Row.condition(depth, RouteCommand.RouteCommandFeedback(sensor, true));
@@ -1174,9 +1033,7 @@ public class testConditionOutline
     @Test
     public void testAnEditToOneGroupLeavesTheRestAsItWas()
     {
-        List<ConditionOutline.Row> rows = outline(condition(0, 3), joining(0, ConditionOutline.Joiner.OR),
-            condition(2, 1), joining(2, ConditionOutline.Joiner.OR), condition(2, 2),
-            joining(1, ConditionOutline.Joiner.AND), condition(1, 4));
+        List<ConditionOutline.Row> rows = fromLevels(" 0:3 0OR 2:1 2OR 2:2 1AND 1:4");
 
         assertEquals(levels(ConditionOutline.of(ConditionOutline.toExpression(rows))), levels(rows),
             "precondition: the fixture is the outline `of` writes for 3 or ((1 or 2) and 4)");

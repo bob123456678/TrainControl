@@ -1520,16 +1520,7 @@ public class testTheTailIsPickedOnTheDiagram
             int from = logged().length();
 
             // ON THE MAIN WINDOW'S DIAGRAM: the editor's own squares are lit too, and do not take the click.
-            TileKey pre = null;
-
-            for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(model.getAutoLayout(),
-                model.getAutoLayout().getPoint("Tunnel (southbound)"), "N", 5, null))
-            {
-                if (choice.getFarthest().getName().startsWith("TunnelPre")) pre = session.getStationIndex().squareOf(
-                    choice.getFarthest());
-            }
-
-            assertNotNull(pre, "precondition: no TunnelPre square to click");
+            TileKey pre = tunnelPreSquare(session);
 
             LayoutLabel onTheMainWindow = null;
 
@@ -1804,7 +1795,8 @@ public class testTheTailIsPickedOnTheDiagram
             && System.currentTimeMillis() < end; ) Thread.sleep(50);
     }
 
-    private static void clickTunnelPre(AutonomySession session) throws Exception
+    /** The square of the TunnelPre choice in the tail question asked at Tunnel (southbound), for a train of 5 from the north. */
+    private static TileKey tunnelPreSquare(AutonomySession session)
     {
         TileKey square = null;
 
@@ -1816,6 +1808,13 @@ public class testTheTailIsPickedOnTheDiagram
         }
 
         assertNotNull(square, "precondition: no TunnelPre square to click");
+
+        return square;
+    }
+
+    private static void clickTunnelPre(AutonomySession session) throws Exception
+    {
+        TileKey square = tunnelPreSquare(session);
 
         java.util.Set<LayoutLabel> labels = ui.getDiagramTileRegistry().labelsFor(square);
 
@@ -2235,18 +2234,6 @@ public class testTheTailIsPickedOnTheDiagram
 
     private static javax.swing.JOptionPane findPane(java.awt.Container in)
     {
-        for (java.awt.Component c : in.getComponents())
-        {
-            if (c instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) c;
-
-            if (c instanceof java.awt.Container)
-            {
-                javax.swing.JOptionPane inner = findPane((java.awt.Container) c);
-
-                if (inner != null) return inner;
-            }
-        }
-
-        return null;
+        return support.Components.inside(in, javax.swing.JOptionPane.class);
     }
 }
