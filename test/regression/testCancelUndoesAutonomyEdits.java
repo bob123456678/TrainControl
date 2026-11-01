@@ -318,24 +318,9 @@ public class testCancelUndoesAutonomyEdits
             assertFalse(before.isEmpty(), "precondition: no locomotive stands anywhere on the snapshot, so a bulk"
                 + " clear takes nothing and Cancel has nothing to put back");
 
-            final java.lang.reflect.Method clear =
-                editor.getAutonomyPanel().getClass().getDeclaredMethod("clearAllPlacements");
-
-            clear.setAccessible(true);
-
             answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    clear.invoke(editor.getAutonomyPanel());
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            clearAllPlacements(editor);
 
             settle();
 
@@ -392,21 +377,8 @@ public class testCancelUndoesAutonomyEdits
         {
             Map<String, String> before = placements();
             assertFalse(before.isEmpty(), "precondition: no locomotive stands anywhere on the snapshot");
-            final java.lang.reflect.Method clear =
-                editor.getAutonomyPanel().getClass().getDeclaredMethod("clearAllPlacements");
-            clear.setAccessible(true);
             answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    clear.invoke(editor.getAutonomyPanel());
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            clearAllPlacements(editor);
             settle();
             answerer.stop();
             assertTrue(placements().isEmpty(), "precondition: the bulk clear left " + placements() + " on the setup");
@@ -417,19 +389,7 @@ public class testCancelUndoesAutonomyEdits
             answerer.stop();
             assertTrue(answerer.answered(), "precondition: the exit did not ask about the unsaved clear");
             assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
-            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-            fold.setAccessible(true);
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    fold.invoke(ui);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            foldTheRunningLayout();
             settle();
             assertEquals(placements(), before,
                 "Discard on the way out restored the setup, and the save on the way out then folded the running"
@@ -535,19 +495,7 @@ public class testCancelUndoesAutonomyEdits
             settle();
             answerer.stop();
             assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
-            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-            fold.setAccessible(true);
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    fold.invoke(ui);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            foldTheRunningLayout();
             settle();
             assertEquals(directions(session).toString(), before.toString(),
                 "Discard on the way out did not keep the arrow put back in the setup");
@@ -576,35 +524,13 @@ public class testCancelUndoesAutonomyEdits
         Answerer answerer = null;
         try
         {
-            TileKey square = null;
-            String locomotive = null;
-            for (TileKey tile : session.getReducer().getPoints().keySet())
-            {
-                String name = session.getLocomotiveNameAt(tile);
-                if (name != null && session.getPointProperty(tile, "home") == null)
-                {
-                    square = tile;
-                    locomotive = name;
-                    break;
-                }
-            }
-            if (square == null) fail("precondition: no square with a locomotive and no home to give it one");
+            final Map.Entry<TileKey, String> standing = aLocomotiveWithNoHome();
+            final TileKey at = standing.getKey();
+            final String name = standing.getValue();
             Map<String, String> before = homes(session);
-            final TileKey at = square;
-            final String name = locomotive;
-            SwingUtilities.invokeAndWait(() ->
-            {
-                session.setHome(at, name);
-                ui.rebuildRunningLayoutFromSetup();
-            });
-            settle();
-            assertNotEquals(homes(session), before, "precondition: making " + at + " home to " + name + " changed nothing");
-            boolean carried = false;
-            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
-            {
-                if (point.getHomeLoc() != null && name.equals(point.getHomeLoc().getName())) carried = true;
-            }
-            assertTrue(carried, "precondition: the running layout does not carry the home given to " + name
+            giveAHomeAndRebuild(at, name, before);
+            assertTrue(theRunningLayoutCarriesTheHomeOf(name),
+                "precondition: the running layout does not carry the home given to " + name
                 + ", so the exit's fold has nothing to write back and this claim cannot fail");
             answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
             final boolean[] mayExit = new boolean[1];
@@ -612,19 +538,7 @@ public class testCancelUndoesAutonomyEdits
             settle();
             answerer.stop();
             assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
-            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-            fold.setAccessible(true);
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    fold.invoke(ui);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            foldTheRunningLayout();
             settle();
             assertEquals(homes(session), before,
                 "Discard on the way out restored the setup, and the save on the way out then folded the running"
@@ -654,21 +568,9 @@ public class testCancelUndoesAutonomyEdits
         declined.setAccessible(true);
         try
         {
-            TileKey square = null;
-            String locomotive = null;
-            for (TileKey tile : session.getReducer().getPoints().keySet())
-            {
-                String name = session.getLocomotiveNameAt(tile);
-                if (name != null && session.getPointProperty(tile, "home") == null)
-                {
-                    square = tile;
-                    locomotive = name;
-                    break;
-                }
-            }
-            if (square == null) fail("precondition: no square with a locomotive and no home to give it one");
-            final TileKey at = square;
-            final String name = locomotive;
+            final Map.Entry<TileKey, String> standing = aLocomotiveWithNoHome();
+            final TileKey at = standing.getKey();
+            final String name = standing.getValue();
             SwingUtilities.invokeAndWait(() ->
             {
                 session.setHome(at, name);
@@ -687,19 +589,7 @@ public class testCancelUndoesAutonomyEdits
             assertEquals(homes(fromDisk()).get(at.toString()), name, "precondition: the home did not reach the file");
             // The running layout was not rebuilt after the write, so it does not carry the home: the fold removed it.
             declined.setBoolean(ui, true);
-            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-            fold.setAccessible(true);
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    fold.invoke(ui);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            foldTheRunningLayout();
             settle();
             assertEquals(homes(session).get(at.toString()), name,
                 "the fold removed the home that was declined during the run - the layout it folded was built"
@@ -902,6 +792,85 @@ public class testCancelUndoesAutonomyEdits
         }
 
         return out;
+    }
+
+    /** A square whose locomotive has no home yet, with the locomotive's name. */
+    private static Map.Entry<TileKey, String> aLocomotiveWithNoHome()
+    {
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            String name = session.getLocomotiveNameAt(tile);
+
+            if (name != null && session.getPointProperty(tile, "home") == null)
+            {
+                return new java.util.AbstractMap.SimpleEntry<>(tile, name);
+            }
+        }
+
+        fail("precondition: no square with a locomotive and no home to give it one");
+
+        return null;
+    }
+
+    /** Gives the locomotive a home through the session and rebuilds the running layout, as the editor's home door does. */
+    private static void giveAHomeAndRebuild(final TileKey at, final String name, Map<String, String> before) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            session.setHome(at, name);
+            ui.rebuildRunningLayoutFromSetup();
+        });
+        settle();
+        assertNotEquals(homes(session), before, "precondition: making " + at + " home to " + name + " changed nothing");
+    }
+
+    /** Whether the running layout has a square whose home is the named locomotive. */
+    private static boolean theRunningLayoutCarriesTheHomeOf(String name)
+    {
+        for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+        {
+            if (point.getHomeLoc() != null && name.equals(point.getHomeLoc().getName())) return true;
+        }
+
+        return false;
+    }
+
+    /** Runs the autonomy panel's bulk clear of every placement on the event thread. */
+    private static void clearAllPlacements(final LayoutEditor editor) throws Exception
+    {
+        final java.lang.reflect.Method clear = editor.getAutonomyPanel().getClass().getDeclaredMethod("clearAllPlacements");
+
+        clear.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                clear.invoke(editor.getAutonomyPanel());
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+    }
+
+    /** Calls the exit's fold of the running layout back into the setup (`captureRunningLayout`) on the event thread. */
+    private static void foldTheRunningLayout() throws Exception
+    {
+        final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+        fold.setAccessible(true);
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                fold.invoke(ui);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
     }
 
     // ---------------------------------------------------------------- the fixture
@@ -1201,35 +1170,13 @@ public class testCancelUndoesAutonomyEdits
         final LayoutEditor editor = opened();
         try
         {
-            TileKey square = null;
-            String locomotive = null;
-            for (TileKey tile : session.getReducer().getPoints().keySet())
-            {
-                String name = session.getLocomotiveNameAt(tile);
-                if (name != null && session.getPointProperty(tile, "home") == null)
-                {
-                    square = tile;
-                    locomotive = name;
-                    break;
-                }
-            }
-            if (square == null) fail("precondition: no square with a locomotive and no home to give it one");
+            final Map.Entry<TileKey, String> standing = aLocomotiveWithNoHome();
+            final TileKey at = standing.getKey();
+            final String name = standing.getValue();
             Map<String, String> before = homes(session);
-            final TileKey at = square;
-            final String name = locomotive;
-            SwingUtilities.invokeAndWait(() ->
-            {
-                session.setHome(at, name);
-                ui.rebuildRunningLayoutFromSetup();
-            });
-            settle();
-            assertNotEquals(homes(session), before, "precondition: making " + at + " home to " + name + " changed nothing");
-            boolean carried = false;
-            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
-            {
-                if (point.getHomeLoc() != null && name.equals(point.getHomeLoc().getName())) carried = true;
-            }
-            assertTrue(carried, "precondition: the running layout does not carry the home given to " + name
+            giveAHomeAndRebuild(at, name, before);
+            assertTrue(theRunningLayoutCarriesTheHomeOf(name),
+                "precondition: the running layout does not carry the home given to " + name
                 + ", so a fold has nothing to write back and this claim cannot fail");
             final java.lang.reflect.Method discard = LayoutEditor.class.getDeclaredMethod("discardAutonomyWork");
             final java.lang.reflect.Method close = LayoutEditor.class.getDeclaredMethod("closeAutonomyMode");
