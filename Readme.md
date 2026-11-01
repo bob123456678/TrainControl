@@ -425,6 +425,7 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - `Why not Moving?` colors a station purple only when the train could be sent there by hand; one it cannot be sent to is gray. Its lines now follow the routes the train would actually take, including a purple line to each purple station, and no stretch of track is drawn twice.
+            - `Why not Moving?` and the Auto tab no longer list a station the train can go to among those it cannot go to right now.
         - Track Diagram
             - `Save Current Track Diagram as a Picture` now asks "What diagram size do you want to save?"
 * v3.0.6 [10/30/2026]
