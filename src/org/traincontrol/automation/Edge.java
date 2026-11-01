@@ -27,14 +27,14 @@ public class Edge
     /**
      * How many claims are standing on this edge, not whether any is: a boolean cannot hold two claims, and the first
      * release would free track a second train is still crossing.  setOccupied raises this edge and each of its lock
-     * edges and setUnoccupied lowers them; the "LockedEdge" methods do the same without the cascade, so a lock relation
-     * cannot recurse.  Floored at zero (see release()).
+     * edges and setUnoccupied lowers them; the "LockedEdge" methods do the same without the cascade.  Floored at zero
+     * (see release()).
      */
     private int occupancy;
     /**
-     * How many paths are running over this rail, as against holding it clear (OB-269).  `occupancy` counts both,
-     * because a path also claims every edge in each of its edges' `lockEdges`; that is right for `isOccupied` and
-     * `getActiveAccs`, but too wide for whether a candidate path may use this rail, which `isRunOver` answers.
+     * How many paths are running over this rail, as against holding it clear (OB-269).  `occupancy` counts both (a path
+     * also claims every edge in each edge's `lockEdges`), too wide for whether a candidate path may use this rail,
+     * which `isRunOver` answers.
      */
     private int runOver;
     private final Point start;
@@ -296,10 +296,8 @@ public class Edge
     /**
      * The side of the END point this edge comes in by, as the build names it.  A Point may be the far end of a run that
      * turns corners, so the compass direction of the neighboring Point (`Layout.sideTowards`) is not the side the metal
-     * leaves by; the arrival write, the tail walk and the operator doors all read this one vocabulary (OB-182).
-     *
-     * Null for a configuration written before this existed or built by hand; every reader then falls back to the
-     * geometry.
+     * leaves by; the arrival write, the tail walk and the operator doors all read this one vocabulary (OB-182).  Null
+     * for a configuration written before this existed or built by hand; every reader then falls back to the geometry.
      */
     private String entrySide = null;
 
@@ -321,8 +319,7 @@ public class Edge
 
     /**
      * The places this edge runs over, in order from its start, and what each measures (OB-207).  Without these an edge
-     * is covered whole or not at all: a one-unit train parked at the end of a twelve-tile run refused every path
-     * sharing any tile of it.  Written by the builder from `GraphReducer.placesAlong`; the lengths sum to
+     * is covered whole or not at all.  Written by the builder from `GraphReducer.placesAlong`; the lengths sum to
      * `getLength()`, the arriving square counting and the departing one not.  Empty for a hand-written or pre-3.0.0
      * configuration, where every reader falls back to the whole-edge answer.
      */
@@ -391,11 +388,9 @@ public class Edge
 
     /**
      * What Mass Assign Lengths would ask a length for on this edge, place by place: the key of the piece, switch or
-     * shared square each place lies in, where that still wants a length (OB-297).  The own-tail note counts these, so
-     * it asks for exactly what the editor offers.
-     *
-     * Written by the build; a configuration built before has none, and says so (`knowsPiecesToMeasure`), and its edges
-     * are read whole.
+     * shared square each place lies in, where that still wants a length (OB-297).  The own-tail note counts these.
+     * Written by the build; a configuration built before has none (`knowsPiecesToMeasure`) and its edges are read
+     * whole.
      */
     private java.util.Map<String, String> piecesToMeasure = Collections.emptyMap();
 
@@ -542,18 +537,17 @@ public class Edge
     /**
      * Whether this edge is held by another route, which is the question a LOCK edge asks: the reservation flag and
      * nothing else.  A lock edge is track held clear so that two routes cannot take one throat at the same time; it is
-     * not a claim on the point beyond it, and a train standing there is not using the throat.
+     * not a claim on the point beyond it, and a train standing there is not using the throat.  (Counted as occupancy
+     * instead, a train parked next to a junction would block every route across it, and two such trains could
+     * deadlock.)
      *
-     * That is how the graph is built: reduction cuts an edge at every sensor, so a Point's tile is an endpoint of the
-     * edges that meet there and an intermediate step of none, and a train stands on a sensor.
+     * Reduction cuts an edge at every sensor, so a Point's tile is an endpoint of the edges that meet there and an
+     * intermediate step of none, and a train stands on a sensor.
      *
      * Locks need not be symmetric (GraphEdgeEdit writes one direction only), and nothing here relies on it: the SAME
-     * list is used in both directions of the transaction - locking a path writes this flag onto every edge in each of
-     * its edges' lockEdges, and checking one reads it off every edge in each of its edges' lockEdges - so an asymmetric
+     * list is used in both directions of the transaction - locking writes this flag onto every edge in each of its
+     * edges' lockEdges, and checking reads it off every edge in each of its edges' lockEdges - so an asymmetric
      * relation still refuses both orderings.
-     *
-     * Counted as occupancy instead, a train parked next to a junction would block every route across it, and two such
-     * trains could deadlock.
      *
      * @param loc the locomotive asking, kept for symmetry with isOccupied and for future ownership
      */
@@ -614,10 +608,10 @@ public class Edge
      * taken BEFORE it takes it, so that an edge a throw leaves occupied is still inside the range its recovery
      * releases.
      *
-     * The floor holds for THIS edge only: `setUnoccupied` cascades `setLockedEdgeUnoccupied()` to every entry in
-     * `lockEdges`, each decrementing its own count.  What makes an over-release unreachable is written at the call
-     * site: `setOccupied` increments as its first statement, so only locked siblings a mid-loop throw never reached
-     * could be released untaken.  Going negative would be worse: the next train to lock the edge would find it free.
+     * The floor holds for THIS edge only: `setUnoccupied` cascades to every entry in `lockEdges`, each decrementing its
+     * own count.  An over-release is unreachable because `setOccupied` increments as its first statement, so only
+     * locked siblings a mid-loop throw never reached could be released untaken.  Going negative would be worse: the
+     * next train to lock the edge would find it free.
      */
     private void release()
     {
