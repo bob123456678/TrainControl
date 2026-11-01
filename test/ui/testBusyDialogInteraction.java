@@ -14,18 +14,12 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.widgets.BusyDialog;
 
 /**
- * The spinner that now stands in front of a Central Station sync, and the ways it could go wrong.
- *
- * TrainControlUI.syncWithCS2 puts a modal BusyDialog in front of the model's sync at sixteen call
- * sites, so that fetching from a station no longer freezes the interface in silence.  Modal and on the
- * event thread is a combination with sharp edges, and these are them:
- *
- *   - the slow work must run OFF the event thread, or nothing has been gained
- *   - the finishing work must run ON it, because that is where Swing belongs
+ * The spinner in front of a Central Station sync (TrainControlUI.syncWithCS2's BusyDialog) and the ways it could go
+ * wrong:
+ *   - the slow work must run OFF the event thread, the finishing work ON it
  *   - run() must not return until the work is done, because every caller reads a result afterwards
- *   - work that THROWS must still dismiss the dialog - it has no close button and is application
- *     modal, so a leaked one freezes the program with no way out
- *   - called off the event thread it must still work, because a caller will get that wrong one day
+ *   - work that THROWS must still dismiss the dialog: it is application modal with no close button
+ *   - called off the event thread it must still work
  *
  * Needs a display.  Run through runone-ui.sh, or the battery's automatic retry.
  */
@@ -50,8 +44,7 @@ public class testBusyDialogInteraction
             throw new SkipException("BusyDialog is a window - this needs a display");
         }
 
-        // THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111): `init` reads the layout preference and loads
-        // whatever it names, which on his machine is his live layout.
+        // THE OPERATOR'S RAILWAY IS NOT THIS TEST'S TO OPEN (OB-111): `init` loads the layout his preference names.
         sandbox = support.LayoutSandbox.open();
 
         model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
@@ -111,10 +104,7 @@ public class testBusyDialogInteraction
             "the finishing work ran before the slow work had finished");
     }
 
-    /**
-     * run() does not return until the work is done, because every caller reads a result afterwards (what makes the sync
-     * wrapper's "return result[0]" honest).
-     */
+    /** run() does not return until the work is done, because every caller reads a result afterwards. */
     @Test(timeOut = 30000)
     public void testRunDoesNotReturnBeforeTheWorkHasFinished() throws Exception
     {
@@ -150,11 +140,9 @@ public class testBusyDialogInteraction
     /**
      * Work that throws still dismisses the dialog.
      *
-     * The dialog is undecorated and application-modal, with no close button, and nothing else can dispose it: a leaked
-     * one is a frozen program.  Asserting only that the `whenDone` callback ran would pass with the dialog stripped out
-     * of `run` entirely, since `BusyDialog.run` schedules it together with the dispose; so this captures the actual
-     * BusyDialog instance while it is showing and checks that it stopped being displayable, which `dispose()` is what
-     * causes.
+     * The dialog is application-modal with no close button, so a leaked one is a frozen program.  Asserting only that
+     * `whenDone` ran would pass with the dialog stripped out of `run` (it schedules both together), so this captures
+     * the showing BusyDialog and checks it stopped being displayable.
      */
     @Test(timeOut = 30000)
     public void testWorkThatThrowsStillDismissesTheDialog() throws Exception
@@ -168,10 +156,8 @@ public class testBusyDialogInteraction
             BusyDialog.run(null, "about to fail",
                 () ->
                 {
-                    // WAITED FOR, not sampled: BusyDialog.run starts this worker before setVisible has put the dialog
-                    // on screen, so asking once at the top of the work captures null.  Bounded, because a dialog
-                    // appearing is an acknowledgment rather than a railway event; if it never appears the wait ends and
-                    // the assertion says exactly that.
+                    // WAITED FOR, not sampled: BusyDialog.run starts this worker before setVisible has shown the
+                    // dialog.  Bounded, so if it never appears the assertion says exactly that.
                     org.traincontrol.gui.widgets.BusyDialog seen = null;
 
                     long until = System.currentTimeMillis() + 5000;
@@ -216,9 +202,7 @@ public class testBusyDialogInteraction
             + "no close button is a frozen program");
     }
 
-    /**
-     * The BusyDialog currently on screen, if any: found rather than handed back, because run() builds it as a local.
-     */
+    /** The BusyDialog currently on screen, if any: run() builds it as a local. */
     private static org.traincontrol.gui.widgets.BusyDialog findShowingBusyDialog()
     {
         for (java.awt.Window w : java.awt.Window.getWindows())
@@ -287,10 +271,8 @@ public class testBusyDialogInteraction
         final int[] result = {-1};
         final AtomicBoolean syncOnEDT = new AtomicBoolean(true);
 
-        // `model` is init()'d from a full locomotive database, so it is never empty, and it is
-        // shared across every test in this class: "the fixture's name is here" would be vacuously true whenever a
-        // sibling ran first.  Removing one of the fixture's own locomotives first gives a known-absent name for the
-        // sync below to bring back, in memory only (nothing here calls saveState).
+        // `model` is shared across this class's tests, so "the fixture's name is here" would be vacuously true after a
+        // sibling ran; removing one fixture locomotive first gives a known-absent name for the sync to bring back.
         String probe = fixtureLocomotiveNames().get(0);
 
         model.deleteLoc(probe);
@@ -388,8 +370,7 @@ public class testBusyDialogInteraction
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 
-        // See testASyncRunsInsideTheDialogAndStillAnswers above for why this is a removed fixture locomotive: `model`
-        // is shared with that test.
+        // A removed fixture locomotive as above, since `model` is shared.
         String probe = fixtureLocomotiveNames().get(0);
 
         model.deleteLoc(probe);
@@ -559,8 +540,8 @@ public class testBusyDialogInteraction
     }
 
     /**
-     * The locomotives test/lokomotive.cs2 actually holds, read directly: a fixed count would only say the fixture had
-     * not changed.
+     * The locomotives test/lokomotive.cs2 actually holds, read directly: a fixed count would not notice a changed
+     * fixture.
      */
     private static java.util.List<String> fixtureLocomotiveNames() throws Exception
     {
