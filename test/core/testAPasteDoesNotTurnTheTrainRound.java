@@ -31,10 +31,10 @@ import support.SourceOf;
 /**
  * A train put down on a square is standing where the drive would leave it, not turned round.
  *
- * Adam: "When 2-8-4 is pasted, it should always face east.  Does it?"  Which way a pasted train pointed was a coin
- * toss on the frozen copy of his railway, because `facingByPath` walks `Layout.getNeighbors`, which SHUFFLES (right
- * for autonomy choosing a journey, wrong for where one square is relative to another), and two copies of BottomMainB
- * sit the same nine edges away: `BottomMainB (eastbound)` facing E and `BottomMainB (eastbound, reverse)` facing W.
+ * Which way a pasted train pointed was a coin toss on the frozen copy of Adam's railway ("When 2-8-4 is pasted, it
+ * should always face east.  Does it?"): `facingByPath` walks `Layout.getNeighbors`, which SHUFFLES (right for autonomy
+ * choosing a journey, wrong for where one square is relative to another), and two copies of BottomMainB sit the same
+ * nine edges away: `BottomMainB (eastbound)` facing E and `BottomMainB (eastbound, reverse)` facing W.
  *
  * The second is not an arrival at all.  A may-turn square is built as a plain copy (where a train that drove in
  * stands) and a turning copy (after deciding to turn round), reached by the same edge and facing opposite ways.
@@ -65,9 +65,7 @@ public class testAPasteDoesNotTurnTheTrainRound
      */
     private static final String ABSENT = "no such locomotive anywhere";
 
-    /**
-     * Enough repeats that a coin toss cannot pass by luck: forty agreeing calls at an even split is 2^-39.
-     */
+    /** Enough repeats that a coin toss cannot pass by luck: forty agreeing calls at an even split is 2^-39. */
     private static final int PASTES = 40;
 
     private static support.LayoutSandbox sandbox;
@@ -141,8 +139,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     {
         // WHAT THIS FIXTURE CANNOT TELL YOU: the rule is "among the copies at the NEAREST distance, prefer one that is
         // not a turning copy", but `AutonomyBuilder` emits a square's plain copy before the turning copy of the same
-        // arrival side, so the tie-break never decides anything HERE.  It keeps the answer right if that order changes;
-        // this line makes a change in emission order show up instead of silently losing coverage.
+        // arrival side, so the tie-break never decides anything HERE; this line makes a change in emission order show
+        // up.
         java.util.List<String> order = new java.util.ArrayList<>(session.facingsFor(onto).keySet());
 
         // Per ARRIVAL SIDE, the pair the tie-break chooses between: the plain and turning copies of one side sit the
@@ -370,10 +368,8 @@ public class testAPasteDoesNotTurnTheTrainRound
     /**
      * Put down on the square it is already standing on, a train keeps the copy it is on.
      *
-     * The old walk only tested the copies it ARRIVED at, never the one it set off from, so a train asked about its own
-     * square was walked all the way round and answered with the other copy.  `sameSquare` exists because the menus
-     * offer a train the square it is on; turning it round for accepting that offer would be the worst version of the
-     * defect.
+     * `sameSquare` exists because the menus offer a train the square it is on; the old walk only tested the copies it
+     * ARRIVED at, never the one it set off from, and turned the train round for accepting that offer.
      */
     @Test
     public void testPastingOntoItsOwnSquareDoesNotTurnIt()
@@ -752,9 +748,7 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " the direction isnt flipped\")");
     }
 
-    /**
-     * Whether this train could drive to a named copy, by its own walk rather than the one under test.
-     */
+    /** Whether this train could drive to a named copy, by its own walk rather than the one under test. */
     private static boolean canBeDrivenFrom(String train, String copy)
     {
         Point start = null;
@@ -803,9 +797,7 @@ public class testAPasteDoesNotTurnTheTrainRound
         return false;
     }
 
-    /**
-     * The facing of the nearest copy of the target that a train could simply be standing on.
-     */
+    /** The facing of the nearest copy of the target that a train could simply be standing on. */
     private static Side standingCopyFacing()
     {
         Map<String, Integer> reach = distances();
