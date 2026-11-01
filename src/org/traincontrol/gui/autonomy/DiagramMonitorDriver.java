@@ -15,14 +15,12 @@ import org.traincontrol.gui.TrainControlUI;
 
 /**
  * Keeps the diagram showing what the trains are doing: the piece between DiagramMonitor (what each tile should show)
- * and DiagramTileRegistry (the screen) that makes it happen repeatedly, on the right threads.
+ * and DiagramTileRegistry (the screen) that repeats it on the right threads.
  *
  * A poll rather than painting from the layout's callback, which fires from whichever thread moved a train, sometimes
- * holding the layout's own monitor: a slow paint there would delay the next movement.  So the callback only sets a
- * flag and this ticks over and does the work somewhere harmless; a burst of movement collapses into one repaint.
- *
- * Threading: computing reads the layout, so it happens on the timer thread; publishing touches Swing, so it happens on
- * the event thread.  Neither ever happens on the other.
+ * holding the layout's own monitor.  The callback only sets a flag and this ticks over, so a burst of movement
+ * collapses into one repaint.  Computing reads the layout, so it happens on the timer thread; publishing touches Swing,
+ * so it happens on the event thread; neither ever happens on the other.
  *
  * @author Adam
  */
@@ -34,8 +32,7 @@ public class DiagramMonitorDriver
     private final TrainControlUI ui;
     private final DiagramTileRegistry registry;
 
-    // Volatile because both are written on the event thread (bind, setEnabled, stop) and read on the
-    // timer thread (tick); without the fence the timer could legally see a stale monitor forever.
+    // Volatile: written on the event thread (bind, setEnabled, stop), read on the timer thread (tick).
     private volatile DiagramMonitor monitor;
 
     // What the last bind's builder says each Point faces, the Points it says nothing about, with their squares, the setup
@@ -46,14 +43,12 @@ public class DiagramMonitorDriver
     private Map<String, org.traincontrol.automationui.TilePorts.Side> facingsShown;
     private volatile Timer timer;
 
-    // Whether monitoring is wanted at all.  Kept separate from whether the timer is running, so turning
-    // the layer off does not tear down the wiring that a train arriving would need.
+    // Whether monitoring is wanted at all; separate from the timer running, so turning the layer off keeps the wiring.
     private volatile boolean enabled = true;
 
     /**
-     * Which wipe the overlays on screen belong to.  A tick computes on the timer thread and paints on the event thread,
-     * so a wipe asked for in between would be painted over by a picture computed before it; comparing this on both
-     * sides lets the wipe win.
+     * Which wipe the overlays on screen belong to: a tick computes on the timer thread and paints on the event thread,
+     * so comparing this on both sides lets a wipe asked for in between win over a picture computed before it.
      */
     private final java.util.concurrent.atomic.AtomicLong generation =
         new java.util.concurrent.atomic.AtomicLong();
@@ -82,9 +77,8 @@ public class DiagramMonitorDriver
             return;
         }
 
-        // The same names the builder wrote into the generated file, recomputed because the naming depends only on the
-        // reduction and the split.  The split has to be passed, or every extra Point a split tile produced is unknown
-        // to the monitor.  Through the session, the one place that says how a builder is configured.
+        // The names the builder wrote into the generated file, recomputed because naming depends only on the reduction
+        // and the split, which must be passed or every extra Point a split tile produced is unknown to the monitor.
         AutonomyBuilder builder = session.builder(null);
 
         Map<String, TileKey> names = builder.tilesByName();
@@ -133,19 +127,14 @@ public class DiagramMonitorDriver
 
         recordedFacingsChanged();
 
-        // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the gray
-        // away: a tool that paused a train on no Point told the monitor, and the rebuild its change asks for then undid it.
+        // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form would take
+        // the gray away.
         monitor.setTrainsOnNoPoint(session.trainsOnNoPoint(), session.pausedTrainsOnNoPoint());
 
         attach();
     }
 
-    /**
-     * Tells the diagram again which trains the setup records where the railway stands them on no Point (a record
-     * written after the load was drawn nowhere).
-     *
-     * @param session the setup
-     */
+    /** Tells the diagram again which trains the setup records on no Point (one written after the load drew nowhere). */
     public void trainsOnNoPointChanged(AutonomySession session)
     {
         DiagramMonitor current = monitor;
@@ -158,8 +147,7 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Draws the trains again: a train paused or set going changes its icon (FR-117) and nothing the railway reports, so
-     * nothing else would.
+     * Draws the trains again: pausing or resuming a train changes its icon (FR-117) and nothing the railway reports.
      */
     public void trainsPausedChanged()
     {
@@ -195,10 +183,9 @@ public class DiagramMonitorDriver
 
     /**
      * The facings of the Points whose copy says nothing, asked of the setup again, and the diagram redrawn where one
-     * changed (OB-348).  A square no track leads out of has no copy facing and no single way out, and an icon given no
-     * facing is drawn east; it is given `AutonomySession.facingWhereNoCopySays`.  Asked whenever the captions are, not
-     * only at a bind: every door that writes a facing ends by redrawing the captions
-     * (`TrainControlUI.updateVisiblePoints`) and none rebinds.  On the event thread, where the captions read the setup.
+     * changed (OB-348).  A square no track leads out of has no copy facing and no single way out, so it is given
+     * `AutonomySession.facingWhereNoCopySays`.  Asked whenever the captions are, not only at a bind: every door that
+     * writes a facing redraws the captions (`TrainControlUI.updateVisiblePoints`) and none rebinds.  Event thread only.
      */
     public void recordedFacingsChanged()
     {
@@ -347,9 +334,8 @@ public class DiagramMonitorDriver
                 // publish can arrive after stop()'s clear.
                 if (timer == null || !enabled) return;
 
-                // And the same for a wipe that is not a stop; otherwise a wipe landing first left stale trains painted
-                // over an emptied diagram, and landing second left the screen blank with the monitor believing it
-                // published.
+                // And the same for a wipe that is not a stop, or a wipe landing first leaves stale trains over an
+                // emptied diagram and landing second leaves it blank while the monitor believes it published.
                 if (generation.get() != computedAt) return;
 
                 registry.publish(overlays);
@@ -388,8 +374,8 @@ public class DiagramMonitorDriver
 
     private Layout currentLayout()
     {
-        // ASKED, NOT BUILT: `getAutoLayout` makes a Layout where there is none, so after Unload the monitor built an
-        // empty one and `hasAutoLayout` answered yes about nothing.
+        // ASKED, NOT BUILT: `getAutoLayout` makes a Layout where there is none, and `hasAutoLayout` would answer yes
+        // about nothing.
         return ui == null || ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
     }
 }
