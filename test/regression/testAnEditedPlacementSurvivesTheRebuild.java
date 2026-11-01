@@ -14,8 +14,7 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337): *"placing locomotives via
- * the editor does not seem to work at all - nothing happens. it only works if placing via the track diagram."*
+ * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337).
  *
  * The track diagram places into the RUNNING layout; the autonomy editor calls `AutonomySession.placeLocomotive`, which
  * writes `loc` into the setup.  Closing the editor then (1) `whereTheTrainsAre()` records every placement in the
@@ -236,14 +235,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A placement NOBODY edited is a record, and a run outran it - so the railway wins.  The setup holds a stale entry
-     * (captured while the train was at PLATFORM; the run took it to SIDING), so the rebuild has an opinion, the wrong
-     * one.  The door this reaches production through has no editor in it: the diagram viewer's right-click autonomy
-     * menu is an `AutonomyEditorPanel` whose gestures end in `rebuildRunningLayoutFromSetup(true)`, and nothing on that
-     * path captures the running layout (`captureRunningLayout`: *"Stopping autonomy does not capture."*).  A train
-     * modeled at PLATFORM while it stands at SIDING is a block the next dispatch believes is free.  What tells the
-     * cases apart is provenance: the rebuild is told which trains the setup was just given a new placement for, and
-     * this train is not among them.
+     * A placement NOBODY edited is a record, and a run outran it, so the railway wins.  The setup holds a stale entry
+     * (captured while the train was at PLATFORM; the run took it to SIDING).  The door this reaches production through
+     * has no editor in it: the diagram viewer's right-click autonomy menu ends in `rebuildRunningLayoutFromSetup(true)`
+     * and nothing on that path captures the running layout.  A train modeled at PLATFORM while it stands at SIDING is a
+     * block the next dispatch believes is free.  What tells the cases apart is provenance: the rebuild is told which
+     * trains the setup was just given a new placement for, and this train is not among them.
      *
      * MUTATION: pass MOVED in the edited set and this fails, reporting the train back at PLATFORM.
      */
