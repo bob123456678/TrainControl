@@ -23,7 +23,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289;
  * Adam: "make it be consistent with other labels").  The autonomy editor hides Text Labels, which its caption choice
- * replaces (FR-061), and the gap above Grid was left standing at the top of the column.  In both editors, because the
+ * replaces (FR-061), so the gap above Grid must not stand at the top of the column.  In both editors, because the
  * plain one is where the column is right and has to stay right.
  *
  * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
@@ -125,9 +125,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312).  They were 6,
-     * 4 and 6 pixels apart: the columns built beside the form's own checkboxes left the heading's gap between them,
-     * where the form leaves 4.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
+     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312): the form
+     * leaves 4 pixels between its own checkboxes, so the columns built beside it must not leave the heading's gap
+     * between them.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
      *
      * MUTATION: leave a heading's gap between two of the checkboxes, and this fails.
      */
@@ -153,13 +153,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam:
      * "the min height of the autonomy editor window needs to be a few more pixels taller").
      *
-     * HEIGHT: at Small the window shrank to 680 pixels and the column of tools needs 693 to show Cancel, the last
-     * control, and the status line.  WIDTH: the status line's words are data and its minimum width was its text's (521
-     * pixels in English, 655 in German), so the tools column went off the right edge; the sentence here is longer than
-     * any language's, so the claim does not depend on the railway's words.  SCALE: the floor was in pixels and the
-     * window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the
-     * display as dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three
-     * diagram sizes, of every control outside the scroll panes.
+     * HEIGHT: the column of tools needs 693 pixels to show Cancel, the last control, and the status line, where Small
+     * once left 680.  WIDTH: the status line's words are data, so its minimum width must not be its text's (521 pixels
+     * in English, 655 in German) or the tools column goes off the right edge; the sentence here is longer than any
+     * language's, so the claim does not depend on the railway's words.  SCALE: the floor is in pixels and the window
+     * is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the display as
+     * dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three diagram
+     * sizes, of every control outside the scroll panes.
      *
      * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout
      * asks for in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum
@@ -172,8 +172,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels
-     * (OB-342).
+     * And the track diagram editor, which has the same floor: its Cancel button must not be cut off (OB-342).
      *
      * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, or take out the floor the window's own layout asks for in
      * `sizeForDiagram`, and this fails.
