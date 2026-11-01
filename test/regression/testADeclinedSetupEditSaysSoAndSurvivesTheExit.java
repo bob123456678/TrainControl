@@ -936,9 +936,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The track diagram says when the setup has changes the railway has not taken (Adam: "Add the setup notice, but
-     * make it brief"): a link unpaired leaves the setup unable to build.  The line goes again once a load takes the
-     * change.
+     * The track diagram says briefly when the setup has changes the railway has not taken: a link unpaired leaves the
+     * setup unable to build.  The line goes again once a load takes the change.
      *
      * MUTATION: set the flag without telling the strip, or leave the strip's line hidden, and this fails.
      */
