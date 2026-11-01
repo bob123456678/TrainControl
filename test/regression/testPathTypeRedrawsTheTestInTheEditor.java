@@ -240,6 +240,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             everyStationIs(panel, from, to, "with the answer shown, when the next click starts a new test,");
 
+            assertFalse(fading(panel), "the Test a Path answer fades on a timer (MT-864)");
+
             SwingUtilities.invokeAndWait(test::doClick);
             settle();
 
@@ -1001,7 +1003,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
     }
 
     /**
-     * Why Not Moving? answers for the tier Path Type names, and switching the radio answers again (OB-225).
+     * Why Not Moving? answers for the tier Path Type names, and switching the radio answers again (OB-225).  The answer
+     * stays until the next notice, never fading on a timer (MT-864: "seems to disappear on its own after a while").
      *
      * On Auto the answer files the stations autonomy is told to leave alone under "will never choose"; on Manual a
      * person may send a train to every one of them, so neither that heading nor autonomy's reason belongs in the
@@ -1056,6 +1059,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
             String onAuto = shown(panel);
 
+            assertFalse(fading(panel), "the Why answer fades on a timer (MT-864): " + onAuto);
+
             assertTrue(onAuto.contains(neverHeading),
                 "precondition: on Auto the answer names no station autonomy will never choose, so the tier cannot be"
                 + " seen to change: " + onAuto);
@@ -1102,6 +1107,16 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 SwingUtilities.invokeAndWait(() -> closing.dispose());
             }
         }
+    }
+
+    /** Whether the banner's message is timed to fade. */
+    private static boolean fading(AutonomyEditorPanel panel) throws Exception
+    {
+        Object banner = field(panel, "messageBanner");
+
+        assertNotNull(banner, "precondition: the editor has no banner");
+
+        return ((javax.swing.Timer) field(banner, "clear")).isRunning();
     }
 
     /** A station square on the page a train is standing on, as the railway sees it. */

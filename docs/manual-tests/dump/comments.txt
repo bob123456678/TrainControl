@@ -29656,6 +29656,52 @@ text:
 | Validated on your *Works* of 2026-10-25.
 |
 
+[comment MT-827 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-31 (triage).** Works, with notes.
+|
+| Change "how big should the picture be" to "what diagram size do you want to save"
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-827 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works, with notes* of 2026-10-31; the note is built (the size choice asks "What diagram size do you want to save?", in all 8 languages) and tested by MT-866.
+|
+
+[comment MT-828 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-31 (triage).** Works.
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-828 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works* of 2026-10-31.
+|
+
 [comment MT-829 0]
 who: Adam
 date: 2026-10-26
@@ -29746,6 +29792,28 @@ text:
 | **Claude, 2026-10-25.**
 |
 | Validated on your *Works* of 2026-10-25.
+|
+
+[comment MT-832 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-31 (triage).** Works.
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-832 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works* of 2026-10-31.
 |
 
 [comment MT-833 0]
@@ -30380,6 +30448,50 @@ text:
 | Correction to the note above: the menu is `Preferences` > `Startup`, where `Power On` is the choice that turns it on at start-up.
 |
 
+[comment MT-859 3]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-31 (triage).** Works.
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-859 4]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works* of 2026-10-31.
+|
+
+[comment MT-860 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-31 (triage).** Works.
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-860 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works* of 2026-10-31.
+|
+
 [comment MT-861 0]
 who: Claude
 date: 2026-10-31
@@ -30413,6 +30525,52 @@ text:
 | Replaced by MT-863 before it was run: Adam reversed the colors the same day ("I want them to be orange when I click and then they can become blue post click (inverse of current behavior)"). Skip this one.
 |
 
+[comment MT-863 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works
+text:
+| **Adam, 2026-10-31 (triage).** Works.
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-863 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works* of 2026-10-31.
+|
+
+[comment MT-864 0]
+who: Adam
+date: 2026-10-31
+kind: verdict
+verdict: Works, with notes
+text:
+| **Adam, 2026-10-31 (triage).** Works, with notes.
+|
+| works, but the flyover with autonomy information seems to disappear on its own after a while.  also, expand its height to 4 lines, along with the corresponding increase to the diagram below the last row to keep up with the overlap bug we recently fixed.
+|
+| *Run against commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+|
+
+[comment MT-864 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Validated on your *Works, with notes* of 2026-10-31; the notes are built (an answer you asked for stays until the next notice or its X; the strip shows up to four lines, and the room below the diagram's last row follows its height) and tested by MT-865.
+|
+
 [comment OB-331 0]
 who: Claude
 date: 2026-10-24
@@ -30444,4 +30602,26 @@ text:
 | **Claude, 2026-10-31.**
 |
 | Adam, 2026-10-31, after option A was built: "I want them to be orange when I click and then they can become blue post click (inverse of current behavior)". Built that way: CLICKABLE draws the selection's orange outline with no wash, PICKED the blue wash and thin frame.
+|
+
+[comment OB-396 0]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| Design chosen 2026-10-31. Adam, in chat: "Let's notate A2 as the fallback and build C3." C3: each group of conditions in a rounded outline, its rule ("All of these must be true" or "At least one must be true") on the outline's top edge and clickable to switch it; no and/or rows; only Kind indents, so the other columns line up at every depth; a drag handle per row; the reading and the Automatically Fire notice below the table; the selection from Kind to Protocol. Fallback A2: today's rows with a 30px handle column, Move Up, Move Down, Indent and Outdent as buttons under the table, and an amber mark on the last edited row that stays until the next edit. Adam also asked that Group and Ungroup sit on the + row, in the table's style, apart from the other buttons; the look is to be proposed before it is finalized.
+|
+
+[comment OB-396 1]
+who: Claude
+date: 2026-10-31
+kind: note
+verdict:
+text:
+| **Claude, 2026-10-31.**
+|
+| The + row chosen 2026-10-31. Adam, in chat: "R1, because then we can add to groups." R1: "+ Add Condition", a thin divider, then "Group Selected" and "Ungroup", icon and word, flat in the table's style, on the table's last row; an action that does not apply is grayed out.
 |

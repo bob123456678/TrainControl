@@ -534,6 +534,18 @@ public class AutonomyEditorPanel extends JPanel
         label.setText("<html><body style='width:" + (width - 30) + "px'>" + html + "</body></html>");
     }
 
+    /**
+     * An answer to a click, which stays until the next notice or the strip's X rather than fading (MT-864: "seems to
+     * disappear on its own after a while").
+     * @param rich whether the text is mark-up this class built, as sayRich takes, rather than a sentence
+     */
+    private void answer(String text, boolean rich)
+    {
+        if (messageBanner != null) messageBanner.showUntilChanged(rich ? "<html>" + text + "</html>" : text);
+        else if (rich) sayRich(hint, text);
+        else say(hint, text);
+    }
+
     /** The tools column, a BoxLayout: a GridLayout gives every row the tallest one's height. */
     private JPanel buildTools()
     {
@@ -4969,8 +4981,7 @@ public class AutonomyEditorPanel extends JPanel
             whyMarks.putAll(answer.marks);
         }
 
-        if (answer.rich) sayRich(hint, answer.message);
-        else say(hint, answer.message);
+        answer(answer.message, answer.rich);
 
         refresh();
     }
@@ -5145,9 +5156,9 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         // Named: the sensors it calls at say where it went.
-        sayRich(hint, I18n.f("autosetup.ui.testBothWays",
+        answer(I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)),
-            leg(there), escape(via(there)), leg(back)) + tierNote);
+            leg(there), escape(via(there)), leg(back)) + tierNote, true);
 
         lastTestFrom = testFrom;
         lastTestTo = tile;

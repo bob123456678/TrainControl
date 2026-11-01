@@ -32610,7 +32610,7 @@ ordinal: 826
 anchor: mt-827
 date: 2026-10-25
 title: Layout > Save Current Track Diagram as a Picture offers Small, Medium and Large, without pixel counts
-disposition: needs test
+disposition: fixed validated
 from: OB-374
 written: 2026-10-25
 reopened: no
@@ -32618,7 +32618,7 @@ body:
 | <a id="mt-827"></a>
 | ### MT-827 - 2026-10-25 - Layout > Save Current Track Diagram as a Picture offers Small, Medium and Large, without pixel counts
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-374
 |
 | **Written:** 2026-10-25
@@ -32647,7 +32647,7 @@ ordinal: 827
 anchor: mt-828
 date: 2026-10-25
 title: The autonomy editor's Test a Path draws no route the setup check says a station cannot take
-disposition: needs test
+disposition: fixed validated
 from: RSA76-C5
 written: 2026-10-25
 reopened: no
@@ -32655,7 +32655,7 @@ body:
 | <a id="mt-828"></a>
 | ### MT-828 - 2026-10-25 - The autonomy editor's Test a Path draws no route the setup check says a station cannot take
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** RSA76-C5
 |
 | **Written:** 2026-10-25
@@ -32811,7 +32811,7 @@ ordinal: 831
 anchor: mt-832
 date: 2026-10-25
 title: Shorter messages and tooltips, and long lists in popups scroll
-disposition: needs test
+disposition: fixed validated
 from: hands-on testing
 written: 2026-10-25
 reopened: no
@@ -32819,7 +32819,7 @@ body:
 | <a id="mt-832"></a>
 | ### MT-832 - 2026-10-25 - Shorter messages and tooltips, and long lists in popups scroll
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** hands-on testing
 |
 | **Written:** 2026-10-25
@@ -33914,15 +33914,15 @@ ordinal: 858
 anchor: mt-859
 date: 2026-10-30
 title: The locomotive picture's right-click and tooltip follow the power
-disposition: needs test
+disposition: fixed validated
 from: OB-392
 written: 2026-10-30
-reopened: yes
+reopened: no
 body:
 | <a id="mt-859"></a>
 | ### MT-859 - 2026-10-30 - The locomotive picture's right-click and tooltip follow the power
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-392
 |
 | **Written:** 2026-10-30
@@ -33947,7 +33947,7 @@ ordinal: 859
 anchor: mt-860
 date: 2026-10-31
 title: Menus show tooltips only where they help
-disposition: needs test
+disposition: fixed validated
 from: OB-393
 written: 2026-10-31
 reopened: no
@@ -33955,7 +33955,7 @@ body:
 | <a id="mt-860"></a>
 | ### MT-860 - 2026-10-31 - Menus show tooltips only where they help
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-393
 |
 | **Written:** 2026-10-31
@@ -34047,7 +34047,7 @@ ordinal: 862
 anchor: mt-863
 date: 2026-10-31
 title: Orange marks what to click, blue what was clicked, in Test a path and Why not Moving?
-disposition: needs test
+disposition: fixed validated
 from: OB-395
 written: 2026-10-31
 reopened: no
@@ -34055,7 +34055,7 @@ body:
 | <a id="mt-863"></a>
 | ### MT-863 - 2026-10-31 - Orange marks what to click, blue what was clicked, in Test a path and Why not Moving?
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-395
 |
 | **Written:** 2026-10-31
@@ -34079,7 +34079,7 @@ ordinal: 863
 anchor: mt-864
 date: 2026-10-31
 title: Why not Moving? colors purple only stations the train could be sent to by hand
-disposition: needs test
+disposition: fixed validated
 from: OB-394
 written: 2026-10-31
 reopened: no
@@ -34087,7 +34087,7 @@ body:
 | <a id="mt-864"></a>
 | ### MT-864 - 2026-10-31 - Why not Moving? colors purple only stations the train could be sent to by hand
 |
-| **Disposition:** needs test
+| **Disposition:** fixed validated
 | **From:** OB-394
 |
 | **Written:** 2026-10-31
@@ -34102,6 +34102,71 @@ body:
 |
 | - On `Auto`, the Tunnel parkings and TopMainR0Park are gray, not purple.
 | - Every purple station (here LowerParkingOuter and ParkingTrack5) is one the train could be sent to by hand: on `Manual` it turns green and a line is drawn to it.
+|
+tail:
+| ---
+|
+
+[test MT-865]
+ordinal: 864
+anchor: mt-865
+date: 2026-10-31
+title: Why not Moving? and Test a path answers stay until the next click, four lines tall
+disposition: needs test
+from: MT-864
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-865"></a>
+| ### MT-865 - 2026-10-31 - Why not Moving? and Test a path answers stay until the next click, four lines tall
+|
+| **Disposition:** needs test
+| **From:** MT-864
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. In `cs2_sample_layout`, open the autonomy editor, turn on `Why not Moving?` and click the 2-8-4 3505 SP at BottomSecondary.
+| 2. Leave the answer alone for a minute.
+| 3. Turn on `Test a path`, click two stations, and leave that answer alone for a minute too.
+| 4. Scroll the diagram to its bottom row while an answer shows.
+|
+| **Expected**
+|
+| - Each answer stays until you click something else or press its X; neither fades on its own.
+| - The strip over the diagram shows up to four lines before it scrolls.
+| - With the diagram scrolled to the bottom, the strip covers no square of the last row.
+|
+tail:
+| ---
+|
+
+[test MT-866]
+ordinal: 865
+anchor: mt-866
+date: 2026-10-31
+title: Save Current Track Diagram as a Picture asks what diagram size to save
+disposition: needs test
+from: MT-827
+written: 2026-10-31
+reopened: no
+body:
+| <a id="mt-866"></a>
+| ### MT-866 - 2026-10-31 - Save Current Track Diagram as a Picture asks what diagram size to save
+|
+| **Disposition:** needs test
+| **From:** MT-827
+|
+| **Written:** 2026-10-31
+|
+| **Steps**
+|
+| 1. Choose `Layout` > `Save Current Track Diagram as a Picture`.
+|
+| **Expected**
+|
+| - The size choice asks "What diagram size do you want to save?"
 |
 tail:
 | ---

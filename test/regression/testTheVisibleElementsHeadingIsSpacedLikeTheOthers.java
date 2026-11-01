@@ -29,7 +29,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
  * status line that does not ask the window for its sentence's width keeps the column on the screen.
  *
- * And the autonomy editor's notices float over the bottom of the diagram, three lines at most, with an X to dismiss
+ * And the autonomy editor's notices float over the bottom of the diagram, four lines at most, with an X to dismiss
  * them, and a notice never moves the diagram (OB-366).
  *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
@@ -251,13 +251,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * A notice longer than three lines scrolls inside a band three lines tall, never sideways, and a shorter one gets a
-     * band its own height (OB-366: "cap the height at 3 lines with a scrollbar"), measured in the notice text's font.
+     * A notice longer than four lines scrolls inside a band four lines tall, never sideways, and a shorter one gets a
+     * band its own height (OB-366; MT-864: "expand its height to 4 lines"), measured in the notice text's font.
      *
      * MUTATION: raise `AutonomyBanner.MOST_LINES` to 6, and this fails.
      */
     @Test
-    public void testALongNoticeScrollsWithinThreeLines() throws Exception
+    public void testALongNoticeScrollsWithinFourLines() throws Exception
     {
         final LayoutEditor editor = autonomyEditor();
 
@@ -283,13 +283,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
                 java.awt.Insets pad = notices.getInsets();
 
-                assertTrue(area.getViewport().getHeight() <= 3 * line, "a six-line notice is shown "
-                    + area.getViewport().getHeight() + " pixels tall, more than three lines of " + line + " (OB-366)");
+                assertTrue(area.getViewport().getHeight() <= 4 * line, "a six-line notice is shown "
+                    + area.getViewport().getHeight() + " pixels tall, more than four lines of " + line + " (MT-864)");
 
-                assertTrue(notices.getHeight() <= 3 * line + pad.top + pad.bottom, "the band is " + notices.getHeight()
-                    + " pixels tall for a six-line notice, more than three lines of " + line + " and its padding");
+                assertTrue(notices.getHeight() <= 4 * line + pad.top + pad.bottom, "the band is " + notices.getHeight()
+                    + " pixels tall for a six-line notice, more than four lines of " + line + " and its padding");
 
-                assertTrue(area.getVerticalScrollBar().isShowing(), "a six-line notice in a band three lines tall has"
+                assertTrue(area.getVerticalScrollBar().isShowing(), "a six-line notice in a band four lines tall has"
                     + " no scrollbar, so the rest of it cannot be reached (OB-366)");
 
                 assertFalse(area.getHorizontalScrollBar().isShowing(), "the notices scroll sideways; they wrap");
@@ -298,15 +298,15 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                     + " six-line one's " + notices.getHeight() + ": the band does not fit what it says");
             });
 
-            say(editor, notices, lines(3));
+            say(editor, notices, lines(4));
 
             SwingUtilities.invokeAndWait(() ->
             {
                 javax.swing.JScrollPane area = scrollerIn(notices);
 
-                assertFalse(area.getVerticalScrollBar().isShowing(), "a three-line notice does not fit the band: "
+                assertFalse(area.getVerticalScrollBar().isShowing(), "a four-line notice does not fit the band: "
                     + area.getViewport().getHeight() + " pixels for a text "
-                    + area.getViewport().getView().getPreferredSize().height + " tall (OB-366, \"3 lines\")");
+                    + area.getViewport().getView().getPreferredSize().height + " tall (MT-864, \"4 lines\")");
             });
         }
         finally

@@ -8,8 +8,8 @@ import javax.swing.Timer;
 import org.traincontrol.util.I18n;
 
 /**
- * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to three lines, and
- * scrolled past that (OB-366).  Hidden while it has nothing to say.
+ * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to four lines, and
+ * scrolled past that (OB-366, MT-864).  Hidden while it has nothing to say.
  *
  * In the autonomy editor it floats over the bottom of the diagram (see floatOver) with an X that hides it until the
  * next notice, so the diagram never moves.  Above the main window's diagram it is a header with no X: what it says
@@ -487,10 +487,10 @@ public class AutonomyBanner extends JPanel
     private static final int MINIMUM_HEIGHT = 26;
 
     /**
-     * The most lines of a message the strip shows; the rest is scrolled to (OB-366, Adam: "cap the height at 3 lines
-     * with a scrollbar").
+     * The most lines of a message the strip shows; the rest is scrolled to (OB-366; MT-864, Adam: "expand its height to
+     * 4 lines").
      */
-    private static final int MOST_LINES = 3;
+    private static final int MOST_LINES = 4;
 
     /** The border this panel draws round its message, which the height has to allow for. */
     private static final int INSET_HEIGHT = 10;

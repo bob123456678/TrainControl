@@ -1690,3 +1690,23 @@ text:
 |
 | Adam, 2026-10-31, in chat: "the initial selection is yellow (as it was before) was clearer than the new blue, because the blue is too far inset on the tile"; of the options rendered, "Go with A" (the orange outline at the square's edge, blue kept for what can be clicked).
 |
+
+[issue OB-396]
+ordinal: 82
+inbox: yes
+kind: bug
+title: route editor user friendliness
+filed: 2026-10-31
+filed_at: 2026-10-31 16:40
+raised_from: noticed while testing - not from a particular test
+build: commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+text:
+| ### OB-396 - 2026-10-31 - route editor user friendliness
+|
+| **Kind:** bug  
+| **Raised from:** noticed while testing - not from a particular test  
+| **Filed:** 2026-10-31 16:40  
+| **Build:** commit a783310b, in English - build\classes, compiled 31 Oct 15:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+|
+| it is still hard to follow changes to the conditions; the fading yellow highlight conflicts with the blue color of the selected row. put the "these conditions" notice and logical read below the table.  also, can the row selection highlighting start from Kind and stretch to Protocol, rather than overlapping with the 4 columns of arrow controls?  drag and dropping to rearrange rather than arrows may also be user friendlier.  propose some designs.
+|
