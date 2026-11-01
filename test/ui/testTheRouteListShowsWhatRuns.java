@@ -26,10 +26,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * The route list turns a mark beside every route that is running (FR-137).  Adam: "in the route tab, show a spinner
- * next to any route that is currently running, similar to the autonomy spinner.  3.0.2 feature".  The mark is the one
- * Start and Return Home turn (FR-077, OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for
- * a route whoever started it and off when the route really ends.
+ * The route list turns a mark beside every route that is running (FR-137).  The mark is the one Start and Return Home
+ * turn (FR-077, OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for a route whoever
+ * started it and off when the route really ends.
  *
  * It is seen as the renderer paints a cell to a picture, the strip left of the play button searched for the mark's
  * gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between its commands.  The list's other
@@ -181,11 +180,8 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * With the power off, a click on a route's row - not its play button - opens the route's editor and asks nothing
-     * (FR-140).  Adam: "when the power is off, clicking on routes in the route tab should open the editor rather than ask
-     * for execution".
-     *
-     * The click is posted rather than waited for, so a modal dialog cannot hold the run; any dialog left open is
-     * closed at the end.
+     * (FR-140).  The click is posted rather than waited for, so a modal dialog cannot hold the run; any dialog left
+     * open is closed at the end.
      *
      * MUTATION: take the power question out of `RouteListMouseClicked`, and this fails.
      */
@@ -290,7 +286,7 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * A click on a route's play button runs it at once, with no question: its accessories switch and their commands
-     * go to the railway (FR-043, MT-217).  Adam: "if play button is hit, route executes without confirming".
+     * go to the railway (FR-043, MT-217).
      */
     @Test
     public void testThePlayButtonRunsTheRouteWithoutAsking() throws Exception
@@ -492,7 +488,7 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * Find Route, given part of a route's name that only it has, brings the route list forward and highlights that
-     * route's cell (FR-044, MT-218).  Adam: "system jumps to the route page and highlights the matched cell".
+     * route's cell (FR-044, MT-218).
      */
     @Test
     public void testFindRouteShowsTheRoute() throws Exception
@@ -616,8 +612,7 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).  Adam:
-     * "let's support partial matching if there is no exact match as entered."
+     * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).
      */
     @Test
     public void testFindRouteAsksWhichWhenSeveralMatch() throws Exception
@@ -1505,11 +1500,9 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * A route switching these MM2 accessories on at once, each switched off first so the route has something to change;
-     * the power on, so a row click asks rather than opening the editor.
-     *
-     * An application route, unlocked with a local id, so Delete Route and the editor's Save start no sync with the
-     * station (FR-136); a claim moved onto a station's route would leave that sync running into the next claim and has
-     * to wait it out as Duplicate Route's does.
+     * the power on, so a row click asks rather than opening the editor.  An application route, unlocked with a local
+     * id, so Delete Route and the editor's Save start no sync with the station (FR-136); a claim moved onto a station's
+     * route would leave that sync running into the next claim.
      */
     private static String aQuickRoute(String name, int... addresses) throws Exception
     {
