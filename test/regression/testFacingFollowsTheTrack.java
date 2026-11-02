@@ -20,14 +20,8 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Which way a train can be pointing is a fact about the TRACK it is standing on.
- *
- * MT-125, Adam: "feedback 1016/1015 offer south and west as facing directions, instead of north and east."
- *
- * The choices were worked out as "the side the train came in by, reversed", which is right on a straight and wrong on
- * a curve: on a curve joining north to east, a train that enters by the north side leaves by the EAST side, and south
- * is not a direction that square has any track in.  So the rule is "the other end of the piece of track I am standing
- * on", which is the opposite compass point only on a straight.
+ * Which way a train can be pointing is a fact about the TRACK it is standing on (MT-125): the rule is "the other end
+ * of the piece of track I am standing on", which is the opposite compass point only on a straight.
  *
  * Two assertions.  The RULE (every facing offered for a square is a side that square's own track uses) is
  * layout-independent and sweeps every square, but it reads the same map the facings are built from, so it cannot fail
@@ -82,23 +76,13 @@ public class testFacingFollowsTheTrack
     }
 
     /**
-     * The facings offered on five named squares, written out by hand from the track under them.  The RULE test below
-     * checks that every facing offered is a side `session.getRoutes(tile)` uses; a version that offered BOTH ends of
-     * every route (including the side the train arrived by, MT-125's own defect class turned round) passed it, because
-     * the arrival side is track too.  The facing menu now reads `facingsFor`, the BUILDER's `facingByName`, so the
-     * premise (`getRoutes`, what track is on the square) and the answer come from different places and the two
-     * assertions are independent.
-     *
-     * Each line reads: the square, the track on it, and where a train standing there can be pointing.  The first is the
-     * curve MT-125 was reported about: `1 - Main:0,11` carries one piece of track joining its NORTH side to its EAST
-     * side.  A train that came down the north leg and round the curve is pointing EAST; one that came in by the east is
-     * pointing NORTH.  It is never pointing SOUTH, which is the answer the compass rule gives, and there is no track on
-     * that side.
-     *
-     * The straights are here as controls: on `1 - Main:0,3` the two rules agree, and a table of only curves would not
-     * notice a change that broke straights.  A square reachable from both ends offers both facings in the order the
-     * arrival sides are visited (N, E, S, W), which is load-bearing: on a square with no side barred the FIRST answer
-     * is the facing a placement with nothing recorded gets (`startableCopy` takes the first copy trains may arrive at).
+     * The facings offered on five named squares, written out by hand from the track under them: the premise
+     * (`session.getRoutes(tile)`) and the answer (`facingsFor`, the BUILDER's `facingByName`) come from different
+     * places, so the two assertions are independent.  The first is the curve MT-125 was reported about:
+     * `1 - Main:0,11` joins its NORTH side to its EAST side, so a train there is pointing EAST or NORTH, never SOUTH.
+     * The straights are controls.  A square reachable from both ends offers both facings in the order the arrival
+     * sides are visited (N, E, S, W), which is load-bearing: on a square with no side barred the FIRST answer is the
+     * facing a placement with nothing recorded gets (`startableCopy` takes the first copy trains may arrive at).
      *
      * MUTATION: in `AutonomySession.onwardFrom`, offer every end of every route regardless of which side the train
      * arrived by - `if (route.getA() != null) out.add(route.getA()); if (route.getB() != null)
