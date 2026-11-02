@@ -16,17 +16,11 @@ import javax.swing.UIManager;
 import org.traincontrol.util.I18n;
 
 /**
- * The line over the active locomotive's name: its key, its page and its decoder (FR-128).  From the left, a keycap
- * and the page as plain words in the label's own font and color (`pageFont`, `pageColour`); floated to the right edge,
- * a navy decoder pill with white text, TYPE and ADDRESS divided by a white line that stays inside the rim.
+ * The line over the active locomotive's name: its key, its page and its decoder (FR-128).  `pageWords` is the one rule
+ * that words the page, for this row, the page tabs and the page label by the arrows.
  *
- * `pageWords` is the one rule that words the page, for this row, the page tabs and the page label by the arrows.  Only
- * the NAME is cut (to the pixel here), never the number, its full stop or "Page 5"; with no room for a letter and the
- * ellipsis the words are "5." alone.  The tooltip always has the whole line.
- *
- * Drawn, not laid out: the window's generated GroupLayout fixes this row's slot at 296 x 18 (`CurrentKeyLabel`),
- * nothing below it may move, and the page name has to be measured and cut to the pixel.  Pill words are 12 point (the
- * decoder pill's 13) in 18 pixel shapes.
+ * Drawn, not laid out: the window's generated GroupLayout fixes this row's slot at 296 x 18 (`CurrentKeyLabel`) and
+ * nothing below it may move.
  *
  * @author Adam
  */
