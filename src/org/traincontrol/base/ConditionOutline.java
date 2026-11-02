@@ -130,9 +130,9 @@ public final class ConditionOutline
     }
 
     /**
-     * The lines `problems` flags, each with the reason (Adam: "a warning triangle icon with a tooltip explaining what's
-     * wrong").  A word deeper than a condition beside it is reported as joining nothing even where it also differs from
-     * its level's word: choosing the group's rule, the remedy for a disagreement, does not help it.
+     * The lines `problems` flags, each with the reason.  A word deeper than a condition beside it is reported as
+     * joining nothing even where it also differs from its level's word: choosing the group's rule, the remedy for a
+     * disagreement, does not help it.
      *
      * @return line index to reason, in the order the lines are found; empty when the outline reads
      */
@@ -1168,8 +1168,8 @@ public final class ConditionOutline
     }
 
     /**
-     * What Group Selected would wrap: the run of one group's items these conditions are, where it is two items or more
-     * and not the whole group.  A nested group counts as an item when all of it is chosen.
+     * What Group Selected would wrap: the run of one group's items these conditions are, two items or more and not the
+     * whole group; a nested group counts as an item when all of it is chosen.
      *
      * @return {the group, its first item's element, its last item's element}, or null where the lines are no such run
      */
@@ -1252,7 +1252,7 @@ public final class ConditionOutline
     }
 
     /**
-     * Where Split Here would cut (OB-396): one condition, not the first item of the group whose own item it is.
+     * Where Split Here would cut (OB-396): one condition, not the first item of its group.
      *
      * @return {that group, the condition's element}, or null where it does not apply
      */
