@@ -318,16 +318,10 @@ public class testDiagramExport
     private static final String RETIRED_COORDINATES_PREF = "ShowCoordinates";
 
     /**
-     * The column and row numbers are part of the grid: on with it, off without (OB-179).
-     *
-     * Adam: **"coordinates should always be on with the grid, off without, and the menu option gone."**  One switch,
-     * and it is the grid's.  `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS; nothing covered
-     * whether anybody put one on the diagram, which is here because building a grid needs the application (a tile
-     * draws itself through the window's image cache).
-     *
-     * Both directions of the switch, because a test of the ON case alone passes for a grid that always carries a
-     * ruler, and BOTH WINDOWS: *"they are visible in the track diagram viewer when they shouldn't be."*  He asked for
-     * the numbers "in both autonomy editor and track diagram editor", and the viewer is neither.
+     * The column and row numbers are part of the grid: on with it, off without (OB-179), in BOTH WINDOWS and both
+     * directions of the switch (a test of the ON case alone passes for a grid that always carries a ruler).
+     * `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS; this covers whether anybody put one on the
+     * diagram.
      *
      * THE RETIRED KEY IS SET TO FALSE THROUGHOUT.
      *
@@ -485,10 +479,9 @@ public class testDiagramExport
 
 
     /**
-     * A replaced grid is not kept alive by the table that retires it (MT-134).  That table is a WeakHashMap keyed by
-     * the panel, which collects an entry only when nothing else reaches the KEY; a LayoutGrid reaches its own panel
-     * (it holds `container` and adds it to the parent), so while the value was the grid itself every entry kept its
-     * own key alive: one page retained per editor, popup or export, for the life of the session.
+     * A replaced grid is not kept alive by the table that retires it (MT-134): a WeakHashMap keyed by the panel
+     * collects an entry only when nothing else reaches the KEY, and a LayoutGrid reaches its own panel, so while the
+     * value was the grid itself every entry kept its own key alive.
      *
      * The collection is asked for in a bounded loop, since a garbage collector may take its time and a test that
      * demands the first `gc()` collect fails on a fast machine for no reason.
@@ -537,16 +530,11 @@ public class testDiagramExport
     }
 
     /**
-     * A dozen editors opened and closed leave nothing behind.
-     *
-     * FR-012: "open and close the aditor a dozen times on a big layout and watch memory.  nothing to see if this is
-     * right."  A heap measurement is noise (the collector need not have run, the JIT allocates on its own account), so
-     * the exact property is asked for directly: after a dozen cycles, ELEVEN of the twelve grids must be reachable
-     * from nothing.
-     *
-     * That is the question `testAReplacedGridIsNotRetained` asks once; asking it twelve times is not redundant, since
-     * the leak retained one page per cycle and a single replacement is the case most likely to be fixed by accident.
-     * The collection is asked for in a bounded loop, as there.
+     * A dozen editors opened and closed leave nothing behind (FR-012).  A heap measurement is noise, so the exact
+     * property is asked for directly: after a dozen cycles, ELEVEN of the twelve grids must be reachable from nothing.
+     * Asking `testAReplacedGridIsNotRetained`'s question twelve times is not redundant, since the leak retained one
+     * page per cycle and a single replacement is the case most likely to be fixed by accident.  The collection is asked
+     * for in a bounded loop, as there.
      */
     @Test
     public void testADozenEditorCyclesRetainNothing() throws Exception
@@ -605,9 +593,8 @@ public class testDiagramExport
     }
 
     /**
-     * The Layout menu's picture export asks for Small, Medium or Large, in that order, with no pixel counts (OB-374).
-     *
-     * Opened through the menu item's own action, and the question read off the screen as the user sees it.
+     * The Layout menu's picture export asks for Small, Medium or Large, in that order, with no pixel counts (OB-374),
+     * opened through the menu item's own action and read off the screen as the user sees it.
      *
      * MUTATION: build the dialog's choices from the two sizes the export used to offer (with their pixel counts), or
      * leave Medium out of `layoutSizes`.
