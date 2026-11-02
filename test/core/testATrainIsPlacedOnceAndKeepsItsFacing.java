@@ -1445,9 +1445,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws
-     * them.  Each was once cleared on demotion for a reason that still holds of a plain point (a caption lights a
-     * station's name, a guard is thrown red over a square nothing is sent to, the old turn flag turns every train
-     * round), so the readers ask whether the square is a station.
+     * them.  Each would misbehave on a plain point (a caption lights a station's name, a guard is thrown red over a
+     * square nothing is sent to, the old turn flag turns every train round), so the readers ask whether the square is a
+     * station.
      *
      * MUTATION: hand the build every square's exit guards again, station or not, and this fails.
      */
