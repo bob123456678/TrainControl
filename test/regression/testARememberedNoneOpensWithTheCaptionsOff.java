@@ -19,20 +19,14 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A remembered **None** opens with the captions actually gone (MT-292): "none is shown in the dropdown, but station
- * names are still drawn."
- *
- * `AutonomyEditorPanel` restores the remembered caption mode while it is being CONSTRUCTED.  Half of applying it is
- * local (the two tick boxes behind the dropdown); the other half is the diagram's own text switch, reached through
+ * A remembered **None** opens with the captions actually gone (MT-292): `AutonomyEditorPanel` restores the remembered
+ * caption mode while it is being CONSTRUCTED, and half of applying it reaches the diagram's text switch through
  * `owner()`, which is null until the panel has been added to the editor.
  *
  * Three openings, because one proves nothing: Station Names, then None, then Station Names again.  The middle one is
- * the claim and the two around it are the controls (a window that draws no captions for its own reasons satisfies
- * None alone, and so does a switch that latches off).
- *
- * The dropdown is four options and the Text Labels box is the fifth state's home (FR-133): the box shows the writing
- * on the diagram, the dropdown only decides the station captions, and a remembered 4 (the old Labels Only) opens as
- * Station Names with the box ticked.
+ * the claim and the two around it are the controls (a window that draws no captions for its own reasons satisfies None
+ * alone, and so does a switch that latches off).  The Text Labels box is the fifth state's home (FR-133); a remembered
+ * 4 (the old Labels Only) opens as Station Names with the box ticked.
  *
  * MUTATION: remove `applyRememberedCaptionMode` from `LayoutEditor.setAutonomyMode` and the None opening draws every
  * caption the Station Names ones do.
