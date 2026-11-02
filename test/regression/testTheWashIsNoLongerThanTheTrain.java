@@ -31,15 +31,12 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, second half: the wash is as long as the train, not as long as the edge.  Adam, after a Return Home run:
- * *"after the parking completed, all of bottommaina stayed shaded, which it shouldn't as I set the length of EN57-203
- * to 1."*
+ * MT-309, second half: the wash is as long as the train, not as long as the edge.
  *
- * Coverage is recorded per EDGE (Adam: "because the points are technically unoccupied. But the blocked edges should
- * prevent routing to the covered points"), and the tail walk stops when the train's length is used up, so a train of
- * length 1 claims one edge, which can be a dozen squares long.  The railway still blocks the whole edge (nothing here
- * touches `Layout.edgesCoveredByStandingTrains`); the diagram says WHERE THE TRAIN IS, so the wash is a subset of what
- * is blocked, the safe direction.  Every tile is measured at ONE here, so a length is a number of squares.
+ * Coverage is recorded per EDGE, and the tail walk stops when the train's length is used up, so a train of length 1
+ * claims one edge, which can be a dozen squares long.  The railway still blocks the whole edge (nothing here touches
+ * `Layout.edgesCoveredByStandingTrains`); the diagram says WHERE THE TRAIN IS, so the wash is a subset of what is
+ * blocked, the safe direction.  Every tile is measured at ONE here, so a length is a number of squares.
  *
  * MUTATION: put the whole-edge loop back in `AutonomySession.tilesCoveredByStandingTrains` and
  * `testATrainOfLengthOneCoversOneSquare` fails with the number of squares in the edge behind the train.  Stop the walk
@@ -317,9 +314,8 @@ public class testTheWashIsNoLongerThanTheTrain
     /**
      * A path locked ahead of the train does not move the wash (MT-438).  A locked path reserves every Point on it, so
      * an anchor taken from `Layout.getLocomotiveLocation`, the FIRST Point in `HashMap` order that holds the
-     * locomotive, could be the destination the train has not reached.  Adam: *"why is the tail from bottommainapre to
-     * bottommaina not orange.  it's almost as if you are shifting the location of the train"*.
-     * `Layout.whereTheTrainIs` is the one rule for this walk, `DiagramMonitor` and `AutoLocomotiveStatus`.
+     * locomotive, could be the destination the train has not reached.  `Layout.whereTheTrainIs` is the one rule for
+     * this walk, `DiagramMonitor` and `AutoLocomotiveStatus`.
      *
      * The arrangement is sought, not hoped for: the test tries candidate destinations until the anchor moves off the
      * square the train stands on, and fails if none can.  A LOCK rather than a run, because a lock returns with the
