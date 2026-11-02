@@ -64,11 +64,9 @@ public class testLayoutTiles
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
-        // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
-        // this, the window below opens and can write to Adam's own railway (OB-111), and can also
-        // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
-        // the whole battery.
+        // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as showUI constructs
+        // the real window, so a later sandbox protects nothing: the window could write to Adam's own railway (OB-111)
+        // or raise a modal "create a track diagram?" prompt that no test here will click, stalling the battery.
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -311,14 +309,11 @@ public class testLayoutTiles
 
         // THE SECOND DRIVE HAS TO LAND INSIDE THE FIRST HIGHLIGHT.
         //
-        // The hold is HIGHLIGHT_HOLD_MS (2250 ms today).  If getting here takes longer than that - `awaitHighlight` plus two
-        // `invokeAndWait` hops, on a machine running the whole battery - the first timer has already
-        // fired and been counted, and the assertion below sees two restores with the fix in place.
-        // That is a flake, and a flake in a class about timers is the worst kind: it reads as the
-        // defect it was written to catch.
-        //
-        // So the window is measured rather than assumed, and a machine too slow to make it says so and
-        // skips instead of failing about something it never tested.
+        // The hold is HIGHLIGHT_HOLD_MS (2250 ms today).  If getting here takes longer - `awaitHighlight` plus two
+        // `invokeAndWait` hops, on a machine running the whole battery - the first timer has already fired and been
+        // counted, and the assertion below sees two restores with the fix in place: a flake in a class about timers
+        // reads as the defect it was written to catch.  So the window is measured rather than assumed, and a machine
+        // too slow to make it says so and skips.
         long armed = System.currentTimeMillis();
 
         SwingUtilities.invokeAndWait(() -> label.updateImage(true));
@@ -350,11 +345,10 @@ public class testLayoutTiles
     }
 
     /**
-     * And the second highlight is DRAWN (OB-333, OB-334; Adam: *"when autonomy is running, I don't see yellow
-     * highlights for switches and signals on my track diagram"*).  A square changed again while its first highlight was
-     * up laid the new yellow over its picture and then ended the first highlight - whose end puts the plain picture back,
-     * over the yellow just laid - so it showed nothing for the whole hold while a highlight was armed.  Autonomy changes
-     * a square twice inside the hold, and at the Large size the picture is slow enough to arrive that it always did.
+     * And the second highlight is DRAWN (OB-333, OB-334).  A square changed again while its first highlight is up must
+     * keep the new yellow: the first highlight's end puts the plain picture back over it, and the square would show
+     * nothing for the whole hold.  Autonomy changes a square twice inside the hold, and at the Large size the picture
+     * is slow enough to arrive that it always would.
      *
      * The test above counts restores, which this left right; this one looks at the picture.
      *
@@ -435,11 +429,11 @@ public class testLayoutTiles
     /**
      * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal.
      *
-     * The first fix dropped the flash inside the accessory-highlight branch, which two ordinary cases never reach:
-     * a switch thrown by clicking its own flashed tile - the click exclusion skips that branch - and a square the
-     * route editor flashes that is not a switch or signal at all, such as an s88 named by a condition.  In both the
-     * flash timer was left holding the picture the tile had before, and put it back seconds later: a switch drawn in
-     * the position it was thrown out of, or a sensor drawn clear with a train standing on it.
+     * Dropping the flash only inside the accessory-highlight branch misses two ordinary cases: a switch thrown by
+     * clicking its own flashed tile (the click exclusion skips that branch) and a square the route editor flashes that
+     * is not a switch or signal at all, such as an s88 named by a condition.  There the flash timer would put back the
+     * picture the tile had before, seconds later: a switch drawn in the position it was thrown out of, or a sensor
+     * drawn clear with a train standing on it.
      *
      * Asked of a FEEDBACK square, which takes no accessory branch at all.
      *
@@ -471,9 +465,8 @@ public class testLayoutTiles
 
         assertTrue(label.isFlashOutstanding(), "precondition: the flash did not start");
 
-        // THE PICTURE IS REPLACED.  `updateImage(false)` returns without doing anything unless the image NAME
-        // changed, and a bare feedback component with nothing bound to it always draws the same picture - so
-        // asked that way this proved nothing and the flash simply timed out inside the wait.
+        // THE PICTURE IS REPLACED.  `updateImage(false)` returns without doing anything unless the image NAME changed,
+        // and a bare feedback component with nothing bound to it always draws the same picture, so that proves nothing.
         // `updateImage(true)` replaces it, which is what an occupancy change does; a FEEDBACK square takes no
         // accessory-highlight branch at all, so what is tested is the path that branch does not cover.
         SwingUtilities.invokeAndWait(() -> label.updateImage(true));
@@ -508,8 +501,7 @@ public class testLayoutTiles
     /**
      * Waits for an accessory highlight to go up, which happens a pass or two after `updateImage` is called.
      *
-     * The timer nulls the field when it fires, so this cannot answer yes about a highlight that ended
-     * long ago - which is what made the second half of the flash test vacuous.
+     * The timer nulls the field when it fires, so this cannot answer yes about a highlight that ended long ago.
      *
      * @param label the label
      * @return whether it went up
@@ -616,9 +608,9 @@ public class testLayoutTiles
     /**
      * The exit itself asks every open window, and a route editor holding unsaved typing can refuse it.
      *
-     * `WindowClosed` asked the open layout editor whether it might settle (OB-070) and never asked the route
-     * editor, so File > Exit and the main window's X disposed it with the process and took whatever had been typed
-     * with them - silently, because that window's own discard question lives on its X and on Escape.
+     * `WindowClosed` must ask the route editor as well as the open layout editor (OB-070): otherwise File > Exit and
+     * the main window's X dispose it with the process and take whatever had been typed with them - silently, because
+     * that window's own discard question lives on its X and on Escape.
      *
      * **The decision, not the predicate under it**.  The handler ends in `System.exit`, so what is asked
      * here is `everyOpenWindowMaySettle` - everything the exit does before it saves anything - with the discard
@@ -685,10 +677,10 @@ public class testLayoutTiles
     }
 
     /**
-     * The exit brings a minimized route editor back before it asks about its unsaved typing (the popups sweep, on Adam's
-     * MT-703 note): the question is owned by the route editor, and a minimized window hides what it owns - so closing
-     * TrainControl with the route editor in the taskbar asked where nobody could see it, and the exit waited on it.
-     * `toFront`, which it did call, does not restore a minimized window.
+     * The exit brings a minimized route editor back before it asks about its unsaved typing (MT-703): the question is
+     * owned by the route editor, and a minimized window hides what it owns - so closing TrainControl with the route
+     * editor in the taskbar would ask where nobody could see it, and the exit would wait on it.  `toFront` does not
+     * restore a minimized window.
      *
      * MUTATION: ask without bringing the route editor back, and this fails.
      *
@@ -748,8 +740,8 @@ public class testLayoutTiles
      *
      * This window is not modal and does not hold the route: Enable/Disable in the route list, a delete, an import or
      * another editor can change it while it is open, and Save is a delete-and-re-add of everything the window holds.
-     * So a toggle made while an editor was open was silently undone by that editor's Save, and after a delete the
-     * Save simply failed with a message that had no remedy - the typing could not be kept at all.
+     * Without that, a toggle made while an editor is open is silently undone by its Save, and after a delete the Save
+     * fails with a message that has no remedy - the typing cannot be kept at all.
      *
      * Asked of the question Save now puts, on all three states.
      *
@@ -788,10 +780,10 @@ public class testLayoutTiles
 
             // A RENAME IS NOT A DELETION.
             //
-            // This looked the route up by NAME only, so a rename under the window read as "gone" - and the
-            // message that followed named the two causes that had not happened, deleted or replaced by an
-            // import, and offered save-as-new: a second route beside the renamed one, carrying a fresh id
-            // that no route tile and no autonomy selection follows.
+            // Looked up by NAME only, a rename under the window would read as "gone", and the message that followed
+            // would name two causes that had not happened (deleted, or replaced by an import) and offer save-as-new: a
+            // second route beside the renamed one, with a fresh id that no route tile and no autonomy selection
+            // follows.
             model.editRoute(name, "Moving route renamed", commands, 0,
                 org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
 
@@ -807,9 +799,8 @@ public class testLayoutTiles
 
             // AND A SAVE KEEPS THE NAME THE OTHER PARTY GAVE IT.
             //
-            // The window does not refresh and `originalName` is final, so the name field still holds the
-            // name it opened with - and the first version of this passed that as the NEW name, renaming
-            // the route straight back while the comment above it said it saved under the new name.
+            // The window does not refresh and `originalName` is final, so the name field still holds the name it opened
+            // with: passing that as the NEW name would rename the route straight back.
             assertEquals(editor.nameToSaveAs(name, "Moving route renamed"), "Moving route renamed",
                 "saving onto a renamed route uses this window's own name, which renames it back to "
                 + name + " - and neither the dialog nor the comment says so");
@@ -852,10 +843,9 @@ public class testLayoutTiles
             model.editRoute("Moving route renamed", name, commands, 0,
                 org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
 
-            // A RENAME IS A CHANGE TOO.  `Route.locomotiveRenamed` rewrites the route's commands and
-            // conditions IN PLACE, so nothing about the route object changes identity - and the signature used
-            // to compare the conditions by object, which made a rename invisible and let Save put the dead name
-            // back.
+            // A RENAME IS A CHANGE TOO.  `Route.locomotiveRenamed` rewrites the route's commands and conditions IN
+            // PLACE, so the route object keeps its identity; the signature compares conditions by value, or a rename
+            // would be invisible and Save would put the dead name back.
             model.newMM2Locomotive("Moving loc", 62);
 
             List<org.traincontrol.base.RouteCommand> driving = new ArrayList<>();

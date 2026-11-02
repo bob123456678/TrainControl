@@ -30,6 +30,9 @@ public final class CopyScan
 {
     public static final int MIN = 60;
 
+    /** The most places a run is paired across by default; the pairs grow as the square of the places. */
+    public static final int CROWDED = 40;
+
     private static final Set<String> KEYWORDS = new HashSet<>(Arrays.asList((
         "abstract assert boolean break byte case catch char class const continue default do double else enum extends "
         + "final finally float for goto if implements import instanceof int interface long native new package private "
@@ -101,15 +104,31 @@ public final class CopyScan
     /** The groups of copies under `src`, longest first.  @throws IOException when a file cannot be read */
     public static List<Group> scan(File src) throws IOException
     {
+        return scan(src, CROWDED);
+    }
+
+    /**
+     * The same, pairing runs found in up to `crowded` places; one found in more is left out, as too common to pair.
+     *
+     * @throws IOException when a file cannot be read
+     */
+    public static List<Group> scan(File src, int crowded) throws IOException
+    {
         Map<String, String> sources = new LinkedHashMap<>();
 
         collect(src, src, sources);
 
-        return scan(sources);
+        return scan(sources, crowded);
     }
 
     /** The groups of copies in sources given as relative path to text, longest first. */
     public static List<Group> scan(Map<String, String> sources)
+    {
+        return scan(sources, CROWDED);
+    }
+
+    /** The same, pairing runs found in up to `crowded` places. */
+    public static List<Group> scan(Map<String, String> sources, int crowded)
     {
         List<String> paths = new ArrayList<>(sources.keySet());
 
@@ -177,7 +196,7 @@ public final class CopyScan
         {
             int count = locs[0];
 
-            if (count < 2 || count > 40) continue;
+            if (count < 2 || count > crowded) continue;
 
             for (int a = 1; a <= count; a++)
             {

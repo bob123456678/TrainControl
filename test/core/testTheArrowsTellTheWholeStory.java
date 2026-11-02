@@ -135,12 +135,7 @@ public class testTheArrowsTellTheWholeStory
 
         try
         {
-            org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
-
-            json.getJSONObject("tileDirections").put(key(main), "BOTH");
-            json.getJSONObject("tileDirections").put(key(spur), "NONE");
-
-            Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+            closeTheSpurUnderAGreenToe(setup, was);
 
             AutonomySession read = new AutonomySession(scenario.getFolder());
 
@@ -165,8 +160,8 @@ public class testTheArrowsTellTheWholeStory
             assertTrue(said.contains("5,3") && said.contains(scenario.getPages().get(0).getName()), "what is logged does"
                 + " not say where the switch is: " + said);
 
-            // WHAT IT SAYS IS TRUE OF EVERY SQUARE brought to its arrows: a road closed OR one-way and now both ways
-            // (OB-351), so the sentence says fewer ways and never that a road was closed
+            // WHAT IT SAYS IS TRUE OF EVERY SQUARE brought to its arrows (a road closed OR one-way, now both ways):
+            // fewer ways, never that a road was closed
             assertTrue(said.contains("fewer ways") && !said.contains("closed"), "what is logged says more than is true of"
                 + " every square brought to its arrows: " + said);
 
@@ -199,9 +194,8 @@ public class testTheArrowsTellTheWholeStory
     }
 
     /**
-     * No door stores a road shut a way its square's arrow shows open: the session's single-road and bulk setters, the
-     * run setter the branch submenus called, the one-way tool through the switch and its spur, and Allow Every Path.
-     * Every road and answer of the switch is tried through the single-road setter, from both ways open.
+     * No door stores a road shut a way its square's arrow shows open: the single-road and bulk setters, the run setter,
+     * the one-way tool through the switch and its spur, and Allow Every Path.
      *
      * MUTATION: record what was wanted in `AutonomySession.recordSquare` and leave out `normalizeToArms`, and this
      * fails.
@@ -330,8 +324,8 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * The other squares whose roads share an arm (a three-way, a double slip, a permanent left and a permanent
-     * three-way) hold no move their arrows hide and keep their blades' own restriction: no road is left an answer the
-     * hardware refuses.  A crossing and a double curve, whose roads end at arms of their own, store each answer as set.
+     * three-way) hold no move their arrows hide and keep their blades' own restriction.  A crossing and a double curve,
+     * whose roads end at arms of their own, store each answer as set.
      *
      * MUTATION: record what was wanted in `AutonomySession.recordSquare` and leave out `normalizeToArms`, and this
      * fails.
@@ -448,6 +442,17 @@ public class testTheArrowsTellTheWholeStory
         return null;
     }
 
+    /** Writes the setup file as it was, but with the switch's main line open both ways and its spur closed. */
+    private static void closeTheSpurUnderAGreenToe(File setup, byte[] was) throws Exception
+    {
+        org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
+
+        json.getJSONObject("tileDirections").put(key(main), "BOTH");
+        json.getJSONObject("tileDirections").put(key(spur), "NONE");
+
+        Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+    }
+
     /** The sides of a square drawn green: those a train may leave by, as the arrows combine its roads. */
     private static Set<Side> arrows(AutonomySession on, TileKey square)
     {
@@ -545,7 +550,7 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * A door other than opening that brings roads shut a way their arrows show open into the setup says so, once per
-     * square, and leaves the setup marked unsaved: a write straight into the store followed by the rebuild (OB-351).
+     * square, and leaves the setup marked unsaved (OB-351).
      *
      * MUTATION: leave the squares brought to their arrows out of `AutonomySession.rebuild`, and this fails.
      */
@@ -649,12 +654,7 @@ public class testTheArrowsTellTheWholeStory
 
         try
         {
-            org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
-
-            json.getJSONObject("tileDirections").put(key(main), "BOTH");
-            json.getJSONObject("tileDirections").put(key(spur), "NONE");
-
-            Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+            closeTheSpurUnderAGreenToe(setup, was);
 
             // A FILE THAT CANNOT BE WRITTEN
             assertTrue(setup.setReadOnly(), "precondition: the setup file would not be made read-only");

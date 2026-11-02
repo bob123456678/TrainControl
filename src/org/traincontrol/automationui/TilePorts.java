@@ -268,8 +268,8 @@ public class TilePorts
 
         // A route button is TRANSPARENT: its art touches no border and its orientation says nothing, so what it
         // conducts depends on its neighbors, which this pure function of type and orientation cannot see: TileGraph
-        // resolves it.  Layouts thread them through running lines (the sample layout has 43): treating them as
-        // decoration severs those lines, while a fixed crossing invents track for a button placed beside the rails.
+        // resolves it.  Layouts thread them through running lines: treating them as decoration severs those lines,
+        // while a fixed crossing invents track for a button placed beside the rails.
         fixed(componentType.ROUTE);
         TRANSPARENT.put(componentType.ROUTE, Boolean.TRUE);
 
@@ -305,8 +305,8 @@ public class TilePorts
      * The road of a sensor square its contact is on, at this orientation: its only road on a straight or a curve, and
      * on a double curve the E-S curve as drawn, turned with the square (MT-712; Adam: *"the station gets rendered on
      * the track without the sensor rather than the one with the sensor"*).  That is the second of `ports` at every
-     * orientation, and where a station's badge is drawn.  What a train on the other curve reaches is separate: the
-     * diagram does not say which track is wired to the contact, and the reduction makes one Point of the square.
+     * orientation, and where a station's badge is drawn.  Which track is wired to the contact on the other curve is not
+     * in the diagram, and the reduction makes one Point of the square.
      *
      * @return the road, or null for a square with none
      */
@@ -378,7 +378,7 @@ public class TilePorts
      * True if a square of this type is never given a length and no length rule reads one (OB-273).  Adam: *"a route
      * tile should not need or accept a length.  it just implicitly connects things as if it were a crossing."*  So it
      * is in no piece of Mass Assign Lengths, takes no share of one, and is never reported as unmeasured.  **The one
-     * list of such types**, asked once here because two lists that must agree is how OB-233 happened.
+     * list of such types**, asked once here because two lists that must agree drift apart (OB-233).
      */
     public static boolean takesNoLength(componentType type)
     {

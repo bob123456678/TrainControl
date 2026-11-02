@@ -86,6 +86,12 @@ public class testTheApiExamplesRun
             + String.join("\n", found));
     }
 
+    /** Each of the lines is in the report, in the order given. */
+    private static void assertSaysEach(List<String> found, String... lines)
+    {
+        for (String line : lines) assertSays(found, line);
+    }
+
     /** Whether a report has a line that begins like this. */
     private static void assertHasLine(List<String> found, String start)
     {
@@ -106,13 +112,11 @@ public class testTheApiExamplesRun
 
         List<String> found = KnowYourStation.run(station);
 
-        assertSays(found, "This station is a simulation");
-
-        assertSays(found, "Locomotive Known locomotive: address 63, MM2, 5 functions");
-
-        assertSays(found, "Power off, confirmed by the station: true (now false)");
-
-        assertSays(found, "Power on, confirmed by the station: true (now true)");
+        assertSaysEach(found,
+            "This station is a simulation",
+            "Locomotive Known locomotive: address 63, MM2, 5 functions",
+            "Power off, confirmed by the station: true (now false)",
+            "Power on, confirmed by the station: true (now true)");
 
         assertTrue(station.getLastLatency() >= 0, "a latency is a number of milliseconds, never negative");
 
@@ -127,27 +131,18 @@ public class testTheApiExamplesRun
     {
         List<String> found = DriveALocomotive.run(station);
 
-        assertSays(found, "after goBackward: going backward true, going forward false");
-
-        assertSays(found, "after goForward: going backward false, going forward true");
-
-        assertSays(found, "after turning round twice: going forward true");
-
-        assertSays(found, "after setSpeed(40): speed 40");
-
-        assertSays(found, "after stop: speed 0");
-
-        assertSays(found, "light true, F1 false, F2 true of 5 functions");
-
-        assertSays(found, "function 5 exists: false");
-
-        assertSays(found, "after a pulse on F3: false");
-
-        assertSays(found, "after lightsOff: light false");
-
-        assertSays(found, "after functionsOff: F2 false");
-
-        assertSays(found, "after applying the preferred setup: F2 true, speed 30");
+        assertSaysEach(found,
+            "after goBackward: going backward true, going forward false",
+            "after goForward: going backward false, going forward true",
+            "after turning round twice: going forward true",
+            "after setSpeed(40): speed 40",
+            "after stop: speed 0",
+            "light true, F1 false, F2 true of 5 functions",
+            "function 5 exists: false",
+            "after a pulse on F3: false",
+            "after lightsOff: light false",
+            "after functionsOff: F2 false",
+            "after applying the preferred setup: F2 true, speed 30");
 
         assertHasLine(found, "journeys run: 0, total run time: ");
 
@@ -169,33 +164,24 @@ public class testTheApiExamplesRun
 
         List<String> found = SwitchesSignalsAndSensors.run(station);
 
-        assertSays(found, "after turn: turned true, straight false");
-
-        assertSays(found, "after straight: turned false, straight true");
-
-        assertSays(found, "after doSwitch: turned true");
-
-        assertSays(found, "after red: red true, green false");
-
-        assertSays(found, "after green: red false, green true");
-
-        assertSays(found, "switch 5 turned: false");
-
-        assertSays(found, "switch 5 found by address: Switch 5");
+        assertSaysEach(found,
+            "after turn: turned true, straight false",
+            "after straight: turned false, straight true",
+            "after doSwitch: turned true",
+            "after red: red true, green false",
+            "after green: red false, green true",
+            "switch 5 turned: false",
+            "switch 5 found by address: Switch 5");
 
         assertHasLine(found, "switch 299 exists: " + thereBefore + ", its state ");
 
-        assertSays(found, "sensor 900 known: true");
-
-        assertSays(found, "sensor 900 occupied: true");
-
-        assertSays(found, "sensor 900 occupied now: false");
-
-        assertSays(found, "routes: true");
-
-        assertSays(found, "after the route: switch 5 turned true, signal 6 red true");
-
-        assertSays(found, "route still stored after deleteRoute: false");
+        assertSaysEach(found,
+            "sensor 900 known: true",
+            "sensor 900 occupied: true",
+            "sensor 900 occupied now: false",
+            "routes: true",
+            "after the route: switch 5 turned true, signal 6 red true",
+            "route still stored after deleteRoute: false");
 
         assertEquals(station.getAccessoryByAddressIfPresent(299, org.traincontrol.base.Accessory.accessoryDecoderType.MM2) != null,
             thereBefore, "asking about an accessory that is not there must not make it up");
@@ -218,35 +204,25 @@ public class testTheApiExamplesRun
 
         assertHasLine(found, "edge by id: Station 1");
 
-        assertSays(found, "edge to an unknown point: null");
-
-        assertSays(found, "leaving Pre Arrival: 2, arriving at Pre Arrival: 1");
-
-        assertSays(found, "every way into Pre Arrival is from a reversing point: false");
-
-        assertSays(found, "after making Main Track reversing: true, and every neighbor of Station 1 reversing: true");
-
-        assertSays(found, "every way into Pre Arrival is from an inactive point: false");
-
-        assertSays(found, "after switching Main Track off: true, and every neighbor of Station 1 inactive: true");
+        assertSaysEach(found,
+            "edge to an unknown point: null",
+            "leaving Pre Arrival: 2, arriving at Pre Arrival: 1",
+            "every way into Pre Arrival is from a reversing point: false",
+            "after making Main Track reversing: true, and every neighbor of Station 1 reversing: true",
+            "every way into Pre Arrival is from an inactive point: false",
+            "after switching Main Track off: true, and every neighbor of Station 1 inactive: true");
 
         assertHasLine(found, "shortest way: [Station 1 -> ");
 
-        assertSays(found, "its length: 260");
-
-        assertSays(found, "settings on Pre Arrival to Station 1: 2");
-
-        assertSays(found, "after clearing Signal 1: 1");
-
-        assertSays(found, "locks held by the way out of Station 1: 1");
-
-        assertSays(found, "after removing one: 0");
-
-        assertSays(found, "after clearing them all: 0");
-
-        assertSays(found, "reloaded: valid true, points 4, edges 5");
-
-        assertSays(found, "locks on the way out of Station 1 after reloading: 1");
+        assertSaysEach(found,
+            "its length: 260",
+            "settings on Pre Arrival to Station 1: 2",
+            "after clearing Signal 1: 1",
+            "locks held by the way out of Station 1: 1",
+            "after removing one: 0",
+            "after clearing them all: 0",
+            "reloaded: valid true, points 4, edges 5",
+            "locks on the way out of Station 1 after reloading: 1");
     }
 
     /**
@@ -257,26 +233,18 @@ public class testTheApiExamplesRun
     {
         List<String> found = RunTrainsOnAGraph.run(station);
 
-        assertSays(found, "running: true");
-
-        assertSays(found, "set off from Platform A for Platform B, over [Crossing, Platform A, Platform B]");
-
-        assertSays(found, "passed sensor 922, sensors reached so far: [Crossing, Platform A], "
-            + "last point reached: Platform A");
-
-        assertSays(found, "moved on from sensor 922");
-
-        assertSays(found, "arrived at Platform B, points reached: [Crossing, Platform A, Platform B]");
-
-        assertSays(found, "the train arrived: true");
-
-        assertSays(found, "still running after stop: false");
-
-        assertSays(found, "the train stands at: Platform B");
-
-        assertSays(found, "journeys run by the train: 1");
-
-        assertSays(found, "the layout's callback heard of changes: true");
+        assertSaysEach(found,
+            "running: true",
+            "set off from Platform A for Platform B, over [Crossing, Platform A, Platform B]",
+            "passed sensor 922, sensors reached so far: [Crossing, Platform A], "
+            + "last point reached: Platform A",
+            "moved on from sensor 922",
+            "arrived at Platform B, points reached: [Crossing, Platform A, Platform B]",
+            "the train arrived: true",
+            "still running after stop: false",
+            "the train stands at: Platform B",
+            "journeys run by the train: 1",
+            "the layout's callback heard of changes: true");
     }
 
     /**
@@ -287,17 +255,13 @@ public class testTheApiExamplesRun
     {
         List<String> found = ReactToEvents.run(station);
 
-        assertSays(found, "sensor 930 known: true");
-
-        assertSays(found, "a train passed sensor 930, switch 7 turned");
-
-        assertSays(found, "a train came back to sensor 930, switch 7 straight again");
-
-        assertSays(found, "the sensor went clear and occupied once more");
-
-        assertSays(found, "switch 8 turned by the route: true");
-
-        assertSays(found, "commands sent while this ran: true");
+        assertSaysEach(found,
+            "sensor 930 known: true",
+            "a train passed sensor 930, switch 7 turned",
+            "a train came back to sensor 930, switch 7 straight again",
+            "the sensor went clear and occupied once more",
+            "switch 8 turned by the route: true",
+            "commands sent while this ran: true");
 
         assertNull(station.getRoute(ReactToEvents.ROUTE), "the example removes the route it stored");
 

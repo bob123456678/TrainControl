@@ -308,8 +308,7 @@ public class testRoutes
         // Initialize model and set states.
         //
         // CREATED FIRST, AND ASSERTED: `setFeedbackState` returns false and does nothing for a module that is not in
-        // the database, and these three came from Adam's saved `LocDB.data`, so a missing one failed eighteen
-        // assertions later with a message that says nothing about feedback 4.
+        // the database; a missing one would fail much later with a message that says nothing about feedback 4.
         model.newFeedback(10, null);
         model.newFeedback(6, null);
         model.newFeedback(4, null);
@@ -521,14 +520,13 @@ public class testRoutes
     }
 
     /**
-     * NOT AT is the same question with the answer turned round (FR-141).
+     * NOT AT is the same question with the answer turned round (FR-141).  Adam: *we need "train at a sensor" or "train
+     * not as a sensor"*.  A train is not at a sensor it is not standing at, and a train on no sensor at all (not on the
+     * autonomy graph) is not at this one either.  A name with no locomotive behind it satisfies neither form: a typo
+     * must not make a condition true.
      *
-     * Adam: *we need "train at a sensor" or "train not as a sensor"*.  A train is not at a sensor it is not standing at,
-     * and a train on no sensor at all - not on the autonomy graph - is not at this one either.  A name with no locomotive
-     * behind it satisfies neither form: a typo must not make a condition true.
-     *
-     * MUTATION: have `Route.evaluate` ignore `isAtSensor` and the first assertion fails; answer "not at" for a name with no
-     * locomotive and the last one does.
+     * MUTATION: have `Route.evaluate` ignore `isAtSensor` and the first assertion fails; answer "not at" for a name
+     * with no locomotive and the last one does.
      */
     @Test
     public void testAutoLocomotiveConditionCanAskForATrainNotAtTheSensor() throws Exception
@@ -628,14 +626,10 @@ public class testRoutes
     }
 
     /**
-     * A route run BY HAND runs whatever its conditions say.
-     *
-     * **The conditions hold back the route's own firing, not a person's.** They are read in exactly two places, the s88
-     * monitor thread and the editor's Test button (which reports what that thread would decide); `execRoute` does not
-     * read them, so the play button, the right-click Execute item and a route tile on the diagram all run the route
-     * regardless.  Same rule as the tiered destination lists: the operator running a route by hand can see the railway
-     * and the condition cannot (see `behaviour/routes.md` section 7a).  Pinned because the next reader of `execRoute`
-     * beside the monitor loop will see a missing guard.
+     * A route run BY HAND runs whatever its conditions say.  The conditions hold back the route's own firing, not a
+     * person's: they are read only by the s88 monitor thread and the editor's Test button, so the play button, the
+     * right-click Execute item and a route tile all run the route regardless (`behaviour/routes.md` section 7a).
+     * Pinned because a reader of `execRoute` beside the monitor loop will see a missing guard.
      *
      * MUTATION: add the monitor's `hasConditions() && !conditions.evaluate(network)` guard to `execRoute` and this
      * fails.
@@ -686,18 +680,12 @@ public class testRoutes
     }
 
     /**
-     * A delay the railway will not honor is not a delay the editor shows.
+     * A delay the railway will not honor is not a delay the editor shows.  `execRoute` honors a command's own delay
+     * only when it is the larger of it and `DEFAULT_SLEEP_MS` (the gap between two route commands;
+     * `THREEWAY_ROUTE_DELAY_MS` sits above it), so the editor shows the delay the railway will use, whether it was
+     * typed or arrived another way (an earlier build, a station import, a JSON file).
      *
-     * `execRoute` honors a command's own delay only when it is the larger of it and `DEFAULT_SLEEP_MS`, but the editor
-     * accepted, stored and redisplayed any non-negative integer, so lowering a pause from 300 to 100 changed the number
-     * and not the railway.  The floor is kept, because it is the gap this program leaves between two route commands
-     * (`THREEWAY_ROUTE_DELAY_MS` sits above it); what is fixed is that it was invisible.
-     *
-     * **Both directions**: raising it only as typed left every delay that arrived another way (a route saved by an
-     * earlier build, imported from a station, read out of a JSON file) showing a number the railway would not use.
-     *
-     * Reached by reflection because both are private statics on a window class and need no instance; building a
-     * `RouteEditorFrame` to ask a pure function about two integers would need a display.
+     * Reached by reflection because both are private statics on a window class; a display would be needed otherwise.
      *
      * MUTATION: return `asked` unchanged from `delayTheRailwayWillUse` and the first two claims fail; raise zero as
      * well and the third does.
@@ -747,15 +735,12 @@ public class testRoutes
     }
 
     /**
-     * A route file that fails half way through leaves nothing watching a sensor.
+     * A route file that fails half way through leaves nothing watching a sensor.  Constructing a `MarklinRoute` arms it
+     * (the constructor ends in `executeAutoRoute()`, which parks a thread on the route's s88), and
+     * `parseRoutesFromJson` builds routes in a loop that `MarklinRoute.fromJSON` throws out of on a malformed entry:
+     * every route built before the bad one would stay armed, in no database, out of reach of `disable()`.
      *
-     * **Constructing a `MarklinRoute` arms it**: the constructor ends in `executeAutoRoute()`, which parks a thread on
-     * the route's s88.  `parseRoutesFromJson` builds routes in a loop and `MarklinRoute.fromJSON` throws out of it on a
-     * malformed entry, so every route built before the bad one is armed, is in no database and has nothing that can
-     * reach `disable()`; it throws switches for the rest of the session, unseen.  The route DATABASE cannot lose routes
-     * to a bad file (the parse happens first); the layer below is that the parse has a side effect on the railway.
-     *
-     * **Asserted by the railway rather than by a flag**: the test pulses the sensor and asks whether the turnout moved.
+     * Asserted by the railway rather than by a flag: the test pulses the sensor and asks whether the turnout moved.
      * `testFailedRouteImportLeavesExistingRoutesIntact` covers the same bad file from the database's side.  The valid
      * route is built with `auto` false so building the FIXTURE arms nothing, and the JSON is then edited to say true.
      *
@@ -820,17 +805,14 @@ public class testRoutes
     }
 
     /**
-     * A route parked during an import and released afterwards still watches its sensor.
+     * A route parked during an import and released afterwards still watches its sensor.  An imported route arrives
+     * disabled, so the operator turning one on afterwards is the ONLY way a freshly imported automatic route starts
+     * watching its sensor.
      *
-     * An imported route arrives disabled (Adam: *"they should not be armed. The user can choose to do this when they
-     * are ready."*), so the operator turning one on afterwards is the ONLY way a freshly imported automatic route
-     * starts watching its sensor; if the release did not work the import would look clean and the railway never
-     * respond.
-     *
-     * **Not driven through `importRoutes` itself, on purpose**: it deletes every route in the database before adding
-     * the file's, and the database here is the operator's own.  What is asserted is the mechanism the import depends
-     * on, at the route: parked, released, still firing.  `testDisableAndReEnableDoesNotStartASecondMonitor` pins the
-     * other side (releasing adds no second monitor); together they say the route fires exactly once.
+     * Not driven through `importRoutes` itself: it deletes every route in the database before adding the file's, and
+     * the database here is the operator's own.  What is asserted is the mechanism the import depends on, at the route:
+     * parked, released, still firing.  `testDisableAndReEnableDoesNotStartASecondMonitor` pins the other side
+     * (releasing adds no second monitor).
      *
      * MUTATION: make `enable()` a no-op and this fails.  It exercises the pair directly rather than through the route
      * editor's own enable path, which needs a window.
@@ -879,17 +861,13 @@ public class testRoutes
     }
 
     /**
-     * A speed outside 0-100 is clamped where the command is built, not in each parser.
+     * A speed outside 0-100 is clamped where the command is built, not in each parser: `fromLine` clamped and
+     * `fromJSON` did not, and the CS3 route import is a third door (`wert / 1000 * 100`, unclamped).  Clamping in the
+     * FACTORY covers all three.
      *
-     * `fromLine` clamped and `fromJSON` did not, so a hand-edited or shared file could carry a speed of 150 that
-     * `execRoute` passes straight to `setSpeed`; the CS3 route import is a third door (`wert / 1000 * 100`, unclamped).
-     * Clamping in the FACTORY covers all three.
-     *
-     * **A negative is load-bearing and is not clamped to zero**: `fromLine` normalizes any negative to `-1` and
-     * `execRoute` reads `-1` as an instant stop, so the clamp has to be that rule and not `clamp(0, 100)`.
-     *
-     * The editor is not a door (`RouteEditorFrame` range-checks a typed speed and refuses to save); an imported
-     * out-of-range route now shows as 100 rather than being refused at Save.
+     * A negative is not clamped to zero: `fromLine` normalizes any negative to `-1` and `execRoute` reads `-1` as an
+     * instant stop, so the clamp has to be that rule and not `clamp(0, 100)`.  The editor is not a door
+     * (`RouteEditorFrame` range-checks a typed speed).
      *
      * MUTATION: store `speed` unchanged in `RouteCommandLocomotiveSpeed` and the first two claims fail.
      */
@@ -927,14 +905,12 @@ public class testRoutes
     }
 
     /**
-     * A route read from a file arrives disabled, whatever the file says.
+     * A route read from a file arrives disabled, whatever the file says.  Adam: *"They should not be armed. The user
+     * can choose to do this when they are ready."*  The `auto` flag is read and then overridden, so a parse that throws
+     * leaves nothing armed and an import cannot have the old route and its replacement watching one sensor at once.
      *
-     * Adam: *"They should not be armed. The user can choose to do this when they are ready."*  The `auto` flag is read
-     * and then overridden, the one deliberate departure from a faithful restoration: a parse that throws leaves nothing
-     * armed, and an import can no longer have the old route and its replacement watching one sensor at once.
-     *
-     * Driven through `parseRoutesFromJson` rather than `importRoutes`, which deletes every route in the database before
-     * adding the file's, and the database here is the operator's own.
+     * Driven through `parseRoutesFromJson` rather than `importRoutes`, which deletes every route in the operator's own
+     * database first.
      *
      * MUTATION: remove the `route.disable()` from the parse loop and this fails.
      */
@@ -975,17 +951,13 @@ public class testRoutes
     }
 
     /**
-     * An ACTIVE route, exported and read back, arrives switched off (MT-352).
-     *
-     * Adam: *"too much manual effort for this, generate an export of an active route, import it, and confirm
-     * behavior."* So this is the manual test, done by the suite: a route with a sensor and automatic execution ON goes
-     * out through the real exporter and comes back through the real parser.  **Read back rather than imported**:
-     * `importRoutes` deletes every route in the (operator's own) database first, and `parseRoutesFromJson` is the half
-     * that decides what a route arrives as; `testFailedRouteImportLeavesExistingRoutesIntact` drives the deleting half
-     * with files that always throw.
+     * An ACTIVE route, exported and read back, arrives switched off (MT-352).  A route with a sensor and automatic
+     * execution ON goes out through the real exporter and comes back through the real parser (not `importRoutes`, which
+     * deletes every route in the operator's own database first; `testFailedRouteImportLeavesExistingRoutesIntact`
+     * drives the deleting half).
      *
      * The route is asserted to have been exported as ACTIVE, because a file that says `auto: false` would make the
-     * claim true for the wrong reason: the trap in testing a default.
+     * claim true for the wrong reason.
      *
      * MUTATION: remove the `route.disable()` from `parseRoutesFromJson` and this fails.
      */
@@ -1353,12 +1325,9 @@ public class testRoutes
     }
 
     /**
-     * Two lists of routes hold the same routes, except that the parsed ones are disarmed.
-     *
-     * `MarklinRoute.equals` compares `enabled`, and a route read from a file arrives disabled whatever the file says
-     * (Adam: *"they should not be armed.  The user can choose to do this when they are ready."*), so a round trip
-     * cannot be asserted with `equals`; the claim left is that everything else came back.  The arming is asserted too,
-     * so a round trip that started returning armed routes fails here.
+     * Two lists of routes hold the same routes, except that the parsed ones are disarmed: `MarklinRoute.equals`
+     * compares `enabled`, and a route read from a file arrives disabled, so a round trip cannot be asserted with
+     * `equals`.  A round trip that started returning armed routes fails here.
      */
     private static void assertSameApartFromArming(List<MarklinRoute> expected, List<MarklinRoute> actual)
     {
@@ -1668,17 +1637,12 @@ public class testRoutes
     }
 
     /**
-     * Editing a route keeps it in the autonomy "Activate routes" selection.
+     * Editing a route keeps it in the autonomy "Activate routes" selection.  `editRoute` works by delete-then-re-add,
+     * and `deleteRoute` strips the route's id out of `activateRouteIDs` (right for a real delete: ids are reused);
+     * `changeRouteId` restores it, and so must every door that deletes and re-adds.
      *
-     * `editRoute` works by delete-then-re-add, and `deleteRoute` strips the route's id out of `activateRouteIDs` (right
-     * for a real delete: ids are reused and a new route inheriting one would be switched on unasked); nothing put the
-     * id back when the same route was added again.  `changeRouteId` has that repair, so this is a sweep failure: three
-     * doors delete and re-add, and one knew.
-     *
-     * **Why it survives to bite**: the loss is only in memory until something persists it, and any mid-session
-     * `parseAuto` rebuild restores the list from the stored configuration.  The save on the way out writes the
-     * shortened list and the NEXT launch disables the route, so an s88 automation stops firing some sessions after the
-     * edit that caused it.
+     * The loss survives to bite: a mid-session `parseAuto` rebuild restores the list from the stored configuration,
+     * the save on the way out writes the shortened list, and the NEXT launch disables the route.
      *
      * MUTATION: removing the restore from `editRoute` fails the second assertion; removing it from the `syncWithCS2`
      * refresh is not covered here (that path needs a Central Station; MT-272 carries it).
@@ -1724,14 +1688,12 @@ public class testRoutes
         }
     }
     /**
-     * Editing a route keeps its Central Station lock.
-     *
-     * **The lock is what the menu guards Delete and Change Route ID on.** `editRoute` edits by delete-then-re-add and
-     * `newRoute` builds a route whose `locked` defaults to false (only the sync's import loop writes true), so every
-     * edit unlocked the route.  **One door reaches it without an edit the user would call one**: Enable/Disable
-     * Automatic Execution is deliberately not gated on the lock, reaches `writeRouteEnabledState` and so `editRoute`,
-     * and `BulkEnableOrDisable` applies it to every route matching a pattern.  `syncWithCS2` re-locks afterwards, but
-     * only if the station answers and still carries that id, which it does not in simulate mode or on a timeout.
+     * Editing a route keeps its Central Station lock, which the menu guards Delete and Change Route ID on.  `editRoute`
+     * edits by delete-then-re-add and `newRoute` builds a route whose `locked` defaults to false.  One door reaches it
+     * without an edit the user would call one: Enable/Disable Automatic Execution is not gated on the lock, reaches
+     * `writeRouteEnabledState` and so `editRoute`, and `BulkEnableOrDisable` applies it to every route matching a
+     * pattern.  `syncWithCS2` re-locks afterwards only if the station answers and still carries that id, which it does
+     * not in simulate mode or on a timeout.
      *
      * MUTATION: remove the `wasLocked` restore from `editRoute` and this fails.
      */
@@ -1955,8 +1917,8 @@ public class testRoutes
     /**
      * A running train is at the sensor it last reached, not at one further along its path (OB-250).  Adam: *"250- the
      * first"* - "X is at T now": the last sensor X reached, or where it stands.  A route condition "X at T" is asked
-     * when the route's own sensor fires, and past the train's last milestone it read "the Point that holds the train" -
-     * the first in the railway's hash order, and every Point of a locked path holds it - so it could answer yes for a
+     * when the route's own sensor fires, and past the train's last milestone it read "the Point that holds the train"
+     * (the first in the railway's hash order, and every Point of a locked path holds it), so it could answer yes for a
      * sensor the train had not reached.  A line A - P - Q - B run both ways, asked about the two sensors beyond the
      * next one before anything is reached: whichever Point the hash order gives first, one answer was wrong.
      *
@@ -1969,11 +1931,7 @@ public class testRoutes
     {
         final int a = 8841, p = 8842, q = 8843, b = 8844;
 
-        for (int s : new int[] {a, p, q, b})
-        {
-            model.newFeedback(s, null);
-            model.setFeedbackState(String.valueOf(s), false);
-        }
+        newClearFeedbacks(a, p, q, b);
 
         model.parseAuto("{"
             + "\"points\": ["
@@ -2007,6 +1965,41 @@ public class testRoutes
         runAndAsk(rail, x, new String[] {"O250 B", "O250 Q", "O250 P", "O250 A"}, new int[] {b, q, p, a});
     }
 
+    /** Creates each of the feedbacks, new to the station, and sets it clear. */
+    private static void newClearFeedbacks(int... sensors)
+    {
+        for (int s : sensors)
+        {
+            model.newFeedback(s, null);
+            model.setFeedbackState(String.valueOf(s), false);
+        }
+    }
+
+    /**
+     * Starts the train along the path on a daemon thread named `name`, waits up to `waitMs` for it to be under way, and
+     * returns the thread; `off` finishes the message "the train did not set ..." if it never is.
+     */
+    private static Thread startRun(final org.traincontrol.automation.Layout rail, final org.traincontrol.base.Locomotive x,
+        final List<org.traincontrol.automation.Edge> path, String name, long waitMs, String off) throws Exception
+    {
+        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), name);
+
+        run.setDaemon(true);
+        run.start();
+
+        long until = System.currentTimeMillis() + waitMs;
+
+        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set "
+            + off + ": " + org.traincontrol.automation.Layout.getLastError());
+
+        return run;
+    }
+
     /**
      * Runs the train along four Points, asking where it is before it reaches the second: at the first, and at neither the
      * third nor the fourth.
@@ -2019,20 +2012,7 @@ public class testRoutes
 
         assertFalse(path.contains(null), "precondition: no path from " + at[0] + " to " + at[3]);
 
-        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "OB-250 " + at[0] + " to " + at[3]);
-
-        run.setDaemon(true);
-        run.start();
-
-        long until = System.currentTimeMillis() + 10000;
-
-        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-        {
-            Thread.sleep(50);
-        }
-
-        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
-            + " off from " + at[0] + ": " + org.traincontrol.automation.Layout.getLastError());
+        Thread run = startRun(rail, x, path, "OB-250 " + at[0] + " to " + at[3], 10000, "off from " + at[0]);
 
         try
         {
@@ -2079,11 +2059,7 @@ public class testRoutes
     {
         final int a = 8851, p = 8852, q = 8853, b = 8854;
 
-        for (int s : new int[] {a, p, q, b})
-        {
-            model.newFeedback(s, null);
-            model.setFeedbackState(String.valueOf(s), false);
-        }
+        newClearFeedbacks(a, p, q, b);
 
         model.parseAuto("{"
             + "\"points\": ["
@@ -2112,20 +2088,7 @@ public class testRoutes
         final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
             rail.getEdge("C1 A", "C1 P"), rail.getEdge("C1 P", "C1 Q"), rail.getEdge("C1 Q", "C1 B"));
 
-        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "RSA56-C1 run");
-
-        run.setDaemon(true);
-        run.start();
-
-        long until = System.currentTimeMillis() + 10000;
-
-        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-        {
-            Thread.sleep(50);
-        }
-
-        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
-            + " off: " + org.traincontrol.automation.Layout.getLastError());
+        Thread run = startRun(rail, x, path, "RSA56-C1 run", 10000, "off");
 
         try
         {
@@ -2186,11 +2149,7 @@ public class testRoutes
     {
         final int a = 8961, r = 8962, c = 8963;
 
-        for (int s : new int[] {a, r, c})
-        {
-            model.newFeedback(s, null);
-            model.setFeedbackState(String.valueOf(s), false);
-        }
+        newClearFeedbacks(a, r, c);
 
         model.parseAuto("{"
             + "\"points\": ["
@@ -2216,27 +2175,14 @@ public class testRoutes
         final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
             rail.getEdge("T57 A", "T57 R"), rail.getEdge("T57 R", "T57 C"));
 
-        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "RSA57-C1 run");
-
-        run.setDaemon(true);
-        run.start();
-
-        long until = System.currentTimeMillis() + 15000;
-
-        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
-        {
-            Thread.sleep(50);
-        }
-
-        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
-            + " off: " + org.traincontrol.automation.Layout.getLastError());
+        Thread run = startRun(rail, x, path, "RSA57-C1 run", 15000, "off");
 
         try
         {
             // AT THE REVERSING POINT: the run records R, then turns, R still pending, for the two-second pause
             model.setFeedbackState(String.valueOf(r), true);
 
-            until = System.currentTimeMillis() + 3000;
+            long until = System.currentTimeMillis() + 3000;
 
             while (!String.valueOf(r).equals(rail.getLatestMilestoneS88(x)) && System.currentTimeMillis() < until)
             {

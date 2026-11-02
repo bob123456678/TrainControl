@@ -179,17 +179,7 @@ public class testTheTimetableAnswersItsMenu
     {
         List<TimetablePath> entries = twoEntries(true);
 
-        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
-        {
-            press(onRow(0), "timetable.ui.menuDeleteEntry");
-
-            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "Delete Entry asked nothing");
-
-            // Its removal runs on a worker: given the time to, had it been sent
-            Thread.sleep(1000);
-
-            Components.settle();
-        }
+        pressAnsweredNo(0, "timetable.ui.menuDeleteEntry", "Delete Entry asked nothing");
 
         assertEquals(railway().getTimetable(), entries, "Delete Entry answered No changed the timetable");
     }
@@ -285,17 +275,7 @@ public class testTheTimetableAnswersItsMenu
     {
         List<TimetablePath> entries = twoEntries(true);
 
-        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
-        {
-            press(onRow(0), "timetable.ui.menuClearTimetable");
-
-            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "Clear Timetable asked nothing");
-
-            // Its clearing runs on a worker: given the time to, had it been sent
-            Thread.sleep(1000);
-
-            Components.settle();
-        }
+        pressAnsweredNo(0, "timetable.ui.menuClearTimetable", "Clear Timetable asked nothing");
 
         assertEquals(railway().getTimetable(), entries, "Clear Timetable answered No changed the timetable");
     }
@@ -587,6 +567,24 @@ public class testTheTimetableAnswersItsMenu
         assertNotNull(item, "the timetable's menu has no " + I18n.t(key));
 
         Components.press(item);
+    }
+
+    /**
+     * Presses the item on a row and answers the question No; `nothingAsked` is the failure if none comes.  Waits out
+     * what a Yes would have started, which runs on a worker.
+     */
+    private static void pressAnsweredNo(int row, String key, String nothingAsked) throws Exception
+    {
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
+        {
+            press(onRow(row), key);
+
+            assertTrue(answering.awaitAsked(1, PATIENCE_MS), nothingAsked);
+
+            Thread.sleep(1000);
+
+            Components.settle();
+        }
     }
 
     /** The Auto tab's Execute Timetable button, by its field, and saying what the operator reads on it. */

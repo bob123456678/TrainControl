@@ -23,13 +23,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289;
  * Adam: "make it be consistent with other labels").  The autonomy editor hides Text Labels, which its caption choice
- * replaces (FR-061), and the gap above Grid was left standing at the top of the column.  In both editors, because the
+ * replaces (FR-061), so the gap above Grid must not stand at the top of the column.  In both editors, because the
  * plain one is where the column is right and has to stay right.
  *
  * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
  * status line that does not ask the window for its sentence's width keeps the column on the screen.
  *
- * And the autonomy editor's notices float over the bottom of the diagram, three lines at most, with an X to dismiss
+ * And the autonomy editor's notices float over the bottom of the diagram, four lines at most, with an X to dismiss
  * them, and a notice never moves the diagram (OB-366).
  *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
@@ -125,9 +125,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312).  They were 6,
-     * 4 and 6 pixels apart: the columns built beside the form's own checkboxes left the heading's gap between them,
-     * where the form leaves 4.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
+     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312): the form
+     * leaves 4 pixels between its own checkboxes, so the columns built beside it must not leave the heading's gap
+     * between them.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
      *
      * MUTATION: leave a heading's gap between two of the checkboxes, and this fails.
      */
@@ -153,13 +153,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam:
      * "the min height of the autonomy editor window needs to be a few more pixels taller").
      *
-     * HEIGHT: at Small the window shrank to 680 pixels and the column of tools needs 693 to show Cancel, the last
-     * control, and the status line.  WIDTH: the status line's words are data and its minimum width was its text's (521
-     * pixels in English, 655 in German), so the tools column went off the right edge; the sentence here is longer than
-     * any language's, so the claim does not depend on the railway's words.  SCALE: the floor was in pixels and the
-     * window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the
-     * display as dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three
-     * diagram sizes, of every control outside the scroll panes.
+     * HEIGHT: the column of tools needs 693 pixels to show Cancel, the last control, and the status line, where Small
+     * once left 680.  WIDTH: the status line's words are data, so its minimum width must not be its text's (521 pixels
+     * in English, 655 in German) or the tools column goes off the right edge; the sentence here is longer than any
+     * language's, so the claim does not depend on the railway's words.  SCALE: the floor is in pixels and the window
+     * is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the display as
+     * dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three diagram
+     * sizes, of every control outside the scroll panes.
      *
      * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout
      * asks for in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum
@@ -172,8 +172,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels
-     * (OB-342).
+     * And the track diagram editor, which has the same floor: its Cancel button must not be cut off (OB-342).
      *
      * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, or take out the floor the window's own layout asks for in
      * `sizeForDiagram`, and this fails.
@@ -251,13 +250,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * A notice longer than three lines scrolls inside a band three lines tall, never sideways, and a shorter one gets a
-     * band its own height (OB-366: "cap the height at 3 lines with a scrollbar"), measured in the notice text's font.
+     * A notice longer than four lines scrolls inside a band four lines tall, never sideways, and a shorter one gets a
+     * band its own height (OB-366; MT-864), measured in the notice text's font.
      *
      * MUTATION: raise `AutonomyBanner.MOST_LINES` to 6, and this fails.
      */
     @Test
-    public void testALongNoticeScrollsWithinThreeLines() throws Exception
+    public void testALongNoticeScrollsWithinFourLines() throws Exception
     {
         final LayoutEditor editor = autonomyEditor();
 
@@ -283,13 +282,13 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
                 java.awt.Insets pad = notices.getInsets();
 
-                assertTrue(area.getViewport().getHeight() <= 3 * line, "a six-line notice is shown "
-                    + area.getViewport().getHeight() + " pixels tall, more than three lines of " + line + " (OB-366)");
+                assertTrue(area.getViewport().getHeight() <= 4 * line, "a six-line notice is shown "
+                    + area.getViewport().getHeight() + " pixels tall, more than four lines of " + line + " (MT-864)");
 
-                assertTrue(notices.getHeight() <= 3 * line + pad.top + pad.bottom, "the band is " + notices.getHeight()
-                    + " pixels tall for a six-line notice, more than three lines of " + line + " and its padding");
+                assertTrue(notices.getHeight() <= 4 * line + pad.top + pad.bottom, "the band is " + notices.getHeight()
+                    + " pixels tall for a six-line notice, more than four lines of " + line + " and its padding");
 
-                assertTrue(area.getVerticalScrollBar().isShowing(), "a six-line notice in a band three lines tall has"
+                assertTrue(area.getVerticalScrollBar().isShowing(), "a six-line notice in a band four lines tall has"
                     + " no scrollbar, so the rest of it cannot be reached (OB-366)");
 
                 assertFalse(area.getHorizontalScrollBar().isShowing(), "the notices scroll sideways; they wrap");
@@ -298,15 +297,15 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                     + " six-line one's " + notices.getHeight() + ": the band does not fit what it says");
             });
 
-            say(editor, notices, lines(3));
+            say(editor, notices, lines(4));
 
             SwingUtilities.invokeAndWait(() ->
             {
                 javax.swing.JScrollPane area = scrollerIn(notices);
 
-                assertFalse(area.getVerticalScrollBar().isShowing(), "a three-line notice does not fit the band: "
+                assertFalse(area.getVerticalScrollBar().isShowing(), "a four-line notice does not fit the band: "
                     + area.getViewport().getHeight() + " pixels for a text "
-                    + area.getViewport().getView().getPreferredSize().height + " tall (OB-366, \"3 lines\")");
+                    + area.getViewport().getView().getPreferredSize().height + " tall (MT-864, \"4 lines\")");
             });
         }
         finally
@@ -740,19 +739,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     private static javax.swing.JScrollPane scrollerIn(Container in)
     {
-        for (Component child : in.getComponents())
-        {
-            if (child instanceof javax.swing.JScrollPane) return (javax.swing.JScrollPane) child;
-
-            if (child instanceof Container)
-            {
-                javax.swing.JScrollPane deeper = scrollerIn((Container) child);
-
-                if (deeper != null) return deeper;
-            }
-        }
-
-        return null;
+        return support.Components.inside(in, javax.swing.JScrollPane.class);
     }
 
     /** A status sentence longer than any language's: 521 pixels is English and 655 German, and this is over 900 */
@@ -814,6 +801,21 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         if (examined == 0) throw new SkipException("the screen is too small for the editor's smallest size at any diagram size");
     }
 
+    /** The editor of the page at a diagram size, rendered and, when asked, in autonomy mode, built on the event thread. */
+    private static LayoutEditor builtEditor(final boolean autonomy, final int size) throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, size, ui, 0);
+            built[0].render();
+            if (autonomy) built[0].setAutonomyMode(session);
+        });
+
+        return built[0];
+    }
+
     /**
      * What an editor's window cuts off of its controls once it is shrunk to its smallest size, each as "Cancel: 13 of 23
      * pixels high"; null where the screen, not the editor's own floor, is what held the floor down.
@@ -823,16 +825,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     private static java.util.List<String> cutOffAtTheSmallestSize(final boolean autonomy, final int size, final int[] floor)
     throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final LayoutEditor built = builtEditor(autonomy, size);
         final java.util.List<String> out = new java.util.ArrayList<>();
         final boolean[] heldDown = new boolean[1];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, size, ui, 0);
-            built[0].render();
-            if (autonomy) built[0].setAutonomyMode(session);
-        });
 
         try
         {
@@ -842,7 +837,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 try
                 {
-                    LayoutEditor editor = built[0];
+                    LayoutEditor editor = built;
 
                     // The words are the railway's and the language's; the window is asked about the longest there could be
                     if (autonomy) editor.getAutonomyPanel().getBanner().setText(A_STATUS_LONGER_THAN_ANY_LANGUAGES);
@@ -876,7 +871,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+            SwingUtilities.invokeAndWait(() -> built.dispose());
         }
 
         return heldDown[0] ? null : out;
@@ -932,15 +927,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      */
     private static java.util.List<String> checkboxGaps(final boolean autonomy) throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final LayoutEditor built = builtEditor(autonomy, 30);
         final java.util.List<String> out = new java.util.ArrayList<>();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-            built[0].render();
-            if (autonomy) built[0].setAutonomyMode(session);
-        });
 
         try
         {
@@ -950,8 +938,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 try
                 {
-                    Container pane = (Container) field(built[0], "formPane");
-                    JLabel heading = (JLabel) field(built[0], "toggleVisibility");
+                    Container pane = (Container) field(built, "formPane");
+                    JLabel heading = (JLabel) field(built, "toggleVisibility");
                     Point at = SwingUtilities.convertPoint(heading.getParent(), heading.getLocation(), pane);
 
                     java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
@@ -961,7 +949,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                     boxes.sort((a, b) -> Integer.compare(SwingUtilities.convertPoint(a.getParent(), a.getLocation(), pane).y,
                         SwingUtilities.convertPoint(b.getParent(), b.getLocation(), pane).y));
 
-                    javax.swing.JCheckBox unmeasured = autonomy ? built[0].getAutonomyPanel().getShowUnmeasured() : null;
+                    javax.swing.JCheckBox unmeasured = autonomy ? built.getAutonomyPanel().getShowUnmeasured() : null;
 
                     for (int i = 1; i < boxes.size(); i++)
                     {
@@ -987,7 +975,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+            SwingUtilities.invokeAndWait(() -> built.dispose());
         }
 
         return out;
@@ -1018,17 +1006,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      */
     private static int[] gaps(final boolean autonomy) throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final LayoutEditor built = builtEditor(autonomy, 30);
         final int[] out = new int[2];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-
-            built[0].render();
-
-            if (autonomy) built[0].setAutonomyMode(session);
-        });
 
         try
         {
@@ -1038,12 +1017,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 try
                 {
-                    Container pane = (Container) field(built[0], "formPane");
+                    Container pane = (Container) field(built, "formPane");
 
-                    JLabel size = (JLabel) field(built[0], "diagramSize");
+                    JLabel size = (JLabel) field(built, "diagramSize");
 
                     out[0] = size.isShowing() ? gapUnder(pane, size) : -1;
-                    out[1] = gapUnder(pane, (JLabel) field(built[0], "toggleVisibility"));
+                    out[1] = gapUnder(pane, (JLabel) field(built, "toggleVisibility"));
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -1053,7 +1032,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
         finally
         {
-            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+            SwingUtilities.invokeAndWait(() -> built.dispose());
         }
 
         assertTrue(out[1] >= 0 && (autonomy || out[0] >= 0), "precondition: nothing was found under one of the"

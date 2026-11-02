@@ -8,8 +8,8 @@ import javax.swing.Timer;
 import org.traincontrol.util.I18n;
 
 /**
- * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to three lines, and
- * scrolled past that (OB-366).  Hidden while it has nothing to say.
+ * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to four lines, and
+ * scrolled past that (OB-366, MT-864).  Hidden while it has nothing to say.
  *
  * In the autonomy editor it floats over the bottom of the diagram (see floatOver) with an X that hides it until the
  * next notice, so the diagram never moves.  Above the main window's diagram it is a header with no X: what it says
@@ -73,9 +73,7 @@ public class AutonomyBanner extends JPanel
      */
     private final javax.swing.JButton action = new javax.swing.JButton();
 
-    /**
-     * What the button currently does, so that a second offer replaces the first rather than firing both.
-     */
+    /** What the button currently does, so that a second offer replaces the first rather than firing both. */
     private java.awt.event.ActionListener acting;
 
     private final Timer clear;
@@ -123,9 +121,9 @@ public class AutonomyBanner extends JPanel
         scroller.setOpaque(false);
         scroller.getViewport().setOpaque(false);
 
-        // The scrollbar is painted in the banner's own color, so it is invisible while the message fits and a
-        // look-and-feel track down the edge does not read as a rendering fault; hold() makes it opaque whenever there
-        // is more to read than fits, so a long answer never stops in the middle with nothing saying there is more.
+        // The scrollbar is painted in the banner's own color, so it is invisible while the message fits; hold() makes
+        // it opaque whenever there is more to read than fits, so a long answer never stops in the middle with nothing
+        // saying so.
         scroller.getVerticalScrollBar().setOpaque(false);
         scroller.getVerticalScrollBar().setBorder(null);
 
@@ -280,9 +278,7 @@ public class AutonomyBanner extends JPanel
     private javax.swing.JViewport followedViewport;
     private java.awt.event.ComponentListener followingViewport;
 
-    /**
-     * Hides the strip until the next notice; the timer is stopped with it, so nothing else changes.
-     */
+    /** Hides the strip until the next notice; the timer is stopped with it, so nothing else changes. */
     private void dismiss()
     {
         dismissed = true;
@@ -292,9 +288,13 @@ public class AutonomyBanner extends JPanel
         showOrHide();
     }
 
-    /**
-     * Shown while it has something to say or to offer and the user has not closed it.
-     */
+    /** Closes the strip as its X does, until the next notice. */
+    public void hideUntilNextNotice()
+    {
+        dismiss();
+    }
+
+    /** Shown while it has something to say or to offer and the user has not closed it. */
     private void showOrHide()
     {
         boolean shown = !dismissed && (!blank || right.isVisible());
@@ -310,9 +310,7 @@ public class AutonomyBanner extends JPanel
         setVisible(shown);
     }
 
-    /**
-     * A key the X does not use, handed to its window's own key handler.
-     */
+    /** A key the X does not use, handed to its window's own key handler. */
     private void toTheWindow(java.awt.event.KeyEvent e)
     {
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
@@ -326,11 +324,7 @@ public class AutonomyBanner extends JPanel
         }
     }
 
-    /**
-     * Says something, for a few seconds.
-     *
-     * @param text
-     */
+    /** Says something, for a few seconds. */
     public void show(String text)
     {
         show(text, false);
@@ -344,9 +338,8 @@ public class AutonomyBanner extends JPanel
     {
         hold(text, warning);
 
-        // Long enough to read what is actually there.  A stale sentence on screen at the next click is
-        // a nuisance; an answer taken away before it has been read is a question that has to be asked
-        // again, and the second is the worse of the two.
+        // Long enough to read what is actually there: an answer taken away before it has been read is a question that
+        // has to be asked again, which is worse than a stale sentence on screen at the next click.
         clear.setInitialDelay(lingerFor(text));
         clear.restart();
     }
@@ -431,19 +424,13 @@ public class AutonomyBanner extends JPanel
         repaint();
     }
 
-    /**
-     * The button this banner offers, for whoever mounts it to size it like its neighbors.
-     * @return
-     */
+    /** The button this banner offers, for whoever mounts it to size it like its neighbors. */
     public javax.swing.JButton getActionButton()
     {
         return action;
     }
 
-    /**
-     * Whether this banner is currently saying anything.
-     * @return
-     */
+    /** Whether this banner is currently saying anything. */
     public boolean isSaying()
     {
         // The document always carries a body wrapper now, so the markup cannot be the test - what
@@ -473,24 +460,17 @@ public class AutonomyBanner extends JPanel
         return new java.awt.Dimension(10, height);
     }
 
-    /**
-     * The height of the most lines a notice is shown at, in the message's own font.
-     */
+    /** The height of the most lines a notice is shown at, in the message's own font. */
     private int mostHeight()
     {
         return MOST_LINES * message.getFontMetrics(MESSAGE_FONT).getHeight();
     }
 
-    /**
-     * Tall enough for a line of text with room around it.
-     */
+    /** Tall enough for a line of text with room around it. */
     private static final int MINIMUM_HEIGHT = 26;
 
-    /**
-     * The most lines of a message the strip shows; the rest is scrolled to (OB-366, Adam: "cap the height at 3 lines
-     * with a scrollbar").
-     */
-    private static final int MOST_LINES = 3;
+    /** The most lines of a message the strip shows; the rest is scrolled to (OB-366, MT-864). */
+    private static final int MOST_LINES = 4;
 
     /** The border this panel draws round its message, which the height has to allow for. */
     private static final int INSET_HEIGHT = 10;
@@ -506,9 +486,8 @@ public class AutonomyBanner extends JPanel
 
         java.awt.Color ink = warning ? WARNING_TEXT : INFO_TEXT;
 
-        // The font and the color go into the DOCUMENT: an editor pane showing HTML takes neither
-        // from setFont nor from setForeground, so a message set the ordinary way came out in the
-        // default serif face in black.
+        // The font and the color go into the DOCUMENT: an editor pane showing HTML takes neither from setFont nor from
+        // setForeground, so a message set the ordinary way came out in the default serif face in black.
         message.setText("<html><body style=\"font-family:'" + MESSAGE_FONT.getFamily()
             + "'; font-size:" + MESSAGE_FONT.getSize() + "pt; color:rgb("
             + ink.getRed() + "," + ink.getGreen() + "," + ink.getBlue() + "); margin:0\">"
@@ -612,8 +591,7 @@ public class AutonomyBanner extends JPanel
      * shorter message gets the leftover space split above and below.  Never taller than the band (OB-191): a LONGER
      * message is given exactly the band, which makes the scroll pane's viewport smaller than its contents, the only
      * condition under which an AS_NEEDED scrollbar appears.  `GridBagLayout` can express neither half safely (`BOTH`
-     * loses the centring; `HORIZONTAL` shrinks toward the child's five-pixel minimum): what is wanted is
-     * `min(preferred, band)`.  ONE CHILD, deliberately; a second would be ignored.
+     * loses the centring; `HORIZONTAL` shrinks toward the child's five-pixel minimum).  ONE CHILD, deliberately.
      */
     private static final class CentredButNeverTaller implements java.awt.LayoutManager
     {

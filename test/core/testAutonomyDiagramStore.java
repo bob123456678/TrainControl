@@ -92,8 +92,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getTileDirection(crossing, straight), Direction.TOWARD_A,
             "the direction of route 1,3 came back wrong - the route half of the key did not survive "
@@ -158,8 +157,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertTrue(reloaded.isTileLengthAnswered(answered), "the deliberate 0 did not survive a save and a load");
         assertEquals(reloaded.getTileLength(answered), 0);
@@ -198,8 +196,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getPointName(station), "Track 14 entrance");
         assertTrue(reloaded.isStation(station));
@@ -296,8 +293,7 @@ public class testAutonomyDiagramStore
         store.setStation(new TileKey("main", 2, 3), true);
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getConfigurationNames().size(), 2, "precondition: both were written");
 
@@ -346,8 +342,7 @@ public class testAutonomyDiagramStore
         store.renameConfiguration("Morning", "Evening");
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getConfigurationNames().size(), 1);
         assertEquals(reloaded.getConfigurationNames().get(0), "Evening");
@@ -405,8 +400,7 @@ public class testAutonomyDiagramStore
 
         // no save: this is the window a failing save leaves open
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(reloaded.getConfigurationNames().size(), 1,
             "the configuration is on disk under neither name, so a rename followed by a failed save "
@@ -460,11 +454,8 @@ public class testAutonomyDiagramStore
 
     /**
      * A name that would share another configuration's file is refused as that, naming the other - not as a name already
-     * in use.
-     *
-     * The window says ERROR_NAME_IN_USE as "a configuration called Night_ Yard already exists", which is false of a
-     * shared file: what exists is Night: Yard, and a file name cannot hold a colon.  The exact name already taken is
-     * still a name in use.
+     * in use: what exists is Night: Yard, and a file name cannot hold a colon.  The exact name already taken is still a
+     * name in use.
      *
      * MUTATION: have the doors throw `ERROR_NAME_IN_USE` for a shared file again, and this fails.
      *
@@ -604,8 +595,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testRenamingAPageCostsNothingBecauseIdsAreStored() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Old Name", "2");
+        java.util.Map<String, String> before = pageIds("Old Name", "2");
 
         store.setPageIds(before);
 
@@ -620,12 +610,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // the same page, renamed: same id, new name
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("New Name", "2");
+        java.util.Map<String, String> after = pageIds("New Name", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         TileKey renamed = new TileKey("New Name", 4, 7);
 
@@ -638,12 +625,9 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A page renamed outside TrainControl is still a page that is loaded.
-     *
-     * `pagesNotLoaded` is the question every save asks before it tidies the setup.  A page renamed on the Central
-     * Station, or in its file, keeps its id and changes its name, so the question must follow the id too: comparing
-     * names alone would read the renamed page as missing while the layout is open, and every save would warn about a
-     * page on the screen.
+     * A page renamed outside TrainControl is still a page that is loaded.  `pagesNotLoaded` is the question every save
+     * asks before it tidies the setup; a page renamed on the Central Station keeps its id and changes its name, so the
+     * question must follow the id too, or every save would warn about a page on the screen.
      *
      * MUTATION: delete `if (nowCalled != null && loaded.contains(nowCalled)) continue;` from `pagesNotLoaded`, and this
      * fails.
@@ -653,8 +637,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAPageRenamedElsewhereIsNotMissing() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Old Name", "2");
+        java.util.Map<String, String> before = pageIds("Old Name", "2");
 
         store.setPageIds(before);
         store.setPointName(new TileKey("Old Name", 4, 7), "Yard throat");
@@ -662,12 +645,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // the same page, renamed somewhere else: same id, new name
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("New Name", "2");
+        java.util.Map<String, String> after = pageIds("New Name", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertEquals(reloaded.getPointName(new TileKey("New Name", 4, 7)), "Yard throat",
             "precondition: the renamed page did not keep its settings, so this is not the rename case");
@@ -679,12 +659,10 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A page RENUMBERED, whose page did not load, is still reported as not loaded.
-     *
-     * The guard on the fix above: the id is believed only where `resolvePage` believes it.  Here id 2 belonged to
-     * "Yard" and now belongs to "Main Line", while "Yard" is still in the index under another id and did not load.
-     * Asked by id alone, the save would call "Yard" present, tidy against a picture without it, and lose a page of
-     * settings (MT-135).  Green with and without the fix; it is here to catch the fix done the short way.
+     * A page RENUMBERED, whose page did not load, is still reported as not loaded.  The guard on the fix above: the id
+     * is believed only where `resolvePage` believes it.  Here id 2 belonged to "Yard" and now belongs to "Main Line",
+     * while "Yard" is still in the index under another id and did not load; asked by id alone, the save would lose a
+     * page of settings (MT-135).
      *
      * MUTATION: ask `pageIdToName.get(written.getKey())` in `pagesNotLoaded` instead of
      * `resolvePage(written.getKey())`, and this fails.
@@ -694,21 +672,16 @@ public class testAutonomyDiagramStore
     @Test
     public void testARenumberedPageThatDidNotLoadIsStillMissing() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
+        java.util.Map<String, String> before = pageIds("Yard", "2");
 
         store.setPageIds(before);
         store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
         store.createConfiguration("Default", null);
         store.save();
 
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertFalse(reloaded.getPageIdConflicts().isEmpty(), "precondition: the renumber was not read as one");
 
@@ -728,8 +701,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAPageRenumberIsReportedRatherThanAdopted() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
+        java.util.Map<String, String> before = pageIds("Yard", "2");
 
         store.setPageIds(before);
         store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
@@ -738,13 +710,9 @@ public class testAutonomyDiagramStore
 
         // id 2 now belongs to a different page - and crucially "Yard" is STILL THERE, under another id.
         // That is what separates a renumber from a rename: after a rename the old name is simply gone.
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertFalse(reloaded.getPageIdConflicts().isEmpty(),
             "an id belonging to a different page must be reported");
@@ -752,20 +720,14 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A renumbered page's settings follow the PAGE, not the number.
-     *
-     * The test above pins that a renumber is REPORTED; this pins where the settings go.  `fromStored` must not resolve
-     * every stored id through the current index, or a page of settings is handed to whatever track holds that number
-     * now and the next save reconciles it away as deleted squares (MT-135).
-     *
-     * With testRenamingAPageCostsNothingBecauseIdsAreStored these are the whole rule: a rename goes by id, because the
-     * old name is GONE, which tells the two apart.
+     * A renumbered page's settings follow the PAGE, not the number.  The test above pins that a renumber is REPORTED;
+     * this pins where the settings go: `fromStored` must not resolve every stored id through the current index, or a
+     * page of settings is handed to whatever track holds that number now (MT-135).
      */
     @Test
     public void testARenumberedPagesSettingsFollowTheNameNotTheNumber() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
+        java.util.Map<String, String> before = pageIds("Yard", "2");
 
         store.setPageIds(before);
 
@@ -779,13 +741,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // "Yard" is still here, under a different id - a renumber, not a rename
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertEquals(reloaded.getPointName(tile), "Yard throat",
             "the settings of a renumbered page did not follow it - they were read through whatever "
@@ -811,9 +769,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAnExcludedPageStaysExcludedAcrossARenumber() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Yard", "2");
-        before.put("Main Line", "3");
+        java.util.Map<String, String> before = pageIds("Yard", "2", "Main Line", "3");
 
         store.setPageIds(before);
         store.setPageExcluded("Yard", true);
@@ -821,13 +777,9 @@ public class testAutonomyDiagramStore
         store.save();
 
         // the two pages swap numbers
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main Line", "2");
-        after.put("Yard", "3");
+        java.util.Map<String, String> after = pageIds("Main Line", "2", "Yard", "3");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertTrue(reloaded.getExcludedPages().contains("Yard"),
             "the excluded page rejoined autonomy because its exclusion was read by number");
@@ -941,14 +893,10 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Switching a paired link off switches its partner off too (OB-041).
-     *
-     * A pair of links is one doorway with an end in two places, and autonomy walks through it in both directions: a
-     * doorway closed at one end and open at the other is a route that exists one way and not the other, which nothing
-     * on the diagram says.
-     *
-     * The same reasoning as OB-031, where pairing two links switches both ends ON: once two squares are paired, a
-     * statement about one of them is a statement about the pair.
+     * Switching a paired link off switches its partner off too (OB-041).  A pair of links is one doorway with an end in
+     * two places, and autonomy walks through it in both directions: a doorway closed at one end and open at the other
+     * is a route that exists one way and not the other, which nothing on the diagram says.  The same reasoning as
+     * OB-031, where pairing two links switches both ends ON.
      */
     @Test
     public void testSwitchingAPairedLinkOffSwitchesItsPartnerOff() throws IOException
@@ -1151,6 +1099,35 @@ public class testAutonomyDiagramStore
 
         assertTrue(written.contains("somethingNewer"),
             "a field from a newer version must not be dropped:\n" + written);
+    }
+
+    /** A page index in the order given: each page's name, then its id. */
+    private static java.util.Map<String, String> pageIds(String... nameThenId)
+    {
+        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
+
+        for (int i = 0; i < nameThenId.length; i += 2) ids.put(nameThenId[i], nameThenId[i + 1]);
+
+        return ids;
+    }
+
+    /** A second store on the same folder, loaded under a page index. */
+    private AutonomyCompanionStore reloadedUnder(java.util.Map<String, String> ids) throws IOException
+    {
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(ids);
+        reloaded.load();
+
+        return reloaded;
+    }
+
+    /** A second store on the same folder, loaded. */
+    private AutonomyCompanionStore reloadedStore() throws IOException
+    {
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        return reloaded;
     }
 
     private Set<TileKey> only(TileKey... tiles)
@@ -1457,12 +1434,9 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * An exported configuration carries the station names and station flags it refers to.
-     *
-     * A configuration is placements and homes against POINTS, while what makes a square a point, its name, length and
-     * direction live in the shared half.  So an export of the configuration alone would refer entirely to nothing when
-     * imported into a fresh setup, which looks like having lost the names.
-     *
+     * An exported configuration carries the station names and station flags it refers to.  A configuration is
+     * placements and homes against POINTS, while what makes a square a point (name, length, direction) lives in the
+     * shared half, so an export of the configuration alone would refer to nothing when imported into a fresh setup.
      * Asserted through a real import into an empty store rather than on the keys in the file: a bundle with the right
      * fields that the importer then ignored would pass the second and fail the user.
      */
@@ -1607,8 +1581,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testACaptionResolvesAfterAReloadUnderPageIds() throws IOException
     {
-        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
-        ids.put("1 - Main", "1");
+        java.util.Map<String, String> ids = pageIds("1 - Main", "1");
 
         store.setPageIds(ids);
 
@@ -1622,9 +1595,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(ids);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(ids);
 
         assertEquals(reloaded.getCaptionTarget(where), station,
             "the caption does not resolve by page name after a reload, so the diagram has nothing to "
@@ -1643,8 +1614,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testACaptionOnItsOwnStationResolvesAfterAReload() throws IOException
     {
-        java.util.Map<String, String> ids = new java.util.LinkedHashMap<>();
-        ids.put("1 - Main", "1");
+        java.util.Map<String, String> ids = pageIds("1 - Main", "1");
 
         store.setPageIds(ids);
 
@@ -1657,34 +1627,25 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(ids);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(ids);
 
         assertEquals(reloaded.getCaptionTarget(station), station,
             "a station captioned on its own square does not resolve after a reload");
     }
 
     /**
-     * A page's EXCLUSION survives a rename too, because it is stored by id like everything else.
+     * A page's EXCLUSION survives a rename too, because it is stored by id like everything else.  Written raw, the
+     * exclusion would not follow a rename: the page would silently rejoin autonomy and the stale name would sit in the
+     * set for ever.  That matters most on a page that redraws another page's sensors (`excludeRepeatedSensorPages`),
+     * because rejoining puts two Points on one sensor.
      *
-     * `excludedPages` goes through the page-level translators like every other shared collection (setPageIds: "A name
-     * is something a user renames on a whim, and every key here begins with one").
-     *
-     * Written raw, the exclusion would not follow a rename: the page would silently rejoin autonomy and the stale name
-     * would sit in the set for ever.  That matters most on a page that redraws another page's sensors
-     * (`excludeRepeatedSensorPages`), because rejoining puts two Points on one sensor.
-     *
-     * `renamePage` has no production caller, so every real rename is an EXTERNAL one, in the Central Station or by
-     * editing the gleisbild, which is what this test performs.  The page name has no colon, so toStored and fromStored
-     * return it unchanged: hence the two page-level translators.
+     * `renamePage` has no production caller: every real rename is an EXTERNAL one, in the Central Station or in the
+     * gleisbild, which is what this test performs.
      */
     @Test
     public void testAnExcludedPageIsStillExcludedAfterItIsRenamed() throws IOException
     {
-        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
-        before.put("Scenery", "3");
-        before.put("Old Name", "2");
+        java.util.Map<String, String> before = pageIds("Scenery", "3", "Old Name", "2");
 
         store.setPageIds(before);
 
@@ -1693,13 +1654,9 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Scenery", "3");
-        after.put("New Name", "2");
+        java.util.Map<String, String> after = pageIds("Scenery", "3", "New Name", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertTrue(reloaded.getExcludedPages().contains("New Name"),
             "the renamed page is no longer excluded, so it has silently rejoined autonomy - and on the "
@@ -1716,8 +1673,7 @@ public class testAutonomyDiagramStore
     @Test
     public void testAnExcludedPageWithNoIdKeepsItsName() throws IOException
     {
-        java.util.Map<String, String> known = new java.util.LinkedHashMap<>();
-        known.put("Known", "2");
+        java.util.Map<String, String> known = pageIds("Known", "2");
 
         store.setPageIds(known);
 
@@ -1726,9 +1682,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(known);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(known);
 
         assertTrue(reloaded.getExcludedPages().contains("Not in the index"),
             "a page with no id in the index lost its exclusion. Files written before this change hold "
@@ -1736,15 +1690,10 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Renaming a locomotive repairs EVERY configuration, not only the one that is running.
-     *
-     * Three places in a configuration hold a locomotive by NAME (the placement, the home assignment and the exclusion
-     * list), so renameLoc and deleteLoc must reach all of them in every configuration: `captureFromLayout` launders
-     * only the ACTIVE one.
-     *
-     * A stale name is not a lost placement: `parseAuto` refuses a configuration naming a locomotive that is not in the
-     * database and invalidates the WHOLE layout, so switching to it later stops the railway working with an error
-     * nothing connects to a rename.
+     * Renaming a locomotive repairs EVERY configuration, not only the one that is running.  Three places in a
+     * configuration hold a locomotive by NAME (the placement, the home assignment and the exclusion list), so renameLoc
+     * and deleteLoc must reach all of them in every configuration: `captureFromLayout` launders only the ACTIVE one.  A
+     * stale name invalidates the WHOLE layout in `parseAuto`, with an error nothing connects to a rename.
      */
     @Test
     public void testRenamingALocomotiveRepairsEveryConfiguration() throws IOException
@@ -1841,22 +1790,16 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Importing a bundle from a layout numbered differently puts each setting on the page it names.
-     *
-     * An import translates the exporter's page ids into this layout's by page name before it merges, so there is no
-     * renumber left to warn about; the claim is the outcome the warning exists to protect, that a renumber must not
-     * silently attach their station names, lengths, directions, pairings and captions to my pages.
-     *
-     * Detection alone was disabled by construction: the merge starts from `sharedFields()`, which is MY pages map, so
-     * `pageIdConflicts` compared my names with my own and was always empty.
-     *
-     * A rename is still not a conflict: the deciding question is whether the old name still exists in MY index.
+     * Importing a bundle from a layout numbered differently puts each setting on the page it names.  An import
+     * translates the exporter's page ids into this layout's by page name before it merges, so the claim is the outcome
+     * the renumber warning exists to protect: their station names, lengths, directions, pairings and captions must not
+     * attach to my pages.  A rename is still not a conflict: the deciding question is whether the old name still exists
+     * in MY index.
      */
     @Test
     public void testImportingABundleFromARenumberedLayoutLandsOnTheRightPages() throws IOException
     {
-        java.util.Map<String, String> theirs = new java.util.LinkedHashMap<>();
-        theirs.put("Yard", "2");
+        java.util.Map<String, String> theirs = pageIds("Yard", "2");
 
         AutonomyCompanionStore exporter =
             new AutonomyCompanionStore(java.nio.file.Files.createTempDirectory("tc-export").toFile());
@@ -1871,9 +1814,7 @@ public class testAutonomyDiagramStore
 
         // Here, id 2 is a different page - and the page THEY called Yard is my id 3.  That is a
         // renumber: adopting their keys would put their siding on my "Main".
-        java.util.Map<String, String> mine = new java.util.LinkedHashMap<>();
-        mine.put("Main", "2");
-        mine.put("Yard", "3");
+        java.util.Map<String, String> mine = pageIds("Main", "2", "Yard", "3");
 
         store.setPageIds(mine);
         store.setPointName(new TileKey("Main", 1, 1), "Mine");
@@ -1932,17 +1873,11 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A station that was never named goes when its tile does.
-     *
-     * `stations` must be pruned by square, not only as a side effect of pruning `pointNames`, whose loop walks the
-     * NAMES that no longer have a square and so never visits a station designation without a name.  An unnamed station
-     * is an ordinary state: `setStation` asks for no name.
-     *
-     * Left alone, redrawing a sensor at those coordinates (routine when a page is re-laid-out) makes it silently a
-     * station again, and `checkNames` raises UNNAMED_STATION as a blocking ERROR about a square the user cannot see.
-     *
-     * A NAMED station is deliberately not dropped this way: the loop above keeps one whose name a configuration still
-     * refers to.  Nothing can refer to an unnamed one.
+     * A station that was never named goes when its tile does.  `stations` must be pruned by square, not only as a side
+     * effect of pruning `pointNames`, whose loop never visits a station designation without a name (`setStation` asks
+     * for no name).  Left alone, redrawing a sensor at those coordinates makes it silently a station again, and
+     * `checkNames` raises UNNAMED_STATION as a blocking ERROR about a square the user cannot see.  A NAMED station is
+     * deliberately kept while a configuration still refers to its name; nothing can refer to an unnamed one.
      */
     @Test
     public void testAnUnnamedStationGoesWhenItsTileDoes()
@@ -1985,17 +1920,11 @@ public class testAutonomyDiagramStore
 
     /**
      * A protecting signal goes when the SIGNAL's tile does, not only when the station's does.
-     *
-     * `dropMissing(stationSignals, keys, false)` tests the KEY, the station's square.  `stationSignals` is the only
-     * square-referencing collection whose VALUE reconcile never checked: portals are checked on both ends, captions
-     * inside reconcileCaptions.
-     *
-     * `forgetSquares` covers a signal square that is BUILT OVER; what is left is the plain deletion.  Unless dropped,
-     * any accessory-bearing tile later drawn at those coordinates is resolved by `protectingSignalNames()` and autonomy
-     * starts throwing an accessory nobody paired: the defect the neighboring drop exists for, in the one collection
-     * that commands real hardware.
-     *
-     * The rule: dropped in reconcile when EITHER tile goes.
+     * `dropMissing(stationSignals, keys, false)` tests the KEY, the station's square, and `stationSignals` is the only
+     * square-referencing collection whose VALUE reconcile never checked.  `forgetSquares` covers a signal square that
+     * is BUILT OVER; what is left is the plain deletion.  Unless dropped, any accessory-bearing tile later drawn there
+     * is resolved by `protectingSignalNames()` and autonomy throws an accessory nobody paired.  The rule: dropped in
+     * reconcile when EITHER tile goes.
      */
     @Test
     public void testAPairingGoesWhenTheSignalsTileDoes()
@@ -2055,15 +1984,10 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A load that fails on the CONTENT leaves the setup exactly as it was, like one that fails on the file.
-     *
-     * load()'s own comment promises this ("Read and parse BEFORE anything is thrown away ..."), which holds for a parse
-     * failure, before `clear()`.  It must hold for a TYPE failure too: `readShared` runs after `clear()` and uses the
-     * strict accessors throughout, each of which can throw with the store already empty, leaving `dirty` set over an
-     * empty store for the next save to write over setup.json.
-     *
-     * The trigger is a setup.json that TrainControl did not write, hand-edited or from another tool; the guarantee is
-     * what is being tested, not the odds.
+     * A load that fails on the CONTENT leaves the setup exactly as it was, like one that fails on the file.  The
+     * parse-failure case holds (before `clear()`); it must hold for a TYPE failure too: `readShared` runs after
+     * `clear()` and its strict accessors can throw with the store already empty, leaving `dirty` set over an empty
+     * store for the next save to write over setup.json.  The trigger is a setup.json TrainControl did not write.
      */
     @Test
     public void testALoadThatFailsOnATypeLeavesTheSetupAlone() throws IOException
@@ -2152,14 +2076,10 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A locomotive renamed while an editor is open is repaired in the snapshot Cancel would put back.
-     *
-     * The diagram editor holds the whole setup as it was when it opened, so that canceling undoes every edit. A rename
-     * made meanwhile repairs the live store and must repair that snapshot too, or Cancel writes the old name back and
-     * `parseAuto` invalidates the WHOLE layout over a locomotive not in the database.
-     *
-     * Repaired rather than refused: blocking renames while an editor is open takes away something reasonable to do, and
-     * the two windows are about different things.
+     * A locomotive renamed while an editor is open is repaired in the snapshot Cancel would put back.  The diagram
+     * editor holds the whole setup as it was when it opened; a rename made meanwhile must repair that snapshot too, or
+     * Cancel writes the old name back and `parseAuto` invalidates the WHOLE layout.  Repaired rather than refused:
+     * blocking renames while an editor is open takes away something reasonable to do.
      */
     @Test
     public void testARenameReachesTheSnapshotACancelPutsBack() throws IOException
@@ -2266,18 +2186,14 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Undo re-opens a link whose two halves are on different pages.
-     *
-     * A portal is a pair of squares on two pages, and `setPortalDisabled` writes **both** ends.  `PairMapKept` and
-     * `ListMapKept` capture an entry with either end on the page being snapshotted; `disabledLinks` is a set, and the
-     * one set whose members are paired across pages, so it needs the same.
+     * Undo re-opens a link whose two halves are on different pages.  A portal is a pair of squares on two pages, and
+     * `setPortalDisabled` writes **both** ends; `disabledLinks` is the one set whose members are paired across pages,
+     * so it needs the same capture as `PairMapKept` and `ListMapKept`.
      *
      * So: link open, snapshot page 1 (captures nothing about it), shut the link (both ends go in), undo page 1.
-     * Without it the members on page 1 would be dropped and nothing put back, leaving the far half alone in the set,
-     * and `isPortalDisabled` answers through the partner, so **the undo would not re-open the link**
-     * (`TileGraph.portalClosed` calls that shape unmigrated).
-     *
-     * Both directions are asserted, because a fix that simply cleared the set would pass the first.
+     * Without it the far half would be left alone in the set and `isPortalDisabled` answers through the partner, so
+     * **the undo would not re-open the link** (`TileGraph.portalClosed` calls that shape unmigrated).  Both directions
+     * are asserted, because a fix that simply cleared the set would pass the first.
      *
      * MUTATION: constructing `disabledLinks` as an unpaired `SquareSetKept` fails this.
      */
@@ -2352,8 +2268,7 @@ public class testAutonomyDiagramStore
         assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"),
             "the setup on disk was not found, so nothing below tests anything");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         org.json.JSONObject point = reloaded.getConfiguration("Only")
             .getJSONObject("points").getJSONObject("1:4,4");
@@ -2385,8 +2300,7 @@ public class testAutonomyDiagramStore
         assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null),
             "the setup on disk was not found, so nothing below tests anything");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         org.json.JSONObject point = reloaded.getConfiguration("Only")
             .getJSONObject("points").getJSONObject("1:4,4");
@@ -2456,9 +2370,7 @@ public class testAutonomyDiagramStore
 
         assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"));
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(twoPages());
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(twoPages());
 
         assertEquals(reloaded.getPointName(square), "Platform",
             "repairing a locomotive lost the point names");
@@ -2496,10 +2408,8 @@ public class testAutonomyDiagramStore
      * exact data, then we should be good... a mutation, a check, a save, a load, and verification that the mutation is
      * still there (while rest staying the same)."
      *
-     * Both halves matter and the second fails in practice: a rename can work in memory and then take a page of settings
-     * with it on the way to disk, pruned by a reconcile against stale names or reattached by a renumber.  So the
-     * fixture carries one of everything the store holds, on TWO pages, and the untouched page is asserted as hard as
-     * the renamed one.
+     * The second half fails in practice: a rename can take a page of settings with it on the way to disk.  So the
+     * fixture carries one of everything the store holds, on TWO pages, and the untouched page is asserted as hard.
      */
     @Test
     public void testARenamedPageSurvivesASaveAndLoad() throws IOException
@@ -2547,16 +2457,12 @@ public class testAutonomyDiagramStore
             "in memory, immediately after the rename");
 
         // the save, and the load
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Mainline", "1");
-        after.put("Yard", "2");
+        java.util.Map<String, String> after = pageIds("Mainline", "1", "Yard", "2");
 
         store.setPageIds(after);
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         // and the check again
         assertEverythingIsWhereItShouldBe(reloaded, renamed, renamedPlaque, renamedDoor, elsewhere,
@@ -2609,13 +2515,9 @@ public class testAutonomyDiagramStore
         assertTrue(AutonomyCompanionStore.renamePageOnDisk(layout, "Main", "Mainline"),
             "the setup on disk was not found, so nothing below tests anything");
 
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Mainline", "1");
-        after.put("Yard", "2");
+        java.util.Map<String, String> after = pageIds("Mainline", "1", "Yard", "2");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertEverythingIsWhereItShouldBe(reloaded,
             new TileKey("Mainline", 4, 4), new TileKey("Mainline", 4, 5),
@@ -2660,15 +2562,11 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Deleting a page through the on-disk door forgets BOTH halves of the setup.
-     *
-     * This is the test the second read in repairOnDisk exists for; the rename above does not notice it being taken out.
-     *
-     * The shared half is keyed by page ID on disk, so a rename needs nothing from that read, and configuration points
-     * are keyed by page NAME, which renamePage rewrites whether the keys are in name form or not.  A delete does not
-     * work either way: deletePage gathers a page's squares by asking isOnPage of every key, false for every ID-form
-     * key, which one read leaves behind.  Without the second read the configurations are cleaned and the shared half is
-     * not: a deleted page's settings all stay in setup.json.
+     * Deleting a page through the on-disk door forgets BOTH halves of the setup.  This is the test the second read in
+     * repairOnDisk exists for.  The shared half is keyed by page ID on disk and configuration points by page NAME; a
+     * delete gathers a page's squares by asking isOnPage of every key, false for every ID-form key, which one read
+     * leaves behind.  Without the second read the shared half is not cleaned: a deleted page's settings all stay in
+     * setup.json.
      */
     @Test
     public void testADeletedPageIsForgottenThroughTheOnDiskDoor() throws IOException
@@ -2697,12 +2595,9 @@ public class testAutonomyDiagramStore
             "the setup on disk was not found, so nothing below tests anything");
 
         // reloaded under the numbering that survives the delete
-        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
-        after.put("Main", "1");
+        java.util.Map<String, String> after = pageIds("Main", "1");
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.setPageIds(after);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedUnder(after);
 
         assertFalse(reloaded.getConfiguration("Only").getJSONObject("points").has("Yard:1,1"),
             "the deleted page is still placed in the configuration");
@@ -2749,8 +2644,7 @@ public class testAutonomyDiagramStore
         // save, load, and check again
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         assertEquals(legOf(reloaded, 0), "New Name",
             "the timetable leg still names the old locomotive after a save and a load. The loader "
@@ -2778,8 +2672,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
-        reloaded.load();
+        AutonomyCompanionStore reloaded = reloadedStore();
 
         org.json.JSONArray legs = reloaded.getConfiguration("Only")
             .getJSONObject("globals").getJSONArray("timetable");

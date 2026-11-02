@@ -20,10 +20,9 @@ import org.traincontrol.marklin.MarklinControlStation;
  * put, and that the road it names is the one the tail then covers.
  *
  * Adam: "the prompt should ask the user to pick from a list and select the farthest sensor the tail of the train
- * recently crossed."  Each claim builds its own graph on sensors of its own ("Make sure tests for the different
- * scenarios use independent track diagrams").  The shape is the junction behind a platform: A -> J -> S with C -> J, J
- * a junction, every edge measured, the platform's approach one unit.  The train stands at S having come in from J's
- * side.
+ * recently crossed."  Each claim builds its own graph on sensors of its own.  The shape is the junction behind a
+ * platform: A -> J -> S with C -> J, J a junction, every edge measured, the platform's approach one unit.  The train
+ * stands at S having come in from J's side.
  *
  * @author Adam
  */
@@ -87,11 +86,7 @@ public class testTheTailCrossedQuestion
 
     /**
      * Three units reach past J and cross neither A nor C: the question is put, offering J and the way the tail lies
-     * past it - towards A, or towards C (MT-477).
-     *
-     * Adam: "when set to lenth 3, the tail always follows switch 51 turned, rather than facing straight toward
-     * rampdown.  Not a major issue, but technically that length should qualify for the prompt."  The last two units lie
-     * on A's rail or on C's, and those are different track.
+     * past it - towards A, or towards C (MT-477).  The last two units lie on A's rail or on C's, different track.
      */
     @Test
     public void testATailPastTheJunctionShortOfASensorIsAsked() throws Exception
@@ -120,9 +115,7 @@ public class testTheTailCrossedQuestion
             "the question is put with no arrival side, where there is no first road back to start from");
     }
 
-    /**
-     * The road the answer names is the one the tail covers: C chosen, C -> J claimed and A -> J not.
-     */
+    /** The road the answer names is the one the tail covers: C chosen, C -> J claimed and A -> J not. */
     @Test
     public void testTheChosenRoadIsTheOneTheTailCovers() throws Exception
     {
@@ -134,15 +127,7 @@ public class testTheTailCrossedQuestion
         s.setArrivedFrom("W");
         loc.setTrainLength(5);
 
-        TailCrossedPrompt.answerForTests("TQ_C");
-
-        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 5, loc.getName(), null, null).getRoad();
-
-        assertNotNull(road, "the answer TQ_C gave no road");
-
-        s.setArrivedAlong(road);
-
-        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> covered = coveredAfterAnswering(layout, s, "TQ_C", 5, "the answer TQ_C gave no road");
 
         assertTrue(covered.containsKey(layout.getEdge("TQ_C", "TQ_J")),
             "TQ_C was chosen as the farthest sensor the tail crossed, and the road from it, C -> J, is not covered."
@@ -157,9 +142,7 @@ public class testTheTailCrossedQuestion
             "Cancel gave a road");
     }
 
-    /**
-     * The way the tail lies is the rail it covers: towards A covers A -> J and not C -> J (MT-477).
-     */
+    /** The way the tail lies is the rail it covers: towards A covers A -> J and not C -> J (MT-477). */
     @Test
     public void testTheWayTheTailLiesIsTheRailItCovers() throws Exception
     {
@@ -171,15 +154,8 @@ public class testTheTailCrossedQuestion
         s.setArrivedFrom("W");
         loc.setTrainLength(3);
 
-        TailCrossedPrompt.answerForTests("TQ_A");
-
-        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 3, loc.getName(), null, null).getRoad();
-
-        assertNotNull(road, "the answer towards TQ_A gave no road");
-
-        s.setArrivedAlong(road);
-
-        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> covered = coveredAfterAnswering(layout, s, "TQ_A", 3,
+            "the answer towards TQ_A gave no road");
 
         assertTrue(covered.containsKey(layout.getEdge("TQ_A", "TQ_J")),
             "the tail was said to lie towards TQ_A, and A -> J is not covered.  Covered: " + covered.keySet());
@@ -189,11 +165,8 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Only a road a train can DRIVE in on is offered (OB-227).
-     *
-     * Adam, MT-435: "the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary,
-     * which would require the train to reverse in.  that isn't a realistic path."  Here the rails out of J run AWAY
-     * from the platform, so no train can have come from A or C to S without turning round: nothing past J is offered.
+     * Only a road a train can DRIVE in on is offered (OB-227, MT-435): here the rails out of J run AWAY from the
+     * platform, so no train can have come from A or C to S without turning round, and nothing past J is offered.
      */
     @Test
     public void testOnlyARoadATrainCanDriveInOnIsOffered() throws Exception
@@ -210,11 +183,8 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * A sensor exactly the train's length back is one its tail has crossed (OB-226).
-     *
-     * Adam, MT-435: "When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away from the station), but
-     * Tunnel should also be offered since it is 3 away."  One unit to J, three more to A and C: a four-unit train
-     * reaches exactly to A and to C.
+     * A sensor exactly the train's length back is one its tail has crossed (OB-226): one unit to J, three more to A and
+     * C, so a four-unit train reaches exactly to A and to C.
      */
     @Test
     public void testASensorExactlyTheTrainsLengthBackIsOffered() throws Exception
@@ -234,12 +204,9 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * With no recorded road, the list starts on the sensor nearest the back when there is exactly one (FR-088).
-     *
-     * Adam, MT-435: "The closest sensor to the back should be the default selection in the length window, so the user
-     * can just click OK if appropriate."  Nearest the back if there is one, nothing chosen otherwise.  One unit to J,
-     * then A -> J three and C -> J five: five units cross A and not C, so A is the one.  With both at three, nothing is
-     * chosen.
+     * With no recorded road, the list starts on the sensor nearest the back when there is exactly one, and on nothing
+     * otherwise (FR-088).  One unit to J, then A -> J three and C -> J five: five units cross A and not C, so A is the
+     * one.  With both at three, nothing is chosen.
      */
     @Test
     public void testTheListStartsOnTheOneSensorNearestTheBack() throws Exception
@@ -297,11 +264,9 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two copies of one square are one road, not two.
-     *
-     * A square a train may turn at is split into a lane copy and a turning copy (`AutonomyBuilder`), the same metal
-     * under two names.  Counted by name they were two roads back from J, so the question was put on plain track and
-     * the list offered the same sensor twice.
+     * Two copies of one square are one road, not two.  A square a train may turn at is split into a lane copy and a
+     * turning copy (`AutonomyBuilder`), the same metal under two names; counted by name they would be two roads back
+     * from J, putting the question on plain track and offering the same sensor twice.
      */
     @Test
     public void testTwoCopiesOfOneSquareAreOneRoad() throws Exception
@@ -337,10 +302,8 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * A fork right behind the platform: the answer picks the rail the tail lies on, and the walk follows it.
-     *
-     * K -> S and L -> S both come in from the west.  The walk's first hop chose between them by side alone and took
-     * whichever it met first, so answering L covered K -> S and left L -> S - where the train stands - open.
+     * A fork right behind the platform: the answer picks the rail the tail lies on, and the walk follows it.  K -> S
+     * and L -> S both come in from the west; answering L must cover L -> S, where the train stands, not K -> S.
      */
     @Test
     public void testTheAnswerPicksTheRailRightBehindThePlatform() throws Exception
@@ -370,15 +333,8 @@ public class testTheTailCrossedQuestion
 
         assertTrue(TailCrossedPrompt.wouldAsk(layout, s, "W", 5), "precondition: the fork behind the platform is not asked about");
 
-        TailCrossedPrompt.answerForTests("TQ_L");
-
-        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 5, loc.getName(), null, null).getRoad();
-
-        assertNotNull(road, "precondition: the answer TQ_L gave no road");
-
-        s.setArrivedAlong(road);
-
-        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+        Map<Edge, Locomotive> covered = coveredAfterAnswering(layout, s, "TQ_L", 5,
+            "precondition: the answer TQ_L gave no road");
 
         assertTrue(covered.containsKey(layout.getEdge("TQ_L", "TQ_S")),
             "TQ_L was answered and the rail from it, right behind the platform, is not covered - the walk's first hop"
@@ -389,11 +345,9 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * A train with no road still follows the only road back past a square it reaches by two names.
-     *
-     * The fork rule counted the junction's neighbors by name, so a lane copy and a turning copy of one square read as
-     * two roads and the tail stopped at J - and with the question rightly not put there, nothing could ever
-     * extend it.  Adam's rule is to stop where the track SPLITS, and two copies of one square are not a split.
+     * A train with no road still follows the only road back past a square it reaches by two names.  Neighbors counted
+     * by name would read a lane copy and a turning copy of one square as two roads and stop the tail at J; Adam's rule
+     * is to stop where the track SPLITS, and two copies of one square are not a split.
      */
     @Test
     public void testATrainWithNoRoadFollowsOneRoadUnderTwoNames() throws Exception
@@ -462,11 +416,9 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Two ends of one square reached from one junction are two roads, and the tail still stops there.
-     *
-     * A balloon: from J one rail reaches square A's west end and a loop reaches its east end.  The builder splits A by
-     * arrival side, so those are two copies with one block - different track.  Counted by block they were one road,
-     * so a train with no road ran on past J down whichever rail sorted first, and the question was not put.
+     * Two ends of one square reached from one junction are two roads, and the tail still stops there.  A balloon: from
+     * J one rail reaches square A's west end and a loop its east end.  The builder splits A by arrival side, so those
+     * are two copies with one block, different track; counted by block they would be one road.
      */
     @Test
     public void testTwoEndsOfOneSquareAreTwoRoads() throws Exception
@@ -604,10 +556,8 @@ public class testTheTailCrossedQuestion
 
     /**
      * Two copies of one square leaving by the same rail are ONE road back, offered once and no reason to ask (OB-276).
-     *
-     * Adam: "when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in the list."  The two
-     * were RampDown's southbound lane and its northbound TURNING copy, both leaving south over the same places; keyed
-     * by lane name they were two roads.
+     * They are RampDown's southbound lane and its northbound TURNING copy, both leaving south over the same places;
+     * keyed by lane name they would be two roads.
      *
      * Built on the diagram, because the copies are the builder's: X - R - Q - A in a line, R a square trains may turn
      * at, so R is emitted as a plain copy and a turning one for each side, and two of them leave east over the same
@@ -662,9 +612,8 @@ public class testTheTailCrossedQuestion
         assertEquals(deeperOffersOfR, 1, "R is offered " + deeperOffersOfR + " times from two rails back - the same rail"
             + " counted as two roads past the first hop: " + farthestOf(behindQ));
 
-        // THE TURNING COPY'S RAIL COMING BACK FIRST (FR-136).  The diagram above emits the plain copy's rail first, so
-        // keeping the first one met is the plain copy there whether or not the plain one is preferred.  Rails come back
-        // in the order of a hash of their names, so names are tried until the turning copy's is the first.
+        // THE TURNING COPY'S RAIL COMING BACK FIRST (FR-136).  The diagram emits the plain copy's rail first, and rails
+        // come back in the order of a hash of their names, so names are tried until the turning copy's is the first.
         Layout turningFirst = null;
 
         for (int i = 0; i < 200 && turningFirst == null; i++)
@@ -773,6 +722,21 @@ public class testTheTailCrossedQuestion
         model.parseAuto(session.buildConfiguration());
 
         return model.getAutoLayout();
+    }
+
+    /** The tail laid along the road the answer names, and the edges the standing trains cover then; fails on no road. */
+    private static Map<Edge, Locomotive> coveredAfterAnswering(Layout layout, Point s, String answer, int length,
+        String noRoadMessage)
+    {
+        TailCrossedPrompt.answerForTests(answer);
+
+        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", length, loc.getName(), null, null).getRoad();
+
+        assertNotNull(road, noRoadMessage);
+
+        s.setArrivedAlong(road);
+
+        return layout.edgesCoveredByStandingTrains();
     }
 
     /** The sensors offered as crossed - leaving out the ways towards one the tail has not reached (MT-477). */

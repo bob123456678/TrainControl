@@ -13,9 +13,9 @@ import support.SourceOf;
 /**
  * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263).
  *
- * Adam: "Start autonomy doesn't run autonomy, as expected - I get an error message saying errors must first be fixed.
- * Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy tab, which should
- * throw an error instead."  A hand send runs over the railway the same setup built, so the same question,
+ * Start refuses with an error message saying errors must first be fixed, and trains moved manually via the track
+ * diagram viewer or the autonomy tab must be refused the same way.  A hand send runs over the railway the same setup
+ * built, so the same question,
  * `autonomyHasErrors`, is asked at both hand doors (the diagram's right-click destinations and the Auto tab's list of
  * paths) and at the two run doors that dispatch without Start, Execute Timetable and Return Home.
  *
@@ -842,47 +842,21 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         @Override
         public void run()
         {
-            while (running)
+            support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                try
-                {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                final javax.swing.JOptionPane pane = paneIn(dialog.getContentPane());
 
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+                if (pane == null || !handled.add(pane)) return;
 
-                    final javax.swing.JOptionPane pane = paneIn(((javax.swing.JDialog) window).getContentPane());
+                said.add(String.valueOf(pane.getMessage()));
 
-                    if (pane == null || !handled.add(pane)) continue;
-
-                    said.add(String.valueOf(pane.getMessage()));
-
-                    javax.swing.SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
-                }
-            }
+                javax.swing.SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
+            });
         }
 
         private static javax.swing.JOptionPane paneIn(java.awt.Container container)
         {
-            for (java.awt.Component component : container.getComponents())
-            {
-                if (component instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) component;
-
-                if (component instanceof java.awt.Container)
-                {
-                    javax.swing.JOptionPane found = paneIn((java.awt.Container) component);
-
-                    if (found != null) return found;
-                }
-            }
-
-            return null;
+            return support.Components.inside(container, javax.swing.JOptionPane.class);
         }
     }
 

@@ -45,8 +45,7 @@ public abstract class Locomotive
      * How long a dispatched train may be on its way to a sensor before the user is told it has not arrived: five
      * minutes, since a long block can legitimately take a while and crying wolf is worse than silence.  Nothing acts on
      * it and it does not end the wait: there is no safe automatic answer to "the train has not reached its sensor", and
-     * the Central Station re-reports the s88 bus on its next poll.  The usual causes are a locomotive that never
-     * started and one that took a different route.
+     * the Central Station re-reports the s88 bus on its next poll.
      *
      * Only the dispatch path in Layout asks for it, via the three-argument wait; a route's trigger monitor waits on its
      * sensor for as long as the layout runs.
@@ -354,10 +353,8 @@ public abstract class Locomotive
         this.preferredFunctions = preferredFunctions;
         this.preferredSpeed = preferredSpeed;
         
-        // Validated like the setters below, because this constructor is how the locomotive database
-        // restores state - the one arrival/departure write that no bound used to guard.  A stale
-        // value (from a decoder converted downward before the setAddress clamp existed) would
-        // otherwise survive every restart and crash the assignment dialog forever.
+        // Validated like the setters below, because this constructor is how the locomotive database restores state: a
+        // stale value would otherwise survive every restart and crash the assignment dialog.
         this.departureFunc =
             (departureFunc != null && departureFunc >= 0 && departureFunc < numF) ? departureFunc : null;
         this.arrivalFunc =
@@ -379,19 +376,13 @@ public abstract class Locomotive
      */
     synchronized public void notifyOfPowerStateChange(boolean powerOn)
     {
-        // speedMonitor - the same lock _setSpeed takes.  Both methods mutate speed, lastStartTime,
-        // powerState and historicalOperatingTime, but used to hold different locks: this one the
-        // locomotive itself, _setSpeed the global speedMonitor.  They therefore never excluded each
-        // other, and a power-off arriving while a speed change was in flight could either lose the
-        // running interval entirely - each method sees the other's half-applied state and skips its
-        // own accounting - or add it twice.  An emergency stop is exactly that situation, since the
-        // power-off handler loops over every locomotive while autonomy may be commanding speed 0.
+        // speedMonitor, the same lock _setSpeed takes: both methods mutate speed, lastStartTime, powerState and
+        // historicalOperatingTime, so they must share a lock, or a power-off arriving mid speed change could lose the
+        // running interval or add it twice (an emergency stop is exactly that case).
         //
-        // Reusing speedMonitor rather than adding a lock keeps the existing acquisition order:
-        // MarklinLocomotive.setSpeed already takes the locomotive and then speedMonitor, and nothing
-        // anywhere takes speedMonitor and then a locomotive, so no new ordering is introduced.  The
-        // two writers of historicalOperatingTime are now the only ones, and both hold this lock, so
-        // its getOrDefault/put read-modify-write is atomic as well.
+        // Reusing speedMonitor rather than adding a lock keeps the acquisition order (MarklinLocomotive.setSpeed takes
+        // the locomotive, then speedMonitor; nothing takes speedMonitor and then a locomotive) and makes the
+        // getOrDefault/put read-modify-write of historicalOperatingTime atomic.
         synchronized (speedMonitor)
         {
             boolean wasOn = powerState;
@@ -407,7 +398,7 @@ public abstract class Locomotive
                 if (powerOn)
                 {
                     // Only a real transition starts the clock: the Central Station broadcasts GO on every press, and
-                    // restarting a running locomotive's clock discarded the time since its real start.
+                    // restarting a running locomotive's clock would discard the time since its real start.
                     if (!wasOn)
                     {
                         this.lastStartTime = System.currentTimeMillis();
@@ -443,8 +434,8 @@ public abstract class Locomotive
             if (speed >= 0 && speed <= 100)
             {
                 // Update total runtime stat
-                // Only when the track is live, as the branch below also asks: with power off a speed command wrote a
-                // "ran today" record for a locomotive that had not moved.
+                // Only when the track is live, as the branch below also asks: with power off a speed command would
+                // record a "ran today" for a locomotive that had not moved.
                 if (speed > 0 && this.speed == 0 && powerState)
                 {
                     this.lastStartTime = System.currentTimeMillis();
@@ -604,8 +595,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }   
@@ -666,8 +656,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }
@@ -698,8 +687,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }
@@ -820,8 +808,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }  
@@ -890,8 +877,7 @@ public abstract class Locomotive
                 }
                 catch (InterruptedException ex)
                 {
-                    // Remembered, not re-armed: re-arming inside the loop made the next wait() throw at once and spin
-                    // at full CPU.  The flag goes back on the way out.
+                    // Remembered, not re-armed (re-arming inside the loop spins at full CPU); put back on the way out.
                     interrupted = true;
                 }
             }  
@@ -1131,8 +1117,7 @@ public abstract class Locomotive
      */
     public boolean getF(int fNumber)
     {
-        // validF checks both ends of the range.  This used to test only fNumber < numF, so a negative
-        // index reached the array and threw ArrayIndexOutOfBoundsException instead of returning false
+        // validF checks both ends of the range, so a negative index returns false rather than reaching the array.
         if (validF(fNumber))
         {
             return functionState[fNumber];
@@ -1272,10 +1257,8 @@ public abstract class Locomotive
      */
     public void setLocalImageURL(String u)
     {
-        // Only the override.  This used to assign imageURL too, so clearing the local icon also
-        // destroyed the Central Station image - compensated by an immediate syncWithCS2 at the
-        // one UI call site, which restores it only when connected; offline the locomotive showed
-        // no image for the rest of the session.  getImageURL now falls back instead.
+        // Only the override: clearing the local icon must not touch imageURL (the Central Station image); getImageURL
+        // falls back to it.
         this.localImageURL = u;
     }
          

@@ -44,10 +44,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A system frame too short to carry a sub command is not read as a stop.
-     *
-     * The guard tested `data.length`, which is always eight (the parsing constructor allocates eight bytes), not the
-     * `length` that says how many were filled; a four-byte frame's unwritten fifth byte, zero, read as STOP.
+     * A system frame too short to carry a sub command is not read as a stop: the guard tested `data.length` (always
+     * eight) rather than the `length` that says how many were filled, so an unwritten fifth byte, zero, read as STOP.
      */
     @Test
     public void testAShortSystemFrameIsNotAStop()
@@ -58,9 +56,7 @@ public class testControlStationFaults
             + "that says nothing read as an order to cut the power");
     }
 
-    /**
-     * And a real stop is still a stop: the fix for the false positive must not suppress true ones.
-     */
+    /** And a real stop is still a stop: the fix for the false positive must not suppress true ones. */
     @Test
     public void testARealStopIsStillReadAsAStop()
     {
@@ -78,11 +74,9 @@ public class testControlStationFaults
     }
 
     /**
-     * The keepalive resumes after a ping goes unanswered.
-     *
-     * A ping in flight silenced the next one and only a RESPONSE cleared the mark, so one dropped packet stopped the
-     * keepalive for the session.  Staged rather than mocked, because the fault is the sequence: a ping with nothing
-     * answering, a wait past the retry, then the echo.
+     * The keepalive resumes after a ping goes unanswered: a ping in flight silenced the next one and only a RESPONSE
+     * cleared the mark, so one dropped packet stopped the keepalive for the session.  Staged rather than mocked,
+     * because the fault is the sequence: a ping with nothing answering, a wait past the retry, then the echo.
      */
     @Test
     public void testTheKeepaliveResumesAfterAnUnansweredPing() throws Exception
@@ -133,10 +127,8 @@ public class testControlStationFaults
     }
 
     /**
-     * Clearing a point's priority leaves it with no priority, rather than null.
-     *
-     * The dialog sends null for an emptied box; getPriority() (int) and toJSON's `!= 0` unboxed it, killing the
-     * locomotive's dispatch thread and breaking every save.  Zero already means none.
+     * Clearing a point's priority leaves it with no priority, rather than null: the dialog sends null for an emptied
+     * box, and unboxing it killed the locomotive's dispatch thread and broke every save.  Zero already means none.
      */
     @Test
     public void testClearingAPriorityDoesNotPoisonThePoint() throws Exception
@@ -160,10 +152,9 @@ public class testControlStationFaults
     }
 
     /**
-     * A database file that exists and will not read is told apart from one that is not there.
-     *
-     * A silent load failure left an EMPTY database that the exit save wrote over the real file.  Treating a first
-     * launch as a failed load would be as wrong: it would keep a copy of a file that never existed.
+     * A database file that exists and will not read is told apart from one that is not there: a silent load failure
+     * left an EMPTY database that the exit save wrote over the real file, while treating a first launch as a failed
+     * load would keep a copy of a file that never existed.
      */
     @Test
     public void testAnUnreadableDatabaseIsToldApartFromAbsentOne() throws Exception
@@ -244,10 +235,9 @@ public class testControlStationFaults
     }
 
     /**
-     * A timetable that has to run one entry at a time still does after being saved and loaded.
-     *
-     * The flag was written into the plan and not the file, so a reloaded return-home plan lost it and its moves
-     * contended again.  A fold no longer writes a plan; this keeps working for a file an older fold wrote.
+     * A timetable that has to run one entry at a time still does after being saved and loaded: the flag was written
+     * into the plan and not the file, so a reloaded return-home plan lost it.  A fold no longer writes a plan; this
+     * keeps working for a file an older fold wrote.
      */
     @Test
     public void testAStagingPlanIsStillSequentialAfterASaveAndLoad() throws Exception
@@ -266,9 +256,7 @@ public class testControlStationFaults
             + "was added to prevent");
     }
 
-    /**
-     * And an ordinary timetable is not turned into a sequential one by the same round trip.
-     */
+    /** And an ordinary timetable is not turned into a sequential one by the same round trip. */
     @Test
     public void testAnOrdinaryTimetableStaysParallel() throws Exception
     {
@@ -282,10 +270,8 @@ public class testControlStationFaults
     }
 
     /**
-     * An MFX locomotive whose file gives no address gets a real address, not its UID.
-     *
-     * The importer falls back to the UID (address plus the decoder type's base); the DCC branch subtracts the base
-     * back and the MFX branch never did, so the stored address pointed past the highest MFX address.
+     * An MFX locomotive whose file gives no address gets a real address, not its UID: the importer falls back to the
+     * UID, and the DCC branch subtracted the decoder type's base back while the MFX branch never did.
      */
     @Test
     public void testAnMfxLocomotiveWithNoAddressGetsARealOne() throws Exception
@@ -316,9 +302,7 @@ public class testControlStationFaults
     }
 
     /**
-     * Two identical commands far enough apart are two commands, not one and an echo.
-     *
-     * The echo drop had no time bound, so repeating an accessory command with no traffic between was swallowed.
+     * Two identical commands far enough apart are two commands, not one and an echo: the echo drop had no time bound.
      */
     @Test
     public void testAnIdenticalCommandLaterIsNotADuplicate() throws Exception
@@ -477,14 +461,7 @@ public class testControlStationFaults
         set(ui, "model", java.lang.reflect.Proxy.newProxyInstance(org.traincontrol.model.ViewListener.class.getClassLoader(),
             new Class<?>[]{ org.traincontrol.model.ViewListener.class }, (proxy, method, args) ->
             {
-                Class<?> type = method.getReturnType();
-
-                if (type == boolean.class) return false;
-                if (type == int.class) return 0;
-                if (type == long.class) return 0L;
-                if (type == double.class) return 0.0;
-
-                return null;
+                return doesNothing(method);
             }));
         set(ui, "buttonMapping", new java.util.HashMap<Integer, javax.swing.JButton>());
         set(ui, "pageNames", new java.util.HashMap<Integer, String>());
@@ -542,11 +519,9 @@ public class testControlStationFaults
     }
 
     /**
-     * A first sync that fails is asked about until it works (OB-338).
-     *
-     * The user is asked after each failure, with its reason, and the sync is repeated while the answer is to try
-     * again.  Staged with a sync that fails twice and then works: two questions each carrying its own reason, three
-     * syncs, no exit, and a connection result.
+     * A first sync that fails is asked about until it works (OB-338): the user is asked after each failure, with its
+     * reason, and the sync is repeated while the answer is to try again.  Staged with a sync that fails twice and then
+     * works: two questions each carrying its own reason, three syncs, no exit, and a connection result.
      *
      * MUTATION: sync only once, or ask with the first failure's reason both times, and this fails.
      */
@@ -783,11 +758,9 @@ public class testControlStationFaults
     }
 
     /**
-     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).
-     *
-     * A real CS3 cannot be made to fail its first sync on purpose.  The switch is read as debug mode is entered
-     * (debug(true)), so the claim arms it the same way and builds no second station; the sync is asked against a port
-     * nothing listens on.  With debug off the switch is ignored though armed.
+     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).  A real CS3 cannot
+     * be made to fail its first sync on purpose; the switch is read as debug mode is entered (debug(true)), so the
+     * claim arms it the same way and builds no second station.  With debug off the switch is ignored though armed.
      *
      * MUTATION: fail in every mode, fail other than N times, or leave the switch's name out of the reason, and this
      * fails.
@@ -849,10 +822,9 @@ public class testControlStationFaults
     }
 
     /**
-     * A simulation never forgets the saved Central Station address (OB-339).
-     *
-     * A simulation never connects, so forgetting the address on no connection wiped it for someone trying the program
-     * out.  Asked of the rule `init` applies, over the starts that matter and the one that cannot happen.
+     * A simulation never forgets the saved Central Station address (OB-339): forgetting it on no connection wiped it
+     * for someone trying the program out.  Asked of the rule `init` applies, over the starts that matter and the one
+     * that cannot happen.
      *
      * MUTATION: forget whenever communication is off, simulation or not, and this fails.
      */
@@ -869,10 +841,9 @@ public class testControlStationFaults
     }
 
     /**
-     * The first sync of a start goes through the question, and the start says whether it is a simulation (OB-338).
-     *
-     * The constructor binds the network and the exit ends the process, so its text is read, with the comments out:
-     * a bare sync there, or `init` passing false, would leave every other claim green.
+     * The first sync of a start goes through the question, and the start says whether it is a simulation (OB-338).  The
+     * constructor binds the network and the exit ends the process, so its text is read, with the comments out: a bare
+     * sync there, or `init` passing false, would leave every other claim green.
      *
      * MUTATION: put the restore path back to `if (syncWithCS2() >= 0)`, or pass anything but `simulate` from `init`,
      * and this fails.
@@ -922,11 +893,10 @@ public class testControlStationFaults
     }
 
     /**
-     * Exit forgets the saved address, then ends the application, once each (OB-338).
-     *
-     * Runs the two halves through the arguments the method takes, on a throwaway node under a test-only path with an
-     * exit that only counts.  The address must be gone before the exit runs, and the exit must run even when the
-     * preferences refuse the removal.  Other settings in the node stay.
+     * Exit forgets the saved address, then ends the application, once each (OB-338).  Runs the two halves through the
+     * arguments the method takes, on a throwaway node under a test-only path with an exit that only counts.  The
+     * address must be gone before the exit runs, and the exit must run even when the preferences refuse the removal.
+     * Other settings in the node stay.
      *
      * MUTATION: drop the `remove`, drop the `exit.run()`, run it before the `remove`, or take the `try` off the
      * `remove`, and this fails.
@@ -1202,6 +1172,19 @@ public class testControlStationFaults
         return window.getLong(null) / 1000000L;
     }
 
+    /** What a proxy that does nothing answers to `method`: false, zero, or null. */
+    private static Object doesNothing(java.lang.reflect.Method method)
+    {
+        Class<?> type = method.getReturnType();
+
+        if (type == boolean.class) return false;
+        if (type == int.class) return 0;
+        if (type == long.class) return 0L;
+        if (type == double.class) return 0.0;
+
+        return null;
+    }
+
     /** A view that records what it is asked to resync about and answers as told; every other call does nothing. */
     private static org.traincontrol.model.View recordingView(java.util.List<String> asked, boolean[] answer)
     {
@@ -1216,14 +1199,7 @@ public class testControlStationFaults
                     return answer[0];
                 }
 
-                Class<?> type = method.getReturnType();
-
-                if (type == boolean.class) return false;
-                if (type == int.class) return 0;
-                if (type == long.class) return 0L;
-                if (type == double.class) return 0.0;
-
-                return null;
+                return doesNothing(method);
             });
     }
 

@@ -44,14 +44,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *   movement, so a counting `RepaintManager` records which components were made dirty, and each must be a tile of a
  *   square whose state actually changed.
  *
- * The changed squares are worked out from the railway, not from the window: `blockedSquares()` translates
- * `Layout.edgesCoveredByStandingTrains` through the reducer, as `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does,
+ * The changed squares are worked out from the railway, not from the window (`blockedSquares()` translates
+ * `Layout.edgesCoveredByStandingTrains` through the reducer, as `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does),
  * because asking the window what the right answer is agrees with it whatever it says.
  *
- * The gesture is a TRAIN LENGTH.  The gray was once fenced on a running railway, so starting autonomy put the wash on;
- * Adam: "yes, this greyout should appear at idle and be regenerated if a placement or train/track length is changed."
- * With the fence gone, starting a run changes no square and this class would have measured nothing.  The train length
- * is the only one of his three gestures that needs no rebuild, which leaves the repaint count as the only thing moving.
+ * The gesture is a TRAIN LENGTH: with the gray no longer fenced on a running railway, starting autonomy changes no
+ * square and would measure nothing.  Adam: "yes, this greyout should appear at idle and be regenerated if a placement
+ * or train/track length is changed."  The train length is the only one of his three gestures that needs no rebuild,
+ * which leaves the repaint count as the only thing moving.
  *
  * THROUGH THE DOOR: `TrainControlUI.applyTrainLength` is everything `promptTrainLength` does once its dialog has
  * answered; nothing here calls the window's own recompute.  BOTH directions: unmeasuring the train takes the wash off
@@ -609,11 +609,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
         }
 
         /**
-         * The DIAGRAM SQUARES among them, which is what this class is about.
-         *
-         * `applyTrainLength` also refreshes the autonomy findings (FR-046 warns about a train with no length), which
-         * dirties the strip at the top of the window: five components that belong to no square, whose counting accused
-         * the wash of repainting free track.  A `LayoutLabel` is one square and nothing else is.
+         * The DIAGRAM SQUARES among them, which is what this class is about.  `applyTrainLength` also refreshes the
+         * autonomy findings (FR-046), which dirties the strip at the top of the window: five components that belong to
+         * no square, and a `LayoutLabel` is one square and nothing else is.
          *
          * KNOWN LIMIT: a full-page repaint asked for by repainting the CONTAINER dirties the container, not its
          * children, and is invisible here; the identity comparison in `testMeasuringTheTrainDoesNotRebuildThePage`
@@ -898,19 +896,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     private static void measureEveryTileAs(int units)
     {
-        Set<TileKey> everyTile = new LinkedHashSet<>();
-
-        for (TileKey tile : session.getReducer().getPoints().keySet()) everyTile.add(tile);
-
-        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
-        {
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() != null) everyTile.add(step.getTile());
-            }
-        }
-
-        for (TileKey tile : everyTile) session.setTileLength(tile, units);
+        support.TileLengths.measureEveryTileAs(session, units);
     }
 
     private static void pump() throws Exception

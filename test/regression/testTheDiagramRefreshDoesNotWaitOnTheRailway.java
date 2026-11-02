@@ -22,19 +22,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-192: the window froze while autonomy ran; the trains kept moving but nothing repainted.
  *
- * The event thread was blocked on a lock someone else held.  `Layout.java`'s comment above `getEdges` names the
- * deadlock; one test per half: the railway must not take the window's monitor while holding its own
+ * The event thread was blocked on a lock someone else held (`Layout.java`'s comment above `getEdges` names the
+ * deadlock); one test per half: the railway must not take the window's monitor while holding its own
  * (`testADrivingThreadNeverWaitsForTheWindowsMonitor`), and the window must never take the railway's, nor on the event
- * thread at all (`testTheDiagramRefreshDoesNotWaitOnTheRailway`).  The measured doors are here;
- * `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the census of the rest.
+ * thread at all (this class).  The measured doors are here; `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the
+ * census of the rest.
  *
  * Bounded: a helper's monitor is released on a timer and every wait is a `Future.get(timeout)`, so a failure is a
  * message, not a hang.  The free cost of a refresh is measured first, so a red result is attributable.
  *
- * MUTATION: put the blocking call back - have `refreshCoveredTrack` ask
- * `getAutonomySession().tilesBlockedByStandingTrains(this.model.getAutoLayout())` on the event thread
- * - and `testTheDiagramRefreshDoesNotWaitOnTheRailway` goes red, timing out with the event thread
- * parked on `Layout.edgesCoveredByStandingTrains`.
+ * MUTATION: have `refreshCoveredTrack` ask `getAutonomySession().tilesBlockedByStandingTrains(...)` on the event thread
+ * again and `testTheDiagramRefreshDoesNotWaitOnTheRailway` times out with the event thread parked on
+ * `Layout.edgesCoveredByStandingTrains`.
  *
  * @author Adam
  */
@@ -327,10 +326,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The fourth door: the caption rule asks the railway whether autonomy can choose each station.
-     *
-     * `captionIsActive` reached `Layout.isChoosableByAutonomy` once per captioned square, from three event-thread
-     * paths.  The answer is now worked out on `CoveredTrackRenderer` and read off a volatile field.
+     * The fourth door: the caption rule asks the railway whether autonomy can choose each station (`captionIsActive`
+     * reached `Layout.isChoosableByAutonomy` once per captioned square, from three event-thread paths; the answer is
+     * worked out on `CoveredTrackRenderer` and read off a volatile field).
      *
      * MUTATION: put the `for (Point point : ...) if (railway.isChoosableByAutonomy(point))` loop back
      * into `captionIsActive` and this times out with the event thread parked on the railway's monitor.
@@ -387,11 +385,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The fifth door: the diagram's right-click menu is built on the event thread.
      *
-     * The constructor used to ask `Layout.getPossiblePaths` (synchronized, a whole-graph search); `showFor` now
-     * gathers the answers on a worker and hands them in, so the constructor must build a menu about a square with a
-     * train on it without asking the railway anything.  A train is placed first (the path section exists only for
-     * a square with a locomotive), and `gatherPathOptions` is called first on this thread, as `showFor`'s worker does,
-     * so a search put back inside the constructor would show.
+     * The constructor must build a menu about a square with a train on it without asking the railway anything:
+     * `showFor` gathers the answers (`Layout.getPossiblePaths`, synchronized, a whole-graph search) on a worker and
+     * hands them in.  A train is placed first (the path section exists only for a square with a locomotive), and
+     * `gatherPathOptions` is called first on this thread, as `showFor`'s worker does, so a search put back inside the
+     * constructor would show.
      *
      * MUTATION: move the `getPossiblePaths` call back out of `gatherPathOptions` into the constructor
      * and this times out.
@@ -440,10 +438,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The sixth door: the autonomy editor's "why is this train not moving" tool.
      *
-     * `AutonomyEditorPanel.applyWhy` asked `Layout.explainDestinations` (synchronized, a whole-graph walk per
-     * candidate) straight from the click.  The editor cannot be open while autonomy runs (OB-047), but
+     * `AutonomyEditorPanel.applyWhy` must not ask `Layout.explainDestinations` (synchronized, a whole-graph walk per
+     * candidate) straight from the click: the editor cannot be open while autonomy runs (OB-047), but
      * `AutoLocomotiveStatus.findPaths` can hold the monitor with nothing running, as this fixture does.  The question
-     * now goes to `WhyRenderer` and the answer is painted by an `invokeLater`; the capture stays on the event thread
+     * goes to `WhyRenderer` and the answer is painted by an `invokeLater`; the capture stays on the event thread
      * because `layoutSource.get()` and `getStationIndex` may build state.
      *
      * MUTATION: call `composeWhy` directly from `applyWhy` instead of submitting it, and this times
@@ -488,39 +486,18 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * What the tool says is the railway's own answer, not a shape that happens to be there (OB-191: it painted the
-     * paths and said nothing).
+     * What the tool says is the railway's own answer, not a shape that happens to be there (OB-191).
      *
-     * The railway is the oracle, asked from this thread: a train that cannot start names the reason, and one that
-     * can names the stations it may go to or says there are none.  Where the reduction finds a run to an offered
-     * station, `traces` must not be empty, which a `paintWhy` that dropped the worker's map would fail.
+     * The railway is the oracle, asked from this thread: a train that cannot start names the reason, and one that can
+     * names the stations it may go to or says there are none.  Where the reduction finds a run to an offered station,
+     * `traces` must not be empty, which a `paintWhy` that dropped the worker's map would fail.
      */
     @Test
     public void testTheWhyToolSaysWhatTheRailwaySays() throws Exception
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
-
-        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
-
-        final java.lang.reflect.Method why = theWhyTool();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                why.invoke(panel, occupied, drawn);
-            }
-            catch (Exception failed)
-            {
-                throw new RuntimeException(failed);
-            }
-        });
-
-        assertTrue(awaitWhy(panel), "the why answer never landed");
-
-        pump();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = answered(occupied);
 
         String said = whatTheEditorSays(panel);
 
@@ -635,29 +612,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
-
-        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
-
-        final java.lang.reflect.Method why = theWhyTool();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                why.invoke(panel, occupied, drawn);
-            }
-            catch (Exception failed)
-            {
-                throw new RuntimeException(failed);
-            }
-        });
-
-        assertTrue(awaitWhy(panel), "the why answer never landed");
-
-        pump();
-
-        String said = whatTheEditorSays(panel);
+        String said = whatTheEditorSays(answered(occupied));
 
         org.traincontrol.base.Locomotive train = trainOn(occupied);
 
@@ -677,9 +632,17 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         String elsewhere = null;
 
+        // A station it can go to by any copy is in neither list.
+        java.util.Set<String> canGo = new java.util.HashSet<>();
+
         for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
         {
-            if (entry.getValue() == null) continue;
+            if (entry.getValue() == null) canGo.add(shownAs(entry.getKey(), occupied));
+        }
+
+        for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
+        {
+            if (entry.getValue() == null || canGo.contains(shownAs(entry.getKey(), occupied))) continue;
 
             String shown = shownAs(entry.getKey(), occupied);
 
@@ -741,6 +704,14 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
                 + (station.getValue() ? "could choose" : "will never choose") + ", by that name - a station"
                 + " on another page carries its page, as " + elsewhere + " should.  Could choose: " + candidates
                 + ".  Never: " + never);
+        }
+
+        for (String reachable : canGo)
+        {
+            String name = reachable.replace("&", "&amp;").replace("<", "&lt;");
+
+            assertFalse(candidates.contains(name) || never.contains(name), reachable + " can be gone to by one copy"
+                + " and is listed as a station it cannot go to.  Could choose: " + candidates + ".  Never: " + never);
         }
     }
 
@@ -812,6 +783,35 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return out;
     }
 
+    /** A Why panel that has answered for the train on a square. */
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel answered(
+        final org.traincontrol.automationui.TileGraph.TileKey occupied) throws Exception
+    {
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
+
+        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
+
+        final java.lang.reflect.Method why = theWhyTool();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                why.invoke(panel, occupied, drawn);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(awaitWhy(panel), "the why answer never landed");
+
+        pump();
+
+        return panel;
+    }
+
     /** A copy in the order MT-429 asks for: page (the train's own first, then by name), then station name. */
     private static java.util.List<String> inPageOrder(java.util.List<String> names,
         final java.util.Map<String, String[]> rank)
@@ -827,12 +827,113 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
             if (byPage != 0) return byPage;
 
-            int byName = x[1].compareTo(y[1]);
+            int byName = org.traincontrol.util.Util.compareAsRead(x[1], y[1]);
 
             return byName != 0 ? byName : a.compareTo(b);
         });
 
         return copy;
+    }
+
+    /**
+     * Station names sort as a person reads them (MT-865): ParkingTrack4 before ParkingTrack10, as the sample layout's
+     * parking tracks are named, and case aside.
+     *
+     * MUTATION: `compareAsRead` returning `a.compareTo(b)`, and this fails on ParkingTrack10 before ParkingTrack4.
+     */
+    @Test
+    public void testStationNamesSortAsRead() throws Exception
+    {
+        java.util.List<String> names = new java.util.ArrayList<>(java.util.Arrays.asList(
+            "ParkingTrack10", "TunnelPre", "ParkingTrack4", "parkingTrack5", "BottomMainA", "ParkingTrack12"));
+
+        java.util.Collections.sort(names, org.traincontrol.util.Util::compareAsRead);
+
+        assertEquals(names, java.util.Arrays.asList(
+            "BottomMainA", "ParkingTrack4", "parkingTrack5", "ParkingTrack10", "ParkingTrack12", "TunnelPre"),
+            "station names are not in the order they are read");
+
+        assertTrue(org.traincontrol.util.Util.compareAsRead("Track07", "Track7") != 0,
+            "two different names compare as equal, so a sorted set would keep only one of them");
+    }
+
+    /**
+     * The why answer names every station the train can go to, not the first four, and ends with what its colors mean,
+     * after an empty line (MT-865).
+     *
+     * MUTATION: put back the cap of four in the "can go to" list (`String.join(", ", available)` limited to four
+     * names), and this fails on the fifth station; put `colours(...)` back before `detail`, and it fails on the order.
+     */
+    @Test
+    public void testTheWhyAnswerNamesEveryStationAndEndsWithItsColors() throws Exception
+    {
+        squareWithATrainOnIt();
+
+        // The standing train with the most places to go, so a cap of four has something to cut
+        org.traincontrol.automationui.TileGraph.TileKey most = null;
+
+        int mostPlaces = -1;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getStationIndex().squares())
+        {
+            org.traincontrol.base.Locomotive standing = trainOn(square);
+
+            if (standing == null || layout.explainCannotStart(standing) != null) continue;
+
+            int places = 0;
+
+            for (String reason : layout.explainDestinationsGrouped(standing).getReasons().values())
+            {
+                if (reason == null) places++;
+            }
+
+            if (places > mostPlaces)
+            {
+                most = square;
+                mostPlaces = places;
+            }
+        }
+
+        assertNotNull(most, "no standing train on this snapshot can start, so there is no list to read");
+
+        final org.traincontrol.automationui.TileGraph.TileKey occupied = most;
+
+        String said = whatTheEditorSays(answered(occupied));
+
+        org.traincontrol.base.Locomotive train = trainOn(occupied);
+
+        assertNotNull(train, "no train stands on " + occupied + ", so there is no answer to read");
+
+        java.util.Set<String> canGo = new java.util.TreeSet<>();
+
+        for (java.util.Map.Entry<String, String> entry : layout.explainDestinationsGrouped(train).getReasons().entrySet())
+        {
+            if (entry.getValue() == null) canGo.add(shownAs(entry.getKey(), occupied));
+        }
+
+        assertTrue(canGo.size() > 4, "precondition: " + train.getName() + " can go to " + canGo.size()
+            + " stations, too few for a cap of four to show: " + canGo);
+
+        String first = said.split("<br>")[0];
+
+        for (String station : canGo)
+        {
+            assertTrue(first.contains(station.replace("&", "&amp;").replace("<", "&lt;")), station + " is a station "
+                + train.getName() + " can go to, and the answer's first line leaves it out: " + first);
+        }
+
+        String legend = org.traincontrol.util.I18n.t("autosetup.ui.whyColourGreen");
+
+        int at = said.indexOf(legend);
+
+        assertTrue(at > 0, "the answer does not say what green means: " + said);
+
+        String before = said.substring(0, at);
+
+        assertTrue(before.endsWith("<br><br>"), "the color legend is not after an empty line: " + said);
+
+        assertFalse(said.substring(at).contains("<br>"), "a line comes after the color legend, which should end the"
+            + " answer: " + said);
     }
 
     /**

@@ -27,7 +27,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 /**
  * Turning round: one sensor, two things a train may do there.
  *
- * The shape under test is taken from the sample layout, where it was written by hand.  BottomMainC and BottomMainCTerm
+ * The shape under test is taken from the sample layout.  BottomMainC and BottomMainCTerm
  * are both stations and both s88 4; both are entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
  * other to TunnelReversePre having turned round.  A single Point per sensor cannot say that, since arriving from the
  * west and going on east is the same edge set as arriving from the west and backing out west again.
@@ -38,9 +38,8 @@ import org.traincontrol.marklin.MarklinAccessory;
  *                    |
  *                   F18                                  (a siding, trailing off behind F4)
  *
- * The switch faces east, so a train running WEST out of F4 can take the siding, and a train running
- * east out of F11 cannot.  Reaching F18 from F11 therefore means stopping at F4 and turning round -
- * which is precisely what the old hand-written graph spelt out with a second Point.
+ * The switch faces east, so a train running WEST out of F4 can take the siding, and one running east out of F11
+ * cannot.  Reaching F18 from F11 therefore means stopping at F4 and turning round.
  *
  * @author Adam
  */
@@ -373,10 +372,8 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * A station autonomy may not choose says exactly that, and nothing else.
-     *
-     * The only way to keep autonomy off a station was to make it a reversing one, which also turned every arriving
-     * train round and refused any path through.
+     * A station autonomy may not choose says exactly that, and nothing else: keeping autonomy off a station must not
+     * also turn every arriving train round and refuse any path through.
      */
     @Test
     public void testAStationAutonomyMayNotChooseSaysSoAndNothingElse() throws IOException
@@ -401,9 +398,9 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * A berth that turns trains round AND is left alone by autonomy, which is what a berth usually is.  As a reversing
-     * station plus a terminus it was two flags on one Point, which Point refuses in either order; said separately, the
-     * two do not touch.
+     * A berth that turns trains round AND is left alone by autonomy, which is what a berth usually is: two flags on one
+     * Point, which Point refuses in either order as a reversing station plus a terminus; said separately, the two do
+     * not touch.
      */
     @Test
     public void testABerthCanTurnTrainsRoundAndStillBeLeftAloneByAutonomy() throws IOException
@@ -498,12 +495,19 @@ public class testAutonomyDiagramReversal
 
     private GraphReducer reduce(LayoutDiagram page, final Set<TileKey> stations)
     {
+        return reduceWith(page, this::names, stations::contains);
+    }
+
+    /**
+     * The page reduced with the given names and stations, every route opened both ways: switches default to
+     * base-to-forks, which would give the sensor ONE arrival side and never split, so only the split is asserted.
+     */
+    private GraphReducer reduceWith(LayoutDiagram page, final java.util.function.Function<TileKey, String> pointName,
+        final java.util.function.Predicate<TileKey> station)
+    {
         TileGraph graph = new TileGraph(
             new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
 
-        // Switches default to base-to-forks (out of the toe only), which would admit trains from the east only, so the
-        // sensor would have ONE arrival side and never split.  Everything is opened both ways, so that what is asserted
-        // is the split and nothing else.
         for (TileKey tile : graph.getTiles().keySet())
         {
             for (RouteId routeId : graph.getRoutes(tile).keySet())
@@ -517,13 +521,13 @@ public class testAutonomyDiagramReversal
             @Override
             public String getPointName(TileKey tile)
             {
-                return names(tile);
+                return pointName.apply(tile);
             }
 
             @Override
             public boolean isStation(TileKey tile)
             {
-                return stations.contains(tile);
+                return station.test(tile);
             }
 
             @Override
@@ -728,7 +732,7 @@ public class testAutonomyDiagramReversal
      *
      * A turning copy's facing is its arrival side rather than the opposite of it, so a facing learned from a train that
      * had just reversed must still match; otherwise it falls through to the first copy, pointing the other way, and the
-     * first move is the backwards edge the whole split exists to forbid.
+     * first move is the backwards edge the split exists to forbid.
      */
     @Test
     public void testAPlacedLocomotiveLandsOnTheCopyItIsFacing() throws Exception
@@ -776,40 +780,6 @@ public class testAutonomyDiagramReversal
      */
     private GraphReducer reduceWithNames(LayoutDiagram page, final Map<TileKey, String> authored)
     {
-        TileGraph graph = new TileGraph(
-            new ArrayList<>(Arrays.asList(page)), Collections.<String>emptySet());
-
-        for (TileKey tile : graph.getTiles().keySet())
-        {
-            for (RouteId routeId : graph.getRoutes(tile).keySet())
-            {
-                graph.setDirection(tile, routeId, Direction.BOTH);
-            }
-        }
-
-        GraphReducer reducer = new GraphReducer(graph, new GraphReducer.Authored()
-        {
-            @Override
-            public String getPointName(TileKey tile)
-            {
-                return authored.get(tile);
-            }
-
-            @Override
-            public boolean isStation(TileKey tile)
-            {
-                return false;
-            }
-
-            @Override
-            public int getTileLength(TileKey tile)
-            {
-                return 0;
-            }
-        });
-
-        reducer.reduce();
-
-        return reducer;
+        return reduceWith(page, authored::get, tile -> false);
     }
 }

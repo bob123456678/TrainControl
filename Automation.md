@@ -242,7 +242,7 @@ A tool stays armed until you press its button again, press Escape, or right-clic
 
 **`Why not Moving?`** answers "why is this train not being sent anywhere?" Click the square a train is standing on: every route it *could* take is drawn on the track, and the stations it cannot go to are listed underneath with the reason for each: occupied and by whom, switched off, excluded, too short, no track at all. A train with somewhere to go draws lines; a train with nowhere draws none. This tool reads the configuration as last **saved**: if you have unsaved changes it says so.
 
-![Why not Moving? on BR 218 at Bramley: nowhere to go, and the reason for each station](assets/automation/08-why-not-moving.png)
+![Why not Moving? on BR 218 at Bramley: it can go to Ashby and Carlton, both marked green with the routes to them drawn in yellow, while Thornbury, where ICE 3 is standing, is marked gray](assets/automation/08-why-not-moving.png)
 
 **`One-Way Run`** (from `Bulk Tools`) closes a stretch of track to one direction in two clicks: click one end of the run, then the far end, and choose `From A to B` or `From B to A`. It stays armed for the next pair.
 

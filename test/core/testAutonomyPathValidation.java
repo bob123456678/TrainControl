@@ -43,11 +43,9 @@ public class testAutonomyPathValidation
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as
-        // showUI constructs the real window, so a sandbox opened afterwards protects nothing.  Without
-        // this, the window below opens and can write to Adam's own railway (OB-111), and can also
-        // raise the modal "create a track diagram?" prompt that no test here will ever click, stalling
-        // the whole battery.
+        // Before init(), not after: init() reads TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF as soon as showUI constructs
+        // the real window, so a sandbox opened afterwards protects nothing: the window could write to Adam's own
+        // railway (OB-111) or raise a modal prompt no test here clicks, stalling the battery.
         sandbox = support.LayoutSandbox.open();
 
         // A window, so the failure popup renders and the operator can see the error.
@@ -169,18 +167,12 @@ public class testAutonomyPathValidation
      * EN57-947 should be able to go from TopMainR2 to BottomSecondary, but no movement is allowed at
      * all."
      *
-     * **Non-atomic mode exists to give track back as the train clears it.** executePath does give the
-     * EDGE back the moment `tailHasProvablyPassed` says the train is clear of it - and it deliberately
-     * kept every LOCK EDGE that edge had taken, until the whole path finished. So the edges came free
-     * and the shared throats did not, and on a railway where routes cross, a throat held is a route
-     * refused. Every square the train had been through went on blocking everything that crossed it for
-     * the rest of the run, which is "no movement is allowed at all".
+     * **Non-atomic mode exists to give track back as the train clears it.** executePath gives the EDGE back the moment
+     * `tailHasProvablyPassed` says the train is clear of it, and it kept every LOCK EDGE that edge had taken until the
+     * whole path finished: on a railway where routes cross, a throat held is a route refused.  The proof is the one the
+     * edge itself is released on: if the train is clear of the edge, it is clear of the throat that edge needed.
      *
-     * The proof is the same one the edge itself is released on. If the train is clear of the edge, it
-     * is clear of the throat that edge needed; there is nothing left for the lock to protect.
-     *
-     * Written as a run rather than as a sequence of calls: the early release happens inside
-     * executePath's progress loop and there is no other door to it.
+     * Written as a run: the early release happens inside executePath's progress loop and there is no other door to it.
      *
      * MUTATION this catches: putting `setLockedEdgeUnoccupied()` back at the early release leaves the
      * crossing held while the train is still going, and the assertion fails.
@@ -209,13 +201,10 @@ public class testAutonomyPathValidation
             model.setFeedbackState(fb.getName(), false);
         }
 
-        // A destination needs a sensor; the ORIGIN is where the train starts and needs none,
-        // so it is the one point here that is not a station.
-        //
-        // FOUR edges, not two.  A two-edge run in simulation is over in a second, and unlockPath
-        // releases everything at the end - so the first version of this test watched a finished run
-        // and could not tell "given back early" from "given back at the end", which is the whole
-        // question.
+        // A destination needs a sensor; the ORIGIN is where the train starts and needs none, so it is the one point
+        // here that is not a station.  FOUR edges, not two: a two-edge run in simulation is over in a second and
+        // unlockPath releases everything at the end, so it could not tell "given back early" from "given back at the
+        // end", which is the whole question.
         layout.createPoint("NA_A", false, null);
         layout.createPoint("NA_B", true, first.getName());
         layout.createPoint("NA_C", true, second.getName());
@@ -642,14 +631,10 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Two paths holding one crossing, and the first to finish does not free it.
-     *
-     * `Edge.occupied` was a boolean, so it could hold one claim however many were made.  Two edges
-     * naming a third as a lock edge is what a crossing looks like when the editor writes it, and with
-     * a boolean the second lock wrote the same true the first had while the first release wrote false
-     * for both - so the crossing went free with a train still on it.
-     *
-     * Nothing about atomicRoutes here: this is the flag itself, and it is shared by both modes.
+     * Two paths holding one crossing, and the first to finish does not free it.  `Edge.occupied` is a count, not a
+     * boolean: with two edges naming a third as a lock edge (what a crossing looks like when the editor writes it), the
+     * first release must not free the crossing with a train still on it.  This is the flag itself, shared by both
+     * modes.
      */
     @Test
     public void testTwoPathsHoldingOneCrossingBothHaveToLetGo() throws Exception
@@ -697,12 +682,10 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A path does not give up an edge twice, because the second time it may not be its own.
-     *
-     * With atomicRoutes off, executePath releases each edge the moment the train's tail has provably
-     * passed it - deliberately keeping that edge's own lock edges held, since a crossing behind the
-     * train may still be in use - and unlockPath releases everything again at the end.  Two releases
-     * per edge, which a boolean could not tell from one.
+     * A path does not give up an edge twice, because the second time it may not be its own.  With atomicRoutes off,
+     * executePath releases each edge the moment the train's tail has provably passed it - keeping that edge's own lock
+     * edges held, since a crossing behind the train may still be in use - and unlockPath releases everything again at
+     * the end: two releases per edge, which a boolean could not tell from one.
      *
      * The sequence, in the order the railway performs it:
      *
@@ -711,10 +694,8 @@ public class testAutonomyPathValidation
      *   B locks a DIFFERENT edge that names A's edge as a lock edge, so it is protected again.
      *   A reaches its destination and unlockPath walks A's path.
      *
-     * The last step must not touch it.  It is not A's any more.
-     *
-     * The asymmetry this needs - B's edge names A's, A's names nothing - is what GraphEdgeEdit writes,
-     * and 104 of the 118 relations in the shipped sample layout are asymmetric.
+     * The last step must not touch it.  It is not A's any more.  The asymmetry this needs (B's edge names A's, A's
+     * names nothing) is what GraphEdgeEdit writes.
      */
     @Test
     public void testAPathDoesNotReleaseAnEdgeItHasAlreadyReleased() throws Exception
@@ -861,18 +842,13 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Two different locomotives cannot end up on one square, however they are put there.
+     * Two different locomotives cannot end up on one square, however they are put there.  The sweep in setLocomotive
+     * enforces "one locomotive, one place"; this is the other invariant, "one square, one locomotive", which hand
+     * placement can still break (autonomy is refused by the block occupancy check long before).
      *
-     * The sweep in setLocomotive enforces "one locomotive, one place" - a train taken off every square
-     * but the one claiming it.  This is the other invariant, "one square, one locomotive", and hand
-     * placement is the only thing that can still break it: autonomy is refused by the block occupancy
-     * check long before it gets here.
-     *
-     * Placing by hand displaces, deliberately - it is a person saying where a train actually is, and
-     * whoever was there is by definition not.  But displacing only cleared the target Point, and a
-     * square is several Points now, so putting a second train on the OTHER copy of an occupied platform
-     * left both standing on one piece of track.  Which is a collision on the layout, and on the diagram
-     * a caption naming two trains where the menu below it can only answer for one.
+     * Placing by hand displaces, deliberately: it is a person saying where a train actually is.  But a square is
+     * several Points, so putting a second train on the OTHER copy of an occupied platform left both standing on one
+     * piece of track, and on the diagram a caption naming two trains where the menu can only answer for one.
      */
     @Test
     public void testHandPlacingOnAnOccupiedSquareDisplacesWhoeverIsThere() throws Exception
@@ -915,18 +891,13 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A lock edge refuses a route when another route HOLDS it, and not merely because a train is parked
-     * at the point it leads to.
+     * A lock edge refuses a route when another route HOLDS it, and not merely because a train is parked at the point
+     * it leads to.  The two halves are one test on purpose: dropping the parked-train refusal is only safe because the
+     * held-lock refusal exists, so one place shows what it was traded against.
      *
-     * The two halves are one test on purpose.  Dropping the parked-train refusal is only safe because
-     * the held-lock refusal exists, so an assertion that the first is gone means nothing without an
-     * assertion that the second still bites - and someone reinstating the first would want to see, in
-     * one place, what it was traded against.
-     *
-     * The parked train cannot be on the track the lock protects: reduction cuts an edge at every
-     * sensor, so a Point's tile is an endpoint of the edges meeting there and part of the path of none
-     * of them.  Counted as an obstruction anyway, a train standing next to a junction was a permanent
-     * roadblock for every route across it, and two such trains deadlocked with no way out for either.
+     * The parked train cannot be on the track the lock protects: reduction cuts an edge at every sensor, so a Point's
+     * tile is an endpoint of the edges meeting there and part of the path of none of them.  Counted as an obstruction
+     * anyway, a train standing next to a junction was a permanent roadblock, and two such trains deadlocked.
      */
     @Test
     public void testALockEdgeRefusesAHeldRouteButNotAParkedTrain() throws Exception
@@ -1008,11 +979,9 @@ public class testAutonomyPathValidation
     }
     /**
      * A path that fails to configure leaves the train at its start, not on no point at all.
-     *
-     * handleMisconfiguredPath releases the locks and, by its own promise, leaves the train "at its
-     * start point (it never departed)".  The sweep broke that promise: the start had already been swept
-     * off during locking, so releasing the path's end points left the train nowhere - and a train on no
-     * point is invisible to pickPath and drops out of autonomy until a reload.
+     * handleMisconfiguredPath releases the locks and promises to leave the train "at its start point (it never
+     * departed)"; the start had already been swept off during locking, so releasing the end points left the train
+     * nowhere - invisible to pickPath, and out of autonomy until a reload.
      */
     @Test
     public void testAFailedConfigurationLeavesTheTrainAtItsStart() throws Exception

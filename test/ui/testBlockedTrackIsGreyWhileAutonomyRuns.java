@@ -1,7 +1,5 @@
 package ui;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.lang.reflect.Field;
@@ -28,10 +26,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, third ruling: the drawing says "track is blocked" again, and says it in gray (Adam: *"'train is here' should
- * also mean 'track is blocked' - that is the whole point."*). The orange line as long as the train and the gray on the
- * tiles stand together, so the drawing and the guard agree: orange on a square (a train lies there), gray and no orange
- * (track a train's presence has made unusable), neither (free).
+ * MT-309, third ruling: the drawing says "track is blocked" again, and says it in gray ("train is here" also means
+ * "track is blocked").  The orange line as long as the train and the gray on the tiles stand together, so the drawing
+ * and the guard agree: orange on a square (a train lies there), gray and no orange (track a train's presence has made
+ * unusable), neither (free).
  *
  * The gray is not bounded to a run, as the refusal it draws never was; `ui.testTheGreyAppearsAtIdleToo` carries the
  * idle half. The blocked extent is worked out here from the railway, not asked of the window under test: what is drawn
@@ -115,9 +113,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
 
         // The frozen copy, not the railway he is operating (OB-111, and `test/layouts/live-snapshot`):
-        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains on it, and a class that skips
-        // everything reads as a green one. `Scenario.folderFor` is the only naming of a fixture folder that cannot
-        // spell its way out to the operator's own railway.
+        // `cs2_sample_layout`'s placements and lengths move as he runs trains on it, and a class that skips everything
+        // reads as green.  `Scenario.folderFor` cannot spell its way out to the operator's own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -171,9 +168,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         repaintTheThree();
 
-        stoppedCovered = paint(coveredTile);
-        stoppedBlocked = paint(blockedTile);
-        stoppedFree = paint(freeTile);
+        stoppedCovered = support.Pixels.paint(coveredTile, TILE);
+        stoppedBlocked = support.Pixels.paint(blockedTile, TILE);
+        stoppedFree = support.Pixels.paint(freeTile, TILE);
 
         // RUNNING, same train, same squares.
         setRunning(true);
@@ -182,9 +179,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         repaintTheThree();
 
-        runningCovered = paint(coveredTile);
-        runningBlocked = paint(blockedTile);
-        runningFree = paint(freeTile);
+        runningCovered = support.Pixels.paint(coveredTile, TILE);
+        runningBlocked = support.Pixels.paint(blockedTile, TILE);
+        runningFree = support.Pixels.paint(freeTile, TILE);
 
         // And running with nothing standing anywhere, the reference every "is this square marked at all" question is
         // asked against. A length of zero is how this railway says "not set", and an unmeasured train covers nothing.
@@ -194,9 +191,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         repaintTheThree();
 
-        bareCovered = paint(coveredTile);
-        bareBlocked = paint(blockedTile);
-        bareFree = paint(freeTile);
+        bareCovered = support.Pixels.paint(coveredTile, TILE);
+        bareBlocked = support.Pixels.paint(blockedTile, TILE);
+        bareFree = support.Pixels.paint(freeTile, TILE);
 
         train.setTrainLength(trainLength);
     }
@@ -244,10 +241,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             "the orange line is not drawn on " + blockedSquare + ", so the train is not shown where"
             + " this class thinks it is and the fade below is about some other square");
 
-        assertTrue(contrast(runningBlocked) < contrast(bareBlocked) - 2,
+        assertTrue(support.Pixels.contrast(runningBlocked) < support.Pixels.contrast(bareBlocked) - 2,
             "the square " + blockedSquare + " is drawn no fainter while a train blocks it ("
-            + contrast(runningBlocked) + ") than with nothing standing anywhere ("
-            + contrast(bareBlocked) + "), so nothing says the track is unusable. Adam: \"'train is "
+            + support.Pixels.contrast(runningBlocked) + ") than with nothing standing anywhere ("
+            + support.Pixels.contrast(bareBlocked) + "), so nothing says the track is unusable. Adam: \"'train is "
             + "here' should also mean 'track is blocked' - that is the whole point\"");
     }
 
@@ -257,9 +254,9 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     {
         assertBuilt();
 
-        int changed = differingPixels(runningBlocked, bareBlocked);
+        int changed = support.Pixels.differing(runningBlocked, bareBlocked);
 
-        int drawn = drawnPixels(bareBlocked);
+        int drawn = support.Pixels.drawn(bareBlocked);
 
         // A real fraction of the square, not one pixel: `drawn > 0` admits a tile with eight drawn pixels, and the
         // claim is meant to tell a fade of the whole tile from a stroke across part of it.
@@ -277,9 +274,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     /**
      * And a stopped railway shows exactly the same gray: the mark is NOT bounded to a run. `Layout.isPathClear` sweeps
      * the covered edges in every tier at every time, because a tail lying across the rail is physical, so at idle a
-     * manual send across a parked train's tail was refused over track this drew as free. Adam: *"this greyout should
-     * appear at idle and be regenerated if a placement or train/track length is changed."*
-     * `ui.testTheGreyAppearsAtIdleToo` carries the regeneration.
+     * manual send across a parked train's tail was refused over track this drew as free.
+     * `ui.testTheGreyAppearsAtIdleToo` carries the regeneration when a placement or a train or track length changes.
      */
     @Test
     public void testAStoppedRailwayShowsTheSameGrey()
@@ -293,10 +289,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
             + "offered a destination the send will refuse (W7B-B1).  Adam: \"yes, this greyout should "
             + "appear at idle\"");
 
-        assertTrue(contrast(stoppedBlocked) < contrast(bareBlocked) - 2,
+        assertTrue(support.Pixels.contrast(stoppedBlocked) < support.Pixels.contrast(bareBlocked) - 2,
             "the square " + blockedSquare + " is drawn no fainter with a train blocking it and "
-            + "autonomy STOPPED (" + contrast(stoppedBlocked) + ") than with no train at all ("
-            + contrast(bareBlocked) + "), so nothing on a stopped railway says the track is "
+            + "autonomy STOPPED (" + support.Pixels.contrast(stoppedBlocked) + ") than with no train at all ("
+            + support.Pixels.contrast(bareBlocked) + "), so nothing on a stopped railway says the track is "
             + "unusable");
     }
 
@@ -331,10 +327,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         // Against the bare picture: the gray is no longer fenced on a running railway, so "stopped" and "running" are
         // identical by design, and the square with nothing standing anywhere is the picture that has no wash on it.
-        assertTrue(contrast(runningCovered) < contrast(bareCovered) - 2,
+        assertTrue(support.Pixels.contrast(runningCovered) < support.Pixels.contrast(bareCovered) - 2,
             "the square the train stands on is drawn no fainter while a train covers it ("
-            + contrast(runningCovered) + ") than with nothing standing anywhere ("
-            + contrast(bareCovered) + "), so the square carrying the train is the one square "
+            + support.Pixels.contrast(runningCovered) + ") than with nothing standing anywhere ("
+            + support.Pixels.contrast(bareCovered) + "), so the square carrying the train is the one square "
             + "that does not say it is blocked");
 
         assertTrue(orangePixels(runningCovered) > 0,
@@ -431,11 +427,11 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
                 }
             }
 
-            // A square that is gray and not orange no longer exists for a standing train, by Adam's ruling (MT-373:
-            // *"grey out the blocked path only if on a double curve.  otherwise, greyed out means either edge locked or
-            // path blocked."*). The gray's own meaning is EDGE LOCKED, a square an active route is holding with no
-            // train on it: that is `TileOverlay`'s wash, tested in `ui.testTheWashDoesNotStack`, and needs a running
-            // route this class does not have. The square this class claims is the one the train is on.
+            // A square that is gray and not orange no longer exists for a standing train (MT-373: the blocked path is
+            // greyed out only on a double curve; otherwise greyed out means edge locked or path blocked). The gray's
+            // own meaning is EDGE LOCKED, a square an active route is holding with no train on it: that is
+            // `TileOverlay`'s wash, tested in `ui.testTheWashDoesNotStack`, and needs a running route this class does
+            // not have. The square this class claims is the one the train is on.
             TileKey blockedOnly = onTheTrain;
 
             if (onTheTrain == null) continue;
@@ -496,121 +492,12 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
     private static int orangePixels(BufferedImage image)
     {
-        int found = 0;
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                if (isOrange(image.getRGB(x, y))) found++;
-            }
-        }
-
-        return found;
-    }
-
-
-    /**
-     * How many pixels of this tile carry anything but its own background, the commonest color on the square (the panel
-     * showing through). A wash paints every pixel and a fade moves only those that were not background, so "the whole
-     * tile is marked" is counted against the DRAWN pixels.
-     */
-    private static int drawnPixels(java.awt.image.BufferedImage image)
-    {
-        java.util.Map<Integer, Integer> seen = new java.util.HashMap<>();
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                int rgb = image.getRGB(x, y);
-
-                seen.put(rgb, seen.containsKey(rgb) ? seen.get(rgb) + 1 : 1);
-            }
-        }
-
-        int background = 0;
-
-        for (java.util.Map.Entry<Integer, Integer> each : seen.entrySet())
-        {
-            if (each.getValue() > background) background = each.getValue();
-        }
-
-        return image.getWidth() * image.getHeight() - background;
-    }
-
-    /** Brightest minus darkest pixel on the tile: its own contrast, independent of the theme. */
-    private static int contrast(java.awt.image.BufferedImage image)
-    {
-        int darkest = 255;
-        int lightest = 0;
-
-        for (int x = 0; x < image.getWidth(); x++)
-        {
-            for (int y = 0; y < image.getHeight(); y++)
-            {
-                int rgb = image.getRGB(x, y);
-
-                int shade = (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3;
-
-                darkest = Math.min(darkest, shade);
-                lightest = Math.max(lightest, shade);
-            }
-        }
-
-        return lightest - darkest;
+        return support.Pixels.count(image, testBlockedTrackIsGreyWhileAutonomyRuns::isOrange);
     }
 
     private static double brightness(BufferedImage image)
     {
         return support.Rendered.brightness(image);
-    }
-
-    private static int differingPixels(BufferedImage a, BufferedImage b)
-    {
-        int found = 0;
-
-        for (int x = 0; x < a.getWidth(); x++)
-        {
-            for (int y = 0; y < a.getHeight(); y++)
-            {
-                if (a.getRGB(x, y) != b.getRGB(x, y)) found++;
-            }
-        }
-
-        return found;
-    }
-
-    /**
-     * Paints one tile, on its own, exactly as the diagram paints it: `paint` and not `printAll`, which do nothing for a
-     * component that is not on screen.
-     */
-    private static BufferedImage paint(final LayoutLabel label) throws Exception
-    {
-        final BufferedImage[] shot = new BufferedImage[1];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            label.setSize(TILE, TILE);
-
-            shot[0] = new BufferedImage(TILE, TILE, BufferedImage.TYPE_INT_RGB);
-
-            Graphics2D g = shot[0].createGraphics();
-
-            try
-            {
-                g.setColor(Color.WHITE);
-                g.fillRect(0, 0, TILE, TILE);
-
-                label.paint(g);
-            }
-            finally
-            {
-                g.dispose();
-            }
-        });
-
-        return shot[0];
     }
 
     // ---------------------------------------------------------------- the fixture
@@ -677,17 +564,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
     private static Set<TileKey> everyTile()
     {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
-        {
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() != null) out.add(step.getTile());
-            }
-        }
-
-        return out;
+        return support.TileLengths.onTheEdges(session);
     }
 
     /**
@@ -738,19 +615,7 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
     private static void measureEveryTileAs(int units)
     {
-        Set<TileKey> everyTile = new LinkedHashSet<>();
-
-        for (TileKey tile : session.getReducer().getPoints().keySet()) everyTile.add(tile);
-
-        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
-        {
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() != null) everyTile.add(step.getTile());
-            }
-        }
-
-        for (TileKey tile : everyTile) session.setTileLength(tile, units);
+        support.TileLengths.measureEveryTileAs(session, units);
     }
 
     private static void pump() throws Exception

@@ -132,9 +132,12 @@ public final class Mouse
         post(on, MouseEvent.MOUSE_RELEASED, at, 0, 1, MouseEvent.BUTTON3, true);
         post(on, MouseEvent.MOUSE_CLICKED, at, 0, 1, MouseEvent.BUTTON3, false);
 
-        Components.waitFor(() -> Components.popupShowing() != null, millis);
+        // The menu the wait saw: a window's focus coming back late from a closed dialog can close it again at once.
+        final JPopupMenu[] seen = new JPopupMenu[1];
 
-        return Components.popupShowing();
+        Components.waitFor(() -> (seen[0] = Components.popupShowing()) != null, millis);
+
+        return seen[0];
     }
 
     /**

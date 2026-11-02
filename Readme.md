@@ -113,6 +113,10 @@ You need S88 sensors (at least one per station) and digital switches; signals ar
 
 The track diagram shows each running train's route, the track it is holding, and where every train is standing.  While trains are stopped, you can right-click a station to place a train there.
 
+When a train is not moving, `Why not Moving?` in the autonomy editor shows where it can go, with the route it would take to each station, and why it cannot go to the others.
+
+![Why not Moving? on BR 218 at Bramley: it can go to Ashby and Carlton, both marked green with the routes to them drawn in yellow, while Thornbury, where ICE 3 is standing, is marked gray](assets/automation/08-why-not-moving.png?raw=true)
+
 You can set home stations and have TrainControl automatically route all your trains back to where they started. You can also record timetables and play them back, with the same protections as autonomous operation.
 
 <img src="assets/timetable3.png?raw=true" alt="The timetable in TrainControl: a captured sequence of journeys, played back in order" width="600">
@@ -127,7 +131,7 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 In addition to all Central Station functionality, complex logical expressions are supported.
 
-![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
+![TrainControl's route editor: each command a row of dropdowns, and its conditions in outlined groups, each with its rule written on its outline](assets/ui_route3.png?raw=true)
 
 **Keyboard**
 
@@ -404,6 +408,34 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.7 [11/02/2026]
+    - New Features
+        - Routes
+            - The route editor is rebuilt so its commands and conditions work alike: drag a row by its handle, move the selected rows with Alt+Up and Alt+Down, and remove them with the trash or the Delete key.
+            - Right-click a command or a condition to insert one above or below it, move it, duplicate it or delete it; the commands' up and down arrows are gone.
+            - Conditions sit in outlined groups whose rule, `All of these must be true` or `At least one must be true`, is written on the outline: click it to change the rule, and drag a condition into or out of a group.
+            - Under the conditions are `Add Condition`, `Group Selected` (Ctrl+G), `Ungroup` (Ctrl+Shift+G), `Split Here` (Ctrl+Shift+S), `Undo` (Ctrl+Z) and `Redo` (Ctrl+Y), and `Split Here` turns `A and B and C` into `(A and B) or C` in one click.
+            - Under the commands are `Add Command`, `Undo` and `Redo`, and Ctrl+Z and Ctrl+Y undo and redo in whichever list you are working in.
+            - `Duplicate` puts a copy of the selected commands or conditions directly below them, from the right-click menu or the copy icon beside each row's trash.
+            - The plain words reading of the conditions is above their table, and the warning that conditions are ignored without `Automatically Fire` sits on their heading.
+            - `Save` now comes before `Cancel`, the window can no longer be made narrower than its top line, `Automatically Fire` is no longer in the Tab order, and `Help` is about half as long.
+            - On the Routes tab, with the track power off, each route shows a wrench instead of its play button, and clicking it opens the route for editing; the right-click menu now starts with the route's name and ID, and `Execute Route` still runs it.
+        - Autonomy
+            - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
+            - The answers of `Test a path` and `Why not Moving?` stay until the next message, until you close them, or until you click the button again or press Escape, in a strip up to four lines tall.
+            - `Why not Moving?` names every station the train can go to, not just the first four, page by page and in alphabetical order within a page (ParkingTrack4 before ParkingTrack10), with what its colors mean at the end.
+        - Interface
+            - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with one, and items whose name says what they do have none.
+    - Bug Fixes
+        - Routes
+            - In the route editor, a value typed into a cell and not yet confirmed with Enter is now saved by `Save`, and `Cancel` or closing the window asks before throwing it away.
+            - A route with one condition now shows its `Reads as` line, and a route with none has no empty line above its conditions.
+        - Autonomy
+            - `Why not Moving?` colors a station purple only when the train could be sent there by hand, and its lines now follow the routes the train would actually take, with no stretch of track drawn twice.
+            - `Why not Moving?` and the Auto tab no longer list a station the train can go to among those it cannot go to right now.
+            - `Test a path` names each leg by the color it is drawn in, purple for a leg ending at a station only you may send a train to, where it used to say yellow or amber.
+        - Track Diagram
+            - `Save Current Track Diagram as a Picture` now asks "What diagram size do you want to save?"
 * v3.0.6 [10/30/2026]
     - New Features
         - Autonomy

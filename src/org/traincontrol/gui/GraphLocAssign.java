@@ -50,18 +50,12 @@ public class GraphLocAssign extends javax.swing.JPanel
     public static final String NONE_LABEL = "---";
 
     /**
-     * What the menu item that opens this dialog should be called for a given point.
+     * What the menu item that opens this dialog should be called for a given point.  The dialog both places and edits a
+     * locomotive, so the wording is all that separates them: an empty station must not read "Edit Locomotive".  Here
+     * rather than in the menus because two of them open this panel and must agree.
      *
-     * The dialog does two jobs, and the menu used to name only one of them: on an empty station it
-     * offers to "Edit Locomotive" when there is nothing there to edit, which reads as though something
-     * is already assigned.  Placing and editing are the same dialog, so the wording is the only thing
-     * that separates them.
-     *
-     * Here rather than in the menus because two of them open this panel, and a label chosen twice is a
-     * label that ends up different in one of them.
-     *
-     * @param p
-     * @return
+     * @param p the point the menu was opened on
+     * @return the menu text
      */
     public static String menuLabelFor(Point p)
     {
@@ -150,7 +144,7 @@ public class GraphLocAssign extends javax.swing.JPanel
      * The heading is read before the commit (which takes the train off the square that knows it) and for the train
      * arriving.  The arrival side is written after it, because `Point.setLocomotive` drops `arrivedFrom` when the
      * occupant changes; both stores, since the track walk reads the live `Point` and the setup only reaches it at the
-     * next rebuild.  The point, session and layout all come from the dialog it was built against.
+     * next rebuild.
      *
      * @param edit the dialog, already dismissed with OK
      */
@@ -167,8 +161,8 @@ public class GraphLocAssign extends javax.swing.JPanel
         org.traincontrol.automationui.TilePorts.Side heading =
             arriving == null || session == null ? null : session.facingOf(arriving, layout);
 
-        // The copy it will stand on, chosen by the rule the facing is recorded with, as the paste chooses it (OB-270).
-        // The copy is the direction: moving the train onto whichever copy the menu was opened on and then recording its
+        // The copy it will stand on, chosen by the rule the facing is recorded with, as the paste chooses it (OB-270):
+        // the copy is the direction, and moving the train onto the copy the menu was opened on and then recording its
         // old heading left a square with two copies facing opposite ways saying west while the train stood on the east
         // copy.
         if (session != null && layout != null && session.getStationIndex() != null)
@@ -263,11 +257,11 @@ public class GraphLocAssign extends javax.swing.JPanel
     /**
      * Offers the arrival side, where the square gives the operator anything to choose between (Adam: **"the missing
      * arrival side should be set - either from the data, by the user, or randomly"**, then **"proceed with this combo.
-     * Try to reuse the machinery/checks of the current popup."**).  `Layout.edgesCoveredByStandingTrains` walks back
-     * from a standing train along the side it came in by and blocks that track, so a wrong side blocks the wrong rail;
-     * a combo can afford a starting value because it is seen and corrected before OK.  Only where there is something to
-     * choose: one side is a terminus and none a square with no track, and `getArrivedFrom` then answers from the rule.
-     * Entries, wording and sides come from `ArrivalSidePrompt`, as the popup's do.
+     * Try to reuse the machinery/checks of the current popup."**).  `Layout.edgesCoveredByStandingTrains` blocks track
+     * back from the side a standing train came in by, so a wrong side blocks the wrong rail; a combo can afford a
+     * starting value because it is seen and corrected before OK.  One side is a terminus and none a square with no
+     * track, and `getArrivedFrom` then answers from the rule.  Entries, wording and sides come from
+     * `ArrivalSidePrompt`.
      */
     private void buildArrivalSide()
     {
@@ -276,10 +270,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         if (this.arrivalSides.size() < 2) return;
 
         // Sides only - there is deliberately no "---" here.  Adam: **"clearing should not be possible, only setting."**
-        // The arrived-from menu's "Not known" entry was taken out for the reason that applies here: every side the
-        // square has is offered, so a wrong answer is corrected by choosing the right one, and a blank entry only
-        // offers a way to switch the tail blocking off.  `refreshArrivalSide` guarantees one: recorded, else derived,
-        // else the first side.
+        // Every side the square has is offered, so a wrong answer is corrected by choosing the right one, and a blank
+        // entry only offers a way to switch the tail blocking off.  `refreshArrivalSide` guarantees one: recorded, else
+        // derived, else the first side.
         List<String> entries = new ArrayList<>();
 
         for (String side : this.arrivalSides)
@@ -291,9 +284,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         this.arrivedFrom.setFont(new java.awt.Font("Segoe UI", 0, 14));
 
         // Its own caption, not the menu's (Adam, OB-203): *"Change 'Train arrived from' to 'Train Arrived', and align
-        // horizontally with the other labels."*  A menu item reads as the start of a sentence its submenu finishes,
-        // "Train arrived from > north"; a label in a column of Title Case nouns reads as one of those, so they are two
-        // wordings of two things.
+        // horizontally with the other labels."*  A menu item reads as the start of a sentence its submenu finishes
+        // ("Train arrived from > north"); a label in a column of Title Case nouns reads as one of those: two wordings
+        // of two things.
         this.arrivedFromLabel = new javax.swing.JLabel(I18n.t("autolayout.ui.trainArrived"));
         this.arrivedFromLabel.setFont(new java.awt.Font("Segoe UI", 0, 14));
         // The standard's blue, not the retired one: `docs/UI-standards.md` gives minor headings 0,0,155; the 0,0,115
@@ -311,10 +304,9 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * The build's own arrival sides for this square, where there is a setup to ask.  Adam: pasting onto BottomMainPost
-     * "asks if the train arrived from the south or from the west, rather than the north or the south": the geometric
-     * answer names where the neighboring Point lies, and a reduced edge may turn corners, while the builder splits the
-     * square on the side the track actually comes in by (OB-182).
+     * The build's own arrival sides for this square, where there is a setup to ask: the geometric answer names where
+     * the neighboring Point lies and a reduced edge may turn corners, while the builder splits the square on the side
+     * the track actually comes in by (OB-182).
      *
      * @return the sides, or null when there is no setup - `choicesFor` then falls back to the geometry
      */
@@ -327,11 +319,7 @@ public class GraphLocAssign extends javax.swing.JPanel
         return this.session == null || tile == null ? null : this.session.unbarredArrivalSides(tile);
     }
 
-    /**
-     * The square this point belongs to, as the setup indexes it.
-     *
-     * @return the square, or null when there is no setup to ask
-     */
+    /** The square this point belongs to, as the setup indexes it; null when there is no setup to ask. */
     private org.traincontrol.automationui.TileGraph.TileKey square()
     {
         return this.session == null || this.session.getStationIndex() == null
@@ -341,11 +329,10 @@ public class GraphLocAssign extends javax.swing.JPanel
     /**
      * Starts the combo at the side this placement should be recorded with, from three sources in the order Adam gave
      * (*"either from the data, by the user, or randomly"*).  From the data: a train already standing here has an
-     * arrival side something watched, which re-opening the dialog must not replace with a derived one; read only when
-     * the selected locomotive is the one standing here.  From the rule, `ArrivalSidePrompt.suggestedFor`, passed
-     * `mayReverse` false on purpose: it declines to guess where trains may turn because a popup's guess is invisible,
-     * and in a form the operator sees it.  Otherwise the first side there is.  Not called when the operator has already
-     * chosen.
+     * arrival side something watched, which re-opening must not replace; read only when the selected locomotive is the
+     * one standing here.  From the rule, `ArrivalSidePrompt.suggestedFor`, with `mayReverse` false on purpose: it
+     * declines to guess where trains may turn because a popup's guess is invisible, and in a form the operator sees it.
+     * Otherwise the first side.  Not called when the operator has already chosen.
      */
     private void refreshArrivalSide()
     {
@@ -365,10 +352,8 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * Puts the combo on one side without that counting as the operator's own answer.  A side this square does not have
-     * falls back to the first one it does, since the combo has no entry for "none of these".
-     *
-     * @param side the side to show
+     * Puts the combo on one side without counting as the operator's own answer; a side this square lacks falls back to
+     * the first it has.
      */
     private void select(String side)
     {
@@ -387,11 +372,8 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * The arrival side already recorded for the train standing here, if it is the one being edited.  The setup first
-     * and the railway second, because the setup survives a restart; every writing door writes both, so this is a
-     * fallback.
-     *
-     * @return the recorded side, or null when there is none or a different locomotive is selected
+     * The arrival side already recorded for the train standing here, if it is the one being edited: the setup first,
+     * which survives a restart, then the railway.  Null when there is none or a different locomotive is selected.
      */
     private String recordedHere()
     {
@@ -408,10 +390,8 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * Which way the selected train is pointing, which is what the tail is worked out from: read for the train arriving,
-     * from the combo, as `commitAndRecord` reads the heading before it commits.
-     *
-     * @return the heading's name, or null when there is no setup or nobody has set one
+     * The heading of the selected train, which the tail is worked out from: read for the train arriving, from the
+     * combo, as `commitAndRecord` does; null when nobody has set one.
      */
     private String headingOfTheArrivingTrain()
     {
@@ -442,11 +422,8 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * Whether the operator marked this square as one trains may turn round at.  Asked of the setup, because
-     * `canReverse` never reaches the running layout (the builder expresses it by splitting the square);
-     * `TrainControlUI.mayTurnHere` asks the same for the paste door.
-     *
-     * @return true when trains may turn there
+     * Whether the operator marked this square as one trains may turn round at: asked of the setup, as `canReverse`
+     * never reaches the running layout (`TrainControlUI.mayTurnHere` asks the same for the paste door).
      */
     private boolean mayTurnHere()
     {
@@ -456,9 +433,9 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * This panel, with the arrival side under it, as the doors should show it.  The GUI-builder form has a fixed size,
-     * so the combo goes in a wrapper built here, in one place for the two doors that show this dialog.  Returns the
-     * panel itself when there is nothing to offer.
+     * This panel, with the arrival side under it, as the doors should show it: the GUI-builder form has a fixed size,
+     * so the combo goes in a wrapper built here for the two doors that show this dialog.  The panel itself when there
+     * is nothing to offer.
      *
      * @return what to hand to `showOptionDialog`
      */
@@ -495,11 +472,9 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * Indents the arrived-from row to the form's own left and right margins (OB-203), read from `arrivalFuncLabel` (its
-     * x is the container gap) and `arrivalFunc`'s right edge.  Only when the numbers have changed: setting a border
-     * revalidates the wrapper and this runs from a resize, so an unconditional set would never settle.
-     *
-     * @param row the panel holding the label and the combo
+     * Indents the arrived-from row to the form's own margins (OB-203), read from `arrivalFuncLabel` and `arrivalFunc`.
+     * Only when the numbers have changed: setting a border revalidates the wrapper and this runs from a resize, so an
+     * unconditional set would never settle.
      */
     private void lineTheRowUpWithTheForm(javax.swing.JPanel row)
     {

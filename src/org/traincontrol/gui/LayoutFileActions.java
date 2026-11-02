@@ -364,9 +364,8 @@ final class LayoutFileActions
                 writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
 
                 // Excluded before the pages are re-read, so no build sees it as a page to walk.  Only a setup that
-                // already exists: the lazy getter builds a session and saveQuietly writes setup.json, so combining on a
-                // layout without autonomy would create one.  excludeRepeatedSensorPages shuts a combined page when a
-                // setup is first created.
+                // already exists: the lazy getter would create one (and write setup.json) on a layout without
+                // autonomy; excludeRepeatedSensorPages shuts a combined page when a setup is first created.
                 org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
 
                 if (session != null)
@@ -478,9 +477,8 @@ final class LayoutFileActions
             try
             {
                 // The sequence lives in LayoutPageEdit, handed the session already built; what is above is about
-                // whether to ask at all and puts dialogs on screen.  The ORDER of a rename is where every rename defect
-                // lived, and a test could not reach it in here ("trigger a rename via the same function that the UI
-                // calls...").
+                // whether to ask at all and puts dialogs on screen.  The ORDER of a rename is where every rename
+                // defect lived, and a test could not reach it in here.
                 String currentLayout = this.ui.layoutList().getSelectedItem().toString();
 
                 // What the last run did, folded in while the naming still agrees with the store: after the rename the
@@ -663,10 +661,9 @@ final class LayoutFileActions
 
     /**
      * Fills the new page in: each source page's squares, stacked with a blank row between, written square by square
-     * because a LayoutDiagramComponent carries its own coordinates.  The copy is written from the source page before
-     * the arrows are re-aimed, so the file on disk is briefly stale; `refreshLayouts` re-reads the corrected sources
-     * and this refills the copy from them through the copy constructor, which carries `rawAddress`, so a link keeps its
-     * destination.
+     * because a LayoutDiagramComponent carries its own coordinates.  The file on disk is briefly stale (written before
+     * the arrows are re-aimed); `refreshLayouts` re-reads the corrected sources and this refills the copy from them
+     * through the copy constructor, which carries `rawAddress`, so a link keeps its destination.
      *
      * @param name the page just created
      * @param pages the source pages, the one being combined first

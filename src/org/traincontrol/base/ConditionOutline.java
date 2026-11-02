@@ -23,8 +23,8 @@ import java.util.Set;
  * "1 and (2 or 3)", read from where each word sits, without a precedence rule or a bracket.
  *
  * The one rule: EVERY WORD AT A LEVEL MUST BE THE SAME WORD.  "and" and "or" side by side at one level is a sentence
- * with two meanings; the class says so (`problems()`, drawn red by the editor) and lets the reader indent the part they
- * meant to group.
+ * with two meanings; the class says so (`problems()`, drawn red by the editor) and the reader settles it by choosing
+ * the group's rule.
  */
 public final class ConditionOutline
 {
@@ -116,7 +116,7 @@ public final class ConditionOutline
 
     /**
      * The lines whose word disagrees with the rest of its level.  The editor shows them in red rather than choosing;
-     * indenting one of the conditions settles it.
+     * choosing the group's rule settles it.
      *
      * The FIRST word at a level is taken as the one meant.  A word deeper than a condition beside it is flagged too: it
      * joins nothing at its own depth.  That is a guess about which is the mistake, but it marks one line rather than
@@ -130,9 +130,9 @@ public final class ConditionOutline
     }
 
     /**
-     * The lines `problems` flags, each with the reason (Adam: "a warning triangle icon with a tooltip explaining what's
-     * wrong").  A word deeper than a condition beside it is reported as joining nothing even where it also differs from
-     * its level's word: indenting a condition, the remedy for a disagreement, does not help it.
+     * The lines `problems` flags, each with the reason.  A word deeper than a condition beside it is reported as
+     * joining nothing even where it also differs from its level's word: choosing the group's rule, the remedy for a
+     * disagreement, does not help it.
      *
      * @return line index to reason, in the order the lines are found; empty when the outline reads
      */
@@ -299,7 +299,7 @@ public final class ConditionOutline
      *
      * A condition at the edge of its group, where the word beside it is shallower, crosses into the neighboring group
      * at its own level (OB-379): "(A and B) or (C and D)" with C moved up is "(A and B and C) or (D)".  With no group
-     * at its level across the edge it does not move: outdenting is how a condition leaves a group.
+     * at its level across the edge it does not move: a drag is how a condition leaves a group.
      *
      * @param by -1 for up, 1 for down
      * @return a new list in the new order, or a copy unchanged where there is nowhere to go
@@ -313,10 +313,160 @@ public final class ConditionOutline
         return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
     }
 
-    /** Whether a move that way changes anything; the editor draws the arrow only then. */
+    /** Whether a move that way changes anything. */
     public static boolean canMove(List<Row> rows, int line, int by)
     {
         return plan(rows, line, by) != null;
+    }
+
+    /**
+     * Moves several conditions one place together (MT-868): each by the rule of `moved`, the one leading the way first,
+     * so a run keeps its order.  Where the leading one has nowhere to go, none moves.  A selection holding a whole
+     * nested group moves by pieces instead, as a drag does: each condition or whole group one item along its own group,
+     * so no group merges into its neighbor.
+     *
+     * @param chosen line indices of the conditions; words among them are ignored
+     * @param by -1 for up, 1 for down
+     * @return a new list, or null where nothing moves
+     */
+    public static List<Row> movedTogether(List<Row> rows, java.util.Collection<Integer> chosen, int by)
+    {
+        if (rows == null || chosen == null || by == 0) return null;
+
+        Group top = groupsOf(rows);
+        List<Object> blocks = new ArrayList<>();
+
+        if (top != null) blocks(top, new java.util.HashSet<>(chosen), blocks);
+
+        for (Object block : blocks)
+        {
+            if (block instanceof Group) return movedByPieces(top, blocks, by);
+        }
+
+        List<RouteCommand> moving = new ArrayList<>();
+
+        for (int at : new java.util.TreeSet<>(chosen))
+        {
+            if (at >= 0 && at < rows.size() && !rows.get(at).isJoiner()) moving.add(rows.get(at).getCommand());
+        }
+
+        if (by > 0) java.util.Collections.reverse(moving);
+
+        List<Row> out = rows;
+
+        for (RouteCommand command : moving)
+        {
+            Move move = plan(out, lineHolding(out, command), by);
+
+            if (move == null && out == rows) return null;
+
+            if (move != null) out = move.rows;
+        }
+
+        return out == rows ? null : out;
+    }
+
+    /** Each piece one item along its own group, the leading one first; null where the leading one is at the end. */
+    private static List<Row> movedByPieces(Group top, List<Object> blocks, int by)
+    {
+        List<Object> order = new ArrayList<>(blocks);
+
+        if (by > 0) java.util.Collections.reverse(order);
+
+        boolean moved = false;
+
+        for (Object block : order)
+        {
+            Group from = block instanceof Group ? ((Group) block).parent : holderOf(top, block);
+            List<Object> items = itemsOf(from);
+            int next = items.indexOf(block) + (by < 0 ? -1 : 1);
+
+            if (next < 0 || next >= items.size() || order.contains(items.get(next)))
+            {
+                if (!moved) return null;
+
+                continue;
+            }
+
+            java.util.Collections.swap(from.elements, from.elements.indexOf(block), from.elements.indexOf(items.get(next)));
+            moved = true;
+        }
+
+        return lines(top);
+    }
+
+    /**
+     * The outline less these conditions: each, or each whole group of them, goes with one word of its own group, and a
+     * group left empty goes too, so no other group's word changes.
+     *
+     * @param conditions line indices of the conditions; words among them are ignored
+     * @return a new list
+     */
+    public static List<Row> removed(List<Row> rows, Set<Integer> conditions)
+    {
+        Group top = groupsOf(rows);
+
+        if (top == null || conditions == null || conditions.isEmpty())
+        {
+            return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+        }
+
+        List<Object> pieces = new ArrayList<>();
+
+        blocks(top, conditions, pieces);
+
+        for (Object piece : pieces)
+        {
+            // A condition standing before a group whose first line is a word, as a stored route can have it (FR-147):
+            // that word is the condition's own, and the word before it joins what stays.
+            Group from = piece instanceof Group ? null : holderOf(top, piece);
+            int at = from == null ? -1 : from.elements.indexOf(piece);
+            Object next = at >= 0 && at + 1 < from.elements.size() ? from.elements.get(at + 1) : null;
+
+            if (next instanceof Group && !((Group) next).elements.isEmpty() && isWord(((Group) next).elements.get(0)))
+            {
+                ((Group) next).elements.remove(0);
+                from.elements.remove(at);
+            }
+            else
+            {
+                cutOut(top, piece);
+            }
+        }
+
+        // A word with nothing before or after it joins nothing, as an outline that was already flagged can leave one.
+        List<Row> out = lines(top);
+
+        while (!out.isEmpty() && out.get(0).isJoiner()) out.remove(0);
+
+        while (!out.isEmpty() && out.get(out.size() - 1).isJoiner()) out.remove(out.size() - 1);
+
+        return out;
+    }
+
+    /**
+     * Takes a piece out with one word beside it, the one before first, and a group left with no condition after it.  A
+     * group whose first line is a word goes with that word alone: it joined the group to what stands before it.
+     */
+    private static void cutOut(Group top, Object piece)
+    {
+        boolean carriesItsWord = piece instanceof Group && !((Group) piece).elements.isEmpty()
+            && isWord(((Group) piece).elements.get(0));
+
+        Group from = pullOut(top, piece, !carriesItsWord);
+
+        if (from != null && from.parent != null && !from.holdsACondition()) cutOut(top, from);
+    }
+
+    /** The line holding this very condition, by identity: two lines can ask the same thing; -1 where none does. */
+    private static int lineHolding(List<Row> rows, RouteCommand command)
+    {
+        for (int at = 0; at < rows.size(); at++)
+        {
+            if (rows.get(at).getCommand() == command) return at;
+        }
+
+        return -1;
     }
 
     /** Where the condition a move takes ends up, so the editor can keep it selected. */
@@ -709,5 +859,812 @@ public final class ConditionOutline
         boolean childIsAnd = child instanceof NodeAnd;
 
         write(child, (childIsOr || childIsAnd) && childIsOr != parentIsOr ? depth + 1 : depth, into);
+    }
+
+    /**
+     * One group of an outline, as `read` finds it: the lines at one depth in one run, with every deeper run inside it
+     * a nested group one level down.  The editor draws each as an outline with its word on it (OB-396).
+     */
+    public static final class Group
+    {
+        private final int depth;
+        private final Group parent;
+
+        /** Its own lines (a `Line`) and its nested groups, in order. */
+        private final List<Object> elements = new ArrayList<>();
+
+        private int first;
+        private int last;
+
+        private Group(int depth, Group parent)
+        {
+            this.depth = depth;
+            this.parent = parent;
+        }
+
+        public int getDepth()
+        {
+            return depth;
+        }
+
+        /** @return the group this one is nested in, or null for the outermost */
+        public Group getParent()
+        {
+            return parent;
+        }
+
+        /** @return the first line of the outline it spans */
+        public int getFirst()
+        {
+            return first;
+        }
+
+        /** @return the last line of the outline it spans */
+        public int getLast()
+        {
+            return last;
+        }
+
+        /**
+         * What the group joins, in order: each condition as its line number (an Integer), each nested group that holds a
+         * condition as the Group.
+         */
+        public List<Object> getItems()
+        {
+            List<Object> out = new ArrayList<>();
+
+            for (Object element : elements)
+            {
+                if (element instanceof Group)
+                {
+                    if (((Group) element).holdsACondition()) out.add(element);
+                }
+                else if (!((Line) element).row.isJoiner())
+                {
+                    out.add(((Line) element).at);
+                }
+            }
+
+            return out;
+        }
+
+        /** @return the first word at its own level, which `whatIsWrong` takes as the one meant; null for none */
+        public Joiner getWord()
+        {
+            for (Object element : elements)
+            {
+                if (element instanceof Line && ((Line) element).row.isJoiner()) return ((Line) element).row.getJoiner();
+            }
+
+            return null;
+        }
+
+        /** @return whether a condition stands anywhere inside it */
+        public boolean holdsACondition()
+        {
+            for (Object element : elements)
+            {
+                if (element instanceof Group ? ((Group) element).holdsACondition() : !((Line) element).row.isJoiner())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /** @return the condition lines anywhere inside it, in order */
+        public List<Integer> getConditions()
+        {
+            List<Integer> out = new ArrayList<>();
+
+            for (Object element : elements)
+            {
+                if (element instanceof Group) out.addAll(((Group) element).getConditions());
+                else if (!((Line) element).row.isJoiner()) out.add(((Line) element).at);
+            }
+
+            return out;
+        }
+
+        /** @return whether every line it spans is one of these */
+        private boolean within(Set<Integer> lines)
+        {
+            List<Integer> mine = getConditions();
+
+            return !mine.isEmpty() && lines.containsAll(mine);
+        }
+    }
+
+    /** A line of the outline inside a Group, with where it stood; -1 for one an edit made. */
+    private static final class Line
+    {
+        final Row row;
+        final int at;
+
+        Line(Row row, int at)
+        {
+            this.row = row;
+            this.at = at;
+        }
+    }
+
+    /**
+     * The outline as groups, read as `toExpression` reads it, so the groups drawn are the groups meant.
+     *
+     * @return the outermost group, or null when there are no lines
+     */
+    public static Group groupsOf(List<Row> rows)
+    {
+        if (rows == null || rows.isEmpty()) return null;
+
+        int outermost = rows.get(0).getDepth();
+
+        for (Row row : rows) outermost = Math.min(outermost, row.getDepth());
+
+        return parse(rows, new int[]{0}, outermost, null);
+    }
+
+    private static Group parse(List<Row> rows, int[] at, int depth, Group parent)
+    {
+        Group group = new Group(depth, parent);
+
+        group.first = at[0];
+
+        while (at[0] < rows.size() && rows.get(at[0]).getDepth() >= depth)
+        {
+            if (rows.get(at[0]).getDepth() == depth)
+            {
+                group.elements.add(new Line(rows.get(at[0]), at[0]));
+                at[0]++;
+            }
+            else
+            {
+                group.elements.add(parse(rows, at, depth + 1, group));
+            }
+        }
+
+        group.last = at[0] - 1;
+
+        return group;
+    }
+
+    /** The lines a tree of groups stands for: each nested group one level below the one holding it. */
+    private static List<Row> lines(Group top)
+    {
+        List<Row> out = new ArrayList<>();
+
+        lines(top, top.depth, out);
+
+        return out;
+    }
+
+    private static void lines(Group group, int depth, List<Row> into)
+    {
+        for (Object element : group.elements)
+        {
+            if (element instanceof Group)
+            {
+                lines((Group) element, depth + 1, into);
+            }
+            else
+            {
+                Row row = ((Line) element).row;
+
+                into.add(row.getDepth() == depth ? row : row.atDepth(depth));
+            }
+        }
+    }
+
+    /**
+     * The innermost group holding every one of these lines.
+     *
+     * @param top the outline's groups, from `groupsOf`
+     * @return that group, or null when there is none
+     */
+    public static Group holding(Group top, Set<Integer> lines)
+    {
+        if (top == null || lines == null || lines.isEmpty()) return null;
+
+        int lowest = java.util.Collections.min(lines);
+        int highest = java.util.Collections.max(lines);
+
+        if (lowest < top.first || highest > top.last) return null;
+
+        Group at = top;
+
+        for (boolean deeper = true; deeper;)
+        {
+            deeper = false;
+
+            for (Object element : at.elements)
+            {
+                if (element instanceof Group && ((Group) element).first <= lowest && ((Group) element).last >= highest)
+                {
+                    at = (Group) element;
+                    deeper = true;
+                    break;
+                }
+            }
+        }
+
+        return at;
+    }
+
+    /** The same group in a freshly read copy of the outline, found by its depth and first line. */
+    private static Group find(Group top, Group like)
+    {
+        if (top == null || like == null) return null;
+
+        if (top.depth == like.depth && top.first == like.first && top.last == like.last) return top;
+
+        for (Object element : top.elements)
+        {
+            Group found = element instanceof Group ? find((Group) element, like) : null;
+
+            if (found != null) return found;
+        }
+
+        return null;
+    }
+
+    /** The other word: a group nested to say something its parent does not. */
+    public static Joiner opposite(Joiner word)
+    {
+        return word == Joiner.OR ? Joiner.AND : Joiner.OR;
+    }
+
+    /** A group's items joined by one word, each pair once: what a group says once its word is chosen. */
+    private static List<Object> joined(List<Object> items, Joiner word)
+    {
+        List<Object> out = new ArrayList<>();
+
+        for (Object item : items)
+        {
+            if (!out.isEmpty()) out.add(new Line(Row.joining(0, word), -1));
+
+            out.add(item);
+        }
+
+        return out;
+    }
+
+    /** A group's own items as its elements hold them: conditions as their lines, nested groups that hold one. */
+    private static List<Object> itemsOf(Group group)
+    {
+        List<Object> out = new ArrayList<>();
+
+        for (Object element : group.elements)
+        {
+            if (element instanceof Group ? ((Group) element).holdsACondition() : !((Line) element).row.isJoiner())
+            {
+                out.add(element);
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * The outline with every word of one group the given word (OB-396), each pair of its items joined once: a word
+     * nested where it joins nothing goes too, so choosing a group's word settles whatever `whatIsWrong` said of it.
+     *
+     * @param group a group of `rows`, from `groupsOf`
+     * @return a new list, or a copy unchanged where the group is not in the outline
+     */
+    public static List<Row> reworded(List<Row> rows, Group group, Joiner word)
+    {
+        Group top = groupsOf(rows);
+        Group at = find(top, group);
+
+        if (at == null) return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+
+        List<Object> items = itemsOf(at);
+
+        at.elements.clear();
+        at.elements.addAll(joined(items, word));
+
+        return lines(top);
+    }
+
+    /**
+     * What Group Selected would wrap: the run of one group's items these conditions are, two items or more and not the
+     * whole group; a nested group counts as an item when all of it is chosen.
+     *
+     * @return {the group, its first item's element, its last item's element}, or null where the lines are no such run
+     */
+    private static Object[] run(Group top, Set<Integer> chosen)
+    {
+        Group group = holding(top, chosen);
+
+        if (group == null) return null;
+
+        List<Object> items = itemsOf(group);
+        int from = -1;
+        int to = -1;
+        int covered = 0;
+
+        for (int item = 0; item < items.size(); item++)
+        {
+            Object element = items.get(item);
+            boolean all = element instanceof Group ? ((Group) element).within(chosen) : chosen.contains(((Line) element).at);
+            boolean some = element instanceof Group && !java.util.Collections.disjoint(((Group) element).getConditions(),
+                chosen);
+
+            if (!all && some) return null;
+
+            if (!all) continue;
+
+            if (from >= 0 && to != item - 1) return null;
+
+            if (from < 0) from = item;
+
+            to = item;
+            covered += element instanceof Group ? ((Group) element).getConditions().size() : 1;
+        }
+
+        if (from < 0 || to - from < 1 || to - from + 1 == items.size() || covered != chosen.size()) return null;
+
+        return new Object[]{group, items.get(from), items.get(to)};
+    }
+
+    /** Whether Group Selected applies to these condition lines (OB-396); `grouped` says what it does. */
+    public static boolean canGroup(List<Row> rows, Set<Integer> chosen)
+    {
+        return run(groupsOf(rows), chosen) != null;
+    }
+
+    /**
+     * The outline with these conditions, a run of two or more items of one group and not all of it, wrapped in a new
+     * group one level in, joined by the word that already joined them (OB-396): grouping never changes what they mean,
+     * and the new group's rule is then chosen on its caption.
+     *
+     * @param chosen condition lines
+     * @return a new list, or a copy unchanged where `canGroup` says no
+     */
+    public static List<Row> grouped(List<Row> rows, Set<Integer> chosen)
+    {
+        Group top = groupsOf(rows);
+        Object[] run = run(top, chosen);
+
+        if (run == null) return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+
+        Group group = (Group) run[0];
+        int from = group.elements.indexOf(run[1]);
+        int to = group.elements.indexOf(run[2]);
+
+        Group wrapped = new Group(group.depth + 1, group);
+        List<Object> inside = new ArrayList<>(group.elements.subList(from, to + 1));
+
+        // The first word inside the run: in "1 or 2 or 3 and 4", grouping 1 to 3 keeps "or".
+        Joiner word = null;
+
+        for (Object element : inside) if (word == null && isWord(element)) word = ((Line) element).row.getJoiner();
+
+        inside.removeIf(ConditionOutline::isWord);
+
+        group.elements.subList(from, to + 1).clear();
+        group.elements.add(from, wrapped);
+
+        wrapped.elements.addAll(joined(inside, word == null ? Joiner.AND : word));
+
+        return lines(top);
+    }
+
+    /**
+     * Where Split Here would cut (OB-396): one condition, not the first item of its group.
+     *
+     * @return {that group, the condition's element}, or null where it does not apply
+     */
+    private static Object[] cut(Group top, Set<Integer> chosen)
+    {
+        if (top == null || chosen == null || chosen.size() != 1) return null;
+
+        int line = chosen.iterator().next();
+        Group group = holderOfCondition(top, line);
+
+        if (group == null) return null;
+
+        List<Object> items = itemsOf(group);
+
+        for (int item = 1; item < items.size(); item++)
+        {
+            if (items.get(item) instanceof Line && ((Line) items.get(item)).at == line)
+            {
+                return new Object[]{group, items.get(item)};
+            }
+        }
+
+        return null;
+    }
+
+    /** Whether Split Here applies to these condition lines (OB-396); `split` says what it does. */
+    public static boolean canSplit(List<Row> rows, Set<Integer> chosen)
+    {
+        return cut(groupsOf(rows), chosen) != null;
+    }
+
+    /** The group whose own elements hold the condition on this line, or null. */
+    private static Group holderOfCondition(Group group, int line)
+    {
+        for (Object element : group.elements)
+        {
+            if (element instanceof Group)
+            {
+                Group found = holderOfCondition((Group) element, line);
+
+                if (found != null) return found;
+            }
+            else if (((Line) element).at == line && !((Line) element).row.isJoiner())
+            {
+                return group;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The outline with a group split just above one of its conditions (OB-396): the items before it are one part, it
+     * and the items after it the other, a part of two or more items a group with the group's word, a part of one item
+     * that item, and the two parts joined by the other word.  "A and B and C" split at C is "(A and B) or C".  A nested
+     * group whose parent already joins by the other word gives the parent its two parts; otherwise the group stays, its
+     * word the other one, so the meaning is exactly the two parts joined.
+     *
+     * @param chosen one condition line, not the first item of its group
+     * @return a new list, or a copy unchanged where `canSplit` says no
+     */
+    public static List<Row> split(List<Row> rows, Set<Integer> chosen)
+    {
+        Group top = groupsOf(rows);
+        Object[] cut = cut(top, chosen);
+
+        if (cut != null) return splitAt(top, (Group) cut[0], cut[1]);
+
+        return new ArrayList<>(rows == null ? new ArrayList<Row>() : rows);
+    }
+
+    /** `split` on the groups of an outline, at one of its group's items; the lines it leaves. */
+    private static List<Row> splitAt(Group top, Group group, Object item)
+    {
+        List<Object> items = itemsOf(group);
+        int at = items.indexOf(item);
+        Joiner word = group.getWord() == null ? Joiner.AND : group.getWord();
+        Joiner other = opposite(word);
+
+        List<Object> parts = new ArrayList<>();
+
+        parts.add(part(group, items.subList(0, at), word));
+        parts.add(part(group, items.subList(at, items.size()), word));
+
+        Group parent = group.parent;
+
+        if (parent != null && (parent.getWord() == null || parent.getWord() == other))
+        {
+            int place = parent.elements.indexOf(group);
+
+            parent.elements.remove(place);
+            parent.elements.addAll(place, joined(parts, other));
+        }
+        else
+        {
+            group.elements.clear();
+            group.elements.addAll(joined(parts, other));
+        }
+
+        return lines(top);
+    }
+
+    /** One part of a split: one item as it is, or several in a group of their own joined by `word`. */
+    private static Object part(Group holder, List<Object> items, Joiner word)
+    {
+        if (items.size() == 1) return items.get(0);
+
+        Group out = new Group(holder.depth + 1, holder);
+
+        out.elements.addAll(joined(new ArrayList<>(items), word));
+
+        return out;
+    }
+
+    /**
+     * The nested groups Ungroup lifts for a selection (MT-868): the group directly holding each selected condition,
+     * leaving out the top level and any group inside another of them, so a group picked by its caption is lifted whole
+     * and its own nested groups stay groups.
+     *
+     * @param chosen line indices of the selected conditions; words among them are ignored
+     * @return the groups, in order; empty where there is nothing to lift
+     */
+    public static List<Group> ungroupables(List<Row> rows, java.util.Collection<Integer> chosen)
+    {
+        List<Group> out = new ArrayList<>();
+
+        if (rows == null || chosen == null) return out;
+
+        Group top = groupsOf(rows);
+        List<Group> touched = new ArrayList<>();
+
+        for (int at : new java.util.TreeSet<>(chosen))
+        {
+            if (at < 0 || at >= rows.size() || rows.get(at).isJoiner()) continue;
+
+            Group group = holding(top, java.util.Collections.singleton(at));
+
+            if (group != null && group.parent != null && !touched.contains(group)) touched.add(group);
+        }
+
+        for (Group group : touched)
+        {
+            boolean inner = false;
+
+            for (Group up = group.parent; up != null; up = up.parent) inner |= touched.contains(up);
+
+            if (!inner) out.add(group);
+        }
+
+        return out;
+    }
+
+    /**
+     * The outline with the innermost nested group holding these lines dissolved into its parent, its items joined by
+     * the parent's word (OB-396).
+     *
+     * @param word the parent's word, which a parent of one item has nowhere to say
+     * @return a new list, or a copy unchanged where these lines are not inside a nested group
+     */
+    public static List<Row> ungrouped(List<Row> rows, Set<Integer> chosen, Joiner word)
+    {
+        Group top = groupsOf(rows);
+        Group group = holding(top, chosen);
+
+        if (group == null || group.parent == null) return rows == null ? new ArrayList<Row>() : new ArrayList<>(rows);
+
+        List<Object> into = group.parent.elements;
+        int at = into.indexOf(group);
+
+        into.remove(at);
+        into.addAll(at, joined(itemsOf(group), word));
+
+        return lines(top);
+    }
+
+    /**
+     * The outline with a condition added at the end of a group, joined by the group's word.
+     *
+     * @param group a group of `rows`, or null for the outermost
+     * @param word the group's word, which a group of one item has nowhere to say
+     * @return a new list
+     */
+    public static List<Row> appended(List<Row> rows, Group group, Joiner word, RouteCommand command)
+    {
+        Group top = groupsOf(rows);
+
+        if (top == null)
+        {
+            List<Row> out = new ArrayList<>();
+
+            out.add(Row.condition(0, command));
+
+            return out;
+        }
+
+        Group at = group == null ? top : find(top, group);
+
+        if (at == null) at = top;
+
+        if (!itemsOf(at).isEmpty()) at.elements.add(new Line(Row.joining(0, word), -1));
+
+        at.elements.add(new Line(Row.condition(0, command), -1));
+
+        return lines(top);
+    }
+
+    /**
+     * The outline with these conditions moved into a group, before its item `at` (OB-396), each joined by that group's
+     * word.  A nested group all of whose conditions move goes as one; a group they leave empty goes with its word.
+     *
+     * @param moving condition lines
+     * @param group where they go, a group of `rows`
+     * @param at which of its items they go before; its item count for the end
+     * @param word that group's word
+     * @return a new list, or null where the group is among what moves
+     */
+    public static List<Row> dropped(List<Row> rows, Set<Integer> moving, Group group, int at, Joiner word)
+    {
+        Group top = groupsOf(rows);
+        Group into = find(top, group);
+
+        if (into == null || moving == null || moving.isEmpty()) return null;
+
+        List<Object> blocks = new ArrayList<>();
+
+        blocks(top, moving, blocks);
+
+        for (Group inside = into; inside != null; inside = inside.parent)
+        {
+            if (blocks.contains(inside)) return null;
+        }
+
+        // Where they land, as the item they go before: the positions move as the blocks come out.
+        List<Object> items = itemsOf(into);
+        Object before = null;
+
+        for (int item = Math.max(0, at); item < items.size() && before == null; item++)
+        {
+            if (!blocks.contains(items.get(item))) before = items.get(item);
+        }
+
+        for (Object block : blocks) takeOut(top, block, into);
+
+        int place = before == null ? into.elements.size() : into.elements.indexOf(before);
+        List<Object> landing = joined(blocks, word);
+
+        if (before != null) landing.add(new Line(Row.joining(0, word), -1));
+        else if (!itemsOf(into).isEmpty()) landing.add(0, new Line(Row.joining(0, word), -1));
+
+        into.elements.addAll(place, landing);
+
+        return lines(top);
+    }
+
+    /**
+     * The outline with copies of these conditions directly after the last of them, as one run in their order (FR-162).
+     * The pieces are those `movedTogether` moves: a nested group all of whose conditions are chosen is copied whole,
+     * its rule and words with it.  The copies join the group holding the last piece, by its word, as a drop does.
+     *
+     * @param chosen line indices of the conditions; words among them are ignored
+     * @param word the word of the group `copiedInto` names
+     * @param copy makes each condition's copy, in order
+     * @return a new list, or null where no condition is chosen
+     */
+    public static List<Row> duplicated(List<Row> rows, Set<Integer> chosen, Joiner word,
+        java.util.function.UnaryOperator<RouteCommand> copy)
+    {
+        Group top = groupsOf(rows);
+        List<Object> pieces = top == null || chosen == null ? new ArrayList<Object>() : piecesOf(top, chosen);
+
+        if (pieces.isEmpty()) return null;
+
+        Object last = pieces.get(pieces.size() - 1);
+        Group into = holderOfPiece(top, last);
+        List<Object> copies = new ArrayList<>();
+
+        for (Object piece : pieces) copies.add(copyOf(piece, into, copy));
+
+        List<Object> landing = joined(copies, word);
+
+        landing.add(0, new Line(Row.joining(0, word), -1));
+        into.elements.addAll(into.elements.indexOf(last) + 1, landing);
+
+        return lines(top);
+    }
+
+    /**
+     * The group `duplicated` puts the copies in: the one holding the last chosen piece.
+     *
+     * @param top the outline's groups, from `groupsOf`
+     * @return that group, or null where no condition is chosen
+     */
+    public static Group copiedInto(Group top, Set<Integer> chosen)
+    {
+        List<Object> pieces = top == null || chosen == null ? new ArrayList<Object>() : piecesOf(top, chosen);
+
+        return pieces.isEmpty() ? null : holderOfPiece(top, pieces.get(pieces.size() - 1));
+    }
+
+    private static List<Object> piecesOf(Group top, Set<Integer> chosen)
+    {
+        List<Object> out = new ArrayList<>();
+
+        blocks(top, chosen, out);
+
+        return out;
+    }
+
+    private static Group holderOfPiece(Group top, Object piece)
+    {
+        return piece instanceof Group ? ((Group) piece).parent : holderOf(top, piece);
+    }
+
+    /** A piece made anew: a condition by `copy`, a group with its words and a copy of each piece inside. */
+    private static Object copyOf(Object piece, Group parent, java.util.function.UnaryOperator<RouteCommand> copy)
+    {
+        if (piece instanceof Line)
+        {
+            Row row = ((Line) piece).row;
+
+            return new Line(row.isJoiner() ? row : row.about(copy.apply(row.getCommand())), -1);
+        }
+
+        Group was = (Group) piece;
+        Group out = new Group(was.depth, parent);
+
+        for (Object element : was.elements) out.elements.add(copyOf(element, out, copy));
+
+        // A word leading the group joined it to what stood before; the copy is joined by the word put before it.
+        while (!out.elements.isEmpty() && isWord(out.elements.get(0))) out.elements.remove(0);
+
+        return out;
+    }
+
+    /** The largest pieces that move whole: a condition, or a nested group every condition of which moves. */
+    private static void blocks(Group group, Set<Integer> moving, List<Object> into)
+    {
+        for (Object element : group.elements)
+        {
+            if (element instanceof Group)
+            {
+                if (((Group) element).within(moving)) into.add(element);
+                else blocks((Group) element, moving, into);
+            }
+            else if (!((Line) element).row.isJoiner() && moving.contains(((Line) element).at))
+            {
+                into.add(element);
+            }
+        }
+    }
+
+    /** Takes a piece out of its group with one word beside it; a group left with nothing goes too, but never `keep`. */
+    private static void takeOut(Group top, Object piece, Group keep)
+    {
+        Group from = pullOut(top, piece, true);
+
+        if (from != null && from.parent != null && !holdsOrIs(from, keep)) takeOut(top, from, keep);
+    }
+
+    /**
+     * Takes a piece out of the group holding it and, when `withAWord`, one word beside it, the one before first.
+     * Returns that group, or null when no group holds the piece.
+     */
+    private static Group pullOut(Group top, Object piece, boolean withAWord)
+    {
+        Group from = piece instanceof Group ? ((Group) piece).parent : holderOf(top, piece);
+
+        if (from == null) return null;
+
+        List<Object> elements = from.elements;
+        int at = elements.indexOf(piece);
+
+        if (at < 0) return null;
+
+        elements.remove(at);
+
+        if (withAWord && at - 1 >= 0 && isWord(elements.get(at - 1))) elements.remove(at - 1);
+        else if (withAWord && at < elements.size() && isWord(elements.get(at))) elements.remove(at);
+
+        return from;
+    }
+
+    private static boolean isWord(Object element)
+    {
+        return element instanceof Line && ((Line) element).row.isJoiner();
+    }
+
+    /** Whether a group still holds a condition, or is or holds the group something is about to land in. */
+    private static boolean holdsOrIs(Group group, Group keep)
+    {
+        if (group == keep || group.holdsACondition()) return true;
+
+        for (Object element : group.elements)
+        {
+            if (element instanceof Group && holdsOrIs((Group) element, keep)) return true;
+        }
+
+        return false;
+    }
+
+    /** The group whose own elements hold this line. */
+    private static Group holderOf(Group group, Object line)
+    {
+        if (group.elements.contains(line)) return group;
+
+        for (Object element : group.elements)
+        {
+            Group found = element instanceof Group ? holderOf((Group) element, line) : null;
+
+            if (found != null) return found;
+        }
+
+        return null;
     }
 }

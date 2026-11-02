@@ -40,10 +40,10 @@ import support.WireRecorder.Sent;
 
 /**
  * Driving a train from the main window, as the operator does every session: the keys, the buttons and the sliders of
- * the keyboard tab, and what reaches the railway when they are used (FR-136 Phase 6).  Each claim acts as the
- * operator (`support.Keys`, a click, a drag, an answered dialog) and asserts both what the locomotive or accessory
- * now is and the command the control station was given (`support.WireRecorder`), so a key that changed the window
- * and sent nothing, or the wrong thing, fails.
+ * the keyboard tab, and what reaches the railway when they are used.  Each claim acts as the operator (`support.Keys`,
+ * a click, a drag, an answered dialog) and asserts both what the locomotive or accessory now is and the command the
+ * control station was given (`support.WireRecorder`), so a key that changed the window and sent nothing, or the wrong
+ * thing, fails.
  *
  * The railway is a sandbox with no Central Station: the model runs in debug, so every command it would send is
  * logged and read back, and the power is switched by packets given to `receiveMessage`.
@@ -923,12 +923,7 @@ public class testDrivingFromTheKeyboard
 
         int mark = wire.mark();
 
-        try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("layout.ui.optionProceed"))))
-        {
-            Components.press(button);
-
-            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
-        }
+        pressAnsweringWith(button, I18n.t("layout.ui.optionProceed"));
 
         assertTrue(waitFor(() -> model.getAccessoryState(address, keyboardProtocol()) == !was),
             "Proceed did not switch the accessory");
@@ -952,13 +947,7 @@ public class testDrivingFromTheKeyboard
 
         int mark = wire.mark();
 
-        try (Answering answering = Answering.start(
-            asked -> Answering.press(I18n.t("layout.ui.optionTurnPowerOnAndProceed"))))
-        {
-            Components.press(button);
-
-            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
-        }
+        pressAnsweringWith(button, I18n.t("layout.ui.optionTurnPowerOnAndProceed"));
 
         assertTrue(waitFor(() -> lastAccessory(mark, address) == (was ? 1 : 0)), "the accessory's command was not sent");
 
@@ -980,6 +969,17 @@ public class testDrivingFromTheKeyboard
         assertTrue(go < switched, "the accessory was sent before the power came on: " + sent);
     }
 
+    /** The button pressed, and the question it asks answered by pressing the named option; fails when nothing is asked. */
+    private static void pressAnsweringWith(JToggleButton button, String option) throws Exception
+    {
+        try (Answering answering = Answering.start(asked -> Answering.press(option)))
+        {
+            Components.press(button);
+
+            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the accessory button asked nothing");
+        }
+    }
+
     /** The power off, as the railway reports it, and the first accessory button. */
     private static JToggleButton powerOffAndTheFirstButton() throws Exception
     {
@@ -992,10 +992,7 @@ public class testDrivingFromTheKeyboard
         return (JToggleButton) field("SwitchButton1");
     }
 
-    /**
-     * A system packet as a Central Station sends one back, read as every packet from it is.  A stand-in for the
-     * Packets helper another worker owns.
-     */
+    /** A system packet as a Central Station sends one back, read as every packet from it is. */
     private static void fromTheRailway(int subCommand)
     {
         CS2Message command = new CS2Message(CS2Message.CMD_SYSTEM, new byte[] {0, 0, 0, 0, (byte) subCommand});
@@ -1137,8 +1134,6 @@ public class testDrivingFromTheKeyboard
     {
         return Components.waitFor(condition, WAIT);
     }
-
-    // A stand-in for the Mouse helper another worker owns
 
     /** Brings the tabs holding a component forward and waits until it is on screen with a size. */
     private static void showing(Component c)

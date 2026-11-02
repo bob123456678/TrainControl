@@ -37,12 +37,8 @@ public class testDiagramExport
     private static TrainControlUI ui;
 
     /**
-     * The operator’s railway is not this test’s to open (OB-111).
-     *
-     * Constructing the window opens whatever the saved layout preference names, which on his machine is
-     * his live layout - so this class rewrote his configuration on every battery, identical but for
-     * line endings, and left it showing as modified in git status. The sandbox points the preference
-     * at a copy of the fixture and puts it back afterwards.
+     * The operator's railway is not this test's to open (OB-111): constructing the window opens whatever the saved
+     * layout preference names, so the sandbox points it at a copy of the fixture and puts it back afterwards.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -54,11 +50,8 @@ public class testDiagramExport
             throw new SkipException("drawing tiles needs a display");
         }
 
-        // BEFORE THE MODEL, not just before the window (OB-111).
-        //
-        // MarklinControlStation.init reads the layout preference too - it is what loads the pages -
-        // so opening the sandbox after it left the model on the operator's real railway while the
-        // window looked at the copy.
+        // BEFORE THE MODEL, not just before the window (OB-111): MarklinControlStation.init reads the layout preference
+        // too, so opening the sandbox after it left the model on the operator's real railway.
         sandbox = support.LayoutSandbox.open();
 
         model = support.TestStation.simulatedInDebug();
@@ -124,30 +117,16 @@ public class testDiagramExport
     /**
      * A size beyond the maximum is brought back to the documented ceiling, not to some other size.
      *
-     * Comparing render(100000) against a second render(MAX_TILE_SIZE) call proves only that
-     * the two inputs are clamped to the SAME size, not that the size is the ceiling the constant
-     * names - a clamp mistakenly written as MAX_TILE_SIZE / 4 would move both calls together and this
-     * test would still pass. So the expected width is derived independently instead: from a render at
-     * a size well under the ceiling, scaled up by the ratio to MAX_TILE_SIZE by hand.
+     * Comparing render(100000) against a second render(MAX_TILE_SIZE) call proves only that both are clamped to the
+     * SAME size; a clamp mistakenly written as MAX_TILE_SIZE / 4 would move both calls together.
      */
     @Test
     public void testAnAbsurdSizeIsCapped() throws Exception
     {
-        // THREE RENDERS, no arithmetic, no tolerance.
-        //
-        // Comparing an absurd size against MAX alone proves nothing - both go through the clamp, so a
-        // clamp written as MAX / 4 moves them together and the test still passes.
-        //
-        // Deriving the expected width instead - render small, scale by the ratio - does not hold
-        // either: a diagram is tiles PLUS what the drawing adds that does not scale with them, so
-        // multiplying a small render by a large factor multiplies the fixed part too. It came out
-        // seven pixels wide of the real answer, and a tolerance loose enough to swallow that is loose
-        // enough to hide a genuine drift.
-        //
-        // What settles it is the SHAPE of the clamp rather than its arithmetic: an absurd size must
-        // land on the same width as the ceiling, and the ceiling must be bigger than a quarter of it.
-        // A clamp of min(size, MAX / 4) makes all three equal and fails the second comparison, which
-        // is the mutation the finding named.
+        // THREE RENDERS, no arithmetic, no tolerance: scaling a small render fails because a diagram is tiles PLUS
+        // drawing that does not scale with them.  What settles it is the SHAPE of the clamp: an absurd size must land
+        // on the same width as the ceiling, and the ceiling must be bigger than a quarter of it (min(size, MAX / 4)
+        // fails that).
         int quarter = Math.max(1, DiagramExport.MAX_TILE_SIZE / 4);
 
         int absurd = render(100000).getWidth();
@@ -234,18 +213,12 @@ public class testDiagramExport
      * draw the same thing - a shortcut that quietly exported a different page would be worse than the
      * question it removes.
      *
-     * The original body rendered `page` against itself twice - byte-identical arguments, so
-     * all it measured was that `DiagramExport.render` is deterministic. The active-page path
-     * (`TrainControlUI.java:8044`, `active.addActionListener(event ->
-     * exportDiagram(activeLayoutPage()))`) never ran.
+     * Reaching the active-page path means going through `activeLayoutPage()` itself, by reflection since it is private
+     * and the rest of `exportDiagram` is a chain of modal dialogs and a file chooser, after pointing the real selector
+     * at a page the way choosing one from the toolbar does.
      *
-     * Rebuilt to go through `activeLayoutPage()` itself - by reflection, since it is private and the
-     * rest of `exportDiagram` is a chain of modal dialogs and a file chooser no headless test can drive
-     * - after pointing the real selector at a page the way choosing one from the toolbar does.
-     *
-     * Mutation this must fail: swap the endpoints so the shortcut asks for a DIFFERENT page than the
-     * selector shows, or revert `activeLayoutPage()` to always answer the same page regardless of the
-     * selector.
+     * Mutation this must fail: swap the endpoints so the shortcut asks for a DIFFERENT page than the selector shows,
+     * or revert `activeLayoutPage()` to always answer the same page regardless of the selector.
      */
     @Test
     public void testTheActivePageDrawsTheSamePictureAsChoosingIt() throws Exception
@@ -273,9 +246,8 @@ public class testDiagramExport
 
         try
         {
-            // The real selector, pointed at the page the shortcut is supposed to notice - not the
-            // page name handed straight to exportDiagram, which would leave activeLayoutPage()
-            // itself unexercised.
+            // The real selector, pointed at the page the shortcut is supposed to notice, so activeLayoutPage() itself
+            // is exercised.
             SwingUtilities.invokeAndWait(() -> list.setSelectedItem(onScreen));
 
             // The exact private call the active-page menu item makes, on the window's Layouts menu (LayoutMenus).
@@ -290,14 +262,8 @@ public class testDiagramExport
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
                 + onScreen + " - the shortcut would export the wrong page");
 
-            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON.
-            //
-            // The assertion above has just established that `reportedActive` equals `onScreen`, so
-            // these two lookups return the same page and everything below is a determinism check on
-            // `render` - which is what this whole test was before it was rebuilt.  The
-            // check that carries the claim is the equality above; this is kept because a rendering that
-            // is NOT deterministic would make every picture comparison in this class meaningless, and
-            // that is worth one assertion somewhere.
+            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON: a determinism check on `render`, since a non-deterministic
+            // rendering would make every picture comparison in this class meaningless.
             LayoutDiagram chosenByName = model.getLayout(onScreen);
             LayoutDiagram viaShortcut = model.getLayout((String) reportedActive);
             LayoutDiagram different = model.getLayout(somethingElse);
@@ -345,41 +311,25 @@ public class testDiagramExport
     }
 
     /**
-     * The preference key the column and row numbers used to have (OB-179).
-     *
-     * A literal rather than a constant, because the constant is gone: the numbers are no longer a
-     * setting of their own, so nothing in the application names this key any more.  The VALUE is still
-     * in the operator's preferences - this project leaves a retired key's stored value where it is,
-     * for the reason `TrainControlUI` gives beside the other retired keys - and a stored `false` there
-     * is exactly what would come back to haunt somebody who had once turned the numbers off.
-     *
-     * So the test writes it, and writes the value that hid the numbers.  That is the half of
-     * this fix that a test of the grid alone would be silent about.
+     * The preference key the column and row numbers once had (OB-179).  A literal, because nothing in the application
+     * names it any more; a stored `false` under it still sits in operators' preferences and must not hide the numbers,
+     * so the test writes it.
      */
     private static final String RETIRED_COORDINATES_PREF = "ShowCoordinates";
 
     /**
      * The column and row numbers are part of the grid: on with it, off without (OB-179).
      *
-     * Adam: **"coordinates should always be on with the grid, off without, and the menu option
-     * gone."**  They were two settings joined by an `&&` - the operator's own switch AND the grid -
-     * which meant an option that had to be found before the grid could show anything, and a diagram
-     * that could have its grid on and its numbers off with nothing on screen to say why.  One switch
-     * now, and it is the grid's.
+     * Adam: **"coordinates should always be on with the grid, off without, and the menu option gone."**  One switch,
+     * and it is the grid's.  `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS; nothing covered
+     * whether anybody put one on the diagram, which is here because building a grid needs the application (a tile
+     * draws itself through the window's image cache).
      *
-     * `testTheDiagramPrintsItsCoordinates` covers what `AxisRuler` DRAWS, and it drew correctly the
-     * whole time - what nothing covered was whether anybody put one on the diagram, which is this
-     * project's own "the extracted rule is tested and the call site is not".  Here rather than in that
-     * class because building a grid needs the application: a tile draws itself through the window's
-     * image cache, and that is what this class already has.
+     * Both directions of the switch, because a test of the ON case alone passes for a grid that always carries a
+     * ruler, and BOTH WINDOWS: *"they are visible in the track diagram viewer when they shouldn't be."*  He asked for
+     * the numbers "in both autonomy editor and track diagram editor", and the viewer is neither.
      *
-     * Both directions of the switch, because a test of the ON case alone passes for a grid that always
-     * carries a ruler - and BOTH WINDOWS, because Adam's earlier report was the other half: *"they are
-     * visible in the track diagram viewer when they shouldn't be."*  He asked for the numbers "in both
-     * autonomy editor and track diagram editor", and the viewer is neither.
-     *
-     * THE RETIRED KEY IS SET TO FALSE THROUGHOUT, which is what makes this test red against the build
-     * before the fix: that build read it, so with the grid on and this value stored it drew nothing.
+     * THE RETIRED KEY IS SET TO FALSE THROUGHOUT.
      *
      * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, restoring the retired
      * preference as a second term of `coordinatesVisible`, dropping the `LayoutEditor.showGrid()` term
@@ -393,15 +343,9 @@ public class testDiagramExport
 
         assertNotNull(page, "no page to draw");
 
-        // WHETHER IT WAS STORED, not what the accessor answers.
-        //
-        // Writing the accessor's default back materializes a preference on a machine that never set
-        // one, so the operator ends up with a setting he did not choose and a later change of default
-        // cannot reach him.  The rule is stated at `testDiagramLooksRight`, in the sweep that produced
-        // it - this was one of the three sites that sweep missed.
-        //
-        // Both keys, because this test writes both: the grid's, which is the one that decides, and the
-        // retired one, which must not.
+        // WHETHER IT WAS STORED, not what the accessor answers: writing the accessor's default back materializes a
+        // preference on a machine that never set one, which a later change of default could not reach.  Both keys,
+        // because this test writes both: the grid's, which decides, and the retired one, which must not.
         boolean gridStored = TrainControlUI.getPrefs().get(TrainControlUI.EDITOR_GRID_PREF, null) != null;
 
         boolean gridWas = TrainControlUI.getPrefs().getBoolean(
@@ -464,11 +408,9 @@ public class testDiagramExport
                     + "Adam: \"they are visible in the track diagram viewer when they shouldn't be\"");
             }
 
-            // AND ON A MACHINE THAT HAS NEVER SET EITHER (Adam: "make coordinates on be default").
-            //
-            // The loop above proves the numbers follow a STORED grid setting.  What it cannot say is
-            // what a fresh install does, which is the other half of what was asked for - so both keys
-            // come out and the defaults are asked instead of a value this test wrote.
+            // AND ON A MACHINE THAT HAS NEVER SET EITHER (Adam: "make coordinates on be default"): both keys come out
+            // and the defaults are asked, since the loop above proves only that the numbers follow a STORED grid
+            // setting.
             TrainControlUI.getPrefs().remove(RETIRED_COORDINATES_PREF);
             TrainControlUI.getPrefs().remove(TrainControlUI.EDITOR_GRID_PREF);
 
@@ -502,19 +444,12 @@ public class testDiagramExport
     }
 
     /**
-     * Building a grid over a panel retires the grid that was there.
-     *
-     * Four places in the application build a `LayoutGrid` over an existing panel, and three of
-     * them called `discard()` on the outgoing one first. A grid that is not discarded keeps two timers
-     * armed, and those timers go on firing into a panel that now belongs to somebody else - the grace
-     * timer drops a spinner into the middle of the page the NEW grid has just drawn, and because the
-     * panel is a FlowLayout the extra component pushes the tiles along and the last row comes out
-     * short.
-     *
-     * `174178c5` had to add the third call and wrote the finding into its own comment: "both other
-     * places that build a grid over an existing panel call this; this one did not." Three out of four
-     * is what a rule looks like just before it is missed at the fourth, so the rule moved into the
-     * constructor and this checks it is there.
+     * Building a grid over a panel retires the grid that was there.  Four places in the application build a
+     * `LayoutGrid` over an existing panel, and three called `discard()` on the outgoing one first.  A grid that is not
+     * discarded keeps two timers armed, firing into a panel that now belongs to somebody else: the grace timer drops
+     * a spinner into the middle of the page the NEW grid has just drawn, and the extra component pushes the tiles
+     * along (FlowLayout), so the last row comes out short.  Three out of four is what a rule looks like just before it
+     * is missed at the fourth, so the rule moved into the constructor and this checks it is there.
      */
     @Test
     public void testANewGridRetiresTheOneItReplaces() throws Exception
@@ -550,20 +485,13 @@ public class testDiagramExport
 
 
     /**
-     * A replaced grid is not kept alive by the table that retires it.
+     * A replaced grid is not kept alive by the table that retires it (MT-134).  That table is a WeakHashMap keyed by
+     * the panel, which collects an entry only when nothing else reaches the KEY; a LayoutGrid reaches its own panel
+     * (it holds `container` and adds it to the parent), so while the value was the grid itself every entry kept its
+     * own key alive: one page retained per editor, popup or export, for the life of the session.
      *
-     * MT-134, third item: "write a test case for this." The table that lets a new grid retire the old
-     * one is a WeakHashMap keyed by the panel - and a WeakHashMap only collects an entry when nothing
-     * else reaches the KEY. A LayoutGrid reaches its own panel: it holds `container` and adds it to the
-     * parent. So while the value was the grid itself, every entry kept its own key alive and none was
-     * ever collected: one page retained per editor, popup or export, for the life of the session.
-     *
-     * Found in review rather than by anybody noticing, which is how a leak of this size behaves -
-     * it costs nothing anyone can see until the day it does.
-     *
-     * The collection itself is asked for rather than assumed: a bounded loop, because a garbage
-     * collector is entitled to take its time and a test that demands the first `gc()` collect is a test
-     * that fails on a fast machine for no reason.
+     * The collection is asked for in a bounded loop, since a garbage collector may take its time and a test that
+     * demands the first `gc()` collect fails on a fast machine for no reason.
      */
     @Test
     public void testAReplacedGridIsNotRetained() throws Exception
@@ -611,22 +539,14 @@ public class testDiagramExport
     /**
      * A dozen editors opened and closed leave nothing behind.
      *
-     * FR-012: "open and close the aditor a dozen times on a big layout and watch memory.  nothing to
-     * see if this is right."
+     * FR-012: "open and close the aditor a dozen times on a big layout and watch memory.  nothing to see if this is
+     * right."  A heap measurement is noise (the collector need not have run, the JIT allocates on its own account), so
+     * the exact property is asked for directly: after a dozen cycles, ELEVEN of the twelve grids must be reachable
+     * from nothing.
      *
-     * Watching memory is what a person does; it is not what a test should assert, because a heap
-     * measurement is noise - a garbage collector is under no obligation to have run, the JIT allocates
-     * on its own account, and a threshold loose enough never to fail spuriously is loose enough to miss
-     * a page or two of retained diagram. The property underneath is exact and can be asked for
-     * directly: after a dozen cycles, ELEVEN of the twelve grids must be reachable from nothing.
-     *
-     * That is the same question `testAReplacedGridIsNotRetained` above asks once. Asking it twelve
-     * times over is not redundant: the leak it found retained one page per cycle, so a single
-     * replacement is the case most likely to be fixed by accident, and a dozen is what Adam actually
-     * does with the editor.
-     *
-     * The collection is asked for in a bounded loop rather than demanded on the first `gc()`, for the
-     * reason given above: a collector is entitled to take its time.
+     * That is the question `testAReplacedGridIsNotRetained` asks once; asking it twelve times is not redundant, since
+     * the leak retained one page per cycle and a single replacement is the case most likely to be fixed by accident.
+     * The collection is asked for in a bounded loop, as there.
      */
     @Test
     public void testADozenEditorCyclesRetainNothing() throws Exception

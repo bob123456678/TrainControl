@@ -65,13 +65,7 @@ public class testPlaceAllAtTheirHomes
             model.newMM2Locomotive(HOMED_TOO, 2402);
             model.newMM2Locomotive(HOMELESS, 2403);
 
-            List<LayoutDiagram> pages = new ArrayList<>();
-
-            for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
-
-            AutonomySession session = new AutonomySession(sandbox.getFolder());
-
-            session.open(pages);
+            AutonomySession session = anOpenSession(sandbox, model);
 
             TileKey mainA = square(session, "BottomMainA");
             TileKey mainC = square(session, "BottomMainC");
@@ -144,16 +138,7 @@ public class testPlaceAllAtTheirHomes
         {
             if (model != null)
             {
-                for (String name : new String[] {HOMED, HOMED_TOO, HOMELESS})
-                {
-                    try
-                    {
-                        model.deleteLoc(name);
-                    }
-                    catch (Exception alreadyGone)
-                    {
-                    }
-                }
+                deleteTheTrains(model, HOMED, HOMED_TOO, HOMELESS);
 
                 model.stop();
             }
@@ -190,13 +175,7 @@ public class testPlaceAllAtTheirHomes
 
             model.newMM2Locomotive(TWICE, 2404);
 
-            List<LayoutDiagram> pages = new ArrayList<>();
-
-            for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
-
-            AutonomySession session = new AutonomySession(sandbox.getFolder());
-
-            session.open(pages);
+            AutonomySession session = anOpenSession(sandbox, model);
 
             String[] names = {"BottomMainA", "BottomMainB", "BottomMainC", "BottomInner"};
 
@@ -269,18 +248,42 @@ public class testPlaceAllAtTheirHomes
         {
             if (model != null)
             {
-                try
-                {
-                    model.deleteLoc(TWICE);
-                }
-                catch (Exception alreadyGone)
-                {
-                }
+                deleteTheTrains(model, TWICE);
 
                 model.stop();
             }
 
             if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** A session on the sandbox's folder with every page of the station open. */
+    private static AutonomySession anOpenSession(support.LayoutSandbox sandbox, MarklinControlStation model)
+        throws Exception
+    {
+        List<LayoutDiagram> pages = new ArrayList<>();
+
+        for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
+
+        AutonomySession session = new AutonomySession(sandbox.getFolder());
+
+        session.open(pages);
+
+        return session;
+    }
+
+    /** The locomotives taken out of the database again, those already gone left alone. */
+    private static void deleteTheTrains(MarklinControlStation model, String... names)
+    {
+        for (String name : names)
+        {
+            try
+            {
+                model.deleteLoc(name);
+            }
+            catch (Exception alreadyGone)
+            {
+            }
         }
     }
 

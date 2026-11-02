@@ -43,12 +43,11 @@ final class TrainFit
 
         if (ids.isEmpty() || ids.size() != spans.size()) return null;
 
-        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED.  The walk below spends the train's length
-        // backwards over the places and, against all zeroes, never runs out: it would claim the WHOLE approach and
-        // refuse the berth against any road sharing any part of it, a refusal invented from the absence of a
-        // measurement.  This is the room rule's own answer (`walkStandingTrains` claims nothing on an unmeasured
-        // segment) and Adam's ruling on MT-364: "a stretch is only indeterminate when ALL of it is zero".  THE BERTH'S
-        // OWN SQUARE COUNTS (OB-278): it is rail the train stands on and is spent first.
+        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED: the walk below spends the train's length
+        // backwards and, against all zeroes, never runs out, so it would refuse the berth from the absence of a
+        // measurement.  This is the room rule's own answer and Adam's ruling on MT-364: "a stretch is only
+        // indeterminate when ALL of it is zero".  THE BERTH'S OWN SQUARE COUNTS (OB-278): it is rail the train stands
+        // on and is spent first.
         boolean anyMeasured = false;
 
         for (int n = 0; n < spans.size(); n++)
@@ -81,10 +80,8 @@ final class TrainFit
         {
             claimed.add(ids.get(n));
 
-            // THE BERTH'S OWN SQUARE FIRST, and spent like the rest (OB-278): the same order and arithmetic as
-            // `walkOneTail`.  The last place is the square being arrived at (`placesAlong` orders them from the edge's
-            // start).  AN ANSWERED 0 IS NOT COUNTED AS MISSING (Adam: "stop listing answered zeros as missing"): it is
-            // read as nothing, and claimed.
+            // THE BERTH'S OWN SQUARE FIRST, and spent like the rest (OB-278), in the order and arithmetic of
+            // `walkOneTail`.  AN ANSWERED 0 IS NOT COUNTED AS MISSING: it is read as nothing, and claimed.
             if ((spans.get(n) == null || spans.get(n) <= 0) && !approach.isPlaceAnswered(ids.get(n))) unmeasured++;
 
             left -= spans.get(n) == null ? 0 : Math.max(0, spans.get(n));
@@ -145,8 +142,8 @@ final class TrainFit
         // WHAT MASS ASSIGN WOULD ASK FOR, place by place along the route (OB-297): the key of the piece, switch or
         // shared square each place lies in that the build marked as still wanting a length, or one key per edge with
         // nothing measured on it on a configuration built before the marks.  NOT THE SQUARE: a square with no length
-        // inside a measured piece is how a short piece drawn over several squares is stored, not a gap.  The note
-        // counts the way round's keys, once each.
+        // inside a measured piece is how a short piece drawn over several squares is stored.  The note counts the keys
+        // once each.
         List<String> askedAlong = new ArrayList<>();
 
         // Where each edge's places start in that list.
@@ -282,10 +279,9 @@ final class TrainFit
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key, or null (OB-297).  The build
+     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key, or null (OB-297): the build
      * marks each place in a piece, switch or shared square still wanting a length with that thing's key
-     * (`Edge.pieceToMeasure`), so the note counts exactly the editor's list; a configuration built before the marks
-     * counts each edge with nothing measured on it as one thing.
+     * (`Edge.pieceToMeasure`); a configuration built before the marks counts each unmeasured edge as one thing.
      *
      * @param index the edge's place in the route, which keys an edge of the old reading
      * @param at the place's index in the edge
@@ -363,18 +359,16 @@ final class TrainFit
             return I18n.f("autolayout.errorTrainLengthTooLong", Layout.placeNameOf(ending));
         }
 
-        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (MT-333; the loop below skips a square it only passes).  Adam:
-        // "This should only apply if lengths are specified - and edges are already locked as trains pass through in
-        // non-dynamic mode.  So it's really about implementing the same mechanic."
+        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (MT-333).  It only applies where lengths are specified; edges
+        // are already locked as trains pass through in non-dynamic mode, so this is the same mechanic.
         //
-        // ONE WALK, ASKED OF EVERY PREFIX: `measuredRoomAtTheEndOf` answers about the square a path ENDS at, so asking
-        // it of path[0..i] answers "if the train stood here, would its tail be clear of the switch behind it".  The
-        // destination is the last iteration rather than a second rule, so the two cannot disagree.
+        // ONE WALK, ASKED OF EVERY PREFIX: `measuredRoomAtTheEndOf` of path[0..i] answers "if the train stood here,
+        // would its tail be clear of the switch behind it"; the destination is the last iteration, so the two cannot
+        // disagree.
         //
-        // NULL IS NOT A REFUSAL: an unmeasured stretch answers "I cannot judge this" and is passed over; the measured
-        // stretches still bind.  THE MESSAGE NAMES THE SQUARE THAT IS SHORT, with a different message for a square on
-        // the way than for the berth, so the operator measures the right stretch.  Copied into an ArrayList: `subList`
-        // is asked for `path.size()` times and callers hand in linked lists.
+        // NULL IS NOT A REFUSAL: an unmeasured stretch answers "I cannot judge this" and is passed over.  THE MESSAGE
+        // NAMES THE SQUARE THAT IS SHORT, so the operator measures the right stretch.  Copied into an ArrayList:
+        // `subList` is asked for `path.size()` times and callers hand in linked lists.
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         List<Edge> ordered = new java.util.ArrayList<>(path);
@@ -391,24 +385,19 @@ final class TrainFit
             // hanging off the measured track.
             boolean comesToRest = berth || (here != null && here.isReversing());
 
-            // A SQUARE THE TRAIN ONLY PASSES IS NOT JUDGED (MT-333): a train passing a square does not stand there.
-            // What is judged is where a train comes to rest: the destination, and a square it turns round at.
+            // A SQUARE THE TRAIN ONLY PASSES IS NOT JUDGED (MT-333): what is judged is where a train comes to rest.
             if (!comesToRest) continue;
 
             Integer room = measuredRoomAtTheEndOf(ordered.subList(0, i + 1), loc);
 
             if (room == null || loc.getTrainLength() <= room) continue;
 
-            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN ITS MEASURED ROUTE IN HOLDS (FR-087).  The kind of square
-            // decides, because of how long the train stays: at a station autonomy may choose a train is PASSING,
-            // standing across the points only until its next route, a cost accepted at a platform and refused at a
-            // parking berth, where a train is STAYING.  `whyABerthCannotHoldIt` is the other half.
-            //
-            // Safety is not what changed: a standing train's tail claims the places it lies on and `isPathClear`
-            // refuses any route over them (OB-207), so this spends only the ability of OTHER trains to get past.  It
-            // only ever ALLOWS: the room rule above has already refused, and the bound is the measured route in, never
-            // back past a turn.  A train that turns round at the destination is deliberately not excluded.
-            // `isAutoDestination` is "Can Be Chosen In Full Autonomy".
+            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN ITS MEASURED ROUTE IN HOLDS (FR-087).  At a station
+            // autonomy may choose a train is PASSING, standing across the points only until its next route, a cost
+            // accepted at a platform and refused at a parking berth, where a train is STAYING.  Safety is not what
+            // changed: a standing train's tail claims the places it lies on and `isPathClear` refuses any route over
+            // them (OB-207).  It only ever ALLOWS: the room rule above has already refused, and the bound is the
+            // measured route in, never back past a turn.  `whyABerthCannotHoldIt` is the other half.
             if (berth && Layout.theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc))
             {
                 continue;
@@ -438,12 +427,10 @@ final class TrainFit
         if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         if (path == null || path.isEmpty()) return null;
-        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE (Adam: "between the switch and the station, the length
-        // must be >= length of the train", and for the direction over the points "let's use any direction, that way we
-        // are guaranteed to be safe").  So this walks the route BACKWARDS and stops at the first edge that crosses a
-        // switch, adding only the part of that edge after it.  The last switch binds: a train that fits between it and
-        // the station fits between any earlier switch and the station too.  An unmeasured edge still answers null (this
-        // guard acts on measurements, not their absence); only the edges it counts are asked.
+        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE: between the switch and the station the length must be
+        // >= the length of the train, in any direction over the points, to be safe.  So this walks the route BACKWARDS
+        // and stops at the first edge that crosses a switch, adding only the part of that edge after it.  An unmeasured
+        // edge still answers null (this guard acts on measurements, not their absence).
         int room = 0;
 
         // WHETHER ANY MEASURED TRACK WAS COUNTED: a room of 0 answered on purpose is a room, not an unknown (Adam: "We
@@ -454,14 +441,11 @@ final class TrainFit
         {
             Edge segment = path.get(i);
 
-            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does (Adam: "it can be either the reversal or the
-            // berth, depending on where switches are.  both need to be long enough.").  So BOTH bounds apply, each over
-            // its own stretch, and this is the first: a train that turns part way along comes to rest on the track
-            // after the turn only.  The second is at the turn itself, in `whyTooLongForThisRoute`, which judges a
-            // reversing square as it judges a berth (`core.testNonReversibleTrains` carries his figures and verdict).
-            // The END of this segment is where the train turned.  The last edge of whatever list is handed in is
-            // exempt, because its end is the square being asked about; that holds for a prefix as well as a whole
-            // route.  ANY reversing point counts: it turns every locomotive.
+            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does: a train that turns part way along comes to rest
+            // on the track after the turn only, and both the reversal and the berth need to be long enough.  The second
+            // bound is at the turn itself, in `whyTooLongForThisRoute` (`core.testNonReversibleTrains` carries the
+            // figures).  The last edge of whatever list is handed in is exempt, because its end is the square being
+            // asked about.  ANY reversing point counts.
             if (i < path.size() - 1 && segment.getEnd() != null && segment.getEnd().isReversing())
             {
                 return counted ? room : null;
@@ -469,10 +453,9 @@ final class TrainFit
 
             if (segment.crossesASwitch())
             {
-                // BOUNDED BUT UNMEASURED (-1), and what has already been counted still stands (Adam: "Generally, allow
-                // it.").  Two units of measured berth already prove a four-unit train does not fit; an unmeasured
-                // stretch behind them cannot unprove it.  `room > 0` separates the halves of the ruling: nothing
-                // measured at all is no evidence either way.
+                // BOUNDED BUT UNMEASURED (-1), and what has already been counted still stands: two units of measured
+                // berth prove a four-unit train does not fit; an unmeasured stretch behind them cannot unprove it.
+                // `room > 0` separates the halves of the ruling.
                 if (segment.getRoomAtTheEnd() < 0)
                 {
                     // THE SEGMENT BOUNDS THE STRETCH INSIDE IT: the room that matters is the track after the last

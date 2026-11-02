@@ -21,14 +21,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Selection process is ok.").
  *
  * A station may be reachable from each end, so it may be protected by a signal on each approach.  They are commanded
- * together and show the same aspect, because a platform guarded at one end and open at the other is worse than one
- * guarded at neither: it looks protected.
+ * together and show the same aspect, because a platform guarded at one end and open at the other looks protected.
  *
- * This is at the layout rather than in the editor because every link of the chain handles several (the store keeps a
- * list, `fromJSON` reads both shapes back, the aspect is memoized per ACCESSORY rather than per Point), and what no
- * test covered was the end of the chain actually being reached for more than one.  `refreshAllProtectingSignals` is
- * public and asks each signal directly, without the "only while running" guard of the per-occupancy path, so this needs
- * no trains and no hardware.
+ * Asserted at the layout, not the editor: every link of the chain handles several (the store keeps a list, `fromJSON`
+ * reads both shapes back, the aspect is memoized per ACCESSORY rather than per Point).  `refreshAllProtectingSignals`
+ * is public and asks each signal directly, without the "only while running" guard, so this needs no trains and no
+ * hardware.
  *
  * @author Adam
  */
@@ -113,10 +111,9 @@ public class testBothProtectingSignalsAreThrown
     /**
      * Deleting a locomotive takes it off the railway, not just out of the lists.
      *
-     * `locDeleted` sweeps six things (the run list, the active locomotives, the milestones, each Point's exclusions,
-     * each Point's home, and the home claims) but not the locomotive STANDING on a Point.  The square then stays
-     * occupied by a train that no longer exists, and `Point.toJSON` writes the name back out, so the next load reports
-     * a locomotive that is not in the database and **invalidates the whole configuration**.
+     * `locDeleted` sweeps six things but not the locomotive STANDING on a Point: the square would stay occupied by a
+     * train that no longer exists, and `Point.toJSON` writes the name back out, so the next load would **invalidate
+     * the whole configuration**.
      */
     @Test
     public void testDeletingALocomotiveTakesItOffThePointItStandsOn() throws Exception
@@ -149,40 +146,25 @@ public class testBothProtectingSignalsAreThrown
     /**
      * Protection re-asserts after something else has moved the signal.
      *
-     * `TilePorts` gives a SIGNAL tile a GREEN configuration command, so a path configured across one commands it green
-     * through `getConfigCommands`, and `configureAndLockPath` does that AFTER reserving the point: the same
-     * `Accessory`, driven behind protection's back.  `signalAspects` remembers what protection last COMMANDED rather
-     * than what the signal is showing, so it then sends nothing, and the signal stays green over an occupied platform
-     * until the train leaves.
+     * `configureAndLockPath` drives the signal's `Accessory` behind protection's back, and `signalAspects` remembers
+     * what protection last COMMANDED, not what the signal shows: it would send nothing and the signal would stay green
+     * over an occupied platform.
      *
      * **What this test does NOT assert.**  Adam's ruling: "This shouldn't happen. The protecting signal is at the
      * destination, so the destination shouldn't be in the middle. If a train just passes through (legally, i.e. there
      * is no lock edge preventing it), then you would set the signal to green and set the destination's to red (if
-     * any)."  So which aspect "wins" is not a question the railway is asked; this asserts only that protection may not
-     * be SILENTLY SKIPPED because of something it remembers.
+     * any)."  So which aspect "wins" is not asked; only that protection may not be SILENTLY SKIPPED because of
+     * something it remembers.
      *
-     * The memo is still wanted: it keeps `configureAndLockPath` from putting a burst of accessory traffic under the
-     * layout monitor.  It just may not be the only thing asked, and the accessory's own state is the one record that
-     * cannot go stale behind somebody's back.
-     *
-     * Two platforms share one signal so that both triggers see the square CLAIMED.  With one platform the clearing
-     * transition would write the memo false in between and the second command would be sent for the ordinary reason.
+     * Two platforms share one signal so that both triggers see the square CLAIMED; with one, the clearing transition
+     * would write the memo false in between and the second command would be sent for the ordinary reason.
      */
     @Test
     public void testProtectionReassertsAfterSomethingElseMovesTheSignal() throws Exception
     {
-        for (int address : new int[]{47423, 47424, 47425, 47426})
-        {
-            if (!model.isFeedbackSet(Integer.toString(address))) model.newFeedback(address, null);
+        clearFeedbacks("47423", "47424", "47425", "47426");
 
-            model.setFeedbackState(Integer.toString(address), false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("MP A", true, "47423");
         layout.createPoint("MP B", true, "47424");
@@ -192,8 +174,7 @@ public class testBothProtectingSignalsAreThrown
         layout.getPoint("MP P").setProtectingSignal(near.getName());
         layout.getPoint("MP Q").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("MP A", "MP B"));
+        List<Edge> path = createEdgesAlong(layout, "MP A", "MP B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
         Locomotive first = model.getLocByName(model.getLocList().get(1));
@@ -230,9 +211,8 @@ public class testBothProtectingSignalsAreThrown
             // and no word to the protection that is holding it red.
             near.setState(Accessory.accessorySetting.GREEN);
 
-            // Any later occupancy change asks again. Both platforms behind this signal are claimed,
-            // so the answer has not changed - and a signal showing the wrong aspect must still be
-            // commanded.
+            // Any later occupancy change asks again.  Both platforms are claimed, so the answer has not changed, but a
+            // signal showing the wrong aspect must still be commanded.
             layout.getPoint("MP Q").setLocomotive(second);
 
             protectedAfter.set(near.isSwitched());
@@ -260,31 +240,19 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A dispatch does not touch a signal it has nothing to do with (OB-166).
      *
-     * Adam: "when sending a train from bottominnerotherside to bottominner, signal 64 goes from red to green
-     * unnecessarily."  And his ruling on it: "Signals should only be touched when a route activates."
-     *
-     * What moved it was the sweep: `refreshAllProtectingSignals` re-commanding every protecting signal from current
-     * occupancy the first time anything is dispatched by hand, and an empty platform is commanded GREEN.  The platform
-     * here is EMPTY and the signal is RED, the state a route leaves behind; a dispatch between two other points is not
-     * a route activating over this signal, so nothing may command it.
+     * Adam: "Signals should only be touched when a route activates."  The sweep, `refreshAllProtectingSignals`,
+     * re-commanded every protecting signal from current occupancy at the first hand dispatch.  Here the platform is
+     * EMPTY and the signal RED, as a route leaves it; a dispatch between two other points is not a route activating
+     * over this signal, so nothing may command it.
      *
      * MUTATION: putting any of the three refreshAllProtectingSignals() calls back fails this.
      */
     @Test
     public void testADispatchLeavesAnUnrelatedSignalAlone() throws Exception
     {
-        for (String feedback : new String[] {"47451", "47452", "47453"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47451", "47452", "47453");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("UN A", true, "47451");
         layout.createPoint("UN B", true, "47452");
@@ -293,8 +261,7 @@ public class testBothProtectingSignalsAreThrown
         // The protected platform has nothing to do with the dispatch, and nobody is standing on it.
         layout.getPoint("UN P").setProtectingSignal(far.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("UN A", "UN B"));
+        List<Edge> path = createEdgesAlong(layout, "UN A", "UN B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
 
@@ -321,33 +288,19 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train passing a station leaves that station's guards alone (OB-315).
      *
-     * Adam: *"I think the root cause for the last two is that the exit guard signals are applied for more than just the
-     * arrival station."*  An exit guard was red while its platform was claimed, and a locked path claims every station
-     * along it, so each station a train only passed turned its exit guard red until the path let it go.  The entry
-     * guard (*"check if the same issue applies to the entry guards, not just exit"*) is thrown only where a journey
-     * ends, so a passing train leaves it alone; asserted here beside the exit guard.
-     *
-     * Watched through the whole run, because the red a passing train left lasted only while the path held the station.
+     * A locked path claims every station along it and an exit guard is red while its platform is claimed, so each
+     * station a train only passed turned its exit guard red until the path let go (Adam: *"the exit guard signals are
+     * applied for more than just the arrival station."*).  The entry guard is thrown only where a journey ends;
+     * asserted here beside the exit guard.
      *
      * MUTATION: let a reservation by a passing train count again, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testAPassingTrainLeavesAStationsGuardsAlone() throws Exception
     {
-        for (String feedback : new String[] {"47461", "47462", "47463"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47461", "47462", "47463");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         // A, then M, a station the train only passes, then B where it stops
         layout.createPoint("PT A", true, "47461");
@@ -357,9 +310,7 @@ public class testBothProtectingSignalsAreThrown
         layout.getPoint("PT M").setProtectingSignal(near.getName());
         layout.getPoint("PT M").setEntrySignals(java.util.Collections.singletonList(far.getName()));
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("PT A", "PT M"));
-        path.add(layout.createEdge("PT M", "PT B"));
+        List<Edge> path = createEdgesAlong(layout, "PT A", "PT M", "PT B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
 
@@ -421,15 +372,12 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A station a train only passes reads as passed while the train hands over from its claim to its journey.
      *
-     * The hand-over writes the journey and then takes the claim away.  The guard's rule must read the claims first
-     * (`pathHeldBy`), or a refresh whose two reads straddle the hand-over finds the train in neither, reads it as
-     * standing at the station it was passing, and turns that exit guard red for the whole passage (OB-315's symptom, by
-     * a race).  The straddle is made certain: the claim taken, and a journeys' map whose read by this thread performs
-     * the hand-over itself, after the value is read.
+     * The hand-over writes the journey and then takes the claim away, so the guard's rule must read the claims first
+     * (`pathHeldBy`): a refresh whose two reads straddle the hand-over would find the train in neither and turn that
+     * exit guard red for the whole passage (OB-315's symptom, by a race).  The straddle is made certain by a journeys'
+     * map whose read performs the hand-over itself.
      *
      * MUTATION: read the journey first again, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testAPassedStationReadsAsPassedAcrossTheHandOver() throws Exception
@@ -445,9 +393,7 @@ public class testBothProtectingSignalsAreThrown
         layout.createPoint("HO M", true, "47465");
         layout.createPoint("HO B", true, "47466");
 
-        final List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("HO A", "HO M"));
-        path.add(layout.createEdge("HO M", "HO B"));
+        final List<Edge> path = createEdgesAlong(layout, "HO A", "HO M", "HO B");
 
         final Locomotive train = model.getLocByName(model.getLocList().get(0));
 
@@ -510,34 +456,20 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A hand dispatch does NOT touch the signal of a train standing elsewhere (OB-166).
      *
-     * The test next door covers the DESTINATION of the dispatched train; this one is about a train nobody dispatched.
-     * While nothing is running the protection refresh is deliberately silent (driving real signals from a setup gesture
-     * is what that silence prevents), so a train placed at a protected platform while idle produces NO occupancy change
-     * and nothing commands that platform's signal on its own.
-     *
-     * A hand dispatch leaves a standing train's signal alone (Adam: "Signals should only be touched when a route
-     * activates."), and the sweep is off all three doors.
+     * While nothing is running the protection refresh is deliberately silent, so a train placed at a protected platform
+     * while idle produces no occupancy change and nothing commands its signal.  The test next door covers the
+     * dispatched train's destination; the sweep is off all three doors.
      *
      * MUTATION: putting the `refreshAllProtectingSignals()` call back into `executePath` fails this test.
      */
     @Test
     public void testAHandDispatchLeavesAStandingTrainsSignalAlone() throws Exception
     {
-        // Its OWN addresses: 47431-47433 are testAThrowWhileLockingReleasesTheTrack's, and a simulated dispatch clears
-        // its feedback from a DETACHED thread, so on a loaded machine the clear may not have landed when the sibling
-        // ran.
-        for (String feedback : new String[] {"47441", "47442", "47443"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        // Its OWN addresses: a simulated dispatch clears its feedback from a DETACHED thread, so a sibling's addresses
+        // (47431-47433) may not be clear yet.
+        clearFeedbacks("47441", "47442", "47443");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         // The two the dispatch runs between, and a third where somebody is already standing.
         layout.createPoint("HD A", true, "47441");
@@ -548,8 +480,7 @@ public class testBothProtectingSignalsAreThrown
         // account for the signal moving.
         layout.getPoint("HD P").setProtectingSignal(far.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("HD A", "HD B"));
+        List<Edge> path = createEdgesAlong(layout, "HD A", "HD B");
 
         Locomotive driving = model.getLocByName(model.getLocList().get(0));
         Locomotive standing = model.getLocByName(model.getLocList().get(1));
@@ -563,8 +494,7 @@ public class testBothProtectingSignalsAreThrown
         assertTrue(layout.moveLocomotive(standing.getName(), "HD P", false),
             "precondition - somebody must be standing at the protected platform");
 
-        // Placed by hand while idle, so the signal has NOT been commanded - that silence is the
-        // behavior the sweep exists to compensate for, and asserting it here is what stops this test
+        // Placed by hand while idle, so the signal has NOT been commanded: asserting that silence stops this test
         // passing for the wrong reason.
         far.setState(Accessory.accessorySetting.GREEN);
 
@@ -575,10 +505,8 @@ public class testBothProtectingSignalsAreThrown
         assertTrue(layout.executePath(path, driving, 30, null),
             "the hand dispatch did not complete, so nothing below tests anything");
 
-        // NOT PROTECTED (Adam: "Signals should only be touched when a route activates."): the sweep that made this true
-        // also RELEASED, commanding every empty protected platform green, so a hand dispatch drove signals a route had
-        // set (OB-166).  A train placed by hand at a protected platform keeps whatever aspect its signal already showed
-        // until a route activates over it.
+        // NOT PROTECTED: a train placed by hand at a protected platform keeps the aspect its signal showed until a
+        // route activates over it (OB-166).
         assertFalse(far.isSwitched(),
             "a dispatch between two other points commanded the signal of a platform it has nothing "
             + "to do with - which is the sweep coming back");
@@ -594,15 +522,10 @@ public class testBothProtectingSignalsAreThrown
      * Adam's ruling: "The same thing should happen in manual operation vs auto - the same switches and signals set, and
      * guards applied."
      *
-     * `refreshProtectingSignal` returns unless `isRunning()`, and a hand dispatch from the diagram's right-click menu
-     * is a bare `new Thread` straight into `executePath`: it never touches `locomotiveThreads`, and `activeLocomotives`
-     * is written AFTER `configureAndLockPath` has reserved every point on the route.  So during the one phase that
-     * matters none of isRunning()'s three terms is true and the destination's signal is never commanded; it closes only
-     * when the train itself claims the destination.
-     *
-     * The guard's comment records the defect it exists for - "cutting a locomotive off a platform with Control+X drove
-     * its protecting signals on the spot, which is hardware moving in response to a setup gesture" - which must stay
-     * fixed; the distinction is "is a train under way", not "is autonomy running".
+     * `refreshProtectingSignal` returns unless `isRunning()`, and a hand dispatch never touches `locomotiveThreads`,
+     * with `activeLocomotives` written AFTER `configureAndLockPath` has reserved every point.  So during the phase that
+     * matters none of isRunning()'s three terms is true and the destination's signal is never commanded.  The guard
+     * stays (hand-setup gestures must not drive hardware): the distinction is "is a train under way".
      *
      * **Observed from the start callback**, which fires right after the path is locked: isRunning() has become true but
      * nothing asks the destination again, so the callback sees the aspect chosen when the path was locked.
@@ -612,25 +535,16 @@ public class testBothProtectingSignalsAreThrown
     {
         // Created before they are set: setFeedbackState refuses a feedback the station has never
         // heard of, and 47421/47422 are this class's own - testAutonomySimulationSanity has 47411/2.
-        if (!model.isFeedbackSet("47421")) model.newFeedback(47421, null);
-        if (!model.isFeedbackSet("47422")) model.newFeedback(47422, null);
+        clearFeedbacks("47421", "47422");
 
-        model.setFeedbackState("47421", false);
-        model.setFeedbackState("47422", false);
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("MD A", true, "47421");
         layout.createPoint("MD B", true, "47422");
 
         layout.getPoint("MD B").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("MD A", "MD B"));
+        List<Edge> path = createEdgesAlong(layout, "MD A", "MD B");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
@@ -666,50 +580,36 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A dispatch that is TURNED AWAY leaves the signals alone.
      *
-     * The sweep ran at the very top of `executePath`, before the eight checks that can refuse a dispatch, so asking for
-     * a bad one (a speed out of range, an empty path, a train that is not at the start, one already running) commanded
-     * every protecting signal on the way to being told no, and they stayed: the per-occupancy refresh is silent while
-     * nothing runs.  The railway is not commanded while the operator is still deciding what it should look like, and a
-     * refusal is that moment.
+     * The sweep must not run before the checks that can refuse a dispatch (a speed out of range, an empty path, a train
+     * not at the start, one already running): the railway is not commanded while the operator is still deciding, and
+     * the per-occupancy refresh is silent while nothing runs, so signals commanded on the way to a refusal would stay.
+     * Speed zero is the refusal used: the earliest one, needing no fixture (`errorInvalidSpeed`, before anything is
+     * locked or reserved).
      *
-     * Speed zero is the refusal used because it is the earliest one that needs no fixture of its own
-     * (`errorInvalidSpeed`, before anything is locked or reserved).
-     *
-     * MUTATION: moving `refreshAllProtectingSignals()` back above the checks in `executePath` - which
-     * is where it was - fails this test.
+     * MUTATION: moving `refreshAllProtectingSignals()` back above the checks in `executePath` fails this test.
      */
     @Test
     public void testARefusedDispatchCommandsNothing() throws Exception
     {
-        if (!model.isFeedbackSet("47425")) model.newFeedback(47425, null);
-        if (!model.isFeedbackSet("47426")) model.newFeedback(47426, null);
+        clearFeedbacks("47425", "47426");
 
-        model.setFeedbackState("47425", false);
-        model.setFeedbackState("47426", false);
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("RD A", true, "47425");
         layout.createPoint("RD B", true, "47426");
 
         layout.getPoint("RD B").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("RD A", "RD B"));
+        List<Edge> path = createEdgesAlong(layout, "RD A", "RD B");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
         assertTrue(layout.moveLocomotive(loc.getName(), "RD A", false),
             "precondition - the locomotive must be placed at the start");
 
-        // A train standing at the protected platform, so the sweep would have something to say: with
-        // the platform empty it would command GREEN, which is already the aspect, and refreshOneSignal
-        // sends nothing when the aspect does not change.  This test would then pass with the defect
-        // present, which is the shape of vacuous test this suite keeps finding.
+        // A train standing at the protected platform, so the sweep would have something to say: with the platform empty
+        // it would command GREEN, already the aspect, and nothing is sent, so the test would pass with the defect
+        // present.
         layout.getPoint("RD B").setLocomotive(loc);
 
         near.setState(Accessory.accessorySetting.GREEN);
@@ -740,19 +640,12 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A failure while LOCKING a path releases what it has taken.
      *
-     * A THROWN failure of `configureAndLockPath` escaped the lock loop into `executePath`'s catch, whose comment says
-     * why it deliberately does not unlock: "The locomotive may be physically standing on those edges, and releasing
-     * them would let another train be routed into occupied track."  That is true of a failure MID-RUN and false of a
-     * failure while locking: `loc.setSpeed(speed)` is not issued until `configureAndLockPath` has returned, so the
-     * train has not moved.
+     * A THROWN failure of `configureAndLockPath` escapes into `executePath`'s catch, which deliberately does not unlock
+     * (the locomotive may be standing on those edges): true of a failure MID-RUN, false while locking, as the train
+     * has not moved.  Otherwise every edge taken so far stays occupied, refused to every train, and `pickPath` can
+     * configure a whole route for a departure from a station the train is not at.
      *
-     * Left behind otherwise, and never cleared: every edge taken so far stays occupied with its lock edges, so that
-     * track is refused to every train; and `reserve` has put the locomotive on those Points without sweeping, so
-     * `pickPath` can take a mid-path Point it is not standing on and configure a whole route for a departure from a
-     * station the train is not at.
-     *
-     * The throw is injected rather than provoked: `configureEdge` reaches `setSwitched`, which calls into Swing and
-     * then the network, and neither can be made to fail on demand.  What matters is what is left behind when one does.
+     * The throw is injected: `configureEdge` reaches `setSwitched`, which calls into Swing and the network.
      */
     @Test
     public void testAThrowWhileLockingReleasesTheTrack() throws Exception
@@ -775,9 +668,8 @@ public class testBothProtectingSignalsAreThrown
 
         Edge first = layout.createEdge("LK A", "LK B");
 
-        // The second edge fails the moment the path tries to set it up, after the first has been locked and this one's
-        // Point reserved.  Not on the FIRST ask: `isPathClear` previews the configuration of every edge before anything
-        // is locked, so an unconditional throw lands there with nothing taken and nothing to leave behind.
+        // The second edge fails when the path sets it up, after the first is locked and this one's Point reserved.  Not
+        // on the FIRST ask: `isPathClear` previews every edge before anything is locked, leaving nothing to check.
         final java.util.concurrent.atomic.AtomicInteger asked =
             new java.util.concurrent.atomic.AtomicInteger();
 
@@ -847,13 +739,9 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train that arrives at a station as the end of its journey throws the station's entry guard red (FR-096).
      *
-     * Adam: *"a signal that turns red after arrival at the final designation"*, and *"The next route sets it green, so
-     * that is out of scope."*
-     *
-     * Through a real hand dispatch, as `testAHandDispatchedTrainProtectsItsDestination` above is: the claim is about
-     * the call in `executePath` where the arrival is recorded, not about the method it calls.
-     *
-     * @throws Exception from the run
+     * Adam: *"a signal that turns red after arrival at the final designation"*.  Through a real hand dispatch, as
+     * `testAHandDispatchedTrainProtectsItsDestination`: the claim is about the call in `executePath` where the arrival
+     * is recorded.
      */
     @Test
     public void testAnEntryGuardGoesRedWhenATrainArrivesThere() throws Exception
@@ -868,8 +756,7 @@ public class testBothProtectingSignalsAreThrown
 
         assertTrue(layout.moveLocomotive(loc.getName(), "EG A", false), "precondition - the train must start at A");
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("EG A", "EG B"));
+        List<Edge> path = edgesAlong(layout, "EG A", "EG B");
 
         try
         {
@@ -885,12 +772,9 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train that only PASSES a station leaves its entry guard alone - and throws the one at the station it stops at.
-     *
-     * "Final destination" is the end of the journey (FR-096).  The second half is the control: without it a guard that
-     * never threw anything at all would pass the first.
-     *
-     * @throws Exception from the run
+     * A train that only PASSES a station leaves its entry guard alone, and throws the one at the station it stops at
+     * (FR-096: "final destination" is the end of the journey).  The second half is the control: a guard that never
+     * threw anything would pass the first.
      */
     @Test
     public void testATrainPassingThroughLeavesTheEntryGuardAlone() throws Exception
@@ -907,9 +791,7 @@ public class testBothProtectingSignalsAreThrown
 
         assertTrue(layout.moveLocomotive(loc.getName(), "EG A", false), "precondition - the train must start at A");
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("EG A", "EG B"));
-        path.add(layout.getEdge("EG B", "EG C"));
+        List<Edge> path = edgesAlong(layout, "EG A", "EG B", "EG C");
 
         try
         {
@@ -958,23 +840,12 @@ public class testBothProtectingSignalsAreThrown
             "the entry guard was read into the protecting signals - two lists that are thrown at different moments");
     }
 
-    /**
-     * A line A - B - C, this class's own feedbacks 47461-47463, simulated and with no delays.
-     */
+    /** A line A - B - C, this class's own feedbacks 47461-47463, simulated and with no delays. */
     private Layout entryGuardLine() throws Exception
     {
-        for (String feedback : new String[] {"47461", "47462", "47463"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47461", "47462", "47463");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        Layout layout = instantLayout();
 
         layout.createPoint("EG A", true, "47461");
         layout.createPoint("EG B", true, "47462");
@@ -992,17 +863,14 @@ public class testBothProtectingSignalsAreThrown
      * A train leaving a terminus is let past its exit guard (OB-340).
      *
      * Adam: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped by that
-     * guard would remain stuck."*  No route out commands this guard - it stands on the station's own track - and the
-     * journey setting off still claims the platform, so protection held the guard red over the train meant to leave.
-     * The first edge out now sets it GREEN with its own accessories, and holds it as it holds them.
+     * guard would remain stuck."*  No route out commands this guard and the journey setting off still claims the
+     * platform, so protection would hold it red; the first edge out sets it GREEN with its own accessories and holds
+     * it.
      *
-     * Read where the train sets off (its departure functions, just before it is given its speed) and again at the first
-     * station on the way, the platform still held by the journey and the first edge still held: GREEN, and held GREEN, so
-     * a route may not turn it red in front of the train.  After the run the platform is free, and the guard green.
+     * Read where the train sets off and at the first station on the way: GREEN, and held GREEN.  After the run the
+     * platform is free, and the guard green.
      *
      * MUTATION: leave the guards out of what the first edge sets, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testATrainLeavingATerminusTurnsItsExitGuardGreen() throws Exception
@@ -1023,35 +891,22 @@ public class testBothProtectingSignalsAreThrown
         final Object[] heldAt = {"not read"};
         final Object[] heldAfter = {"not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
         {
             atDeparture[0] = aspectOver(layout, "TX T", loc, near);
 
             heldAt[0] = layout.getActiveAccSettings().get(near);
-
-            startWas.accept(l);
         });
 
         // The first start is the run being registered; the second, the train at TX M
-        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
-
-        layout.setCallback("OB-340 watcher", (edges, l, started) ->
+        readAtTheSecondStart(layout, "OB-340 watcher", () ->
         {
-            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
-
             onTheWay[0] = aspectOver(layout, "TX T", loc, near);
 
             heldAfter[0] = layout.getActiveAccSettings().get(near);
-
-            return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1086,13 +941,11 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train standing at a terminus keeps its exit guard red - the control for the claim above (OB-340).
      *
-     * A train run in to stand there turns the guard red as its path claims the platform, and leaves it red once it has
-     * arrived: only the first edge out of it sets the guard green.  The guard starts GREEN, as a departure leaves it over
-     * the empty platform, so this is also the next train in after one has left.
+     * A train run in to stand there turns the guard red as its path claims the platform and leaves it red once
+     * arrived: only the first edge out sets it green.  The guard starts GREEN, as a departure leaves it over the empty
+     * platform, so this is also the next train in after one has left.
      *
      * MUTATION: let the last edge in set the guards of the station it reaches green, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testATrainArrivingAtATerminusTurnsItsExitGuardRed() throws Exception
@@ -1122,9 +975,7 @@ public class testBothProtectingSignalsAreThrown
             return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX B", "TX M"));
-        path.add(layout.getEdge("TX M", "TX T"));
+        List<Edge> path = edgesAlong(layout, "TX B", "TX M", "TX T");
 
         try
         {
@@ -1150,14 +1001,12 @@ public class testBothProtectingSignalsAreThrown
      * A train leaving a through station turns its exit guards green too (OB-340; Adam: *"extend the rule to MAY TURN
      * stations too.  just make the exit guard green when something departs."*).
      *
-     * Its exit signal is its route's to set, green as the route is claimed, as before; a guard no route out commands, which
-     * the journey's own claim held red, now turns green with the first edge's accessories, is held GREEN with them, and
-     * stays green asked again on the way.
+     * Its exit signal is its route's to set, green as the route is claimed; a guard no route out commands, which the
+     * journey's own claim held red, turns green with the first edge's accessories, is held GREEN with them, and stays
+     * green asked again on the way.
      *
-     * MUTATION: leave the guards out of what the first edge sets, or let protection turn red a signal a path holds green,
-     * and this fails.
-     *
-     * @throws Exception from the run
+     * MUTATION: leave the guards out of what the first edge sets, or let protection turn red a signal a path holds
+     * green, and this fails.
      */
     @Test
     public void testAThroughStationsExitGuardsTurnGreenAsATrainLeaves() throws Exception
@@ -1181,37 +1030,24 @@ public class testBothProtectingSignalsAreThrown
         final Object[] farHeld = {"not read"};
         final String[] farAskedAgain = {"not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
         {
             atDeparture[0] = aspects();
 
             farHeld[0] = layout.getActiveAccSettings().get(far);
-
-            startWas.accept(l);
         });
 
-        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
-
-        layout.setCallback("OB-340 through watcher", (edges, l, started) ->
+        readAtTheSecondStart(layout, "OB-340 through watcher", () ->
         {
-            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
-
             onTheWay[0] = aspects();
 
             // every guard asked again, the journey still holding the platform
             layout.refreshAllProtectingSignals();
 
             farAskedAgain[0] = far.isSwitched() ? "RED" : "GREEN";
-
-            return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1244,8 +1080,6 @@ public class testBothProtectingSignalsAreThrown
      * (OB-340): the rule is the departure's, from any station, whichever copy the train stands on.
      *
      * MUTATION: set only a terminus copy's guards with the first edge, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testAMayTurnStationsForwardDepartureTurnsItsExitGuardGreen() throws Exception
@@ -1259,8 +1093,6 @@ public class testBothProtectingSignalsAreThrown
      * barred, built as a reversing point - turns the station's exit guard green (OB-340).
      *
      * MUTATION: set only a terminus copy's guards with the first edge, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testAMustTurnStationsBarredCopyDepartureTurnsItsExitGuardGreen() throws Exception
@@ -1277,8 +1109,6 @@ public class testBothProtectingSignalsAreThrown
      *
      * MUTATION: leave the guards out of what the first edge sets, and the first claim fails; let protection turn red a
      * signal a path holds green, and the second does.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testAnExitGuardSharedWithAnotherTrainsPlatformIsGreenWhileTheTrainLeaves() throws Exception
@@ -1295,8 +1125,6 @@ public class testBothProtectingSignalsAreThrown
      * own railway pairs signals 63 and 64 with TopMainR0, R1 and R2, and only the routes out of those platforms set them.
      *
      * MUTATION: let protection turn red a signal a path holds green, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testAnExitSignalSharedWithAnOccupiedPlatformStaysGreenForTheTrainLeaving() throws Exception
@@ -1309,10 +1137,9 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * A train leaves the terminus TX T while another stands at TX P, both guarded by `near` (OB-340).
-     *
-     * @param routeCommandsIt whether the first edge out commands `near` green, as a route out does its exit signal
-     * @return the guard as the train sets off; at TX M, once the other train has been taken off P and put back; and over
-     *         the other train once the run is over - each as `aspectOver` reads it
+     * `routeCommandsIt`: whether the first edge out commands `near` green, as a route out does its exit signal.
+     * Returns the guard as the train sets off; at TX M, once the other train has been taken off P and put back; and
+     * over the other train once the run is over - each as `aspectOver` reads it.
      */
     private List<String> leaveBesideAnotherTrain(boolean routeCommandsIt) throws Exception
     {
@@ -1335,34 +1162,19 @@ public class testBothProtectingSignalsAreThrown
 
         final String[] read = {"not read", "not read", "not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
-            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        leaving.setCallback(Layout.CB_ROUTE_START, l ->
-        {
-            read[0] = aspectOver(layout, "TX T", leaving, near);
-
-            startWas.accept(l);
-        });
-
-        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(leaving, l ->
+            read[0] = aspectOver(layout, "TX T", leaving, near));
 
         // At TX M, the first edge still held: P's occupancy changes and back, which asks protection again
-        layout.setCallback("OB-340 shared watcher", (edges, l, started) ->
+        readAtTheSecondStart(layout, "OB-340 shared watcher", () ->
         {
-            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
-
             layout.getPoint("TX P").setLocomotive(null);
             layout.getPoint("TX P").setLocomotive(standing);
 
             read[1] = aspectOver(layout, "TX T", leaving, near);
-
-            return null;
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1384,17 +1196,15 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * With Atomic Routes off - Adam's own setting - a guard shared with a platform another train stands at is GREEN as the
-     * train leaves and still GREEN while the first edge out holds it, and RED over the other train once the tail has
-     * cleared that edge: the hold lapses there, and the start, given back at once, asks it again (OB-340).
-     *
-     * A journey of four edges, none measured, so the tail clears the first edge when the head finishes the second.
+     * With Atomic Routes off - Adam's own setting - a guard shared with a platform another train stands at is GREEN as
+     * the train leaves and still GREEN while the first edge out holds it, and RED over the other train once the tail
+     * has cleared that edge: the hold lapses there, and the start, given back at once, asks it again (OB-340).  A
+     * journey of four edges, none measured, so the tail clears the first edge when the head finishes the second.
      *
      * MUTATION: leave the start unreleased where the tail clears the first edge, so nothing asks its guards then, and
-     * this fails.  (Keeping the first edge's hold past its clearing does not: non-atomic routes give the edge itself back
-     * before the start, so nothing holds the guard either way - the claim below, with Atomic Routes on, is that one's.)
-     *
-     * @throws Exception from the run
+     * this fails.  (Keeping the first edge's hold past its clearing does not: non-atomic routes give the edge itself
+     * back before the start, so nothing holds the guard either way - the claim below, with Atomic Routes on, is that
+     * one's.)
      */
     @Test
     public void testASharedGuardGoesBackToRedAsTheTailClearsTheFirstEdgeWithAtomicRoutesOff() throws Exception
@@ -1413,8 +1223,6 @@ public class testBothProtectingSignalsAreThrown
      *
      * MUTATION: keep the first edge's hold once its tail has cleared it, or record the clearing only where non-atomic
      * routes give the edge back, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testASharedGuardIsAskedAgainOnceTheTailHasClearedTheFirstEdgeWithAtomicRoutesOn() throws Exception
@@ -1428,33 +1236,19 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * A train leaves the terminus FE T over four edges - FE M, FE N, FE O, FE B - while another stands at FE P, both
-     * guarded by `near`; this class's own feedbacks 47481-47486 (OB-340).
-     *
-     * @param atomic Atomic Routes
-     * @return the guard as the train sets off and at FE M, beside the train leaving; then at FE N, where the tail has
-     *         cleared the first edge, and there once the other train has been taken off P and put back, beside that one
+     * guarded by `near`; this class's own feedbacks 47481-47486 (OB-340).  `atomic`: Atomic Routes.  Returns the guard
+     * as the train sets off and at FE M, then at FE N (the tail has cleared the first edge), and there once the other
+     * train has been taken off P and put back, as `aspectOver` reads it.
      */
     private List<String> leaveBesideAnotherTrainOverFourEdges(boolean atomic) throws Exception
     {
         String[] names = {"FE T", "FE M", "FE N", "FE O", "FE B", "FE P"};
 
-        final Layout layout = new Layout(model);
+        final Layout layout = instantLayout();
 
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
         layout.setAtomicRoutes(atomic);
 
-        for (int i = 0; i < names.length; i++)
-        {
-            String feedback = Integer.toString(47481 + i);
-
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(47481 + i, null);
-
-            model.setFeedbackState(feedback, false);
-
-            layout.createPoint(names[i], true, feedback);
-        }
+        createPointsOnClearFeedbacks(layout, names, 47481);
 
         layout.getPoint("FE T").setTerminus(true);
         layout.getPoint("FE T").setProtectingSignal(near.getName());
@@ -1476,15 +1270,8 @@ public class testBothProtectingSignalsAreThrown
 
         final String[] read = {"not read", "not read", "not read", "not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
-            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        leaving.setCallback(Layout.CB_ROUTE_START, l ->
-        {
-            read[0] = aspectOver(layout, "FE T", leaving, near);
-
-            startWas.accept(l);
-        });
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(leaving, l ->
+            read[0] = aspectOver(layout, "FE T", leaving, near));
 
         final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
 
@@ -1539,16 +1326,14 @@ public class testBothProtectingSignalsAreThrown
     private static final long DEPARTURE_BOUND_MS = 3 * RACE_BOUND_MS;
 
     /**
-     * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does not
-     * turn the leaving train's exit guard RED after the departure has set it GREEN, with Atomic Routes off - nor does the
-     * same refresh made after the claim (OB-340).  The refresh reads the holds and commands the signal as one
-     * step against the departure's GREEN, so it either commands first and the GREEN lands last, or reads the hold.
+     * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does
+     * not turn the leaving train's exit guard RED after the departure has set it GREEN, with Atomic Routes off - nor
+     * does the same refresh made after the claim (OB-340).  The refresh reads the holds and commands the signal as one
+     * step, so it either commands first and the GREEN lands last, or reads the hold.
      *
      * MUTATION: take the signal's lock out of `Layout.refreshOneSignal`, or out of the departure's GREEN in
-     * `configureAndLockPath`, and the forced reading goes RED after the refresh; command that GREEN before the claim and
-     * the first edge are taken, and the GREEN is sent before its hold can be read.
-     *
-     * @throws Exception from the run
+     * `configureAndLockPath`, and the forced reading goes RED after the refresh; command that GREEN before the claim
+     * and the first edge are taken, and the GREEN is sent before its hold can be read.
      */
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff() throws Exception
@@ -1564,8 +1349,6 @@ public class testBothProtectingSignalsAreThrown
      * The same with Atomic Routes on (OB-340).
      *
      * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff`.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOn() throws Exception
@@ -1584,8 +1367,6 @@ public class testBothProtectingSignalsAreThrown
      *
      * MUTATION: take the signal's lock out of `Layout.configureEdge`'s command, and the forced reading goes RED after the
      * refresh.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff()
@@ -1602,8 +1383,6 @@ public class testBothProtectingSignalsAreThrown
      * The same with Atomic Routes on (OB-340).
      *
      * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff`.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOn()
@@ -1618,54 +1397,36 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * A train leaves RR S for RR N by RR M while another thread refreshes `near`, the guard RR S shares with RR P; this
-     * class's own feedbacks 47491-47496.
+     * class's own feedbacks 47491-47496.  `forced`: the refresh straddles the claim; `atomic`: Atomic Routes;
+     * `edgeCommandsIt`: the first edge out commands `near` GREEN itself, rather than the departure adding it as an exit
+     * guard of RR S.
      *
-     * Another train is under way on one held edge, RR X to RR Y, put among the journeys directly, so that a refresh walks
-     * that edge's commands as it reads the holds.  Forced, the refresh runs on a thread of its own before the departure,
-     * and that walk waits there, once, until the departure has been handed over - its guard set GREEN, its speed not yet
-     * given - or until the departure is waiting for a monitor the refresh holds: so the refresh has read the holds before
-     * the claim, and finishes after the GREEN unless the departure waits for it.  Unforced, the same refresh is made on
-     * the departing thread at the hand-over, after the claim.
+     * Another train is under way on one held edge (RR X to RR Y, put among the journeys directly), so that a refresh
+     * walks that edge's commands as it reads the holds.  Forced, the refresh runs on a thread of its own before the
+     * departure and waits there until the departure is handed over (GREEN set, speed not yet given) or waits for a
+     * monitor the refresh holds; unforced, it is made on the departing thread after the claim.
      *
-     * Every GREEN the departure sends `near` before its hand-over is checked against the holds as it is sent, through the
-     * control station's sent-message observer.  The departure runs on a thread of its own, joined with a bound, so that
-     * a refresh that came to wait for the railway's monitor fails here rather than hanging the class.
+     * Every GREEN sent to `near` before the hand-over is checked against the holds as sent (through the control
+     * station's sent-message observer).  The departure runs on a thread of its own, joined with a bound, so a refresh
+     * that waits for the railway's monitor fails here rather than hanging the class.
      *
-     * @param forced whether the refresh straddles the claim
-     * @param atomic Atomic Routes
-     * @param edgeCommandsIt whether the first edge out commands `near` GREEN itself, rather than the departure adding it
-     *        as an exit guard of RR S
-     * @return the guard as `aspectOver` reads it, with the setting the paths hold it at, as the train sets off; as
-     *         `aspectOver` reads it once the refresh is done; and whether the GREEN was sent with its hold readable
+     * Returns the guard as `aspectOver` reads it, with the setting the paths hold it at, as the train sets off; once
+     * the refresh is done; and whether the GREEN was sent with its hold readable.
      */
     private String raceTheRefresh(final boolean forced, boolean atomic, boolean edgeCommandsIt) throws Exception
     {
         String[] names = {"RR S", "RR M", "RR N", "RR P", "RR X", "RR Y"};
 
-        final Layout layout = new Layout(model);
+        final Layout layout = instantLayout();
 
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
         layout.setAtomicRoutes(atomic);
 
-        for (int i = 0; i < names.length; i++)
-        {
-            String feedback = Integer.toString(47491 + i);
-
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(47491 + i, null);
-
-            model.setFeedbackState(feedback, false);
-
-            layout.createPoint(names[i], true, feedback);
-        }
+        createPointsOnClearFeedbacks(layout, names, 47491);
 
         layout.getPoint("RR S").setProtectingSignal(near.getName());
         layout.getPoint("RR P").setProtectingSignal(near.getName());
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.createEdge("RR S", "RR M"));
-        path.add(layout.createEdge("RR M", "RR N"));
+        List<Edge> path = createEdgesAlong(layout, "RR S", "RR M", "RR N");
 
         if (edgeCommandsIt) path.get(0).addConfigCommand(near.getName(), Accessory.accessorySetting.GREEN);
 
@@ -1713,10 +1474,7 @@ public class testBothProtectingSignalsAreThrown
 
         near.setState(Accessory.accessorySetting.RED);
 
-        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
-            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        leaving.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(leaving, l ->
         {
             handedOver.set(true);
 
@@ -1744,8 +1502,6 @@ public class testBothProtectingSignalsAreThrown
             }
 
             read[1] = aspectOver(layout, "RR S", leaving, near);
-
-            startWas.accept(l);
         });
 
         final Object[] ran = {"not finished"};
@@ -1857,11 +1613,7 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A protection refresh of one Point, as an occupancy change there makes it.
-     *
-     * @param layout the railway
-     * @param point the Point
-     * @return "refreshed", or what it threw
+     * A protection refresh of one Point, as an occupancy change there makes it; returns "refreshed", or what it threw.
      */
     private static String refreshOn(Layout layout, String point)
     {
@@ -1881,12 +1633,7 @@ public class testBothProtectingSignalsAreThrown
         }
     }
 
-    /**
-     * The railway's journeys under way, so that a test can put a train among them without running it.
-     *
-     * @param layout the railway
-     * @return its live map of each train under way to its path
-     */
+    /** The railway's live map of journeys under way, so that a test can put a train among them without running it. */
     @SuppressWarnings("unchecked")
     private static java.util.Map<Locomotive, List<Edge>> journeys(Layout layout) throws Exception
     {
@@ -1898,12 +1645,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * Whether one thread is BLOCKED entering a monitor another thread holds - the departure waiting for the refresh, which
-     * is the fix's shape and which the forcing must let through rather than deadlock on.
-     *
-     * @param waiting the thread that may be waiting
-     * @param holding the thread that may hold what it waits for
-     * @return true when it does
+     * Whether `waiting` is BLOCKED entering a monitor `holding` holds - the departure waiting for the refresh, which is
+     * the fix's shape and which the forcing must let through rather than deadlock on.
      */
     private static boolean waitsForAMonitorHeldBy(Thread waiting, Thread holding)
     {
@@ -1930,8 +1673,6 @@ public class testBothProtectingSignalsAreThrown
      * RED - under one spelling of its name where the station uses the other, one accessory - leaves it RED, held RED.
      *
      * MUTATION: set every guard of the station green whatever the edge commands, and this fails.
-     *
-     * @throws Exception from the run
      */
     @Test
     public void testTheFirstEdgesOwnSettingOfAGuardStands() throws Exception
@@ -1957,20 +1698,13 @@ public class testBothProtectingSignalsAreThrown
 
         final Object[] read = {"not read", "not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
-
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
         {
             read[0] = near.isSwitched() ? "RED" : "GREEN";
             read[1] = layout.getActiveAccSettings().get(near);
-
-            startWas.accept(l);
         });
 
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge("TX T", "TX M"));
-        path.add(layout.getEdge("TX M", "TX B"));
+        List<Edge> path = edgesAlong(layout, "TX T", "TX M", "TX B");
 
         try
         {
@@ -1994,8 +1728,6 @@ public class testBothProtectingSignalsAreThrown
      * and the start reserved again, which asks the guard.
      *
      * MUTATION: give the route back without reserving the start again, and this fails.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testADepartureGivenBackForAStopLeavesItsGuardRed() throws Exception
@@ -2010,8 +1742,6 @@ public class testBothProtectingSignalsAreThrown
      * was taken is released and the start reserved again, which asks the guard.
      *
      * MUTATION: release a failed route without reserving the start again, and this fails.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testADepartureThatFailsWhileItsRouteIsSetLeavesItsGuardRed() throws Exception
@@ -2021,11 +1751,9 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A departure from the terminus TX T, guarded by `near`, that does not happen: while its second edge is being set up -
-     * the first edge's accessories and guards set - a stop is ordered, or the edge cannot be configured (OB-340).
-     *
-     * @param fails true for an edge that cannot be configured, false for a stop
-     * @return the guard as the second edge is set up, and after the departure as `aspectOver` reads it
+     * A departure from the terminus TX T, guarded by `near`, that does not happen: while its second edge is being set
+     * up (the first edge's accessories and guards set) a stop is ordered, or (`fails`) the edge cannot be configured
+     * (OB-340).  Returns the guard as the second edge is set up, and after the departure, as `aspectOver` reads it.
      */
     private List<String> failADeparture(boolean fails) throws Exception
     {
@@ -2093,27 +1821,15 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * Two copies of one station square, CP 1 and CP 2, each a way out to CP M and on to CP B, both guarded by `near`; a
-     * train leaves from CP 2 or CP 1 - whichever is not a terminus - and the guard is read where it sets off (OB-340).
-     *
-     * @param mustTurn true: CP 1 a terminus and CP 2 the turning copy of a barred side, a reversing point and no
-     *        destination - the train leaves from CP 2; false: CP 1 a plain copy and CP 2 the turning one - the train leaves
-     *        forward from CP 1
-     * @return the guard's aspect where the train sets off, as `aspectOver` reads it
+     * train leaves from whichever is not a terminus and the guard is read where it sets off (OB-340).  `mustTurn`:
+     * CP 1 a terminus and CP 2 the turning copy of a barred side (a reversing point, no destination), the train leaving
+     * from CP 2; else CP 1 a plain copy and the train leaves forward from it.
      */
     private String leaveACopy(boolean mustTurn) throws Exception
     {
-        for (String feedback : new String[] {"47475", "47476", "47477", "47478"})
-        {
-            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        clearFeedbacks("47475", "47476", "47477", "47478");
 
-            model.setFeedbackState(feedback, false);
-        }
-
-        final Layout layout = new Layout(model);
-
-        layout.setMaxDelay(0);
-        layout.setMinDelay(0);
-        layout.setSimulate(true);
+        final Layout layout = instantLayout();
 
         layout.createPoint("CP 1", true, "47475");
         layout.createPoint("CP 2", !mustTurn, "47476");
@@ -2151,19 +1867,10 @@ public class testBothProtectingSignalsAreThrown
 
         final String[] atDeparture = {"not read"};
 
-        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
-            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+        final java.util.function.Consumer<Locomotive> startWas = readAtRouteStart(loc, l ->
+            atDeparture[0] = aspectOver(layout, from, loc, near));
 
-        loc.setCallback(Layout.CB_ROUTE_START, l ->
-        {
-            atDeparture[0] = aspectOver(layout, from, loc, near);
-
-            startWas.accept(l);
-        });
-
-        List<Edge> path = new LinkedList<>();
-        path.add(layout.getEdge(from, "CP M"));
-        path.add(layout.getEdge("CP M", "CP B"));
+        List<Edge> path = edgesAlong(layout, from, "CP M", "CP B");
 
         try
         {
@@ -2197,26 +1904,106 @@ public class testBothProtectingSignalsAreThrown
         return "near " + (near.isSwitched() ? "RED" : "GREEN") + ", far " + (far.isSwitched() ? "RED" : "GREEN");
     }
 
-    /**
-     * T, M, B in a line, joined both ways, and P apart: this class's own feedbacks 47471-47474, simulated and with no
-     * delays (OB-340).
-     *
-     * @param terminus whether T is a terminus
-     */
-    private Layout terminusLine(boolean terminus) throws Exception
+    /** The layout's existing edges from each point to the next, in order. */
+    private static List<Edge> edgesAlong(Layout layout, String... points)
     {
-        for (String feedback : new String[] {"47471", "47472", "47473", "47474"})
+        List<Edge> path = new LinkedList<>();
+
+        for (int i = 0; i + 1 < points.length; i++) path.add(layout.getEdge(points[i], points[i + 1]));
+
+        return path;
+    }
+
+    /** The edges created from each point to the next, in order. */
+    private static List<Edge> createEdgesAlong(Layout layout, String... points) throws Exception
+    {
+        List<Edge> path = new LinkedList<>();
+
+        for (int i = 0; i + 1 < points.length; i++) path.add(layout.createEdge(points[i], points[i + 1]));
+
+        return path;
+    }
+
+    /** Makes each feedback exist, if the station has not heard of it, and clear. */
+    private static void clearFeedbacks(String... feedbacks)
+    {
+        for (String feedback : feedbacks)
         {
             if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
 
             model.setFeedbackState(feedback, false);
         }
+    }
 
+    /** A new layout that simulates its dispatches and waits no time between steps. */
+    private static Layout instantLayout() throws Exception
+    {
         Layout layout = new Layout(model);
 
         layout.setMaxDelay(0);
         layout.setMinDelay(0);
         layout.setSimulate(true);
+
+        return layout;
+    }
+
+    /** Creates a point for each name on consecutive feedbacks from `first`, each feedback made clear just before. */
+    private static void createPointsOnClearFeedbacks(Layout layout, String[] names, int first) throws Exception
+    {
+        for (int i = 0; i < names.length; i++)
+        {
+            String feedback = Integer.toString(first + i);
+
+            clearFeedbacks(feedback);
+
+            layout.createPoint(names[i], true, feedback);
+        }
+    }
+
+    /**
+     * Runs `reading` when the locomotive's route starts, ahead of the start callback it had; returns that callback, to
+     * put back.
+     */
+    private static java.util.function.Consumer<Locomotive> readAtRouteStart(Locomotive loc,
+        java.util.function.Consumer<Locomotive> reading)
+    {
+        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
+            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            reading.accept(l);
+
+            startWas.accept(l);
+        });
+
+        return startWas;
+    }
+
+    /** Runs `reading` at the second start the layout announces; the first is the run being registered. */
+    private static void readAtTheSecondStart(Layout layout, String name, Runnable reading)
+    {
+        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+
+        layout.setCallback(name, (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
+
+            reading.run();
+
+            return null;
+        });
+    }
+
+    /**
+     * T, M, B in a line, joined both ways, and P apart: this class's own feedbacks 47471-47474, simulated, no delays
+     * (OB-340); `terminus`: whether T is a terminus.
+     */
+    private Layout terminusLine(boolean terminus) throws Exception
+    {
+        clearFeedbacks("47471", "47472", "47473", "47474");
+
+        Layout layout = instantLayout();
 
         layout.createPoint("TX T", true, "47471");
         layout.createPoint("TX M", true, "47472");

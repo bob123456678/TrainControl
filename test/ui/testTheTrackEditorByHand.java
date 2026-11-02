@@ -34,7 +34,7 @@ import support.Mouse;
 
 /**
  * The track diagram editor, driven as the user drives it: the Edit button, the pointer over a square, the keys, the
- * right-click menu, clicks and drags, and the answers given to its dialogs (FR-136 Phase 6).
+ * right-click menu, clicks and drags, and the answers given to its dialogs.
  *
  * Each claim reads its outcome from one of three places: the page file written by Save and read back by a fresh
  * parser, the editor's undo stack as its own menu shows it, or the page the window holds after the editor closes.
@@ -1149,16 +1149,7 @@ public class testTheTrackEditorByHand
 
         try
         {
-            assertTrue(Components.waitFor(() -> editButton().isEnabled(), 30000), "the Edit button never came back");
-
-            Components.press(editButton());
-
-            assertTrue(Components.waitFor(() -> editorOpen() != null && editorOpen().isAutonomyMode()
-                && editorOpen().getAutonomyPanel() != null, 30000), "the Edit button opened no autonomy editor");
-
-            Components.settle();
-
-            LayoutEditor editor = editorOpen();
+            LayoutEditor editor = theAutonomyEditorTheEditButtonOpens();
 
             JCheckBox lengths = editor.getAutonomyPanel().getShowLengths();
 
@@ -1193,16 +1184,7 @@ public class testTheTrackEditorByHand
 
         try
         {
-            assertTrue(Components.waitFor(() -> editButton().isEnabled(), 30000), "the Edit button never came back");
-
-            Components.press(editButton());
-
-            assertTrue(Components.waitFor(() -> editorOpen() != null && editorOpen().isAutonomyMode()
-                && editorOpen().getAutonomyPanel() != null, 30000), "the Edit button opened no autonomy editor");
-
-            Components.settle();
-
-            final LayoutEditor editor = editorOpen();
+            final LayoutEditor editor = theAutonomyEditorTheEditButtonOpens();
 
             final int first = viewportListeners(editor);
 
@@ -1270,16 +1252,7 @@ public class testTheTrackEditorByHand
 
         try
         {
-            assertTrue(Components.waitFor(() -> editButton().isEnabled(), 30000), "the Edit button never came back");
-
-            Components.press(editButton());
-
-            assertTrue(Components.waitFor(() -> editorOpen() != null && editorOpen().isAutonomyMode()
-                && editorOpen().getAutonomyPanel() != null, 30000), "the Edit button opened no autonomy editor");
-
-            Components.settle();
-
-            final LayoutEditor autonomy = editorOpen();
+            final LayoutEditor autonomy = theAutonomyEditorTheEditButtonOpens();
 
             AbstractButton text = Components.find(autonomy, JCheckBox.class,
                 b -> I18n.t("layout.ui.textLabels").equals(b.getText()) && b.isShowing());
@@ -1351,6 +1324,21 @@ public class testTheTrackEditorByHand
         assertFalse(editor.isAutonomyMode(), "the Edit button opened the autonomy editor, not the track editor");
 
         return editor;
+    }
+
+    /** The autonomy editor the Edit button opens once the button is back, settled; the claim fails when none opens. */
+    private static LayoutEditor theAutonomyEditorTheEditButtonOpens() throws Exception
+    {
+        assertTrue(Components.waitFor(() -> editButton().isEnabled(), 30000), "the Edit button never came back");
+
+        Components.press(editButton());
+
+        assertTrue(Components.waitFor(() -> editorOpen() != null && editorOpen().isAutonomyMode()
+            && editorOpen().getAutonomyPanel() != null, 30000), "the Edit button opened no autonomy editor");
+
+        Components.settle();
+
+        return editorOpen();
     }
 
     private static AbstractButton editButton()

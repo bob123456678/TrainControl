@@ -34,9 +34,8 @@ public class AutonomyOverlayToggle extends JPanel
         new javax.swing.JLabel(I18n.t("autosetup.ui.labelPageLeftOut"));
 
     /**
-     * Said while the setup has changes the railway has not taken yet ("Add the setup notice, but make it brief"): an
-     * edit made as a run started, or one that leaves the setup unable to build while the last railway that built stays
-     * loaded.  The tooltip says when they apply.
+     * Said while the setup has changes the railway has not taken yet: an edit made as a run started, or one that leaves
+     * the setup unable to build.  The tooltip says when they apply.
      */
     private final javax.swing.JLabel waiting = new javax.swing.JLabel(I18n.t("autosetup.ui.labelSetupNotApplied"));
 
@@ -91,7 +90,7 @@ public class AutonomyOverlayToggle extends JPanel
         left.add(show);
 
         // Red, and a way out of it: a page left out of autonomy is why nothing on it has stations, arrows or trains,
-        // and the setting lives three menus deep.  The banner's font, not bold: the color already says it matters.
+        // and the setting lives three menus deep.
         left_out.setFont(AutonomyBanner.MESSAGE_FONT);
         left_out.setForeground(EXCLUDED_TEXT);
         left_out.setVisible(false);
@@ -156,9 +155,8 @@ public class AutonomyOverlayToggle extends JPanel
             if (source != null) source.doClick();
         });
 
-        // The banner's own insets, so the two bands read as one thing stacked: 4 here plus the FlowLayout's 4 makes 8
-        // at the leading edge.  Two above and below, not four (OB-149, OB-151), symmetric so the content stays
-        // centered.
+        // The banner's own insets, so the two bands read as one thing stacked (OB-149, OB-151), symmetric so the
+        // content stays centered.
         setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 4, 2, 4));
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
@@ -204,9 +202,8 @@ public class AutonomyOverlayToggle extends JPanel
     /**
      * What the strip should be showing, as a rule rather than a side effect (OB-143): "the button disappears rather
      * than being greyed out prior to replacement by the start button. make it get greyed out and then replaced."
-     * Graceful Stop disables the real button at once while autonomy keeps running, and the strip used to hide itself
-     * for that window.  STOP_PENDING only when a stop is genuinely pending (`isGracefulStopPending`): "neither enabled"
-     * has other causes, mostly before anything ran.  Extracted so it can be exercised without a window.
+     * STOP_PENDING only when a stop is genuinely pending (`isGracefulStopPending`): "neither enabled" has other
+     * causes.  Extracted so it can be exercised without a window.
      *
      * @param loaded whether a setup is loaded
      * @param excluded whether the page on screen is left out of it
@@ -261,11 +258,9 @@ public class AutonomyOverlayToggle extends JPanel
             : showing == RunButton.STOP || showing == RunButton.STOP_PENDING ? stop : null;
 
         // Fix it rather than Start, when starting would be refused (OB-090: "the setup refuses to run when there are
-        // errors.  it runs on warnings, but on errors it should say fix it.").  Against START only: an error appearing
-        // while trains run is when stopping matters most, so Stop keeps winning.  The guard's own question,
-        // hasErrors(), not a count: it also covers a graph that will not build, and a count offered Start while every
-        // press was refused.  lastTotalErrors is read only when there is no window to ask (a strip built before its
-        // owner).
+        // errors.  it runs on warnings, but on errors it should say fix it.").  Against START only: Stop keeps winning
+        // while trains run.  The guard's own question, hasErrors(), not a count: it also covers a graph that will not
+        // build.  lastTotalErrors is read only when there is no window to ask.
         boolean broken = ui != null ? ui.autonomyHasErrors() : lastTotalErrors > 0;
 
         fixing = source != null && source == start && broken;
@@ -347,9 +342,8 @@ public class AutonomyOverlayToggle extends JPanel
 
     /**
      * Sizes another button exactly as the Start button in this strip is sized, so the Load button in the banner above
-     * and the Start that replaces it look the same: same font (Start's bold even before Start is bound, OB-391), height
-     * (`BUTTON_HEIGHT`, OB-313) and insets.  Re-applied whenever the text changes, since the preferred width follows the
-     * label.
+     * and the Start that replaces it look the same: font (OB-391), height (`BUTTON_HEIGHT`) and insets.  Re-applied
+     * whenever the text changes, since the preferred width follows the label.
      *
      * @param button
      */
@@ -369,14 +363,12 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * The height of the buttons on this page (OB-313: "The issue was on lower display scaling monitors, where the
-     * button looked too narrow vertically"); the main window's Edit, Small and Large are held to 24 by the form.
+     * The height of the buttons on this page (OB-313); the main window's Edit, Small and Large are held to 24 by the
+     * form.
      */
     static final int BUTTON_HEIGHT = 24;
 
-    /**
-     * The padding round a strip button's text: the page's buttons' two above and below, and ten at the sides (OB-313).
-     */
+    /** The padding round a strip button's text: two above and below, ten at the sides (OB-313). */
     private static final java.awt.Insets BUTTON_MARGIN = new java.awt.Insets(2, 10, 2, 10);
 
     /** The square the count leads to: the first thing the checks found, errors before warnings. */
@@ -385,10 +377,7 @@ public class AutonomyOverlayToggle extends JPanel
     /** Whether the run button is currently offering to fix the setup rather than to start it. */
     private boolean fixing;
 
-    /**
-     * The strip's fill while the setup has something that must be dealt with: light yellow, so black text reads across
-     * the full width.
-     */
+    /** The strip's fill while the setup has something that must be dealt with: light yellow, so black text reads. */
     private static final java.awt.Color FIX_BACKGROUND = new java.awt.Color(255, 248, 205);
 
     /**
@@ -438,8 +427,7 @@ public class AutonomyOverlayToggle extends JPanel
         findings.setForeground(totalErrors > 0
             ? new java.awt.Color(170, 0, 0) : new java.awt.Color(150, 95, 0));
 
-        // Errors and warnings said separately when there are errors (OB-090): "the autonomy error count is 4 but shows
-        // as 8", with four of each.  The page figure is the third number.
+        // Errors and warnings said separately when there are errors (OB-090); the page figure is the third number.
         findings.setText(findingsCountText(totalErrors, totalWarnings, totalErrors > 0 ? pageErrors + pageWarnings : pageWarnings));
         findings.setToolTipText(I18n.t("autosetup.ui.tooltipFindings"));
         findings.setVisible(true);
@@ -467,8 +455,8 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * Whether a configuration is actually running.  The strip exists before one does, so the banner above can say a
-     * setup is not loaded; the controls here are about a loaded setup and would invite clicks that do nothing.
+     * Whether a configuration is actually running.  The strip exists before one does; the controls here are about a
+     * loaded setup and would invite clicks that do nothing.
      *
      * @param loaded
      */
@@ -546,9 +534,8 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * The strip itself goes when it has nothing in it (MT-219): "remove the gap below the gray bar and the track
-     * diagram when there is autonomy but not loaded yet."  Asked of the children rather than the state, which two
-     * setters and a repaint decide, so a fourth copy of "is there anything worth showing" cannot drift.
+     * The strip itself goes when it has nothing in it (MT-219).  Asked of the children rather than the state, so a
+     * fourth copy of "is there anything worth showing" cannot drift.
      */
     private void hideIfEmpty()
     {

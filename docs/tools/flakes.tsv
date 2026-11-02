@@ -1,0 +1,2 @@
+date	commit	class	outcome	first failure
+2026-11-01	9609e70e	regression.testAPendingTurnSurvivesTheRebuild	flaky	regression.testAPendingTurnSurvivesTheRebuild: Total tests run: 16, Failures: 1, Skips: 0 (testAPopUpKeepsItsSizeAndPlaceWhenACaptionChanges)

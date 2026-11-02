@@ -623,6 +623,9 @@
         <test-one-class class="testTheAutoTabSaysWhyATrainWaits"/>
         <test-one-class class="testTheAutonomyEditorsBulkDoors"/>
         <test-one-class class="testTheUsageChartShowsWhatTheLocomotivesRan"/>
+        <test-one-class class="testTestSleepsOnlyGoDown"/>
+        <test-one-class class="testBuildingARouteByHand"/>
+        <test-one-class class="testChangingARouteByHand"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

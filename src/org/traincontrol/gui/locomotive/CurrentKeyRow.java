@@ -17,9 +17,8 @@ import org.traincontrol.util.I18n;
 
 /**
  * The line over the active locomotive's name: its key, its page and its decoder (FR-128).  From the left, a keycap
- * and the page as plain words in the label's own font and color (`pageFont`, `pageColour`: read, not written down
- * again); floated to the right edge, a navy decoder pill with white text, TYPE and ADDRESS divided by a white line
- * that stays inside the rim.
+ * and the page as plain words in the label's own font and color (`pageFont`, `pageColour`); floated to the right edge,
+ * a navy decoder pill with white text, TYPE and ADDRESS divided by a white line that stays inside the rim.
  *
  * `pageWords` is the one rule that words the page, for this row, the page tabs and the page label by the arrows.  Only
  * the NAME is cut (to the pixel here), never the number, its full stop or "Page 5"; with no room for a letter and the
@@ -27,8 +26,7 @@ import org.traincontrol.util.I18n;
  *
  * Drawn, not laid out: the window's generated GroupLayout fixes this row's slot at 296 x 18 (`CurrentKeyLabel`),
  * nothing below it may move, and the page name has to be measured and cut to the pixel.  Pill words are 12 point (the
- * decoder pill's 13) in 18 pixel shapes.  A pill is painted in `StationCaption`'s style, but not with its symbol
- * LABEL_FONT.
+ * decoder pill's 13) in 18 pixel shapes.
  *
  * @author Adam
  */
@@ -61,10 +59,7 @@ public class CurrentKeyRow extends JComponent
     /** The text size, in points, of the keycap's letter and the decoder pill's words: 12 in an 18 pixel pill. */
     public static final float SIZE = 12f;
 
-    /**
-     * The decoder pill's words: one notch larger than the keycap's letter ("Can we increase the font size inside the
-     * blue mfx+address pill slightly?").
-     */
+    /** The decoder pill's words: one notch larger than the keycap's letter. */
     public static final float DECODER_SIZE = 13f;
 
     /** The ellipsis a cut page name ends in. */
@@ -73,10 +68,7 @@ public class CurrentKeyRow extends JComponent
     /** The separator in the tooltip, the one the old line used between its parts. */
     private static final String BULLET = " " + (char) 0x2022 + " ";
 
-    /**
-     * Measured as drawn (anti-aliased, fractional advances, as the drawing's hints), so a width taken here is the width
-     * on screen.
-     */
+    /** Measured as drawn (anti-aliased, fractional advances), so a width taken here is the width on screen. */
     private static final FontRenderContext FRC = new FontRenderContext(null, true, true);
 
     /** The keycap's letter: medium weight - Segoe UI Semibold, and bold of the plain family where that is not installed. */
@@ -119,9 +111,8 @@ public class CurrentKeyRow extends JComponent
 
     /**
      * THE ONE RULE for how a page is worded, for every place that follows "Show Page Numbers" (FR-128): this row, the
-     * page tabs and the page label by the arrows.  "If no name, use Page 5.  If yes name, MMM if show is off, and 5.
-     * MMM if show is on."  Only the NAME is cut, in the caller's own way; a name with no room at all leaves "5.", so
-     * the words of a page are never empty.
+     * page tabs and the page label by the arrows.  No name: "Page 5".  A name: the name if the setting is off, "5.
+     * name" if on.  Only the NAME is cut, in the caller's own way; a name with no room at all leaves "5.".
      *
      * @param page the page, counting from 1
      * @param name the page's name as the operator typed it, or null or empty for none
@@ -157,7 +148,7 @@ public class CurrentKeyRow extends JComponent
         private final boolean showNumber;
 
         /**
-         * With the page's number shown, as the row drew it before it was a setting.
+         * With the page's number shown.
          *
          * @param key the key's letter, as on its button
          * @param page the page the key was chosen on
@@ -402,8 +393,7 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * The font the page's words are drawn in: the label's own, inherited (Segoe UI Semibold 13 in the form), asked and
-     * not written down again.
+     * The font the page's words are drawn in: the label's own, inherited (Segoe UI Semibold 13 in the form).
      *
      * @return the font
      */
@@ -417,8 +407,7 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * The color the page's words are drawn in: the label's foreground, inherited as the font is (rgb(0,0,115) in the
-     * form).
+     * The color the page's words are drawn in: the label's foreground, inherited as the font is.
      *
      * @return the color
      */

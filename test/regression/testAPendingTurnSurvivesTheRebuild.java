@@ -21,13 +21,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A destination turn nobody has managed to write down yet survives a setup rebuild.
  *
  * `Layout.reversedOnArrival` holds the reversals the railway performed at a destination and has not yet drained into
- * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale and the carry (OB-183) left this out, so
- * every pending turn died on any setup gesture.  What matters is the RETRY: a turn destroyed mid-drain never
- * self-heals, and the next dispatch is offered paths for the wrong heading (OB-189).
+ * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, and the carry (OB-183) left this out, so
+ * every pending turn died on any setup gesture; the RETRY matters (OB-189): a turn destroyed mid-drain never
+ * self-heals, and the next dispatch is offered paths for the wrong heading.
  *
- * The rebuild is RUN, not modeled: the defect is that the call site does not carry something, which a hand-built
- * `Layout` cannot show.  It cannot pass vacuously: the rebuild is a no-op with no active configuration, with autonomy
- * busy or with no viewer panel, so the `assertNotSame` below says the rebuild really happened.
+ * The rebuild is RUN, not modeled (a hand-built `Layout` cannot show a call site that does not carry something), and
+ * cannot pass vacuously: it is a no-op with no active configuration, with autonomy busy or with no viewer panel, so the
+ * `assertNotSame` below says it really happened.
  *
  * MUTATION: take the `takeThePendingTurns()` / `putThePendingTurnsBack(...)` pair out of
  * `RunningLayoutSync.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
@@ -587,8 +587,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A grid the window has replaced is let go: the map that found a panel's grid once held every grid ever built,
-     * about half a megabyte per rebuild of 1 - Main.
+     * A grid the window has replaced is let go (the map that found a panel's grid once kept every grid ever built).
      *
      * MUTATION: keep the window's grids in a map again, and this fails.
      */
@@ -809,8 +808,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A build keeps both of its captions of a station captioned on two squares (a long platform labeled at both ends),
-     * and a later build's caption still takes an earlier build's place.  Registering one used to let go of every other
-     * of the same window not on screen, its own build's included.
+     * and a later build's caption still takes an earlier build's place; registering one used to let go of every other
+     * of the same window not on screen.
      *
      * MUTATION: let a build evict its own caption again, or no caption evict another, and this fails.
      */
@@ -862,11 +861,8 @@ public class testAPendingTurnSurvivesTheRebuild
      * A station captioned on two pages keeps a caption on each, and both are written (OB-341).  Adam: *"It is OK to
      * show on another page what is going on on another."*  The station map is keyed by the STATION's square, so a
      * caption on another page is registered under the station's own key; a label is let go of only by a successor on
-     * the SAME page, and the grid stamps each caption with its page.
-     *
-     * Two detached labels of one station on two pages under one owner, as two cached pages' are; then the window writes
-     * its captions, as it does on every publish of the running diagram.
-     *
+     * the SAME page, and the grid stamps each caption with its page.  Two detached labels of one station on two pages
+     * under one owner; then the window writes its captions, as it does on every publish of the running diagram.
      * MUTATION: let a later page's label evict another page's, and this fails.
      */
     @Test
@@ -954,36 +950,10 @@ public class testAPendingTurnSurvivesTheRebuild
     {
         settle();
 
-        @SuppressWarnings("unchecked")
-        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+        final org.traincontrol.automationui.TileGraph.TileKey[] drawnOnce = aStationDrawnOnceOnTheShownPage();
 
-        String shownPage = String.valueOf(pages.getSelectedItem());
-
-        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
-        org.traincontrol.automationui.TileGraph.TileKey found = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
-        {
-            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
-                || ui.getLayoutStations(square).isEmpty())
-            {
-                continue;
-            }
-
-            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
-
-            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
-            {
-                found = square;
-                drawnAt = drawn.get(0);
-                break;
-            }
-        }
-
-        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
-
-        final org.traincontrol.automationui.TileGraph.TileKey station = found;
-        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
+        final org.traincontrol.automationui.TileGraph.TileKey station = drawnOnce[0];
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnOnce[1];
 
         final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
 
@@ -1018,11 +988,9 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
-     * bounds remembered for it are not overwritten (OB-341).  A caption-only redraw leaves the window's size and place
-     * alone and saves nothing; an explicit page change still sizes the window.
-     *
-     * Modeled on the validator's probe: the Medium pop-up made 160 pixels narrower and 120 shorter and moved, one
-     * caption taken off as the editor takes it off.  Remember Window Location is switched on and put back after.
+     * bounds remembered for it are not overwritten (OB-341); an explicit page change still sizes the window.  Modeled
+     * on the validator's probe: the Medium pop-up made 160 pixels narrower and 120 shorter and moved, one caption taken
+     * off as the editor takes it off.  Remember Window Location is switched on and put back after.
      *
      * MUTATION: let the caption redraw pack and save as `refreshDiagram` does, and this fails.
      */
@@ -1031,36 +999,13 @@ public class testAPendingTurnSurvivesTheRebuild
     {
         settle();
 
+        final org.traincontrol.automationui.TileGraph.TileKey[] drawnOnce = aStationDrawnOnceOnTheShownPage();
+
+        final org.traincontrol.automationui.TileGraph.TileKey station = drawnOnce[0];
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnOnce[1];
+
         @SuppressWarnings("unchecked")
         final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
-
-        String shownPage = String.valueOf(pages.getSelectedItem());
-
-        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
-        org.traincontrol.automationui.TileGraph.TileKey found = null;
-
-        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
-        {
-            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
-                || ui.getLayoutStations(square).isEmpty())
-            {
-                continue;
-            }
-
-            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
-
-            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
-            {
-                found = square;
-                drawnAt = drawn.get(0);
-                break;
-            }
-        }
-
-        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
-
-        final org.traincontrol.automationui.TileGraph.TileKey station = found;
-        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
 
         // REMEMBER WINDOW LOCATION ON, the operator's own choice put back below, with whatever was kept for the window
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
@@ -1154,6 +1099,9 @@ public class testAPendingTurnSurvivesTheRebuild
             window.goToLayoutPage(shown);
 
             for (int i = 0; i < 20; i++) pump();
+
+            // The resize can follow the pumps on a busy machine: waited for, and judged below either way
+            support.Components.waitFor(() -> natural[0].equals(support.Components.onTheEventThread(window::getSize)), 5000);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = window.getSize());
 
@@ -1449,6 +1397,40 @@ public class testAPendingTurnSurvivesTheRebuild
         });
 
         return count[0];
+    }
+
+    /** A station of the page shown that its grid draws exactly once, and the square that caption is drawn on. */
+    private static org.traincontrol.automationui.TileGraph.TileKey[] aStationDrawnOnceOnTheShownPage() throws Exception
+    {
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
+        org.traincontrol.automationui.TileGraph.TileKey found = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
+                || ui.getLayoutStations(square).isEmpty())
+            {
+                continue;
+            }
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
+
+            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
+            {
+                found = square;
+                drawnAt = drawn.get(0);
+                break;
+            }
+        }
+
+        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
+
+        return new org.traincontrol.automationui.TileGraph.TileKey[] {found, drawnAt};
     }
 
     /** Something to run with a direction set on plain track of the page shown, put back however it ends. */

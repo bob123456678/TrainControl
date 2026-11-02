@@ -36,15 +36,10 @@ import org.traincontrol.marklin.file.CS2File;
  * The ground truth gate: reduce a real track diagram and compare what comes out against the autonomy configuration
  * somebody wrote for that same layout by hand.
  *
- * It is deliberately NOT a pass/fail equality check.  The two are not supposed to match exactly:
- *
- *   - the generated graph should be a SUPERSET of Points, because every s88 becomes one whereas hand-authoring includes
- *     only the sensors somebody bothered with;
- *   - trailing moves are absent by default, so hand-written edges that trail through a switch will be missing until
- *     those branches are opened;
- *   - lock references are derived from shared tiles, so hand-written conservative locks may have no derived
- * counterpart,
- *     which is fine, while a derived lock the author never wrote is worth reading.
+ * It is deliberately NOT a pass/fail equality check.  The two are not supposed to match exactly: the generated graph
+ * should be a SUPERSET of Points (every s88 becomes one), trailing moves are absent by default, and lock references are
+ * derived from shared tiles, so hand-written conservative locks may have no derived counterpart (a derived lock the
+ * author never wrote is worth reading).
  *
  * What matters is the report it prints.  Read that, not the assertion count: the assertions only catch the reduction
  * collapsing entirely.
@@ -58,9 +53,8 @@ public class testAutonomyDiagramSampleLayout
     /**
      * The two ends of the one doorway between the pages autonomy is looking at.
      *
-     * Found once in the setup and kept, rather than each test writing the coordinates down again: three did, all wrong,
-     * and every test in this class was skipped from the @BeforeClass while the battery reported it green, because a
-     * skip is not a failure.
+     * Found once in the setup and kept, not written down as coordinates: a stale one skipped every test in this class
+     * from the @BeforeClass while the battery reported it green, because a skip is not a failure.
      */
     private static TileKey mainLink;
     private static TileKey bottomLink;
@@ -109,20 +103,14 @@ public class testAutonomyDiagramSampleLayout
 
         wireAccessories();
 
-        // Three pages are outside autonomy, excluded the way a user would exclude them (only Main and Bottom are used
-        // for autonomy; the rest are for convenience):
-        //
-        //   "4 - Combined" redraws tiles from the other pages.  Left in, it would mint a second Point for every sensor
+        // Three pages are outside autonomy, excluded the way a user would (only Main and Bottom are used for autonomy):
+        //   "4 - Combined" redraws tiles from the other pages; left in, it would mint a second Point for every sensor
         // it
         //   shows and a parallel set of edges.
-        //
-        //   "5 - Test" is a scratch page carrying a scissors tile, a drawing convention for a double slip across two
-        // tiles
-        //   that cannot be expressed per tile and so disqualifies any page it appears on: the disqualification working.
-        //
-        //   "3 - Top Parking" is a convenience view.  Every sensor the hand-built configuration uses is drawn on Main
-        // or
-        //   Bottom, so excluding it costs nothing and removes the one genuine pairing ambiguity in this layout.
+        //   "5 - Test" carries a scissors tile (a double slip across two tiles), which disqualifies any page it appears
+        //   on: the disqualification working.
+        //   "3 - Top Parking" is a convenience view; every sensor the hand-built configuration uses is drawn on Main or
+        //   Bottom, so excluding it removes the one genuine pairing ambiguity in this layout.
         Set<String> excluded = excludedPages;
 
         for (LayoutDiagram page : pages)
@@ -137,13 +125,10 @@ public class testAutonomyDiagramSampleLayout
 
         graph = new TileGraph(pages, excluded);
 
-        // FOUND rather than written down, because a written-down coordinate went stale (it said 15,5; the arrow sits at
-        // 14,5), skipping every test in this class from its @BeforeClass while the battery called it green.
-        //
-        // A link tile records its destination PAGE and nothing more, which is why the pairing has to be authored at
-        // all.  With Top Parking excluded there is exactly ONE arrow on Main pointing at Bottom and one on Bottom
-        // pointing back, so the pair is forced and can be looked up; the two arrows on Main pointing at Top Parking are
-        // left unpaired, which is what an unnamed link should do now that its destination is outside autonomy.
+        // FOUND rather than written down (see `mainLink`).  A link tile records its destination PAGE and nothing more,
+        // so the pairing has to be authored.  With Top Parking excluded there is exactly ONE arrow on Main pointing at
+        // Bottom and one on Bottom pointing back, so the pair is forced; the two arrows on Main pointing at Top Parking
+        // stay unpaired, as an unnamed link should.
         mainLink = onlyLinkFrom("1 - Main", "2 - Bottom", pages);
         bottomLink = onlyLinkFrom("2 - Bottom", "1 - Main", pages);
 
@@ -1861,13 +1846,8 @@ public class testAutonomyDiagramSampleLayout
         return out.toString();
     }
     /**
-     * A doorway switched off at one end is shut at both.
-     *
-     * OB-041 made the WRITER mutual (switching a paired link off switches its partner off) but the readers went on
-     * asking about the near end alone, and there is no migration: every setup saved before holds one-ended disables,
-     * and autonomy went on routing through a doorway the operator had excluded, in one direction.  This is what those
-     * files look like (a pairing with only one end in the disabled set); the graph has to treat it as shut, which
-     * repairs them without anybody running anything.
+     * A doorway switched off at one end is shut at both (OB-041).  Setups saved before the writer was made mutual hold
+     * one-ended disables (a pairing with only one end in the disabled set), and the graph has to treat them as shut.
      */
     @Test
     public void testALinkSwitchedOffAtOneEndIsShutAtBoth() throws Exception

@@ -267,15 +267,14 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     /**
      * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not.
      * `passesTheTailsOfTrainsItHasMoved` has two arms: the edge the mover wants IS one the tail covers (pinned above),
-     * and an edge the tail does not cover but which is LOCKED against one it does, the model's way of saying "the same
-     * piece of metal" (OB-073's shape, as OB-228 was).
+     * and an edge the tail does not cover but which is LOCKED against one it does ("the same piece of metal", OB-073's
+     * shape, as OB-228 was).
      *
      * The refinement: where BOTH edges carry places from the build, the lock alone is not enough; the tail has to lie
-     * on a place the mover's edge runs over, or the planner is stricter than its railway. So three arrangements are
-     * asserted, differing in nothing else: the lock with no places refuses, the lock with places the tail is not on
-     * allows, the lock with the place the tail IS on refuses again. The railway forces the order: A starts on B's home,
-     * so A moves first, and its three-unit tail over `RS_T -> RS_HA` is on B's only road home, `RS_P -> RS_Y`, unless
-     * the shared metal is not modeled.
+     * on a place the mover's edge runs over, or the planner is stricter than its railway. Three arrangements differ in
+     * nothing else: the lock with no places refuses, the lock with places the tail is not on allows, the lock with the
+     * place the tail IS on refuses again. A starts on B's home, so A moves first, and its three-unit tail over
+     * `RS_T -> RS_HA` is on B's only road home, `RS_P -> RS_Y`, unless the shared metal is not modeled.
      *
      * MUTATION, both run: dropping the lock-edge loop from `passesTheTailsOfTrainsItHasMoved` fails the first
      * arrangement. Dropping the `tailLiesOn` continue instead fails all four claims in this class, the control first:
@@ -320,8 +319,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
      * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184). Here A is already
      * home and never moves, so its tail is the one it left at the START of the plan, and the only check that sees it is
      * `liesAcrossAtStart`, through `Layout.tailLiesOn`, once for the lock partner (the lock, with places on both edges)
-     * and once for the other copies of the same metal (no lock at all). The other callers of `tailLiesOn` are covered
-     * by `anotherTailOn`.
+     * and once for the other copies of the same metal (no lock at all).
      *
      * The railway as above, with A standing at `RS_HA` from the start. B's only road home runs over `RS_P -> RS_Y`,
      * which shares the square `RS_bridge` with A's `RS_T -> RS_HA`. The control puts the squares apart, and is READY.

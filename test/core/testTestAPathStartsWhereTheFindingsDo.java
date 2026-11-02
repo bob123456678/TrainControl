@@ -212,6 +212,12 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         return panel;
     }
 
+    /** The word for a leg's color: purple to a station only a person may send a train to, else the leg's own. */
+    private String colorOf(TileKey end, String ordinary)
+    {
+        return I18n.t(session.manualOnlyStations().contains(end) ? "autosetup.ui.testColorPurple" : ordinary);
+    }
+
     /** The two squares clicked: what the strip says of the leg there and of the leg back. */
     private String[] legs(AutonomyEditorPanel panel, TileKey from, TileKey to) throws Exception
     {
@@ -224,7 +230,8 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
         // The legs read out between the message's fixed words, so the claim holds in any language
         String shape = I18n.f("autosetup.ui.testBothWays", session.describeTile(from), session.describeTile(to),
-            "\u0001", "\u0002", "\u0003");
+            "\u0001", "\u0002", "\u0003", colorOf(to, "autosetup.ui.testColorYellow"),
+            colorOf(from, "autosetup.ui.testColorAmber"));
 
         String before = shape.substring(0, shape.indexOf('\u0001'));
         String afterThere = shape.substring(shape.indexOf('\u0001') + 1, shape.indexOf('\u0002'));

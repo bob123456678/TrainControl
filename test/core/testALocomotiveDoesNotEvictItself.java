@@ -147,17 +147,7 @@ public class testALocomotiveDoesNotEvictItself
             assertFalse(head.isSimultaneousMultiUnitCompatible(member), "precondition: a head counts as compatible with"
                 + " its own member, so the sweep had nothing to take it off for");
 
-            Layout layout = new Layout(model);
-
-            MarklinFeedback first = model.newFeedback(8392, null);
-            MarklinFeedback second = model.newFeedback(8393, null);
-
-            model.setFeedbackState(first.getName(), false);
-            model.setFeedbackState(second.getName(), false);
-
-            layout.createPoint("MU A", true, first.getName());
-            layout.createPoint("MU B", true, second.getName());
-            layout.createEdge("MU A", "MU B");
+            Layout layout = twoStationsJoined("MU A", "MU B", 8392);
 
             layout.getPoint("MU A").setLocomotive(head);
 
@@ -207,17 +197,7 @@ public class testALocomotiveDoesNotEvictItself
 
             assertEquals(head.setLinkedLocomotives(consist), 1, "precondition: the member could not be linked to the head");
 
-            Layout layout = new Layout(model);
-
-            MarklinFeedback first = model.newFeedback(8394, null);
-            MarklinFeedback second = model.newFeedback(8395, null);
-
-            model.setFeedbackState(first.getName(), false);
-            model.setFeedbackState(second.getName(), false);
-
-            layout.createPoint("MU C", true, first.getName());
-            layout.createPoint("MU D", true, second.getName());
-            layout.createEdge("MU C", "MU D");
+            Layout layout = twoStationsJoined("MU C", "MU D", 8394);
 
             // BOTH STANDING, as a file written by hand, or by an older build, can have them.
             layout.getPoint("MU C").setLocomotive(head);
@@ -270,17 +250,7 @@ public class testALocomotiveDoesNotEvictItself
 
             assertEquals(head.setLinkedLocomotives(consist), 1, "precondition: the member could not be linked to the head");
 
-            Layout layout = new Layout(model);
-
-            MarklinFeedback first = model.newFeedback(8396, null);
-            MarklinFeedback second = model.newFeedback(8397, null);
-
-            model.setFeedbackState(first.getName(), false);
-            model.setFeedbackState(second.getName(), false);
-
-            layout.createPoint("MU E", true, first.getName());
-            layout.createPoint("MU F", true, second.getName());
-            layout.createEdge("MU E", "MU F");
+            Layout layout = twoStationsJoined("MU E", "MU F", 8396);
 
             layout.getPoint("MU E").setLocomotive(head);
             layout.getPoint("MU F").setLocomotive(other);
@@ -346,17 +316,7 @@ public class testALocomotiveDoesNotEvictItself
             assertFalse(head.isLinkedTo(member), "precondition: the member is linked in TrainControl as well, so this says"
                 + " nothing about the Central Station's own list");
 
-            Layout layout = new Layout(model);
-
-            MarklinFeedback first = model.newFeedback(8398, null);
-            MarklinFeedback second = model.newFeedback(8399, null);
-
-            model.setFeedbackState(first.getName(), false);
-            model.setFeedbackState(second.getName(), false);
-
-            layout.createPoint("MU G", true, first.getName());
-            layout.createPoint("MU H", true, second.getName());
-            layout.createEdge("MU G", "MU H");
+            Layout layout = twoStationsJoined("MU G", "MU H", 8398);
 
             layout.getPoint("MU G").setLocomotive(head);
             layout.getPoint("MU H").setLocomotive(other);
@@ -392,20 +352,28 @@ public class testALocomotiveDoesNotEvictItself
     private static final int MEMBER_ADDRESS = 75;
     private static final int OTHER_ADDRESS = 76;
 
-    /** One station with one train standing on it. */
-    private static Layout layoutWithOnePlacedTrain() throws Exception
+    /** A layout of two stations, each on a feedback of its own (off) from the sensor on, joined by one edge. */
+    private static Layout twoStationsJoined(String from, String to, int firstSensor) throws Exception
     {
         Layout layout = new Layout(model);
 
-        MarklinFeedback first = model.newFeedback(8390, null);
-        MarklinFeedback second = model.newFeedback(8391, null);
+        MarklinFeedback first = model.newFeedback(firstSensor, null);
+        MarklinFeedback second = model.newFeedback(firstSensor + 1, null);
 
         model.setFeedbackState(first.getName(), false);
         model.setFeedbackState(second.getName(), false);
 
-        layout.createPoint("SM A", true, first.getName());
-        layout.createPoint("SM B", true, second.getName());
-        layout.createEdge("SM A", "SM B");
+        layout.createPoint(from, true, first.getName());
+        layout.createPoint(to, true, second.getName());
+        layout.createEdge(from, to);
+
+        return layout;
+    }
+
+    /** One station with one train standing on it. */
+    private static Layout layoutWithOnePlacedTrain() throws Exception
+    {
+        Layout layout = twoStationsJoined("SM A", "SM B", 8390);
 
         layout.getPoint("SM A").setLocomotive(model.getLocByName(NAME) != null
             ? model.getLocByName(NAME) : model.getLocByName(RENAMED));

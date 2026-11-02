@@ -155,18 +155,13 @@ public class testAutoLayoutRace
     /**
      * A train already under way does not queue behind one that is still being dispatched.
      *
-     * `configureAndLockPath` holds the layout monitor across its whole lock loop, deliberately -
-     * claiming a path has to be atomic - and that loop sleeps CONFIGURE_SLEEP per edge and again per
-     * accessory, so on a long path it is held for seconds.  `updatePendingS88` used to want the same
-     * monitor, and every running locomotive calls it immediately before waiting for its next sensor.
+     * `configureAndLockPath` holds the layout monitor across its whole lock loop (claiming a path is atomic), sleeping
+     * CONFIGURE_SLEEP per edge and per accessory, so on a long path it is held for seconds.  `updatePendingS88`, which
+     * every running locomotive calls just before waiting for its next sensor, must not want that monitor: a train held
+     * there could cross and clear its sensor, and `waitForOccupiedFeedback` (it tests a LEVEL) would then wait for an
+     * occupancy of a sensor the train had already passed.
      *
-     * So a second train could be held here while its own train crossed that sensor AND cleared it
-     * again.  `waitForOccupiedFeedback` tests a LEVEL, so it would then find the sensor clear and wait
-     * for the next occupancy of a sensor the train had already passed - no slowing, no stopping.
-     *
-     * This holds the layout monitor for as long as a six-edge path would and asks whether the
-     * bookkeeping still runs.  Driven directly rather than through autonomy, because what is being
-     * tested is which monitor guards what, and a full simulated run would make the timing the subject.
+     * Driven directly, not through autonomy: the subject is which monitor guards what, not timing.
      */
     @Test
     public void testARunningTrainIsNotBlockedByOneBeingDispatched() throws Exception
@@ -224,13 +219,10 @@ public class testAutoLayoutRace
     /**
      * A train that never arrives is said out loud, and the wait carries on.
      *
-     * The wait itself is right to be endless - a sensor is the only thing that can say where a train
-     * is, and neither driving on blind nor stopping mid-block on a guess is a safe automatic answer -
-     * but the operator was told nothing at all.  A locomotive that failed to start, or that took a
-     * different route from the one it was given, simply stopped being mentioned.
+     * The wait is right to be endless (only a sensor says where a train is, and driving on blind or stopping on a guess
+     * is not safe), but the operator must be told when a locomotive failed to start or took another route.
      *
-     * The threshold is turned down here rather than waiting three real minutes; it is not final for
-     * that reason, exactly as Layout.TIMETABLE_STUCK_MS is not.
+     * The threshold is turned down here rather than waiting three real minutes, as Layout.TIMETABLE_STUCK_MS is.
      */
     @Test
     public void testALocomotiveWaitingTooLongForASensorSaysSo() throws Exception
@@ -306,10 +298,9 @@ public class testAutoLayoutRace
     /**
      * And it is said ONCE, however the sensor behaves afterwards.
      *
-     * The wait restarts itself when the feedback does not stay occupied for minDuration - a flicker is
-     * not an arrival - and the advisory's remaining time was carried into that restart by subtraction.
-     * Past the threshold the remainder is negative, and flooring it at a millisecond meant every
-     * flicker announced the same train again, immediately, as "0 minutes".
+     * The wait restarts when the feedback does not stay occupied for minDuration (a flicker is not an arrival).  The
+     * advisory's remaining time carries into the restart by subtraction; past the threshold it is negative, and
+     * flooring it at a millisecond would announce the same train again on every flicker, as "0 minutes".
      */
     @Test
     public void testTheAdvisoryIsSaidOnceEvenIfTheSensorFlickers() throws Exception
@@ -375,12 +366,10 @@ public class testAutoLayoutRace
     /**
      * And a wait that is SUPPOSED to be endless says nothing at all.
      *
-     * A route's trigger monitor sits on its sensor for as long as the layout runs - that is the whole
-     * job - and it does so on a locomotive called "Dummy Loc" that exists only to borrow these
-     * utilities.  An advisory built into the wait itself would therefore have announced, once per
-     * route and for ever, that a locomotive nobody owns had failed to arrive.
-     *
-     * So the advisory is asked for by the caller, and this is the test that keeps it that way.
+     * A route's trigger monitor waits on its sensor for as long as the layout runs, on a locomotive called "Dummy Loc"
+     * that exists only to borrow these utilities; an advisory built into the wait itself would announce, once per
+     * route, that a locomotive nobody owns had failed to arrive.  So the caller asks for the advisory, and this keeps
+     * it so.
      */
     @Test
     public void testAWaitThatIsMeantToBeEndlessStaysQuiet() throws Exception
@@ -422,17 +411,14 @@ public class testAutoLayoutRace
     /**
      * Waiting for the power to come on gives up, rather than parking the only switching thread.
      *
-     * The power state is written in one place - the echo from the Central Station - so nothing local
-     * can release this wait, and the socket is unconnected, which means a datagram sent to a station
-     * that has been switched off succeeds and disappears.  Untimed, one click on a tile stopped every
-     * tile in the application from responding again.
+     * Only the Central Station's echo writes the power state, and a datagram sent to a switched-off station succeeds
+     * and disappears, so nothing local can release an untimed wait.
      */
     @Test
     public void testWaitingForPowerGivesUp() throws Exception
     {
-        // Power believed OFF, which is the state the wait is entered from - a tile click that has to
-        // turn the power on first.  Set directly rather than by sending STOP, because whether a STOP
-        // echoes back at all is the very thing being simulated away here: nothing is going to answer.
+        // Power believed OFF, the state a tile click that has to turn the power on first is in.  Set directly: whether
+        // a STOP echoes back at all is what is being simulated away.
         java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("powerState");
 
         field.setAccessible(true);
@@ -450,10 +436,7 @@ public class testAutoLayoutRace
             "waited " + took + "ms for a deadline of 400ms");
     }
 
-    /**
-     * updatePendingS88 is private - it is bookkeeping, and nothing outside the driving loop has any
-     * business calling it.  Reached here the way testImportRename reaches its internals.
-     */
+    /** updatePendingS88 is private bookkeeping; reached the way testImportRename reaches its internals. */
     private static void pendingS88(Layout layout, Locomotive loc, String s88) throws Exception
     {
         java.lang.reflect.Method method = Layout.class.getDeclaredMethod(

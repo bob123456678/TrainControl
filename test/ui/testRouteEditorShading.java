@@ -11,23 +11,24 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * OB-121: the + row at the bottom of the conditions list is white (Adam: "make all its cells white, not gray").
+ * OB-121: the lines of the conditions list that are not conditions, the group captions, are white, not gray.
  *
- * Reading the code said this could not happen: `greyWhatCannotBeEdited` exempts the last row, which IS the + row.  What
- * the reading missed is that a table cell renderer hands back ONE recycled component for every cell, so the cell drawn
- * before the + row paints that shared label gray, and the exemption handed the same label back for each cell of the
- * + row.  So the order below is the test: ask for a grayed cell FIRST and the + row's cells after it, as the table
- * paints them; the other way round passes with the defect present.
+ * Reading the code said this could not happen: `greyWhatCannotBeEdited` exempts such a line.  What the reading missed
+ * is that a table cell renderer hands back ONE recycled component for every cell, so the cell drawn before the caption
+ * line paints that shared label gray, and the exemption handed the same label back for each of its cells.  So the
+ * order below is the test: ask for a grayed cell FIRST and the caption line's cells after it, as the table paints
+ * them; the other way round passes with the defect present.
  *
  * @author Adam
  */
 public class testRouteEditorShading
 {
     /**
-     * Every cell of the + row is the table's own color, even straight after a grayed one.
+     * Every cell of a caption line is the table's own color, even straight after a grayed one, except the drag handle,
+     * whose column is gray on every line (OB-396).
      *
-     * MUTATION: either exemption going back to a bare `return out` fails this, and only because the grayed cell is
-     * rendered first.
+     * MUTATION: the caption exemption in `greyWhatCannotBeEdited` going back to a bare `return out` fails this, and
+     * only because the grayed cell is rendered first.
      */
     @Test
     public void testThePlusRowIsNotLeftHoldingTheLastCellsGrey() throws Exception
@@ -42,23 +43,23 @@ public class testRouteEditorShading
 
             assertNotNull(conditions, "cannot find the conditions table in the route editor");
 
-            // One condition and the + row beneath it.
+            // The group's caption, and its one condition beneath it.
             assertEquals(conditions.getRowCount(), 2,
-                "expected one condition and the + row, got " + conditions.getRowCount()
+                "expected a caption and one condition, got " + conditions.getRowCount()
                 + " rows - the fixture is not what this test is about");
 
-            int plus = conditions.getRowCount() - 1;
+            int caption = 0;
 
             java.awt.Color plain = conditions.getBackground();
 
-            // PRIME the recycled component, exactly as painting the row above does.
+            // PRIME the recycled component, exactly as painting the line below does.
             boolean primed = false;
 
-            for (int column = 0; column < conditions.getColumnCount(); column++)
+            for (int column = 1; column < conditions.getColumnCount(); column++)
             {
-                if (conditions.getModel().isCellEditable(0, column)) continue;
+                if (conditions.getModel().isCellEditable(1, column)) continue;
 
-                Component grey = render(conditions, 0, column);
+                Component grey = render(conditions, 1, column);
 
                 if (grey.getBackground() != null && !grey.getBackground().equals(plain))
                 {
@@ -68,16 +69,16 @@ public class testRouteEditorShading
 
             assertTrue(primed,
                 "no cell on the condition row came back shaded, so nothing has painted the shared "
-                + "renderer grey and the + row below could not inherit it either - this test is no "
+                + "renderer grey and the caption line could not inherit it either - this test is no "
                 + "longer reproducing the thing it is about");
 
-            // And now the + row, in the order the table draws it.
-            for (int column = 0; column < conditions.getColumnCount(); column++)
+            // And now the caption line, every column but the handle's.
+            for (int column = 1; column < conditions.getColumnCount(); column++)
             {
-                Component cell = render(conditions, plus, column);
+                Component cell = render(conditions, caption, column);
 
                 assertEquals(cell.getBackground(), plain,
-                    "column " + column + " of the + row came back " + cell.getBackground()
+                    "column " + column + " of the caption line came back " + cell.getBackground()
                     + " rather than the table's own " + plain + ". The renderer hands back one "
                     + "recycled component for every cell, so declining to ADD the grey is not the "
                     + "same as not having it - the exemption has to take the previous cell's wash "

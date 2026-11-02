@@ -146,10 +146,8 @@ public class RightClickFunctionMenu extends MouseAdapter
             LocomotiveFunctionAssign edit =
                 new LocomotiveFunctionAssign(activeLoc, tcui, fNumber, true);
 
-            // Focus the icon selector when the dialog actually shows.  This used to be a bare
-            // focusImages() after showOptionDialog returned - the modal was already disposed, so
-            // it never did anything.  The ancestor listener is the same pattern GraphLocAssign
-            // uses for its dropdown.
+            // Focus the icon selector when the dialog actually shows: after showOptionDialog returns the modal is
+            // already disposed, so a bare focusImages() there does nothing.
             edit.addAncestorListener(new javax.swing.event.AncestorListener()
             {
                 @Override

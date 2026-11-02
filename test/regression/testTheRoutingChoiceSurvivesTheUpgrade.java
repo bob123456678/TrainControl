@@ -272,19 +272,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             });
 
         // No session, so there is nowhere to put the answer.
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], null);
+            giveTheWindowThisSession(ui[0], null);
 
             org.traincontrol.automation.Layout live = new org.traincontrol.automation.Layout(model);
 
-            java.lang.reflect.Method migrate =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
-            migrate.setAccessible(true);
-
-            migrate.invoke(ui[0], live);
+            migrateTheStoredChoice(ui[0], live);
 
             assertEquals(prefs.get(LEGACY, null), "SHORTEST_LENGTH",
                 "the first migration deleted the only durable copy of the choice even though it had "
@@ -297,7 +289,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 + "though the user's answer is sitting on disk");
 
         // The tick of a checkbox: nothing about the world has changed, so nothing about the answer should.
-            migrate.invoke(ui[0], live);
+            migrateTheStoredChoice(ui[0], live);
 
             assertEquals(prefs.get(LEGACY, null), "SHORTEST_LENGTH",
                 "the SECOND migration deleted the key, because it asked the live layout whether the "
@@ -324,8 +316,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
      * A configuration that exists and has NOT answered gets the old choice written into it: a session with an active
      * configuration carrying no pathPreference, the migration working end to end.
      *
-     * MUTATION THIS CATCHES: AutonomySession.getGlobal returning "" instead of null for an absent key.  The guard
-     * then fires on the FIRST call, the legacy key is deleted, and nothing is ever stored.
+     * MUTATION THIS CATCHES: in `TrainControlUI`'s migration, take any stored configuration as having answered (drop
+     * `stored.getGlobal("pathPreference") != null`): the legacy key is deleted and nothing is ever stored.
      */
     @Test
     public void testAConfigurationWithNoAnswerIsGivenTheOldOne() throws Exception
@@ -388,19 +380,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             assertNull(session.getGlobal("pathPreference"),
                 "the fixture already carries an answer, so this test would prove nothing");
 
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            giveTheWindowThisSession(ui[0], session);
 
             org.traincontrol.automation.Layout live = new org.traincontrol.automation.Layout(model);
 
-            java.lang.reflect.Method migrate =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
-            migrate.setAccessible(true);
-
-            migrate.invoke(ui[0], live);
+            migrateTheStoredChoice(ui[0], live);
 
             assertEquals(session.getGlobal("pathPreference"), "SHORTEST_LENGTH",
                 "the choice was not written into the configuration that had room for it - which is "
@@ -471,10 +455,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             });
 
             // No session at all, which is the legacy user exactly.
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], null);
+            giveTheWindowThisSession(ui[0], null);
 
             org.traincontrol.automation.Layout live = new org.traincontrol.automation.Layout(model);
 
@@ -482,12 +463,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             live.setPathPreference(
                 org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED);
 
-            java.lang.reflect.Method migrate =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
-            migrate.setAccessible(true);
-
-            migrate.invoke(ui[0], live);
+            migrateTheStoredChoice(ui[0], live);
 
             assertEquals(live.getPathPreference(),
                 org.traincontrol.automation.Layout.PathPreference.LEAST_RECENTLY_VISITED,
@@ -582,19 +558,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             assertTrue(session.setGlobal("pathPreference", "LONGEST_LENGTH"),
                 "the fixture could not store a global, so this test would pass for the wrong reason");
 
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            giveTheWindowThisSession(ui[0], session);
 
             org.traincontrol.automation.Layout live = new org.traincontrol.automation.Layout(model);
 
-            java.lang.reflect.Method migrate =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
-            migrate.setAccessible(true);
-
-            migrate.invoke(ui[0], live);
+            migrateTheStoredChoice(ui[0], live);
 
             assertNull(prefs.get(LEGACY, null),
                 "the pre-upgrade key survived even though the configuration has its own answer - so a "
@@ -735,5 +703,27 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /** Sets the window's autonomy session field, which is null for a user whose autonomy comes from autonomy.json. */
+    private static void giveTheWindowThisSession(org.traincontrol.gui.TrainControlUI ui, Object session)
+        throws Exception
+    {
+        java.lang.reflect.Field sessionField =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
+        sessionField.setAccessible(true);
+        sessionField.set(ui, session);
+    }
+
+    /** Runs the window's start-up migration of the stored path preference onto `live`. */
+    private static void migrateTheStoredChoice(org.traincontrol.gui.TrainControlUI ui,
+        org.traincontrol.automation.Layout live) throws Exception
+    {
+        java.lang.reflect.Method migrate =
+            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
+                "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
+        migrate.setAccessible(true);
+
+        migrate.invoke(ui, live);
     }
 }

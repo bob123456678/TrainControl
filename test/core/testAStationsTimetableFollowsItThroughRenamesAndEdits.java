@@ -35,9 +35,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("B1 rename");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheThreeStations();
         session.setPointFlag(new TileKey("main", 3, 1), AutonomyBuilder.CAN_REVERSE, true);
 
         org.json.JSONObject before = new org.json.JSONObject(session.buildConfiguration());
@@ -45,15 +43,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         String[] leg = anEdgeBetween(before, "Beta", "Gamma");
 
         // THE TURNING COPY'S WAY BACK, beside the plain copy's to the same place
-        String[] turned = null;
-
-        for (Object o : before.getJSONArray("edges"))
-        {
-            org.json.JSONObject e = (org.json.JSONObject) o;
-
-            if (e.getString("start").startsWith("Beta") && e.getString("start").contains("reverse")
-                && e.getString("end").startsWith("Alpha")) turned = new String[] {e.getString("start"), e.getString("end")};
-        }
+        String[] turned = betasTurningCopyToAlpha(before);
 
         assertNotNull(leg, "precondition: no edge from Beta to Gamma");
         assertNotNull(turned, "precondition: no edge from Beta's turning copy to Alpha");
@@ -109,13 +99,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         LayoutDiagram page = threeStationsInARow("A");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheThreeStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from Beta to Gamma");
+        String[] leg = aLegBetween("Beta", "Gamma", "Beta");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
@@ -128,11 +114,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         session.save();
 
         // THE NEXT START, with B made the one in use
-        AutonomySession next = new AutonomySession(layout);
-
-        next.open(Arrays.asList(page));
-        next.getStore().setActiveConfiguration("B");
-        next.rebuild();
+        AutonomySession next = aNextStartWithInUse(page, "B");
 
         assertTheTimetableIsLoadable(next, "renaming Beta to Bravo while another configuration was in use", 1);
 
@@ -151,13 +133,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("C4");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheThreeStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from Beta to Gamma");
+        String[] leg = aLegBetween("Beta", "Gamma", "Beta");
 
         // A TRAIN AT GAMMA, come in from the west along Beta -> Gamma
         TileKey gamma = new TileKey("main", 5, 1);
@@ -200,15 +178,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         session.getStore().setActiveConfiguration("B");
         session.setPointFlag(beta, AutonomyBuilder.CAN_REVERSE, true);
 
-        String[] turned = null;
-
-        for (Object o : new org.json.JSONObject(session.buildConfiguration()).getJSONArray("edges"))
-        {
-            org.json.JSONObject e = (org.json.JSONObject) o;
-
-            if (e.getString("start").startsWith("Beta") && e.getString("start").contains("reverse")
-                && e.getString("end").startsWith("Alpha")) turned = new String[] {e.getString("start"), e.getString("end")};
-        }
+        String[] turned = betasTurningCopyToAlpha(new org.json.JSONObject(session.buildConfiguration()));
 
         assertNotNull(turned, "precondition: no edge from Beta's turning copy to Alpha in B");
 
@@ -229,11 +199,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         next.save();
 
         // AND B CHOSEN, by a session of its own
-        AutonomySession after = new AutonomySession(layout);
-
-        after.open(Arrays.asList(page));
-        after.getStore().setActiveConfiguration("B");
-        after.rebuild();
+        AutonomySession after = aNextStartWithInUse(page, "B");
 
         assertTheTimetableIsLoadable(after, "renaming Beta to Bravo with A in use, B alone building the leg's copy", 1);
 
@@ -250,31 +216,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     @Test
     public void testARenameToAnotherStationsNameCarriesItsLegs() throws Exception
     {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+        LayoutDiagram page = aRowOfFourNamedStations(111, "A1 moved");
 
-        for (int i = 0; i < 4; i++)
-        {
-            page.addComponent(componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0, 111 + i, 111 + i, accessoryDecoderType.MM2, null);
-
-            if (i < 3) page.addComponent(componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        }
-
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("A1 moved");
-
-        String[] names = {"Alpha", "Beta", "Gamma", "Delta"};
-
-        for (int i = 0; i < 4; i++)
-        {
-            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
-            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
-        }
-
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Gamma", "Delta");
-
-        assertNotNull(leg, "precondition: no edge from Gamma to Delta");
+        String[] leg = aLegBetween("Gamma", "Delta", "Gamma");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
@@ -298,19 +242,14 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("B2 page");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+        String[] leg = aLegBetween("main 3,1", "Gamma", "the unnamed station");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
         // AND A TRAIN AT ALPHA, come in along the rail from the unnamed station
-        String[] step = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Alpha");
-
-        assertNotNull(step, "precondition: no edge from the unnamed station to Alpha");
+        String[] step = aLegBetween("main 3,1", "Alpha", "the unnamed station");
 
         TileKey alpha = new TileKey("main", 1, 1);
 
@@ -358,12 +297,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("C1 rename");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+        String[] leg = aLegBetween("main 3,1", "Gamma", "the unnamed station");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
@@ -401,12 +337,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("B rename");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from the middle station to Gamma");
+        String[] leg = aLegBetween("main 3,1", "Gamma", "the middle station");
 
         // THE EDITOR OPENS on a setup whose stations are called Alpha and Gamma
         org.json.JSONObject opened = session.snapshotSetup();
@@ -420,9 +353,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            String[] renamed = anEdgeBetween(built, "main 3,1", "Omega");
-
-            assertNotNull(renamed, "precondition: no edge from the middle station to Omega");
+            String[] renamed = aLegBetween(built, "main 3,1", "Omega", "the middle station");
 
             // THE TIMETABLE CHANGES ON THE RAILWAY ALONE, in the new name, and a fold takes it
             org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
@@ -459,8 +390,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("B rename fold");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
         org.json.JSONObject opened = session.snapshotSetup();
 
@@ -472,9 +402,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            String[] renamed = anEdgeBetween(built, "main 3,1", "Omega");
-
-            assertNotNull(renamed, "precondition: no edge from the middle station to Omega");
+            String[] renamed = aLegBetween(built, "main 3,1", "Omega", "the middle station");
 
             // CANCEL FIRST, and then its own fold of the railway - built with the new name, its timetable changed
             org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
@@ -510,8 +438,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("C1 reuse");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
         org.json.JSONObject opened = session.snapshotSetup();
 
@@ -524,9 +451,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            String[] renamed = anEdgeBetween(built, "main 3,1", "Omega");
-
-            assertNotNull(renamed, "precondition: no edge from the middle station to Omega");
+            String[] renamed = aLegBetween(built, "main 3,1", "Omega", "the middle station");
 
             org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
 
@@ -563,8 +488,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("C1 forget");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
         org.json.JSONObject opened = session.snapshotSetup();
 
@@ -595,12 +519,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("C3 move");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+        String[] leg = aLegBetween("main 3,1", "Gamma", "the unnamed station");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
@@ -612,9 +533,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         built.put("timetable", aTimetableOf(leg, leg));
 
         // MOVED, as the track editor moves a tile, and the fold behind its Save while an edit waits
-        java.util.Map<TileKey, TileKey> moves = new java.util.LinkedHashMap<>();
-
-        moves.put(new TileKey("main", 3, 1), new TileKey("main", 3, 2));
+        java.util.Map<TileKey, TileKey> moves = theMiddleSquareMovedDown();
 
         assertTrue(session.moveTiles(moves), "precondition: the square did not move");
 
@@ -683,19 +602,14 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("B2 move");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+        String[] leg = aLegBetween("main 3,1", "Gamma", "the unnamed station");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
         // MOVED, as the track editor moves a tile
-        java.util.Map<TileKey, TileKey> moves = new java.util.LinkedHashMap<>();
-
-        moves.put(new TileKey("main", 3, 1), new TileKey("main", 3, 2));
+        java.util.Map<TileKey, TileKey> moves = theMiddleSquareMovedDown();
 
         session.getStore().moveTiles(moves);
 
@@ -705,6 +619,107 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         assertEquals(moved, "main 3,2" + leg[0].substring("main 3,1".length()), "the leg through the unnamed station"
             + " still names the square it was moved off (RSA5-B2)");
+    }
+
+    /** Names the three stations of the row Alpha, Beta and Gamma. */
+    private void nameTheThreeStations()
+    {
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+    }
+
+    /** Names the first and the last station of the row Alpha and Gamma, and leaves the middle one unnamed. */
+    private void nameTheEndStations()
+    {
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+    }
+
+    /** The edge between two stations in the build as it stands now; the claim fails when there is none. */
+    private String[] aLegBetween(String from, String to, String fromWords)
+    {
+        return aLegBetween(new org.json.JSONObject(session.buildConfiguration()), from, to, fromWords);
+    }
+
+    /** The edge between two stations in a build; the claim fails when there is none. */
+    private static String[] aLegBetween(org.json.JSONObject built, String from, String to, String fromWords)
+    {
+        String[] leg = anEdgeBetween(built, from, to);
+
+        assertNotNull(leg, "precondition: no edge from " + fromWords + " to " + to);
+
+        return leg;
+    }
+
+    /** The edge from Beta's turning copy to Alpha in a build, or null. */
+    private static String[] betasTurningCopyToAlpha(org.json.JSONObject built)
+    {
+        String[] turned = null;
+
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject e = (org.json.JSONObject) o;
+
+            if (e.getString("start").startsWith("Beta") && e.getString("start").contains("reverse")
+                && e.getString("end").startsWith("Alpha")) turned = new String[] {e.getString("start"), e.getString("end")};
+        }
+
+        return turned;
+    }
+
+    /** A session of its own on the page, with the named configuration made the one in use and the railway rebuilt. */
+    private AutonomySession aNextStartWithInUse(LayoutDiagram page, String configuration) throws Exception
+    {
+        AutonomySession next = new AutonomySession(layout);
+
+        next.open(Arrays.asList(page));
+        next.getStore().setActiveConfiguration(configuration);
+        next.rebuild();
+
+        return next;
+    }
+
+    /** The middle square of the row moved one down, as the track editor moves a tile. */
+    private static java.util.Map<TileKey, TileKey> theMiddleSquareMovedDown()
+    {
+        java.util.Map<TileKey, TileKey> moves = new java.util.LinkedHashMap<>();
+
+        moves.put(new TileKey("main", 3, 1), new TileKey("main", 3, 2));
+
+        return moves;
+    }
+
+    /**
+     * A page of four feedback squares with straights between (addresses run on from `address`), opened in the session
+     * under a new configuration as the stations Alpha, Beta, Gamma and Delta.
+     */
+    private LayoutDiagram aRowOfFourNamedStations(int address, String configuration) throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+
+        for (int i = 0; i < 4; i++)
+        {
+            page.addComponent(componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0, address + i, address + i,
+                accessoryDecoderType.MM2, null);
+
+            if (i < 3) page.addComponent(componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize(configuration);
+
+        String[] names = {"Alpha", "Beta", "Gamma", "Delta"};
+
+        for (int i = 0; i < 4; i++)
+        {
+            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
+            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
+        }
+
+        return page;
     }
 
     /** A built configuration of this session with the timetable given, as the running layout writes it. */
@@ -729,31 +744,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     @Test
     public void testARenameToAnotherStationsNameCarriesAnotherConfigurationsLegs() throws Exception
     {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+        LayoutDiagram page = aRowOfFourNamedStations(121, "A");
 
-        for (int i = 0; i < 4; i++)
-        {
-            page.addComponent(componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0, 121 + i, 121 + i, accessoryDecoderType.MM2, null);
-
-            if (i < 3) page.addComponent(componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        }
-
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("A");
-
-        String[] names = {"Alpha", "Beta", "Gamma", "Delta"};
-
-        for (int i = 0; i < 4; i++)
-        {
-            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
-            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
-        }
-
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Gamma", "Delta");
-
-        assertNotNull(leg, "precondition: no edge from Gamma to Delta");
+        String[] leg = aLegBetween("Gamma", "Delta", "Gamma");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
@@ -765,11 +758,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         session.setPointName(new TileKey("main", 3, 1), "Gamma");
         session.save();
 
-        AutonomySession next = new AutonomySession(layout);
-
-        next.open(Arrays.asList(page));
-        next.getStore().setActiveConfiguration("B");
-        next.rebuild();
+        AutonomySession next = aNextStartWithInUse(page, "B");
 
         assertEquals(legOf(next, 0)[0], "Gamma (2)" + leg[0].substring("Gamma".length()), "another configuration's leg"
             + " out of the station that was Gamma was not carried to what it is called now (RSA5-A1)");
@@ -869,21 +858,16 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("B2 save");
 
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        nameTheEndStations();
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
-
-        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+        String[] leg = aLegBetween("main 3,1", "Gamma", "the unnamed station");
 
         session.setGlobal("timetable", aTimetableOf(leg));
 
         // THE RAILWAY RUNNING, built before the move
         org.json.JSONObject running = new org.json.JSONObject(session.buildConfiguration());
 
-        java.util.Map<TileKey, TileKey> moves = new java.util.LinkedHashMap<>();
-
-        moves.put(new TileKey("main", 3, 1), new TileKey("main", 3, 2));
+        java.util.Map<TileKey, TileKey> moves = theMiddleSquareMovedDown();
 
         session.moveTiles(moves);
 
@@ -1018,9 +1002,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         String[][] legs = twoPagesWithATimetable("aside anchor");
 
-        String[] back = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Alpha");
-
-        assertNotNull(back, "precondition: no edge from Beta to Alpha");
+        String[] back = aLegBetween("Beta", "Alpha", "Beta");
 
         session.setGlobal("timetable", aTimetableOf(legs[0], legs[1], back));
 

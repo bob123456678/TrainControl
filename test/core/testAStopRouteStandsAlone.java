@@ -76,20 +76,11 @@ public class testAStopRouteStandsAlone
     @Test
     public void testAnImportSplitsARouteThatMixesAStop() throws Exception
     {
-        JSONObject file = new JSONObject(new String(java.nio.file.Files.readAllBytes(new java.io.File(
-            support.Scenario.folderFor("live-snapshot"), "config/gleisbilder/routes.json").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        JSONObject file = hisRoutesFile();
 
         JSONArray routes = file.getJSONArray("routes");
 
-        JSONObject his = null;
-
-        for (int i = 0; i < routes.length(); i++)
-        {
-            if (HIS.equals(routes.getJSONObject(i).optString("name"))) his = routes.getJSONObject(i);
-        }
-
-        assertNotNull(his, "precondition: his routes file has no " + HIS);
+        JSONObject his = hisRouteIn(file);
 
         // SAVED ARMED, so the split is seen to keep a route armed as the file saved it
         his.put("auto", true);
@@ -207,20 +198,9 @@ public class testAStopRouteStandsAlone
     @Test
     public void testTheStopRouteIsNumberedAsAUsersRouteIs() throws Exception
     {
-        JSONObject file = new JSONObject(new String(java.nio.file.Files.readAllBytes(new java.io.File(
-            support.Scenario.folderFor("live-snapshot"), "config/gleisbilder/routes.json").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        JSONObject file = hisRoutesFile();
 
-        JSONArray routes = file.getJSONArray("routes");
-
-        JSONObject his = null;
-
-        for (int i = 0; i < routes.length(); i++)
-        {
-            if (HIS.equals(routes.getJSONObject(i).optString("name"))) his = routes.getJSONObject(i);
-        }
-
-        assertNotNull(his, "precondition: his routes file has no " + HIS);
+        JSONObject his = hisRouteIn(file);
 
         // HIS ROUTE ALONE, NUMBERED LOW
         his.put("id", 7);
@@ -332,6 +312,31 @@ public class testAStopRouteStandsAlone
                 if (model.getRoute(each) != null) model.deleteRoute(each);
             }
         }
+    }
+
+    /** The routes file of his frozen railway, read as the Import door reads it. */
+    private static JSONObject hisRoutesFile() throws Exception
+    {
+        return new JSONObject(new String(java.nio.file.Files.readAllBytes(new java.io.File(
+            support.Scenario.folderFor("live-snapshot"), "config/gleisbilder/routes.json").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /** His mixed route in a routes file; the claim fails when the file has none. */
+    private static JSONObject hisRouteIn(JSONObject file)
+    {
+        JSONArray routes = file.getJSONArray("routes");
+
+        JSONObject his = null;
+
+        for (int i = 0; i < routes.length(); i++)
+        {
+            if (HIS.equals(routes.getJSONObject(i).optString("name"))) his = routes.getJSONObject(i);
+        }
+
+        assertNotNull(his, "precondition: his routes file has no " + HIS);
+
+        return his;
     }
 
     /**

@@ -197,13 +197,8 @@ public class testADiagramClickAsksFirst
 
         int mark = sent.size();
 
-        try (Answering answering = Answering.start(
-            message -> Answering.press(I18n.t("layout.ui.optionProceed"))))
-        {
-            Mouse.click(tile(SWITCH_X, SWITCH_Y));
-
-            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "a click with the power off asked nothing");
-        }
+        clickAndAnswer(tile(SWITCH_X, SWITCH_Y), I18n.t("layout.ui.optionProceed"),
+            "a click with the power off asked nothing");
 
         assertTrue(Components.waitFor(() -> turnout.isSwitched() != was, PATIENCE_MS), "Proceed did not throw it");
 
@@ -228,13 +223,8 @@ public class testADiagramClickAsksFirst
 
         int mark = sent.size();
 
-        try (Answering answering = Answering.start(
-            message -> Answering.press(I18n.t("layout.ui.optionTurnPowerOnAndProceed"))))
-        {
-            Mouse.click(tile(SWITCH_X, SWITCH_Y));
-
-            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "a click with the power off asked nothing");
-        }
+        clickAndAnswer(tile(SWITCH_X, SWITCH_Y), I18n.t("layout.ui.optionTurnPowerOnAndProceed"),
+            "a click with the power off asked nothing");
 
         assertTrue(Components.waitFor(() -> turnout.isSwitched() != was, PATIENCE_MS), "the turnout was not thrown");
 
@@ -317,12 +307,7 @@ public class testADiagramClickAsksFirst
 
         int mark = sent.size();
 
-        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.ok"))))
-        {
-            Mouse.click(tile(SIGNAL_X, SIGNAL_Y));
-
-            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "nothing was asked before clearing the protection");
-        }
+        clickAndAnswer(tile(SIGNAL_X, SIGNAL_Y), I18n.t("ui.ok"), "nothing was asked before clearing the protection");
 
         assertTrue(Components.waitFor(() -> !signal.isSwitched(), PATIENCE_MS), "OK did not set the signal green");
 
@@ -401,6 +386,17 @@ public class testADiagramClickAsksFirst
         model.stop();
 
         assertTrue(model.waitForPowerState(false, PATIENCE_MS), "the power did not go off");
+    }
+
+    /** Clicks the square, presses the button when the question comes, and checks that one was asked. */
+    private static void clickAndAnswer(LayoutLabel square, String button, String notAsked) throws Exception
+    {
+        try (Answering answering = Answering.start(message -> Answering.press(button)))
+        {
+            Mouse.click(square);
+
+            assertTrue(answering.awaitAsked(1, PATIENCE_MS), notAsked);
+        }
     }
 
     /**

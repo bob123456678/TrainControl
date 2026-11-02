@@ -15,19 +15,10 @@ import org.traincontrol.util.I18n;
 /**
  * Saves a track diagram to a picture file, at whatever size it is asked for.
  *
- * There was no way to get a diagram out of TrainControl except by photographing the screen, which
- * caps it at the size of the window and at whatever part of it happened to be scrolled into view. A
- * diagram is the one thing about a layout worth showing somebody else - in a manual, on a forum, or
- * beside the layout itself - so it should be possible to hand over the whole of one, sharp.
+ * Drawn OFFSCREEN from a fresh grid at the requested tile size, not by photographing the on-screen component, which
+ * would inherit its scroll position, window size and selection highlights.
  *
- * Drawn OFFSCREEN rather than by photographing the on-screen grid. Painting the visible component
- * would inherit its scroll position, its window size, and its selection highlights; building a fresh
- * grid at the requested tile size and painting that gives the whole diagram, at any size, with none
- * of the interface in it.
- *
- * The tiles come from the same LayoutGrid the application draws with, so an export cannot drift away
- * from what is on screen: if a tile renders differently here than there, it is because the grid
- * renders it differently, and both change together.
+ * The tiles come from the same LayoutGrid the application draws with, so an export cannot drift from what is on screen.
  */
 public final class DiagramExport
 {
@@ -47,17 +38,9 @@ public final class DiagramExport
     private static final int TILE_WAIT_SECONDS = 30;
 
     /**
-     * The tile size the diagram is actually DRAWN at, whatever size was asked for.
-     *
-     * Tile images are files on disk, in folders named for their size - there is an icons30 and an
-     * icons60 and nothing else. Ask a grid for 40-pixel tiles and every icon fails to load: the
-     * failure is logged per tile and the picture comes out blank, which is exactly what the first
-     * version of this class produced and what its test caught.
-     *
-     * So the grid is always built at 60, the larger of the two, and the finished picture is scaled to
-     * whatever was wanted. That makes "any size" true rather than "any size for which somebody
-     * remembered to draw an icon set", and scaling one finished image is both sharper and far cheaper
-     * than scaling several hundred tiles.
+     * The size the diagram is DRAWN at: tile icons exist only as icons30 and icons60, so a grid at any other size loads
+     * no icons and renders blank.  The grid is always built at 60 and the finished picture is scaled, which is also
+     * sharper and far cheaper than scaling the tiles.
      */
     private static final int NATIVE_TILE_SIZE = 60;
 
@@ -71,14 +54,9 @@ public final class DiagramExport
     /**
      * Draws a diagram into an image.
      *
-     * Must be called OFF the event thread, and says so by throwing rather than by producing a blank
-     * picture.  A tile does not draw itself when it is built: the image is decoded on a worker and
-     * applied to the label afterwards, on the event thread.  So a render that holds the event thread
-     * from start to finish paints every tile before any of them has an image - a file that opens
-     * perfectly well and holds an empty white rectangle, with nothing anywhere saying so.
-     *
-     * The three steps therefore go where they belong: build on the event thread, WAIT for the decodes
-     * off it, paint on it again.
+     * Must be called OFF the event thread, and throws rather than produce a blank picture: tile images are decoded on a
+     * worker and applied on the event thread afterwards, so a render that holds the event thread paints every tile
+     * before it has an image.  Hence: build on the event thread, WAIT for the decodes off it, paint on it again.
      *
      * @param layout the page to draw
      * @param tileSize how many pixels each square should be

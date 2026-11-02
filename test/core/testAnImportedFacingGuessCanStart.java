@@ -106,20 +106,7 @@ public class testAnImportedFacingGuessCanStart
         // ONLY BOTTOMMAINA CARRIES A TRAIN, one the file names elsewhere.
         JSONArray points = legacy.getJSONArray("points");
 
-        String train = null;
-
-        for (int i = 0; i < points.length(); i++)
-        {
-            JSONObject point = points.getJSONObject(i);
-
-            if (!point.has("loc")) continue;
-
-            if (train == null) train = point.getJSONObject("loc").getString("name");
-
-            point.remove("loc");
-        }
-
-        assertNotNull(train, "precondition: the legacy file places no train");
+        String train = takeTheTrainsOff(legacy);
 
         boolean placed = false;
 
@@ -572,8 +559,8 @@ public class testAnImportedFacingGuessCanStart
         return null;
     }
 
-    /** The file with one train, one the file names elsewhere, standing only on the named point. */
-    private static JSONObject onlyThisPointPlaced(JSONObject legacy, String name)
+    /** Every train the file places taken off its point; the first one it names, which the claim fails without. */
+    private static String takeTheTrainsOff(JSONObject legacy)
     {
         JSONArray points = legacy.getJSONArray("points");
 
@@ -591,6 +578,16 @@ public class testAnImportedFacingGuessCanStart
         }
 
         assertNotNull(train, "precondition: the legacy file places no train");
+
+        return train;
+    }
+
+    /** The file with one train, one the file names elsewhere, standing only on the named point. */
+    private static JSONObject onlyThisPointPlaced(JSONObject legacy, String name)
+    {
+        JSONArray points = legacy.getJSONArray("points");
+
+        String train = takeTheTrainsOff(legacy);
 
         for (int i = 0; i < points.length(); i++)
         {

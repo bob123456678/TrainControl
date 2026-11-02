@@ -153,10 +153,10 @@ public final class CommandRow
     /**
      * Whether this kind is something a route can DO, as against something it can ask about.
      *
-     * AUTO_LOCOMOTIVE is a fact, not an instruction, and FEEDBACK (OB-141) does nothing when a route runs:
-     * `MarklinRoute.execRoute` has no branch for it, so it only delayed the route.  Adam: "a route command should not
-     * be able to contain s88 sensors. these should only be in the conditions only."  A row that already holds one
-     * still opens and shows; no new one can be added.
+     * AUTO_LOCOMOTIVE is a fact, not an instruction, and FEEDBACK (OB-141) does nothing when a route runs
+     * (`MarklinRoute.execRoute` has no branch for it).  Adam: "a route command should not be able to contain s88
+     * sensors. these should only be in the conditions only."  A row that already holds one still opens and shows; no
+     * new one can be added.
      */
     public static boolean canBeACommand(Kind kind)
     {
@@ -173,14 +173,9 @@ public final class CommandRow
     }
 
     /**
-     * A setting this kind will accept, for when a row changes from one kind to another.
-     *
-     * The vocabularies do not overlap: an accessory is turn or straight, a feedback is on or off, a
-     * direction is forward or backward.  So changing a row's kind has to change its setting too, or
-     * the rebuilt command is refused and the change appears not to have happened.
-     *
-     * The FIRST of each pair, which is also the un-thrown, un-triggered, forward state - the one a
-     * user is least likely to be surprised by finding there.
+     * A setting this kind will accept, for when a row changes kind.  The vocabularies do not overlap (turn/straight,
+     * on/off, forward/backward), so the setting has to change too or the rebuilt command is refused.  The FIRST of each
+     * pair is used: the un-thrown, un-triggered, forward state.
      */
     public static String defaultSettingFor(Kind kind)
     {
@@ -467,21 +462,7 @@ public final class CommandRow
     }
 
     /**
-     * True for the first word, false for the second, and a refusal for anything else.
-     *
-     * The setting column is typed rather than chosen, and the old reading was
-     * `"backward".equalsIgnoreCase(setting) ? BACKWARD : FORWARD` - so a user who typed "backwards",
-     * or "back", or mis-hit a key, got FORWARD. Silently, with the table still showing what they had
-     * typed, and the locomotive running the other way when the route fired.
-     *
-     * That is precisely the failure RouteCommand.fromLine was hardened against, in a class whose whole
-     * purpose is to take the syntax risk away. An address typo is already refused with a dialog naming
-     * the row; a direction typo has to be refused the same way rather than quietly guessed.
-     *
-     * @throws IllegalArgumentException when the text is neither
-     */
-    /**
-     * The same, with a second name for each state: a signal's red is a switch's turn, so both are accepted and the
+     * `oneOf`, with a second name for each state: a signal's red is a switch's turn, so both are accepted and the
      * editor offers whichever belongs to the thing at that address.
      *
      * @return the state, or a refusal naming what was expected
@@ -497,6 +478,14 @@ public final class CommandRow
         return oneOf(setting, whenTrue, whenFalse);
     }
 
+    /**
+     * True for the first word, false for the second, and a refusal for anything else.
+     *
+     * The setting column is typed rather than chosen, so a direction typo such as "backwards" must be refused (as
+     * RouteCommand.fromLine does) rather than quietly read as FORWARD with the table still showing what the user typed.
+     *
+     * @throws IllegalArgumentException when the text is neither
+     */
     private static boolean oneOf(String setting, String whenTrue, String whenFalse)
     {
         String text = setting == null ? "" : setting.trim();

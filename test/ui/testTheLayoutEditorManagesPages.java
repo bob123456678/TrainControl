@@ -382,18 +382,11 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
-     * While a route runs, each of the three items is refused in one dialog, the run refusal, over the editor: no
-     * name is asked for and nothing about unsaved work; the pages and the folder are as they were and the same window
-     * is on the same page.
-     *
-     * MUTATION: the editor's own run refusal dropped (`pageMenuItem`), so Add and Rename ask for a name first, and
-     * this fails.
+     * Edits the page with a route running and clicks each item in turn: each is refused in one dialog, the run
+     * refusal, over the editor, and the pages, the folder and the window are as they were.
      */
-    @Test
-    public void testTheItemsRefuseWhileARouteRunsInOneDialog() throws Exception
+    private void assertTheItemsAreRefusedInOneDialogWhileARouteRuns(final String page, String... items) throws Exception
     {
-        final String page = "2 - Bottom";
-
         Watched editor = editPage(page, false);
 
         turnASquare(editor);
@@ -410,8 +403,7 @@ public class testTheLayoutEditorManagesPages
             {
                 int asked = 0;
 
-                for (String item : new String[] {"ui.main.toolbar.addBlackPage", "ui.main.toolbar.renameCurrentPage",
-                    "ui.main.toolbar.deleteCurrentPage"})
+                for (String item : items)
                 {
                     click(editor, item);
 
@@ -421,8 +413,8 @@ public class testTheLayoutEditorManagesPages
 
                     Components.settle();
 
-                    assertEquals(answering.asked().size(), asked, I18n.t(item) + " asked more than one question while a"
-                        + " route runs: " + answering.asked());
+                    assertEquals(answering.asked().size(), asked, I18n.t(item) + " asked more than one question while"
+                        + " a route runs: " + answering.asked());
 
                     assertEquals(answering.asked().get(asked - 1), refusal, I18n.t(item) + " was not refused while a"
                         + " route runs");
@@ -438,6 +430,21 @@ public class testTheLayoutEditorManagesPages
             + model.getLayoutList());
 
         assertEquals(fingerprint(), before, "a page action changed the layout's folder while a route runs");
+    }
+
+    /**
+     * While a route runs, each of the three items is refused in one dialog, the run refusal, over the editor: no
+     * name is asked for and nothing about unsaved work; the pages and the folder are as they were and the same window
+     * is on the same page.
+     *
+     * MUTATION: the editor's own run refusal dropped (`pageMenuItem`), so Add and Rename ask for a name first, and
+     * this fails.
+     */
+    @Test
+    public void testTheItemsRefuseWhileARouteRunsInOneDialog() throws Exception
+    {
+        assertTheItemsAreRefusedInOneDialogWhileARouteRuns("2 - Bottom", "ui.main.toolbar.addBlackPage",
+            "ui.main.toolbar.renameCurrentPage", "ui.main.toolbar.deleteCurrentPage");
     }
 
     /**
@@ -752,52 +759,8 @@ public class testTheLayoutEditorManagesPages
     @Test
     public void testDuplicateAndCombineRefuseWhileARouteRunsInOneDialog() throws Exception
     {
-        final String page = "1 - Main";
-
-        Watched editor = editPage(page, false);
-
-        turnASquare(editor);
-
-        Map<String, String> before = fingerprint();
-
-        aRouteRuns();
-
-        String refusal = I18n.t("ui.main.errorNoEditsWhileRunning");
-
-        try (Owners owners = new Owners())
-        {
-            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
-            {
-                int asked = 0;
-
-                for (String item : new String[] {"ui.main.toolbar.duplicateCurrentPage",
-                    "layout.ui.menuCombineLinkedPages"})
-                {
-                    click(editor, item);
-
-                    asked++;
-
-                    assertTrue(answering.awaitAsked(asked, 10000), I18n.t(item) + " asked nothing while a route runs");
-
-                    Components.settle();
-
-                    assertEquals(answering.asked().size(), asked, I18n.t(item) + " asked more than one question while"
-                        + " a route runs: " + answering.asked());
-
-                    assertEquals(answering.asked().get(asked - 1), refusal, I18n.t(item) + " was not refused while a"
-                        + " route runs");
-                }
-            }
-
-            owners.allAre(editor.window);
-        }
-
-        editor.isAsItWas(page);
-
-        assertEquals(model.getLayoutList().size(), 5, "a page action changed the pages while a route runs: "
-            + model.getLayoutList());
-
-        assertEquals(fingerprint(), before, "a page action changed the layout's folder while a route runs");
+        assertTheItemsAreRefusedInOneDialogWhileARouteRuns("1 - Main", "ui.main.toolbar.duplicateCurrentPage",
+            "layout.ui.menuCombineLinkedPages");
     }
 
     /**

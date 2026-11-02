@@ -44,7 +44,7 @@ import support.WireRecorder;
 import support.WireRecorder.Sent;
 
 /**
- * The locomotive mapping pages and the doors a locomotive's key opens, used as the operator uses them (FR-136 Phase 6).
+ * The locomotive mapping pages and the doors a locomotive's key opens, used as the operator uses them.
  *
  * The pages: the Prev and Next buttons and their keys, and the page menu's Copy, Paste and Reset Mappings with their
  * questions.  The doors: the notes, Find Similar Locomotives, the name and address, Delete from Database, and the
@@ -284,16 +284,7 @@ public class testMappingPagesAndLocomotiveDoors
     @Test
     public void testPasteMappingsAnsweredYesCopiesThePage() throws Exception
     {
-        AbstractButton copy = pageMenuItem(I18n.t("page.ui.menuCopyMappings"));
-
-        Components.onTheEventThread(() ->
-        {
-            copy.doClick();
-
-            return null;
-        });
-
-        turnTo(pageQ);
+        copyMappingsAndTurnTo(pageQ);
 
         AbstractButton paste = pageMenuItem(I18n.t("page.ui.menuPasteMappings"));
 
@@ -317,16 +308,7 @@ public class testMappingPagesAndLocomotiveDoors
     @Test
     public void testPasteMappingsAnsweredNoChangesNothing() throws Exception
     {
-        AbstractButton copy = pageMenuItem(I18n.t("page.ui.menuCopyMappings"));
-
-        Components.onTheEventThread(() ->
-        {
-            copy.doClick();
-
-            return null;
-        });
-
-        turnTo(pageQ);
+        copyMappingsAndTurnTo(pageQ);
 
         AbstractButton paste = pageMenuItem(I18n.t("page.ui.menuPasteMappings"));
 
@@ -664,6 +646,21 @@ public class testMappingPagesAndLocomotiveDoors
     private static Locomotive onKey(int key)
     {
         return Components.onTheEventThread(() -> ui.getButtonLocomotive(letters().get(key)));
+    }
+
+    /** Copies the mappings of the page showing, as its menu does, and turns to the page. */
+    private static void copyMappingsAndTurnTo(int page) throws Exception
+    {
+        AbstractButton copy = pageMenuItem(I18n.t("page.ui.menuCopyMappings"));
+
+        Components.onTheEventThread(() ->
+        {
+            copy.doClick();
+
+            return null;
+        });
+
+        turnTo(page);
     }
 
     /** Turns to a page by its tab, as clicking the tab does. */

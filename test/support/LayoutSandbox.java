@@ -14,12 +14,11 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * A throwaway copy of the fixture layout, with the window pointed at it (OB-111).
  *
- * A full battery left `cs2_sample_layout`, Adam's real railway, modified in `git status` after every run, because three
- * classes construct the real window and the window opens whatever the saved layout preference names.  So the
- * preference is what this changes, to a COPY rather than to `test/test_layout`: the window writes as well as reads,
- * and the fixture is tracked.
+ * Three classes construct the real window, which opens whatever the saved layout preference names, and a full battery
+ * left `cs2_sample_layout` modified.  So the preference is what this changes, to a COPY rather than to
+ * `test/test_layout`: the window writes as well as reads, and the fixture is tracked.
  *
- * Usage is two lines, in @BeforeClass and @AfterClass:
+ * Usage, in @BeforeClass and @AfterClass:
  *
  *     sandbox = LayoutSandbox.open();      // and construct the window AFTER this
  *     sandbox.close();
@@ -68,9 +67,8 @@ public final class LayoutSandbox
 
         Preferences prefs = TrainControlUI.getPrefs();
 
-        // ANYTHING A KILLED JVM LEFT BEHIND IS PUT BACK FIRST: `close()` runs only if the JVM lives, and a killed one
-        // left the preference naming a sandbox, which the APPLICATION reads too, so Adam's own window would open that
-        // folder.
+        // Anything a killed JVM left behind is put back first: `close()` runs only if the JVM lives, and a leaked
+        // preference naming a sandbox would be read by the APPLICATION too.
         repairALeakedPreference(prefs);
 
         String was = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -83,9 +81,8 @@ public final class LayoutSandbox
         // For an ordinary exit that skips close() the hook is enough; the marker above covers a forced kill.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> putBack(prefs, was)));
 
-        // AND NOBODY IS WATCHING, which the window has no other way to know.  Adam: "in the tests you're running, at
-        // startup there is a prompt about initializing a new track diagram.  I have been clicking on those windows."  A
-        // modal dialog in an automated run stops it.  Set here because every test that stands a window up calls this.
+        // Nobody is watching, which the window has no other way to know: a modal dialog (the new-track-diagram prompt)
+        // stops an automated run.  Set here because every test that stands a window up calls this.
         TrainControlUI.setUnattended(true);
 
         return new LayoutSandbox(to, was);
@@ -201,11 +198,9 @@ public final class LayoutSandbox
     }
 
     /**
-     * Parses through this parser and WIRES what came back, which is the pair `syncLayouts` does.  A one-word change at
-     * each call site: `parser.parseLayout(new LinkedList<>())` becomes `LayoutSandbox.wired(model, parser)`.
-     *
-     * Parsing alone leaves every switch and signal with a null accessory, so `TileGraph` refuses to trace through it
-     * (see `wiredPages`).  `wireComponents` is the application's own loop, made reachable rather than copied here.
+     * Parses through this parser and WIRES what came back, which is the pair `syncLayouts` does: parsing alone leaves
+     * every switch and signal with a null accessory, so `TileGraph` refuses to trace through it (see `wiredPages`).
+     * `wireComponents` is the application's own loop, made reachable rather than copied here.
      *
      * @param model the control station whose accessory, feedback and route databases to wire against
      * @param parser the parser, already pointed at a layout folder
@@ -232,16 +227,7 @@ public final class LayoutSandbox
      *
      * Parsing does not attach a tile to its accessory; `MarklinControlStation.syncLayouts` does that in a loop AFTER
      * the parse.  A second `CS2File` parser bypasses it, so every switch and signal has a null accessory, `TileGraph`
-     * reports `errorTileHasNoAddress` and refuses to trace through, and the railway arrives in pieces:
-     *
-     * | | re-parsed | the model's own |
-     * |---|---|---|
-     * | switches and signals with an accessory | 0 of 222 | 221 of 222 |
-     * | reduced edges | 18 | 128 |
-     * | built points / edges | 59 / 5 | 96 / 149 |
-     * | isolated points | 51 | 3 |
-     *
-     * Tests standing on that asserted against a graph where nothing is connected to anything, and passed.
+     * reports `errorTileHasNoAddress` and refuses to trace through, and the railway arrives in pieces.
      *
      * @param model the control station, already built with this sandbox open
      * @return its pages, in its own order

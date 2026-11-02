@@ -118,22 +118,10 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     public void testAPageThisLayoutAlreadyKnewIsStillProtected() throws IOException
     {
         // This layout, as it was written with two pages of its own ...
-        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
-
-        Map<String, String> both = pages("Page 1", "0");
-
-        both.put("Away", "7");
-
-        before.setPageIds(both);
-        before.setPointName(new TileKey("Page 1", 5, 5), "Already Mine");
-        before.setPointName(new TileKey("Away", 3, 3), "Waiting To Download");
-        before.save();
+        writtenWithAway("Page 1", "0", new TileKey("Page 1", 5, 5), "Already Mine", true);
 
         // ... and opened again with "Away" not loaded, which is what an unhydrated page looks like.
-        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
-
-        store.setPageIds(pages("Page 1", "0"));
-        store.load();
+        AutonomyCompanionStore store = opened(pages("Page 1", "0"));
 
         assertTrue(store.pagesNotLoaded(Collections.singletonList("Page 1")).contains("Away"),
             "precondition: the layout's own unloaded page is not recorded as missing before the import,"
@@ -200,17 +188,13 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @Test
     public void testAPageThisLayoutHasLandsOnItUnderAnyId() throws IOException
     {
-        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
-
-        source.setPageIds(pages("Main", "7"));
-        source.setPointName(new TileKey("Main", 4, 4), "Renumbered Elsewhere");
-        source.createConfiguration("Theirs", null);
+        org.json.JSONObject bundle = theirMainUnderId7("Renumbered Elsewhere");
 
         AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
 
         store.setPageIds(pages("Main", "1"));
 
-        store.importBundle("Theirs", source.exportBundle("Theirs"));
+        store.importBundle("Theirs", bundle);
 
         assertEquals(store.getPointName(new TileKey("Main", 4, 4)), "Renumbered Elsewhere",
             "the exporter's Main, id 7, did not land on this layout's Main, id 1 - a page is matched by its"
@@ -228,29 +212,11 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @Test
     public void testTheirIdForAnotherPageDoesNotTakeOverAnUnloadedOne() throws IOException
     {
-        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
+        Map<String, String> both = writtenWithAway("Main", "1", new TileKey("Main", 1, 1), "Mine", true);
 
-        Map<String, String> both = pages("Main", "1");
+        AutonomyCompanionStore store = opened(pages("Main", "1"));
 
-        both.put("Away", "7");
-
-        before.setPageIds(both);
-        before.setPointName(new TileKey("Main", 1, 1), "Mine");
-        before.setPointName(new TileKey("Away", 3, 3), "Waiting To Download");
-        before.save();
-
-        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
-
-        store.setPageIds(pages("Main", "1"));
-        store.load();
-
-        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
-
-        source.setPageIds(pages("Main", "7"));
-        source.setPointName(new TileKey("Main", 4, 4), "Theirs On Main");
-        source.createConfiguration("Theirs", null);
-
-        store.importBundle("Theirs", source.exportBundle("Theirs"));
+        store.importBundle("Theirs", theirMainUnderId7("Theirs On Main"));
 
         assertEquals(store.getPointName(new TileKey("Main", 4, 4)), "Theirs On Main",
             "precondition: their Main did not land on this layout's Main, so nothing below is about an import"
@@ -267,10 +233,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         // And it is all still there for Away when Away comes back.
         store.save();
 
-        AutonomyCompanionStore reopened = new AutonomyCompanionStore(mine);
-
-        reopened.setPageIds(both);
-        reopened.load();
+        AutonomyCompanionStore reopened = opened(both);
 
         assertEquals(reopened.getPointName(new TileKey("Away", 3, 3)), "Waiting To Download",
             "Away's own setting did not survive the import and a save (TDR-A1)");
@@ -283,20 +246,9 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @Test
     public void testTheirUnloadedPagesSettingsWaitForItNotForTheIdHere() throws IOException
     {
-        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
+        Map<String, String> both = writtenWithAway("Main", "1", new TileKey("Main", 1, 1), "Mine", false);
 
-        Map<String, String> both = pages("Main", "1");
-
-        both.put("Away", "7");
-
-        before.setPageIds(both);
-        before.setPointName(new TileKey("Main", 1, 1), "Mine");
-        before.save();
-
-        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
-
-        store.setPageIds(pages("Main", "1"));
-        store.load();
+        AutonomyCompanionStore store = opened(pages("Main", "1"));
 
         AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
 
@@ -312,10 +264,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
         store.save();
 
-        AutonomyCompanionStore reopened = new AutonomyCompanionStore(mine);
-
-        reopened.setPageIds(both);
-        reopened.load();
+        AutonomyCompanionStore reopened = opened(both);
 
         assertEquals(reopened.getPointName(new TileKey("Away", 5, 5)), "Their Away",
             "their Away's setting was not held for this layout's Away, which is the page it names (TDR-A1)");
@@ -366,36 +315,18 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @Test
     public void testAnImportWithNoPageLoadedStillKeepsEachPagesSettings() throws IOException
     {
-        Map<String, String> both = pages("Main", "1");
-
-        both.put("Away", "7");
-
-        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
-
-        before.setPageIds(both);
-        before.setPointName(new TileKey("Main", 1, 1), "Mine");
-        before.setPointName(new TileKey("Away", 3, 3), "Waiting To Download");
-        before.save();
+        Map<String, String> both = writtenWithAway("Main", "1", new TileKey("Main", 1, 1), "Mine", true);
 
         // Opened with nothing loaded at all: no index, only the file's own record.
         AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
 
         store.load();
 
-        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
-
-        source.setPageIds(pages("Main", "7"));
-        source.setPointName(new TileKey("Main", 4, 4), "Theirs On Main");
-        source.createConfiguration("Theirs", null);
-
-        store.importBundle("Theirs", source.exportBundle("Theirs"));
+        store.importBundle("Theirs", theirMainUnderId7("Theirs On Main"));
 
         store.save();
 
-        AutonomyCompanionStore reopened = new AutonomyCompanionStore(mine);
-
-        reopened.setPageIds(both);
-        reopened.load();
+        AutonomyCompanionStore reopened = opened(both);
 
         assertEquals(reopened.getPointName(new TileKey("Main", 4, 4)), "Theirs On Main",
             "precondition: their Main did not land on Main once the pages were back, so nothing below is"
@@ -413,13 +344,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @Test
     public void testAnUnmodelledFieldIsNotSavedInTheirNumbering() throws IOException
     {
-        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
-
-        source.setPageIds(pages("Main", "7"));
-        source.setPointName(new TileKey("Main", 4, 4), "Theirs On Main");
-        source.createConfiguration("Theirs", null);
-
-        org.json.JSONObject bundle = source.exportBundle("Theirs");
+        org.json.JSONObject bundle = theirMainUnderId7("Theirs On Main");
 
         bundle.getJSONObject(AutonomyCompanionStore.EXPORT_SHARED)
             .put("aFieldFromANewerVersion", new org.json.JSONObject().put("7:1,1", "theirs"));
@@ -465,6 +390,52 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         assertNotNull(bundle, "the export produced nothing");
 
         return bundle;
+    }
+
+    /**
+     * Writes this layout's setup with two pages of its own, the first with one setting and "Away" (id 7), which holds
+     * "Waiting To Download" only when asked, and returns the page record it was written with.
+     */
+    private Map<String, String> writtenWithAway(String first, String firstId, TileKey square, String name,
+        boolean awayHolds) throws IOException
+    {
+        AutonomyCompanionStore before = new AutonomyCompanionStore(mine);
+
+        Map<String, String> both = pages(first, firstId);
+
+        both.put("Away", "7");
+
+        before.setPageIds(both);
+        before.setPointName(square, name);
+
+        if (awayHolds) before.setPointName(new TileKey("Away", 3, 3), "Waiting To Download");
+
+        before.save();
+
+        return both;
+    }
+
+    /** This layout's store opened on the given pages and loaded. */
+    private AutonomyCompanionStore opened(Map<String, String> pages) throws IOException
+    {
+        AutonomyCompanionStore store = new AutonomyCompanionStore(mine);
+
+        store.setPageIds(pages);
+        store.load();
+
+        return store;
+    }
+
+    /** An export whose Main page has id 7 and one setting, square 4,4 named as given. */
+    private org.json.JSONObject theirMainUnderId7(String name) throws IOException
+    {
+        AutonomyCompanionStore source = new AutonomyCompanionStore(theirs);
+
+        source.setPageIds(pages("Main", "7"));
+        source.setPointName(new TileKey("Main", 4, 4), name);
+        source.createConfiguration("Theirs", null);
+
+        return source.exportBundle("Theirs");
     }
 
     private static Map<String, String> pages(String name, String id)

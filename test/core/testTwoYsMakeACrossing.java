@@ -106,13 +106,7 @@ public class testTwoYsMakeACrossing
     @Test
     public void testAPermanentYAloneIsStillOnlyTrailed() throws Exception
     {
-        LayoutDiagram page = page();
-
-        y(page, 5, 5, 0);
-
-        sensor(page, 4, 5, 0, 1);
-        sensor(page, 6, 5, 0, 2);
-        sensor(page, 5, 6, 1, 3);
+        LayoutDiagram page = aloneY();
 
         open(page, "OB-320 alone");
 
@@ -195,10 +189,7 @@ public class testTwoYsMakeACrossing
 
         open(page, "OB-320 not pairs");
 
-        for (TileKey square : Arrays.asList(key(2, 2), key(3, 2), key(8, 2), key(8, 3), key(5, 7), key(5, 8)))
-        {
-            assertNull(session.getGraph().crossingPartner(square), square + " is half of a crossing");
-        }
+        assertNoCrossingAt(key(2, 2), key(3, 2), key(8, 2), key(8, 3), key(5, 7), key(5, 8));
     }
 
     /**
@@ -359,15 +350,7 @@ public class testTwoYsMakeACrossing
     {
         open(verticalPair(), "OB-320 click");
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
-
-        final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-        cycle.setAccessible(true);
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editorPanel();
 
         List<Set<String>> expected = Arrays.asList(
             // ONE TRACK ONE WAY, the other both ways (MT-688)
@@ -388,17 +371,7 @@ public class testTwoYsMakeACrossing
             // THE UPPER SQUARE AND THE LOWER IN TURN
             final TileKey square = click % 2 == 0 ? key(5, 5) : key(5, 6);
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    cycle.invoke(panel[0], square);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            clickOn(panel, square);
 
             assertEquals(edges(), expected.get(click), "click " + (click + 1) + ", on " + square + ", does not leave the"
                 + " crossing's tracks running the next of both ways, each one way with the other open (MT-688), the four"
@@ -617,10 +590,7 @@ public class testTwoYsMakeACrossing
 
         open(page, "OB-320 still turnouts");
 
-        for (TileKey square : Arrays.asList(key(2, 2), key(2, 3), key(8, 2), key(8, 3)))
-        {
-            assertNull(session.getGraph().crossingPartner(square), square + " is half of a crossing");
-        }
+        assertNoCrossingAt(key(2, 2), key(2, 3), key(8, 2), key(8, 3));
     }
 
     /**
@@ -687,10 +657,7 @@ public class testTwoYsMakeACrossing
         TileKey upper = key(5, 5);
         TileKey lower = key(5, 6);
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editorPanel();
 
         // ON SHOW ALL, which draws the open track's arrows too; the view it opened on is put back
         final java.lang.reflect.Method view =
@@ -707,9 +674,9 @@ public class testTwoYsMakeACrossing
         {
             try
             {
-                was[0] = (Integer) view.invoke(panel[0]);
+                was[0] = (Integer) view.invoke(panel);
 
-                show.invoke(panel[0], 0);
+                show.invoke(panel, 0);
             }
             catch (ReflectiveOperationException e)
             {
@@ -729,7 +696,7 @@ public class testTwoYsMakeACrossing
 
                 org.traincontrol.automationui.TileAnnotation[] editor = new org.traincontrol.automationui.TileAnnotation[1];
 
-                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0] = panel[0].annotationFor(square));
+                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0] = panel.annotationFor(square));
 
                 for (org.traincontrol.automationui.TileAnnotation annotation : Arrays.asList(diagram, editor[0]))
                 {
@@ -751,7 +718,7 @@ public class testTwoYsMakeACrossing
             {
                 try
                 {
-                    show.invoke(panel[0], was[0]);
+                    show.invoke(panel, was[0]);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -761,13 +728,7 @@ public class testTwoYsMakeACrossing
         }
 
         // A PERMANENT Y ON ITS OWN keeps its toe's arrow: the pair taken apart
-        LayoutDiagram alone = page();
-
-        y(alone, 5, 5, 0);
-
-        sensor(alone, 4, 5, 0, 1);
-        sensor(alone, 6, 5, 0, 2);
-        sensor(alone, 5, 6, 1, 3);
+        LayoutDiagram alone = aloneY();
 
         open(alone, "OB-322 alone");
 
@@ -889,32 +850,14 @@ public class testTwoYsMakeACrossing
 
         assertNull(session.getGraph().crossingPartner(turnout), "precondition: the turnout is half of a crossing");
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
-
-        final java.lang.reflect.Method cycle =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-        cycle.setAccessible(true);
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editorPanel();
 
         boolean opened = false;
         boolean shut = false;
 
         for (int click = 1; click <= 10; click++)
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    cycle.invoke(panel[0], turnout);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            clickOn(panel, turnout);
 
             for (java.util.Map.Entry<RouteId, Route> road : session.getGraph().getRoutes(turnout).entrySet())
             {
@@ -945,6 +888,63 @@ public class testTwoYsMakeACrossing
         sensor(page, 4, 5, 0, 3);
 
         return page;
+    }
+
+    /** A permanent Y on its own, toe south at 5,5, with a sensor off each of its three arms. */
+    private static LayoutDiagram aloneY() throws IOException
+    {
+        LayoutDiagram page = page();
+
+        y(page, 5, 5, 0);
+
+        sensor(page, 4, 5, 0, 1);
+        sensor(page, 6, 5, 0, 2);
+        sensor(page, 5, 6, 1, 3);
+
+        return page;
+    }
+
+    /** The autonomy editor's panel over the session, made on the event thread. */
+    private org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel editorPanel() throws Exception
+    {
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[] panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { }));
+
+        return panel[0];
+    }
+
+    /** A click on a square in the editor's panel: its private `cycle` called on the event thread. */
+    private static void clickOn(final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel, final TileKey square)
+        throws Exception
+    {
+        final java.lang.reflect.Method cycle =
+            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+
+        cycle.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                cycle.invoke(panel, square);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    /** Asserts that none of the squares is half of a crossing. */
+    private void assertNoCrossingAt(TileKey... squares)
+    {
+        for (TileKey square : squares)
+        {
+            assertNull(session.getGraph().crossingPartner(square), square + " is half of a crossing");
+        }
     }
 
     /** The side every road of a turnout with no address is directed toward: its toe. */

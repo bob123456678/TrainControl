@@ -167,28 +167,7 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
      */
     private static List<String> add(String name, String address, boolean mfx) throws Exception
     {
-        final AddLocomotive dialog = Components.onTheEventThread(() -> new AddLocomotive(model, ui));
-
-        try (Answering answering = Answering.start(message -> null))
-        {
-            Components.onTheEventThread(() ->
-            {
-                text(dialog, "LocNameInput").setText(name);
-                text(dialog, "LocAddressInput").setText(address);
-                radio(dialog, mfx ? "LocTypeMFX" : "LocTypeDCC").setSelected(true);
-                button(dialog, "AddLocButton").doClick();
-
-                return null;
-            });
-
-            assertTrue(answering.awaitAsked(1, WAIT), "Add said nothing");
-
-            return answering.asked();
-        }
-        finally
-        {
-            SwingUtilities.invokeAndWait(dialog::dispose);
-        }
+        return typeAndPress(name, address, mfx, "AddLocButton", "Add said nothing");
     }
 
     /**
@@ -196,20 +175,29 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
      */
     private static List<String> check(String address, boolean mfx) throws Exception
     {
+        return typeAndPress(null, address, mfx, "checkDuplicates", "Check Duplicates said nothing");
+    }
+
+    /** Types the name (unless null) and the address into Add Locomotive, presses the button, gives what was asked. */
+    private static List<String> typeAndPress(String name, String address, boolean mfx, String pressed, String silent)
+        throws Exception
+    {
         final AddLocomotive dialog = Components.onTheEventThread(() -> new AddLocomotive(model, ui));
 
         try (Answering answering = Answering.start(message -> null))
         {
             Components.onTheEventThread(() ->
             {
+                if (name != null) text(dialog, "LocNameInput").setText(name);
+
                 text(dialog, "LocAddressInput").setText(address);
                 radio(dialog, mfx ? "LocTypeMFX" : "LocTypeDCC").setSelected(true);
-                button(dialog, "checkDuplicates").doClick();
+                button(dialog, pressed).doClick();
 
                 return null;
             });
 
-            assertTrue(answering.awaitAsked(1, WAIT), "Check Duplicates said nothing");
+            assertTrue(answering.awaitAsked(1, WAIT), silent);
 
             return answering.asked();
         }

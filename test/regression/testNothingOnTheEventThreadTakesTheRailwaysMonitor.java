@@ -19,15 +19,12 @@ import org.testng.annotations.Test;
  * whole of `configureAndLockPath` (a `CONFIGURE_SLEEP` per edge and again per accessory) and that
  * `AutoLocomotiveStatus.findPaths` holds for a whole-graph search on every panel refresh.  A user-interface class runs
  * on the event thread unless it has gone to some trouble not to, so the event thread queues on that monitor and the
- * operator sees a window that does not repaint while the trains go on running.  That is OB-192, which Adam reported
- * twice:
+ * operator sees a window that does not repaint while the trains go on running (OB-192: *"starting autonomous
+ * operation from the current track state ... makes the UI unresponsive.  Trains still run, but nothing is repainted,
+ * and controls are stuck."*).
  *
- * *"starting autonomous operation from the current track state ... makes the UI unresponsive.  Trains
- * still run, but nothing is repainted, and controls are stuck."*
- *
- * The rule once lived as prose at the call sites and was fixed one more caller at a time.  This class is the guard with
- * the *list of `synchronized` `Layout` methods*; the narrow guard that pinned one method name (`triageReturnToHome`) is
- * deleted, since two guards for one rule come to disagree.
+ * This class is the guard with the *list of `synchronized` `Layout` methods*; two guards for one rule come to
+ * disagree, so there is only this one.
  *
  * What it cannot see: source cannot tell which thread a line runs on.  This is an INVENTORY, not a proof: every call
  * from a user-interface class to one of these methods must appear in the list below, saying which thread it is on and,
@@ -71,11 +68,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
      * builds a `HomeStaging.snapshot`, which calls the `synchronized` `Layout.getHomeStations`.
      *
      *   - `executePath`, `executeTimetable`, `runLocomotives` reach it through `isPathClear` and
-     * `configureAndLockPath`,
-     *     each holding it for a dispatch or a run.
-     *   - `configureAndLockPath`, `getPathValidationFailureCount`, `hasShownPathValidationAlert` use `synchronized
-     * (this)`
-     *     blocks; the last two are the shape a status panel or a tooltip reads from `actionPerformed`.
+     *     `configureAndLockPath`, each holding it for a dispatch or a run.
+     *   - `configureAndLockPath`, `getPathValidationFailureCount`, `hasShownPathValidationAlert` use
+     *     `synchronized (this)` blocks; the last two are the shape a status panel or a tooltip reads from
+     *     `actionPerformed`.
      *
      * This list cannot be derived from the source (it would need a call graph), so it grows by hand when somebody finds
      * another.
@@ -107,9 +103,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // ------------------------------------------------------------ off the event thread
 
         // ------------------------------------------------------- the five dispatch doors
-        // These reach the monitor through `isPathClear` and `configureAndLockPath` rather than by being `synchronized`
-        // themselves, so the scanner above could not see them.  `executePath` holds the monitor for a whole dispatch,
-        // across a CONFIGURE_SLEEP per accessory of the path: on the event thread that is OB-192 exactly.
+        // These reach the monitor through `isPathClear` and `configureAndLockPath`; `executePath` holds it for a whole
+        // dispatch, across a CONFIGURE_SLEEP per accessory of the path: on the event thread that is OB-192 exactly.
         ALLOWED.put("TrainControlUI.java#sendATrainByHand",
             "OFF THE EVENT THREAD: the one door both hand doors send through (2026-09-29) dispatches the run on"
             + " a `new Thread`, and a refusal is put back on the event thread with invokeLater.");
@@ -187,8 +182,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " this (OB-206)");
 
         // THE GRAY'S OWN ANSWER (OB-208).  Adam: *"orange shows where the train is, gray shows what's blocked"*, so the
-        // railway is asked by `routesBlockedByStandingTrains`, on the same worker: the places it claims (OB-280), where
-        // OB-208 asked for the covered edges.
+        // railway is asked by `routesBlockedByStandingTrains`, on the same worker, for the places it claims (OB-280).
         ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
             "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");
@@ -257,15 +251,18 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         ALLOWED.put("RunningLayoutSync.java#captureRunningLayout",
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
+
+        ALLOWED.put("RouteEditorFrame.java#copied",
+            "ON THE EVENT THREAD: accepted, as no monitor is taken - a route command's own toJSON and fromJSON, which"
+            + " share a name with Layout's, for Duplicate in the route editor (FR-162)");
     }
 
-    /** Every call from a user-interface class to a method that takes the railway's monitor is listed. */
-    @Test
-    public void testEveryDoorOntoTheRailwaysMonitorIsWrittenDown() throws Exception
+    /** Each call from a user-interface class to a door onto the monitor, as {`File.java#member`, the line it is on}. */
+    private static List<String[]> callsOntoTheMonitor() throws Exception
     {
         Set<String> guarded = doorsOntoTheMonitor();
 
-        List<String> unlisted = new ArrayList<>();
+        List<String[]> found = new ArrayList<>();
 
         for (File source : surfaceSources())
         {
@@ -277,13 +274,24 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
                 while (calls.find())
                 {
-                    String key = source.getName() + "#" + memberAround(code, calls.start());
-
-                    if (ALLOWED.containsKey(key)) continue;
-
-                    unlisted.add(key + "\n        " + lineAround(code, calls.start()));
+                    found.add(new String[] {source.getName() + "#" + memberAround(code, calls.start()),
+                        lineAround(code, calls.start())});
                 }
             }
+        }
+
+        return found;
+    }
+
+    /** Every call from a user-interface class to a method that takes the railway's monitor is listed. */
+    @Test
+    public void testEveryDoorOntoTheRailwaysMonitorIsWrittenDown() throws Exception
+    {
+        List<String> unlisted = new ArrayList<>();
+
+        for (String[] call : callsOntoTheMonitor())
+        {
+            if (!ALLOWED.containsKey(call[0])) unlisted.add(call[0] + "\n        " + call[1]);
         }
 
         assertTrue(unlisted.isEmpty(),
@@ -362,24 +370,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     @Test
     public void testEveryAllowanceIsStillADoor() throws Exception
     {
-        Set<String> guarded = doorsOntoTheMonitor();
-
         Set<String> found = new LinkedHashSet<>();
 
-        for (File source : surfaceSources())
-        {
-            String code = withoutComments(read(source));
-
-            for (String door : guarded)
-            {
-                Matcher calls = Pattern.compile("\\.\\s*" + door + "\\s*\\(").matcher(code);
-
-                while (calls.find())
-                {
-                    found.add(source.getName() + "#" + memberAround(code, calls.start()));
-                }
-            }
-        }
+        for (String[] call : callsOntoTheMonitor()) found.add(call[0]);
 
         List<String> stale = new ArrayList<>();
 

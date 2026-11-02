@@ -26,10 +26,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * The route list turns a mark beside every route that is running (FR-137).  Adam: "in the route tab, show a spinner
- * next to any route that is currently running, similar to the autonomy spinner.  3.0.2 feature".  The mark is the one
- * Start and Return Home turn (FR-077, OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for
- * a route whoever started it and off when the route really ends.
+ * The route list turns a mark beside every route that is running (FR-137).  The mark is the one Start and Return Home
+ * turn (FR-077, OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for a route whoever
+ * started it and off when the route really ends.
  *
  * It is seen as the renderer paints a cell to a picture, the strip left of the play button searched for the mark's
  * gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between its commands.  The list's other
@@ -181,11 +180,8 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * With the power off, a click on a route's row - not its play button - opens the route's editor and asks nothing
-     * (FR-140).  Adam: "when the power is off, clicking on routes in the route tab should open the editor rather than ask
-     * for execution".
-     *
-     * The click is posted rather than waited for, so a modal dialog cannot hold the run; any dialog left open is
-     * closed at the end.
+     * (FR-140).  The click is posted rather than waited for, so a modal dialog cannot hold the run; any dialog left
+     * open is closed at the end.
      *
      * MUTATION: take the power question out of `RouteListMouseClicked`, and this fails.
      */
@@ -285,12 +281,307 @@ public class testTheRouteListShowsWhatRuns
         }
     }
 
+    /**
+     * With the power off the route list's button is a wrench in the play button's place, and with it on, the green
+     * triangle (FR-164).  Read as the renderer paints the cell, the glyph's box searched for the triangle's green and
+     * the wrench's gray; the power is turned off and on by the station's
+     * report, as a Central Station's GO and STOP arrive.
+     *
+     * MUTATION: in `CustomTableRenderer.paintComponent`, change `if (routeListEditsRoutes())` to `if (false)`, and the
+     * wrench is never painted.
+     */
+    @Test
+    public void testTheButtonIsAWrenchWithThePowerOffAndATriangleWithItOn() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "wrench", 246);
+
+        try
+        {
+            BufferedImage on = pictureOf(route);
+
+            assertTrue(glyphInk(on, true) >= 40, "with the power on the route's button is not the green triangle");
+            assertEquals(glyphInk(on, false), 0, "with the power on the button has the wrench's gray in it");
+
+            thePowerIs(false);
+
+            BufferedImage off = pictureOf(route);
+
+            assertTrue(glyphInk(off, false) >= 10, "with the power off the route's button is not a wrench.  Adam,"
+                + " FR-164: \"when the power is off, replace the current green play icon with a wrench icon to edit\"");
+            assertEquals(glyphInk(off, true), 0, "with the power off the green triangle is still painted");
+
+            thePowerIs(true);
+
+            assertTrue(glyphInk(pictureOf(route), true) >= 40, "the triangle did not come back with the power");
+        }
+        finally
+        {
+            thePowerIs(true);
+        }
+    }
+
+    /**
+     * The list is asked to repaint when the power changes, so the wrench and the triangle follow it without the pointer
+     * having to move (FR-164).  The power moves by the station's report, the path the power button's echo and a
+     * Central Station's report take to `updatePowerState`.
+     *
+     * MUTATION: take the `RouteList.repaint()` out of `TrainControlUI.updatePowerState`, and this fails.
+     */
+    @Test
+    public void testThePowerChangeRepaintsTheRouteList() throws Exception
+    {
+        aQuickRoute(PREFIX + "repaint", 246);
+
+        final JTable table = routeTable();
+
+        final javax.swing.RepaintManager real = javax.swing.RepaintManager.currentManager(table);
+
+        final java.util.concurrent.atomic.AtomicBoolean asked = new java.util.concurrent.atomic.AtomicBoolean();
+
+        javax.swing.RepaintManager watching = new javax.swing.RepaintManager()
+        {
+            @Override
+            public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+            {
+                if (c == table) asked.set(true);
+
+                real.addDirtyRegion(c, x, y, w, h);
+            }
+        };
+
+        try
+        {
+            for (boolean on : new boolean[] {false, true})
+            {
+                settle();
+
+                asked.set(false);
+
+                javax.swing.RepaintManager.setCurrentManager(watching);
+
+                reportThePower(on);
+
+                assertTrue(model.waitForPowerState(on, 5000), "precondition: the power did not go " + (on ? "on" : "off"));
+
+                assertTrue(support.Components.waitFor(asked::get, 5000), "the power went " + (on ? "on" : "off")
+                    + " and the route list was not asked to repaint, so its buttons keep the old picture");
+
+                javax.swing.RepaintManager.setCurrentManager(real);
+            }
+        }
+        finally
+        {
+            javax.swing.RepaintManager.setCurrentManager(real);
+
+            thePowerIs(true);
+        }
+    }
+
+    /**
+     * With the power off, a click on the wrench itself opens the route's editor and runs nothing (FR-164): the whole
+     * cell does what a click elsewhere on the row does.
+     *
+     * MUTATION: in `RouteListPanel.RouteListMouseClicked`, change the power question to
+     * `routeListEditsRoutes() && !isOverTheRoutePlayButton(evt)`, and this fails.
+     */
+    @Test
+    public void testWithThePowerOffAClickOnTheWrenchOpensTheEditorAndRunsNothing() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "wrench click", 246, 247);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try
+        {
+            thePowerIs(false);
+
+            int mark = wire.mark();
+
+            clickTheRoute(route, true, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
+
+            assertTrue(support.Components.waitFor(() -> routeEditorShowing(), 8000), "with the power off, a click on the"
+                + " wrench did not open the route's editor.  Adam, FR-164: \"the overall click behavior of cell can"
+                + " remain unchanged\"");
+
+            settle();
+
+            assertEquals(accessoryCommandsSince(wire, mark), 0, "a click on the wrench sent the route's commands: "
+                + wire.since(mark));
+            assertFalse(model.getRoute(route).isExecuting(), "a click on the wrench ran the route");
+            assertFalse(switched(246) || switched(247), "a click on the wrench switched the route's accessories");
+        }
+        finally
+        {
+            thePowerIs(true);
+
+            wire.close();
+
+            closeTheEditors();
+        }
+    }
+
+    /**
+     * The right-click menu's Execute Route still runs the route with the power off (FR-164).  Adam: "right clicking to
+     * execute when the power is off should still be allowed."
+     *
+     * MUTATION: in `RightClickRouteMenu`, give the Execute Route item `setEnabled(ui.getModel().getPowerState())`, and
+     * this fails.
+     */
+    @Test
+    public void testRightClickExecuteRunsTheRouteWithThePowerOff() throws Exception
+    {
+        executeFromTheMenu(PREFIX + "menu run off", true);
+    }
+
+    /**
+     * Chooses Execute Route in a new route's right-click menu, the power as asked, and waits for the route's accessories
+     * to switch and their commands to reach the railway.
+     */
+    private static void executeFromTheMenu(String name, boolean powerOff) throws Exception
+    {
+        final String route = aQuickRoute(name, 246, 247);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try
+        {
+            if (powerOff) thePowerIs(false);
+
+            int mark = wire.mark();
+
+            final javax.swing.AbstractButton execute = support.Components.withText(rightClickTheRoute(route),
+                org.traincontrol.util.I18n.t("route.ui.menuExecute"));
+
+            assertNotNull(execute, "the route's right-click menu has no Execute Route");
+
+            assertTrue(execute.isEnabled(), "the menu's Execute Route is grayed out");
+
+            SwingUtilities.invokeLater(execute::doClick);
+
+            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "Execute did not switch the route's"
+                + " accessories");
+
+            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Execute switched the accessories"
+                + " and no command for them reached the railway: " + wire.since(mark));
+        }
+        finally
+        {
+            wire.close();
+
+            theRouteIsOver(route);
+
+            thePowerIs(true);
+
+            closeAnyMenu();
+        }
+    }
+
+    /**
+     * The menu opens with a grayed, bold line naming the route and its id, a divider, and then Execute Route, plain
+     * (FR-164).  Adam: "make sure that grey right click menu route name heading becomes bold and has a divider right
+     * below it."
+     *
+     * MUTATION: in `RightClickRouteMenu`, delete the header's `setFont(...)` line, and this fails.
+     */
+    @Test
+    public void testTheMenuOpensWithAGrayHeaderAndExecuteRouteBelowIt() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "menu head", 246);
+
+        try
+        {
+            java.awt.Component[] items = rightClickTheRoute(route).getComponents();
+
+            String name = route + " (" + org.traincontrol.util.I18n.t("route.ui.id") + ": " + model.getRouteId(route) + ")";
+
+            assertTrue(items.length >= 4 && items[0] instanceof javax.swing.JMenuItem
+                && items[2] instanceof javax.swing.JMenuItem, "precondition: the menu does not open with an item,"
+                + " a divider and an item");
+
+            javax.swing.JMenuItem header = (javax.swing.JMenuItem) items[0];
+            javax.swing.JMenuItem execute = (javax.swing.JMenuItem) items[2];
+
+            assertEquals(header.getText(), name, "the menu's first line does not name the route and its id");
+            assertFalse(header.isEnabled(), "the menu's first line, naming the route, can be pressed instead of being"
+                + " grayed");
+
+            assertTrue(header.getFont().isBold(), "the menu's first line is not bold");
+            assertFalse(execute.getFont().isBold(), "Execute Route is bold like the header");
+
+            assertTrue(items[1] instanceof javax.swing.JPopupMenu.Separator, "there is no divider right below the"
+                + " menu's first line.  Adam, FR-164: \"has a divider right below it\"");
+
+            assertEquals(execute.getText(), org.traincontrol.util.I18n.t("route.ui.menuExecute"),
+                "under the divider, the menu's next line is not plain Execute Route");
+            assertTrue(execute.isEnabled(), "Execute Route is grayed out");
+
+            assertTrue(items[3] instanceof javax.swing.JPopupMenu.Separator, "Execute Route is not followed by the"
+                + " divider that opens the rest of the menu");
+        }
+        finally
+        {
+            closeAnyMenu();
+        }
+    }
+
+    /** The station reporting the power on or off, as a Central Station's GO or STOP does (a simulation sends no echo). */
+    private static void reportThePower(boolean on)
+    {
+        org.traincontrol.marklin.udp.CS2Message sent = new org.traincontrol.marklin.udp.CS2Message(
+            org.traincontrol.marklin.udp.CS2Message.CMD_SYSTEM, new byte[]
+            {
+                0, 0, 0, 0, (byte) (on ? org.traincontrol.marklin.udp.CS2Message.CMD_SYSSUB_GO
+                    : org.traincontrol.marklin.udp.CS2Message.CMD_SYSSUB_STOP)
+            });
+
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(sent.getCommand(), sent.getHash(), true,
+            sent.getData()));
+    }
+
+    /** Puts the track power on or off by the station's report, and waits for the window to hear. */
+    private static void thePowerIs(boolean on) throws Exception
+    {
+        if (model.getPowerState() == on) return;
+
+        reportThePower(on);
+
+        assertTrue(model.waitForPowerState(on, 5000), "precondition: the power did not go " + (on ? "on" : "off"));
+
+        settle();
+    }
+
+    /** How many pixels of a route button's glyph are the triangle's green (or, if not, the wrench's gray). */
+    private static int glyphInk(BufferedImage picture, boolean green)
+    {
+        Rectangle glyph = TrainControlUI.routePlayGlyphBox(
+            TrainControlUI.routePlayButtonBox(new Rectangle(0, 0, CELL_W, CELL_H)));
+
+        int ink = 0;
+
+        for (int x = glyph.x; x < glyph.x + glyph.width; x++)
+        {
+            for (int y = glyph.y; y < glyph.y + glyph.height; y++)
+            {
+                int rgb = picture.getRGB(x, y);
+
+                int r = (rgb >> 16) & 0xff, g = (rgb >> 8) & 0xff, b = rgb & 0xff;
+
+                boolean hit = green ? g > 110 && r < 90 && b < 90
+                    : r < 170 && Math.abs(r - g) < 12 && Math.abs(r - b) < 12;
+
+                if (hit) ink++;
+            }
+        }
+
+        return ink;
+    }
+
     // The route list as the user drives it (FR-136): real clicks on the table, its right-click menu, Find Route and
     // Bulk Enable, each answered through the real dialogs.
 
     /**
      * A click on a route's play button runs it at once, with no question: its accessories switch and their commands
-     * go to the railway (FR-043, MT-217).  Adam: "if play button is hit, route executes without confirming".
+     * go to the railway (FR-043, MT-217).
      */
     @Test
     public void testThePlayButtonRunsTheRouteWithoutAsking() throws Exception
@@ -396,38 +687,7 @@ public class testTheRouteListShowsWhatRuns
     @Test
     public void testRightClickExecuteRunsTheRoute() throws Exception
     {
-        final String route = aQuickRoute(PREFIX + "menu run", 246, 247);
-
-        support.WireRecorder wire = support.WireRecorder.open();
-
-        try
-        {
-            int mark = wire.mark();
-
-            javax.swing.JPopupMenu menu = rightClickTheRoute(route);
-
-            final javax.swing.AbstractButton execute = support.Components.withText(menu,
-                org.traincontrol.util.I18n.f("route.ui.menuExecuteRoute", route + " ("
-                    + org.traincontrol.util.I18n.t("route.ui.id") + ": " + model.getRouteId(route) + ")"));
-
-            assertNotNull(execute, "the route's right-click menu has no Execute naming the route and its id");
-
-            SwingUtilities.invokeLater(execute::doClick);
-
-            assertTrue(waitFor(() -> switched(246) && switched(247), 10000), "Execute did not switch the route's"
-                + " accessories");
-
-            assertTrue(waitFor(() -> accessoryCommandsSince(wire, mark) >= 2, 5000), "Execute switched the accessories"
-                + " and no command for them reached the railway: " + wire.since(mark));
-        }
-        finally
-        {
-            wire.close();
-
-            theRouteIsOver(route);
-
-            closeAnyMenu();
-        }
+        executeFromTheMenu(PREFIX + "menu run", false);
     }
 
     /**
@@ -479,20 +739,12 @@ public class testTheRouteListShowsWhatRuns
     /** Whether Duplicate Route's worker, which syncs with the station after the copy is made, is still going. */
     private static boolean duplicating()
     {
-        for (StackTraceElement[] frames : Thread.getAllStackTraces().values())
-        {
-            for (StackTraceElement frame : frames)
-            {
-                if (frame.getMethodName().startsWith("lambda$duplicateRoute$")) return true;
-            }
-        }
-
-        return false;
+        return support.RouteListDoors.duplicating();
     }
 
     /**
      * Find Route, given part of a route's name that only it has, brings the route list forward and highlights that
-     * route's cell (FR-044, MT-218).  Adam: "system jumps to the route page and highlights the matched cell".
+     * route's cell (FR-044, MT-218).
      */
     @Test
     public void testFindRouteShowsTheRoute() throws Exception
@@ -616,8 +868,7 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).  Adam:
-     * "let's support partial matching if there is no exact match as entered."
+     * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).
      */
     @Test
     public void testFindRouteAsksWhichWhenSeveralMatch() throws Exception
@@ -1108,12 +1359,10 @@ public class testTheRouteListShowsWhatRuns
 
             renameElsewhere(route, renamed);
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+            try (support.Answering answering = answeringPressing("ui.yes"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the rename");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the rename");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteRenamed", route,
                     renamed));
@@ -1154,12 +1403,10 @@ public class testTheRouteListShowsWhatRuns
 
             final String before = model.getRoute(renamed).toCSV();
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            try (support.Answering answering = answeringPressing("ui.no"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the rename");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the rename");
 
                 settle();
             }
@@ -1194,12 +1441,10 @@ public class testTheRouteListShowsWhatRuns
 
             model.deleteRoute(route);
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+            try (support.Answering answering = answeringPressing("ui.yes"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the deleted route");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the deleted route");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteGoneSaveAsNew",
                     route));
@@ -1241,12 +1486,10 @@ public class testTheRouteListShowsWhatRuns
 
             final String theirs = model.getRoute(route).toCSV();
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            try (support.Answering answering = answeringPressing("ui.no"))
             {
-                support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t("route.ui.frameSave")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Save asked nothing about the change made elsewhere");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameSave",
+                    "Save asked nothing about the change made elsewhere");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                     "route.ui.confirmRouteChangedUnderneath", route));
@@ -1290,13 +1533,10 @@ public class testTheRouteListShowsWhatRuns
                 return null;
             });
 
-            try (support.Answering answering = support.Answering.start(
-                message -> support.Answering.press(org.traincontrol.util.I18n.t("ui.no"))))
+            try (support.Answering answering = answeringPressing("ui.no"))
             {
-                support.Components.press(support.Components.withText(editor,
-                    org.traincontrol.util.I18n.t("route.ui.frameCancel")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Cancel over a typed change asked nothing");
+                pressAndAwaitAQuestion(answering, editor, "route.ui.frameCancel",
+                    "Cancel over a typed change asked nothing");
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.confirmDiscardChanges"));
 
@@ -1319,28 +1559,7 @@ public class testTheRouteListShowsWhatRuns
     /** Opens the route's editor from its right-click menu, and gives back its window. */
     private static java.awt.Window openTheEditor(String route) throws Exception
     {
-        final String title = org.traincontrol.util.I18n.f("route.ui.dialogEditRouteWithId", route,
-            model.getRouteId(route));
-
-        final javax.swing.AbstractButton edit = support.Components.withText(rightClickTheRoute(route),
-            org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
-
-        assertNotNull(edit, "the route's right-click menu has no Edit Route");
-
-        SwingUtilities.invokeLater(edit::doClick);
-
-        assertTrue(waitFor(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
-            + title + "\"");
-
-        closeAnyMenu();
-
-        for (java.awt.Window window : java.awt.Window.getWindows())
-        {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
-                && title.equals(((java.awt.Frame) window).getTitle())) return window;
-        }
-
-        throw new AssertionError("the editor titled \"" + title + "\" is gone");
+        return support.RouteListDoors.edit(ui, route);
     }
 
     /** Renames a route behind the editor's back, keeping everything else, as another window would. */
@@ -1352,6 +1571,21 @@ public class testTheRouteListShowsWhatRuns
 
         assertTrue(model.editRoute(route, renamed, r.getRoute(), r.getS88(), r.getTriggerType(), r.isEnabled(),
             r.getConditions()), "precondition: the route could not be renamed elsewhere");
+    }
+
+    /** An answerer that presses the dialog button the bundle key `buttonKey` labels. */
+    private static support.Answering answeringPressing(String buttonKey)
+    {
+        return support.Answering.start(message -> support.Answering.press(org.traincontrol.util.I18n.t(buttonKey)));
+    }
+
+    /** Presses the editor's button the key labels, and asserts the answerer was asked a question. */
+    private static void pressAndAwaitAQuestion(support.Answering answering, java.awt.Window editor, String buttonKey,
+        String nothingAsked) throws Exception
+    {
+        support.Components.press(support.Components.withText(editor, org.traincontrol.util.I18n.t(buttonKey)));
+
+        assertTrue(answering.awaitAsked(1, 10000), nothingAsked);
     }
 
     private static void closeTheEditors() throws Exception
@@ -1370,61 +1604,19 @@ public class testTheRouteListShowsWhatRuns
     /** How many route editors are showing under this title. */
     private static int routeEditorsTitled(String title)
     {
-        int found = 0;
-
-        for (java.awt.Window window : java.awt.Window.getWindows())
-        {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
-                && title.equals(((java.awt.Frame) window).getTitle())) found++;
-        }
-
-        return found;
+        return support.RouteListDoors.editorsTitled(title);
     }
 
     /** The route list's table: the one holding routes. */
     private static JTable routeTable()
     {
-        JTable table = support.Components.find(ui, JTable.class, t ->
-        {
-            for (int row = 0; row < t.getRowCount(); row++)
-            {
-                for (int column = 0; column < t.getColumnCount(); column++)
-                {
-                    if (t.getValueAt(row, column) instanceof org.traincontrol.base.Route) return true;
-                }
-            }
-
-            return false;
-        });
-
-        assertNotNull(table, "the window has no table of routes");
-
-        return table;
+        return support.RouteListDoors.table(ui);
     }
 
     /** A route's cell in the list, or null. */
     private static Rectangle cellOf(final String route)
     {
-        return support.Components.onTheEventThread(() ->
-        {
-            JTable table = routeTable();
-
-            for (int row = 0; row < table.getRowCount(); row++)
-            {
-                for (int column = 0; column < table.getColumnCount(); column++)
-                {
-                    Object value = table.getValueAt(row, column);
-
-                    if (value instanceof org.traincontrol.base.Route
-                        && route.equals(((org.traincontrol.base.Route) value).getName()))
-                    {
-                        return table.getCellRect(row, column, true);
-                    }
-                }
-            }
-
-            return null;
-        });
+        return support.RouteListDoors.cellOf(ui, route);
     }
 
     /**
@@ -1434,37 +1626,58 @@ public class testTheRouteListShowsWhatRuns
     private static void clickTheRoute(String route, boolean onThePlayButton, final int kind, boolean popup)
         throws Exception
     {
-        final JTable table = routeTable();
-
-        support.Components.select(table);
-
-        settle();
-
-        Rectangle cell = cellOf(route);
-
-        assertNotNull(cell, "precondition: the route " + route + " is not in the route list");
-
-        final java.awt.Point at = onThePlayButton
-            ? new java.awt.Point((int) TrainControlUI.routePlayButtonBox(cell).getCenterX(), (int) cell.getCenterY())
-            : new java.awt.Point(cell.x + 6, (int) cell.getCenterY());
-
-        final int button = popup ? java.awt.event.MouseEvent.BUTTON3 : java.awt.event.MouseEvent.BUTTON1;
-        final int mask = popup ? java.awt.event.InputEvent.BUTTON3_DOWN_MASK : java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
-        final int modifiers = kind == java.awt.event.MouseEvent.MOUSE_CLICKED ? 0 : mask;
-
-        SwingUtilities.invokeLater(() -> table.dispatchEvent(new java.awt.event.MouseEvent(table, kind,
-            System.currentTimeMillis(), modifiers, at.x, at.y, 1, popup, button)));
+        support.RouteListDoors.click(ui, route, onThePlayButton, kind, popup);
     }
 
-    /** Right-clicks a route's cell and gives back the menu that opened. */
+    /**
+     * A right-click as Windows sends it, the popup trigger on the release and then a click, opens the route's menu and
+     * leaves it open, with the power on and off (MT-876: "the right click menu is gone in both power on and off mode").
+     *
+     * MUTATION: drop `this.RouteList.addMouseListener(new RightClickRouteMenu(this))` from `TrainControlUI`, and no
+     * menu opens.
+     */
+    @Test
+    public void testAWindowsRightClickOpensTheRoutesMenu() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "right click", 248, 249);
+
+        try
+        {
+            for (boolean powerOff : new boolean[] {false, true})
+            {
+                thePowerIs(!powerOff);
+
+                rightClickTheRoute(route);
+
+                // Still open once everything the click set off has run: a menu shown and then closed is gone too
+                settle();
+                settle();
+
+                javax.swing.JPopupMenu open = support.Components.popupShowing();
+
+                assertNotNull(open, "the route's menu opened and closed again with the power " + (powerOff ? "off"
+                    : "on"));
+
+                assertNotNull(support.Components.withText(open, org.traincontrol.util.I18n.t("route.ui.menuExecute")),
+                    "the menu that stayed open is not the route's");
+
+                closeAnyMenu();
+            }
+        }
+        finally
+        {
+            thePowerIs(true);
+            closeAnyMenu();
+        }
+    }
+
+    /**
+     * Right-clicks a route's cell as Windows does, the popup trigger on the release and then a click, through the
+     * window, and gives back the menu that opened: the menu's own listener on the list is part of what is tested.
+     */
     private static javax.swing.JPopupMenu rightClickTheRoute(String route) throws Exception
     {
-        clickTheRoute(route, false, java.awt.event.MouseEvent.MOUSE_PRESSED, true);
-
-        assertTrue(waitFor(() -> support.Components.popupShowing() != null, 5000), "a right-click on the route opened"
-            + " no menu");
-
-        return support.Components.popupShowing();
+        return support.RouteListDoors.rightClick(ui, route);
     }
 
     private static void closeAnyMenu()
@@ -1505,11 +1718,9 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * A route switching these MM2 accessories on at once, each switched off first so the route has something to change;
-     * the power on, so a row click asks rather than opening the editor.
-     *
-     * An application route, unlocked with a local id, so Delete Route and the editor's Save start no sync with the
-     * station (FR-136); a claim moved onto a station's route would leave that sync running into the next claim and has
-     * to wait it out as Duplicate Route's does.
+     * the power on, so a row click asks rather than opening the editor.  An application route, unlocked with a local
+     * id, so Delete Route and the editor's Save start no sync with the station (FR-136); a claim moved onto a station's
+     * route would leave that sync running into the next claim.
      */
     private static String aQuickRoute(String name, int... addresses) throws Exception
     {

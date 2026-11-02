@@ -66,24 +66,15 @@ public class testTheAutoTabSaysWhyATrainWaits
      * the (i) mark and a hand cursor, and hovering the line lists, per station, the reason a hand-driven send meets
      * there (the occupant, the terminus it could not leave).
      *
-     * MUTATION: in `whyNotToolTip`, key each reason by the Point's own name (`String station = entry.getKey()`), and the
+     * MUTATION: in `fileByStation`, file each reason under the Point's own name (`point` for its `stationName`), and the
      * square's two copies are listed apart, as "Approach (eastbound)" and "Approach (westbound)".
      */
     @Test
     public void testHoveringTheLineListsEachStationsReason() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("single-switch", () ->
         {
-            open("single-switch");
-
-            Locomotive mover = train(MOVER, false);
-
-            Locomotive blocker = train(BLOCKER, false);
-
-            stand(MOVER, PLATFORM_X, PLATFORM_Y);
-            stand(BLOCKER, APPROACH_X, APPROACH_Y);
+            Locomotive mover = aMoverBlockedAtTheApproach();
 
             JLabel line = secondLine(refreshedUntilNoPaths(mover));
 
@@ -98,11 +89,7 @@ public class testTheAutoTabSaysWhyATrainWaits
                 "BranchPlatform: " + I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", MOVER),
                 "WestEnd: " + I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", MOVER)),
                 "the tooltip does not give each station once, with the reason it cannot be reached");
-        }
-        finally
-        {
-            close();
-        }
+        });
     }
 
     /**
@@ -115,18 +102,9 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testClickingTheLineOpensTheWholeList() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("single-switch", () ->
         {
-            open("single-switch");
-
-            Locomotive mover = train(MOVER, true);
-
-            train(BLOCKER, true);
-
-            stand(MOVER, PLATFORM_X, PLATFORM_Y);
-            stand(BLOCKER, BRANCH_X, BRANCH_Y);
+            Locomotive mover = aMoverAndABlockerAtTheBranch();
 
             railway().getPoint("WestEnd").setActive(false);
 
@@ -149,11 +127,161 @@ public class testTheAutoTabSaysWhyATrainWaits
                 + "    BranchPlatform - " + I18n.f("autolayout.why.occupied", BLOCKER) + "\n"
                 + "    WestEnd - " + I18n.t("autolayout.why.inactive"),
                 "the window does not say where the train stands, then list each station with its own reason");
-        }
-        finally
+        });
+    }
+
+    /**
+     * A station the train can be sent to by one copy is in neither the window nor the tooltip, though its other copy is
+     * refused.
+     *
+     * MUTATION: in `fileByStation`, skip the Points with no reason (`if (destinations.getReasons().get(point) == null)
+     * continue;`), and Approach is listed with its other copy's reason.
+     */
+    @Test
+    public void testAStationItCanBeSentToIsNotListed() throws Exception
+    {
+        onTheRailway("single-switch", () ->
         {
-            close();
-        }
+            Locomotive mover = aMoverAndABlockerAtTheBranch();
+
+            // Westbound it can go; eastbound Approach is an intermediate terminus.
+            java.util.Map<String, String> reasons = railway().explainDestinations(mover, true);
+
+            assertTrue(reasons.containsKey("Approach (westbound)") && reasons.get("Approach (westbound)") == null
+                && reasons.get("Approach (eastbound)") != null,
+                "precondition: Approach is not reachable by one copy and refused by the other: " + reasons);
+
+            AutoLocomotiveStatus card = card(mover);
+
+            String window = (String) said(card, "whyNotReport");
+            String tooltip = (String) said(card, "whyNotToolTip");
+
+            assertTrue(window.contains("BranchPlatform"), "precondition: the window lists no refused station: " + window);
+
+            assertFalse(window.contains("Approach"),
+                "the window lists Approach as a station it cannot be sent to, and it can: " + window);
+
+            assertFalse(tooltip != null && tooltip.contains("Approach"),
+                "the tooltip lists Approach as a station it cannot be sent to, and it can: " + tooltip);
+        });
+    }
+
+    /**
+     * Paths found off the event thread for a train that has since left its square are not offered: the card lists no
+     * path to double-click and says the train is not on the graph.
+     *
+     * MUTATION: in `updateState`, keep a late answer (`this.paths = answer == null ? ... : answer`), and its paths are
+     * listed under a train that stands nowhere.
+     */
+    @Test
+    public void testPathsForATrainThatHasLeftAreNotOffered() throws Exception
+    {
+        onTheRailway("single-switch", () ->
+        {
+            final Locomotive mover = train(MOVER, true);
+
+            stand(MOVER, PLATFORM_X, PLATFORM_Y);
+
+            final List<List<org.traincontrol.automation.Edge>> late = railway().getPossiblePaths(mover, true);
+
+            assertFalse(late.isEmpty(), "precondition: the train has no path to be late with");
+
+            // The card the answer was asked for, before the train leaves.
+            final AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
+
+            SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(null,
+                railway().getLocomotiveLocation(mover).getName(), true));
+
+            SwingUtilities.invokeAndWait(() -> card.updateState(mover, late, true));
+
+            Field list = AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+
+            list.setAccessible(true);
+
+            assertEquals(((javax.swing.JList<?>) list.get(card)).getModel().getSize(), 0,
+                "paths that arrived after the train left its square are offered to double-click");
+
+            assertEquals(secondLine(card).getText(), I18n.t("autolayout.ui.locNotOnGraph"),
+                "the card does not say the train is off the graph");
+        });
+    }
+
+    /**
+     * A card built before its search lands does not say its train has nowhere to go: no "No available paths" and no
+     * (i) for a train that has paths, until the answer says so.  Its second line keeps its height meanwhile, so the tab
+     * does not jump when the answer lands.
+     *
+     * MUTATION: in `updateState`, take the deferred build's "no answer yet" for "no paths" (`noPathsNow = true` and
+     * the "No available paths" text), and the new card says it with the (i); leave the line empty while it waits, and
+     * the heights differ.
+     */
+    @Test
+    public void testACardWaitingForItsSearchDoesNotSayItHasNoPaths() throws Exception
+    {
+        onTheRailway("single-switch", () ->
+        {
+            final Locomotive mover = train(MOVER, true);
+
+            stand(MOVER, PLATFORM_X, PLATFORM_Y);
+
+            assertFalse(railway().getPossiblePaths(mover, true).isEmpty(), "precondition: the train has nowhere to go");
+
+            final AutoLocomotiveStatus[] card = new AutoLocomotiveStatus[1];
+
+            SwingUtilities.invokeAndWait(() -> card[0] = new AutoLocomotiveStatus(mover, ui, true));
+
+            assertNotEquals(secondLine(card[0]).getText(), I18n.t("autolayout.ui.noAvailPaths"),
+                "a card waiting for its search says the train has no available paths, and it has some");
+
+            assertNull(secondLine(card[0]).getIcon(), "a card waiting for its search offers a reason to hover for");
+
+            final List<List<org.traincontrol.automation.Edge>> paths = railway().getPossiblePaths(mover, true);
+
+            final int[] height = new int[2];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    height[0] = secondLine(card[0]).getPreferredSize().height;
+
+                    card[0].updateState(mover, paths, true);
+
+                    height[1] = secondLine(card[0]).getPreferredSize().height;
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+
+            assertEquals(height[0], height[1], "a card waiting for its search is a line shorter than once it lands, so"
+                + " the tab jumps");
+        });
+    }
+
+    /** What a card's private answer method says, asked on the event thread as the card asks it. */
+    private static Object said(final AutoLocomotiveStatus card, String method) throws Exception
+    {
+        final java.lang.reflect.Method asked = AutoLocomotiveStatus.class.getDeclaredMethod(method);
+
+        asked.setAccessible(true);
+
+        final Object[] out = new Object[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                out[0] = asked.invoke(card);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        return out[0];
     }
 
     /**
@@ -166,18 +294,9 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testTheHeadingsAreBoldAndTheStationLinesAreNot() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("single-switch", () ->
         {
-            open("single-switch");
-
-            Locomotive mover = train(MOVER, false);
-
-            train(BLOCKER, false);
-
-            stand(MOVER, PLATFORM_X, PLATFORM_Y);
-            stand(BLOCKER, APPROACH_X, APPROACH_Y);
+            Locomotive mover = aMoverBlockedAtTheApproach();
 
             AutoLocomotiveStatus card = refreshedUntilNoPaths(mover);
 
@@ -211,11 +330,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             assertEquals(plain.size(), 3, "the station lines are not plain: " + plain);
 
             for (String line : plain) assertTrue(line.startsWith("    "), "a plain line is not a station's: " + line);
-        }
-        finally
-        {
-            close();
-        }
+        });
     }
 
     /**
@@ -227,12 +342,8 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testATrainWithAWayToGoHasNothingToExplain() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("single-switch", () ->
         {
-            open("single-switch");
-
             Locomotive mover = train(MOVER, false);
 
             stand(MOVER, PLATFORM_X, PLATFORM_Y);
@@ -240,11 +351,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
 
             assertSaysNothing(secondLine(card));
-        }
-        finally
-        {
-            close();
-        }
+        });
     }
 
     /**
@@ -256,12 +363,8 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testATrainNotOnTheDiagramHasNothingToExplain() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("single-switch", () ->
         {
-            open("single-switch");
-
             Locomotive nowhere = train(MOVER, false);
 
             SwingUtilities.invokeAndWait(() -> railway().getLocomotivesToRun().add(nowhere));
@@ -269,11 +372,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             AutoLocomotiveStatus card = refreshedUntil(nowhere, I18n.t("autolayout.ui.locNotOnGraph"));
 
             assertSaysNothing(secondLine(card));
-        }
-        finally
-        {
-            close();
-        }
+        });
     }
 
     /**
@@ -285,25 +384,16 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testTheExplanationGoesWhenTheWayClears() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("single-switch", () ->
         {
-            open("single-switch");
-
-            Locomotive mover = train(MOVER, false);
-
-            Locomotive blocker = train(BLOCKER, false);
-
-            stand(MOVER, PLATFORM_X, PLATFORM_Y);
-            stand(BLOCKER, APPROACH_X, APPROACH_Y);
+            Locomotive mover = aMoverBlockedAtTheApproach();
 
             JLabel line = secondLine(refreshedUntilNoPaths(mover));
 
             assertNotNull(tooltipAfterHover(line), "precondition: hovering a stuck train gives no reasons");
 
-            SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(null, railway().getLocomotiveLocation(blocker).getName(),
-                true));
+            SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(null,
+                railway().getLocomotiveLocation(model.getLocByName(BLOCKER)).getName(), true));
 
             AutoLocomotiveStatus card = redrawnUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"), true);
 
@@ -312,11 +402,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             assertNull(line.getToolTipText(), "the old reasons are still on the line, before the pointer moves");
 
             assertSaysNothing(line);
-        }
-        finally
-        {
-            close();
-        }
+        });
     }
 
     /**
@@ -347,7 +433,14 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             Settle.simulate(layout);
 
-            Components.press(startButton());
+            // The window enables Start once the setup is loaded, which can follow the railway; `doClick` on a grayed button
+            // does nothing (OB-388).
+            final JButton start = startButton();
+
+            assertTrue(Settle.until(start::isEnabled, PATIENCE_MS),
+                "Start never became enabled, so there was nothing to press");
+
+            Components.press(start);
 
             final Layout started = layout;
 
@@ -378,25 +471,8 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testACardNotRedrawnSinceStartSaysThePauseInTheTooltip() throws Exception
     {
-        needsADisplay();
-
-        Layout layout = null;
-
-        try
+        onAStuckCardThenAutonomyStarts((layout, mover, line) ->
         {
-            open("single-switch");
-
-            Locomotive mover = train(MOVER, false);
-
-            Locomotive blocker = train(BLOCKER, false);
-
-            stand(MOVER, PLATFORM_X, PLATFORM_Y);
-            stand(BLOCKER, APPROACH_X, APPROACH_Y);
-
-            layout = railway();
-
-            JLabel line = secondLine(refreshedUntilNoPaths(mover));
-
             startBehindTheCardsBack(layout, mover);
 
             String tip = tooltipAfterHover(line);
@@ -408,13 +484,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             assertTrue(tip.contains(I18n.t("autolayout.why.paused")), "the tooltip does not say the train is paused: " + tip);
 
             assertFalse(tip.contains("Approach"), "the tooltip lists stations beside the pause: " + tip);
-        }
-        finally
-        {
-            if (layout != null) Settle.gracefully(layout, Settle.PATIENCE_MS);
-
-            close();
-        }
+        });
     }
 
     /**
@@ -426,25 +496,8 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testACardNotRedrawnSinceStartSaysTheSwitchedOffStationInTheWindow() throws Exception
     {
-        needsADisplay();
-
-        Layout layout = null;
-
-        try
+        onAStuckCardThenAutonomyStarts((layout, mover, line) ->
         {
-            open("single-switch");
-
-            Locomotive mover = train(MOVER, false);
-
-            Locomotive blocker = train(BLOCKER, false);
-
-            stand(MOVER, PLATFORM_X, PLATFORM_Y);
-            stand(BLOCKER, APPROACH_X, APPROACH_Y);
-
-            layout = railway();
-
-            JLabel line = secondLine(refreshedUntilNoPaths(mover));
-
             SwingUtilities.invokeAndWait(() -> railway().getLocomotiveLocation(mover).setActive(false));
 
             startBehindTheCardsBack(layout, null);
@@ -456,13 +509,7 @@ public class testTheAutoTabSaysWhyATrainWaits
                 + "\n"
                 + I18n.f("autolayout.why.startInactive", "MainPlatform"),
                 "the window does not say why autonomy will not start the train, and only that");
-        }
-        finally
-        {
-            if (layout != null) Settle.gracefully(layout, Settle.PATIENCE_MS);
-
-            close();
-        }
+        });
     }
 
     /**
@@ -474,12 +521,8 @@ public class testTheAutoTabSaysWhyATrainWaits
     @Test
     public void testATallListIsCutShortInTheTooltipAndWholeInTheWindow() throws Exception
     {
-        needsADisplay();
-
-        try
+        onTheRailway("live-snapshot", () ->
         {
-            open("live-snapshot");
-
             Locomotive mover = aTrainWithNowhereToGo();
 
             JLabel line = secondLine(refreshedUntilNoPaths(mover));
@@ -505,11 +548,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertTrue(shown.contains(I18n.f("autolayout.ui.whyHeaderByHand", stations.size())), "the window's count is not its"
                 + " " + stations.size() + " lines: " + shown);
-        }
-        finally
-        {
-            close();
-        }
+        });
     }
 
     // ---------------------------------------------------------------- what the user sees
@@ -523,7 +562,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
         assertEquals(line.getCursor().getType(), Cursor.DEFAULT_CURSOR, "the pointer invites a click that explains nothing");
 
-        assertNull(tooltipAfterHover(line), "the line gives reasons although there is nothing to explain");
+        assertNull(tooltipAfterHover(line, 3000), "the line gives reasons although there is nothing to explain");
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
@@ -534,13 +573,22 @@ public class testTheAutoTabSaysWhyATrainWaits
         }
     }
 
-    /** What hovering the line gives, which arrives a moment after the pointer: null when nothing comes. */
+    /**
+     * What hovering the line gives, which arrives a moment after the pointer: worked out off the event thread under the
+     * railway's monitor, which a big railway's searches hold for seconds.
+     */
     private static String tooltipAfterHover(JLabel line) throws Exception
+    {
+        return tooltipAfterHover(line, PATIENCE_MS);
+    }
+
+    /** The same, giving up after `patience`: null when nothing comes by then. */
+    private static String tooltipAfterHover(JLabel line, long patience) throws Exception
     {
         Mouse.exit(line);
         Mouse.enter(line);
 
-        Components.waitFor(() -> line.getToolTipText() != null, 3000);
+        Components.waitFor(() -> line.getToolTipText() != null, patience);
 
         return line.getToolTipText();
     }
@@ -666,6 +714,91 @@ public class testTheAutoTabSaysWhyATrainWaits
     private static void needsADisplay()
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the Auto tab is a window");
+    }
+
+    /** What a claim does on the open railway. */
+    private interface OnTheRailway
+    {
+        void run() throws Exception;
+    }
+
+    /** Skips without a display; otherwise opens the scenario's railway, runs the claim on it, and closes it. */
+    private static void onTheRailway(String scenario, OnTheRailway claim) throws Exception
+    {
+        needsADisplay();
+
+        try
+        {
+            open(scenario);
+
+            claim.run();
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    /** What a claim does with the railway, the train that cannot move and its card's second line. */
+    private interface OnAStuckCard
+    {
+        void run(Layout layout, Locomotive mover, JLabel line) throws Exception;
+    }
+
+    /**
+     * Opens the single-switch railway with the mover stuck behind the blocker, hands the claim the card's second line,
+     * and stops any autonomy the claim started before closing.
+     */
+    private static void onAStuckCardThenAutonomyStarts(OnAStuckCard claim) throws Exception
+    {
+        needsADisplay();
+
+        Layout layout = null;
+
+        try
+        {
+            open("single-switch");
+
+            Locomotive mover = aMoverBlockedAtTheApproach();
+
+            layout = railway();
+
+            JLabel line = secondLine(refreshedUntilNoPaths(mover));
+
+            claim.run(layout, mover, line);
+        }
+        finally
+        {
+            if (layout != null) Settle.gracefully(layout, Settle.PATIENCE_MS);
+
+            close();
+        }
+    }
+
+    /** A train that cannot reverse on the main platform, and the blocker on the approach, which it cannot pass. */
+    private static Locomotive aMoverBlockedAtTheApproach() throws Exception
+    {
+        Locomotive mover = train(MOVER, false);
+
+        train(BLOCKER, false);
+
+        stand(MOVER, PLATFORM_X, PLATFORM_Y);
+        stand(BLOCKER, APPROACH_X, APPROACH_Y);
+
+        return mover;
+    }
+
+    /** A train that can reverse on the main platform, and a blocker on the branch platform. */
+    private static Locomotive aMoverAndABlockerAtTheBranch() throws Exception
+    {
+        Locomotive mover = train(MOVER, true);
+
+        train(BLOCKER, true);
+
+        stand(MOVER, PLATFORM_X, PLATFORM_Y);
+        stand(BLOCKER, BRANCH_X, BRANCH_Y);
+
+        return mover;
     }
 
     /** The sandboxed railway, with its own window, in simulation and with no Central Station. */

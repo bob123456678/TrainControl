@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -74,20 +73,7 @@ public class testTheReversalReachesTheTracks
         // may-turn destination here has one, is the case these claims are about
         model.getLocByName(DRIVER).setReversible(true);
 
-        recorder = new Handler()
-        {
-            @Override
-            public void publish(LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) HEARD.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        recorder = support.LogTap.messagesInto(HEARD);
 
         recorder.setLevel(Level.ALL);
 

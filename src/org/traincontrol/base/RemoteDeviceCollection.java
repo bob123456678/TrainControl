@@ -36,11 +36,8 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     }
     
     /**
-     * Adds a device.
-     *
-     * Maintains a strict one-to-one mapping between names and ids: adding clears out anything the
-     * name or the id was previously attached to, so neither map can accumulate entries the other
-     * does not know about.
+     * Adds a device, keeping a strict one-to-one mapping between names and ids: anything the name or the id was
+     * previously attached to is cleared out, so neither map can hold entries the other does not know about.
      * @param device
      * @param name
      * @param id

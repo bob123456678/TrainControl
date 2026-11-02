@@ -21,15 +21,14 @@ import support.SourceOf;
 /**
  * A route will not switch an accessory that autonomy has locked.
  *
- * `configureAndLockPath` reserves every accessory on a path, and a route must not set one of them back
- * while a train is under way on it.  Three doors reach a route: an s88 trigger route fired when an
- * AUTONOMY train crosses the trigger sensor (sensors are shared on this railway, so no person is
- * involved), the manual routes tab, and the diagram's route tile.  The tile's guard asks
- * `activeAccs.contains(c.getAccessory())`, which checks nothing because a route component's accessory is
- * null.
+ * `configureAndLockPath` reserves every accessory on a path, and a route must not set one of them back while a train is
+ * under way on it.  Three doors reach a route: an s88 trigger route fired when an AUTONOMY train crosses the trigger
+ * sensor (sensors are shared on this railway, so no person is involved), the manual routes tab, and the diagram's route
+ * tile.  The tile's guard asks `activeAccs.contains(c.getAccessory())`, which checks nothing because a route
+ * component's accessory is null.
  *
- * Its own class on purpose: the guard can only see the layout the model holds, so the test puts its
- * fixture there, and one JVM per class lets it take the model apart without upsetting other tests.
+ * Its own class on purpose: the guard can only see the layout the model holds, so the test puts its fixture there, and
+ * one JVM per class lets it take the model apart without upsetting other tests.
  *
  * @author Adam
  */
@@ -226,11 +225,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
         layout.getPoint("RG_A").setLocomotive(loc);
 
-        // Fired from INSIDE the dispatch, the only moment the hazard exists: `activeLocomotives`, which makes
-        // isRunning() true and is what getActiveAccs reads, is written by executePathInternal AFTER the lock succeeds.
-        // So the route runs from the started callback, where a real s88 trigger route fires: path locked, train
-        // registered, accessories reserved.  The verdicts are ACCUMULATED, not overwritten: the callback fires once per
-        // leg.
+        // Fired from INSIDE the dispatch, the only moment the hazard exists: `activeLocomotives` (what isRunning() and
+        // getActiveAccs read) is written by executePathInternal AFTER the lock succeeds.  So the route runs from the
+        // started callback, where a real s88 trigger route fires.  The verdicts are ACCUMULATED, not overwritten: the
+        // callback fires once per leg.
         final boolean[] sawTheLock = {false};
         final boolean[] everSwitched = {false};
 
@@ -473,12 +471,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * The exit guard of a terminus a train is leaving is held GREEN by its journey's first edge (OB-340): a route may not
-     * turn it red in front of the train, and may set the green it shows.  No route out commands that guard - it stands on
-     * the station's own track - so the first edge out sets it green with its own accessories, and holds it as it holds
-     * them.
-     *
-     * Asked at the first station on the way, the first edge still held.
+     * The exit guard of a terminus a train is leaving is held GREEN by its journey's first edge (OB-340): a route may
+     * not turn it red in front of the train, and may set the green it shows.  No route out commands that guard - it
+     * stands on the station's own track - so the first edge out sets it green with its own accessories, and holds it as
+     * it holds them.  Asked at the first station on the way, the first edge still held.
      *
      * MUTATION: leave the guard out of what the first edge holds, and both claims fail.
      *
@@ -565,11 +561,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * A route already under way when a dispatch begins does not set the accessory either.
      *
      * The guard is asked again immediately before each accessory command, and once the answer is settled it holds for
-     * the rest of the route: the command loop takes seconds (`execRoute` sleeps `SLEEP_INTERVAL` plus each command's
-     * own delay between every pair), and a dispatch that locked a path while a route was part way through would
-     * otherwise be invisible to it, through all three doors including the s88 trigger with nobody present.  A route can
-     * be stopped part way with some of its ironwork set and the rest not, the smaller harm than throwing a switch under
-     * a train crossing it.
+     * the rest of the route: the command loop takes seconds, and a dispatch that locked a path while a route was part
+     * way through would otherwise be invisible to it, through all three doors including the s88 trigger.  A route
+     * stopped part way is the smaller harm than throwing a switch under a train crossing it.
      *
      * A conflict appearing mid-route ASKS at the two doors with a person at them, and sets none of its accessories at
      * the s88 trigger door.  This test runs with no interface attached (`init` with `showUI` false, so `getGUI()` is
@@ -580,8 +574,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * The window is opened deliberately with a command delay, rather than raced: the first command carries a delay long
      * enough for the dispatch to lock the path while the route sits between its two commands.
      *
-     * MUTATION: asking the guard only once - removing the `heldReason(rc)` re-check from the loop -
-     * fails this test.
+     * MUTATION: asking the guard only once - removing the `heldReason(rc)` re-check from the loop - fails this test.
      */
     @Test
     public void testARouteAlreadyRunningDoesNotThrowTheSwitchEither() throws Exception
@@ -692,9 +685,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * MUTATION: dropping the `!rc.getSetting()` test - so the aspect stops mattering - fails this test on the RED half
      * while the GREEN half still passes.  Returning the locked-path key from the protecting-signal branch of
-     * `heldReason` fails the last assertion, which decides what sentence the operator is shown, on every run, because
-     * that assertion's guard is about whether the signal is on an active path, which under the mutation it still is
-     * not.
+     * `heldReason` fails the last assertion, which decides what sentence the operator is shown.
      */
     @Test
     public void testASignalMayBeSetREDOverAnOccupiedPlatform() throws Exception
@@ -763,9 +754,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             // and `getActiveAccs` is computed from a map the dispatch is writing to as this runs.
             signalWasActive.add(layout.getActiveAccs().contains(signal));
 
-            // What the two sides of that comparison actually were: `heldReason` resolves the command's address and
-            // protocol through getAccessoryByAddressIfPresent, `getActiveAccs` fills itself through getAccessoryByName,
-            // and this suite runs against the real locomotive database, where address 86 may already be spoken for.
+            // What the two sides of that comparison actually were: `heldReason` and `getActiveAccs` resolve an
+            // accessory differently, and this suite runs against the real locomotive database, where address 86 may be
+            // spoken for.
             StringBuilder said = new StringBuilder();
 
             said.append("active=[");
@@ -828,12 +819,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
                 + "standing at it. Nothing re-asserts it until the next occupancy change, so that is "
                 + "a green aspect inviting a hand-driven train into an occupied platform");
 
-            // And WHICH refusal it is, which is what the operator gets asked about: `heldReason` tells the two apart
-            // and `conflictingAccessoryAndReason` carries the reason to the confirmation dialog.  With one sentence for
-            // both, "which is on track a train is running over right now" would be said about a train standing still on
-            // a platform nothing is routed over.  Asserted only while the fixture says what it means to say: if the
-            // signal HAS become one of the active path's accessories, the locked-path reason is correct (the probe ran
-            // late).
+            // And WHICH refusal it is, which is what the operator gets asked about: with one sentence for both, "which
+            // is on track a train is running over right now" would be said about a train standing still on a platform
+            // nothing is routed over.  Asserted only while the fixture says what it means to say: if the signal HAS
+            // become one of the active path's accessories, the locked-path reason is correct (the probe ran late).
             if (Boolean.TRUE.equals(signalWasActive.get(0)))
             {
                 System.out.println("testASignalMayBeSetREDOverAnOccupiedPlatform: the signal was on "
@@ -865,8 +854,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * A locked path holds every point along it for its train (`Point.reserve`), its destination included, from the
      * moment it is locked, so the signal protecting that destination is held, rightly, before the train is anywhere
-     * near it.  The refusal must not say "it protects a platform where a train is standing" when nobody is standing
-     * there yet.  Asked from inside the dispatch, while the train still stands where it set off.
+     * near it, and the refusal must not say "it protects a platform where a train is standing".  Asked from inside the
+     * dispatch, while the train still stands where it set off.
      *
      * MUTATION: have `heldReason` give the standing key whatever `protectsAStandingTrain` answers, or have
      * `protectsAStandingTrain` stop asking `whereTheTrainIs`, and this fails.
@@ -970,11 +959,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * cannot pass by the guard being uniformly off: when the train has crossed the first leg, that leg's turnout must
      * be free and the last leg's must not.
      *
-     * Three legs, not two: an edge is only released once the train has reached the end of the edge AFTER it ("unlock 1
-     * edge prior to the current one" in the dispatch loop), so on a two-edge path the first edge is never cleared
-     * mid-run.  For the same reason the assertions read the FIRST and LAST observation rather than a numbered leg: the
-     * progress callback fires before the release, so clearance becomes visible one leg after the train crossed the
-     * edge.
+     * Three legs, not two: an edge is only released once the train has reached the end of the edge AFTER it, so on a
+     * two-edge path the first edge is never cleared mid-run.  For the same reason the assertions read the FIRST and
+     * LAST observation rather than a numbered leg: the progress callback fires before the release, so clearance becomes
+     * visible one leg after the train crossed the edge.
      *
      * MUTATION: making `getActiveAccs` ignore `clearedEdges` fails it on the behind-the-train half while the
      * ahead-of-the-train half still passes.
@@ -1087,15 +1075,13 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * route."
      *
      * A turnout that did not take the command is exactly when somebody needs to set it, and exactly when it will be on
-     * a locked path, because the path is what commanded it.  So the s88 trigger door refuses, because nobody is there
-     * to ask; the two doors with a person at them ask, as clicking an accessory on an active route always has, and call
-     * this when the answer is yes.
+     * a locked path.  So the s88 trigger door refuses, because nobody is there to ask; the two doors with a person at
+     * them ask, as clicking an accessory on an active route always has, and call this when the answer is yes.
      *
      * This tests the MODEL half: that saying yes really does set the accessory.  The dialog is
      * `TrainControlUI.askAboutRouteConflict`, one method for both doors; MT-189 checks it by hand.
      *
-     * MUTATION: making `execRouteOverridingConflicts` pass `false` - so the override does nothing -
-     * fails this test.
+     * MUTATION: making `execRouteOverridingConflicts` pass `false` - so the override does nothing - fails this test.
      */
     @Test
     public void testSomebodyCanRunTheRouteAnyway() throws Exception
@@ -1179,12 +1165,11 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * emergency stop is not asked about at all, so it has no OK: it fires the ordinary way (Adam: *"Emergency stop
      * should never conflict or prompt."*).
      *
-     * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop (a Route command
-     * firing a stop-only route, as a route must carry a stop: `core.testAStopRouteStandsAlone`).  With the stop,
-     * the route list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there
-     * is nothing to confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the
-     * train, is skipped.  Without the stop the question is asked, and OK - `execRouteOverridingConflicts`, what the
-     * route list runs on OK - throws both switches.
+     * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop (a Route command firing a
+     * stop-only route, as a route must carry a stop: `core.testAStopRouteStandsAlone`).  With the stop, the route
+     * list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there is nothing to
+     * confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the train, is skipped.
+     * Without the stop the question is asked, and OK (`execRouteOverridingConflicts`) throws both switches.
      *
      * MUTATION: have the override skip the held switch, have a route with a stop ask, or have the guarded run throw the
      * held switch or drop the stop, and this fails.
@@ -1365,16 +1350,15 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * A refused route still cuts the power, if that is what it also says.
      *
-     * Refusing a held accessory must not discard the rest of the route.  A route that cuts the power AND
-     * sets a trap point, the shape a safety route on an s88 trigger naturally has, would otherwise lose its
-     * emergency stop with nobody present, on the door that fires by itself.  A stop is safe to obey whatever
-     * else is true, so the held accessory is skipped and everything else in the route runs.
+     * Refusing a held accessory must not discard the rest of the route.  A route that cuts the power AND sets a trap
+     * point, the shape a safety route on an s88 trigger naturally has, would otherwise lose its emergency stop with
+     * nobody present, on the door that fires by itself.  A stop is safe to obey whatever else is true, so the held
+     * accessory is skipped and everything else in the route runs.
      *
      * The refusal is per command (MT-247) and the route here has one accessory; the point pinned is that a refusal must
      * not take the stop with it.  `testAConflictSkipsOnlyTheSwitchUnderTheTrain` holds the grain itself.
      *
-     * MUTATION: making the refusal `return` instead of `continue` fails this test - the power stays
-     * on.
+     * MUTATION: making the refusal `return` instead of `continue` fails this test - the power stays on.
      */
     @Test
     public void testTheStopInARefusedRouteStillRuns() throws Exception
@@ -1409,11 +1393,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
         // WAITED FOR, NOT READ AT ONCE: `go()` SENDS a command and returns, and the power flag is written by the ECHO
         // on another thread (`receiveMessage` hands it to `locMessageProcessor`), so a read taken here has no
-        // happens-before with that write.  What turns the power off is this class itself, a route carrying an emergency
-        // stop restored by an asynchronous `model.go()` in a `finally`; every class runs in its own JVM and
-        // `init(simulate)` turns the power on, so no earlier class can be reaching this one.  `waitForPowerState` is
-        // bounded because an acknowledgment of a command TrainControl just sent either comes back in milliseconds or is
-        // not coming (`testAConflictSkipsOnlyTheSwitchUnderTheTrain` waits the same way).
+        // happens-before with that write.  Every class runs in its own JVM and `init(simulate)` turns the power on, so
+        // what turns it off is this class itself.  `waitForPowerState` is bounded because an acknowledgment of a
+        // command TrainControl just sent either comes back in milliseconds or is not coming.
         assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
             "precondition: the power has to be ON, or the route's stop has nothing to turn off and "
             + "this test passes without exercising anything");
@@ -1494,8 +1476,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * The test above proves the stop survives a refusal at the AUTOMATIC door, where nobody is asked.  At the two human
      * doors, `TrainControlUI` and `LayoutLabel` ask first and `return` on Cancel, so `execRoute` is never reached and a
      * route that cuts power and sets a trap point does neither.  So `conflictingAccessoryAndReason`, which every door
-     * consults before acting, answers "nothing to confirm" whenever the route carries a stop.  The conflicting
-     * accessory is still skipped and logged, exactly as at the s88 door.
+     * consults before acting, answers "nothing to confirm" whenever the route carries a stop; the conflicting accessory
+     * is still skipped and logged, as at the s88 door.
      *
      * The second assertion is the control: without the stop the same route on the same conflict must still raise the
      * question, or this would be a rule that switched the guard off for everybody.
@@ -1590,12 +1572,11 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * Adam, on the behavior itself: "OK - let's add a warning about this."
      *
-     * A command naming a locomotive that is not in the database does nothing when the route fires, and leaving it makes
-     * the route look complete while it is not.  An operator who deletes a locomotive and adds it back under the same
-     * name (which is how a decoder type gets changed) finds the route's commands gone, so the deletion says how many
-     * routes will lose commands.  Commands only: a condition naming the locomotive is deliberately left in place, so
-     * counting it would warn about something the route keeps.  The second assertion is a route that only mentions the
-     * locomotive in a condition: it must not count.
+     * A command naming a locomotive that is not in the database does nothing when the route fires.  An operator who
+     * deletes a locomotive and adds it back under the same name (which is how a decoder type gets changed) finds the
+     * route's commands gone, so the deletion says how many routes will lose commands.  Commands only: a condition
+     * naming the locomotive is left in place, so the second assertion, a route that only mentions it in a condition,
+     * must not count.
      */
     @Test
     public void testDeletingALocomotiveCountsTheRoutesThatDriveIt() throws Exception
@@ -1658,18 +1639,14 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * An s88 route with nothing in its way still runs while autonomy is going.
      *
-     * `testTheStopInARefusedRouteStillRuns` fires `execRoute(true)` for a route whose turnout IS on a locked path, so
-     * the tests say what the automatic door refuses and nothing else says what it does when there is nothing to refuse.
-     * The rule is `heldReason(rc)`, asked of each accessory command in turn: make it answer for every command while
-     * autonomy is running and every s88-triggered route stops setting anything for as long as a train is out, and
-     * nothing else would fail.
+     * `testTheStopInARefusedRouteStillRuns` says what the automatic door refuses; this says what it does when there is
+     * nothing to refuse.  The rule is `heldReason(rc)`, asked of each accessory command in turn: make it answer for
+     * every command while autonomy runs and every s88-triggered route stops setting anything while a train is out.  So
+     * a route on a DIFFERENT accessory, one no edge configures, must set it.  The refusal is per command (MT-247)
+     * (`testAConflictSkipsOnlyTheSwitchUnderTheTrain`).
      *
-     * So this is the other side: a route on a DIFFERENT accessory, one no edge configures, fired automatically while a
-     * train is running, must set it.  The refusal is per command (MT-247), so one busy turnout does not drop the
-     * route's other switches (`testAConflictSkipsOnlyTheSwitchUnderTheTrain`).
-     *
-     * MUTATION this catches: dropping the `heldReason` null check so every accessory is skipped while
-     * autonomy runs fails this test and leaves the one above green.
+     * MUTATION this catches: dropping the `heldReason` null check so every accessory is skipped while autonomy runs
+     * fails this test and leaves the one above green.
      *
      * @throws Exception
      */
@@ -1769,22 +1746,21 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * A route that cuts the power is never held back, and its stop always goes out.
      *
      * `behaviour/routes.md` section 7a states this as a rule - *"an emergency stop is obeyed whatever else is true. A
-     * route carrying a stop is never refused at a human door and never has its stop skipped"* - and it has two halves.
-     * Adam ruled on `MT-247`: *"make test cases for this"*.
+     * route carrying a stop is never refused at a human door and never has its stop skipped"* - and it has two halves
+     * (Adam on MT-247: *"emergency stop should never conflict or prompt."*).
      *
      * The first half, that a route with a stop is not screened at the human door, is also held by
      * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` and, by shape, by `testBothDoorsCarveOutTheEmergencyStop`.
-     * This test adds the second half: that the stop actually goes out.  Being excused the question is worth nothing if
-     * the command is then dropped.  Suppressing a stop is the one refusal that can make things worse (Adam:
-     * **"emergency stop should never conflict or prompt."**).
+     * This test adds the second: that the stop actually goes out, since being excused the question is worth nothing if
+     * the command is then dropped.
      *
      * **Two claims and two controls**, in the one state where the hazard exists - inside a dispatch, with the path
      * locked and the turnout reserved:
      *
-     * - the route carrying a stop is not screened at the human door, while the SAME route without one is.  Without that
-     *   second half, a door that screened nothing would pass;
-     * - the power really goes off, and the conflicting accessory is still not thrown.  A fix that obeyed the stop by
-     *   running the whole route would be worse than the defect.
+     * - the route carrying a stop is not screened at the human door, while the SAME route without one is (without that
+     *   second half, a door that screened nothing would pass);
+     * - the power really goes off, and the conflicting accessory is still not thrown (a fix that obeyed the stop by
+     *   running the whole route would be worse than the defect).
      *
      * MUTATION: take `if (this.hasEmergencyStop()) return null;` out of
      * `MarklinRoute.conflictingAccessoryAndReason` and the first claim fails.
@@ -1903,9 +1879,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * The same one-accessory route, with an emergency stop after it.
      *
-     * The stop comes second on purpose: `hasEmergencyStop` is about the whole route *"wherever it sits
-     * in the command list"*, and a stop written first would also be the first command executed, which
-     * would pass a weaker implementation that only looked at the head.
+     * The stop comes second on purpose: `hasEmergencyStop` is about the whole route, and a stop written first would
+     * also be the first command executed, which would pass a weaker implementation that only looked at the head.
      *
      * @param id a route id nothing else uses
      * @return the route, not executed
@@ -1925,12 +1900,17 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
     private static MarklinRoute route(int id)
     {
+        return oneCommandRoute("RG route ", id, SWITCH_ADDRESS, true);
+    }
+
+    /** A route of the name followed by its id, with one command: the accessory at the address, thrown or not. */
+    private static MarklinRoute oneCommandRoute(String name, int id, int address, boolean throwIt)
+    {
         List<RouteCommand> commands = new ArrayList<>();
 
-        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
-            Accessory.accessoryDecoderType.MM2, true));
+        commands.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, throwIt));
 
-        return new MarklinRoute(model, "RG route " + id, id, commands, 0,
+        return new MarklinRoute(model, name + id, id, commands, 0,
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
     }
 
@@ -1943,13 +1923,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      */
     private static MarklinRoute switchRoute(int id, boolean turn)
     {
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
-            Accessory.accessoryDecoderType.MM2, turn));
-
-        return new MarklinRoute(model, "RG switch " + id, id, commands, 0,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        return oneCommandRoute("RG switch ", id, SWITCH_ADDRESS, turn);
     }
 
     /** A second protecting signal, which no path holds. */
@@ -1965,12 +1939,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      */
     private static MarklinRoute accessoryRoute(int id, int address, boolean throwIt)
     {
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, throwIt));
-
-        return new MarklinRoute(model, "RG accessory " + id, id, commands, 0,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        return oneCommandRoute("RG accessory ", id, address, throwIt);
     }
 
     /**
@@ -1982,13 +1951,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      */
     private static MarklinRoute signalRoute(int id, boolean red)
     {
-        List<RouteCommand> commands = new ArrayList<>();
-
-        commands.add(RouteCommand.RouteCommandAccessory(SIGNAL_ADDRESS,
-            Accessory.accessoryDecoderType.MM2, red));
-
-        return new MarklinRoute(model, "RG signal " + id, id, commands, 0,
-            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+        return oneCommandRoute("RG signal ", id, SIGNAL_ADDRESS, red);
     }
 
     /** The dispatched locomotive, by the name executePath wants. */
@@ -2011,17 +1974,16 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * A turnout under a MEASURED train stays refused, on a path that is only partly measured.
      *
      * The sibling of `testAnAccessoryBehindTheTrainIsStillSettable`, with a train that has a length: without one every
-     * edge is handed back the moment the head leaves it, which is right on an unmeasured railway and says nothing about
-     * a measured one.
+     * edge is handed back the moment the head leaves it, which says nothing about a measured railway.
      *
      * Edges of 100, 100 and 0 with a train of 250.  When the head finishes the unmeasured third edge, the first edge
-     * has 100 units of measured distance behind it and 150 units of train still standing on it.  Nothing better can be
-     * known over unmeasured track, so the answer must be that the train is still there: `getActiveAccs` skips cleared
-     * edges, and with atomicRoutes on the lock is held for the whole run, so being reported clear is the ONLY thing
-     * that stops `heldReason` refusing a route that would throw that turnout.
+     * has 100 units of measured distance behind it and 150 units of train still standing on it, and over unmeasured
+     * track nothing better can be known, so the train is still there.  `getActiveAccs` skips cleared edges and with
+     * atomicRoutes on the lock is held for the whole run, so being reported clear is the ONLY thing that stops
+     * `heldReason` refusing a route that would throw that turnout.
      *
-     * MUTATION: restoring the escape - release when the last edge traversed had no length - fails the
-     * behind-the-train assertion while every other test in this class still passes.
+     * MUTATION: restoring the escape - release when the last edge traversed had no length - fails the behind-the-train
+     * assertion while every other test in this class still passes.
      */
     @Test
     public void testAMeasuredTrainKeepsItsTurnoutsRefused() throws Exception

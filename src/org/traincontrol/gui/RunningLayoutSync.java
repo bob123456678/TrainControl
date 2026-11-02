@@ -106,11 +106,9 @@ final class RunningLayoutSync
 
     /**
      * Writes these trains' pauses into the railway's settings as built, for a door that changed them on the railway and
-     * in the setup together (as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` does for atomic routes).  Only the
-     * trains the door changed (OB-343): writing the railway's whole list would hide a pause made by the Auto tab's
-     * button, and the rebuild would take the setup's older list as the word on every train.
-     *
-     * @param changed the trains the door has just changed, on the railway and in the setup
+     * in the setup together.  Only the trains the door changed (OB-343): writing the railway's whole list would hide a
+     * pause made by the Auto tab's button, and the rebuild would take the setup's older list as the word on every
+     * train.
      */
     void notePausesAsBuilt(java.util.Collection<Locomotive> changed)
     {
@@ -341,10 +339,7 @@ final class RunningLayoutSync
         }
     }
 
-    /**
-     * The same, over a layout handed in, so it can be tested without a window (MT-337): a source-shape guard on the
-     * order of `whereTheTrainsAre` and the load cannot say what the two statements do to a train.
-     */
+    /** The same, over a layout handed in, so it can be tested without a window (MT-337). */
     static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log)
     {
@@ -454,12 +449,11 @@ final class RunningLayoutSync
     }
 
     /**
-     * The same, told which trains the setup has just been given a new placement for.  Where the rebuilt placement and
-     * `standing` disagree one of them is newer, and which does not show in either: the setup is newer where somebody
-     * just placed a train in the editor (`AutonomySession.placeLocomotive`, MT-337); the record is newer where a run
-     * moved a train after the last capture (OB-183).  A rebuild is also asked for by gestures that edit no placement,
-     * so neither rule can be inferred from the rebuild happening.  Decided per TRAIN: one named in
-     * `placementsJustEdited` (or null) keeps where the rebuild put it, every other goes back where the railway had it.
+     * The same, told which trains the setup has just been given a new placement for (`placementsJustEdited`, or null).
+     * Where the rebuilt placement and `standing` disagree one of them is newer, and which does not show in either: the
+     * setup is newer where somebody just placed a train in the editor (`AutonomySession.placeLocomotive`, MT-337); the
+     * record is newer where a run moved a train after the last capture (OB-183).  A rebuild is also asked for by
+     * gestures that edit no placement, so neither rule can be inferred from the rebuild happening.  Decided per TRAIN.
      * Returns the trains it could not put back, left where the rebuild put them; `log` is where to say so.
      */
     static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
@@ -492,8 +486,8 @@ final class RunningLayoutSync
                 if (twin != null) back = twin;
 
                 // The railway wins, unless this train's placement is the edit (OB-183): where a train IS is a fact, and
-                // where the file thinks it is is a record.  A train the operator just placed has its new square only in
-                // the setup, and the door that made it supplies the exception rather than it being inferred.
+                // where the file thinks it is is a record.  The door that placed the train supplies the exception; it
+                // is not inferred.
                 if (placementsJustEdited == null || !placementsJustEdited.contains(was.getKey()))
                 {
                     if (back.getCurrentLocomotive() == null
@@ -524,9 +518,8 @@ final class RunningLayoutSync
                 }
 
                 // Where the rebuild put it, which is where the SETUP says it is: a rebuild is asked for because the
-                // setup just changed, so writing this record over it undoes the edit (MT-337).
-                // `AutonomySession.placeLocomotive` writes `loc` into the setup while the diagram's door writes the
-                // running layout, which `whereTheTrainsAre` reads.  Reached only for trains somebody chose to place.
+                // setup just changed, so writing this record over it undoes the edit (MT-337).  Reached only for trains
+                // somebody chose to place (`AutonomySession.placeLocomotive` writes `loc` into the setup).
                 org.traincontrol.automation.Point now = null;
 
                 for (org.traincontrol.automation.Point each : built.getPoints())
@@ -572,8 +565,8 @@ final class RunningLayoutSync
      * starting inside that event finds this gate shut and the edit is thrown away, correctly: rebuilding under a moving
      * railway is what `prepareAutonomyReload` refuses.  Not deferred to when the run ends: a run moves locomotives and
      * nothing folds `currentLoc` back, so a deferred rebuild would put each train back where it started (OB-144).  The
-     * remedy: stop the run and make the edit again, or let the next ordinary load pick it up off disk.
-     * `placementsJustEdited` is the locomotives whose placement this gesture wrote into the setup, or null.
+     * remedy: stop the run and make the edit again.  `placementsJustEdited` is the locomotives whose placement this
+     * gesture wrote into the setup, or null.
      */
     void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
         java.util.Set<String> placementsJustEdited)
@@ -587,8 +580,8 @@ final class RunningLayoutSync
         // A declined edit is recorded so the exit does not delete it: the save on the way out folds the RUNNING layout
         // back over the configuration (`captureFromLayout` removes what the layout lacks), and that layout was built
         // before the edit.  Only from the door that carries an edit: the flag rides on `sayIfDeclined`, because
-        // `autonomyEditorClosed()` reaches here on every close.  The door it excludes cannot reach here while autonomy
-        // is busy (OB-047, `refuseWhileEditorOpen()`); if that guard is relaxed, this flag needs its own parameter.
+        // `autonomyEditorClosed()` reaches here on every close.  The excluded door cannot reach here while autonomy is
+        // busy (OB-047); if that guard is relaxed, this flag needs its own parameter.
         if (sayIfDeclined && this.ui.getActiveDiagramConfiguration() != null && this.ui.isAutonomyBusy()
             && this.ui.getAutonomyViewerPanel() != null)
         {
@@ -600,15 +593,14 @@ final class RunningLayoutSync
         {
             // Without capturing the running layout's state first: every caller reaches here because the setup just
             // changed, so an ordinary load would fold the running layout's stale answer over the edit.  "Newer of the
-            // two" holds only because `openLayoutEditor` captures the running layout before it constructs the editor
-            // (this method cannot check that).  Where the trains ARE survives the rebuild (OB-183): placements only,
-            // with the one exception named, not inferred (`placementsJustEdited`, MT-337; `putTheTrainsBack` makes it).
+            // two" holds only because `openLayoutEditor` captures the running layout before it constructs the editor.
+            // Where the trains ARE survives the rebuild (OB-183): placements only, with the one exception named
+            // (`placementsJustEdited`, MT-337).
             java.util.Map<String, String[]> standing = this.ui.whereTheTrainsAre();
 
             // And the turns nobody has managed to write down yet: `Layout.reversedOnArrival` lives on the Layout, which
-            // the load below replaces wholesale, so every pending turn died on any setup gesture.  This preserves the
-            // retry case (a turn that declined to write is put back and tried again at the next idle refresh; OB-189
-            // through a third door).
+            // the load below replaces wholesale, so every pending turn died on any setup gesture; a turn that declined
+            // to write is put back and retried at the next idle refresh (OB-189).
             java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
             // Asked, not built, as the carry asks
@@ -677,7 +669,7 @@ final class RunningLayoutSync
             }
         }
 
-        // And both marks follow the edit (MT-278): a placement reached the marks through `updateVisiblePoints`, a train
+        // And both marks follow the edit (MT-278): a placement reaches the marks through `updateVisiblePoints`, a train
         // length through `applyTrainLength`, a tile length through this rebuild, but everything else the editor can
         // change alters which edges exist and so what a standing train covers.  This is the one door every setup change
         // goes through; `refreshCoveredTrack` repaints only the squares whose mark changed.

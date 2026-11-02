@@ -1,14 +1,12 @@
 package regression;
 
 import java.awt.Container;
-import java.awt.Window;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
@@ -25,7 +23,6 @@ import org.traincontrol.util.I18n;
 import static regression.testTheImportDoorReadsAnOldFile.importFromTheMenu;
 import static regression.testTheImportDoorReadsAnOldFile.loggedEntries;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
-import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 import static regression.testTheImportDoorReadsAnOldFile.textOf;
 
 /**
@@ -257,19 +254,18 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            sandbox.withNoTrains().standing(STANDS, "75 407 DB", "E", "W").standing(KEPT, "2-8-4 3505 SP", "E", "N");
+            sandboxed.sandbox().withNoTrains().standing(STANDS, "75 407 DB", "E", "W")
+                .standing(KEPT, "2-8-4 3505 SP", "E", "N");
 
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             AutonomySession session = ui[0].getAutonomySession();
 
@@ -295,7 +291,7 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
                 listed.put(sold.get(sold.size() - 1));
             }
 
-            File file = new File(sandbox.getFolder(), "ob349-export.json");
+            File file = new File(sandboxed.sandbox().getFolder(), "ob349-export.json");
 
             Files.write(file.toPath(), bundle.toString(2).getBytes(StandardCharsets.UTF_8));
 
@@ -343,8 +339,8 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
             assertFalse(imported.contains(GONE) || imported.contains("OB-349 Sold"), "the imported configuration still names"
                 + " a locomotive the database does not hold: " + imported);
 
-            assertNoFileNames(sandbox.getFolder(), GONE);
-            assertNoFileNames(sandbox.getFolder(), "OB-349 Sold");
+            assertNoFileNames(sandboxed.sandbox().getFolder(), GONE);
+            assertNoFileNames(sandboxed.sandbox().getFolder(), "OB-349 Sold");
 
             org.json.JSONObject kept = pointAt(session.getStore().getConfiguration("OB-349 import")
                 .getJSONObject("points"), KEPT);
@@ -358,16 +354,7 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -386,15 +373,13 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
 
         assertTrue(mt491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
             org.json.JSONObject old = read(mt491);
 
@@ -410,11 +395,11 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
                 if ("BottomInner".equals(point.optString("name"))) point.getJSONArray("excludedLocs").put(sold);
             }
 
-            File file = new File(sandbox.getFolder(), "ob349-autonomy.json");
+            File file = new File(sandboxed.sandbox().getFolder(), "ob349-autonomy.json");
 
             Files.write(file.toPath(), old.toString(2).getBytes(StandardCharsets.UTF_8));
 
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             int logBefore = loggedEntries().size();
 
@@ -443,7 +428,7 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
                 assertFalse(imported.contains(one), "the configuration imported from the old file names " + one + ", a"
                     + " locomotive the database does not hold: " + imported);
 
-                assertNoFileNames(sandbox.getFolder(), one);
+                assertNoFileNames(sandboxed.sandbox().getFolder(), one);
             }
 
             assertEquals(entriesNaming(homeless, logBefore).size(), 1, "the log does not name " + homeless + " once: "
@@ -451,16 +436,7 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
         }
         finally
         {
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -558,50 +534,24 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
         @Override
         public void run()
         {
-            while (running)
+            support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                try
-                {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                final JOptionPane pane = find(dialog.getContentPane());
 
-                for (Window window : Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof JDialog)) continue;
+                if (pane == null || !handled.add(pane)) return;
 
-                    final JOptionPane pane = find(((JDialog) window).getContentPane());
+                said.add(textOf(pane.getMessage()));
 
-                    if (pane == null || !handled.add(pane)) continue;
+                final Object[] options = pane.getOptions();
 
-                    said.add(textOf(pane.getMessage()));
-
-                    final Object[] options = pane.getOptions();
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
-                        ? options[0] : Integer.valueOf(JOptionPane.OK_OPTION)));
-                }
-            }
+                SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
+                    ? options[0] : Integer.valueOf(JOptionPane.OK_OPTION)));
+            });
         }
 
         private static JOptionPane find(Container container)
         {
-            for (java.awt.Component child : container.getComponents())
-            {
-                if (child instanceof JOptionPane) return (JOptionPane) child;
-
-                if (child instanceof Container)
-                {
-                    JOptionPane deeper = find((Container) child);
-
-                    if (deeper != null) return deeper;
-                }
-            }
-
-            return null;
+            return support.Components.inside(container, JOptionPane.class);
         }
     }
 }

@@ -161,37 +161,60 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+            org.json.JSONObject standingOn = pointHolding(built, "C7 curve train");
 
-            String standing = null;
+            assertNotNull(standingOn, "precondition: the train placed on the curve is on no Point");
 
-            for (Object o : built.getJSONArray("points"))
-            {
-                org.json.JSONObject point = (org.json.JSONObject) o;
-
-                sensorOf.put(point.getString("name"), point.optInt("s88"));
-
-                org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
-
-                if (held != null && "C7 curve train".equals(held.optString("name", null))) standing = point.getString("name");
-            }
-
-            assertNotNull(standing, "precondition: the train placed on the curve is on no Point");
+            String standing = standingOn.getString("name");
 
             int ahead = facing == org.traincontrol.automationui.TilePorts.Side.N ? 70 : 72;
 
-            List<Integer> reached = new ArrayList<>();
-
-            for (Object o : built.getJSONArray("edges"))
-            {
-                org.json.JSONObject edge = (org.json.JSONObject) o;
-
-                if (standing.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
-            }
+            List<Integer> reached = sensorsReachedFrom(built, standing);
 
             assertEquals(reached, Arrays.asList(ahead), "the train placed on the curve facing " + facing + " is not"
                 + " offered exactly the station that way (RSA2-C7): " + reached);
         }
+    }
+
+    /** The last Point of a build that holds the locomotive, or null. */
+    private static org.json.JSONObject pointHolding(org.json.JSONObject built, String locomotive)
+    {
+        org.json.JSONObject found = null;
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            if (held != null && locomotive.equals(held.optString("name", null))) found = point;
+        }
+
+        return found;
+    }
+
+    /** The sensors of the Points a build has an edge to from one Point, in the edges' order. */
+    private static List<Integer> sensorsReachedFrom(org.json.JSONObject built, String start)
+    {
+        java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            sensorOf.put(point.getString("name"), point.optInt("s88"));
+        }
+
+        List<Integer> reached = new ArrayList<>();
+
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject edge = (org.json.JSONObject) o;
+
+            if (start.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
+        }
+
+        return reached;
     }
 
     private void awayOnly(TileKey straight, org.traincontrol.automationui.TilePorts.Side towards)
@@ -249,41 +272,19 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
 
-            java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+            org.json.JSONObject standingOn = pointHolding(built, "C7 train");
 
-            String standing = null;
-            String itsFacing = null;
+            assertNotNull(standingOn, "precondition: the train placed on the middle square is on no Point");
 
-            for (Object o : built.getJSONArray("points"))
-            {
-                org.json.JSONObject point = (org.json.JSONObject) o;
-
-                sensorOf.put(point.getString("name"), point.optInt("s88"));
-
-                org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
-
-                if (held != null && "C7 train".equals(held.optString("name", null)))
-                {
-                    standing = point.getString("name");
-                    itsFacing = point.optString(AutonomyBuilder.COPY_FACING, null);
-                }
-            }
-
-            assertNotNull(standing, "precondition: the train placed on the middle square is on no Point");
+            String standing = standingOn.getString("name");
+            String itsFacing = standingOn.optString(AutonomyBuilder.COPY_FACING, null);
 
             assertEquals(itsFacing, facing.name(), "the train placed facing " + facing + " stands on a copy that records"
                 + " no facing, or another (RSA2-C7)");
 
             int ahead = facing == org.traincontrol.automationui.TilePorts.Side.E ? 66 : 64;
 
-            List<Integer> reached = new ArrayList<>();
-
-            for (Object o : built.getJSONArray("edges"))
-            {
-                org.json.JSONObject edge = (org.json.JSONObject) o;
-
-                if (standing.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
-            }
+            List<Integer> reached = sensorsReachedFrom(built, standing);
 
             assertFalse(reached.isEmpty(), "precondition: the train facing " + facing + " has no way out at all");
 
@@ -480,9 +481,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * And across a build and a capture, which is the hop that actually rewrote it: `captureFromLayout` takes the
-     * running layout back into the setup, so a value that goes out through `buildConfiguration` and comes back changed
-     * is a direction nobody chose.
+     * And across a build and a capture, the hop that rewrote it: a value that goes out through `buildConfiguration` and
+     * comes back from `captureFromLayout` changed is a direction nobody chose.
      */
     @Test
     public void testADirectionSurvivesABuildAndACapture() throws Exception
@@ -520,11 +520,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * Taking a train off a square takes its arrival side with it: `arrivedFrom` describes the TRAIN that was standing
-     * here, and `parseAuto` reads it straight back onto whatever is placed there next, so the walk that blocks track
-     * behind a standing train would follow the previous train's tail, silently.  The menu offers no way to say "not
-     * known", so the side must leave with the train.  Both doors that empty a square are asserted:
-     * `clearEveryPlacement` is a separate loop that mirrors `placeLocomotive`, and the two have drifted before.
+     * Taking a train off a square takes its arrival side with it: `arrivedFrom` describes the TRAIN that stood here,
+     * and `parseAuto` reads it back onto whatever is placed next, so the walk blocking track behind a standing train
+     * would follow the previous train's tail.  Both doors that empty a square are asserted (`clearEveryPlacement`
+     * mirrors `placeLocomotive`, and the two have drifted).
      */
     @Test
     public void testAnArrivalSideDoesNotOutliveItsTrain() throws IOException
@@ -602,9 +601,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             + " tail that blocks the wrong rail (VAL9-B5)");
     }
     /**
-     * The arrival side reaches the running layout, and comes back from a save.  Both hops, because they fail for
-     * different reasons: the FILE hop is the store, and the BUILD hop is what `parseAuto` is handed.  A property that
-     * survives a save and never reaches the railway is a setting that does nothing.
+     * The arrival side reaches the running layout, and comes back from a save: the FILE hop is the store, the BUILD hop
+     * is what `parseAuto` is handed (a property that never reaches the railway does nothing).
      */
     @Test
     public void testTheArrivalSideReachesTheRailwayAndSurvivesASave() throws IOException
@@ -644,10 +642,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A direction change never flips the facing of a square the train has LEFT.  `flipFacing` gathers the squares the
-     * running layout says hold this train, then the setup's, and skips any it cannot decide.  After a run the arrival
-     * square often has no recorded facing yet, so the loop moved on to the square the train set off from and flipped a
-     * platform the train is not standing on.  The setup now gets a vote only when the railway has no opinion; a
-     * locomotive recorded on two SETUP squares is still walked in full when the running layout does not know.
+     * running layout says hold this train, then the setup's; the setup gets a vote only when the railway has no opinion
+     * (after a run the arrival square often has no recorded facing, and the loop flipped the platform the train had set
+     * off from).  A locomotive on two SETUP squares is still walked in full when the running layout does not know.
      */
     @Test
     public void testADirectionChangeDoesNotFlipTheSquareTheTrainLeft() throws IOException
@@ -768,9 +765,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A placement naming a locomotive this database does not have is refused, not written in.  The running model drops
-     * such a placement with a log line (`core.testHomeStaging
-     * .testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`: *"drop the train and keep the rest."*), so
-     * this test is about the importer NAMING what it dropped, which the user can act on.
+     * it with a log line (`core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`), so
+     * this is about the importer NAMING what it dropped, which the user can act on.
      */
     @Test
     public void testAPlacementForAnUnknownLocomotiveIsRefused() throws Exception
@@ -1252,9 +1248,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
      * A station demoted and promoted again has every setting it had as a station (*"keep them, ignored while not a
      * station"*, as its maximum train length, OB-291, and its blockers already were): the caption, the sides it bars
      * arrivals by, its exit guard, its entry guards, and the turn flag older setups spell "terminus".  Through the
-     * editor's own answer to the station menu, `setUsage`, because the turn flag was cleared there and the other four
-     * in the session.  The caption sits two squares below the platform, where the placer never puts one, so a caption
-     * placed afresh on promotion cannot pass for the one kept.
+     * editor's own `setUsage`.  The caption sits two squares below the platform, where the placer never puts one, so
+     * one placed afresh on promotion cannot pass for the one kept.
      *
      * MUTATION: clear any of the five on demotion again, and this fails naming it.
      */
@@ -1398,9 +1393,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A square that stops being a Point keeps its locomotive.  A sensor reduces to a Point only where track connects
-     * it, so a station nudged out of its run is present on the diagram and is not a Point.  The placement is kept, the
-     * build refuses it, and it comes back when the track is joined up again: a disconnected station is a mistake
-     * somebody is in the middle of making.  A square whose TILE is gone still keeps nothing.
+     * it, so a station nudged out of its run is on the diagram and not a Point.  The placement is kept, the build
+     * refuses it, and it comes back when the track is joined up again.  A square whose TILE is gone still keeps
+     * nothing.
      */
     @Test
     public void testASquareThatStopsBeingAPointKeepsItsLocomotive() throws Exception
@@ -1450,9 +1445,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws
-     * them.  Each was once cleared on demotion for a reason that still holds of a plain point (a caption lights a
-     * station's name up when a train reverses there, a guard is thrown red over a square nothing is sent to, the old
-     * turn flag turns every train round), so the readers ask whether the square is a station.
+     * them.  Each would misbehave on a plain point (a caption lights a station's name, a guard is thrown red over a
+     * square nothing is sent to, the old turn flag turns every train round), so the readers ask whether the square is a
+     * station.
      *
      * MUTATION: hand the build every square's exit guards again, station or not, and this fails.
      */
@@ -1672,10 +1667,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The bulk clear touches exactly the squares the findings call homes.  `homeTiles()` feeds the findings,
-     * `tilesWithAHome()` decides what Clear All Home Locomotives touches, and `homesElsewhere()` and `shutTiles()` walk
-     * the same map; they are one walk now, and a qualification added to one alone would have the button act on a set
-     * the findings never mentioned.
+     * The bulk clear touches exactly the squares the findings call homes.  `homeTiles()`, `tilesWithAHome()`,
+     * `homesElsewhere()` and `shutTiles()` are one walk, and a qualification added to one alone would have the button
+     * act on a set the findings never mentioned.
      *
      * MUTATION: give either method a filter the other does not have and the first assertion fails.
      */
@@ -1716,9 +1710,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
     /**
      * A facing that follows the track moves the locomotive on the running layout too (*"flipFacing should also update
-     * the running layout."*).  A square is several Points once split, and the copy a locomotive stands on decides where
-     * it can go next; `captureFromLayout` derives the facing from that copy and writes it back over the setup.
-     * Asserted as both in one call, since either alone passes while the other is wrong.
+     * the running layout."*).  The copy a locomotive stands on decides where it can go next, and `captureFromLayout`
+     * derives the facing from that copy and writes it back over the setup.  Asserted as both in one call, since either
+     * alone passes while the other is wrong.
      *
      * MUTATION: drop the `moveOntoFacingCopy` call and the layout half fails; drop the `setFacing` and the setup half
      * does.

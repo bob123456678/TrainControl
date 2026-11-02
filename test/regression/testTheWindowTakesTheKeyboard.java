@@ -7,13 +7,10 @@ import support.SourceOf;
 /**
  * A keystroke right after start-up lands on the keyboard and changes the active key (OB-168, OB-170).
  *
- * The frame is not the thing that holds the keyboard: it is `setFocusable(false)`, and the letter keys are read by
- * KeyListeners on `KeyboardTab` and on the locomotive panel, so `takeTheKeyboard` asks the tabbed pane for it.
- *
- * The tests ask `getMostRecentFocusOwner`, not `getFocusOwner`: a test JVM's window is usually not the OS's focused
- * window (the launching terminal is), and `getFocusOwner` answers null for every such window.  The most recent owner
- * is the child the window hands the keyboard to the moment it is focused, and `requestFocusInWindow` sets it on any
- * showing window.  Each test presses its letter on the component the window arranged to receive it, so a build that
+ * The frame is `setFocusable(false)` and the letter keys are read by KeyListeners on `KeyboardTab` and on the
+ * locomotive panel, so `takeTheKeyboard` asks the tabbed pane for it.  The tests ask `getMostRecentFocusOwner`, not
+ * `getFocusOwner`: a test JVM's window is usually not the OS's focused window, and `getFocusOwner` answers null for
+ * every such window.  Each test presses its letter on the component the window arranged to receive it, so a build that
  * arranged for the wrong component fails at that press.
  */
 public class testTheWindowTakesTheKeyboard
@@ -46,10 +43,8 @@ public class testTheWindowTakesTheKeyboard
 
     /**
      * Start-up, in the order `MarklinControlStation.init` performs it: build the window, hand it the model, then
-     * `display()`, which calls `takeTheKeyboard`; calling that directly would test a method rather than a start-up.
-     *
-     * BEFORE the model (OB-111): `init` reads the machine-global layout preference and would otherwise open Adam's real
-     * railway.
+     * `display()`, which calls `takeTheKeyboard`.  BEFORE the model (OB-111): `init` reads the machine-global layout
+     * preference and would otherwise open Adam's real railway.
      */
     private static Started start() throws Exception
     {
@@ -182,8 +177,7 @@ public class testTheWindowTakesTheKeyboard
 
     /**
      * Something else in this window that can hold the keyboard and is NOT a place anybody types.  Found rather than
-     * named, so the claim is about any control.  Text components are excluded here and looked for separately below,
-     * since running both tests against one component would make one a statement about the other's fixture.
+     * named, so the claim is about any control; text components are looked for separately below.
      */
     private static java.awt.Component somethingThatDoesNotType(java.awt.Container in,
         java.awt.Component keyboard)
@@ -320,11 +314,10 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * OB-170 proper: the keyboard comes back when the window does.
-     *
-     * The first fix asked once, from the end of `display()`, but `requestFocusInWindow` does nothing while the window
-     * is not the focused window, and on Windows a starting process's window often is not one.  This reproduces that
-     * without an OS: something else in the window is given the keyboard after start-up, then the window gains focus.
+     * OB-170 proper: the keyboard comes back when the window does.  `requestFocusInWindow` does nothing while the
+     * window is not the focused window, and on Windows a starting process's window often is not one.  This reproduces
+     * that without an OS: something else in the window is given the keyboard after start-up, then the window gains
+     * focus.
      *
      * MUTATION this catches: remove the `addWindowFocusListener` block from `takeTheKeyboard` and keep the single
      * posted request; the press then leaves `currentButton` where it was.
@@ -424,18 +417,15 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * Coming to the foreground gives the always-on-top setting back (OB-170).
-     *
-     * The fix works by breaking a rule: Windows refuses a foreground change from a process not already in the
-     * foreground, except for a topmost window, so the window is made topmost, raised, and set back to whatever the
-     * operator chose.  Leaving it topmost would put the application above everything else for the session.
+     * Coming to the foreground gives the always-on-top setting back (OB-170).  Windows refuses a foreground change from
+     * a process not already in the foreground, except for a topmost window, so the window is made topmost, raised, and
+     * set back to whatever the operator chose.
      *
      * Both directions, because a one-directional test passes on `setAlwaysOnTop(false)` unconditionally.  The restore
      * is on a timer (handing the flag back in the same breath as the raise loses the raise), so this waits for it, the
      * wait bounded so a restore that never happens fails rather than hangs.
      *
-     * MUTATION this catches: dropping the restore, or replacing it with a bare
-     * `setAlwaysOnTop(false)`.
+     * MUTATION this catches: dropping the restore, or replacing it with a bare `setAlwaysOnTop(false)`.
      */
     @Test(timeOut = 300000)
     public void testComingToTheForegroundGivesTheOnTopSettingBack() throws Exception
@@ -675,14 +665,10 @@ public class testTheWindowTakesTheKeyboard
         }
     }
     /**
-     * `display()` does not take the topmost flag off after showing the window (OB-170).
-     *
-     * `setViewListener` makes the frame topmost before it is shown, which is the mechanism: a topmost window is the one
-     * case Windows lets a process raise itself without owning the foreground.  Showing is asynchronous, so a restore
-     * on the next line removed the style before the window manager acted.  Whether Windows grants the foreground cannot
-     * be read back, so no behavioral test can hold this (putting the restore back passes the rest of the class); it is
-     * pinned in the source, as `testTheWindowAttachesItsRefreshCallback` does.  `takeTheKeyboard`'s raise still hands
-     * the operator's setting back after 400 ms.
+     * `display()` does not take the topmost flag off after showing the window (OB-170): `setViewListener` makes the
+     * frame topmost before it is shown, and showing is asynchronous, so a restore on the next line would remove the
+     * style before the window manager acted.  Whether Windows grants the foreground cannot be read back, so no
+     * behavioral test can hold this; it is pinned in the source, as `testTheWindowAttachesItsRefreshCallback` does.
      */
     @Test
     public void testDisplayDoesNotUndoTheTopmostTrickItDependsOn() throws Exception
@@ -706,12 +692,10 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * The menu bar is grayed out for as long as the connecting notice is up (OB-170).
-     *
-     * The menu bar is part of the window rather than of its content, so swapping the content in left every menu looking
-     * ready while none could act: they command a model that does not exist until the connect is over.  Exactly the
-     * ones it took are switched back, since several menus are off by state.  Neither method shows anything, so this
-     * can run in a battery.
+     * The menu bar is grayed out for as long as the connecting notice is up (OB-170).  The menu bar is part of the
+     * window rather than of its content, so swapping the content in would leave every menu looking ready while none
+     * could act.  Exactly the ones it took are switched back, since several menus are off by state.  Neither method
+     * shows anything, so this can run in a battery.
      *
      * MUTATION this catches: `ungreyTheMenus` walking the menu bar instead of its own list.
      */

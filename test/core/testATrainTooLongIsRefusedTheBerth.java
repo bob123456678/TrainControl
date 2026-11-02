@@ -322,14 +322,6 @@ public class testATrainTooLongIsRefusedTheBerth
     // ---------------------------------------------------------------- the fixture
 
     /**
-     * Builds a run into a terminus with a switch part way along, and asks whether the path is clear.
-     *
-     * @param trainLength how long the train is
-     * @param roomAfterTheSwitch how much measured track lies between the switch and the berth
-     * @return whether isPathClear allowed it
-     * @throws Exception on a failure to build
-     */
-    /**
      * One built railway, so the rule and the menu can be asked the same question about it.
      */
     private static final class Fixture
@@ -362,6 +354,14 @@ public class testATrainTooLongIsRefusedTheBerth
         return false;
     }
 
+    /**
+     * Builds a run into a terminus with a switch part way along, and asks whether the path is clear.
+     *
+     * @param trainLength how long the train is
+     * @param roomAfterTheSwitch how much measured track lies between the switch and the berth
+     * @return whether isPathClear allowed it
+     * @throws Exception on a failure to build
+     */
     private boolean admitted(int trainLength, int roomAfterTheSwitch) throws Exception
     {
         Fixture fixture = build(trainLength, roomAfterTheSwitch);

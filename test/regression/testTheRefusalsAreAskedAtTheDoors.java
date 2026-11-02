@@ -14,11 +14,11 @@ import support.SourceOf;
  * refusal has to be in the method."*): Execute Timetable and Return Home must not start trains under an open editor,
  * and switching layouts or swapping the layout folder must not replace the diagram during a run.
  *
- * This pins the half that goes wrong: a door that forgets to ask. It does NOT pin the two guards' own bodies, which are
- * a dialog over a predicate: `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by
- * `core.testHomeStaging` and `regression.testARouteDoesNotThrowSwitchesUnderATrain`; `refuseWhileEditorOpen` is
- * `isLayoutEditorOpen()`, pinned by shape in `testEditorSurfaceRules`. A behavioral test of the refusals would have to
- * raise the modal dialog each one shows, and a modal dialog inside a battery strands a runner.
+ * This pins the half that goes wrong: a door that forgets to ask. It does NOT pin the two guards' own bodies:
+ * `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by `core.testHomeStaging` and
+ * `regression.testARouteDoesNotThrowSwitchesUnderATrain`; `refuseWhileEditorOpen` is `isLayoutEditorOpen()`, pinned by
+ * shape in `testEditorSurfaceRules`.  A behavioral test would have to raise each refusal's modal dialog, which strands
+ * a battery runner.
  *
  * MUTATION: delete the `refusedToSendATrain(` call from `requestReturnToHome` and the first test fails, naming it.
  *
@@ -110,7 +110,7 @@ public class testTheRefusalsAreAskedAtTheDoors
      */
     private static final String[][] DOORS =
     {
-        // The four doors `38ccbfc8` was filed for.
+        // The first four doors.
         {"private void executeTimetableActionPerformed(", GATE,
             "a timetable starts trains, and an editor holds the diagram they would run on"},
         {"    void requestReturnToHome(", GATE,
@@ -127,7 +127,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
-        // And the rest, which were longhand at four doors before the two methods collected them.
+        // And the rest.
         {"private void startAutonomyActionPerformed(", GATE,
             "starting autonomy against a diagram somebody is still editing"},
         {"void sendATrainByHand(", GATE,
@@ -156,8 +156,8 @@ public class testTheRefusalsAreAskedAtTheDoors
         {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
         // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
-        // anywhere, `openLayoutEditor` brings that window forward as the Edit item does, and asking the refusal first
-        // would show "Close the editor first" in exactly the state that item handles.
+        // anywhere (`openLayoutEditor` brings that window forward), and asking the refusal first would show "Close the
+        // editor first" in exactly the state that item handles.
         {"    void refreshAutonomyPrompt(", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
@@ -209,10 +209,9 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The one gate asks what every door that sends a train used to ask for itself: the editor, the setup and the power,
-     * and the hand doors in the other two files send through the one door that asks it. The editor is asked as one open
-     * OR on its way: Edit Layout posts the editor's build, and a send queued ahead of it would otherwise find no editor
-     * and run under it.
+     * The one gate asks what every door that sends a train asks: the editor, the setup and the power, and the hand
+     * doors in the other two files send through the one door that asks it. The editor is asked as one open OR on its
+     * way: Edit Layout posts the editor's build, and a send queued ahead of it would find no editor and run under it.
      *
      * MUTATION: take any of the three out of `whyNoTrainMayBeSent`, or send from a hand door past the one door, and
      * this fails.
@@ -324,9 +323,8 @@ public class testTheRefusalsAreAskedAtTheDoors
         // the window's delegator handing to `RunGates`' declaration.
         int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 3 + occurrences(source, GATE) - 1;
 
-        // Counted inside the declared doors, not from the list's own arithmetic: two errors can cancel in a total (a
-        // door that never asked, one that asked twice), while reading the bodies names a door that does not ask and
-        // counts a door that asks twice as two.
+        // Counted inside the declared doors, not from the list's own arithmetic: two errors can cancel in a total,
+        // while reading the bodies names a door that does not ask and counts one that asks twice as two.
         int inDeclaredDoors = 0;
 
         for (String[] door : DOORS)
@@ -349,19 +347,17 @@ public class testTheRefusalsAreAskedAtTheDoors
      * throwing when it refuses, and a door that discarded that answer wrote the placement into the setup AND SAVED it,
      * so the next build emitted the train on a square it was never put on.
      *
-     * A named list, and every door on it guards: `GraphLocAssign.commitChanges` was once allowed to discard the answer
-     * because `commitAndRecord` records no placement for a refused move, but that kept the setup honest and not the
-     * locomotive: the dialog's length, speed and functions were written to a train the railway had refused to place.
+     * A named list, and every door on it guards, `GraphLocAssign.commitChanges` too: recording no placement for a
+     * refused move keeps the setup honest but not the locomotive, whose dialog values would be written to a train the
+     * railway refused to place.
      *
      * MUTATION: drop the `if (!` from any of the three doors, and this names it.
      */
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
     {
-        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door (a refusal
-        // that also cleared the clipboard left a train cut with Control+X on no square and on no clipboard), and the
-        // assign dialog. Asked of the whole program, so a door that moves to another file is still counted: five
-        // answers are tested today.
+        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door, and the
+        // assign dialog.  Asked of the whole program, so a door that moves to another file is still counted.
         List<String> wrong = new ArrayList<>();
 
         String source = SourceOf.allCode();
@@ -383,7 +379,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         }
 
         // And each of the five still does, door by door (FR-136): a total holds when one door drops its guard and a
-        // guarded call is added elsewhere in the same change.
+        // guarded call is added elsewhere.
         final String[][] doors =
         {
             {"private void placeFacing(String locName, String pointName,", "the diagram menu's Place"},
@@ -420,15 +416,15 @@ public class testTheRefusalsAreAskedAtTheDoors
     public void testThePlacementDoorsKeepAHeadingATrainCanLeaveBy() throws Exception
     {
         // Asked of the whole program, so a door that moves is still counted: `placeableFacingsFor` is named by its
-        // declaration and the one use inside the session, and by no door; `departableFacingsFor` by its declaration and
-        // the six places the four doors ask it.
+        // declaration and one use inside the session, `departableFacingsFor` by its declaration and the six places the
+        // four doors ask it.
         assertEquals(SourceOf.occurrences("placeableFacingsFor("), 2, "a door chooses a placed train's heading among"
             + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
         assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 7, "a door no longer asks which headings a train can"
             + " leave by (OB-284)");
 
-        // And each place still asks it (FR-136): a total of seven holds when one door stops asking and another call is
-        // added elsewhere, so the places are named with the calls each makes.
+        // And each place still asks it (FR-136): a total holds when one door stops asking and another call is added
+        // elsewhere, so the places are named with the calls each makes.
         final Object[][] places =
         {
             {"    void placeLocomotive(TileKey tile)", 1},
@@ -450,8 +446,8 @@ public class testTheRefusalsAreAskedAtTheDoors
     /**
      * Only the rebuild's put-back and the three doors that keep a heading a train can leave by stand a train on a copy
      * of a station trains may not arrive at (OB-284, OB-296). `moveLocomotive`'s four-argument form accepts such a copy
-     * when its last argument is true, and the guard above counts calls without reading their arguments, so a door
-     * passing `true` would still read as refusing. Any other door passing `true` is a new decision.
+     * when its last argument is true, and the guard above counts calls without reading arguments, so any other door
+     * passing `true` is a new decision.
      *
      * MUTATION: pass true from any door but these four - the editor's Place, say - and this fails.
      */
@@ -499,8 +495,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             }
         }
 
-        // The calls, whichever file holds them: the model's own, the assign dialog, the diagram menu's Place, the
-        // rebuild's put-back and the paste.
+        // The calls, whichever file holds them.
         java.util.Collections.sort(found);
 
         assertEquals(found.toString(), "[moveLocomotive(getLoc(), p.getName(), false, true), "
@@ -546,8 +541,7 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     /**
      * The diagram's destination sends on the railway its paths were found on, as the Auto tab's does, so a railway
-     * replaced between the gather and the click refuses the send at its own fence instead of the new railway locking
-     * the old one's track.
+     * replaced between the gather and the click refuses the send at its own fence.
      *
      * MUTATION: dispatch the destination on the railway current at the click, and this fails.
      */

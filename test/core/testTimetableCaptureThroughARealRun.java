@@ -17,20 +17,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Capture, tested the way the operator meets it: a real configuration, real autonomy, real trains.
  *
- * Adam: "Make sure you validate via REALISTIC tests for the timetable issue that still persists."  The earlier
- * `testTimetableCapture` built its own two-point Layout, set the flag on it, handed `executePath` a path it had
- * assembled, and could only see the model.  The capture worked throughout; what had stopped was the REDRAW, because
- * the registration that repainted the timetable was deleted with the GraphStream window.
- *
- * So this does the whole thing:
+ * The earlier `testTimetableCapture` (kept as a faster unit test of the flag) built its own two-point Layout and could
+ * only see the model, not the REDRAW that repaints the timetable.  So this does the whole thing:
  *
  * - a real configuration, through `model.parseAuto`, which is what loading one does
  * - capture switched on where the window switches it, on `model.getAutoLayout()`
  * - `AutonomyRefreshCallback.attach`, which is the same call the window makes
  * - `runLocomotives()`, so autonomy picks its own paths rather than being handed one
  *
- * and then asks the two questions that were separately false: did anything get captured, and was anybody told.  The
- * old test is kept as a faster unit test of the flag.
+ * and then asks the two questions: did anything get captured, and was anybody told.
  */
 public class testTimetableCaptureThroughARealRun
 {
@@ -48,12 +43,10 @@ public class testTimetableCaptureThroughARealRun
     private static final String START = "Station 1";
 
     /**
-     * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).
-     *
-     * Far above what a dispatch takes, and deliberately not derived from RUN_MS, which is how long a run is watched
-     * for.  Raised to 480 seconds after it ran out twice in consecutive batteries on a busy machine and passed alone.
-     * The wait ends the moment a locomotive moves, so a higher ceiling is only ever spent on a run that is failing
-     * anyway; no wall-clock number can tell a slow machine from a railway that will never move.
+     * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).  Far above what a
+     * dispatch takes, and deliberately not derived from RUN_MS, which is how long a run is watched for.  The wait ends
+     * the moment a locomotive moves, so a higher ceiling is only ever spent on a run that is failing anyway; no
+     * wall-clock number can tell a slow machine from a railway that will never move.
      */
     private static final long STARTUP_CEILING_MS = 480000;
 
@@ -337,12 +330,10 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * Puts every sensor back to clear, the other half of starting from a known railway (MT-374).
-     *
-     * `emptyTheRailway` puts the trains back but nothing put the SENSORS back, so a feedback left occupied by the
-     * previous run stayed occupied and a destination whose approach expects it clear was shut for ever ("Station 2 =
-     * Expects feedback 5 to be clear").  It is load-dependent because a busy machine cuts the first run off mid-leg.
-     * Only sensors the RAILWAY knows about, since clearing others would be the same fault the other way.
+     * Puts every sensor back to clear, the other half of starting from a known railway (MT-374): a feedback left
+     * occupied by the previous run stayed occupied and a destination whose approach expects it clear was shut for ever
+     * ("Station 2 = Expects feedback 5 to be clear").  Only sensors the RAILWAY knows about, since clearing others
+     * would be the same fault the other way.
      *
      * @param layout the freshly parsed railway
      */
@@ -359,14 +350,10 @@ public class testTimetableCaptureThroughARealRun
     /**
      * Takes every train off, so this test starts from a railway nobody else has arranged.
      *
-     * Adam: "let's get it to start with an empty layout onto which you place locomotives, with other locomotives
-     * removed."  `autonomy_sanity.json` places three trains on a railway with four destinations and one single-track
-     * corridor, so it ran at capacity minus one with one train able to move at a time: fine for autonomy's
-     * contention handling, the arrangement least likely to produce a moving train on a loaded machine.  That made this
-     * class fail batteries with "no locomotive moved in 480 seconds", and `explainCannotStart` could not say why.
-     *
-     * Through `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses, so the state is one the application
-     * can also be in.
+     * `autonomy_sanity.json` places three trains on a railway with one single-track corridor, the arrangement least
+     * likely to produce a moving train on a loaded machine, so the test starts empty and places its own.  Through
+     * `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses, so the state is one the application can also
+     * be in.
      *
      * @param layout the freshly parsed railway
      */

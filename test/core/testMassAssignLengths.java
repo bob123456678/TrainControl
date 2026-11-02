@@ -64,8 +64,7 @@ public class testMassAssignLengths
     public void testHowManySharedSquaresHisOwnMainPageAsksAbout() throws Exception
     {
         // Opened inside the try (OB-111): the open redirects the machine-global layout preference, and anything
-        // throwing before the try, even a SkipException, would leave it pointing under %TEMP%, the railway opened next
-        // start.
+        // throwing before the try would leave it pointing under %TEMP%.
         support.LayoutSandbox sandbox = null;
 
         try
@@ -441,8 +440,8 @@ public class testMassAssignLengths
     /**
      * The walk's prompt comes back where it was left, and a new round starts it afresh (Adam, MT-454: *"make sure it
      * remembers its location unless I reopen a new mass assignment round from the right click menu."*).  Asked of the
-     * real walk: the test moves the prompt, presses Skip, reads where the next prompt opened, then presses Cancel and
-     * starts a second round, whose first prompt must NOT open where the first round left it.
+     * real walk: move the prompt, press Skip, read where the next prompt opened, then Cancel and start a second round,
+     * whose first prompt must NOT open where the first round left it.
      */
     @Test
     public void testTheWalkPromptStaysWhereItWasLeftUntilANewRound() throws Exception
@@ -453,15 +452,9 @@ public class testMassAssignLengths
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignLengths");
-        walk.setAccessible(true);
-
         final java.awt.Point movedTo = new java.awt.Point(37, 41);
 
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
-        });
+        startTheWalk(panel, "massAssignLengths");
 
         javax.swing.JDialog first = awaitPrompt(null);
 
@@ -482,10 +475,7 @@ public class testMassAssignLengths
 
         awaitNoPrompt();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
-        });
+        startTheWalk(panel, "massAssignLengths");
 
         javax.swing.JDialog fresh = awaitPrompt(second);
 
@@ -504,8 +494,8 @@ public class testMassAssignLengths
      * The number field has the keyboard focus, and Enter after typing a number submits it and moves on (Adam, MT-454:
      * *"make sure the entry field is focused, and when I hit enter after typing the number, it submits and goes to the
      * next one"*).  `JOptionPane` gives the focus to the OK button when the dialog gains it, so the field takes it once
-     * the dialog is on screen.  A desktop that never lets the test's window take focus says so as a skip, which is why
-     * this is the ONLY test here that presses Enter: `NotifyAction` acts on the focused text component.
+     * the dialog is on screen.  A desktop that never gives the window focus says so as a skip, which is why this is the
+     * ONLY test here that presses Enter.
      */
     @Test
     public void testTheNumberFieldHasFocusAndEnterSubmits() throws Exception
@@ -516,13 +506,7 @@ public class testMassAssignLengths
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignLengths");
-        walk.setAccessible(true);
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
-        });
+        startTheWalk(panel, "massAssignLengths");
 
         final javax.swing.JDialog first = awaitPrompt(null);
 
@@ -658,13 +642,7 @@ public class testMassAssignLengths
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignMaxTrainLengths");
-        walk.setAccessible(true);
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
-        });
+        startTheWalk(panel, "massAssignMaxTrainLengths");
 
         final javax.swing.JDialog first = awaitPrompt(null, MAXIMA);
 
@@ -1262,44 +1240,13 @@ public class testMassAssignLengths
     /** What a refusal over the walk's prompt says - its message, as read - after closing it as its OK does. */
     private static String refusalMessage(String walkTitleKey) throws Exception
     {
-        String walkTitle = org.traincontrol.util.I18n.t(walkTitleKey);
-        long giveUp = System.currentTimeMillis() + 10000;
-
-        while (System.currentTimeMillis() < giveUp)
-        {
-            for (java.awt.Window window : java.awt.Window.getWindows())
-            {
-                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
-
-                final javax.swing.JDialog dialog = (javax.swing.JDialog) window;
-
-                if (walkTitle.equals(dialog.getTitle())) continue;
-
-                final JOptionPane[] pane = new JOptionPane[1];
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0] = findPane(dialog.getContentPane()));
-
-                if (pane[0] == null) continue;
-
-                String text = String.valueOf(pane[0].getMessage()).replaceAll("<[^>]*>", "").replace("&lt;", "<")
-                    .replace("&gt;", ">").replace("&amp;", "&").trim();
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(JOptionPane.OK_OPTION));
-
-                return text;
-            }
-
-            Thread.sleep(50);
-        }
-
-        fail("the walk did not refuse with a message");
-
-        return null;
+        return closeTheRefusal(walkTitleKey, "the walk did not refuse with a message",
+            (dialog, pane) -> stripped(String.valueOf(pane.getMessage())));
     }
 
     /**
-     * Closes every dialog still showing, as Escape closes it, until none is left.  Asked after the event thread has
-     * come back each time: a walk that has just had a refusal closed asks its question again a moment later.
+     * Closes every dialog still showing, as Escape closes it, until none is left; a walk asks again a moment after a
+     * refusal.
      */
     private static void closeEveryDialog() throws Exception
     {
@@ -1742,8 +1689,7 @@ public class testMassAssignLengths
 
     /**
      * The reducer never names a route tile as the unmeasured track after the last switch (OB-273): that list feeds the
-     * "trains turn round here and its track has no length recorded" notice, which would ask for a length the tile does
-     * not take.
+     * "no length recorded" notice, which would ask for a length the tile does not take.
      */
     @Test
     public void testTheReducerNeverAsksForARouteTilesLength() throws IOException
@@ -1807,7 +1753,7 @@ public class testMassAssignLengths
     /**
      * A route tile's place reaches the railway as answered, so a leg answered 0 around it counts as measured there
      * (*"0 lengths count as measures"*; OB-273).  A route tile is never asked, so a leg whose every other square was
-     * answered 0 still had one place with no answer, and the Atomic Routes gate counted it as unmeasured track.
+     * answered 0 would still have one place with no answer.
      *
      * MUTATION: mark only the squares answered 0, and this fails.
      */
@@ -1980,9 +1926,8 @@ public class testMassAssignLengths
 
     /**
      * A route tile's length is folded into the track beside it when the setup is opened, keeping the total (*"Fold
-     * them, they were likely auto set during the mass assignment run."*).  Five route tiles on his railway held a
-     * length of 1 from before OB-273, so the piece they sat in measured a unit less than he had given it.  Written to
-     * the file and read back, because the fold is what opening a setup does.
+     * them, they were likely auto set during the mass assignment run."*).  Written to the file and read back, because
+     * the fold is what opening a setup does.
      *
      * MUTATION: dropping the fold from `open` leaves the route tile's length where it was.
      */
@@ -2164,15 +2109,21 @@ public class testMassAssignLengths
         }
     }
 
-    private static void invokeTheTrainWalk(final AutonomyEditorPanel panel) throws Exception
+    /** Starts the named mass-assign walk of the panel on the event thread without waiting for it, as its menu item does. */
+    private static void startTheWalk(final AutonomyEditorPanel panel, String name) throws Exception
     {
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignTrainLengths");
+        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod(name);
         walk.setAccessible(true);
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
         });
+    }
+
+    private static void invokeTheTrainWalk(final AutonomyEditorPanel panel) throws Exception
+    {
+        startTheWalk(panel, "massAssignTrainLengths");
     }
 
     private static void type(final javax.swing.JDialog prompt, final String text) throws Exception
@@ -2222,8 +2173,8 @@ public class testMassAssignLengths
 
         awaitNoPrompt(TRAINS);
 
-        // The last prompt closing is not the walk ending: the answer is written on the event thread after the modal
-        // loop returns.  An empty task queued behind the walk runs only once the walk has returned.
+        // The last prompt closing is not the walk ending: an empty task queued behind the walk runs only once it
+        // returned.
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
         assertEquals(lengths.written, Arrays.asList("Alpha=3"),
@@ -2270,8 +2221,8 @@ public class testMassAssignLengths
 
         awaitNoPrompt(TRAINS);
 
-        // The last prompt closing is not the walk ending: the answer is written on the event thread after the modal
-        // loop returns.  An empty task queued behind the walk runs only once the walk has returned.
+        // The last prompt closing is not the walk ending: an empty task queued behind the walk runs only once it
+        // returned.
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
         assertEquals(lengths.written, Arrays.asList("Alpha=4"), "the length typed after the refusals was not written once");
@@ -2457,38 +2408,8 @@ public class testMassAssignLengths
     /** The text of the refusal the walk shows over its own prompt, which is then closed the way its OK button does. */
     private static String refusalText(String walkTitleKey) throws Exception
     {
-        String walkTitle = org.traincontrol.util.I18n.t(walkTitleKey);
-        long giveUp = System.currentTimeMillis() + 10000;
-
-        while (System.currentTimeMillis() < giveUp)
-        {
-            for (java.awt.Window window : java.awt.Window.getWindows())
-            {
-                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
-
-                final javax.swing.JDialog dialog = (javax.swing.JDialog) window;
-
-                if (walkTitle.equals(dialog.getTitle())) continue;
-
-                final JOptionPane[] pane = new JOptionPane[1];
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0] = findPane(dialog.getContentPane()));
-
-                if (pane[0] == null) continue;
-
-                String text = promptText(dialog);
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(JOptionPane.OK_OPTION));
-
-                return text;
-            }
-
-            Thread.sleep(50);
-        }
-
-        fail("the walk did not refuse the length with a message");
-
-        return null;
+        return closeTheRefusal(walkTitleKey, "the walk did not refuse the length with a message",
+            (dialog, pane) -> promptText(dialog));
     }
 
     /**
@@ -2626,8 +2547,8 @@ public class testMassAssignLengths
     /**
      * The door the main window supplies asks the list the Atomic Routes refusal names, and writes through the one
      * train-length door (FR-094).  Read from the source because the window is the half these claims replace with a
-     * stand-in: the walk must ask the SAME list the refusal names, and `applyTrainLength` is where the findings and the
-     * gray are told, so a walk that set the field itself would leave both describing the length before last.
+     * stand-in: `applyTrainLength` is where the findings and the gray are told, so a walk that set the field itself
+     * would leave both describing the length before last.
      */
     @Test
     public void testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor() throws Exception
@@ -2692,6 +2613,21 @@ public class testMassAssignLengths
 
     private static void dismissTheRefusal(String walkTitleKey) throws Exception
     {
+        closeTheRefusal(walkTitleKey, "the walk did not refuse the length with a message", (dialog, pane) -> null);
+    }
+
+    /** What is taken from the refusal's dialog and option pane before it is closed. */
+    private interface Reading<T>
+    {
+        T of(javax.swing.JDialog dialog, JOptionPane pane) throws Exception;
+    }
+
+    /**
+     * Waits for the refusal the walk shows over its own prompt, takes `reading` of it, and closes it the way its OK
+     * button does; fails with `failure` when none comes.
+     */
+    private static <T> T closeTheRefusal(String walkTitleKey, String failure, Reading<T> reading) throws Exception
+    {
         String walkTitle = org.traincontrol.util.I18n.t(walkTitleKey);
         long giveUp = System.currentTimeMillis() + 10000;
 
@@ -2711,15 +2647,19 @@ public class testMassAssignLengths
 
                 if (pane[0] == null) continue;
 
+                T read = reading.of(dialog, pane[0]);
+
                 javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(JOptionPane.OK_OPTION));
 
-                return;
+                return read;
             }
 
             Thread.sleep(50);
         }
 
-        fail("the walk did not refuse the length with a message");
+        fail(failure);
+
+        return null;
     }
 
     /**
@@ -3012,10 +2952,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * A square with no length between a berth and its switch does not end the count - the berth walk passes it for
-     * nothing (MT-552): the berth's own square 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.
-     * A three-unit train is spent at 22,9, short of the switch, and nothing refuses it.  What the count does stop at is
-     * the switch: the walk refuses a train whose spending reaches track another road runs over.
+     * A square with no length between a berth and its switch does not end the count (MT-552): the berth's own square
+     * 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.  A three-unit train is spent at 22,9,
+     * short of the switch, and nothing refuses it; the count does stop at the switch.
      *
      * MUTATION: stop the count at a square with no length again, or let it run on past the switch, and this fails.
      */
@@ -3049,9 +2988,7 @@ public class testMassAssignLengths
 
     /**
      * The count stops where the berth rule does: at a permanent turnout (OB-233) and at a crossing, as well as at a
-     * switch.  The room behind a platform ends at `boundsTheRoom`, and the berth rule refuses as soon as a place it
-     * claims is on another road.  Run on past either, the count left quiet a berth whose longest train the rule
-     * refuses.
+     * switch.  Run on past either, the count would leave quiet a berth whose longest train the rule refuses.
      *
      * MUTATION: stop the count at a switch only, and this fails.
      */
@@ -3103,7 +3040,6 @@ public class testMassAssignLengths
      * MUTATION: leave the answered berth to the run-in notice, or grade its sentence a notice, and this fails.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testNothingSpentBeforeTheCrossingIsAWarningOfItsOwn() throws Exception
     {
         openBerthBehindACrossing();
@@ -3118,12 +3054,7 @@ public class testMassAssignLengths
         session.setPointProperty(berth, "maxTrainLength", 5);
         session.rebuild();
 
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
-
-        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        java.util.Map<TileKey, int[]> said = runInsSaid();
 
         assertFalse(said.containsKey(berth), "a parking berth with nothing but answered zeros before a crossing takes no"
             + " train, and the run-in notice - written for a berth that holds something - still says it: "
@@ -3149,7 +3080,7 @@ public class testMassAssignLengths
         session.setTileLength(key(6, 1), 0);
         session.rebuild();
 
-        said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        said = runInsSaid();
 
         assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: two unanswered squares"
             + " before the crossing are not named by the half-measured notice");
@@ -3295,7 +3226,6 @@ public class testMassAssignLengths
      * measured.  The berth rule refuses every train, and that is the berth's own warning, not the run-in notice.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testNothingSpentBeforeTheSwitchIsAWarningOfItsOwn() throws Exception
     {
         openBerthBehindALongerRun(componentType.SWITCH_LEFT, key(7, 1));
@@ -3307,12 +3237,7 @@ public class testMassAssignLengths
         session.setPointProperty(berth, "maxTrainLength", 3);
         session.rebuild();
 
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
-
-        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        java.util.Map<TileKey, int[]> said = runInsSaid();
 
         assertFalse(said.containsKey(berth), "a parking berth with nothing but answered zeros before its switch takes no"
             + " train, and the run-in notice still says it (TDA4-C2): "
@@ -3352,6 +3277,18 @@ public class testMassAssignLengths
             + " is not warned about: " + session.check());
     }
 
+    /** What the berths' run-in notice says, read from the session by reflection: tile to the figures quoted. */
+    @SuppressWarnings("unchecked")
+    private java.util.Map<TileKey, int[]> runInsSaid() throws Exception
+    {
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        return (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+    }
+
     private boolean warnsOfNoRoom(TileKey berth)
     {
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
@@ -3370,7 +3307,6 @@ public class testMassAssignLengths
      * MUTATION: take the berth rule's figure at every switch, turnout and crossing, and this fails.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testNoZeroWhereNothingRefuses() throws Exception
     {
         TileKey berth = key(1, 1);
@@ -3382,12 +3318,7 @@ public class testMassAssignLengths
         session.setPointProperty(berth, "maxTrainLength", 3);
         session.rebuild();
 
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
-
-        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        java.util.Map<TileKey, int[]> said = runInsSaid();
 
         assertFalse(said.containsKey(berth), "behind a permanent turnout whose other road ends at the berth nothing refuses"
             + " a three-unit train, and the run-in notice says everything longer than 0 is (TDA5-C1): "
@@ -3405,7 +3336,6 @@ public class testMassAssignLengths
      * MUTATION: take the berth rule's figure without asking whether it judges the leg, and this fails.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testALegNothingMeasuresIsNotSaidAsNothing() throws Exception
     {
         openBerthBehindACrossing();
@@ -3417,12 +3347,7 @@ public class testMassAssignLengths
         session.setPointProperty(berth, "maxTrainLength", 5);
         session.rebuild();
 
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
-
-        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        java.util.Map<TileKey, int[]> said = runInsSaid();
 
         assertFalse(said.containsKey(berth), "a berth on a leg nothing measures - which the berth rule does not judge - is"
             + " said to refuse every train: " + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
@@ -3438,7 +3363,6 @@ public class testMassAssignLengths
      * MUTATION: take the berth rule's figure only where the room walk found a switch, and this fails.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testACrossingOnALegWithNoSwitchIsSaid() throws Exception
     {
         openBerthBehindACrossing(false);
@@ -3450,12 +3374,7 @@ public class testMassAssignLengths
         session.setPointProperty(berth, "maxTrainLength", 3);
         session.rebuild();
 
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
-
-        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        java.util.Map<TileKey, int[]> said = runInsSaid();
 
         assertTrue(said.containsKey(berth) && said.get(berth)[1] == 2, "a parking berth set to take a train of 3, with 2"
             + " measured before a crossing on a leg with no switch, is not warned: "
@@ -3463,15 +3382,14 @@ public class testMassAssignLengths
     }
 
     /**
-     * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch: it must
-     * not quote the room back to the switch (the room rule's number).  With every square measured and 2 of them before
-     * the crossing, a berth set to take a train of 3 refuses it, and 6 of room to the switch is not short of 3.  A
-     * platform autonomy may choose is not judged by the berth rule, and keeps the room rule's number.
+     * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch, and does
+     * not quote the room back to the switch.  With every square measured and 2 of them before the crossing, a berth set
+     * to take a train of 3 refuses it, and 6 of room to the switch is not short of 3.  A platform autonomy may choose
+     * keeps the room rule's number.
      *
      * MUTATION: take the room to the switch alone again, and this fails.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testTheRunInNoticeStopsAtACrossingForABerth() throws Exception
     {
         openBerthBehindACrossing();
@@ -3487,15 +3405,10 @@ public class testMassAssignLengths
         session.setPointProperty(berth, "maxTrainLength", 3);
         session.rebuild();
 
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
-
         assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: every square is"
             + " measured, and the berth is warned about as half measured");
 
-        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        java.util.Map<TileKey, int[]> said = runInsSaid();
 
         assertTrue(said.containsKey(berth) && said.get(berth)[1] == 2, "a berth set to take a train of 3, with 2 measured"
             + " before a crossing, is not warned that a train longer than 2 is refused - the berth rule refuses it at the"
@@ -3504,7 +3417,7 @@ public class testMassAssignLengths
         session.setAutoDestination(berth, true);
         session.rebuild();
 
-        said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+        said = runInsSaid();
 
         assertFalse(said.containsKey(berth), "control: a platform autonomy may choose, with 6 of room to the switch, is"
             + " warned that a train of 3 is refused - the berth rule does not judge it");
@@ -3648,19 +3561,7 @@ public class testMassAssignLengths
 
     private static javax.swing.JTextField findField(java.awt.Container container)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.JTextField) return (javax.swing.JTextField) child;
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JTextField found = findField((java.awt.Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JTextField.class);
     }
 
     private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne) throws Exception
@@ -3751,19 +3652,7 @@ public class testMassAssignLengths
 
     private static JOptionPane findPane(java.awt.Container container)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof JOptionPane) return (JOptionPane) child;
-
-            if (child instanceof java.awt.Container)
-            {
-                JOptionPane found = findPane((java.awt.Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, JOptionPane.class);
     }
 
     // ------------------------------------------------------------------------------------------------ the railways
@@ -4064,9 +3953,8 @@ public class testMassAssignLengths
 
     /**
      * A leg that runs over one square twice - a figure of eight - is cut at it too.  The rule counts how often a
-     * crossing is run OVER rather than how many legs run over it, because a single leg that uses both of a crossing's
-     * roads reads that square twice and its answer would be counted twice.  The fixture is one leg between two sensors
-     * that goes east through the crossing, round a loop, and back through it southbound.
+     * crossing is run OVER rather than how many legs run over it, because a single leg using both of a crossing's roads
+     * reads that square twice.
      */
     @Test
     public void testALegThatCrossesItsOwnSquareTwiceIsCutAtIt() throws IOException
@@ -4166,8 +4054,8 @@ public class testMassAssignLengths
      * A berth whose approach is half measured is warned about, and a whole one is not (*"As long as lengths are
      * specified on the berth, it will work, right?  We want clear warnings to the user if so, then it's fine."*).  Half
      * measured is the trap: the room walk judges as soon as anything is measured, so the berth takes no train at all.
-     * It is the state Mass Assign Lengths leaves between sittings (MT-454).  Three states: nothing measured (no
-     * warning), the switch measured and the piece not (warned), everything measured (no warning).
+     * Three states: nothing measured (no warning), the switch measured and the piece not (warned), everything measured
+     * (no warning).
      */
     @Test
     public void testAHalfMeasuredApproachIsWarnedAbout() throws IOException

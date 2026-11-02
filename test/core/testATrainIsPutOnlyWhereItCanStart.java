@@ -31,10 +31,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * so - that it faces the way trains may not arrive at that square, and what to do: turn it round, or open that side.
  *
  * Among the copies facing the recorded way, one trains may arrive at is chosen first, and the train is never turned
- * round to get it.  Adam, on OB-270: *"we shouldn't allow an impossible facing to be saved."*  That was built into the
- * paste, but a facing only a barred copy holds can still reach the setup (the editor's Place door, the Place Locomotive
- * dialog, an older setup), and the build, the Facing door and the idle drain after a turn must prefer a copy trains may
- * arrive at.
+ * round to get it (OB-270: an impossible facing is not allowed to be saved).  A facing only a barred copy holds can
+ * still reach the setup (the editor's Place door, the Place Locomotive dialog, an older setup), and the build, the
+ * Facing door and the idle drain after a turn must prefer a copy trains may arrive at.
  *
  * **On the frozen railway, as he has it**: BottomMainA with arrivals from the east barred, so its westbound copy is no
  * station; BottomMainPost, which trains may turn at and which has arrivals from the north barred.
@@ -84,11 +83,10 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * The diagram's right-click **Place** keeps the train's heading as the other three placement doors do: over every
      * copy it could leave by, one trains may not arrive at included, onto the copy the paste would take - the plain one
-     * before its turning twin - and the same copy every time (Adam, OB-296: *"Yes, keep the train's heading."*).
+     * before its turning twin - and the same copy every time (OB-296).
      *
-     * On his railway BottomMainA takes no arrivals from the east, so its copy facing west is no station.  The paste,
-     * the dialog and the editor's Place stand a train facing west there on that copy (OB-284: *"for barred arrival
-     * directions, keep the direction"*).  This door chose only among station copies, and turned it round.
+     * On the frozen railway BottomMainA takes no arrivals from the east, so its copy facing west is no station.  The
+     * paste, the dialog and the editor's Place stand a train facing west there on that copy (OB-284).
      *
      * MUTATION: choose among the station copies only, take the first copy facing the way rather than the paste's,
      * ignore the heading at the door, or move with the form of `moveLocomotive` that refuses a barred copy - and this
@@ -277,8 +275,8 @@ public class testATrainIsPutOnlyWhereItCanStart
      * A train reversed on the throttle at a square whose other facing only a barred copy holds is moved onto a copy
      * facing its new way.
      *
-     * Adam: *"a locomotive direction command WILL update the direction on the graph if it does not match"*.  The flip
-     * is a physical fact - the decoder has already reversed - so the copy has to follow it, whether or not autonomy can
+     * A locomotive direction command updates the direction on the graph if it does not match.  The flip is a physical
+     * fact - the decoder has already reversed - so the copy has to follow it, whether or not autonomy can
      * start the train from there.
      */
     @Test
@@ -322,13 +320,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         TileKey mainA = square(session, "BottomMainA");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
 
         session.setFacingAndMove(mainA, Side.W);
 
@@ -439,13 +431,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
             TileKey mainA = square(session, "BottomMainA");
 
-            final Layout running = build(session);
-
-            session.setRunningLayoutSource(() -> running);
-
-            stoodFacing(session, running, mainA, Side.E);
-
-            session.placeLocomotive(mainA, PROBE);
+            final Layout running = theProbeStoodFacing(session, mainA, Side.E);
 
             // WHAT THE SETUP HAS, which is not the railway's answer: nothing, or another train's facing.
             session.setFacing(mainA, lastSaid);
@@ -480,13 +466,7 @@ public class testATrainIsPutOnlyWhereItCanStart
         TileKey mainA = square(session, "BottomMainA");
         TileKey post = square(session, "BottomMainPost");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
         session.setFacingAndMove(mainA, Side.W);
 
         Point standing = standingOn(running);
@@ -585,9 +565,9 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * A home set for a train standing on a copy trains may not arrive at saves no facing no train can come home in.
      *
-     * Adam: *"we shouldn't allow an impossible facing to be saved."*  The facing of the train standing there was saved
-     * unfiltered, assuming a copy a train stands on is one it may arrive at: not so once a train facing the barred way
-     * is stood on the barred copy.
+     * An impossible facing is not allowed to be saved: the facing of the train standing there must be filtered, as a
+     * copy a train stands on is not always one it may arrive at (a train facing the barred way is stood on the barred
+     * copy).
      *
      * MUTATION: save the railway's facing unfiltered again and this fails.
      */
@@ -598,13 +578,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         TileKey mainA = square(session, "BottomMainA");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
         session.setFacingAndMove(mainA, Side.W);
 
         try
@@ -639,13 +613,7 @@ public class testATrainIsPutOnlyWhereItCanStart
         TileKey mainA = square(session, "BottomMainA");
         TileKey post = square(session, "BottomMainPost");
 
-        final Layout running = build(session);
-
-        session.setRunningLayoutSource(() -> running);
-
-        stoodFacing(session, running, mainA, Side.E);
-
-        session.placeLocomotive(mainA, PROBE);
+        final Layout running = theProbeStoodFacing(session, mainA, Side.E);
         session.setFacingAndMove(mainA, Side.W);
 
         org.traincontrol.base.Locomotive train = model.getLocByName(PROBE);
@@ -734,7 +702,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
     /**
      * At a square every train must turn round at, a train facing the barred way is told to drive it off by hand or turn
-     * it round - not to open the side (Adam: *"offer the other two remedies only"*).
+     * it round - not to open the side.
      *
      * A terminus reached from two sides is an error (MT-361), whose own remedy is to close one of them - so "open that
      * side" there sends the operator from one refusal into a loop.  BottomMainA made a compulsory turn, its east side
@@ -756,13 +724,7 @@ public class testATrainIsPutOnlyWhereItCanStart
             assertFalse(session.terminiWithTwoWaysIn().containsKey(mainA), "precondition: BottomMainA made a compulsory"
                 + " turn is already the terminus error, so its east side is not barred");
 
-            final Layout running = build(session);
-
-            session.setRunningLayoutSource(() -> running);
-
-            stoodFacing(session, running, mainA, Side.W);
-
-            session.placeLocomotive(mainA, PROBE);
+            final Layout running = theProbeStoodFacing(session, mainA, Side.W);
 
             session.flipFacing(PROBE, running);
 
@@ -786,8 +748,8 @@ public class testATrainIsPutOnlyWhereItCanStart
     /**
      * A placement keeps a heading a train can leave by, and turns only one it cannot (OB-284).
      *
-     * Adam: *"this should check for barred departure directions, not arrival ones.  for barred arrival directions, keep
-     * the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  At BottomMainA,
+     * Barred departure directions are checked, not arrival ones: a barred arrival direction keeps the heading, a barred
+     * departure direction turns it to a way trains may arrive in.  At BottomMainA,
      * arrivals from the east barred, a train facing west stands on a copy trains may not arrive at and can leave by the
      * west, so a paste, the editor's Place and the Place Locomotive dialog keep it facing west.  Made one-way eastward
      * on its approach, the west copy has no way out: then the placement turns the train east, a way trains may arrive
@@ -834,6 +796,20 @@ public class testATrainIsPutOnlyWhereItCanStart
             + " left facing west by a placement (OB-284: \"for barred departure directions, turn it\")");
         assertTrue(placed == null || session.homeFacingsFor(mainA).contains(placed), "turned, it faces " + placed
             + ", which is not a way trains may arrive in (OB-284)");
+    }
+
+    /** The railway built, serving the session, with the probe train stood facing that way on the square and placed there. */
+    private static Layout theProbeStoodFacing(AutonomySession session, TileKey square, Side facing) throws Exception
+    {
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        stoodFacing(session, running, square, facing);
+
+        session.placeLocomotive(square, PROBE);
+
+        return running;
     }
 
     private static Point stoodFacing(AutonomySession session, Layout running, TileKey square, Side facing)

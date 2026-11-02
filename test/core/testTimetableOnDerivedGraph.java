@@ -64,10 +64,9 @@ public class testTimetableOnDerivedGraph
     private static final int RUN_SECONDS = 12;
 
     /**
-     * How long to wait for autonomy to dispatch ANYTHING before giving up (OB-114, OB-132).  This derives a real graph
-     * from the frozen snapshot and does a real path search before its first command, which on a machine running a full
-     * battery can take far longer than twelve seconds, and a skip after a short fixed sleep cannot tell "nothing to
-     * see here" from "the clock ran out".  Matches the ceiling testTimetableCaptureThroughARealRun uses.
+     * How long to wait for autonomy to dispatch ANYTHING before giving up (OB-114, OB-132): a real graph is derived
+     * from the frozen snapshot and a real path search done before the first command, which on a machine running a full
+     * battery can take far longer than twelve seconds.  Matches the ceiling testTimetableCaptureThroughARealRun uses.
      */
     private static final long STARTUP_CEILING_MS = 240000;
 
@@ -368,11 +367,9 @@ public class testTimetableOnDerivedGraph
      */
     private static Layout derivedLayout() throws Exception
     {
-        // The snapshot, not test/test_layout (OB-132).  Adam: "we should have a test fixture that doesn't change, and
-        // is a snapshot of my current layout."  On test/test_layout nothing moves inside the run window, so it threw a
-        // SkipException every time, and a class that skips everything reads as green.  test/test_layout_snapshot is
-        // frozen for the same reason; its README says why re-taking it would turn every assertion here into a statement
-        // about the railway rather than the code.
+        // The snapshot, not test/test_layout (OB-132): nothing moves inside the run window there, and a class that
+        // skips everything reads as green.  test/test_layout_snapshot is frozen: re-taking it would turn every
+        // assertion here into a statement about the railway rather than the code.
         File folder = new File("test/test_layout_snapshot");
 
         if (!folder.isDirectory())
@@ -387,9 +384,9 @@ public class testTimetableOnDerivedGraph
 
         List<LayoutDiagram> pages = parser.parseLayout(new java.util.LinkedList<MarklinAccessory>());
 
-        // The ironwork, without which two thirds of the track does not connect (OB-132): parseLayout is handed an
-        // empty accessory list, so every switch and signal tile has an address and nothing behind it, and no path can
-        // be configured (see testTheCheckerAgreesWithTheBuild).  A class that skips everything reads as green.
+        // The ironwork, without which two thirds of the track does not connect (OB-132): parseLayout is handed an empty
+        // accessory list, so every switch and signal tile has an address and nothing behind it, and no path can be
+        // configured (see testTheCheckerAgreesWithTheBuild).
         wireAccessories(pages);
 
         AutonomySession session = new AutonomySession(folder);

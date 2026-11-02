@@ -40,14 +40,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             addSeparator();
         }
         
-        // Paste, singular.
-        //
-        // There used to be three of these - a tile, an entire row, an entire column - which is not
-        // three ways to paste so much as three answers to a question the user was never asked.  The
-        // row and column variants filled from the pasted tile to the edge of the diagram, so a
-        // mis-aimed one wrote over a whole row of track and undo was the only way back.  Selecting the
-        // squares and dragging them says the same thing, visibly, and can be corrected before it
-        // happens rather than after.
+        // Paste, singular, by design: row and column variants filled to the edge of the diagram, so a mis-aimed one
+        // wrote over a whole row of track.  Selecting the squares and dragging says the same thing and can be corrected
+        // before it happens.
         JMenuItem pasteMenuItem = new JMenuItem(I18n.t("ui.paste"));
 
         pasteMenuItem.addActionListener(event ->
@@ -104,10 +99,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             // picked twenty squares by mistake comes looking.
             JMenuItem deselect = new JMenuItem(I18n.t("layout.ui.menuDeselectAll"));
             deselect.addActionListener(event -> edit.clearSelection());
-            deselect.setToolTipText("Escape");
+            deselect.setToolTipText(I18n.t("layout.ui.tooltipDeselect"));
             deselect.setEnabled(!edit.getSelection().isEmpty());
             selectionMenu.add(deselect);
-
 
             // Only reachable on a grid square - the palette has no row to speak of
             boolean onDiagram = edit.getGridX(label) >= 0 && edit.getGridY(label) >= 0;
@@ -148,10 +142,6 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             deleteSelected.setToolTipText("Delete");
             deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
-
-            // One "Deselect All" only (the same action as the removed "Clear Selection"): it sits with the three ways
-            // to select, where a user undoing a selection looks first.
-            selectionMenu.setToolTipText(I18n.t("layout.ui.tooltipSelection"));
 
             add(selectionMenu);
 

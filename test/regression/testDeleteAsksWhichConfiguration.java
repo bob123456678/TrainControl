@@ -24,7 +24,6 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static regression.testTheImportDoorReadsAnOldFile.itemCalled;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
-import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 
 /**
  * Autonomy > Manage > Delete asks which configuration, and is offered while none is loaded (OB-319; Adam: "There seems
@@ -55,19 +54,17 @@ public class testDeleteAsksWhichConfiguration
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         final TrainControlUI[] ui = new TrainControlUI[1];
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         AtomicBoolean going = new AtomicBoolean(true);
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui[0] = openTheWindow();
+            ui[0] = sandboxed.hold(openTheWindow());
 
             // NOTHING LOADED, as after a configuration whose setup would not load
             final boolean[] unloaded = new boolean[1];
@@ -132,16 +129,7 @@ public class testDeleteAsksWhichConfiguration
         {
             going.set(false);
 
-            putTheFolderBack(folderWas);
-
-            if (ui[0] != null)
-            {
-                final TrainControlUI closing = ui[0];
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            sandboxed.close();
         }
     }
 
@@ -155,52 +143,38 @@ public class testDeleteAsksWhichConfiguration
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 150, dialog ->
             {
-                try
+                for (Component c : dialog.getContentPane().getComponents())
                 {
-                    Thread.sleep(150);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                    if (!(c instanceof JOptionPane) || !handled.add(c)) continue;
 
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+                    final JOptionPane pane = (JOptionPane) c;
 
-                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    asked.add(String.valueOf(pane.getMessage()));
+
+                    if (pane.getWantsInput() && pane.getSelectionValues() != null)
                     {
-                        if (!(c instanceof JOptionPane) || !handled.add(c)) continue;
-
-                        final JOptionPane pane = (JOptionPane) c;
-
-                        asked.add(String.valueOf(pane.getMessage()));
-
-                        if (pane.getWantsInput() && pane.getSelectionValues() != null)
-                        {
-                            offered.add(new ArrayList<>(Arrays.asList(pane.getSelectionValues())));
-                        }
-
-                        SwingUtilities.invokeLater(() ->
-                        {
-                            if (pane.getWantsInput())
-                            {
-                                pane.setInputValue(SPARE);
-                                pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION));
-                            }
-                            else
-                            {
-                                Object[] options = pane.getOptions();
-
-                                pane.setValue(options != null && options.length > 0 ? options[0]
-                                    : Integer.valueOf(JOptionPane.OK_OPTION));
-                            }
-                        });
+                        offered.add(new ArrayList<>(Arrays.asList(pane.getSelectionValues())));
                     }
+
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        if (pane.getWantsInput())
+                        {
+                            pane.setInputValue(SPARE);
+                            pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION));
+                        }
+                        else
+                        {
+                            Object[] options = pane.getOptions();
+
+                            pane.setValue(options != null && options.length > 0 ? options[0]
+                                : Integer.valueOf(JOptionPane.OK_OPTION));
+                        }
+                    });
                 }
-            }
+            });
         }, "delete door answerer");
 
         answering.setDaemon(true);

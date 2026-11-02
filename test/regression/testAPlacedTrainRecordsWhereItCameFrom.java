@@ -26,9 +26,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train put down by the assign dialog records which way it came in.
  *
- * Adam, settling the question `behaviour/facing.md` section 4 had left open: **"the missing arrival side should be
- * set - either from the data, by the user, or randomly"**, then **"proceed with this combo.  Try to reuse the
- * machinery/checks of the current popup."**
+ * The question `behaviour/facing.md` section 4 left open is settled: the missing arrival side is set, from the data,
+ * by the user, or randomly, reusing the machinery and checks of the current popup.
  *
  * `Layout.edgesCoveredByStandingTrains` walks back from a standing train along the side it came in by and blocks that
  * track for everything else.  Three doors put a train down by hand and only the diagram's drag and paste worked the
@@ -119,9 +118,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * A side the operator has barred is not a side a train can have arrived by (OB-204).  Adam: *"when copying (moving)
-     * a locomotive from bottommainc to bottommaina, it does not always show the orange tail facing west.  seems to
-     * appear about half the time."*
+     * A side the operator has barred is not a side a train can have arrived by (OB-204).
      *
      * `AutonomyBuilder.splitSides`, which every placement door reads through `StationIndex.arrivalSidesAt`, collected
      * entry sides with no reference to the barred list, so a square with one way in and one barred side looked
@@ -396,11 +393,10 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * Every entry on the combo is a side, and a placement therefore always records one.  Adam: **"clearing should not
-     * be possible, only setting."**  A "Not known" entry was taken out of the arrived-from MENU on the argument that
-     * every side the square has is offered, so a wrong answer is corrected by choosing the right one; a blank only
-     * offers a way to switch the tail blocking off.  The entries are read off what the dialog would really show, so a
-     * second row added anywhere in the wrapper is caught too.
+     * Every entry on the combo is a side, and a placement therefore always records one: clearing is not possible, only
+     * setting.  Every side the square has is offered, so a wrong answer is corrected by choosing the right one; a blank
+     * only offers a way to switch the tail blocking off.  The entries are read off what the dialog would really show,
+     * so a second row added anywhere in the wrapper is caught too.
      *
      * MUTATION: put `entries.add(NONE_LABEL);` back at the top of `buildArrivalSide` and the first claim fails, naming
      * the entry that is not a side.
@@ -444,9 +440,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  Adam: *"separately,
-     * increase choosable train lengths up to 40 in the dropdown."*  The two lists are one question; this one wrote its
-     * own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
+     * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  The two lists are
+     * one question, so the limit is `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, not a list of its own.
      *
      * MUTATION: leave the limit at 20, or write this list out by hand again, and this fails.
      */

@@ -110,21 +110,10 @@ public class testARouteIsFoundPastATerminus
     @Test
     public void testNoRoundTripBackToTheTrainsOwnSquare() throws Exception
     {
-        Layout layout = new Layout(model);
-
-        layout.setDefaultLocSpeed(30);
-
         String[] names = { "RR9_Pa", "RR9_Pb", "RR9_K", "RR9_L", "RR9_M" };
         boolean[] stations = { true, true, false, false, false };
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback sensor = model.newFeedback(3240 + i, null);
-
-            model.setFeedbackState(sensor.getName(), false);
-
-            layout.createPoint(names[i], stations[i], sensor.getName());
-        }
+        Layout layout = layoutOf(names, stations, 3240);
 
         layout.getPoint("RR9_Pa").setBlock("RR9_P-square");
         layout.getPoint("RR9_Pb").setBlock("RR9_P-square");
@@ -156,21 +145,10 @@ public class testARouteIsFoundPastATerminus
     @Test
     public void testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare() throws Exception
     {
-        Layout layout = new Layout(model);
-
-        layout.setDefaultLocSpeed(30);
-
         String[] names = { "RC9_Pa", "RC9_Pb", "RC9_K", "RC9_L", "RC9_E" };
         boolean[] stations = { true, true, false, false, true };
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback sensor = model.newFeedback(3260 + i, null);
-
-            model.setFeedbackState(sensor.getName(), false);
-
-            layout.createPoint(names[i], stations[i], sensor.getName());
-        }
+        Layout layout = layoutOf(names, stations, 3260);
 
         layout.getPoint("RC9_Pa").setBlock("RC9_P-square");
         layout.getPoint("RC9_Pb").setBlock("RC9_P-square");
@@ -201,21 +179,10 @@ public class testARouteIsFoundPastATerminus
     @Test
     public void testNoRoutePassesAnotherCopyOfItsDestination() throws Exception
     {
-        Layout layout = new Layout(model);
-
-        layout.setDefaultLocSpeed(30);
-
         String[] names = { "RD9_S", "RD9_Qa", "RD9_Qb", "RD9_M" };
         boolean[] stations = { true, true, true, false };
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback sensor = model.newFeedback(3270 + i, null);
-
-            model.setFeedbackState(sensor.getName(), false);
-
-            layout.createPoint(names[i], stations[i], sensor.getName());
-        }
+        Layout layout = layoutOf(names, stations, 3270);
 
         layout.getPoint("RD9_Qa").setBlock("RD9_Q-square");
         layout.getPoint("RD9_Qb").setBlock("RD9_Q-square");
@@ -241,21 +208,10 @@ public class testARouteIsFoundPastATerminus
     @Test
     public void testWhyNotMovingSaysTheOnlyWayThereIsALap() throws Exception
     {
-        Layout layout = new Layout(model);
-
-        layout.setDefaultLocSpeed(30);
-
         String[] names = { "RL9_Pa", "RL9_Pb", "RL9_K", "RL9_L", "RL9_E", "RL9_Z" };
         boolean[] stations = { true, true, false, false, true, true };
 
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback sensor = model.newFeedback(3280 + i, null);
-
-            model.setFeedbackState(sensor.getName(), false);
-
-            layout.createPoint(names[i], stations[i], sensor.getName());
-        }
+        Layout layout = layoutOf(names, stations, 3280);
 
         layout.getPoint("RL9_Pa").setBlock("RL9_P-square");
         layout.getPoint("RL9_Pb").setBlock("RL9_P-square");
@@ -277,6 +233,25 @@ public class testARouteIsFoundPastATerminus
         assertEquals(layout.explainDestinations(loc, true).get("RL9_Z"),
             org.traincontrol.util.I18n.t("autolayout.why.noRoute"),
             "RL9_Z is joined to nothing, and Why Not Moving? does not say no track route leads there");
+    }
+
+    /** A layout at the default speed of 30 with a point per name, each on a feedback of its own (off) from the sensor on. */
+    private static Layout layoutOf(String[] names, boolean[] stations, int firstSensor) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(firstSensor + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], stations[i], sensor.getName());
+        }
+
+        return layout;
     }
 
     /** S -> X -> T -> Y -> Q -> E, T a terminus; and, when asked for, S -> A -> B -> C -> D -> F -> Q. */

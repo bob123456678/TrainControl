@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -510,24 +509,7 @@ public class testRestoreFromBackup
 
         final List<String> logged = Collections.synchronizedList(new ArrayList<>());
 
-        Handler listening = new Handler()
-        {
-            @Override
-            public void publish(LogRecord record)
-            {
-                logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        Handler listening = support.LogTap.everyMessageInto(logged);
 
         Logger station = Logger.getLogger(MarklinControlStation.class.getName());
 
@@ -576,47 +558,7 @@ public class testRestoreFromBackup
 
         try
         {
-            Map<String, byte[]> elsewhere = new TreeMap<>();
-
-            for (Map.Entry<String, byte[]> entry : entriesOf(backUp()).entrySet())
-            {
-                elsewhere.put(entry.getKey().replace(layout + "/config/", OTHER_LAYOUT + "/config/"), entry.getValue());
-            }
-
-            File zip = new File(folder.toFile(), "other-layout.zip");
-
-            writeZip(zip, elsewhere);
-
-            restore(zip, I18n.t("ui.restoreButton"), 2, 1000);
-
-            assertTrue(Components.waitFor(() -> guard.exits().size() == 1, 30000), "TrainControl did not close after"
-                + " the restore");
-
-            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
-                .getAbsoluteFile(), other, "precondition: the restore did not move TrainControl to the other layout");
-
-            File undo = newBeforeRestore();
-
-            SwingUtilities.invokeAndWait(ui::dispose);
-
-            model.stop();
-
-            model = support.TestStation.simulatedWithWindow();
-
-            ui = (TrainControlUI) model.getGUI();
-
-            assertNotNull(ui, "the model has no window");
-
-            Components.settle();
-
-            restore(undo, I18n.t("ui.restoreButton"), 2, 1000);
-
-            assertTrue(Components.waitFor(() -> guard.exits().size() == 2, 30000), "TrainControl did not close after"
-                + " restoring " + undo.getName());
-
-            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
-                .getAbsoluteFile(), sandbox.getFolder().getAbsoluteFile(), "restoring the backup taken before the"
-                + " restore did not take TrainControl back to the layout folder it left");
+            restoreToTheOtherLayoutAndBack(folder, layout, other, "");
         }
         finally
         {
@@ -653,47 +595,7 @@ public class testRestoreFromBackup
 
         try
         {
-            Map<String, byte[]> elsewhere = new TreeMap<>();
-
-            for (Map.Entry<String, byte[]> entry : entriesOf(backUp()).entrySet())
-            {
-                elsewhere.put(entry.getKey().replace(layout + "/config/", OTHER_LAYOUT + "/config/"), entry.getValue());
-            }
-
-            File zip = new File(folder.toFile(), "other-layout.zip");
-
-            writeZip(zip, elsewhere);
-
-            restore(zip, I18n.t("ui.restoreButton"), 2, 1000);
-
-            assertTrue(Components.waitFor(() -> guard.exits().size() == 1, 30000), "TrainControl did not close after"
-                + " the restore");
-
-            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
-                .getAbsoluteFile(), other, "precondition: the restore did not move TrainControl to the other layout");
-
-            File undo = newBeforeRestore();
-
-            SwingUtilities.invokeAndWait(ui::dispose);
-
-            model.stop();
-
-            model = support.TestStation.simulatedWithWindow();
-
-            ui = (TrainControlUI) model.getGUI();
-
-            assertNotNull(ui, "the model has no window");
-
-            Components.settle();
-
-            restore(undo, I18n.t("ui.restoreButton"), 2, 1000);
-
-            assertTrue(Components.waitFor(() -> guard.exits().size() == 2, 30000), "TrainControl did not close after"
-                + " restoring " + undo.getName());
-
-            assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
-                .getAbsoluteFile(), sandbox.getFolder().getAbsoluteFile(), "restoring the backup taken before the"
-                + " restore did not take TrainControl back to the layout folder it left, whose config is a link");
+            restoreToTheOtherLayoutAndBack(folder, layout, other, ", whose config is a link");
 
             assertTrue(Util.isLink(new File(sandbox.getFolder(), "config")), "the undo replaced the linked config");
         }
@@ -800,6 +702,55 @@ public class testRestoreFromBackup
 
             unlinkTheConfig(shared);
         }
+    }
+
+    /**
+     * Restores this layout's backup as another layout's folder, then restores the backup taken before that, checking
+     * TrainControl is moved to the other layout and then back to this one; `backEnd` ends the message of the last check.
+     */
+    private void restoreToTheOtherLayoutAndBack(Path folder, String layout, File other, String backEnd) throws Exception
+    {
+        Map<String, byte[]> elsewhere = new TreeMap<>();
+
+        for (Map.Entry<String, byte[]> entry : entriesOf(backUp()).entrySet())
+        {
+            elsewhere.put(entry.getKey().replace(layout + "/config/", OTHER_LAYOUT + "/config/"), entry.getValue());
+        }
+
+        File zip = new File(folder.toFile(), "other-layout.zip");
+
+        writeZip(zip, elsewhere);
+
+        restore(zip, I18n.t("ui.restoreButton"), 2, 1000);
+
+        assertTrue(Components.waitFor(() -> guard.exits().size() == 1, 30000), "TrainControl did not close after"
+            + " the restore");
+
+        assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
+            .getAbsoluteFile(), other, "precondition: the restore did not move TrainControl to the other layout");
+
+        File undo = newBeforeRestore();
+
+        SwingUtilities.invokeAndWait(ui::dispose);
+
+        model.stop();
+
+        model = support.TestStation.simulatedWithWindow();
+
+        ui = (TrainControlUI) model.getGUI();
+
+        assertNotNull(ui, "the model has no window");
+
+        Components.settle();
+
+        restore(undo, I18n.t("ui.restoreButton"), 2, 1000);
+
+        assertTrue(Components.waitFor(() -> guard.exits().size() == 2, 30000), "TrainControl did not close after"
+            + " restoring " + undo.getName());
+
+        assertEquals(new File(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""))
+            .getAbsoluteFile(), sandbox.getFolder().getAbsoluteFile(), "restoring the backup taken before the"
+            + " restore did not take TrainControl back to the layout folder it left" + backEnd);
     }
 
     /**

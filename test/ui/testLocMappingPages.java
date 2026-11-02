@@ -12,8 +12,7 @@ import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
 /**
- * A ceiling of fifty locomotive mapping pages (Adam: "add a cap of 50 pages for now (not 99) and associated error
- * message if exceeded.").
+ * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.
  *
  * Two halves, and the second is the one worth having.  A guard that only the interface consults is a guard the next
  * caller does not have, so the predicate is tested, AND the menu that offers the action is asked whether it actually
@@ -799,6 +798,22 @@ public class testLocMappingPages
         return first < 0 ? null : new int[] {first, last};
     }
 
+    /** Fills the picture with the background, then paints the component over it, on the event thread. */
+    private static void paintOver(final java.awt.image.BufferedImage image, final java.awt.Color background,
+        final java.awt.Component component, final java.awt.Dimension box) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(background);
+            g.fillRect(0, 0, box.width, box.height);
+
+            component.paint(g);
+            g.dispose();
+        });
+    }
+
     /**
      * Whether every pixel in this box is the page's words' color on the background or a blend of the two - which, over a
      * magenta background and navy words, is every pixel whose green is nothing.  A gray, a white or a neutral edge has
@@ -824,16 +839,7 @@ public class testLocMappingPages
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(box.width, box.height,
             java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            java.awt.Graphics2D g = image.createGraphics();
-
-            g.setColor(java.awt.Color.MAGENTA);
-            g.fillRect(0, 0, box.width, box.height);
-
-            row.paint(g);
-            g.dispose();
-        });
+        paintOver(image, java.awt.Color.MAGENTA, row, box);
 
         return image;
     }
@@ -919,9 +925,8 @@ public class testLocMappingPages
      * (FR-128).
      *
      * The design Adam chose: the key's letter on a keycap, then the page as plain words, "5. Example", in
-     * `CurrentKeyLabel`'s own font and color with no pill (*"I wouldn't like to see the word 'page' in it."*), then a
-     * solid decoder pill with the type and the address parted by a white line, floated to the right.  Only the keycap
-     * and the decoder pill are shapes.
+     * `CurrentKeyLabel`'s own font and color with no pill, then a solid decoder pill with the type and the address
+     * parted by a white line, floated to the right.  Only the keycap and the decoder pill are shapes.
      *
      * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
      * multi-unit and a consist of an MFX head with a member.  Driven through `repaintLoc`, which is what the window
@@ -1112,15 +1117,13 @@ public class testLocMappingPages
     /**
      * A wide page name is cut with an ellipsis and nothing else is, and the line never leaves its slot (FR-128).
      *
-     * Adam: *"make sure we test with wide page names (like MMMMMMMMMMM) as in the current test data"*, and *"manage the
-     * height so it fits in the current space"*.  His data has a page named with 22 capital Ms.  The page NAME takes
+     * Wide page names (22 capital Ms, as in the current test data) must fit the current space.  The page NAME takes
      * what room is left and gives way; the keycap, the page number and the decoder pill are never cut.  The slot is 296
      * by 18 and nothing below it may move.
      *
      * Measured with the widest decoder text, the multi-unit's, because it leaves the least room.  The name's room is
      * what lies between the number's segment and the decoder pill, less a gap: the name is cut to that, and never runs
-     * under the pill.  Every font in the pills is 12 point (Adam: *"Increase font sizes by 1 notch to improve
-     * visibility - make sure everything still fits vertically"*).  With the 22-M name the page's words are "5.
+     * under the pill.  Every font in the pills is 12 point.  With the 22-M name the page's words are "5.
      * MMMM...": the name is cut with an ellipsis and the "5. " in front of it is whole and clear of the decoder pill.
      *
      * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
@@ -1310,16 +1313,7 @@ public class testLocMappingPages
 
             final int none = java.awt.Color.MAGENTA.getRGB() & 0xFFFFFF;
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                java.awt.Graphics2D g = image.createGraphics();
-
-                g.setColor(java.awt.Color.MAGENTA);
-                g.fillRect(0, 0, box.width, box.height);
-
-                row.paint(g);
-                g.dispose();
-            });
+            paintOver(image, java.awt.Color.MAGENTA, row, box);
 
             Object at = geometry(row, box.width, box.height);
 
@@ -1415,8 +1409,8 @@ public class testLocMappingPages
      * Twelve point text fits the 18 pixel pills cleanly, and the page's 13 point words the slot: nothing clipped,
      * nothing touching a rim (FR-128).
      *
-     * The slot is 296 by 18 and does not grow (Adam: *"Increase font sizes by 1 notch to improve visibility - make sure
-     * everything still fits vertically."*).  A page name with letters that go above the line and below it - "Egypt jgy
+     * The slot is 296 by 18 and does not grow.  A page name with letters that go above the line and below it - "Egypt
+     * jgy
      * Alt" - a key with a tail ("Q") and a decoder in both its parts are painted, and each piece's text is looked for
      * in the rows it may use: below the top rim and above the bottom one, with the descenders really there (a clipped
      * descender is a text whose last row is the rim's) and the rim rows themselves untouched, one color along the whole
@@ -1479,16 +1473,7 @@ public class testLocMappingPages
             java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(box.width, box.height,
                 java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                java.awt.Graphics2D g = image.createGraphics();
-
-                g.setColor(java.awt.Color.WHITE);
-                g.fillRect(0, 0, box.width, box.height);
-
-                row.paint(g);
-                g.dispose();
-            });
+            paintOver(image, java.awt.Color.WHITE, row, box);
 
             Object at = geometry(row, box.width, box.height);
 
@@ -1551,12 +1536,10 @@ public class testLocMappingPages
      * "Show Page Numbers" is a checkbox in the Preferences menu's Locomotive submenu, off until it is asked for, and with
      * it off the line over the locomotive's name has the page's name and no number (FR-128).
      *
-     * Adam: *"Make an checkbox option called show page numbers within the preferences jmenu, under the locomotive
-     * submenu.  Default off.  When off, 5. MMMM... becomes just MMMM... .  Use the same design patterns as now with
-     * prefs."*  The preference is removed before the window is built, so what is read is the default.  The words are
-     * the name alone; a name too wide for the room is cut, and cut later than with the number, which takes no room; a
-     * page with no name reads "Page 5" (Adam: *"the text next to the locomotive key should be 'Page 5', not '5' if the
-     * page is unnamed"*); and the tooltip has the page's number whatever the setting.
+     * The preference is removed before the window is built, so what is read is the default (off: "5. MMMM..." becomes
+     * "MMMM...").  The words are the name alone; a name too wide for the room is cut, and cut later than with the
+     * number, which takes no room; a page with no name reads "Page 5"; and the tooltip has the page's number whatever
+     * the setting.
      *
      * MUTATION: default the preference on, leave the item out of the submenu or out of the form's menu, take the number
      * out of the tooltip, let an unnamed page show nothing, or let it read "5.", and this fails.
@@ -1861,9 +1844,7 @@ public class testLocMappingPages
      * The rule itself, with no window: for page 5 with the name N, "Page 5" with no name, "N" with the numbers off, "5. N"
      * with them on - and only the NAME is the caller's to cut (FR-128).
      *
-     * Adam: *"when the show page numbers is turned off, the keyboard tabs themselves should also not show the page number
-     * unless the page has no name.  If no name, use Page 5.  If yes name, MMM if show is off, and 5. MMM if show is on."*
-     * and *"That way, all are consistent."*  So there is one rule, asked by every place that follows the setting, and this
+     * There is one rule, asked by every place that follows the setting, and this
      * is it asked directly: every case, the cuts that are the caller's, and the one thing the rule keeps for itself - a
      * name that had no room at all leaves the number and its full stop.
      *
@@ -1946,8 +1927,6 @@ public class testLocMappingPages
     /**
      * The page tabs are worded by the one rule (FR-128).
      *
-     * Adam: *"when the show page numbers is turned off, the keyboard tabs themselves should also not show the page number
-     * unless the page has no name.  If no name, use Page 5.  If yes name, MMM if show is off, and 5. MMM if show is on."*
      * The page tabs are the ones shown with "Show Locomotive Pages as Tabs" ticked, in a window built with the numbers off
      * and again with them on - set before the window, not toggled - and a page is a page with no name, a page called
      * Example and the 22-M page.  A tab has room for fourteen letters of the NAME: the 22 Ms are cut to 14, and with the
@@ -1989,7 +1968,7 @@ public class testLocMappingPages
     /**
      * The page label between the arrows is worded by the one rule, in one line, and moves nothing (FR-128).
      *
-     * Adam: *"That way, all are consistent."*  The label is the one shown with the tabs off: the rule's words on one
+     * The label is the one shown with the tabs off: the rule's words on one
      * line - "Page 5" for a page with no name, "N" with the numbers off, "5. N" with them on - with its own cut of
      * forty letters of the NAME: the 22-M page is whole, a 44-M page is cut to 40.
      *

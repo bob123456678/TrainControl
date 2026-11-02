@@ -376,11 +376,9 @@ public class LayoutDiagram
     private final Map<String, String> bareKeys = new LinkedHashMap<>();
 
     /**
-     * Remembers a key at the left margin of a page file, so that it survives a save.
-     *
-     * Preserved verbatim, and it may disagree with the index: `writeLayoutIndex` can reissue the page's id, so `page=1`
-     * may sit beside `.id=8`.  Neither number decides anything (pages sort by name; the id keys the autonomy setup), so
-     * rewriting the line from the id would assert an ordering the program does not use.
+     * Remembers a key at the left margin of a page file, so that it survives a save.  Preserved verbatim, though it may
+     * disagree with the index (`page=1` may sit beside `.id=8`): neither decides anything, so rewriting the line from
+     * the id would assert an ordering the program does not use.
      *
      * @param key the name, `page` on a real export
      * @param value what follows the equals sign
@@ -464,15 +462,12 @@ public class LayoutDiagram
     }
     
     /**
-     * Writes the page index and re-aims every arrow at the page it was aimed at, saving what changed.
-     *
-     * The one place the rule lives: a link tile holds a POSITION in the name-sorted page list, so adding, renaming,
-     * duplicating, deleting or combining pages changes what every arrow means, and the re-aim is the one step a caller
-     * could get wrong unnoticed.  The OLD order comes from the pages this session holds, not the index file (`layoutDB`
-     * is keyed by name, so an index naming two pages alike aliases them onto one entry).
-     *
-     * A rename carries the arrows with it; a page that has gone leaves its arrows pointing at nothing (see
-     * `LayoutDiagramComponent.setLinkedPageIndex`).
+     * Writes the page index and re-aims every arrow at the page it was aimed at, saving what changed.  The one place
+     * the rule lives: a link tile holds a POSITION in the name-sorted page list, so adding, renaming, duplicating,
+     * deleting or combining pages changes what every arrow means.  The OLD order comes from the pages this session
+     * holds, not the index file (`layoutDB` is keyed by name, so an index naming two pages alike aliases them).  A
+     * rename carries the arrows with it; a page that has gone leaves its arrows pointing at nothing
+     * (`LayoutDiagramComponent.setLinkedPageIndex`).
      *
      * @param path the layout folder
      * @param layoutList the new page list, name-sorted
@@ -498,11 +493,9 @@ public class LayoutDiagram
     }
 
     /**
-     * Re-aims every arrow for a new page order, in memory, and says which pages changed.
-     *
-     * Separate from the index write because a caller that writes a page file in the same gesture (`LayoutPageEdit`:
-     * Add, Duplicate, Rename) must re-aim before it writes; `writeIndexAndKeepLinksAimed` is the whole job for Delete
-     * and Combine.  Both ends are sorted, and `before` comes from the PAGES, not from any list.
+     * Re-aims every arrow for a new page order, in memory, and says which pages changed.  Separate from the index write
+     * because a caller that writes a page file in the same gesture (`LayoutPageEdit`: Add, Duplicate, Rename) must
+     * re-aim before it writes; `writeIndexAndKeepLinksAimed` is the whole job for Delete and Combine.
      *
      * @param pages every page of the layout
      * @param layoutList the new page list, in whatever order the caller holds it
@@ -567,12 +560,10 @@ public class LayoutDiagram
     }
 
     /**
-     * Rewrites every link on this page so it still points at the page it pointed at before.
-     *
-     * A link holds a position in the NAME-SORTED page list, so any change to that list would silently change what the
-     * arrow means.  The destination is identified by NAME across the change; a page not in the new list (deleted)
-     * leaves its arrows pointing at nothing rather than at whatever slid into its place.  A link that already points
-     * nowhere, or whose number is not in the OLD list, is left alone.
+     * Rewrites every link on this page so it still points at the page it pointed at before.  A link holds a position in
+     * the NAME-SORTED page list, so the destination is identified by NAME across the change; a page not in the new list
+     * (deleted) leaves its arrows pointing at nothing rather than at whatever slid into its place.  A link that already
+     * points nowhere, or whose number is not in the OLD list, is left alone.
      *
      * @param before the page list as it was, in the order the links were written against
      * @param after the page list as it now is
@@ -613,9 +604,9 @@ public class LayoutDiagram
     private boolean unreadable = false;
 
     /**
-     * Marks this page as standing in for one whose file would not read.  It holds the page's place in the list so every
-     * link after it still resolves, and it must never be written: it is blank and the file it would go over is the
-     * page the operator is trying to recover.
+     * Marks this page as standing in for one whose file would not read: it holds the place in the list so every link
+     * after it resolves, and must never be written (it is blank, and the file it would go over is the one being
+     * recovered).
      */
     public void markUnreadable()
     {
@@ -1010,12 +1001,10 @@ public class LayoutDiagram
     }
     
     /**
-     * Moves the elements this build could not model with a shift, as the shift moves the tiles.
-     *
-     * Such an element is written back verbatim, its id with it, and the id IS its square: x + (y << 8).  Inserting at
-     * `start` moves everything at or past it one further on; removing `start` moves everything past it one back.  An
-     * element ON a removed row or column is KEPT where it is rather than dropped, since this program cannot draw it and
-     * nobody removing the row could see it was there.  An id that does not read as `CS2File` reads one is left alone.
+     * Moves the elements this build could not model with a shift, as the shift moves the tiles.  Such an element is
+     * written back verbatim, its id with it, and the id IS its square: x + (y << 8).  An element ON a removed row or
+     * column is KEPT where it is rather than dropped, since this program cannot draw it and nobody removing the row
+     * could see it was there.  An id that does not read as `CS2File` reads one is left alone.
      *
      * @param columns true for a shift along x (right, left), false for one along y (down, up)
      * @param start the first column or row the shift moved, after the shift's own normalizing
@@ -1080,15 +1069,10 @@ public class LayoutDiagram
     }
 
     /**
-     * What id a page in the index has, given what its `.id=` line said and where it sits.
-     *
-     * An absent `.id` is ZERO (the owner's ruling: *"no .id means id 0 implicitly."*), the CS2 convention and what the
-     * files say.  Reading it as the page's POSITION would give two pages one id, and one page's autonomy settings would
-     * come back on the other's track.  Both this file and `CS2File` ask this, so the setup is not keyed by ids the
-     * index does not believe.
-     *
-     * A CORRUPT `.id=` line falls back to the position: the file is damaged rather than terse, and zero would give
-     * every damaged page the same id.
+     * What id a page in the index has, given what its `.id=` line said and where it sits.  An absent `.id` is ZERO (the
+     * owner's ruling: *"no .id means id 0 implicitly."*), the CS2 convention: reading it as the page's POSITION would
+     * give two pages one id, and one page's autonomy settings would come back on the other's track.  A CORRUPT `.id=`
+     * line falls back to the position, since zero would give every damaged page the same id.
      *
      * @param idText what the `.id=` line said, or null when the page had none
      * @param position the page's place in the file, counting from one
@@ -1177,14 +1161,9 @@ public class LayoutDiagram
 
     /**
      * The keys inside a page's own `seite` block that TrainControl does not model, such as the `.xoffset` and
-     * `.yoffset` a Central Station writes, kept so the writer can put them back.
-     *
-     * Keyed by the page's NAME, not its id: two pages can resolve to one id (the genuine export here has such a pair).
-     * The writer is handed the rename map so a renamed page still finds its own lines.  The `.id` line is not read
-     * here.
-     *
-     * Best-effort: an unreadable index is already reported by `readLayoutIndexIds`, and this must not add a second way
-     * to fail a save.
+     * `.yoffset` a Central Station writes, kept so the writer can put them back.  Keyed by the page's NAME, not its id
+     * (two pages can resolve to one id); the writer is handed the rename map so a renamed page still finds its own
+     * lines.  Best-effort: an unreadable index is already reported by `readLayoutIndexIds`.
      *
      * @param path the layout folder
      * @return each page NAME against the lines of its block the writer does not emit, in file order
@@ -1256,12 +1235,8 @@ public class LayoutDiagram
     }
 
     /**
-     * Files one page's unmodeled keys under its name.  A block with no name cannot be matched to a page on the way back
-     * out, so it is not filed.
-     *
-     * @param out what has been filed so far
-     * @param name the page's name, or null when there is no page open
-     * @param extras its unmodeled lines, or null
+     * Files one page's unmodeled keys under its name; a block with no name cannot be matched on the way back, so it is
+     * not filed.
      */
     private static void attribute(Map<String, List<String>> out, String name, List<String> extras)
     {
@@ -1272,13 +1247,9 @@ public class LayoutDiagram
 
     /**
      * The blocks in `gleisbild.cs2` that TrainControl does not model (the genuine export carries `zuletztBenutzt`),
-     * kept so a page edit does not delete them: what TrainControl does not understand it is not entitled to throw away.
-     *
-     * Not kept here: `[gleisbild]`, `version`, `groesse` and `seite`, which the writer regenerates from what the layout
-     * is now.  The other keys inside a `seite` block (the scroll position) are `readLayoutIndexPageExtras`' business.
-     *
-     * Best-effort: an unreadable index is already reported by `readLayoutIndexIds`; this returns nothing rather than
-     * add a second way to fail a save.
+     * kept so a page edit does not delete them.  Not `[gleisbild]`, `version`, `groesse` and `seite`, which the writer
+     * regenerates; the other keys inside a `seite` block are `readLayoutIndexPageExtras`' business.  Best-effort: an
+     * unreadable index is already reported by `readLayoutIndexIds`.
      *
      * @param path the layout folder
      * @return the unmodeled blocks, each as its lines in file order, outermost first
@@ -1394,12 +1365,9 @@ public class LayoutDiagram
     }
 
     /**
-     * The same, with a floor below which a fresh id will not be issued.
-     *
-     * A retired id is free again after the write that dropped it, which is fine for a DELETED page but not for one
-     * whose file was merely absent: its settings are still in the autonomy setup under the old number, and the next new
-     * page would collect them.  The floor comes from the setup, which remembers every id it has written; zero when
-     * none.
+     * The same, with a floor below which a fresh id will not be issued: a retired id is free again after the write that
+     * dropped it, fine for a DELETED page but not one whose file was merely absent (its settings are still in the setup
+     * under the old number).  The floor comes from the setup, which remembers every id it has written; zero when none.
      *
      * @param floor no fresh id will be at or below this
      */
@@ -1410,16 +1378,12 @@ public class LayoutDiagram
     }
 
     /**
-     * Which pages this index holds that a write would drop (FR-018).
-     *
-     * Retiring the id of a page not in the list is deliberate (MT-135), but it cannot tell a deleted page from one
-     * whose file merely will not parse or is not there (on OneDrive an unhydrated placeholder, or a file the sync
-     * client holds open): written then, the index retires the id and the page returns as a NEW page, its settings
-     * stranded under the old id.  So this reports, the caller asks the user, and the answer goes back in through
-     * `keepAbsent`.
-     *
-     * Deliberate removals are subtracted here rather than at each call site, since every caller has some and one that
-     * forgot would ask about the very thing the operator just did.
+     * Which pages this index holds that a write would drop (FR-018).  Retiring the id of a page not in the list is
+     * deliberate (MT-135), but it cannot tell a deleted page from one whose file merely will not parse or is not there
+     * (an unhydrated OneDrive placeholder): written then, the page returns as a NEW page with its settings stranded.
+     * So this reports, the caller asks the user, and the answer goes back in through `keepAbsent`.  Deliberate removals
+     * are subtracted here rather than at each call site, since one that forgot would ask about what the operator just
+     * did.
      *
      * @param path the layout folder
      * @param layoutList the pages the caller can see
@@ -1486,11 +1450,9 @@ public class LayoutDiagram
     }
 
     /**
-     * The same again, told which absent pages to hold on to rather than retire (FR-018).
-     *
-     * `keepAbsent` names pages the operator has said are coming back: they are written out with the id they already
-     * have, so when the file returns it is the SAME page.  Anything absent and not named is retired, which is what
-     * every caller gets by passing null (the startup path and tests are never asked anything).
+     * The same again, told which absent pages to hold on to rather than retire (FR-018): `keepAbsent` names pages the
+     * operator has said are coming back, written out with the id they already have so the returning file is the SAME
+     * page.  Anything absent and not named is retired, which is what every caller gets by passing null.
      *
      * @param keepAbsent names to keep in the index though they are not in the list.  Null or empty
      *        for the old behavior
@@ -1529,10 +1491,9 @@ public class LayoutDiagram
             }
         }
 
-        // Write layout details, keeping the id each page already had: an id is a page's IDENTITY (MT-135), kept for
-        // every page still in the list, retired when a page goes, issued fresh only for a page that never had one.  The
-        // autonomy setup is keyed by it, so an id that was a page's place in the alphabet would reattach settings
-        // wrongly.
+        // Write layout details, keeping the id each page already had: an id is a page's IDENTITY (MT-135), kept while
+        // the page is in the list, retired when it goes, issued fresh only for a page that never had one.  The autonomy
+        // setup is keyed by it, so an id that was a page's place in the alphabet would reattach settings wrongly.
         Map<String, Integer> existing = readLayoutIndexIds(path);
 
         // What the station wrote inside each page's block, emitted with each page below.
@@ -1543,9 +1504,9 @@ public class LayoutDiagram
         // the caller wanted saved is not saved, the lesser harm.
         if (existing.isEmpty() && getUnreadableIndex() != null)
         {
-            // Reachable only for a file that cannot be READ.  One this build cannot DECODE does not come here
-            // (readIndexLines falls back to a total charset): refusing what a retry can fix is a delay, refusing what
-            // it cannot is a layout nobody can save.
+            // Reachable only for a file that cannot be READ (readIndexLines falls back to a total charset for one it
+            // cannot DECODE): refusing what a retry can fix is a delay, refusing what it cannot is a layout nobody can
+            // save.
             throw new IOException("The layout index could not be read, so the pages were not renumbered."
                 + "  Nothing was written.  Try again in a moment: " + getUnreadableIndex().getMessage());
         }
@@ -1558,9 +1519,8 @@ public class LayoutDiagram
             if (taken != null && taken >= next) next = taken + 1;
         }
 
-        // Every id issued in THIS write, so two pages cannot leave holding one: `setPageIds` inverts name->id, so a
-        // duplicate would make the second page silently win.  Reissued rather than refused (a page that cannot be saved
-        // is worse); the LATER page loses and gets a number of its own.
+        // Every id issued in THIS write, so two pages cannot leave holding one (`setPageIds` inverts name->id, so the
+        // second would silently win).  Reissued rather than refused; the LATER page loses and gets a number of its own.
         Set<Integer> issued = new java.util.LinkedHashSet<>();
 
         for (String layout : layoutList)
@@ -1594,9 +1554,8 @@ public class LayoutDiagram
             appendPageExtras(contents, pageExtras, layout, renamedFromTo);
         }
 
-        // Pages the operator said are coming back (FR-018), after the ones that are here (position means nothing now
-        // that ids are identities).  Only a name the index already has an id for; inventing one for a page nobody can
-        // see is the opposite of the point.
+        // Pages the operator said are coming back (FR-018), after the ones that are here.  Only a name the index
+        // already has an id for; inventing one for a page nobody can see is the opposite of the point.
         if (keepAbsent != null)
         {
             for (String held : keepAbsent)

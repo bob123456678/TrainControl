@@ -58,13 +58,9 @@ public class testLayoutTimetable
         MarklinLocomotive loc = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2,
             "TT Loc " + (++locCounter));
 
-        // WITH A SPEED, which was never what these tests are about.
-        //
-        // A fresh locomotive has none, and the dispatch loop now SKIPS an entry whose locomotive has
-        // a speed outside 1 to 100 rather than retrying it - so the two give-up tests below ended
-        // instantly, by the new rule, without ever reaching the bounds they were written to check.
-        // The reason those entries can never execute is that the layout is invalidated, and that is
-        // the mechanism they must keep exercising.
+        // WITH A SPEED: the dispatch loop SKIPS an entry whose locomotive has a speed outside 1 to 100, so the give-up
+        // tests below would end instantly without reaching the bounds they check.  Those entries can never execute
+        // because the layout is invalidated, and that is the mechanism they must keep exercising.
         loc.setPreferredSpeed(35);
 
         return loc;
@@ -317,20 +313,7 @@ public class testLayoutTimetable
         // at the start of the path" with the validity check deleted; the log says which of the two it was.
         java.util.List<String> logged = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
 
@@ -395,12 +378,10 @@ public class testLayoutTimetable
             runner.setDaemon(true);
             runner.start();
 
-            // Precondition: the run must actually have STARTED before the wait loop below is asked to
-            // see it end.  executeTimetableInternal sets `running = true` only after the worker is
-            // scheduled, so the main thread's very first read can otherwise see `false` before the
-            // retry loop ever ran - the wait loop below exits immediately, and both closing assertions
-            // pass without the give-up bound having been exercised at all.  testAGracefulStopEndsTheRetryLoop
-            // guards this the same way.
+            // Precondition: the run must actually have STARTED before the wait loop below is asked to see it end:
+            // executeTimetableInternal sets `running = true` only after the worker is scheduled, so the first read can
+            // see `false` and both closing assertions pass without the give-up bound being exercised
+            // (testAGracefulStopEndsTheRetryLoop guards this the same way).
             long startDeadline = System.currentTimeMillis() + 3000;
 
             while (!layout.isAutoRunning() && System.currentTimeMillis() < startDeadline)
@@ -541,9 +522,8 @@ public class testLayoutTimetable
 
     /**
      * The run stops at an entry the railway cannot run, and says why (Adam: "stop the timetable run upon
-     * encountering an invalid path, and let the user know").  Refused and passed over, a train's later entries started
-     * where it was not, and the run stood for minutes before giving up, saying only that the track never became free.
-     * The entry is left unrun, so the window names it, and nothing after it runs.
+     * encountering an invalid path, and let the user know").  Passed over, a train's later entries started where it was
+     * not.  The entry is left unrun, so the window names it, and nothing after it runs.
      *
      * MUTATION: pass over an entry the railway cannot run, and this fails.
      *
@@ -567,20 +547,7 @@ public class testLayoutTimetable
 
         final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
 
@@ -622,12 +589,10 @@ public class testLayoutTimetable
     }
 
     /**
-     * A route that ends where it starts - a lap - is refused: kept unrunnable when a timetable is read, so the run stops
-     * there and says why, and refused by the run itself whatever door brings it.
-     *
-     * No door of the application offers one; a timetable read from a file can carry one.  Run, it left the train on no
-     * Point - the arrival took it off the station it had just reached - with that station's exit guard green under it,
-     * and in non-atomic mode freed the station while the train was still on its way there.
+     * A route that ends where it starts - a lap - is refused: kept unrunnable when a timetable is read, so the run
+     * stops there and says why, and refused by the run itself whatever door brings it.  No door of the application
+     * offers one; a timetable read from a file can carry one.  Run, it would leave the train on no Point and, in
+     * non-atomic mode, free the station while the train was still on its way there.
      *
      * MUTATION: take either refusal out, and this fails.
      *
@@ -668,20 +633,7 @@ public class testLayoutTimetable
         // AND THE RUN REFUSES ONE, whatever door brings it
         final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
 
-        java.util.logging.Handler tap = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
-            }
-
-            @Override
-            public void flush() { }
-
-            @Override
-            public void close() { }
-        };
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
 
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
 
@@ -751,11 +703,9 @@ public class testLayoutTimetable
     }
 
     /**
-     * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or nothing
-     * (OB-260).
-     *
-     * The delete asked, held a confirmation open as long as the operator liked, and then removed the row by number from
-     * the plain list capture appends to under this railway's lock.  So it is asked of the entry, and taken under the lock.
+     * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or
+     * nothing (OB-260).  A confirmation can stay open as long as the operator likes while capture appends to the list,
+     * so the delete is asked of the entry, not of the row number, and taken under the lock.
      *
      * MUTATION: remove by the row number alone, or without the lock, and this fails.
      *

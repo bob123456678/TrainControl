@@ -25,13 +25,11 @@ import org.traincontrol.marklin.MarklinFeedback;
 /**
  * A reversal command reaches the tracks at every kind of square that should turn a train, and at no other kind.
  *
- * Adam: "in your tests for arrival, make sure you check for an emitted reversal command to the tracks."  And asking
- * what the suite covered: "Do we have tests validating that reversal commands are being issued when intended at
- * terminuses/reversing stations/points, and not otherwise?"
+ * Adam: "in your tests for arrival, make sure you check for an emitted reversal command to the tracks."
  *
- * `testTheReversalReachesTheTracks` watched the wire on ONE square kind and made a COMPARATIVE claim, and
- * `testAReversalCommandIsEmitted` reads `goingForward()`, the application's belief and not the cable; a terminus had no
- * emission test at all.
+ * `testTheReversalReachesTheTracks` watches the wire on ONE square kind and makes a COMPARATIVE claim, and
+ * `testAReversalCommandIsEmitted` reads `goingForward()`, the application's belief and not the cable; neither covers a
+ * terminus.
  *
  * What makes an absolute claim possible is the window: dispatch sets a locomotive's direction as it departs, so
  * counting from zero over a whole journey cannot tell an arrival that turned the train from one that did not.
@@ -145,8 +143,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * A plain station turns nobody round: the negative half of Adam's question, which the older test could not make (it
-     * compared two journeys rather than looking at one arrival).
+     * A plain station turns nobody round: the negative half of Adam's question.
      *
      * MUTATION: dropping the `arrived.isTerminus() ||` guard in `Layout.executePath` does not move this (a plain
      * station is neither); replacing the whole condition with `true` does.
@@ -164,7 +161,7 @@ public class testWhatReachesTheTracksAtEachKindOfArrival
     }
 
     /**
-     * A terminus turns every train that arrives, and nobody is asked: the case with no emission test anywhere.
+     * A terminus turns every train that arrives, and nobody is asked.
      *
      * MUTATION, and this is the one it exists for: removing `arrived.isTerminus() ||` from
      * `Layout.executePath`'s arrival condition fails this and leaves every other claim here green.

@@ -30,15 +30,14 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * of the train"** - asked whether that holds at every station, *"Everywhere"*, and *"This shouldn't be a major ruling
  * reversal."*
  *
- * "The station size" is the station's MAXIMUM TRAIN LENGTH, how much train it may HOLD (`whyTooLongForThisRoute`).  It
- * had been read as the length MEASURED on the station's own square, and every walk that works out where a standing
- * train's body lies left that square unspent, putting the whole train on the track BEHIND it: on his measured railway
- * the tail went over the switch behind almost every berth.
+ * "The station size" is the station's MAXIMUM TRAIN LENGTH, how much train it may HOLD (`whyTooLongForThisRoute`), not
+ * the length MEASURED on the station's own square: every walk that works out where a standing train's body lies spends
+ * that square first, so the tail does not go over the switch behind a berth.
  *
- * The rule now: every measured square a train lies over is spent, the square it stands on first; a train no longer than
+ * The rule: every measured square a train lies over is spent, the square it stands on first; a train no longer than
  * that square blocks nothing behind it.  Three walks read it and must agree - `Layout.walkStandingTrains` (what the
- * railway blocks), `Layout.whyABerthCannotHoldIt` (whether a berth can take a train) and
- * `AutonomySession.walkBackFrom` (the orange line) - and this class asks each of them.
+ * railway blocks), `Layout.whyABerthCannotHoldIt` (whether a berth can take a train) and `AutonomySession.walkBackFrom`
+ * (the orange line) - and this class asks each of them.
  *
  * On a sandbox copy of the frozen `live-snapshot`, which carries his measurements; where he has not measured the
  * squares a claim needs, they are set here and say so.  The train is this class's own.
@@ -411,9 +410,8 @@ public class testAStationsSizeIsAnAllowance
 
     /**
      * A berth measured on an approach measured nowhere else takes a train that fits on it, and blocks nothing behind:
-     * the arrangement `Automation.md` produces first, because it tells him to measure the station.  Before OB-278 the
-     * approach counted as unmeasured and the walk claimed nothing at all.  The approach into TunnelLongPark has every
-     * square but the berth's taken to 0 for the length of this claim.
+     * the arrangement `Automation.md` produces first, because it tells him to measure the station.  The approach into
+     * TunnelLongPark has every square but the berth's taken to 0 for the length of this claim.
      */
     @Test(dependsOnMethods = "testTheParkIsMeasuredTheWayHeMeasuredIt")
     public void testAMeasuredBerthOnAnUnmeasuredApproachHoldsWhatFits()

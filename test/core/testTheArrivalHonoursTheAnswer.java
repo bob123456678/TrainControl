@@ -17,8 +17,8 @@ import org.traincontrol.marklin.MarklinFeedback;
 /**
  * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).
  *
- * The arrival once read `arrived.isTerminus() || shouldReverseAt(...)`, and `AutonomyBuilder` emits the turning copy of
- * a MAY-turn square with `terminus: true`, so the dialog's answer was collected and thrown away. The decision is now
+ * `AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`, so a decision written as
+ * `arrived.isTerminus() || shouldReverseAt(...)` would throw the dialog's answer away.  The decision is
  * `Layout.turnsOnArrival`, and this class asks it what it DOES, not what its source says.
  *
  * MUTATION: restore the `||` and the first claim fails; drop the `asksAbout` branch and it fails too; make the branch
@@ -618,20 +618,7 @@ public class testTheArrivalHonoursTheAnswer
         final Point plain = rail.getPoint("RSMP");
 
         // THE OPERATOR SAID KEEP THE DIRECTION: asked about the turning copy, and no
-        final Layout.ReversalPolicy keep = new Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(Locomotive loc, Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(Point at)
-            {
-                return at == turning;
-            }
-        };
+        final Layout.ReversalPolicy keep = answering(false, turning);
 
         final java.util.concurrent.atomic.AtomicBoolean arriving = new java.util.concurrent.atomic.AtomicBoolean(false);
         final java.util.List<String> atTheArrival = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
@@ -742,20 +729,7 @@ public class testTheArrivalHonoursTheAnswer
         final Point plain = rail.getPoint("ICFP");
 
         // THE OPERATOR SAID KEEP THE DIRECTION: asked about the turning copy, and no
-        final Layout.ReversalPolicy keep = new Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(Locomotive loc, Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(Point at)
-            {
-                return at == turning;
-            }
-        };
+        final Layout.ReversalPolicy keep = answering(false, turning);
 
         // The diagram: the start on one square, both copies of the destination on another - the turning copy facing back
         // the way trains come in, the plain one onward

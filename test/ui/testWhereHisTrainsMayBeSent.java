@@ -111,10 +111,9 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * A send the right-click refuses says why in a message that belongs to the main window: with the power off, "-> a
-     * station" on his train's right-click tells him to turn the power on, in front of the window he is using.
-     *
-     * A refusal parented on the popup menu belongs to Swing's hidden frame, and with Window Always on Top ticked (the
-     * default) it opens beneath the main window and holds every window with nothing to show why.
+     * station" on his train's right-click tells him to turn the power on, in front of the window he is using.  A
+     * refusal parented on the popup menu belongs to Swing's hidden frame and, with Window Always on Top ticked (the
+     * default), opens beneath the main window and holds every window with nothing to show why.
      *
      * MUTATION: parent the refusal on the menu again, and this fails.
      */
@@ -185,10 +184,8 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * No message on either right-click menu (the diagram's autonomy menu, the track-diagram editor's) belongs to the
-     * menu itself, and none on the autonomy viewer panel to the panel; the setup's tidy report is a message too.
-     *
-     * The claim above drives one refusal; the rest are read here.  A message parented on a menu or on a never-shown
-     * panel belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the window it holds.
+     * menu itself, and none on the autonomy viewer panel to the panel; the setup's tidy report is a message too.  The
+     * claim above drives one refusal; the rest are read here.
      *
      * MUTATION: put `this` back as any one of their owners, a tidy report's included, and this fails naming the line.
      */
@@ -439,9 +436,8 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * On 1 - Main with three of his trains standing on it, Why not Moving? outlines every square with a train on it and
-     * no other while it waits; a click on one answers, and the outlines that marked where to click go (MT-570).
-     *
-     * Asked of every square of the page, from the running railway, which is where the outlines are read.
+     * no other while it waits; a click on one answers, and the outlines that marked where to click go (MT-570).  Asked
+     * of every square of the page, from the running railway, which is where the outlines are read.
      *
      * MUTATION: outline a square without a train, miss one with a train, or keep the waiting outlines after the click.
      */
@@ -1272,39 +1268,12 @@ public class testWhereHisTrainsMayBeSent
 
     private static javax.swing.JCheckBox checkBoxIn(java.awt.Container container, String text)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.JCheckBox && text.equals(((javax.swing.JCheckBox) child).getText()))
-            {
-                return (javax.swing.JCheckBox) child;
-            }
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JCheckBox found = checkBoxIn((java.awt.Container) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, javax.swing.JCheckBox.class, box -> text.equals(box.getText()));
     }
 
     private static <T> T find(java.awt.Container container, Class<T> type)
     {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, type);
     }
 
     private static javax.swing.JDialog awaitDialogTitled(String title) throws Exception

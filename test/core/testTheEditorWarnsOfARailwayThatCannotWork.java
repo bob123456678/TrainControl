@@ -56,7 +56,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
     /**
      * A sensor address two pages share is OB-150's ERROR alone - the later page repeats the earlier one's sensors - and
-     * the shared-address warning does not say it again (FR-139; Adam: "suppress the warning where OB-150 applies").
+     * the shared-address warning does not say it again (FR-139).
      *
      * MUTATION: count the squares of a page OB-150 reports, and this fails.
      */
@@ -79,10 +79,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A page autonomy does not use is not one of the places a sensor address is shared between (FR-139).
-     *
-     * The control is the same two squares with both pages in, so the absence below is about the exclusion and not about
-     * a check that has stopped finding anything.
+     * A page autonomy does not use is not one of the places a sensor address is shared between (FR-139).  The control
+     * is the same two squares with both pages in, so the absence is about the exclusion and not a check that has
+     * stopped finding anything.
      *
      * MUTATION: read the excluded pages out of the sensor check, or leave the excluded page in its places, and this
      * fails.
@@ -101,10 +100,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A sensor with no address is not a shared address, however many squares have none (FR-139).
-     *
-     * An address of zero or less is no address: the reduction makes no point of one and the duplicate-sensor check
-     * passes over one.
+     * A sensor with no address is not a shared address, however many squares have none (FR-139): an address of zero or
+     * less is no address.
      *
      * MUTATION: count a sensor whose address is 0 or -1 as an address, and this fails.
      */
@@ -125,9 +122,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
     /**
      * A square that builds into two copies, one per way a train comes in, is one place and is not said to share its
-     * address with itself (FR-139).
-     *
-     * The precondition is the copies: the middle square builds into more than one Point, or the claim says nothing.
+     * address with itself (FR-139).  The precondition is the copies: the middle square builds into more than one Point.
      *
      * MUTATION: count each copy of a square as a place, and this fails.
      */
@@ -191,8 +186,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * check reports it as an error (Adam: "Generally I prefer warnings or errors over outright refusals, since it makes
-     * editing easier for the user.  Make refusals that make sense be errors").
+     * check reports it as an error (refusals that make sense are errors, smaller issues warnings).
      *
      * MUTATION: report it as a warning, and this fails.
      */
@@ -226,8 +220,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A placed train facing track that runs only towards it is a warning - set, not refused (Adam: "smaller issues be
-     * warnings") - and the track closed instead is not, nothing arriving by it.
+     * A placed train facing track that runs only towards it is a warning - set, not refused - and the track closed
+     * instead is not, nothing arriving by it.
      *
      * MUTATION: leave the warning out, and this fails.
      */
@@ -262,9 +256,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A trapped arrival is named by the side it comes in by, and the advice offers to close arrivals from that side, as
-     * well as opening the way ahead or letting trains change direction there (OB-201; Adam: *"This error message should
-     * say either close arrivals from <direction>, open the way ahead, or let trains change direction."*).
+     * A trapped arrival is named by the side it comes in by, and the advice offers to close arrivals from that side,
+     * as well as opening the way ahead or letting trains change direction there (OB-201).
      *
      * MUTATION: name the point instead of the side, or every way in rather than the trapped one, and this fails.
      */
@@ -308,8 +301,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
     /**
      * Closing arrivals from the side a trapped arrival comes in by clears the warning.  It is the first of the three
-     * ways out the warning offers (OB-201), and the check never asked which arrivals were closed: the operator who took
-     * that advice got the same warning back, still telling them to close arrivals from that side.
+     * ways out the warning offers (OB-201); the check never asked which arrivals were closed.
      *
      * MUTATION: count a closed side's copy as trapped again, and this fails.
      */
@@ -414,10 +406,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * An arrival no train can make is not said to be trapped (OB-361; Adam: *"it is impossible for trains to arrive
-     * from the west anyway, so both these conditions should disqualify the notice."*).  3,1 is a station with track
-     * east of it running only towards it, so a train arriving from the west could not go on; then trains stop turning
-     * round at 1,1, the end of the line west of it, and no train arrives at 3,1 from the west at all.
+     * An arrival no train can make is not said to be trapped (OB-361).  3,1 is a station with track east of it running
+     * only towards it, so a train arriving from the west could not go on; then trains stop turning round at 1,1, the
+     * end of the line west of it, and no train arrives at 3,1 from the west at all.
      *
      * MUTATION: say it for a copy no train reaches, and this fails.
      */
@@ -486,8 +477,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station at the end of a line that trains may not turn at is an error - a train sent there could never leave
-     * could never leave - and marking that trains must change direction there clears it.
+     * A station at the end of a line that trains may not turn at is an error - a train sent there could never leave -
+     * and marking that trains must change direction there clears it.
      *
      * MUTATION: leave the error out, and this fails.
      */
@@ -554,12 +545,10 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223).
-     *
-     * Adam: "all conflicting sensors should be listed."  A page that repeats anything contributes nothing to what
-     * counts as seen, or a third page sharing one of its other sensors is blamed against the page that should itself
-     * have been switched off.  The fixture does both: "repeat" clashes on TWO sensors and must produce two findings,
-     * and "third" shares a sensor only "repeat" holds and must produce none.
+     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223): a page that repeats
+     * anything contributes nothing to what counts as seen, or a third page sharing one of its other sensors is blamed
+     * against the page that should itself have been switched off.  The fixture does both: "repeat" clashes on TWO
+     * sensors and must produce two findings, and "third" shares a sensor only "repeat" holds and must produce none.
      */
     @Test
     public void testEveryClashingSensorIsReportedAndOnlyTheRepeatingPageIs() throws Exception
@@ -632,8 +621,6 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
      * the copies do not share their edges: a square can be reachable while one of its arrivals is a trap.  The fixture
      * is a square with two arrivals, healthy from one side and stuck from the other (barring the far section leaves the
      * middle station's eastward arrival with nothing to go on to).
-     *
-     * Adam: "we need a warning for instances like the previous version of this."
      *
      * Which of TOWARD_A and TOWARD_B points which way is the tile's business, so both are applied and exactly one of
      * them must trap the arrival.  The last assertion asks `check()` about the current state, so the trapping direction
@@ -782,13 +769,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * And the one that has a way out, and still gets the train nowhere.
-     *
-     * Adam: "yes, extend the check to catch that shape too."  The square is healthy and one of its arrivals is not: a
-     * run with a station at each end and a plain sensor beyond, where the sensor is a dead end nothing may turn at.
-     * Arriving at the middle station from the west you can only carry on into that dead end; from the east you reach a
-     * real station.  Where every arrival is stuck the square-level check has it, so the control is the same railway
-     * with the dead end marked "trains may turn here", and then nothing is reported.
+     * And the one that has a way out, and still gets the train nowhere.  The square is healthy and one of its arrivals
+     * is not: a run with a station at each end and a plain sensor beyond, where the sensor is a dead end nothing may
+     * turn at.  Arriving at the middle station from the west you can only carry on into that dead end; from the east
+     * you reach a real station.  Where every arrival is stuck the square-level check has it, so the control is the same
+     * railway with the dead end marked "trains may turn here", and then nothing is reported.
      *
      * MUTATION: counting any Point the train can get to, rather than only a STATION, makes this pass with the railway
      * unchanged.
@@ -860,13 +845,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A square trains turn round at, from which no station can be reached, is reported.
-     *
-     * Adam, closing OB-113: "We need to add a warning if a reversing point leads to nothing else."  A healthy
-     * switchback never appears here, since the whole railway is reachable from it; what is left is a reversing square
-     * in a pocket of track with no station, which `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` (stations only) do
-     * not watch.  The second half gives the pocket a station, which stops the notice, so the check is not one that
-     * lists every reversing point.
+     * A square trains turn round at, from which no station can be reached, is reported (OB-113).  A healthy switchback
+     * never appears here, since the whole railway is reachable from it; what is left is a reversing square in a pocket
+     * of track with no station, which `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` (stations only) do not watch.
+     * The second half gives the pocket a station, which stops the notice, so the check is not one that lists every
+     * reversing point.
      *
      * MUTATION: dropping the `!reachesAStation` condition fails the second half; removing the call to
      * `checkReversingGoesSomewhere` fails the first.
@@ -937,13 +920,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A pocket whose only station is one autonomy may never choose still leads nowhere.
-     *
-     * Adam: "Make it a notice."  The runtime's `Layout.isSendableDestination` requires `!isReversing() &&
-     * isAutoDestination()` before autonomy picks a destination, so a station that is only a parking berth read as
-     * healthy in the editor and was useless in the run.  Only the two square-level clauses are checked: the other two
-     * take a locomotive, and this notice is drawn on a square with no train in the question.  The fixture is the one
-     * above with one flag moved.
+     * A pocket whose only station is one autonomy may never choose still leads nowhere.  The runtime's
+     * `Layout.isSendableDestination` requires `!isReversing() && isAutoDestination()` before autonomy picks a
+     * destination, so a station that is only a parking berth would read as healthy in the editor.
+     * Only the two square-level clauses are checked: the other two take a locomotive, and this notice is drawn on a
+     * square with no train in the question.  The fixture is the one above with one flag moved.
      *
      * MUTATION: counting a station regardless of `isAutoDestination` fails the second half; counting nothing at all
      * fails the first.
@@ -1012,10 +993,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         }
     }
     /**
-     * What a square is called, in the three cases there are.
-     *
-     * The rule lives in the session so the diagram's right-click menu (OB-112) and the editor ask the same one: what
-     * somebody named it, then the sensor address printed beside it, then where it is.  Each case is its own assertion.
+     * What a square is called, in the three cases there are: what somebody named it, then the sensor address printed
+     * beside it, then where it is.  The rule lives in the session so the diagram's right-click menu (OB-112) and the
+     * editor ask the same one.  Each case is its own assertion.
      *
      * MUTATION: dropping the feedback branch fails the second assertion; returning the coordinates always fails all
      * three.
@@ -1048,13 +1028,10 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * "May change direction here" is judged by where a train can GO, not by what arrives (OB-123).
-     *
-     * Adam: "this is wrong: the train can continue or reverse.  It should test for two outgoing paths, not two
-     * incoming." A square a train can only enter from one side but leave by either offers exactly the choice the
-     * setting describes; that shape needs a one-way run to build.  Both halves are in one test because `hasFinding`
-     * asks by message key and not by square: the far end, also set reversing, is a genuine dead end and must still be
-     * reported, as the control.
+     * "May change direction here" is judged by where a train can GO, not by what arrives (OB-123): a square a train can
+     * only enter from one side but leave by either offers exactly the choice the setting describes; that shape needs a
+     * one-way run to build.  Both halves are in one test because `hasFinding` asks by message key and not by square:
+     * the far end, also set reversing, is a genuine dead end and must still be reported, as the control.
      *
      * MUTATION: putting `arrivalSides(tile).size() < 2` back reports the middle square and fails.
      */
@@ -1380,10 +1357,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station set to No - Nothing Can Pass is said to be, once - not reported as unreachable (FR-101).
-     *
-     * Adam: *"these show 'no train can reach &lt;point&gt; from any other station....check the direction'.  Update the
-     * error message to say that is marked for nothing to be able to pass, user to validate if intentional."*
+     * A station set to No - Nothing Can Pass is said to be, once - not reported as unreachable (FR-101): the message
+     * says it is marked for nothing to be able to pass, user to validate if intentional.
      *
      * MUTATION: let the reachability sentences report a closed station again, or leave out the new one, and this fails.
      */
@@ -1421,13 +1396,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station every train must turn round at may have only one way in (MT-361).
-     *
-     * Adam, on MT-361: *"terminuses (stations that must reverse) are currently allowed to have ingress from two sides.
-     * Make this be an autonomy ERROR that the user has to fix."*
-     *
-     * A square marked "must turn round" is emitted as one Point per arrival side, each leaving the way it came, so with
-     * two ways in it becomes two termini and the track out of the other side is never used.
+     * A station every train must turn round at may have only one way in (MT-361): a square marked "must turn round" is
+     * emitted as one Point per arrival side, each leaving the way it came, so with two ways in it becomes two termini
+     * and the track out of the other side is never used.
      *
      * An ERROR is asserted rather than assumed: `errorCount() > 0` refuses to start autonomy at all, and a warning
      * would let the configuration run.  The three remedies the message names all clear it: bar one way in, change the
@@ -1526,16 +1497,12 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station shut from every direction is reported - as INFORMATION.
-     *
-     * The editor will not let anybody tick the last way in, so this is for the ways round it: a diagram edited after
-     * the fact, or a file written by hand.  The consequence is quiet (the station stops being somewhere autonomy sends
-     * a train), so it is said out loud.
-     *
-     * Adam (MT-078): "We should let the user know a train can't come in in any way (warning). If manual only, it's
-     * info." A bar is advisory: autonomy will not route into a barred side but a person driving by hand may, so an
-     * ERROR would block the whole setup over a station the operator can still use.  The case that IS a warning, nothing
-     * can arrive by any means, is a square no track reaches: POINT_ISOLATED.
+     * A station shut from every direction is reported - as INFORMATION (MT-078).  The editor will not let anybody tick
+     * the last way in, so this is for the ways round it: a diagram edited after the fact, or a file written by hand.
+     * The consequence is quiet (the station stops being somewhere autonomy sends a train), so it is said out loud.  A
+     * bar is advisory: autonomy will not route into a barred side but a person driving by hand may, so an ERROR would
+     * block the whole setup over a station the operator can still use.  The case that IS a warning, nothing can arrive
+     * by any means, is a square no track reaches: POINT_ISOLATED.
      */
     @Test
     public void testAStationWithEveryWayInBarredIsReported() throws Exception
@@ -1576,11 +1543,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             "nothing told the user autonomy will no longer send a train to their station");
     }
     /**
-     * And the CHECKS are actually given it, which is a separate question.
-     *
-     * Asked of the findings themselves, since a test of the rule alone could not fail: reverting the call site left it
-     * green.  Adam: *"show how inactive points would affect the routes"* - close the middle of a run and the station
-     * beyond it becomes unreachable.  (A barred side is passed THROUGH and merely not stopped at, OB-120.)
+     * And the CHECKS are actually given it, which is a separate question: asked of the findings themselves, since a
+     * test of the rule alone could not fail.  Close the middle of a run and the station beyond it becomes unreachable.
+     * (A barred side is passed THROUGH and merely not stopped at, OB-120.)
      *
      * MUTATION: hand `barredArrivals()` to `AutonomyChecks.run` again and the second assertion fails.
      */
@@ -1620,10 +1585,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             + "manual routes included - and the cross on the diagram says so, but the checks walked "
             + "straight through it (V31-C3).  Findings: " + session.check());
 
-        // AND THE CLOSED SQUARE IS NOT A DESTINATION EITHER.  Adam: *"in manual mode, inactive endpoints and
-        // intermediates should be refused as well.  Just not inactive start points.  Inactive really means nothing can
-        // pass."*  The START is exempt by construction (the walk seeds `from` before the loop), so it is not tested
-        // here.
+        // The closed square is not a destination either: in manual mode inactive endpoints and intermediates are
+        // refused, just not inactive start points.  The START is exempt by construction, so it is not tested here.
         session.setStation(middle, true);
 
         session.rebuild();

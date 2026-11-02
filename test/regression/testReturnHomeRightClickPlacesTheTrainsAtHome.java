@@ -1,8 +1,6 @@
 package regression;
 
-import java.awt.Component;
 import java.awt.Container;
-import java.awt.Window;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -11,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import javax.swing.JDialog;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -37,7 +34,6 @@ import static regression.testTheImportDoorReadsAnOldFile.closeTheEditor;
 import static regression.testTheImportDoorReadsAnOldFile.logged;
 import static regression.testTheImportDoorReadsAnOldFile.openTheEditorFor;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
-import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 
 /**
  * Right-clicking Return Home offers to put the trains at their homes without moving them (FR-129; Adam: "make it so that
@@ -123,15 +119,6 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             .replace("&amp;", "&");
     }
 
-    private static void closeDown(TrainControlUI ui, support.LayoutSandbox sandbox, String folderWas) throws Exception
-    {
-        putTheFolderBack(folderWas);
-
-        if (ui != null) SwingUtilities.invokeAndWait(() -> ui.dispose());
-
-        if (sandbox != null) sandbox.close();
-    }
-
     /**
      * The menu offers the item with the number of homes, on a button that is enabled and on one that is grayed - Swing
      * delivers the mouse to a disabled button, and a right-click that did nothing would not say why.
@@ -143,17 +130,15 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             int homes = ui.getAutonomySession().homesToPlace().size();
 
@@ -193,7 +178,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
         finally
         {
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -209,19 +194,17 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         final String probe = "FR-129 probe route";
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final MarklinControlStation model = (MarklinControlStation) ui.getModel();
             final AutonomySession session = ui.getAutonomySession();
@@ -232,9 +215,8 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             final String running = I18n.t("ui.main.tooltip.placeAtHomesWhileRunning");
 
             // AUTONOMY, OR A TIMETABLE: the railway's own running flag
-            java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+            java.lang.reflect.Field flag = runningFlag();
 
-            flag.setAccessible(true);
             flag.setBoolean(layout, true);
 
             try
@@ -310,16 +292,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             greyedWith(ui, I18n.t("autosetup.ui.infoNoHomesToPlace"), "no train having a home");
 
             // AN EDITOR HOLDING THE SETUP
-            TileKey square = null;
-
-            for (TileKey tile : session.getGraph().getTiles().keySet())
-            {
-                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
-            }
-
-            assertNotNull(square, "precondition: no square on the main page");
-
-            openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+            openAnEditorOnTheMainPage(ui);
 
             try
             {
@@ -336,7 +309,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         {
             if (ui != null && ui.getModel().getRoute(probe) != null) ui.getModel().deleteRoute(probe);
 
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -351,32 +324,21 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final javax.swing.JButton button = returnHomeButton(ui);
 
             SwingUtilities.invokeAndWait(() -> button.setEnabled(true));
 
-            TileKey square = null;
-
-            for (TileKey tile : ui.getAutonomySession().getGraph().getTiles().keySet())
-            {
-                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
-            }
-
-            assertNotNull(square, "precondition: no square on the main page");
-
-            openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+            openAnEditorOnTheMainPage(ui);
 
             try
             {
@@ -401,8 +363,44 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
         finally
         {
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
+    }
+
+    /** Opens the layout editor on the first square of the main page. */
+    private static void openAnEditorOnTheMainPage(TrainControlUI ui) throws Exception
+    {
+        TileKey square = null;
+
+        for (TileKey tile : ui.getAutonomySession().getGraph().getTiles().keySet())
+        {
+            if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+        }
+
+        assertNotNull(square, "precondition: no square on the main page");
+
+        openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+    }
+
+    /** The reflected flag that says the railway's autonomy is running, opened for writing. */
+    private static java.lang.reflect.Field runningFlag() throws Exception
+    {
+        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+
+        flag.setAccessible(true);
+
+        return flag;
+    }
+
+    /** Clears every placement, then puts a train that is nobody's home on the first of the homes; the train. */
+    private static String placeOnlyAStrayTrain(TrainControlUI ui, AutonomySession session, Map<TileKey, String> homes)
+    {
+        String stray = aTrainWithNoHome(ui, homes);
+
+        session.clearEveryPlacement();
+        session.placeLocomotive(homes.keySet().iterator().next(), stray);
+
+        return stray;
     }
 
     /** The window's question and the right-click item both give this reason, and the item is grayed. */
@@ -428,26 +426,21 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui.getAutonomySession();
 
             Map<TileKey, String> homes = session.homesToPlace();
 
-            String stray = aTrainWithNoHome(ui, homes);
-
-            session.clearEveryPlacement();
-            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+            String stray = placeOnlyAStrayTrain(ui, session, homes);
 
             final Map<TileKey, String> before = new LinkedHashMap<>(session.placementsAutonomyWillWrite());
 
@@ -469,7 +462,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
         finally
         {
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -484,27 +477,22 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui.getAutonomySession();
 
             Map<TileKey, String> homes = new LinkedHashMap<>(session.homesToPlace());
 
-            String stray = aTrainWithNoHome(ui, homes);
-
             // THE TRAINS ELSEWHERE: a train with no home on a home, and the homed trains nowhere
-            session.clearEveryPlacement();
-            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+            String stray = placeOnlyAStrayTrain(ui, session, homes);
 
             assertEquals(session.placementsAutonomyWillWrite().get(homes.keySet().iterator().next()), stray,
                 "precondition: the stray train was not placed");
@@ -526,7 +514,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             for (String page : ui.getModel().getLayoutList()) pages.add(ui.getModel().getLayout(page));
 
-            AutonomySession reloaded = new AutonomySession(sandbox.getFolder());
+            AutonomySession reloaded = new AutonomySession(sandboxed.sandbox().getFolder());
 
             reloaded.open(pages);
 
@@ -536,7 +524,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
         finally
         {
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -545,25 +533,23 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * with the by-hand sentence, and saying its result in the log rather than on a banner the track diagram does not
      * have.
      *
-     * MUTATION: let the track diagram's item ask the editor's question and say its result on the editor's banner, as it
-     * did, and this fails.
+     * MUTATION: let the track diagram's item ask the editor's question and say its result on the editor's banner,
+     * and this fails.
      */
     @Test
     public void testTheTrackDiagramsBulkToolsItemIsTheSameDoor() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final TrainControlUI window = ui;
             final AutonomySession session = ui.getAutonomySession();
@@ -571,15 +557,11 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             Map<TileKey, String> homes = new LinkedHashMap<>(session.homesToPlace());
 
-            String stray = aTrainWithNoHome(ui, homes);
-
-            session.clearEveryPlacement();
-            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+            String stray = placeOnlyAStrayTrain(ui, session, homes);
 
             // WHILE A RUN IS UNDER WAY: grayed with Return Home's reason
-            java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+            java.lang.reflect.Field flag = runningFlag();
 
-            flag.setAccessible(true);
             flag.setBoolean(layout, true);
 
             try
@@ -624,7 +606,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
         finally
         {
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -676,23 +658,19 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
-        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
-
-        flag.setAccessible(true);
+        java.lang.reflect.Field flag = runningFlag();
 
         Layout layout = null;
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final AutonomySession session = ui.getAutonomySession();
 
@@ -739,7 +717,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         {
             if (layout != null) flag.setBoolean(layout, false);
 
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -774,17 +752,15 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = null;
-
         TrainControlUI ui = null;
 
-        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
-            ui = openTheWindow();
+            ui = sandboxed.hold(openTheWindow());
 
             final TrainControlUI window = ui;
             final AutonomySession session = ui.getAutonomySession();
@@ -881,7 +857,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
         finally
         {
-            closeDown(ui, sandbox, folderWas);
+            sandboxed.close();
         }
     }
 
@@ -929,36 +905,22 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         {
             java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-            while (going.get())
+            support.DialogWatch.until(going::get, 100, dialog ->
             {
-                try
-                {
-                    Thread.sleep(100);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
+                final JOptionPane pane = find(dialog.getContentPane());
 
-                for (Window window : Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof JDialog)) continue;
+                if (pane == null || !handled.add(pane)) return;
 
-                    final JOptionPane pane = find(((JDialog) window).getContentPane());
+                final String message = String.valueOf(pane.getMessage());
 
-                    if (pane == null || !handled.add(pane)) continue;
+                asked.add(message);
 
-                    final String message = String.valueOf(pane.getMessage());
+                final Object[] options = pane.getOptions();
+                final int option = choose.apply(message);
 
-                    asked.add(message);
-
-                    final Object[] options = pane.getOptions();
-                    final int option = choose.apply(message);
-
-                    SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > option
-                        ? options[option] : Integer.valueOf(JOptionPane.OK_OPTION)));
-                }
-            }
+                SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > option
+                    ? options[option] : Integer.valueOf(JOptionPane.OK_OPTION)));
+            });
         }, "answering");
 
         answering.setDaemon(true);
@@ -996,18 +958,6 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
     private static JOptionPane find(Container container)
     {
-        for (Component child : container.getComponents())
-        {
-            if (child instanceof JOptionPane) return (JOptionPane) child;
-
-            if (child instanceof Container)
-            {
-                JOptionPane found = find((Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return support.Components.inside(container, JOptionPane.class);
     }
 }

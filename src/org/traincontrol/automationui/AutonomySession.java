@@ -806,9 +806,8 @@ public class AutonomySession
     }
 
     /**
-     * Carries the stored names (timetable legs, standing trains' roads) to this build's Point names, so a rename or a
-     * changed copy count does not make a load drop the entry: the configuration in use by its build, the others
-     * across a renamed square only.
+     * Carries stored names (timetable legs, trains' roads) to this build's Point names, so a rename or a changed copy
+     * count drops no entry: the in-use configuration by its build, the others across a renamed square only.
      */
     private void carryTheNamesAcross(AutonomyBuilder naming)
     {
@@ -2020,9 +2019,8 @@ public class AutonomySession
     }
 
     /**
-     * What the settings folds took from the railway during an edit session, by configuration (JSON null where the
-     * railway stopped writing one); null while none is open.  The railway's facts, not the edit's, so Cancel keeps them
-     * (OB-343).
+     * What the settings folds took from the railway during an edit, by configuration (JSON null: the railway stopped
+     * writing one); null while none is open.  The railway's facts, so Cancel keeps them (OB-343).
      */
     private java.util.Map<String, org.json.JSONObject> takenFromTheRailway;
 
@@ -2511,9 +2509,8 @@ public class AutonomySession
     }
 
     /**
-     * Brings "Point:<name>" labels in the diagram across into the setup as captions keyed by square, once; a label
-     * naming nothing is dropped.  The setup is written before the pages, so a failed page write leaves both and it
-     * runs again.  Returns the pages that could not be written.
+     * Brings "Point:<name>" diagram labels into the setup as captions keyed by square, once; a label naming nothing is
+     * dropped.  Setup first, so a failed page write leaves both and it reruns.  Returns the pages not written.
      */
     private List<String> migrateStationLabels()
     {
@@ -3309,9 +3306,8 @@ public class AutonomySession
     }
 
     /**
-     * Stations whose arrival copy has no outgoing edge, for arrivals a train can make (OB-361), each with the sides
-     * those arrivals come in by (OB-201).  Not a non-station, nor an arrival from a side no train comes from.  Empty
-     * when the setup will not build.
+     * Stations whose arrival copy has no outgoing edge, for arrivals a train can make (OB-361), with the sides those
+     * arrivals come in by (OB-201).  Empty when the setup will not build.
      */
     private Map<TileKey, Set<Side>> tilesWithATrappedArrival(org.json.JSONObject built,
         java.util.Map<String, TileKey> named, java.util.Map<String, Side> arrivals)
@@ -3932,9 +3928,8 @@ public class AutonomySession
     }
 
     /**
-     * Derives the index now, on the event thread, from the two places that invalidate it: the volatile field publishes
-     * the reference, not the derivation over HashMap-backed JSON, so readers must only see a finished index.
-     * @return the new index, also stored
+     * Derives the index now, on the event thread: the volatile field publishes the reference, not the derivation over
+     * HashMap-backed JSON, so readers must see only a finished index.  Returns it, also stored.
      */
     private StationIndex deriveStationIndex()
     {
@@ -4880,8 +4875,7 @@ public class AutonomySession
 
     /**
      * Squares whose recorded facing no copy can hold: the build falls back to `startableCopy` and the train quietly
-     * turns.  Reported, not corrected, as only the operator knows which way it points; squares with no facings are left
-     * to their own findings.
+     * turns.  Reported, not corrected: only the operator knows which way it points.
      */
     private java.util.Set<TileKey> facingsThatCannotBeHeld()
     {
@@ -5286,9 +5280,8 @@ public class AutonomySession
     }
 
     /**
-     * Stations whose name is drawn twice on one page (OB-341), by `drawnCaptionsFor`, in reading order.  The editor's
-     * doors prevent it, so these came from a hand-edited or older file.  Maps each to the squares of the pages that
-     * draw its name more than once.
+     * Stations whose name is drawn twice on one page (OB-341), by `drawnCaptionsFor`; the editor prevents it, so a
+     * hand-edited or older file.  Maps each to the squares of the pages that draw it more than once.
      */
     private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
     {
@@ -5396,9 +5389,9 @@ public class AutonomySession
     }
 
     /**
-     * Which routes command each guard, read off the BUILT railway, whose edges know each copy's facing and the
-     * accessories they command.  Noticed: an entry guard no way in commands; an exit guard no route commands (away from
-     * the station's own track), one routes to other stations command, and one a way in commands.  None with no build.
+     * Which routes command each guard, read off the BUILT railway, whose edges know each copy's facing and accessories.
+     * Noticed: an entry guard no way in commands; an exit guard no route commands, one only other stations' routes
+     * command, and one a way in commands.  None with no build.
      */
     private GuardNotices guardNotices(org.json.JSONObject built, Map<String, TileKey> named)
     {
@@ -6288,9 +6281,8 @@ public class AutonomySession
     }
 
     /**
-     * The locomotive named by a stored placement, or null: the one place that knows its shape, an object (parseAuto
-     * resets what it omits) or, in a hand-edited or old file, a bare string, read too so a re-placement is no change of
-     * occupant.
+     * The locomotive named by a stored placement, or null: an object (parseAuto resets what it omits) or, in a
+     * hand-edited or old file, a bare string, read too so a re-placement is no change of occupant.
      */
     private static String nameOfPlacedLocomotive(Object placement)
     {
@@ -6551,9 +6543,8 @@ public class AutonomySession
     }
 
     /**
-     * The rails a train with no covered edge can lie along (OB-348): every reduced rail into its square, by its arrival
-     * side where known, running over every claimed place, including rails the build leaves out (a hand placement may
-     * have come along one).  Null means every edge.
+     * The rails a train with no covered edge can lie along (OB-348): every reduced rail into its square, by arrival
+     * side where known, over every claimed place, including rails the build leaves out.  Null means every edge.
      */
     private List<GraphReducer.ReducedEdge> railsATailLiesAlong(org.traincontrol.automation.Layout running,
         org.traincontrol.base.Locomotive train, Set<String> claimed)
@@ -6807,8 +6798,7 @@ public class AutonomySession
     }
 
     /**
-     * Puts a sensor square a train lies on into the covered set with its road (OB-277); with no road nameable (a portal
-     * hop) it goes in and draws no line.
+     * Puts a sensor square a train lies on into the covered set with its road (OB-277), or with none for a portal hop.
      * @param rail the covered edge the body lies along there, whose own side names the road (OB-239)
      */
     private void markTheSensor(Map<TileKey, Set<RouteId>> out, TileKey sensor, GraphReducer.ReducedEdge rail)
@@ -7056,22 +7046,15 @@ public class AutonomySession
     /**
      * Which way a train put down on a square should end up pointing.
      *
-     * Adam: **"pasted locomotives pasted on the succeeding/preceding station to a given station on the same
-     * line face into the station and away from that station, respectively"**, and **"for terminuses, they must reverse on
-     * paste"**.
-     *
-     * Both halves of the first sentence are one rule: the heading survives, so putting a train down must not turn it.
-     *
-     * A terminus holds one heading, so a train put down there takes it.
-     *
-     * The heading is read before the move and handed in: the landing copy's side is not the train's (see `landedOn`).
+     * Adam: **"pasted locomotives pasted on the succeeding/preceding station to a given station on the same line face
+     * into the station and away from that station, respectively"**, and **"for terminuses, they must reverse on
+     * paste"**.  The first is one rule: the heading survives, so putting a train down must not turn it.  A terminus
+     * holds one heading, so a train put down there takes it.
      *
      * @param held every copy the landing square builds to, by name, with the side each one faces
-     * @param keep the heading the train had before it was moved, or null when that is not known
-     * @param landedOn the copy the running layout chose - accepted and deliberately NOT used, because
-     *        `StationIndex.speakerAt` says that on an empty square "any copy will do", so it is copy 0
-     *        and evidence of nothing.  Recording it was a bug.  Kept in the signature so that a
-     *        caller reaching for it finds this sentence rather than the idea
+     * @param keep the heading the train had before it was moved (read beforehand), or null when not known
+     * @param landedOn the copy the running layout chose; deliberately NOT used, because on an empty square any copy
+     *        will do (`StationIndex.speakerAt`), so it is copy 0 and evidence of nothing
      * @return the side to record, or null to record nothing
      */
     public static Side facingAfterAPaste(Map<String, Side> held, Side keep, String landedOn)
@@ -7152,14 +7135,9 @@ public class AutonomySession
     }
 
     /**
-     * Where to find the running layout, when there is one.
-     *
-     * A supplier rather than a reference, because the layout is rebuilt - `parseAuto` replaces the
-     * object - and a field captured once would go stale at the first rebuild and then quietly move
-     * trains on a graph nobody is looking at.
-     *
-     * Null until the window sets it, which is right for every headless use: a session opened by a
-     * test or a migration has no railway to move anything on.
+     * Where to find the running layout, if any.  A supplier because `parseAuto` replaces the layout object, so a field
+     * captured once would go stale and quietly move trains on a graph nobody is looking at.  Null until the window sets
+     * it, as in every headless use.
      */
     private java.util.function.Supplier<org.traincontrol.automation.Layout> runningLayout;
 
@@ -8536,9 +8514,9 @@ public class AutonomySession
 
     /**
      * The track a parking berth's rule spends walking back from the berth over one leg until it stops (OB-288), as
-     * `Layout.whyABerthCannotHoldIt` spends it, berth first (`squares` in order, the berth last).  Returns {measured
-     * length before the stop, squares before it with no length, how it stops}: 1 where the berth rule refuses (another
-     * road runs over), 2 where only the room walk ends, 0 at none.
+     * `Layout.whyABerthCannotHoldIt` spends it (`squares` in order, the berth last).  Returns {measured length before
+     * the stop, squares before it with no length, how it stops}: 1 where the berth rule refuses, 2 where only the room
+     * walk ends, 0 at none.
      */
     private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
     {

@@ -445,8 +445,8 @@ public class testRecentLayouts
         });
     }
 
-    /** Clicks the listed folder, and gives back what was asked. */
-    private static List<String> click(String folder) throws Exception
+    /** The Recent Layouts item that opens the folder; fails when there is none. */
+    private static JMenuItem listedItem(String folder)
     {
         JMenuItem item = Components.onTheEventThread(() ->
         {
@@ -459,6 +459,14 @@ public class testRecentLayouts
         });
 
         assertNotNull(item, "Recent Layouts does not list " + folder);
+
+        return item;
+    }
+
+    /** Clicks the listed folder, and gives back what was asked. */
+    private static List<String> click(String folder) throws Exception
+    {
+        JMenuItem item = listedItem(folder);
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
@@ -480,17 +488,7 @@ public class testRecentLayouts
 
         List<String> said = new ArrayList<>();
 
-        JMenuItem item = Components.onTheEventThread(() ->
-        {
-            for (int i = 0; i < recentMenu().getItemCount(); i++)
-            {
-                if (folder.equals(pathOf(recentMenu().getItem(i)))) return recentMenu().getItem(i);
-            }
-
-            return null;
-        });
-
-        assertNotNull(item, "Recent Layouts does not list " + folder);
+        JMenuItem item = listedItem(folder);
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {

@@ -365,126 +365,31 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         assertNotNull(running, "precondition: no running railway");
 
-        // A may-turn square: a turning copy and a plain copy, reached by one approach, facing different ways
-        org.traincontrol.automation.Point turning = null, plain = null, approach = null;
+        final MayTurn at = aFreeMayTurnSquare(running, false);
 
-        TileKey square = null;
+        final Point turning = at.turning;
+        final Point plain = at.plain;
+        final Point approach = at.approach;
+        final TileKey square = at.square;
 
-        for (TileKey tile : session.getReducer().getPoints().keySet())
-        {
-            if (turning != null) break;
-
-            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
-
-            for (String t : session.getStationIndex().pointNamesAt(tile))
-            {
-                org.traincontrol.automation.Point tp = running.getPoint(t);
-
-                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
-
-                for (String p : session.getStationIndex().pointNamesAt(tile))
-                {
-                    org.traincontrol.automation.Point pp = running.getPoint(p);
-
-                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
-                    {
-                        continue;
-                    }
-
-                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
-
-                    for (org.traincontrol.automation.Point a : running.getPoints())
-                    {
-                        // A station, so a train can be stood there
-                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
-
-                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
-
-                        turning = tp;
-                        plain = pp;
-                        approach = a;
-                        square = tile;
-                        break;
-                    }
-
-                    if (turning != null) break;
-                }
-
-                if (turning != null) break;
-            }
-        }
-
-        if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
-
-        // A train standing nowhere
-        String train = null;
-
-        for (String name : model.getLocList())
-        {
-            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
-        }
-
-        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+        final String train = aTrainStandingNowhere(running);
 
         final org.traincontrol.base.Locomotive loc = model.getLocByName(train);
 
         // Simulated, so the route's switches confirm without a Central Station; the label is read the moment the train
         // sets off
-        final boolean simulating = running.isSimulate();
+        final boolean simulating = standOnTheApproach(running, at, train);
 
-        running.setSimulate(true);
-
-        model.setFeedbackState(approach.getS88(), true);
-        model.setFeedbackState(turning.getS88(), false);
-        model.setFeedbackState(plain.getS88(), false);
-
-        assertTrue(running.moveLocomotive(train, approach.getName(), false), "precondition: could not stand " + train
-            + " on " + approach.getName());
-
-        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
-
-        path.add(running.getEdge(approach.getName(), turning.getName()));
-
-        final org.traincontrol.automation.Point askedAbout = turning;
+        final java.util.List<org.traincontrol.automation.Edge> path = theWayOntoTheTurningCopy(running, at);
 
         final org.traincontrol.automation.Point approach_ = approach;
 
-        org.traincontrol.automation.Layout.ReversalPolicy keepDirection = new org.traincontrol.automation.Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(org.traincontrol.base.Locomotive t, org.traincontrol.automation.Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(org.traincontrol.automation.Point at)
-            {
-                return at == askedAbout;
-            }
-        };
+        Layout.ReversalPolicy keepDirection = keepingDirectionAt(turning);
 
         // What the railway says, for a dispatch that does not go
         final java.util.List<String> said = java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
 
-        java.util.logging.Handler listening = new java.util.logging.Handler()
-        {
-            @Override
-            public void publish(java.util.logging.LogRecord record)
-            {
-                said.add(record.getMessage());
-            }
-
-            @Override
-            public void flush()
-            {
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
+        java.util.logging.Handler listening = support.LogTap.everyMessageInto(said);
 
         java.util.logging.Logger.getLogger("").addHandler(listening);
 
@@ -520,20 +425,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         }
         finally
         {
-            model.setFeedbackState(turning.getS88(), true);
-            model.setFeedbackState(approach.getS88(), false);
-
-            long until = System.currentTimeMillis() + 30000;
-
-            while (run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
-
-            running.moveLocomotive(null, turning.getName(), false);
-            running.moveLocomotive(null, plain.getName(), false);
-            running.moveLocomotive(null, approach.getName(), false);
-
-            model.setFeedbackState(turning.getS88(), false);
-
-            running.setSimulate(simulating);
+            standDown(running, at, run, simulating);
 
             java.util.logging.Logger.getLogger("").removeHandler(listening);
         }
@@ -563,98 +455,22 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         assertNotNull(running, "precondition: no running railway");
 
-        // A may-turn square: a turning copy and a plain copy, reached by one approach, facing different ways
-        org.traincontrol.automation.Point turning = null, plain = null, approach = null;
+        final MayTurn at = aFreeMayTurnSquare(running, false);
 
-        TileKey square = null;
+        final Point turning = at.turning;
+        final Point plain = at.plain;
+        final Point approach = at.approach;
+        final TileKey square = at.square;
 
-        for (TileKey tile : session.getReducer().getPoints().keySet())
-        {
-            if (turning != null) break;
-
-            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
-
-            for (String t : session.getStationIndex().pointNamesAt(tile))
-            {
-                org.traincontrol.automation.Point tp = running.getPoint(t);
-
-                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
-
-                for (String p : session.getStationIndex().pointNamesAt(tile))
-                {
-                    org.traincontrol.automation.Point pp = running.getPoint(p);
-
-                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
-                    {
-                        continue;
-                    }
-
-                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
-
-                    for (org.traincontrol.automation.Point a : running.getPoints())
-                    {
-                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
-
-                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
-
-                        turning = tp;
-                        plain = pp;
-                        approach = a;
-                        square = tile;
-                        break;
-                    }
-
-                    if (turning != null) break;
-                }
-
-                if (turning != null) break;
-            }
-        }
-
-        if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
-
-        String train = null;
-
-        for (String name : model.getLocList())
-        {
-            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
-        }
-
-        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+        final String train = aTrainStandingNowhere(running);
 
         final org.traincontrol.base.Locomotive loc = model.getLocByName(train);
 
-        final boolean simulating = running.isSimulate();
+        final boolean simulating = standOnTheApproach(running, at, train);
 
-        running.setSimulate(true);
+        final java.util.List<org.traincontrol.automation.Edge> path = theWayOntoTheTurningCopy(running, at);
 
-        model.setFeedbackState(approach.getS88(), true);
-        model.setFeedbackState(turning.getS88(), false);
-        model.setFeedbackState(plain.getS88(), false);
-
-        assertTrue(running.moveLocomotive(train, approach.getName(), false), "precondition: could not stand " + train
-            + " on " + approach.getName());
-
-        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
-
-        path.add(running.getEdge(approach.getName(), turning.getName()));
-
-        final org.traincontrol.automation.Point askedAbout = turning;
-
-        org.traincontrol.automation.Layout.ReversalPolicy keepDirection = new org.traincontrol.automation.Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(org.traincontrol.base.Locomotive t, org.traincontrol.automation.Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(org.traincontrol.automation.Point at)
-            {
-                return at == askedAbout;
-            }
-        };
+        Layout.ReversalPolicy keepDirection = keepingDirectionAt(turning);
 
         java.lang.reflect.Field journeysField = org.traincontrol.automation.Layout.class.getDeclaredField("activeLocomotives");
 
@@ -708,20 +524,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         }
         finally
         {
-            model.setFeedbackState(turning.getS88(), true);
-            model.setFeedbackState(approach.getS88(), false);
-
-            long until = System.currentTimeMillis() + 30000;
-
-            while (run != null && run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
-
-            running.moveLocomotive(null, turning.getName(), false);
-            running.moveLocomotive(null, plain.getName(), false);
-            running.moveLocomotive(null, approach.getName(), false);
-
-            model.setFeedbackState(turning.getS88(), false);
-
-            running.setSimulate(simulating);
+            standDown(running, at, run, simulating);
         }
 
         java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(square);
@@ -746,74 +549,14 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         assertNotNull(running, "precondition: no running railway");
 
-        // A may-turn square with two facings to flip between, reached from a square with one
-        org.traincontrol.automation.Point turning = null, plain = null, approach = null;
+        final MayTurn at = aFreeMayTurnSquare(running, true);
 
-        TileKey square = null;
+        final Point turning = at.turning;
+        final Point plain = at.plain;
+        final Point approach = at.approach;
+        final TileKey square = at.square;
 
-        for (TileKey tile : session.getReducer().getPoints().keySet())
-        {
-            if (turning != null) break;
-
-            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
-
-            if (session.facingChoices(tile).size() != 2) continue;
-
-            for (String t : session.getStationIndex().pointNamesAt(tile))
-            {
-                Point tp = running.getPoint(t);
-
-                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
-
-                for (String p : session.getStationIndex().pointNamesAt(tile))
-                {
-                    Point pp = running.getPoint(p);
-
-                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
-                    {
-                        continue;
-                    }
-
-                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
-
-                    for (Point a : running.getPoints())
-                    {
-                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
-
-                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
-
-                        TileKey from = session.getStationIndex().squareOf(a.getName());
-
-                        if (from == null || session.facingChoices(from).size() == 2) continue;
-
-                        turning = tp;
-                        plain = pp;
-                        approach = a;
-                        square = tile;
-                        break;
-                    }
-
-                    if (turning != null) break;
-                }
-
-                if (turning != null) break;
-            }
-        }
-
-        if (turning == null)
-        {
-            throw new AssertionError("the snapshot has no free two-facing may-turn square with an approach to both copies"
-                + " from a square with one facing");
-        }
-
-        String train = null;
-
-        for (String name : model.getLocList())
-        {
-            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
-        }
-
-        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+        final String train = aTrainStandingNowhere(running);
 
         final String trainName = train;
 
@@ -821,37 +564,11 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         final org.json.JSONObject asFound = session.snapshotSetup();
 
-        final boolean simulating = running.isSimulate();
+        final boolean simulating = standOnTheApproach(running, at, train);
 
-        running.setSimulate(true);
+        final java.util.List<org.traincontrol.automation.Edge> path = theWayOntoTheTurningCopy(running, at);
 
-        model.setFeedbackState(approach.getS88(), true);
-        model.setFeedbackState(turning.getS88(), false);
-        model.setFeedbackState(plain.getS88(), false);
-
-        assertTrue(running.moveLocomotive(train, approach.getName(), false), "precondition: could not stand " + train
-            + " on " + approach.getName());
-
-        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
-
-        path.add(running.getEdge(approach.getName(), turning.getName()));
-
-        final Point askedAbout = turning;
-
-        Layout.ReversalPolicy keepDirection = new Layout.ReversalPolicy()
-        {
-            @Override
-            public boolean shouldReverse(Locomotive t, Point at)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean asksAbout(Point at)
-            {
-                return at == askedAbout;
-            }
-        };
+        Layout.ReversalPolicy keepDirection = keepingDirectionAt(turning);
 
         Thread run = new Thread(() -> running.executePath(path, loc, 20, null, keepDirection));
 
@@ -881,20 +598,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         }
         finally
         {
-            model.setFeedbackState(turning.getS88(), true);
-            model.setFeedbackState(approach.getS88(), false);
-
-            long until = System.currentTimeMillis() + 30000;
-
-            while (run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
-
-            running.moveLocomotive(null, turning.getName(), false);
-            running.moveLocomotive(null, plain.getName(), false);
-            running.moveLocomotive(null, approach.getName(), false);
-
-            model.setFeedbackState(turning.getS88(), false);
-
-            running.setSimulate(simulating);
+            standDown(running, at, run, simulating);
 
             session.restoreSetup(asFound);
 
@@ -910,6 +614,172 @@ public class testTheFacingMenuIsAboutTheTrainThere
         assertEquals(written, facings.get(turning.getName()), "flipped on its way to " + square + " with KEEP DIRECTION, "
             + train + " was recorded facing " + written + " - the way it will stand there anyway, on the plain copy facing "
             + facings.get(plain.getName()) + " (OB-372)");
+    }
+
+    /** The points of a may-turn square a claim sends a train onto, and the square. */
+    private static final class MayTurn
+    {
+        Point turning;
+        Point plain;
+        Point approach;
+        TileKey square;
+    }
+
+    /**
+     * The first square with a free turning copy and a free plain copy facing different ways, and a free station with an
+     * edge to both.  With `twoFacings` the square must offer two facings and the station's square one; none: the claim
+     * fails.
+     */
+    private static MayTurn aFreeMayTurnSquare(Layout running, boolean twoFacings)
+    {
+        MayTurn found = new MayTurn();
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (found.turning != null) break;
+
+            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
+
+            if (twoFacings && session.facingChoices(tile).size() != 2) continue;
+
+            for (String t : session.getStationIndex().pointNamesAt(tile))
+            {
+                Point tp = running.getPoint(t);
+
+                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
+
+                for (String p : session.getStationIndex().pointNamesAt(tile))
+                {
+                    Point pp = running.getPoint(p);
+
+                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
+                    {
+                        continue;
+                    }
+
+                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
+
+                    for (Point a : running.getPoints())
+                    {
+                        // A station, so a train can be stood there
+                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
+
+                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
+
+                        if (twoFacings)
+                        {
+                            TileKey from = session.getStationIndex().squareOf(a.getName());
+
+                            if (from == null || session.facingChoices(from).size() == 2) continue;
+                        }
+
+                        found.turning = tp;
+                        found.plain = pp;
+                        found.approach = a;
+                        found.square = tile;
+                        break;
+                    }
+
+                    if (found.turning != null) break;
+                }
+
+                if (found.turning != null) break;
+            }
+        }
+
+        if (found.turning == null)
+        {
+            throw new AssertionError(twoFacings
+                ? "the snapshot has no free two-facing may-turn square with an approach to both copies from a square"
+                    + " with one facing"
+                : "the snapshot has no free may-turn square with an approach to both copies");
+        }
+
+        return found;
+    }
+
+    /** A locomotive the running railway has standing nowhere. */
+    private static String aTrainStandingNowhere(Layout running)
+    {
+        String train = null;
+
+        for (String name : model.getLocList())
+        {
+            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
+        }
+
+        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+
+        return train;
+    }
+
+    /**
+     * Puts the railway in simulation and the train on the approach, its sensor on and the two copies' off.
+     *
+     * @return whether the railway was simulating before, for {@link #standDown}
+     */
+    private static boolean standOnTheApproach(Layout running, MayTurn at, String train) throws Exception
+    {
+        final boolean simulating = running.isSimulate();
+
+        running.setSimulate(true);
+
+        model.setFeedbackState(at.approach.getS88(), true);
+        model.setFeedbackState(at.turning.getS88(), false);
+        model.setFeedbackState(at.plain.getS88(), false);
+
+        assertTrue(running.moveLocomotive(train, at.approach.getName(), false), "precondition: could not stand " + train
+            + " on " + at.approach.getName());
+
+        return simulating;
+    }
+
+    /** The path of one edge, from the approach onto the turning copy. */
+    private static java.util.List<org.traincontrol.automation.Edge> theWayOntoTheTurningCopy(Layout running, MayTurn at)
+    {
+        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
+
+        path.add(running.getEdge(at.approach.getName(), at.turning.getName()));
+
+        return path;
+    }
+
+    /** A policy that keeps every train's direction, and is asked about the one point only. */
+    private static Layout.ReversalPolicy keepingDirectionAt(final Point askedAbout)
+    {
+        return new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive t, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == askedAbout;
+            }
+        };
+    }
+
+    /** Waits for a dispatch to end, then puts the sensors, the trains and the simulation flag back. */
+    private static void standDown(Layout running, MayTurn at, Thread run, boolean simulating) throws Exception
+    {
+        model.setFeedbackState(at.turning.getS88(), true);
+        model.setFeedbackState(at.approach.getS88(), false);
+
+        long until = System.currentTimeMillis() + 30000;
+
+        while (run != null && run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+        running.moveLocomotive(null, at.turning.getName(), false);
+        running.moveLocomotive(null, at.plain.getName(), false);
+        running.moveLocomotive(null, at.approach.getName(), false);
+
+        model.setFeedbackState(at.turning.getS88(), false);
+
+        running.setSimulate(simulating);
     }
 
     /** A dispatch waiting at its hand-over: its claim taken, and blocked entering the hand-over's monitor. */

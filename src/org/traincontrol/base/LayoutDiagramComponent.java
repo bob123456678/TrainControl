@@ -560,12 +560,11 @@ public class LayoutDiagramComponent
     }
 
     /**
-     * Points a link tile at a page, by its place in the name-sorted page list, or at nothing.  A link holds a position,
-     * and positions move when a page is added, renamed, duplicated, deleted or combined, so those operations call
-     * `LayoutDiagram.repointPageLinks` to rewrite the numbers, which needs a way in: `setLogicalAddress` is the
-     * operator's door and refuses what this must write.  -1 is a link to nothing, which is what an arrow becomes when
-     * its page is deleted: clicking it does nothing, the tooltip says so, and `.artikel=-1` is the file's own "no
-     * address".
+     * Points a link tile at a page, by its place in the name-sorted page list, or at nothing.  Positions move when a
+     * page is added, renamed, duplicated, deleted or combined, so those operations call
+     * `LayoutDiagram.repointPageLinks` to rewrite the numbers; `setLogicalAddress` is the operator's door and refuses
+     * what this must write.  -1 is a link to nothing (an arrow whose page is deleted): clicking it does nothing, and
+     * `.artikel=-1` is the file's own "no address".
      *
      * @param index the page's place in the name-sorted list, or -1 for no page
      */
@@ -875,10 +874,9 @@ public class LayoutDiagramComponent
         }
         
         // .typ: the file's own word wherever this component still IS what was read.  getComponentType is many-to-one,
-        // so writing the canonical name collapsed every variant (fifteen signal types became "signal") and baked in the
-        // parser's "_f_" rotation correction.  Only while the type is unchanged: a redrawn square is a different
-        // component.  Decided before the rotation is written, because a rotation number only means something beside its
-        // word.
+        // so writing the canonical name collapsed every variant (fifteen signal types became "signal").  Only while the
+        // type is unchanged (a redrawn square is a different component), and decided before the rotation is written,
+        // because a rotation number only means something beside its word.
         String writtenTyp = originalTyp != null && getComponentTypeOf(originalTyp) == this.type
             ? originalTyp : getTypeString(this.type);
 
@@ -888,9 +886,8 @@ public class LayoutDiagramComponent
         }
         
         // Back into the file's own space: the parser turns any type whose word contains "_f_" back by a quarter on the
-        // way in, so writing the corrected orientation out under such a word applies it twice and the signal creeps a
-        // step with every save.  Inverting against the word actually written reproduces the file's own number in every
-        // case, including "no .drehung at all" (rotation 0).
+        // way in, so writing the corrected orientation out under such a word applies it twice.  Inverting against the
+        // word actually written reproduces the file's own number in every case, including "no .drehung at all".
         int fileRotation = writtenTyp.contains("_f_")
             ? Math.floorMod(this.orientation + 1, 4) : this.orientation;
 

@@ -14,8 +14,7 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337): *"placing locomotives via
- * the editor does not seem to work at all - nothing happens. it only works if placing via the track diagram."*
+ * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337).
  *
  * The track diagram places into the RUNNING layout; the autonomy editor calls `AutonomySession.placeLocomotive`, which
  * writes `loc` into the setup.  Closing the editor then (1) `whereTheTrainsAre()` records every placement in the
@@ -236,14 +235,12 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A placement NOBODY edited is a record, and a run outran it - so the railway wins.  The setup holds a stale entry
-     * (captured while the train was at PLATFORM; the run took it to SIDING), so the rebuild has an opinion, the wrong
-     * one.  The door this reaches production through has no editor in it: the diagram viewer's right-click autonomy
-     * menu is an `AutonomyEditorPanel` whose gestures end in `rebuildRunningLayoutFromSetup(true)`, and nothing on that
-     * path captures the running layout (`captureRunningLayout`: *"Stopping autonomy does not capture."*).  A train
-     * modeled at PLATFORM while it stands at SIDING is a block the next dispatch believes is free.  What tells the
-     * cases apart is provenance: the rebuild is told which trains the setup was just given a new placement for, and
-     * this train is not among them.
+     * A placement NOBODY edited is a record, and a run outran it, so the railway wins.  The setup holds a stale entry
+     * (captured while the train was at PLATFORM; the run took it to SIDING).  The door this reaches production through
+     * has no editor in it: the diagram viewer's right-click autonomy menu ends in `rebuildRunningLayoutFromSetup(true)`
+     * and nothing on that path captures the running layout.  A train modeled at PLATFORM while it stands at SIDING is a
+     * block the next dispatch believes is free.  What tells the cases apart is provenance: the rebuild is told which
+     * trains the setup was just given a new placement for, and this train is not among them.
      *
      * MUTATION: pass MOVED in the edited set and this fails, reporting the train back at PLATFORM.
      */
@@ -437,9 +434,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     private static org.traincontrol.automationui.AutonomySession alphaBetaGamma(String folderName, int firstSensor)
         throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory(folderName).toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder(folderName);
 
         org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 7, 3, null, null);
 
@@ -474,6 +469,77 @@ public class testAnEditedPlacementSurvivesTheRebuild
         }
 
         return session;
+    }
+
+    /** Parses the session's railway as the running one and stands the mover on the station (`where` names it). */
+    private static Layout runningWithTheMoverOn(org.traincontrol.automationui.AutonomySession session, String station,
+        String where) throws Exception
+    {
+        model.parseAuto(session.buildConfiguration());
+
+        Layout running = model.getAutoLayout();
+
+        session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+        assertTrue(running.moveLocomotive(MOVED, station, false), "precondition: " + MOVED + " not stood"
+            + " on " + where + ": " + namesOf(running));
+
+        return running;
+    }
+
+    /** The moves of squares 1 to 7 on the row two columns right, the last first, as the editor moves them. */
+    private static java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        org.traincontrol.automationui.TileGraph.TileKey> theRowTwoColumnsRight()
+    {
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
+            moves = new java.util.LinkedHashMap<>();
+
+        for (int x = 7; x >= 1; x--)
+        {
+            moves.put(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1),
+                new org.traincontrol.automationui.TileGraph.TileKey("main", x + 2, 1));
+        }
+
+        return moves;
+    }
+
+    /** Records where the running layout's trains stand, rebuilds on the page, and puts the trains back as the carry does. */
+    private static Layout carriedOver(Layout running, java.io.File folder, org.traincontrol.base.LayoutDiagram page)
+        throws Exception
+    {
+        Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+        org.traincontrol.automationui.AutonomySession next = sessionOver(folder, page);
+
+        model.parseAuto(next.buildConfiguration());
+
+        Layout built = model.getAutoLayout();
+
+        TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+
+        return built;
+    }
+
+    /** Gives the two squares beside Beta (columns 2 and 4 of the row) the direction. */
+    private static void directBothRoadsBesideBeta(org.traincontrol.automationui.AutonomySession session,
+        org.traincontrol.automationui.TileGraph.Direction direction)
+    {
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
+
+        either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
+        either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
+
+        session.setDirection(either, direction);
+    }
+
+    /** A new folder under the temp directory, removed when the JVM exits. */
+    private static java.io.File aTempFolder(String name) throws java.io.IOException
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory(name).toFile();
+
+        folder.deleteOnExit();
+
+        return folder;
     }
 
     private static String namesOf(Layout layout)
@@ -603,9 +669,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     private static org.traincontrol.automationui.AutonomySession aRow(String folderName, int firstSensor,
         String... names) throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory(folderName).toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder(folderName);
 
         org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 2 * names.length + 1,
             3, null, null);
@@ -671,14 +735,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
-
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
-                + " not stood on Beta (westbound): " + namesOf(running));
+            Layout running = runningWithTheMoverOn(session, "Beta (westbound)", "Beta (westbound)");
 
             running.getPoint("Beta (westbound)").setArrivedFrom("E");
 
@@ -700,12 +757,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertTrue(session.getLocomotiveNameAt(beta) == null, "precondition: the setup already has a train on Beta");
 
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
-
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
-
-            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+            directBothRoadsBesideBeta(session, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
 
             assertEquals(session.getLocomotiveNameAt(beta), MOVED, "the train the run left on Beta, whose way the change"
                 + " took, is not recorded where it stands");
@@ -777,45 +829,19 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testACarryAfterAMoveKeepsEachTrainOnItsStation() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa7-b3-move").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("rsa7-b3-move");
 
         org.traincontrol.automationui.AutonomySession session = sessionOn(folder, aRowPage("main", 0, 8441, 4), "B3 move",
             "Alpha", "Beta", "Gamma", "Delta");
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
+            Layout running = runningWithTheMoverOn(session, "Gamma (eastbound)", "Gamma");
 
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
-                + " on Gamma: " + namesOf(running));
-
-            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
-                moves = new java.util.LinkedHashMap<>();
-
-            for (int x = 7; x >= 1; x--)
-            {
-                moves.put(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1),
-                    new org.traincontrol.automationui.TileGraph.TileKey("main", x + 2, 1));
-            }
-
-            session.moveTiles(moves);
+            session.moveTiles(theRowTwoColumnsRight());
             session.saveWithoutReconciling();
 
-            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
-
-            org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("main", 2, 8441, 4));
-
-            model.parseAuto(next.buildConfiguration());
-
-            Layout built = model.getAutoLayout();
-
-            TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+            Layout built = carriedOver(running, folder, aRowPage("main", 2, 8441, 4));
 
             assertTrue(stoodOn(built, MOVED, "main:7,1", "Gamma"), MOVED + ", left on Gamma, is not on it after Gamma's"
                 + " square was moved two columns (RSA7-B3): " + standingOn(built));
@@ -835,36 +861,19 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testACarryAfterAPageRenameKeepsEachTrainOnItsStation() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa7-b3-rename").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("rsa7-b3-rename");
 
         org.traincontrol.automationui.AutonomySession session = sessionOn(folder, aRowPage("main", 0, 8451, 4),
             "B3 rename", "Alpha", "Beta", "Gamma", "Delta");
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
-
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
-                + " on Gamma: " + namesOf(running));
+            Layout running = runningWithTheMoverOn(session, "Gamma (eastbound)", "Gamma");
 
             session.renamePage("main", "yard");
             session.saveWithoutReconciling();
 
-            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
-
-            org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("yard", 0, 8451, 4));
-
-            model.parseAuto(next.buildConfiguration());
-
-            Layout built = model.getAutoLayout();
-
-            TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+            Layout built = carriedOver(running, folder, aRowPage("yard", 0, 8451, 4));
 
             assertTrue(stoodOn(built, MOVED, "yard:5,1", "Gamma"), MOVED + ", left on Gamma, is not on it after its page"
                 + " was renamed (RSA7-B3): " + standingOn(built));
@@ -884,51 +893,25 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testACancelledMovePutsTheRailwaysSquaresBack() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa7-b3-cancel").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("rsa7-b3-cancel");
 
         org.traincontrol.automationui.AutonomySession session = sessionOn(folder, aRowPage("main", 0, 8461, 4),
             "B3 cancel", "Alpha", "Beta", "Gamma", "Delta");
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
-
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
-                + " on Gamma: " + namesOf(running));
+            Layout running = runningWithTheMoverOn(session, "Gamma (eastbound)", "Gamma");
 
             org.json.JSONObject asOpened = session.snapshotSetup();
 
-            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
-                moves = new java.util.LinkedHashMap<>();
-
-            for (int x = 7; x >= 1; x--)
-            {
-                moves.put(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1),
-                    new org.traincontrol.automationui.TileGraph.TileKey("main", x + 2, 1));
-            }
-
-            session.moveTiles(moves);
+            session.moveTiles(theRowTwoColumnsRight());
 
             assertTrue(stoodOn(running, MOVED, "main:7,1", "Gamma"), "precondition: the move did not move the railway's"
                 + " squares: " + standingOn(running));
 
             assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
 
-            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
-
-            org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("main", 0, 8461, 4));
-
-            model.parseAuto(next.buildConfiguration());
-
-            Layout built = model.getAutoLayout();
-
-            TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+            Layout built = carriedOver(running, folder, aRowPage("main", 0, 8461, 4));
 
             assertTrue(stoodOn(built, MOVED, "main:5,1", "Gamma"), MOVED + ", left on Gamma, is not on it after a move"
                 + " was cancelled (RSA7-B3): " + standingOn(built));
@@ -1017,9 +1000,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testAnUndoneMoveNamesAnUnnamedStationAsBefore() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa8-b2-unnamed").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("rsa8-b2-unnamed");
 
         org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, 8501, 5, 13);
 
@@ -1065,9 +1046,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testAnUndoneMovePutsTheRailwaysSquaresBack() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa8-b3-undo").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("rsa8-b3-undo");
 
         org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, 8511, 4, 11);
 
@@ -1076,14 +1055,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
-
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
-                + " on Gamma: " + namesOf(running));
+            Layout running = runningWithTheMoverOn(session, "Gamma (eastbound)", "Gamma");
 
             java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
 
@@ -1110,9 +1082,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
      */
     private static Object[] fiveStationsWithATimetable(String folderName, int firstSensor) throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory(folderName).toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder(folderName);
 
         org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, firstSensor, 5, 13);
 
@@ -1217,9 +1187,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("keep-the-entries").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("keep-the-entries");
 
         org.traincontrol.automationui.AutonomySession session = twoPagesWithATimetable(folder, "keep", 8541, null);
 
@@ -1272,9 +1240,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testStartTimetableAsksOnlyEntriesTheRailwayCanRun() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("start-the-timetable").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("start-the-timetable");
 
         String other = null;
 
@@ -1418,9 +1384,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testStartTimetableAsksNothingPastTheEntryTheRunStopsAt() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("start-past-the-stop").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("start-past-the-stop");
 
         String other = null;
 
@@ -1561,14 +1525,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
-
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
-                + " not stood on Beta (westbound): " + namesOf(running));
+            Layout running = runningWithTheMoverOn(session, "Beta (westbound)", "Beta (westbound)");
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
@@ -1615,12 +1572,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
-
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
-
-            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+            directBothRoadsBesideBeta(session, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
             session.setPointProperty(beta, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, Boolean.TRUE);
 
             model.parseAuto(session.buildConfiguration());
@@ -1728,21 +1680,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
             session.placeLocomotive(beta, MOVED);
             session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
 
-            model.parseAuto(session.buildConfiguration());
+            Layout running = runningWithTheMoverOn(session, "Gamma", "Gamma");
 
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Gamma", false), "precondition: " + MOVED
-                + " not stood on Gamma: " + namesOf(running));
-
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
-
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
-
-            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+            directBothRoadsBesideBeta(session, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
 
             for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
             {
@@ -1771,9 +1711,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
     @Test
     public void testATrainBesideALinkSwitchedOffIsRecordedWhereItStands() throws Exception
     {
-        java.io.File folder = java.nio.file.Files.createTempDirectory("r35-link").toFile();
-
-        folder.deleteOnExit();
+        java.io.File folder = aTempFolder("r35-link");
 
         org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 7, 3, null, null);
 
@@ -1818,14 +1756,7 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         try
         {
-            model.parseAuto(session.buildConfiguration());
-
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Gamma (westbound)", false), "precondition: " + MOVED
-                + " not stood on Gamma (westbound): " + namesOf(running));
+            Layout running = runningWithTheMoverOn(session, "Gamma (westbound)", "Gamma (westbound)");
 
             assertTrue(session.getLocomotiveNameAt(gamma) == null, "precondition: the setup already has a train on Gamma");
 
@@ -1865,21 +1796,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
             session.placeLocomotive(beta, MOVED);
             session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.E);
 
-            model.parseAuto(session.buildConfiguration());
+            Layout running = runningWithTheMoverOn(session, "Beta (westbound)", "Beta (westbound)");
 
-            Layout running = model.getAutoLayout();
-
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
-
-            assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
-                + " not stood on Beta (westbound): " + namesOf(running));
-
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
-
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
-            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
-
-            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_B);
+            directBothRoadsBesideBeta(session, org.traincontrol.automationui.TileGraph.Direction.TOWARD_B);
 
             for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
             {

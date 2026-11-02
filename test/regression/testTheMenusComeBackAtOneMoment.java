@@ -84,20 +84,7 @@ public class testTheMenusComeBackAtOneMoment
             call(ui, "greyTheMenus");
 
             // AND THE CONNECT HAPPENS UNDER IT, which is where the autonomy menu is built and added.
-            final org.traincontrol.marklin.MarklinControlStation connected = model;
-            final org.traincontrol.gui.TrainControlUI window = ui;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    window.setViewListener(connected, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            connect(model, ui);
 
             assertEquals(bar.getMenuCount(), before,
                 "the bar changed shape during the connect. OB-202's placeholder exists so that it"
@@ -148,16 +135,7 @@ public class testTheMenusComeBackAtOneMoment
         }
         finally
         {
-            if (ui != null)
-            {
-                final org.traincontrol.gui.TrainControlUI open = ui;
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> open.dispose());
-            }
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
+            closeDown(ui, model, sandbox);
         }
     }
 
@@ -201,21 +179,8 @@ public class testTheMenusComeBackAtOneMoment
 
             ui = made[0];
 
-            final org.traincontrol.marklin.MarklinControlStation connected = model;
-            final org.traincontrol.gui.TrainControlUI window = ui;
-
             // The real start-up, the menu as the user sees it.
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    window.setViewListener(connected, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            connect(model, ui);
 
             javax.swing.JMenu manage = field(ui, "modifyLocalLayoutMenu", javax.swing.JMenu.class);
 
@@ -246,15 +211,39 @@ public class testTheMenusComeBackAtOneMoment
         }
         finally
         {
-            if (ui != null)
-            {
-                final org.traincontrol.gui.TrainControlUI closing = ui;
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
+            closeDown(ui, null, sandbox);
         }
+    }
+
+    /** Hands the window its model on the event thread, as the real start-up does. */
+    private static void connect(org.traincontrol.marklin.MarklinControlStation model,
+        org.traincontrol.gui.TrainControlUI window) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                window.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /** Disposes the window on the event thread, stops the model if there is one, and closes the sandbox, in that order. */
+    private static void closeDown(org.traincontrol.gui.TrainControlUI ui,
+        org.traincontrol.marklin.MarklinControlStation model, support.LayoutSandbox sandbox) throws Exception
+    {
+        if (ui != null)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
+        }
+
+        if (model != null) model.stop();
+
+        if (sandbox != null) sandbox.close();
     }
 
     /** A private field of the window, by name. */
@@ -366,20 +355,9 @@ public class testTheMenusComeBackAtOneMoment
 
             ui = made[0];
 
-            final org.traincontrol.marklin.MarklinControlStation connected = model;
-            final org.traincontrol.gui.TrainControlUI window = ui;
+            connect(model, ui);
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    window.setViewListener(connected, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            final org.traincontrol.gui.TrainControlUI window = ui;
 
             final java.util.Set<String> tips = new java.util.LinkedHashSet<>();
 
@@ -412,16 +390,7 @@ public class testTheMenusComeBackAtOneMoment
         }
         finally
         {
-            if (ui != null)
-            {
-                final org.traincontrol.gui.TrainControlUI open = ui;
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> open.dispose());
-            }
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
+            closeDown(ui, model, sandbox);
         }
     }
 

@@ -305,10 +305,9 @@ public class testRenderingCost
             + " coldDecodeTotal=" + String.format("%.1f", ms) + "ms"
             + " perDecode=" + String.format("%.2f", decoded == 0 ? 0 : ms / decoded) + "ms");
 
-        // The decode loop swallows every exception, so a getImage that throws for EVERY
-        // tile leaves decoded at 0 and ms near zero - which would read as a fast, passing test.
-        // That is the "0.00ms looks like good news" failure this class's own header comment says it
-        // was rewritten to avoid; the floor below is what closes it for this loop too.
+        // The decode loop swallows every exception, so a getImage that throws for EVERY tile leaves decoded at 0 and ms
+        // near zero, which would read as a fast, passing test (the "0.00ms looks like good news" failure); the floor
+        // below closes it for this loop too.
         assertTrue(decoded > 0,
             "not a single tile image decoded (coldDecodes=0 of " + tiles + " tiles on "
             + distinct.size() + " distinct appearances).  Either the fixture lost its icons or "
@@ -323,24 +322,18 @@ public class testRenderingCost
     /**
      * One accessory drawn on several squares keeps a label on every one of them.
      *
-     * A real layout puts one address on several tiles - the sample layout has 162 on four squares of
-     * "3 - Top Parking" and five of "4 - Combined" - and the control station gives all of them the SAME
-     * MarklinAccessory, because it resolves by address out of the database.  Each of those tiles has to
-     * stay registered with it or it stops being repainted when the accessory is thrown.
+     * A real layout puts one address on several tiles (the sample layout has 162 on four squares of "3 - Top Parking"
+     * and five of "4 - Combined") and the control station gives all of them the SAME MarklinAccessory, because it
+     * resolves by address out of the database.  Each of those tiles has to stay registered with it or it stops being
+     * repainted when the accessory is thrown.
      *
-     * This is the test that was missing when a pruning rule was carried over from a map keyed by SQUARE
-     * into three collections keyed by DEVICE.  Inside one square's entry, "an older label of this
-     * window that is no longer displayable" means "the label this one replaces"; inside one device's,
-     * it also matches that device's OTHER squares - and LayoutGrid registers every label in its build
-     * loop and only attaches the container afterwards, so during a build none of them is displayable.
-     * Every arriving label therefore evicted its own siblings and only the last one survived.
+     * A pruning rule keyed by SQUARE must not be reused on collections keyed by DEVICE: inside one device's entry "an
+     * older label of this window that is no longer displayable" also matches that device's OTHER squares, and
+     * LayoutGrid registers every label in its build loop and only attaches the container afterwards, so during a build
+     * none of them is displayable and only the last label would survive, and three of four tiles would stop updating.
      *
-     * The hands-on test for that change could not see it: three of the four tiles stopped updating and
-     * the fourth still worked, which looks like a working diagram unless you are counting.
-     *
-     * A fresh parse rather than the shared fixture, because the accessories have to be shared by
-     * address the way the control station shares them, and the fixture deliberately gives each tile
-     * its own.
+     * A fresh parse rather than the shared fixture, because the accessories have to be shared by address the way the
+     * control station shares them, and the fixture deliberately gives each tile its own.
      */
     @Test
     public void testEveryTileOfOneAccessoryStaysRegistered() throws Exception
@@ -492,13 +485,9 @@ public class testRenderingCost
         // Counted ON the thread that builds, between the reset and the constructor returning (OB-084).
         //
         // Read from the test thread after invokeAndWait returns, the count would be a stable floor plus however much of
-        // the deferred work had landed (both LayoutGrid and LayoutLabel post further work with invokeLater), so it
-        // would pass or fail on timing.  Waiting for quiet is worse: the deferred work rebuilds labels, so the longer
-        // you wait the more you count, and the total depends on when you stop looking.
-        //
-        // Inside one EDT runnable there is nothing to race: invokeLater work cannot run while the event thread is busy
-        // with this, so what is counted is exactly what BUILDING THE GRID does, which is the question the test is
-        // asking.
+        // the deferred work had landed (LayoutGrid and LayoutLabel post further work with invokeLater), so it would
+        // pass or fail on timing, and waiting for quiet counts more the longer you wait.  Inside one EDT runnable
+        // invokeLater work cannot run, so what is counted is exactly what BUILDING THE GRID does.
         final long[] built = new long[1];
         final long[] applied = new long[1];
 
@@ -530,10 +519,8 @@ public class testRenderingCost
         // times).  A bound of twice the cell count would let a grid that builds itself twice over pass; at a quarter
         // above, it goes to 2.0 and fails.
         //
-        // WHAT IS NOT MEASURED HERE, and is the interesting number: after construction the diagram goes on rebuilding
-        // labels, and settles somewhere between 2.0 and 3.0 per cell depending on timing. That is real work and it is
-        // the subject of OB-053, which Adam has asked to be left alone for now. It is not asserted because there is
-        // nothing stable to assert - the total depends on when you stop watching.
+        // NOT MEASURED HERE: after construction the diagram goes on rebuilding labels and settles between 2.0 and 3.0
+        // per cell depending on timing (OB-053); there is nothing stable to assert.
         //
         // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes the count to 729
         // and fails this.

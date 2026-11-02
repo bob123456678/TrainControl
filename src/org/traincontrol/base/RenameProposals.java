@@ -4,13 +4,10 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The outcome of a "check for renamed locomotives" scan: what can be applied, and whether anything was
- * declined.
+ * The outcome of a "check for renamed locomotives" scan: what can be applied, and whether anything was declined.
  *
- * The two are separate answers and the caller needs both.  An empty proposal list means one of two
- * quite different things - the Central Station and the local database agree, or every rename it wanted
- * was refused - and the flow used to report both as "No locomotives to rename.", which is false in the
- * second case and hides a remedy the user needs.
+ * Both are needed because an empty proposal list means either that the Central Station and the local database agree or
+ * that every rename it wanted was refused, and the user has to be told which.
  *
  * @author Adam
  */

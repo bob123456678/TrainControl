@@ -102,14 +102,12 @@ abstract public class Accessory
     /**
      * Whether this setting throws the accessory, as opposed to releasing it to straight.
      *
-     * Everything that decides whether a setting is thrown asks here, so that they cannot disagree:
-     * setState below acts on it, autonomy path configuration orders its commands by it, and path
-     * actuation checks confirmation against it.  A three-way turnout is two drives, and its diverging
-     * drive has to be commanded after the other has been released, never before - an inline copy left
-     * to drift would break either that ordering or the confirmation that follows it.
+     * Everything that decides whether a setting is thrown asks here so they cannot disagree: setState, autonomy path
+     * configuration (which orders its commands by it) and path actuation (which checks confirmation against it).  A
+     * three-way turnout is two drives, and its diverging drive has to be commanded after the other has been released.
      *
-     * @param state
-     * @return
+     * @param state the setting
+     * @return true if it throws the accessory
      */
     public static boolean isThrow(accessorySetting state)
     {
@@ -217,21 +215,14 @@ abstract public class Accessory
     }
 
     /**
-     * Returns whether the network has confirmed (echoed) this accessory at the given state.
-     * setSwitched() sets {@code switched} optimistically, but {@code stateAtLastActuation} only advances
-     * when the CS echoes an actuation - so this reflects the last CS-confirmed position, letting autonomy
-     * verify an accessory actually reached its commanded state rather than just being commanded to it.
-     *
-     * An echo has to have been seen at all.  Without that requirement this returned true for any
-     * accessory whose ASSUMED startup state already matched the command, so the very first path to
-     * command a switch to the position it was believed to already be in passed validation
-     * unconditionally - the one case where nothing had been confirmed by anybody.  Safe to require,
-     * because setSwitched() always transmits, even when the accessory is already in the requested
-     * position, so an echo is always expected.
+     * Whether the network has confirmed (echoed) this accessory at the given state.  setSwitched() sets {@code
+     * switched} optimistically, but {@code stateAtLastActuation} advances only when the CS echoes an actuation, so this
+     * reflects the last CS-confirmed position.  An echo must have been seen at all: otherwise an accessory whose
+     * ASSUMED startup state matches the command would pass unconfirmed.  Safe to require, because setSwitched() always
+     * transmits, so an echo is always expected.
      *
      * @param desired the commanded switched state
-     * @return true if the CS has echoed this accessory and its last confirmed actuation matches
-     *         {@code desired}
+     * @return true if the CS has echoed this accessory and its last confirmed actuation matches {@code desired}
      */
     public boolean isConfirmedAt(boolean desired)
     {

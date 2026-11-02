@@ -200,14 +200,8 @@ public class testATailPastASwitchIsAskedAbout
     {
         Point platform = platform();
 
-        Edge straight = null;
-        Edge turned = null;
-
-        for (Edge rail : railsIn(platform))
-        {
-            if (rail.getStart().getName().startsWith("RampDown")) straight = rail;
-            if (rail.getStart().getName().startsWith("BottomCrossover")) turned = rail;
-        }
+        Edge straight = railFrom(platform, "RampDown");
+        Edge turned = railFrom(platform, "BottomCrossover");
 
         assertNotNull(straight, "precondition: no rail from RampDown comes into " + PLATFORM);
         assertNotNull(turned, "precondition: no rail from BottomCrossover comes into " + PLATFORM);
@@ -281,14 +275,8 @@ public class testATailPastASwitchIsAskedAbout
     {
         Point platform = platform();
 
-        Edge straight = null;
-        Edge turned = null;
-
-        for (Edge rail : railsIn(platform))
-        {
-            if (rail.getStart().getName().startsWith("RampDown")) straight = rail;
-            if (rail.getStart().getName().startsWith("BottomCrossover")) turned = rail;
-        }
+        Edge straight = railFrom(platform, "RampDown");
+        Edge turned = railFrom(platform, "BottomCrossover");
 
         assertNotNull(straight, "precondition: no rail from RampDown comes into " + PLATFORM);
         assertNotNull(turned, "precondition: no rail from BottomCrossover comes into " + PLATFORM);
@@ -456,6 +444,19 @@ public class testATailPastASwitchIsAskedAbout
         return found;
     }
 
+    /** The last rail into the platform that starts at a point named `from...`, or null. */
+    private static Edge railFrom(Point platform, String from)
+    {
+        Edge found = null;
+
+        for (Edge rail : railsIn(platform))
+        {
+            if (rail.getStart().getName().startsWith(from)) found = rail;
+        }
+
+        return found;
+    }
+
     /** The rails that bring a train into the platform from the east. */
     private static List<Edge> railsIn(Point platform)
     {
@@ -478,14 +479,8 @@ public class testATailPastASwitchIsAskedAbout
      */
     private static int unitsBeforeTheSwitch(Point platform)
     {
-        Edge straight = null;
-        Edge turned = null;
-
-        for (Edge rail : railsIn(platform))
-        {
-            if (rail.getStart().getName().startsWith("RampDown")) straight = rail;
-            if (rail.getStart().getName().startsWith("BottomCrossover")) turned = rail;
-        }
+        Edge straight = railFrom(platform, "RampDown");
+        Edge turned = railFrom(platform, "BottomCrossover");
 
         assertNotNull(straight, "precondition: no rail from RampDown");
         assertNotNull(turned, "precondition: no rail from BottomCrossover");

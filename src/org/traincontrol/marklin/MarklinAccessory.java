@@ -40,16 +40,7 @@ public class MarklinAccessory extends Accessory
     public static final int MM2_BASE = 0x3000;
     public static final int DCC_BASE = 0x3800;
         
-    /**
-     * Constructor
-     * @param network
-     * @param address
-     * @param type
-     * @param decoderType
-     * @param name
-     * @param state
-     * @param numActuations
-     */
+    /** Constructor; the UID is derived from the raw address and the decoder type. */
     public MarklinAccessory(MarklinControlStation network, int address, accessoryType type, accessoryDecoderType decoderType, String name, boolean state, int numActuations)
     {
         super(name, type, false);
@@ -177,12 +168,9 @@ public class MarklinAccessory extends Accessory
                     this.numActuations += 1;
                 }
 
-                // Any echo is an acknowledgment from the Central Station, whether or not it moved the
-                // accessory - so it confirms the position, and it has to wake the waiter either way.
-                // Both of these used to happen only when the state changed, which left an accessory
-                // commanded to the position it was already in confirmed by nothing at all, and left
-                // autonomy path validation asleep until its timeout even though the CS had answered.
-                // Set before the notify so a woken waiter sees it.
+                // Any echo is an acknowledgment from the Central Station, whether or not it moved the accessory, so it
+                // confirms the position and wakes the waiter either way.  Set before the notify so a woken waiter sees
+                // it.
                 this.actuationConfirmed = true;
 
                 // Wake anyone waiting for a CS-confirmed actuation (e.g. autonomy path validation).

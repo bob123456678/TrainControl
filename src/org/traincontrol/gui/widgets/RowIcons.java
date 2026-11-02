@@ -37,9 +37,7 @@ public final class RowIcons
         return trash(size, WARN);
     }
 
-    /**
-     * The same, in a color of the caller's choosing - see plus(int, Color).
-     */
+    /** The same, in a color of the caller's choosing - see plus(int, Color). */
     public static Icon trash(final int size, final Color colour)
     {
         return new Painted(size)
@@ -81,9 +79,7 @@ public final class RowIcons
         return copy(size, QUIET);
     }
 
-    /**
-     * The same, in a color of the caller's choosing - see plus(int, Color).
-     */
+    /** The same, in a color of the caller's choosing - see plus(int, Color). */
     public static Icon copy(final int size, final Color colour)
     {
         return new Painted(size)
@@ -99,9 +95,8 @@ public final class RowIcons
                 int h = front.height;
                 int gap = front.x - 1;
 
-                // The sheet behind, only where it shows (the front one hides its lower right corner), so the two read
-                // as two sheets.  Not by filling the front one white: on a selected row that was a solid white sheet
-                // (OB-258).
+                // The sheet behind, only where it shows (the front one hides its lower right corner).  Not by filling
+                // the front one white: on a selected row that was a solid white sheet (OB-258).
                 g.setColor(colour);
                 g.drawLine(1, 1, 1 + w, 1);
                 g.drawLine(1, 1, 1, 1 + h);
@@ -140,8 +135,8 @@ public final class RowIcons
     }
 
     /**
-     * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is very nearly invisible
-     * against the look-and-feel's selection blue, and that is the row whose mark is most likely to be reached for.
+     * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is nearly invisible against
+     * the look-and-feel's selection blue.
      *
      * @param colour what to draw it in
      * @return the icon
@@ -204,26 +199,180 @@ public final class RowIcons
     }
 
     /**
-     * An arrow into or out of an indent, drawn as a bar and a chevron pointing at it.
+     * Six dots in two columns, the grip a row is dragged by.
      *
      * @param size how many pixels square
-     * @param inward true to indent, false to bring back out
      * @return the icon
      */
-    public static Icon indent(final int size, final boolean inward)
+    public static Icon grip(final int size)
     {
-        return indent(size, inward, QUIET);
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(new Color(150, 150, 150));
+
+                for (int column = -1; column <= 1; column += 2)
+                {
+                    for (int row = -1; row <= 1; row++)
+                    {
+                        g.fill(new java.awt.geom.Ellipse2D.Float(width / 2f + column * 2.5f - 1.1f,
+                            height / 2f + row * 4f - 1.1f, 2.2f, 2.2f));
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Two lines inside a rounded outline: put rows in a group of their own.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon group(final int size)
+    {
+        return group(size, QUIET);
     }
 
     /**
      * The same, in a given color.
      *
      * @param size how many pixels square
-     * @param inward true to indent
      * @param colour what to draw it in
      * @return the icon
      */
-    public static Icon indent(final int size, final boolean inward, final Color colour)
+    public static Icon group(final int size, final Color colour)
+    {
+        return outlined(size, colour, false);
+    }
+
+    /**
+     * The same two lines with the outline broken: take a group apart.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon ungroup(final int size)
+    {
+        return ungroup(size, QUIET);
+    }
+
+    /**
+     * The same, in a given color.
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon ungroup(final int size, final Color colour)
+    {
+        return outlined(size, colour, true);
+    }
+
+    /**
+     * Two small outlines one above the other, a line in each: cut a group in two (OB-396).
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon split(final int size)
+    {
+        return split(size, QUIET);
+    }
+
+    /**
+     * The same, in a given color.
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon split(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                int half = (height - 3) / 2;
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(1.2f));
+
+                for (int part = 0; part < 2; part++)
+                {
+                    int y = 1 + part * (half + 1);
+
+                    g.drawRoundRect(1, y, width - 3, half - 1, 4, 4);
+                    g.drawLine(width / 4 + 1, y + half / 2, width * 3 / 4 - 1, y + half / 2);
+                }
+            }
+        };
+    }
+
+    /**
+     * A hooked arrow pointing back: Undo (FR-161).
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon undo(final int size, final Color colour)
+    {
+        return hooked(size, colour, false);
+    }
+
+    /**
+     * Undo's arrow, mirrored: Redo (FR-161).
+     *
+     * @param size how many pixels square
+     * @param colour what to draw it in
+     * @return the icon
+     */
+    public static Icon redo(final int size, final Color colour)
+    {
+        return hooked(size, colour, true);
+    }
+
+    private static Icon hooked(final int size, final Color colour, final boolean forward)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                if (forward)
+                {
+                    g.translate(width, 0);
+                    g.scale(-1, 1);
+                }
+
+                java.awt.geom.Path2D.Float hook = new java.awt.geom.Path2D.Float();
+
+                hook.moveTo(width * 0.32f, height * 0.38f);
+                hook.lineTo(width * 0.58f, height * 0.38f);
+                hook.curveTo(width * 0.92f, height * 0.38f, width * 0.92f, height * 0.84f, width * 0.58f, height * 0.84f);
+                hook.lineTo(width * 0.36f, height * 0.84f);
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.draw(hook);
+
+                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+
+                head.moveTo(width * 0.08f, height * 0.38f);
+                head.lineTo(width * 0.38f, height * 0.16f);
+                head.lineTo(width * 0.38f, height * 0.60f);
+                head.closePath();
+
+                g.fill(head);
+            }
+        };
+    }
+
+    private static Icon outlined(final int size, final Color colour, final boolean broken)
     {
         return new Painted(size)
         {
@@ -231,23 +380,13 @@ public final class RowIcons
             void draw(Graphics2D g, int width, int height)
             {
                 g.setColor(colour);
-                g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.setStroke(broken ? new BasicStroke(1.2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 1f,
+                    new float[]{2.5f, 2f}, 0f) : new BasicStroke(1.2f));
+                g.drawRoundRect(1, 2, width - 3, height - 5, 4, 4);
 
-                int pad = width / 5;
-                int middle = height / 2;
-
-                // The bar the row moves towards
-                int bar = inward ? width - pad : pad;
-
-                g.drawLine(bar, pad, bar, height - pad);
-
-                // And the chevron pointing at it
-                int tip = inward ? bar - pad : bar + pad;
-                int tail = inward ? pad : width - pad;
-
-                g.drawLine(tail, middle, tip, middle);
-                g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle - pad);
-                g.drawLine(tip, middle, tip - (inward ? pad : -pad), middle + pad);
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(width / 4 + 1, height * 2 / 5, width * 3 / 4 - 1, height * 2 / 5);
+                g.drawLine(width / 4 + 1, height * 3 / 5 + 1, width * 3 / 4 - 1, height * 3 / 5 + 1);
             }
         };
     }
@@ -290,56 +429,41 @@ public final class RowIcons
     }
 
     /**
-     * The faint vertical lines that show how deep a row sits: indentation alone is a distance and hard to count, a line
-     * per level is countable.
+     * A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164).
      *
-     * @param depth how many levels in
-     * @param step how many pixels one level is worth
-     * @return a border that draws them and leaves room for the text
+     * @param size how many pixels square
+     * @param colour what it is drawn in
+     * @return the icon
      */
-    public static javax.swing.border.Border guides(final int depth, final int step)
+    public static Icon wrench(final int size, final Color colour)
     {
-        return new javax.swing.border.Border()
+        return new Painted(size)
         {
             @Override
-            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height)
+            void draw(Graphics2D g, int width, int height)
             {
-                Graphics2D g2 = (Graphics2D) g.create();
+                // Drawn upright on a 13-unit grid around the origin, then turned a half right angle and scaled
+                java.awt.geom.Area shape = new java.awt.geom.Area(
+                    new java.awt.geom.Ellipse2D.Float(-3.3f, -7.8f, 6.6f, 6.6f));
 
-                try
-                {
-                    g2.setColor(new Color(200, 200, 200));
+                shape.add(new java.awt.geom.Area(
+                    new java.awt.geom.RoundRectangle2D.Float(-1.35f, -5f, 2.7f, 12.5f, 2.7f, 2.7f)));
+                shape.subtract(new java.awt.geom.Area(
+                    new java.awt.geom.Rectangle2D.Float(-1.3f, -8.5f, 2.6f, 4.4f)));
 
-                    for (int at = 0; at < depth; at++)
-                    {
-                        int line = x + 6 + at * step;
+                java.awt.geom.AffineTransform turn = new java.awt.geom.AffineTransform();
 
-                        g2.drawLine(line, y, line, y + height - 1);
-                    }
-                }
-                finally
-                {
-                    g2.dispose();
-                }
-            }
+                turn.translate(width / 2.0, height / 2.0);
+                turn.scale(width / 13.0, height / 13.0);
+                turn.rotate(Math.PI / 4);
 
-            @Override
-            public java.awt.Insets getBorderInsets(Component c)
-            {
-                return new java.awt.Insets(0, 6 + depth * step + 4, 0, 0);
-            }
-
-            @Override
-            public boolean isBorderOpaque()
-            {
-                return false;
+                g.setColor(colour);
+                g.fill(turn.createTransformedShape(shape));
             }
         };
     }
 
-    /**
-     * An icon that paints itself, antialiased, on a graphics it is handed.
-     */
+    /** An icon that paints itself, antialiased, on a graphics it is handed. */
     private abstract static class Painted implements Icon
     {
         private final int size;

@@ -38,9 +38,8 @@ final class LocIconActions
     }
 
     /**
-     * The revert, drawn as the wrench is: a circular arrow, most of a ring with a solid head where it ends (MT-591;
-     * Adam: "make the arrow at the end of the circle more prominent, right now it doesn't really look like an arrow").
-     * The head is a filled triangle, wider than the ring is thick, pointing the way the ring runs.
+     * The revert, drawn as the wrench is: a circular arrow, most of a ring with a solid head where it ends, wider than
+     * the ring is thick and pointing the way the ring runs, so it reads as an arrow (MT-591).
      */
     static final class RevertMark implements javax.swing.Icon
     {
@@ -94,7 +93,7 @@ final class LocIconActions
 
         /**
          * The solid head at the end of the ring, in the icon's own coordinates: a triangle whose base straddles the
-         * ring's end and whose tip points the way the ring runs there (up and to the right).
+         * ring's end and whose tip points the way the ring runs there.
          *
          * @return the head
          */
@@ -127,9 +126,9 @@ final class LocIconActions
     }
 
     /**
-     * The wrench itself, drawn rather than loaded, as the crop mark is: a handle corner to corner with an open jaw at
-     * each end, dark over a white underlay so it reads on any photograph (MT-591).  The drawing is the same turned half
-     * round about the middle of the square, which is why it is laid out in half-pixel coordinates.
+     * The wrench itself, drawn rather than loaded: a handle corner to corner with an open jaw at each end, dark over a
+     * white underlay so it reads on any photograph (MT-591).  Turned half round about the middle of the square, hence
+     * the half-pixel coordinates.
      */
     static final class WrenchMark implements javax.swing.Icon
     {
@@ -187,9 +186,8 @@ final class LocIconActions
     }
 
     /**
-     * The crop mark itself, drawn rather than loaded: two overlapping right angles in eleven pixels of two lines (a PNG
-     * would want a size, a folder, a name and a test).  A white line is laid under the dark one so it reads on any
-     * photograph.
+     * The crop mark itself, drawn rather than loaded: two overlapping right angles in eleven pixels of two lines, a
+     * white line laid under the dark one so it reads on any photograph.
      */
     static final class CropMark implements javax.swing.Icon
     {
@@ -252,8 +250,8 @@ final class LocIconActions
             if (l.getLocalImageURL() != null)
             {
                 // Through a URI, because that is what the value IS: `new File(String)` on a "file:/..." URI never
-                // exists.  And not opened in tc_loc_icons, the application's own folder where a cropped icon lives: the
-                // chooser starts where the current icon is only when that is somewhere else.
+                // exists.  Not opened in tc_loc_icons, where a cropped icon lives: the chooser starts where the current
+                // icon is only when that is somewhere else.
                 File currentIcon = TrainControlUI.fileOf(l.getLocalImageURL());
 
                 if (currentIcon != null && currentIcon.exists()
@@ -278,24 +276,22 @@ final class LocIconActions
 
             fc.setAcceptAllFileFilterUsed(false);
 
-            // FR-022.  The offer lives in the chooser, beside the files, where the user is when "will the whole of this
-            // picture fit?" occurs to them; a menu item would be a second entrance to the same job.
+            // FR-022.  The offer lives in the chooser, beside the files, where the user decides whether the whole
+            // picture will fit.
             final JCheckBox crop = new JCheckBox(I18n.t("loc.ui.cropCheckbox"),
                 TrainControlUI.getPrefs().getBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false));
 
             crop.setToolTipText(I18n.t("loc.ui.tooltip.cropCheckbox"));
 
-            // Under the file name, not in the accessory panel (Adam: "is there a way to put the checkbox in a more
-            // organic place?"): an accessory sits on the right where a preview pane belongs and reads as bolted on.
-            // SOUTH, and the constraint is the whole of it: a JFileChooser's BorderLayout CENTER holds the entire
-            // browser, so `fc.add(row)` with no constraint replaced it.
+            // Under the file name, not in the accessory panel.  SOUTH, and the constraint is the whole of it: a
+            // JFileChooser's BorderLayout CENTER holds the entire browser, so `fc.add(row)` with no constraint replaced
+            // it.
             JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
             row.setBorder(BorderFactory.createEmptyBorder(0, 2, 4, 2));
             row.add(crop);
 
             // Clear Icon (FR-142): the menu's own clear, then the chooser closes with nothing chosen.  Disabled, not
-            // hidden, when there is no icon of this computer's to clear, so the row does not change shape from one
-            // locomotive to the next.
+            // hidden, when there is no icon of this computer's to clear.
             final javax.swing.JButton clear = new javax.swing.JButton(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
 
             clear.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
@@ -320,22 +316,18 @@ final class LocIconActions
                 TrainControlUI.getPrefs().putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, crop.isSelected());
 
                 // The file the user picked, unless cropping produced a file of our own.  Assigned before the crop is
-                // attempted so every way the crop can fail lands on the behavior this method had before FR-022, not on
-                // no icon at all.
+                // attempted so every way the crop can fail falls back to it.
                 String chosenURL = Paths.get(f.getAbsolutePath()).toUri().toString();
 
                 // Readable at all, whether or not it is going to be cropped: the guard must not live inside the branch
-                // below, or an unticked Crop with a CMYK JPEG, or a `.png` that is really something else (both pass the
-                // extension filter), points the locomotive at a file that renders as nothing and deletes the crop it
-                // had.
+                // below, or an unticked Crop with a CMYK JPEG points the locomotive at a file that renders as nothing
+                // and deletes the crop it had.
                 if (!pictureCanBeRead(f, source)) return;
 
                 if (crop.isSelected())
                 {
-                    // Cancel is not a failure: cropLocIcon returned null for both "the user pressed Cancel" and "the
-                    // picture could not be read", and falling back to the uncropped file set the full photograph as the
-                    // icon and deleted the crop.  Two answers, not one: was it canceled, and was the picture
-                    // unreadable.
+                    // Cancel is not a failure: cropLocIcon returns null for both "the user pressed Cancel" and "the
+                    // picture could not be read".  Two answers, not one.
                     boolean[] cancelled = {false, false};
 
                     String cropped = cropLocIcon(source, l, f, cancelled, null);
@@ -343,10 +335,9 @@ final class LocIconActions
                     // Nothing is assigned and nothing is deleted: the locomotive keeps the icon it had.
                     if (cancelled[0]) return;
 
-                    // Nor when the picture could not be read at all: the fallback below (the file the user picked,
-                    // uncropped) is right when only the crop failed; here it would point the locomotive at a file that
-                    // renders as nothing and delete its crop.  The sibling `recropLocIcon` has always refused this
-                    // case.
+                    // Nor when the picture could not be read at all: the fallback below is right when only the crop
+                    // failed; here it would point the locomotive at a file that renders as nothing.  `recropLocIcon`
+                    // refuses this case too.
                     if (cancelled[1]) return;
 
                     if (cropped != null) chosenURL = cropped;
@@ -374,9 +365,9 @@ final class LocIconActions
 
     /**
      * Whether a picture the user picked can actually be displayed, complaining if it cannot.  The file chooser filters
-     * on the NAME: a `.png` that is really something else, a CMYK JPEG, a HEIC renamed, a cloud-backed file not on this
-     * machine all get past it.  Asked before anything is assigned or deleted, because deleting the crop being replaced
-     * cannot be undone.
+     * on the NAME, so a `.png` that is really something else, a CMYK JPEG or a cloud-backed file not on this machine
+     * get past it.  Asked before anything is assigned or deleted, because deleting the crop being replaced cannot be
+     * undone.
      *
      * @param chosen the picture the user picked, opened for reading and nothing else
      * @param parent the component to complain on
@@ -404,8 +395,7 @@ final class LocIconActions
 
     /**
      * The array the crop dialog opens on and writes what the user settled on back into: SIX NUMBERS, the last the
-     * crop's width in the photograph's own pixels (OB-257).  An older note's five are copied in, and the sixth is
-     * written after the crop.
+     * crop's width in the photograph's own pixels (OB-257).  An older note's five are copied in.
      *
      * @param opening the view the note held, or null
      * @return the array, NaN where nothing was held
@@ -422,8 +412,7 @@ final class LocIconActions
     /**
      * FR-022 - runs the crop dialog over a picture the user has just picked, and stores what comes back as a locomotive
      * icon of our own.  The user's file is opened for READING and nothing else; the crop goes in the application's own
-     * folder, as PNG regardless of the source, since JPEG would flatten the transparency of a crop of a Central Station
-     * picture to black.
+     * folder, as PNG regardless of the source, since JPEG would flatten the transparency to black.
      *
      * @param parent the component the dialog should center on
      * @param l the locomotive the icon is for; its name is used to make the file recognizable
@@ -461,7 +450,7 @@ final class LocIconActions
             this.ui.getModel().logf("ui.errorFailedToLoadImage", chosen.getAbsolutePath());
 
             // And said out loud, because the caller must not fall back to this file: falling back is right when only
-            // the crop failed, and the worst of both when the picture cannot be read.
+            // the crop failed.
             if (cancelled != null) cancelled[1] = true;
 
             JOptionPane.showMessageDialog(parent,
@@ -473,8 +462,8 @@ final class LocIconActions
         BufferedImage cropped = LocIconCropDialog.crop(parent, picture, TrainControlUI.LOC_ICON_WIDTH,
             TrainControlUI.LOC_ICON_HEIGHT, view);
 
-        // The dialog returns null only when the user said no (Cancel, Escape, or the close box); the caller must tell
-        // it apart from the failures above, which DO fall back to the picked file.
+        // The dialog returns null only when the user said no (Cancel, Escape, or the close box), unlike the failures
+        // above, which DO fall back to the picked file.
         if (cropped == null)
         {
             if (cancelled != null) cancelled[0] = true;
@@ -482,8 +471,8 @@ final class LocIconActions
             return null;
         }
 
-        // A fresh name every time: getLocImage caches by URL, so reusing a name would show the OLD crop until the
-        // application restarted.  The caller deletes the superseded file, so this accumulates one file per locomotive.
+        // A fresh name every time: getLocImage caches by URL, so a reused name would show the OLD crop until restart.
+        // The caller deletes the superseded file.
         String name = Util.sanitizeFilename(l.getName()) + "_" + System.currentTimeMillis() + ".png";
 
         File target = Util.getLocIconFile(name);
@@ -498,8 +487,7 @@ final class LocIconActions
         try
         {
             // The RETURN VALUE, which ImageIO answers false with when no writer claims the format: thrown away, a
-            // zero-byte file was moved into place and the crop it replaced deleted.  DiagramExport checks the same
-            // call.
+            // zero-byte file was moved into place and the crop it replaced deleted.
             Util.writeAtomically(target, out ->
             {
                 if (!ImageIO.write(cropped, "png", out))
@@ -516,9 +504,8 @@ final class LocIconActions
             return null;
         }
 
-        // Not when the picture cropped was itself one of our crops: a crop with no note (made before FR-032) re-crops
-        // from the crop itself, and this would write a note naming a crop the caller deletes three lines later; no note
-        // beats a wrong one.
+        // Not when the picture cropped was itself one of our crops: a crop with no note re-crops from the crop itself,
+        // and a note would name a crop the caller deletes; no note beats a wrong one.
         if (!Util.isLocIconFile(chosen.toPath().toUri().toString()))
         {
             rememberCropSource(target, chosen, view);
@@ -625,10 +612,10 @@ final class LocIconActions
     }
 
     /**
-     * What a crop's note SAYS, whether or not the file it names is there right now: `cropSourceOf` answered null for
-     * both "no note" and "the note names a photograph I cannot see at the moment", and a re-crop that treated the two
-     * the same wrote a NEW note and deleted the old, throwing away the only record of where the photograph was (an
-     * unplugged drive, a OneDrive folder not yet online).  Carrying the old note forward loses nothing.
+     * What a crop's note SAYS, whether or not the file it names is there right now: `cropSourceOf` answers null for
+     * both "no note" and "the note names a photograph I cannot see at the moment" (an unplugged drive, a OneDrive
+     * folder not yet online), and a re-crop that treated the two the same threw away the only record of where the
+     * photograph was.
      *
      * @param url the icon currently set on the locomotive
      * @return the file the note names, existing or not, or null when there is no note to read
@@ -694,8 +681,7 @@ final class LocIconActions
                 return;
             }
 
-            // Two slots, as the other call site: one slot passed to a method that writes slot 1 was saved only by its
-            // `cancelled.length > 1` guard, leaving the next reader of `cancelled[1]` out of bounds.
+            // Two slots, as the other call site: `cancelled[1]` must be in bounds for the next reader.
             boolean[] cancelled = {false, false};
 
             // Only when working from the photograph the view was measured over (OB-125): the fallback crops the crop
@@ -710,8 +696,8 @@ final class LocIconActions
             l.setLocalImageURL(cropped);
 
             // The old note wins over the one just written, which names the crop this was cut from rather than the
-            // photograph behind it.  No view goes with it: this branch cropped the CROP, and storing one against the
-            // other would open the next re-crop of the original at coordinates measured on something else (OB-125).
+            // photograph behind it.  No view goes with it: it would open the next re-crop of the original at
+            // coordinates measured on something else (OB-125).
             if (remembered != null)
             {
                 File fresh = TrainControlUI.fileOf(cropped);
@@ -725,8 +711,7 @@ final class LocIconActions
             }
 
             // Told, because the difference is invisible: re-cropping a crop cannot pan back out to anything the
-            // previous crop threw away.  The message does not claim to know WHY there was no original: the note named a
-            // file that is not there, or there never was a note (every crop made before FR-032).
+            // previous crop threw away.  The message does not claim to know WHY there was no original.
             this.ui.getModel().logf(fromOriginal ? "loc.ui.infoRecroppedFromOriginal"
                 : "loc.ui.infoRecroppedFromCrop", l.getName());
 
@@ -740,8 +725,7 @@ final class LocIconActions
      * Crops a locomotive's Central Station picture into an icon of this computer's (FR-104).  The picture is fetched
      * off the event thread and kept, named for the locomotive, in a folder of its own inside the icon folder; the
      * crop's note names it, so a second crop pans over the whole picture.  Outside the crops proper
-     * (`Util.isLocIconFile`), so replacing a crop does not delete it: it outlives every crop cut from it, one per
-     * locomotive.
+     * (`Util.isLocIconFile`), so replacing a crop does not delete it.
      *
      * @param l the locomotive
      * @param parent where the crop window centers

@@ -31,13 +31,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     /**
      * A stand-in for a page that would not read is not a page autonomy may judge.  `CS2File` substitutes a blank page
      * (same NAME and ID) so that link tiles after it still resolve; `pagesNotLoaded` compares names, so the stand-in
-     * made the session think it saw the whole railway, and the next `save()` reconciled the real page's setup against
+     * made the session think it saw the whole railway and the next `save()` reconciled the real page's setup against
      * one text tile (MT-135, "all stations are gone", by a third route).
      *
-     * Three loops in this class build that name set, and a repair reaching two of them is worse than one reaching
-     * none (the prune is declined while `wasDeclined()` reads false).  This asserts the ANSWER, so it holds however
-     * many copies of them there are.
-     *
+     * Three loops in this class build that name set, and a repair reaching two of them is worse than one reaching none
+     * (the prune is declined while `wasDeclined()` reads false), so this asserts the ANSWER, whatever the copies.
      * MUTATION: take `if (page.isUnreadable()) continue;` out of `pagesSafeToJudge` or out of `open`
      * and this fails.
      */
@@ -926,9 +924,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A save that declines to tidy up SAYS SO, and names the pages.  An EMPTY reconciliation and a REFUSED one used to
-     * be the same object, and five of the six doors that call `save()` threw the result away, so nobody was told.
-     *
+     * A save that declines to tidy up SAYS SO, and names the pages: an EMPTY reconciliation and a REFUSED one must not
+     * be the same object, or the doors that call `save()` and throw the result away tell nobody.
      * MUTATION: having `save()` return a plain `new Reconciliation()` for the incomplete case fails this test.
      */
     @Test
@@ -978,9 +975,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
     /**
      * A page that did not load keeps its setup (OB-068).  `CS2File.parseLayout` skips a page whose file will not parse
-     * or is not there, quietly and on purpose (an unhydrated OneDrive placeholder is enough), and `save()` used to
-     * reconcile against the pages that DID load, pruning everything on the missing one.
-     *
+     * or is not there, quietly and on purpose (an unhydrated OneDrive placeholder is enough), so `save()` must not
+     * reconcile against only the pages that DID load, which would prune everything on the missing one.
      * The mutation here is the absence itself: set up two pages, then reopen holding only one.
      */
     @Test
