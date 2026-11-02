@@ -13,14 +13,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * The locomotive mapping pages stop at fifty, in the method as well as in the menu (FR-033, MT-383; Adam: "too much
- * manual effort.  add an automated test for this.").
- *
- * Both halves: `canAddLocMappingPage` is what the menu grays itself on, and `addLocMappingPage` refuses again on its
- * own account (its javadoc: "A guard that lives only in the interface is a guard the next caller does not have.").  NOT
- * asserted: that loading cannot exceed fifty.  `setViewListener` grows the count past the ceiling on purpose, since a
- * saved state can hold more pages than the preference knows about and clamping would throw away their mappings.
- *
+ * The locomotive mapping pages stop at fifty, in the method as well as in the menu (FR-033, MT-383):
+ * `canAddLocMappingPage` is what the menu grays itself on, and `addLocMappingPage` refuses again on its own account.
+ * NOT asserted: that loading cannot exceed fifty, since `setViewListener` grows the count past the ceiling on purpose.
  * The window is built through `LayoutSandbox` (OB-111), so Adam's own railway is never opened.
  *
  * @author Adam
