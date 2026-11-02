@@ -3,18 +3,9 @@ package support;
 import org.traincontrol.automation.Layout;
 
 /**
- * Takes the operator's pace out of a railway, for a test whose claims are not about it (FR-136).
- *
- * The pace is the railway's Minimum and Maximum Delay: a run waits between them, in whole seconds, at each simulated
- * sensor, before a turn at a terminus and between retries.  A built setup has 1 to 5 by default, so every turn in a test
- * cost up to five seconds that nothing asserted.  Both are instance settings with setters, so a test can change them;
- * with both at zero the railway's own waits fall back to its poll, so nothing spins.
- *
- * The other fixed pauses cannot be set from a test.  `Layout.CONFIGURE_SLEEP`, `COMPLETION_POLL`, `NO_PATH_IDLE_MS`,
- * `STAGING_RETRY_PAUSE`, `HomeStaging.SEARCH_BUDGET_MS`, `Locomotive.FEEDBACK_DURATION_THRESHOLD`,
- * `CS2File.CONNECT_TIMEOUT_MS` and the second after a turn (`delay(1000)`) are compile-time constants or literals:
- * javac writes the number into each use, no bytecode reads the field, and setting it by reflection changes nothing.
- * Making them settable is a production change.
+ * Takes the operator's pace out of a railway (its Minimum and Maximum Delay), for a test whose claims are not about it
+ * (FR-136).  The other fixed pauses (`Layout.CONFIGURE_SLEEP` and the like) are compile-time constants and cannot be
+ * set from a test.
  *
  * Use it with try-with-resources, so the pace is put back:
  *
