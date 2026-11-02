@@ -145,19 +145,8 @@ public class testNoSelfRecursiveWrappers
     };
 
     /**
-     * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
-     *
-     * The extractions leave a one-line delegator on the window, the session, the track editor and the autonomy editor,
-     * and the moved code calls back into its owner through `ui`, `owner` or `editor`.  A mechanical edit can make a
-     * delegator call its own name instead of the collaborator's, or make the moved body call the owner's delegator that
-     * leads straight back to it: either is a StackOverflowError the compiler accepts.
-     *
-     * Methods are told apart by name AND number of arguments: the editor's `deleteSelection()` hands to the
-     * collaborator's, which calls `editor.deleteSelection(true)`, a different method by design.  Static delegators
-     * (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`, `detectImportFormat`) hand over as `Class.method(` and
-     * the collaborator calls the owner's statics as `TrainControlUI.method(`, so both spellings are read.  The
-     * self-call half reads every method of the owner that shares a name with one of the collaborator's, since a
-     * delegator rewritten to call itself names the collaborator nowhere.
+     * A delegator and the collaborator it hands to do not call each other for ever (FR-136): a StackOverflowError the
+     * compiler accepts.  Methods are told apart by name AND number of arguments.
      *
      * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
      * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, SessionRuns' `runs()` return
@@ -450,20 +439,14 @@ public class testNoSelfRecursiveWrappers
     };
 
     /**
-     * The railway's delegators and the helpers they hand to do not call each other for ever (FR-136).
-     *
-     * Layout keeps every public and `synchronized` method, and each private one that something outside a moved cluster
-     * calls, as a one-line call to a package-private helper; the helper calls back through `owner.`, or `Layout.` for a
-     * static.  Both loops are read: a delegator calling its own name instead of the helper's, and a helper's method
-     * calling back into the delegator that leads to it (a StackOverflowError the compiler accepts).  The helpers' own
-     * hand-offs are read too: a helper keeps overloads that hand to one another by the bare name (`explainCannotStart`
-     * 2 to 1, `walkStandingTrains` 2 to 3, `walkOneTail` 6 to 7), and one rewritten to call its own arity goes through
-     * neither the railway nor the owner.
+     * The railway's delegators and the helpers they hand to do not call each other for ever (FR-136).  Both loops are
+     * read: a delegator calling its own name instead of the helper's, and a helper's method calling back into the
+     * delegator that leads to it; so are the helpers' own hand-offs between overloads.
      *
      * MUTATION: make LayoutExplanations.explainCannotStart(Locomotive) end `return owner.explainCannotStart(loc);`, or
      * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails; so does making
-     * LayoutExplanations' `explainCannotStart(loc, byHand)` hand to `explainCannotStart(loc, false)`, or StandingTrains'
-     * six-argument `walkOneTail` call `walkOneTail(` with six arguments.
+     * LayoutExplanations' `explainCannotStart(loc, byHand)` hand to `explainCannotStart(loc, false)`, or
+     * StandingTrains' six-argument `walkOneTail` call `walkOneTail(` with six arguments.
      *
      * @throws Exception if the source cannot be read
      */
@@ -510,11 +493,9 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * Only the railway assigns its `edges` and `points` (FR-136).  They are package-private so that `StandingTrains`
-     * can read them, which leaves them open to every class of the `automation` package; Layout writes them under its
-     * monitor and builds the adjacency beside them (`createPoint`, `createEdge`), so a write from another class would
-     * skip both.  So no other file of the package assigns either through another object or calls a mutator on it, and
-     * Layout declares both `final`.
+     * Only the railway assigns its `edges` and `points` (FR-136): Layout writes them under its monitor and builds the
+     * adjacency beside them, so a write from another class would skip both.  No other file of the package assigns
+     * either through another object or calls a mutator on it, and Layout declares both `final`.
      *
      * MUTATION: have any other class of the package call `layout.points.put(`, `owner.edges.remove(` or assign
      * `layout.points = `, and this fails; so does dropping `final` from either declaration in Layout.
@@ -562,12 +543,8 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * A method of the autonomy editor panel named like one of its helpers' is one call to it (FR-136): the panel keeps
-     * each method that something outside a moved cluster calls as a one-line call to a package-private helper, so a
-     * claim that reads the helper's body is reading what the panel runs.  A second statement, or a different call, is
-     * code those claims do not see.  Only the panel's rows of COLLABORATORS are read: the window, the session and the
-     * track editor keep same-named methods that are not single calls on purpose (a guard first, a hand-off to two
-     * collaborators, an overload with its own work).
+     * A method of the autonomy editor panel named like one of its helpers' is one call to it (FR-136), so a claim that
+     * reads the helper's body is reading what the panel runs.  Only the panel's rows of COLLABORATORS are read.
      *
      * MUTATION: add a statement of its own before the call in any of the panel's delegators, or make one call another
      * helper, and this fails.
@@ -667,14 +644,8 @@ public class testNoSelfRecursiveWrappers
 
     /**
      * Nothing outside the autonomy editor and its helpers reaches the panel's `promptName`, `applyLength` or `session`
-     * (FR-136).  They are package-private so that `EditorTileMenus`, `EditorPrompts`, `EditorSignals`,
-     * `EditorMassAssign` and `EditorWhy` can reach them, which leaves them open to the rest of `org.traincontrol.gui`;
-     * each has a door that decides something first (`promptNameFor` and `promptLengthFor` decide who may ask, and a
-     * write to the setup goes through the panel so that `setupChanged()` follows), and a caller that went round them
-     * would skip that.
-     *
-     * The control is the helpers themselves: the same reading must find `editor.session`, `editor.promptName(` and
-     * `editor.applyLength(` in them, and `autonomyPanel` as a declared name in LayoutEditor, or it is reading nothing.
+     * (FR-136): each has a door that decides something first, and a caller that went round it would skip that.  The
+     * control is the helpers themselves: the same reading must find them there, or it is reading nothing.
      *
      * MUTATION: in LayoutEditor, add `autonomyPanel.session.getStore();` or `autonomyPanel.promptName(over);` and this
      * fails.
