@@ -61,10 +61,8 @@ public class testRoutePicking
         EnumSet.copyOf(COVERED_HERE_BY.keySet());
 
     /**
-     * And the ones whose ranking needs a different railway, with where they are tested instead.
-     * LEAST_RECENTLY_VISITED ranks DESTINATIONS, so it needs two destinations (testAutoLayout).  RANDOM_ANY_STATION
-     * differs from RANDOM only in WHICH stations are eligible, so it is measured as a distribution over 400 decisions
-     * per case on the frozen snapshot of the operator's railway (MT-231, OB-156).
+     * And the ones whose ranking needs a different railway: LEAST_RECENTLY_VISITED is tested in testAutoLayout,
+     * RANDOM_ANY_STATION as a distribution on the frozen snapshot (MT-231).
      */
     private static final Set<Layout.PathPreference> COVERED_ELSEWHERE = EnumSet.of(
         Layout.PathPreference.LEAST_RECENTLY_VISITED,
