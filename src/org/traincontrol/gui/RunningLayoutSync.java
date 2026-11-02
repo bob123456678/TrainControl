@@ -106,9 +106,8 @@ final class RunningLayoutSync
 
     /**
      * Writes these trains' pauses into the railway's settings as built, for a door that changed them on the railway and
-     * in the setup together.  Only the trains the door changed (OB-343): writing the railway's whole list would hide a
-     * pause made by the Auto tab's button, and the rebuild would take the setup's older list as the word on every
-     * train.
+     * in the setup together.  Only the trains the door changed (OB-343): the railway's whole list would hide a pause
+     * made by the Auto tab's button.
      */
     void notePausesAsBuilt(java.util.Collection<Locomotive> changed)
     {
@@ -253,9 +252,8 @@ final class RunningLayoutSync
 
     /**
      * Puts each train back where it stood before the rebuild (OB-183), on the Point the rebuild gives the copy it stood
-     * on, by the name recorded or, where a square was renamed, the name the session traces it to.  A train whose square
-     * is gone is left where the rebuild put it.  The arrival side goes back too, as `Point.setLocomotive` clears it.
-     * `placementsJustEdited` is the trains the setup was just given a new placement for, or null.
+     * on; a train whose square is gone is left where the rebuild put it.  `placementsJustEdited` is the trains the
+     * setup was just given a new placement for, or null.
      */
     void putTheTrainsBack(java.util.Map<String, String[]> standing,
         java.util.Set<String> placementsJustEdited)
@@ -450,10 +448,8 @@ final class RunningLayoutSync
 
     /**
      * The same, told which trains the setup has just been given a new placement for (`placementsJustEdited`, or null).
-     * Where the rebuilt placement and `standing` disagree one of them is newer, and which does not show in either: the
-     * setup is newer where somebody just placed a train in the editor (`AutonomySession.placeLocomotive`, MT-337); the
-     * record is newer where a run moved a train after the last capture (OB-183).  A rebuild is also asked for by
-     * gestures that edit no placement, so neither rule can be inferred from the rebuild happening.  Decided per TRAIN.
+     * Where the rebuilt placement and `standing` disagree, the setup is newer where somebody just placed a train in the
+     * editor (MT-337), the record where a run moved a train after the last capture (OB-183).  Decided per TRAIN.
      * Returns the trains it could not put back, left where the rebuild put them; `log` is where to say so.
      */
     static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
@@ -560,13 +556,10 @@ final class RunningLayoutSync
     }
 
     /**
-     * The same rebuild, saying so when it declines one the operator has not been warned about (`sayIfDeclined`).  The
-     * rebuild is coalesced into one per gesture and posted an event later than the write that asked for it, so a run
-     * starting inside that event finds this gate shut and the edit is thrown away, correctly: rebuilding under a moving
-     * railway is what `prepareAutonomyReload` refuses.  Not deferred to when the run ends: a run moves locomotives and
-     * nothing folds `currentLoc` back, so a deferred rebuild would put each train back where it started (OB-144).  The
-     * remedy: stop the run and make the edit again.  `placementsJustEdited` is the locomotives whose placement this
-     * gesture wrote into the setup, or null.
+     * The same rebuild, saying so when it declines one the operator has not been warned about (`sayIfDeclined`).  A run
+     * starting inside the coalesced rebuild's event finds the gate shut and the edit is thrown away, correctly; a
+     * deferred rebuild would put each train back where it started (OB-144).  The remedy: stop the run and make the edit
+     * again.  `placementsJustEdited` is the locomotives whose placement this gesture wrote into the setup, or null.
      */
     void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
         java.util.Set<String> placementsJustEdited)
