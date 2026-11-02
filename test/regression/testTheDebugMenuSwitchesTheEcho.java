@@ -17,21 +17,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * Preferences > Debug switches the echo of sent commands, in debug and simulation only.
- *
- * Adam: *"it would be handy to have a preference option (only when in debug+simulate mode) to turn on and off echoing,
- * so we don't need to recompile every time"*, under *"a debug heading visible only in this mode"*.  Echoing is
- * `MarklinControlStation.DEBUG_SIMULATE_PACKETS`: with it on, a simulation answers every command as a Central Station
- * would, which lets the window follow a throttle reversal there (MT-488).
- *
- * In a window started simulating and in debug, on a sandbox.  A test run is unattended, so the stored choice is
- * neither read into the flag nor written from it.
+ * Preferences > Debug switches the echo of sent commands, in debug and simulation only (MT-488).  In a window started
+ * simulating and in debug, on a sandbox.  A test run is unattended, so the stored choice is neither read into the flag
+ * nor written from it.
  *
  * MUTATION: leave the checkbox out of the flag, or mount the menu whatever the mode, and a claim fails.
  *
- * And what a Central Station sends shows in that window (FR-136): the power cut at the station and a turnout thrown
- * there, each sent as the station sends it (`support.Packets`) and read off the window; and Sync Full Function State
- * asks the station, or does not, as its question is answered.
+ * And what a Central Station sends shows in that window (FR-136): the power cut and a turnout thrown, each sent as the
+ * station sends it (`support.Packets`), and Sync Full Function State asks the station, or does not, as its question is
+ * answered.
  *
  * @author Adam
  */
