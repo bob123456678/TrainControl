@@ -739,15 +739,7 @@ public class testTheRouteListShowsWhatRuns
     /** Whether Duplicate Route's worker, which syncs with the station after the copy is made, is still going. */
     private static boolean duplicating()
     {
-        for (StackTraceElement[] frames : Thread.getAllStackTraces().values())
-        {
-            for (StackTraceElement frame : frames)
-            {
-                if (frame.getMethodName().startsWith("lambda$duplicateRoute$")) return true;
-            }
-        }
-
-        return false;
+        return support.RouteListDoors.duplicating();
     }
 
     /**
@@ -1567,28 +1559,7 @@ public class testTheRouteListShowsWhatRuns
     /** Opens the route's editor from its right-click menu, and gives back its window. */
     private static java.awt.Window openTheEditor(String route) throws Exception
     {
-        final String title = org.traincontrol.util.I18n.f("route.ui.dialogEditRouteWithId", route,
-            model.getRouteId(route));
-
-        final javax.swing.AbstractButton edit = support.Components.withText(rightClickTheRoute(route),
-            org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
-
-        assertNotNull(edit, "the route's right-click menu has no Edit Route");
-
-        SwingUtilities.invokeLater(edit::doClick);
-
-        assertTrue(waitFor(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
-            + title + "\"");
-
-        closeAnyMenu();
-
-        for (java.awt.Window window : java.awt.Window.getWindows())
-        {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
-                && title.equals(((java.awt.Frame) window).getTitle())) return window;
-        }
-
-        throw new AssertionError("the editor titled \"" + title + "\" is gone");
+        return support.RouteListDoors.edit(ui, route);
     }
 
     /** Renames a route behind the editor's back, keeping everything else, as another window would. */
@@ -1633,61 +1604,19 @@ public class testTheRouteListShowsWhatRuns
     /** How many route editors are showing under this title. */
     private static int routeEditorsTitled(String title)
     {
-        int found = 0;
-
-        for (java.awt.Window window : java.awt.Window.getWindows())
-        {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
-                && title.equals(((java.awt.Frame) window).getTitle())) found++;
-        }
-
-        return found;
+        return support.RouteListDoors.editorsTitled(title);
     }
 
     /** The route list's table: the one holding routes. */
     private static JTable routeTable()
     {
-        JTable table = support.Components.find(ui, JTable.class, t ->
-        {
-            for (int row = 0; row < t.getRowCount(); row++)
-            {
-                for (int column = 0; column < t.getColumnCount(); column++)
-                {
-                    if (t.getValueAt(row, column) instanceof org.traincontrol.base.Route) return true;
-                }
-            }
-
-            return false;
-        });
-
-        assertNotNull(table, "the window has no table of routes");
-
-        return table;
+        return support.RouteListDoors.table(ui);
     }
 
     /** A route's cell in the list, or null. */
     private static Rectangle cellOf(final String route)
     {
-        return support.Components.onTheEventThread(() ->
-        {
-            JTable table = routeTable();
-
-            for (int row = 0; row < table.getRowCount(); row++)
-            {
-                for (int column = 0; column < table.getColumnCount(); column++)
-                {
-                    Object value = table.getValueAt(row, column);
-
-                    if (value instanceof org.traincontrol.base.Route
-                        && route.equals(((org.traincontrol.base.Route) value).getName()))
-                    {
-                        return table.getCellRect(row, column, true);
-                    }
-                }
-            }
-
-            return null;
-        });
+        return support.RouteListDoors.cellOf(ui, route);
     }
 
     /**
@@ -1697,26 +1626,7 @@ public class testTheRouteListShowsWhatRuns
     private static void clickTheRoute(String route, boolean onThePlayButton, final int kind, boolean popup)
         throws Exception
     {
-        final JTable table = routeTable();
-
-        support.Components.select(table);
-
-        settle();
-
-        Rectangle cell = cellOf(route);
-
-        assertNotNull(cell, "precondition: the route " + route + " is not in the route list");
-
-        final java.awt.Point at = onThePlayButton
-            ? new java.awt.Point((int) TrainControlUI.routePlayButtonBox(cell).getCenterX(), (int) cell.getCenterY())
-            : new java.awt.Point(cell.x + 6, (int) cell.getCenterY());
-
-        final int button = popup ? java.awt.event.MouseEvent.BUTTON3 : java.awt.event.MouseEvent.BUTTON1;
-        final int mask = popup ? java.awt.event.InputEvent.BUTTON3_DOWN_MASK : java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
-        final int modifiers = kind == java.awt.event.MouseEvent.MOUSE_CLICKED ? 0 : mask;
-
-        SwingUtilities.invokeLater(() -> table.dispatchEvent(new java.awt.event.MouseEvent(table, kind,
-            System.currentTimeMillis(), modifiers, at.x, at.y, 1, popup, button)));
+        support.RouteListDoors.click(ui, route, onThePlayButton, kind, popup);
     }
 
     /**
@@ -1761,75 +1671,13 @@ public class testTheRouteListShowsWhatRuns
         }
     }
 
-    /** One event of a right-click on a route's cell, the popup trigger only where it is said to be. */
-    private static void rightButton(String route, final int kind, final boolean popup) throws Exception
-    {
-        final JTable table = routeTable();
-
-        Rectangle cell = cellOf(route);
-
-        assertNotNull(cell, "precondition: the route " + route + " is not in the route list");
-
-        final java.awt.Point at = new java.awt.Point(cell.x + 6, (int) cell.getCenterY());
-
-        final int modifiers = kind == java.awt.event.MouseEvent.MOUSE_PRESSED
-            ? java.awt.event.InputEvent.BUTTON3_DOWN_MASK : 0;
-
-        // Through the window and the system queue, as the operating system's click arrives, so every listener on the
-        // way (the popup's own grab of the mouse included) sees it
-        SwingUtilities.invokeAndWait(() ->
-        {
-            // In sight first, as a route the user clicks is: the window hands the click to what is under it
-            table.scrollRectToVisible(new Rectangle(at.x, at.y, 1, 1));
-
-            java.awt.Window window = SwingUtilities.getWindowAncestor(table);
-            java.awt.Point there = SwingUtilities.convertPoint(table, at, window);
-
-            java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(new java.awt.event.MouseEvent(window,
-                kind, System.currentTimeMillis(), modifiers, there.x, there.y, 1, popup,
-                java.awt.event.MouseEvent.BUTTON3));
-        });
-    }
-
     /**
      * Right-clicks a route's cell as Windows does, the popup trigger on the release and then a click, through the
      * window, and gives back the menu that opened: the menu's own listener on the list is part of what is tested.
      */
     private static javax.swing.JPopupMenu rightClickTheRoute(String route) throws Exception
     {
-        support.Components.select(routeTable());
-
-        settle();
-
-        rightButton(route, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
-        rightButton(route, java.awt.event.MouseEvent.MOUSE_RELEASED, true);
-        rightButton(route, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
-
-        settle();
-
-        assertTrue(waitFor(() -> support.Components.popupShowing() != null, 5000), "a right-click on the route opened"
-            + " no menu");
-
-        final javax.swing.JPopupMenu menu = support.Components.popupShowing();
-
-        // The route's own menu, or a message saying which one was found instead
-        String found = support.Components.onTheEventThread(() ->
-        {
-            StringBuilder out = new StringBuilder(menu.getClass().getName()).append(':');
-
-            for (java.awt.Component item : menu.getComponents())
-            {
-                out.append(' ').append(item instanceof javax.swing.JMenuItem ? ((javax.swing.JMenuItem) item).getText()
-                    : "|");
-            }
-
-            return out.toString();
-        });
-
-        assertTrue(found.contains(org.traincontrol.util.I18n.t("route.ui.menuExecute")), "a right-click on " + route
-            + " opened a menu that is not the route's: " + found);
-
-        return menu;
+        return support.RouteListDoors.rightClick(ui, route);
     }
 
     private static void closeAnyMenu()

@@ -1723,11 +1723,7 @@ public class testRouteEditorValidation
     /** The section holding a table: its ancestor that sits beside the other table's section. */
     private static java.awt.Container section(javax.swing.JTable table, javax.swing.JTable other)
     {
-        java.awt.Container out = table.getParent();
-
-        while (out.getParent() != null && !out.getParent().isAncestorOf(other)) out = out.getParent();
-
-        return out;
+        return support.RouteEditing.section(table, other);
     }
 
     /**
@@ -1960,15 +1956,7 @@ public class testRouteEditorValidation
     /** A right-click on an outline row's line where no press edits anything, and the item chosen; it must be enabled. */
     private static void rightClickAndChoose(javax.swing.JTable table, int line, String key)
     {
-        javax.swing.JPopupMenu menu = rightClickCell(table, line, NOTHING_TO_EDIT);
-
-        assertNotNull(menu, "a right-click on line " + line + " opened no menu");
-
-        javax.swing.JMenuItem chosen = item(menu, key);
-
-        assertTrue(chosen.isEnabled(), key + " is grayed on line " + line + ": " + offered(menu));
-
-        support.Mouse.choose(chosen);
+        support.RouteEditing.rightClickAndChoose(table, line, key);
     }
 
     private static String plainReading(org.traincontrol.gui.RouteEditorFrame frame)
@@ -1985,12 +1973,7 @@ public class testRouteEditorValidation
     /** The route editor's table of one class, by its simple name. */
     private static javax.swing.JTable table(org.traincontrol.gui.RouteEditorFrame frame, final String kind)
     {
-        javax.swing.JTable table = support.Components.find(frame, javax.swing.JTable.class,
-            t -> kind.equals(t.getClass().getSimpleName()));
-
-        assertNotNull(table, "the route editor has no " + kind);
-
-        return table;
+        return support.RouteEditing.table(frame, kind);
     }
 
     /** The outline row of the selected line, or -1: the table shows no line for a joining word (OB-396). */
@@ -2020,70 +2003,34 @@ public class testRouteEditorValidation
     /** A right-click in one cell of the line showing an outline row. */
     private static javax.swing.JPopupMenu rightClickCell(final javax.swing.JTable table, int row, int column)
     {
-        final int line = screen(table, row);
-        java.awt.Rectangle cell = support.Components.onTheEventThread(() -> table.getCellRect(line, column, true));
-
-        return support.Mouse.rightClickAt(table, new java.awt.Point(cell.x + cell.width / 2,
-            cell.y + cell.height / 2), 5000);
+        return support.RouteEditing.rightClickCell(table, row, column);
     }
 
     /** A right-click below the last line, where the table has no line. */
     private static javax.swing.JPopupMenu rightClickBelow(final javax.swing.JTable table)
     {
-        int height = support.Components.onTheEventThread(() -> table.getHeight());
-
-        return support.Mouse.rightClickAt(table, new java.awt.Point(40, height + 6), 5000);
+        return support.RouteEditing.rightClickBelow(table);
     }
 
-    /** The table line showing an outline row, asked of the table; -1 for a joining word, which has none (OB-396). */
     private static int screen(final javax.swing.JTable table, final int row)
     {
-        return support.Components.onTheEventThread(() -> (Integer) call(table, "lineOf", row));
+        return support.RouteEditing.screen(table, row);
     }
 
-    /** The table's caption lines, top to bottom. */
     private static java.util.List<Integer> captionLines(final javax.swing.JTable table)
     {
-        return support.Components.onTheEventThread(() ->
-        {
-            java.util.List<Integer> out = new java.util.ArrayList<>();
-
-            for (int line = 0; line < table.getRowCount(); line++)
-            {
-                if ((Boolean) call(table, "isCaptionLine", line)) out.add(line);
-            }
-
-            return out;
-        });
+        return support.RouteEditing.captionLines(table);
     }
 
-    /** A private method of the condition table that takes one int, called as the table calls it. */
     private static Object call(Object table, String name, int argument)
     {
-        try
-        {
-            java.lang.reflect.Method method = table.getClass().getDeclaredMethod(name, int.class);
-
-            method.setAccessible(true);
-
-            return method.invoke(table, argument);
-        }
-        catch (ReflectiveOperationException e)
-        {
-            throw new AssertionError("the condition table has no " + name + "(int)", e);
-        }
+        return support.RouteEditing.call(table, name, argument);
     }
 
     /** Presses a button of the route editor by its text, as a click does, and lets its work finish. */
     private static void press(final org.traincontrol.gui.RouteEditorFrame frame, String key)
     {
-        javax.swing.AbstractButton button = notOnTheCommands(frame, key);
-
-        assertNotNull(button, "the route editor has no button " + key);
-        assertTrue(support.Components.onTheEventThread(button::isEnabled), key + " is grayed");
-
-        support.Components.press(button);
-        support.Components.settle();
+        support.RouteEditing.press(frame, key);
     }
 
     /** Selects a line and presses Alt and an arrow on the table. */
@@ -2099,44 +2046,12 @@ public class testRouteEditorValidation
     /** The menu's items as their message keys, each marked + when enabled and - when not; a divider as |. */
     private static String offered(final javax.swing.JPopupMenu menu)
     {
-        String[] keys = {"route.ui.menuInsertConditionAbove", "route.ui.menuInsertConditionBelow",
-            "route.ui.menuAddCondition", "route.ui.menuInsertCommandAbove", "route.ui.menuInsertCommandBelow",
-            "route.ui.menuAddCommand", "route.ui.menuMoveUp", "route.ui.menuMoveDown", "route.ui.menuDuplicate",
-            "route.ui.menuGroupSelected", "route.ui.menuUngroup", "route.ui.menuSplitHere", "ui.delete"};
-
-        StringBuilder out = new StringBuilder();
-
-        for (java.awt.Component part : menu.getComponents())
-        {
-            if (part instanceof javax.swing.JPopupMenu.Separator) out.append(" |");
-
-            if (!(part instanceof javax.swing.JMenuItem)) continue;
-
-            javax.swing.JMenuItem item = (javax.swing.JMenuItem) part;
-            String named = item.getText();
-
-            for (String key : keys)
-            {
-                if (I18n.t(key).equals(item.getText())) named = key;
-            }
-
-            out.append(out.length() == 0 ? "" : " ").append(item.isEnabled() ? "+" : "-").append(named);
-        }
-
-        return out.toString();
+        return support.RouteEditing.offered(menu);
     }
 
     private static javax.swing.JMenuItem item(javax.swing.JPopupMenu menu, String key)
     {
-        for (java.awt.Component part : menu.getComponents())
-        {
-            if (part instanceof javax.swing.JMenuItem && I18n.t(key).equals(((javax.swing.JMenuItem) part).getText()))
-            {
-                return (javax.swing.JMenuItem) part;
-            }
-        }
-
-        throw new AssertionError("the menu has no " + key + ": " + offered(menu));
+        return support.RouteEditing.item(menu, key);
     }
 
     /** The bold parts of "Reads as" other than the joining words, each cut to its sensor: "[S88 #23]". */
@@ -2392,22 +2307,7 @@ public class testRouteEditorValidation
     private static void clickCell(final javax.swing.JTable table, final int line, final int column, final int modifiers,
         final int count) throws Exception
     {
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            java.awt.Rectangle cell = table.getCellRect(line, column, true);
-
-            int x = cell.x + cell.width / 2;
-            int y = cell.y + cell.height / 2;
-            long now = System.currentTimeMillis();
-
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
-                modifiers | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, count, false,
-                java.awt.event.MouseEvent.BUTTON1));
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_RELEASED, now + 1,
-                modifiers, x, y, count, false, java.awt.event.MouseEvent.BUTTON1));
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED, now + 1,
-                modifiers, x, y, count, false, java.awt.event.MouseEvent.BUTTON1));
-        });
+        support.RouteEditing.clickCell(table, line, column, modifiers, count);
     }
 
     /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
@@ -2983,50 +2883,13 @@ public class testRouteEditorValidation
     /** The text of a caption, top to bottom, as it is painted. */
     private static String captionText(final javax.swing.JTable table, int caption)
     {
-        final int line = captionLines(table).get(caption);
-
-        return support.Components.onTheEventThread(() ->
-        {
-            java.lang.reflect.Method label = table.getClass().getDeclaredMethod("captionFor", int.class);
-
-            label.setAccessible(true);
-
-            return ((javax.swing.JLabel) label.invoke(table, line)).getText();
-        });
+        return support.RouteEditing.captionText(table, caption);
     }
 
     /** Clicks the caption on a caption line and chooses one of its rules from the menu that opens. */
     private static void chooseRule(final javax.swing.JTable table, int caption, String key) throws Exception
     {
-        final int line = captionLines(table).get(caption);
-        final java.awt.Rectangle pill = support.Components.onTheEventThread(() ->
-        {
-            java.lang.reflect.Method bounds = table.getClass().getDeclaredMethod("captionBounds", int.class);
-
-            bounds.setAccessible(true);
-
-            return (java.awt.Rectangle) bounds.invoke(table, line);
-        });
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            int x = pill.x + pill.width / 2;
-            int y = pill.y + pill.height / 2;
-            long now = System.currentTimeMillis();
-
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
-                java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_RELEASED, now + 1,
-                0, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
-        });
-
-        support.Components.waitFor(() -> support.Components.popupShowing() != null, 5000);
-
-        javax.swing.JPopupMenu menu = support.Components.popupShowing();
-
-        assertNotNull(menu, "a click on caption " + caption + " opened no menu");
-
-        support.Mouse.choose(item(menu, key));
+        support.RouteEditing.chooseRule(table, caption, key);
     }
 
     /**
@@ -4349,21 +4212,12 @@ public class testRouteEditorValidation
     private static javax.swing.AbstractButton commandButton(final org.traincontrol.gui.RouteEditorFrame frame,
         String key)
     {
-        javax.swing.AbstractButton out = support.Components.withText(commandSection(frame), I18n.t(key));
-
-        assertNotNull(out, "the commands' section has no " + key);
-
-        return out;
+        return support.RouteEditing.commandButton(frame, key);
     }
 
     private static void pressOnTheCommands(final org.traincontrol.gui.RouteEditorFrame frame, String key)
     {
-        javax.swing.AbstractButton button = commandButton(frame, key);
-
-        assertTrue(support.Components.onTheEventThread(button::isEnabled), key + " is grayed on the commands");
-
-        support.Components.press(button);
-        support.Components.settle();
+        support.RouteEditing.pressOnTheCommands(frame, key);
     }
 
     /** The commands' Undo and Redo, each + when it can be pressed and - when grayed: "+Undo -Redo". */
@@ -4477,26 +4331,7 @@ public class testRouteEditorValidation
     /** Presses an outline row's handle, drags to a point of the table and lets go there, as the mouse sends it. */
     private static void drag(final javax.swing.JTable table, int row, final java.awt.Point to) throws Exception
     {
-        final int line = screen(table, row);
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            java.awt.Rectangle handle = table.getCellRect(line, HANDLE, true);
-            int x = handle.x + handle.width / 2;
-            int y = handle.y + 12;
-            long now = System.currentTimeMillis();
-
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_PRESSED, now,
-                java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_DRAGGED, now + 1,
-                java.awt.event.InputEvent.BUTTON1_DOWN_MASK, x, y + 8, 0, false, java.awt.event.MouseEvent.NOBUTTON));
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_DRAGGED, now + 2,
-                java.awt.event.InputEvent.BUTTON1_DOWN_MASK, to.x, to.y, 0, false, java.awt.event.MouseEvent.NOBUTTON));
-            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_RELEASED, now + 3,
-                0, to.x, to.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
-        });
-
-        support.Components.settle();
+        support.RouteEditing.drag(table, row, to);
     }
 
     /** Whether a button of the route editor, found by its text, can be pressed. */
@@ -4513,16 +4348,13 @@ public class testRouteEditorValidation
     private static javax.swing.AbstractButton notOnTheCommands(final org.traincontrol.gui.RouteEditorFrame frame,
         String key)
     {
-        final java.awt.Container commands = commandSection(frame);
-
-        return support.Components.find(frame, javax.swing.AbstractButton.class, b -> I18n.t(key).equals(b.getText())
-            && !commands.isAncestorOf(b));
+        return support.RouteEditing.notOnTheCommands(frame, key);
     }
 
     /** The commands' section of the window: their frame, the row under it, and Capture. */
     private static java.awt.Container commandSection(final org.traincontrol.gui.RouteEditorFrame frame)
     {
-        return support.Components.onTheEventThread(() -> section(table(frame, "CommandTable"), conditionTable(frame)));
+        return support.RouteEditing.commandSection(frame);
     }
 
     /**
@@ -5069,19 +4901,7 @@ public class testRouteEditorValidation
     /** An address no signal of the layout answers at, from a preferred one up, so the condition is shown as a switch. */
     private static int switchAt(org.traincontrol.marklin.MarklinControlStation model, int preferred)
     {
-        for (int address = preferred; ; address += 10)
-        {
-            boolean signal = false;
-
-            for (Accessory.accessoryDecoderType type : Accessory.accessoryDecoderType.values())
-            {
-                Accessory at = model.getAccessoryByAddressIfPresent(address, type);
-
-                signal |= at != null && at.isSignal();
-            }
-
-            if (!signal) return address;
-        }
+        return support.RouteEditing.switchAt(model, preferred);
     }
 
     /** One edit of the practical claim, done through the editor as a user does it. */
