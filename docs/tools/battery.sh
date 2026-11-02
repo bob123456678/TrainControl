@@ -972,7 +972,7 @@ fi
 # THE COUNT, in name order, from the verdicts: the summary reads as it always did.
 # ONE RERUN OF EACH FAILED CLASS, alone, so a flake reads as a flake and not as a failure.  A class that fails, then
 # passes, is "flaky": listed apart, not counted green, and not an exit 1.  The rerun uses the state its first run had
-# (its lane's data folder, preference node and temp folder, with what the lane's earlier classes left there), so a
+# (its lane's data folder, preference node and temp folder, with what every class of the lane left there), so a
 # failure caused by a lane-mate's leftovers fails again and is counted.  Each flaky class, and each that fails both
 # times, gets a line in the flake log, naming the claims that failed first; `python docs/tools/flakes.py` adds them up
 # per class.  The log is docs/tools/flakes.tsv for a full run of the main checkout without TC_JVM_ARGS, and

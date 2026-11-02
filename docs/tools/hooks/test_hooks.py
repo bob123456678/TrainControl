@@ -184,12 +184,23 @@ check('xargs git checkout --', sh('git diff --name-only | xargs git checkout --'
 check('timeout git reset --hard', sh('timeout 60 git reset --hard'), 'deny')
 check('git checkout <branch>', sh('git checkout dev'), 'pass')
 
-# Each command is judged where it runs: a cd or git -C elsewhere, or a folder that only shares the layout's name
-for cmd in ['cd /tmp/clone && git reset --hard', 'git -C /tmp/clone reset --hard', 'cd /tmp/clone; git clean -fd',
-            'cp x.cs2 /tmp/cs2_sample_layout_backup/x.cs2', 'echo x > /tmp/cs2_sample_layout/a.cs2']:
+# A cd only adds folders a command may run in: it can fail, a subshell ends.  git -C is where git really runs.
+for cmd in ['git -C /tmp/clone reset --hard', 'cp x.cs2 /tmp/cs2_sample_layout_backup/x.cs2',
+            'echo x > /tmp/cs2_sample_layout/a.cs2', 'git checkout dev']:
     check(cmd, sh(cmd), 'pass')
+for cmd in ['cd /tmp/clone && git reset --hard', 'cd /tmp/clone; git clean -fd', '(cd /tmp/x && make); git reset --hard',
+            'pushd /tmp/x; popd; git reset --hard', 'cd -; git reset --hard', 'cd; git stash',
+            'cmd /c "cd /d C:/x && git reset --hard"', 'echo x > $PWD/cs2_sample_layout/a.cs2',
+            'cp x.cs2 ~/TrainControl/cs2_sample_layout/a.cs2']:
+    check(cmd, sh(cmd), 'deny')
+check('Set-Location then ; reset --hard', ps('Set-Location C:/scratch/clnoe; git reset --hard'), 'deny')
 check('cd into the repo, then reset --hard', sh('cd /tmp && cd ' + MSYS + ' && git reset --hard'), 'deny')
 check('git -C <repo> reset --hard elsewhere', sh('git -C ' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
+check('--work-tree <repo> elsewhere', sh('git --work-tree=' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
+
+# checkout of a named folder, several paths, or paths from xargs
+for cmd in ['git checkout src', 'git checkout HEAD src test', 'git diff --name-only | xargs git checkout']:
+    check(cmd, sh(cmd), 'ask')
 
 out = subprocess.run([sys.executable, GUARD], input='not json', capture_output=True, text=True)
 check('garbage on stdin', 'pass' if not out.stdout.strip() and out.returncode == 0 else 'error', 'pass')

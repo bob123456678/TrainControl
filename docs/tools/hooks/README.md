@@ -9,11 +9,11 @@ Two hooks enforce the standing rules that used to live only in instructions. Rea
 | `claude_guard.py` | The Claude Code `PreToolUse` hook. It judges every Bash, PowerShell, Edit, Write and NotebookEdit call that touches this repository, and answers deny, ask, or nothing. |
 | `pre-commit` | git's pre-commit hook. It runs `precommit.py` and lets the commit through, with a note, when there is no Python. |
 | `precommit.py` | The pre-commit checks. They read what is staged, never the working tree. |
-| `test_hooks.py` | 186 cases for both hooks. Run it after any change: `python docs/tools/hooks/test_hooks.py`. |
+| `test_hooks.py` | 199 cases for both hooks. Run it after any change: `python docs/tools/hooks/test_hooks.py`. |
 
 ## What they check
 
-It reads a shell command as the simple commands it is made of (split at `;`, `&&`, `|`, newlines and subshells), each as words with their quotes taken off. So text inside a quoted argument, a heredoc or a PowerShell here-string (a commit message, a grep pattern) is never read as a command, while `bash -c "..."`, `sh -c`, `cmd /c`, `powershell -Command`, `eval` and `Invoke-Expression` have their script judged as commands of their own. git's global options (`-C`, `-c k=v`, `--git-dir=...`) and a quoted or full-path `git` are seen through. Each command is judged in the folder it runs in: a `cd` earlier in the call, or git's `-C`, moves it, so the same command in a scratch clone outside this checkout passes. Every command in a call is judged before the answer: a deny anywhere wins over an ask before it.
+It reads a shell command as the simple commands it is made of (split at `;`, `&&`, `|`, newlines and subshells), each as words with their quotes taken off. So text inside a quoted argument, a heredoc or a PowerShell here-string (a commit message, a grep pattern) is never read as a command, while `bash -c "..."`, `sh -c`, `cmd /c`, `powershell -Command`, `eval` and `Invoke-Expression` have their script judged as commands of their own. git's global options (`-C`, `-c k=v`, `--git-dir=...`) and a quoted or full-path `git` are seen through. A `cd` earlier in the call only adds a folder the rest may run in, as a `cd` can fail and a subshell ends: a command is judged if any of those folders is this checkout. git's `-C`, which git itself obeys, is the one way to run a whole-tree revert in a scratch clone from here (`git -C <clone> reset --hard`). A live layout path the guard cannot read literally (a variable, `~`, an 8.3 short name) counts as inside it. Every command in a call is judged before the answer: a deny anywhere wins over an ask before it.
 
 `claude_guard.py` refuses:
 
@@ -34,7 +34,7 @@ It asks first about:
 
 * a push to master, or `git push --all` or `--mirror`
 * a merge, rebase, cherry-pick or commit while the checkout is on master
-* `git checkout -- <path>` or `git restore` of named files
+* `git checkout -- <path>`, a checkout naming a file or folder that exists, one fed paths by `xargs`, or `git restore` of named files
 * a shell command that writes or removes `LocDB.data`, `UIState.data` or `autonomy.json` (a redirection into it, a copy onto it, a move or removal of it)
 * a `.java` edit in `src/` or `test/` while a battery runs: `battery.sh` writes `%TEMP%\traincontrol-battery.lock.battery` with its pid and removes it on the way out, and a marker whose process is gone is ignored
 
@@ -78,7 +78,7 @@ It also prints a note, without stopping the commit, when `cs2_sample_layout` has
 
 2. **The git hook** needs one setting in the repository: `git config core.hooksPath docs/tools/hooks`. Worktrees share it.
 
-3. **Check both**: run `python docs/tools/hooks/test_hooks.py` (186 ok, 0 missed). Then, in a new session, ask Claude to run `git stash push`. It should be refused with "TrainControl guard: no git stash".
+3. **Check both**: run `python docs/tools/hooks/test_hooks.py` (199 ok, 0 missed). Then, in a new session, ask Claude to run `git stash push`. It should be refused with "TrainControl guard: no git stash".
 
 ## Changing a rule
 

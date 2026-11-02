@@ -29,7 +29,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `core.testMassAssignLengths` asks the same of a panel with no window round it, which is not where he met it; here the
  * autonomy editor is on screen with the main window behind it and the walk is started from its own Bulk Tools item.  A
  * desktop that will not give the editor the keyboard at all cannot show where it goes inside a prompt, and says so as a
- * skip.
+ * skip; the naming claims type their answer into the prompt, so there they fail.
  *
  * On the frozen railway (OB-111).  The two trains measured here are given back their lengths afterwards.
  *
@@ -608,8 +608,8 @@ public class testTheLengthPromptHasTheKeyboard
     }
 
     /**
-     * The prompt's text field, once it has the keyboard: the AWT drops a key event dispatched to a field while nothing
-     * has the focus, so an Enter sent earlier is lost and no refusal comes (OB-387).
+     * The prompt's text field, once it has the keyboard: an Enter typed before the field holds it does not reach the
+     * prompt, so no refusal comes (OB-387).
      */
     private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
     {

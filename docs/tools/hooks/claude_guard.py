@@ -367,9 +367,8 @@ def judge_git(glob_opts, sub, args, text, cwd=ROOT):
         f, pos = options(args, 'bB', long_takes=('orphan', 'conflict', 'pathspec-from-file'))
         if f & {'-f', '--force'} or any(p in WHOLE for p in pos):
             answer('deny', revert)
-        # Paths after `--`, from xargs with none named, or a named file that exists: each reverts that file
-        if '--' in args or any(os.path.exists(os.path.join(cwd, p)) and not os.path.isdir(os.path.join(cwd, p))
-                               for p in pos):
+        # Paths after `--`, from xargs, or a named file or folder that exists: each reverts what it names
+        if '--' in args or any(os.path.exists(os.path.join(cwd, p)) for p in pos):
             answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
     if sub == 'switch':
         f, _ = options(args, 'cC', long_takes=('create', 'force-create', 'orphan', 'conflict'))
@@ -467,31 +466,51 @@ def absolute(path, cwd):
     return path if os.path.isabs(path) or re.match(r'^/[a-zA-Z]/', path) else os.path.join(cwd or '', path)
 
 
+# A path the guard cannot read literally: a variable, a home folder, an 8.3 short name
+UNRESOLVED = re.compile(r'[$~%]')
+
+
 def moves_to(words, cwd):
-    """The folder a cd, pushd or Set-Location moves to, when this simple command is one; None otherwise."""
+    """The folder a cd, pushd or Set-Location names, when this simple command is one; None otherwise."""
     ci = command_at(words)
     if ci < len(words) and base(words[ci]) in ('cd', 'pushd', 'chdir', 'set-location', 'sl'):
-        args = [a for a in words[ci + 1:] if not a.startswith('-')]
-        if args:
+        args = [a for a in words[ci + 1:] if not a.startswith('-') and not re.match(r'^/[A-Za-z]$', a)]
+        if args and not UNRESOLVED.search(args[0]):
             return absolute(args[0], cwd)
     return None
 
 
-def git_dir(glob_opts, cwd):
-    """The folder git works in: the last -C, else where the command runs."""
-    here = cwd
+def git_places(words, glob_opts, places):
+    """The folders a git command may work in.  -C is where git really runs; --git-dir, --work-tree and GIT_DIR only
+    add folders, as they can name this checkout from anywhere."""
+    out = list(places)
     for k, o in enumerate(glob_opts):
         if o == '-C' and k + 1 < len(glob_opts):
-            here = absolute(glob_opts[k + 1], here)
-    return here
+            out = [absolute(glob_opts[k + 1], p) for p in out]
+    named = [o.split('=', 1)[1] for o in glob_opts if o.startswith(('--git-dir=', '--work-tree=')) and '=' in o]
+    named += [glob_opts[k + 1] for k, o in enumerate(glob_opts) if o in ('--git-dir', '--work-tree')
+              and k + 1 < len(glob_opts)]
+    named += [w.split('=', 1)[1] for w in words[:command_at(words)] if re.match(r'^GIT_(DIR|WORK_TREE)=', w)]
+    for n in named:
+        if UNRESOLVED.search(n):
+            return out + [ROOT]
+        out += [absolute(n, p) for p in places]
+    return out
 
 
-def in_live_layout(word, cwd):
-    """Whether a word names the repository's live layout folder or a path inside it."""
-    if LIVE_DIR.rstrip('/') not in word.lower() or not in_repo(word, cwd):
+def in_live_layout(word, places):
+    """Whether a word may name the repository's live layout folder or a path inside it: one the guard cannot read
+    literally counts, and a relative one counts if it lands there from any folder the command may run in."""
+    if LIVE_DIR.rstrip('/') not in word.lower():
         return False
-    r = rel(word, cwd).lower()
-    return r == LIVE_DIR.rstrip('/') or r.startswith(LIVE_DIR)
+    if UNRESOLVED.search(word):
+        return True
+    for p in places:
+        if in_repo(word, p):
+            r = rel(word, p).lower()
+            if r == LIVE_DIR.rstrip('/') or r.startswith(LIVE_DIR):
+                return True
+    return False
 
 
 def judge_shell(cmd, cwd, ps):
@@ -504,17 +523,23 @@ def judge_shell(cmd, cwd, ps):
             answer('deny', '-ExecutionPolicy Bypass is never used; run the script another way.')
     if not (in_repo(cwd, '') or NAME.lower() in cmd.lower()):
         return
-    # Each command is judged in the folder it runs in: a cd earlier in the call moves it, and git -C names its own
-    here = cwd
+    # A cd earlier in the call adds a folder the rest may run in, and never takes one away: a cd can fail, a subshell
+    # ends, and the shell is then still where it was.  Only git -C, which git itself obeys, moves a git command.
+    places = [cwd]
     for words, targets in segs:
-        moved = moves_to(words, here)
+        moved = moves_to(words, places[-1])
         if moved:
-            here = moved
+            places.append(moved)
             continue
         g = git_call(words)
-        if g and in_repo(git_dir(g[0], here), ''):
-            judge_git(g[0], g[1], g[2], ' '.join(words), git_dir(g[0], here))
-        if writes(words, targets, lambda w: in_live_layout(w, here)):
+        if g:
+            inside = [p for p in git_places(words, g[0], places) if in_repo(p, '')]
+            if inside:
+                ci = command_at(words)
+                via_xargs = any(base(w) == 'xargs' for w in words[:ci])
+                judge_git(g[0], g[1], g[2] + (['--'] if via_xargs and g[1] in ('checkout', 'restore') else []),
+                          ' '.join(words), inside[0])
+        if writes(words, targets, lambda w: in_live_layout(w, places)):
             answer('deny', 'the live layout is never written or reverted by a session; its changes are committed.')
     # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that is
     # itself the command being run is not a name to kill by.
