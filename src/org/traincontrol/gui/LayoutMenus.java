@@ -755,9 +755,7 @@ final class LayoutMenus
 
     /**
      * What a Recent Layouts item reads (OB-390): the folder's name, or where another listed folder shares it, as many
-     * of its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.  Cut
-     * in the middle past `RECENT_LABEL_MOST`, the head running past where it first differs from another item's, and not
-     * cut where the cut would still read like another item's.
+     * of its last folders as tell the two apart after an ellipsis, the whole path only where nothing shorter does.
      * @param path the folder
      * @param shown every folder listed with it
      * @return the label
