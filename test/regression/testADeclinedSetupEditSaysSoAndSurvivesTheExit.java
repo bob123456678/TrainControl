@@ -19,12 +19,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).
- *
- * The setup rebuild is coalesced into one per gesture, so a run starting before it finds the gate shut and the rebuild
- * is refused, correctly.  The race is not raced here: `isAutonomyBusy()` is also true for a staging flow, so the state
- * is reachable without one, and what is asserted is the consequence.  The message promises the edit "will be picked up
- * the next time the setup is loaded", so the exit's save must not fold the running layout over it.
+ * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).  The message
+ * promises the edit "will be picked up the next time the setup is loaded", so the exit's save must not fold the
+ * running layout over it.
  *
  * @author Adam
  */
@@ -1232,9 +1229,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A refusal from a menu item is owned by the main window, though the menu has closed by the time it is said (Adam's
-     * MT-703 note): said over the item, the message went to Swing's hidden frame and opened under an always-on-top main
-     * window, modal, so the window looked frozen.
+     * A refusal from a menu item is owned by the main window, though the menu has closed by the time it is said
+     * (MT-703).
      *
      * MUTATION: say the refusal over the item again, and this fails.
      */
@@ -1276,9 +1272,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The windows the main window opens follow its always-on-top setting whenever it changes (MT-703): they once copied
-     * it when made, so a later change left them as they were and a popped-out window restored at start-up stayed on
-     * top.
+     * The windows the main window opens follow its always-on-top setting whenever it changes (MT-703).
      *
      * MUTATION: let the windows copy the setting once again, and this fails.
      */
@@ -1359,9 +1353,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
     /**
      * Edit Name/Address/Decoder's error is owned by the window the operator clicked in, read before the locomotive
-     * database refreshes (MT-703): the refresh replaces every tile, so an error said over the clicked tile afterwards
-     * was owned by Swing's hidden frame.  Read off the source, because only a failure of the database reaches that
-     * error.
+     * database refreshes (MT-703), which replaces every tile.  Read off the source, because only a failure of the
+     * database reaches that error.
      *
      * MUTATION: say the error over the clicked tile again, and this fails.
      */
