@@ -36,15 +36,9 @@ import static regression.testTheImportDoorReadsAnOldFile.openTheEditorFor;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 
 /**
- * Right-clicking Return Home offers to put the trains at their homes without moving them (FR-129; Adam: "make it so that
- * when the return home button is right clicked, an option to just teleport the locomotives back (same as what the
- * autonomy right click menu allows) is shown.  Show a confirmation window that asks if the user wants to do this, and
- * confirms they will manually move the trains back"; and "the option should only be allowed when nothing is running").
- *
- * On the live snapshot's window.  The item is Place All Trains at Their Homes, which the editor's Bulk Tools menu offers
- * on the editor's session; here it lands on the live setup and is saved with it, as a placement made from the track
- * diagram is.  One question, `whyTheTrainsCannotBePlacedAtTheirHomes`, grays the item and refuses its press, asked again
- * after the confirmation.
+ * Right-clicking Return Home offers to put the trains at their homes without moving them (FR-129), after a
+ * confirmation, and only when nothing is running.  One question, `whyTheTrainsCannotBePlacedAtTheirHomes`, grays the
+ * item and refuses its press, asked again after the confirmation.
  *
  * @author Adam
  */
@@ -738,11 +732,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
-     * Return Home does not say "already on its home" over a train that is paused away from its home (OB-355; Adam:
-     * "'every locomotive is already at its home' is shown, and return home is greyed out, even if the reason is that
-     * locomotives are inactive but not on their stations.").  With every other train home and one homed train paused
-     * away, the button is grayed and says the train is paused and how to set it going - the menu's Run Trains to Their
-     * Homes the same; set going, the button is offered; with every train home, it says they are.
+     * Return Home does not say "already on its home" over a train that is paused away from its home (OB-355).
      *
      * MUTATION: let the triage count a paused train as home without saying so (answer ALREADY_HOME for it), and the
      * first reason fails.
