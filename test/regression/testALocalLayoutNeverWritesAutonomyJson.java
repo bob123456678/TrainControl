@@ -19,11 +19,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A layout stored on this computer never has autonomy.json written, loaded setup or not (OB-254).
  *
- * autonomy.json is the old graph's file, beside the application rather than in the layout folder.  The save on exit
- * wrote it back whenever no diagram configuration was loaded - which on a local layout is any session started with
- * Load Autonomy unticked, as every legacy import now leaves it.  Adam: *"We should only write to
- * the new save format in the layout folder, IMO."*  The same day the old window was removed from every layout, and
- * no layout writes the file (testTheOldAutonomyTabIsGone asks it of a Central Station one).
+ * autonomy.json is the old graph's file, beside the application rather than in the layout folder; the save on exit
+ * wrote it back whenever no diagram configuration was loaded (Adam: "We should only write to the new save format in the
+ * layout folder, IMO.").  No layout writes the file now (testTheOldAutonomyTabIsGone asks it of a Central Station one).
  *
  * Asked of the backup save, which writes the same files under a timestamp into the run's own backup folder - never over
  * the application's autonomy.json, whichever way the claim comes out.
