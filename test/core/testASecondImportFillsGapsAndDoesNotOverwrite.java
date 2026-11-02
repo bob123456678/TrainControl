@@ -15,17 +15,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Importing the same 2.7.4c file twice fills what is missing and leaves what is there (MT-298).
- *
- * The promise is that an import is safe to repeat: somebody who imports, corrects a station by hand, then imports again
- * must not lose the correction.  `importLegacy` gap-fills by design, and nothing held it to that.
- *
- * The file is Adam's own, shipped beside the entry: `docs/manual-tests/files/MT-298-autonomy-2.7.4c.json` is a
- * byte-for-byte copy of the `config/autonomy_legacy/autonomy.json` in the frozen snapshot of his railway, which this
- * reads.
- *
- * **Driven at `importLegacy` rather than through the menu**, where the gap-filling rule lives; whether the menu item
- * reaches it is MT-298's own step 1.
+ * Importing the same 2.7.4c file twice fills what is missing and leaves what is there (MT-298): an import is safe to
+ * repeat.  The file is Adam's own, shipped as `docs/manual-tests/files/MT-298-autonomy-2.7.4c.json`.  Driven at
+ * `importLegacy` rather than through the menu, where the gap-filling rule lives.
  *
  * MUTATION: make the import overwrite rather than gap-fill - write the file's value unconditionally - and the hand-made
  * change is lost, which is the claim below.
