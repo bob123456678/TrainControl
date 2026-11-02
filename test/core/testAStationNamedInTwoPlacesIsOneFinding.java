@@ -103,12 +103,9 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station whose name is drawn in two places is an error that names the station and both squares (OB-341). Every
-     * door of the editor keeps one station to one caption (OB-256), so the state arrives from outside them: a setup
-     * saved, a second caption written into its `captions`, and the setup opened again.
-     *
-     * One finding for the station, on its own square, carrying both caption squares and their number. THE CONTROLS are
-     * the same setup before the edit and the station once it is no station, whose captions are kept but not drawn.
+     * A station whose name is drawn in two places is an error that names the station and both squares (OB-341).  The
+     * state arrives from outside the editor's doors, which keep one station to one caption (OB-256).  THE CONTROLS are
+     * the same setup before the edit and the station once it is no station.
      *
      * MUTATION: leave the error out, report a station with one caption, or count a square that is no station, and this
      * fails.
@@ -197,8 +194,6 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * One finding per station however many places its name is drawn in, and the editor's own doors clear it (OB-341).
-     * The sentence tells the reader to stop showing the station on all but one square, and to show it on the one to
-     * keep: both go through `setCaption`, the door the editor's menu uses, so doing as it says ends the finding.
      *
      * MUTATION: one finding per caption square, counting the station's own square, or not clearing when the extra ones
      * go, and this fails.
@@ -263,9 +258,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * A station named on its own square and beside it is drawn once, so it is no error (OB-341): the shape of Adam's
-     * own railway, where `TrainControlUI.autonomyCaptionAt` draws it ONCE, the beside one (MT-337). The check counts
-     * what is drawn, by the session's `isCaptionDrawn` that the drawing asks as well; a second caption beside the
-     * station makes it two names.
+     * own railway (MT-337).  The check counts what is drawn, by the session's `isCaptionDrawn`.
      *
      * MUTATION: count the station's own square as a place, and this fails.
      */
@@ -311,8 +304,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * What is stale is not counted (OB-341): a caption on a page that is gone is not drawn anywhere. The control is the
-     * station with a second caption that is on a page, which is reported.
+     * A caption on a page that is gone is not counted (OB-341).
      *
      * MUTATION: leave out the page test in `isCaptionDrawn`, and this fails.
      */
@@ -344,9 +336,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * A station that is no Point is reported when its name is drawn twice on a page (OB-341): the diagram draws a
-     * caption for any station whether or not the railway built a Point there (`getCaptionTarget` asks only that the
-     * square be one). Two such stations: a sensor with no track to it, and a station on a page left out of autonomy
-     * whose captions sit on a page that is drawn. A setup edited by hand can make either.
+     * caption for any station whether or not the railway built a Point there.
      *
      * MUTATION: ask whether the station is a Point in `stationsShownMoreThanOnce`, and this fails.
      */
@@ -393,9 +383,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A station unnamed and out of service is not reported for what is not drawn (OB-341): the diagram draws no caption
-     * for it (*"hide the label if empty and nothing can pass."*), and its automatic name already has an error of its
-     * own, which `checkStationLabels` avoids doubling. Named, or unnamed and in service, it is drawn and reported.
+     * A station unnamed and out of service is not reported for what is not drawn (OB-341); named, or unnamed and in
+     * service, it is drawn and reported.
      *
      * MUTATION: leave the rule out of `isCaptionDrawn`, and the first assertion fails.
      */
@@ -443,10 +432,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * The finding is filed on the first square the name is drawn on, and counted and clicked to there (OB-341): the
-     * editor counts it for the page and jumps to the square it is filed on, so one filed on the station's own page
-     * would send the click where the squares to look at are not. It is ABOUT the station, which is what the sentence
-     * names.
+     * The finding is filed on the first square the name is drawn on, and counted and clicked to there (OB-341).
      *
      * MUTATION: file it on the station's own square, and this fails.
      */
@@ -509,8 +495,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * A station named on its own square and on another page is drawn on both, and is no error (OB-341): the check is
-     * per page, and the station's own caption gives way only to a caption on its OWN page. A caption on a page that is
-     * not drawn (left out of autonomy, `LayoutGrid.hidesStationCaptions`, or gone) is drawn nowhere.
+     * per page.
      *
      * MUTATION: let the own caption give way to a caption on another page, and this fails.
      */
@@ -560,9 +545,6 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * Only a page that draws a station's name twice is an error, and the finding names that page's squares (OB-341).
-     * Two on the station's own page and one on another is one finding with the two; two on the OTHER page is one
-     * finding with the other page's two, named with their page; a caption beside the station on each page, or two on a
-     * page that is not drawn, are not two names.
      *
      * MUTATION: count the captions of all pages together, and this fails.
      */
@@ -640,8 +622,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * The squares are named in reading order, and the stations are listed in it, whatever order the setup holds them in
-     * (OB-341): a file's captions load in JSON order, which is no order at all. Put in through the store in the
-     * opposite order, so that only sorting gives the answer.
+     * (OB-341).  Put in through the store in the opposite order, so that only sorting gives the answer.
      *
      * MUTATION: leave the sorts out of `stationsShownMoreThanOnce`, and this fails.
      */
@@ -682,10 +663,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * An import does not caption a station the setup already shows somewhere else (OB-341): `importBundle` merges the
-     * file's `captions` square by square, and a square with no caption is a gap whether or not the STATION it names is
-     * shown elsewhere. A station the setup shows nowhere still gets the file's caption, or an import onto a fresh setup
-     * would lose them all.
+     * An import does not caption a station the setup already shows somewhere else (OB-341); a station the setup shows
+     * nowhere still gets the file's caption.
      *
      * MUTATION: take the guard out of the `captions` merge in `importBundle`, and this fails.
      */
@@ -739,10 +718,9 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * A file that names one station in several places gives the setup one of them, and always the same one (OB-341).
-     * org.json holds the file's keys in no order, so the squares are taken in reading order (page, row, column) and the
-     * first is kept; the keys below hash in an order that is NOT reading order, so only the sort puts the right one
-     * first.
+     * A file that names one station in several places gives the setup one of them, and always the same one (OB-341):
+     * the squares are taken in reading order.  The keys below hash in an order that is NOT reading order, so only the
+     * sort puts the right one first.
      *
      * MUTATION: take the keys in the order the file gives them, and this fails.
      */
@@ -790,9 +768,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     }
 
     /**
-     * An import keeps a caption on another page than the station's own, and still skips a second on one page (OB-341):
-     * the merge takes a caption of the file's only when the station has none yet ON THAT CAPTION'S PAGE, the file's own
-     * repeats included, in the order of the squares.
+     * An import keeps a caption on another page than the station's own, and still skips a second on one page (OB-341).
      *
      * MUTATION: compare the stations alone, without their page, and this fails.
      */
@@ -840,8 +816,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
     /**
      * Showing a station's name on another page ADDS a caption there; on the same page it MOVES the one that was there,
-     * and Stop Showing takes off only the one clicked (OB-341). `clearCaptions` takes off only the captions on the new
-     * one's page, and `setCaption`, `placeCaption` and `moveCaption` go through it.
+     * and Stop Showing takes off only the one clicked (OB-341).
      *
      * MUTATION: clear the station's captions on every page, and this fails at the first step.
      */
