@@ -23,14 +23,9 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The autonomy editor's keyboard shortcuts are named where their actions are offered.
- *
- * Adam, OB-214: *"in the autonomy editor, Set Segment Length needs a tooltip that says 'Control+E'.  change for other
- * missing tooltip hints."*
- *
- * Asked of the real menu, through `buildTileMenu` - the method the right-click calls - on a station of the frozen
- * railway, and of the item that carries each action rather than of the menu as a whole, so a hint put on the wrong item
- * fails.
+ * The autonomy editor's keyboard shortcuts are named where their actions are offered (OB-214).  Asked of the real
+ * menu, through `buildTileMenu` - the method the right-click calls - and of the item that carries each action rather
+ * than of the menu as a whole, so a hint put on the wrong item fails.
  *
  * MUTATION: delete `lengthItem.setToolTipText(SHORTCUT_LENGTH)` and the first claim fails.
  *
@@ -105,12 +100,9 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Nothing in the autonomy editor's window takes the keyboard from it (OB-200; Adam: *"when items in the list of
-     * issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just send
-     * the commands through with the list of issues panel selected."*).
-     *
-     * The shortcuts are the window's own key handler, so its controls are kept from taking the keyboard (OB-019).
-     * Asked of every control a click would give the keyboard to, in the whole window, so one added later is asked too.
+     * Nothing in the autonomy editor's window takes the keyboard from it (OB-200, OB-019): the shortcuts are the
+     * window's own key handler.  Asked of every control a click would give the keyboard to, in the whole window, so one
+     * added later is asked too.
      *
      * MUTATION: let the findings list or the directions box take the keyboard again, and this fails.
      */
@@ -166,9 +158,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A page switch in the autonomy editor never shows the track editor's title (MT-669; Adam: *"when switching pages,
-     * the autonomy editor window title briefly shows the layout editor (not autonomy editor) title for a split second,
-     * before being updated."*).  The title is the arriving mode's from the start.
+     * A page switch in the autonomy editor never shows the track editor's title (MT-669): the title is the arriving
+     * mode's from the start.
      *
      * MUTATION: set the track editor's title on the way into autonomy mode again, and this fails.
      */
@@ -239,14 +230,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Both editors' titles name the configuration that is loaded, beside the page, and follow it (FR-127; Adam: *"the
-     * current autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if
-     * active)"*).
-     *
-     * An editor open while the configuration is unloaded, loaded, switched, renamed and unloaded is asked for its title
-     * after each.  The track editor names the configuration LOADED (with nothing loaded, the page's); the autonomy
-     * editor names the configuration it EDITS, the setup's chosen one, loaded or not.  Run last (priority 1) because
-     * unloading rebuilds the session the other claims share, which is taken afresh at the end.
+     * Both editors' titles name the configuration that is loaded, beside the page, and follow it (FR-127).  Run last
+     * (priority 1) because unloading rebuilds the session the other claims share, which is taken afresh at the end.
      *
      * MUTATION: build the title from the page alone, leave a rename or an unload out of the places that set it again,
      * or name the autonomy editor's configuration by what is loaded and not what is chosen, and this fails.
@@ -469,10 +454,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Select by Dragging a Box has a key, named on its item in the track diagram editor's right-click menu (FR-107).
-     *
-     * Adam: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*.  The item's
-     * tooltip names the key, and the key does what the item does: one box, then back to normal.
+     * Select by Dragging a Box has a key, named on its item in the track diagram editor's right-click menu (FR-107),
+     * and the key does what the item does: one box, then back to normal.
      *
      * MUTATION: take the key out of the editor's key handler, or its name off the item, and this fails.
      */
@@ -824,12 +807,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape pressed while a box is being drawn drops the box too.
-     *
-     * Escape is how a half-made gesture is dropped (behaviour/editing-while-running.md 6a, FR-065), so the box being
-     * drawn is in the track editor's list: otherwise the release picks it with picking off, or Escape closes the editor
-     * with the button down.  A box dragged with the button down - once with Control+M's picking, once with Shift and
-     * nothing else held - then Escape, then the release.
+     * Escape pressed while a box is being drawn drops the box too (FR-065): Escape is how a half-made gesture is
+     * dropped.
      *
      * MUTATION: leave the box out of what Escape drops again, and this fails.
      */
@@ -2400,15 +2379,9 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * The click's tooltip line is for the visit: a page switch keeps it gone, so do the editor's own reopenings, and
-     * the next opening through the main window says it again.
+     * the next opening through the main window says it again (MT-697).
      *
-     * Adam, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip tracking
-     * state reset after the editor is closed"*.  A finding, a notice or a link changes page by closing the window and
-     * opening another - the user closed nothing, so the click goes with them.
-     *
-     * The class's own editor is put away so the main window opens its own, and built again after.  Each of the three
-     * doors is gone through twice: from a window a square was clicked in, where the line stays gone, and from one
-     * nothing was clicked in, where it is still said.
+     * The class's own editor is put away so the main window opens its own, and built again after.
      *
      * MUTATION: let a page switch, or any of the editor's three own reopenings, forget the click or hand on one nobody
      * made; or keep it in the main window past the editor's closing - and this fails.
@@ -3616,10 +3589,8 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The exit brings a minimized track editor back before it asks about its unsaved work (MT-703): the question is
-     * owned by the editor, and a minimized window hides what it owns, so the exit would wait on a question nobody can
-     * see.  The editor has a turned square unsaved, so the exit does ask, and the editor is read while the question
-     * shows.
+     * The exit brings a minimized track editor back before it asks about its unsaved work (MT-703): a minimized window
+     * hides the question it owns.
      *
      * MUTATION: ask without bringing the editor back, and this fails.
      */
