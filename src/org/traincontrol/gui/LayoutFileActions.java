@@ -40,11 +40,9 @@ final class LayoutFileActions
     }
 
     /**
-     * Writes the page index and re-aims every arrow on the layout at the page it was aimed at.  A link tile holds a
-     * position in the name-sorted page list, so any change to the set of page names changes what the arrows mean.
-     * Delete and Combine go through here; Add, Duplicate and Rename go through `LayoutPageEdit`.  The order is taken
-     * from the pages this session holds, not the index file, because an index naming two pages the same aliases them.
-     * A page that has gone leaves its arrows pointing at nothing (`LayoutDiagramComponent.setLinkedPageIndex`).
+     * Writes the page index and re-aims every arrow on the layout at the page it was aimed at, as a link tile holds a
+     * position in the name-sorted page list.  Delete and Combine go through here; Add, Duplicate and Rename go through
+     * `LayoutPageEdit`.  The order is taken from the pages this session holds, not the index file (FR-018).
      *
      * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
      * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
@@ -419,9 +417,7 @@ final class LayoutFileActions
      * @param rename - true if renaming
      * @param duplicate - true if duplicating
      * @param blank - true to clear
-     * @param from the layout editor that asked (FR-109), or null for the Layouts menu: the one editor not refused as
-     *        open; the questions hang off it, it steps aside once nothing can refuse, and it is told which page to
-     *        show however this ends
+     * @param from the layout editor that asked (FR-109), or null for the Layouts menu
      */
     void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank,
         final LayoutEditor from)
