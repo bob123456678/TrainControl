@@ -81,8 +81,7 @@ final class TrainFit
             claimed.add(ids.get(n));
 
             // THE BERTH'S OWN SQUARE FIRST, and spent like the rest (OB-278), in the order and arithmetic of
-            // `walkOneTail`.  AN ANSWERED 0 IS NOT COUNTED AS MISSING (Adam: "stop listing answered zeros as missing"):
-            // it is read as nothing, and claimed.
+            // `walkOneTail`.  AN ANSWERED 0 IS NOT COUNTED AS MISSING: it is read as nothing, and claimed.
             if ((spans.get(n) == null || spans.get(n) <= 0) && !approach.isPlaceAnswered(ids.get(n))) unmeasured++;
 
             left -= spans.get(n) == null ? 0 : Math.max(0, spans.get(n));
@@ -360,9 +359,8 @@ final class TrainFit
             return I18n.f("autolayout.errorTrainLengthTooLong", Layout.placeNameOf(ending));
         }
 
-        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (MT-333).  Adam: "This should only apply if lengths are
-        // specified - and edges are already locked as trains pass through in non-dynamic mode.  So it's really about
-        // implementing the same mechanic."
+        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (MT-333).  It only applies where lengths are specified; edges
+        // are already locked as trains pass through in non-dynamic mode, so this is the same mechanic.
         //
         // ONE WALK, ASKED OF EVERY PREFIX: `measuredRoomAtTheEndOf` of path[0..i] answers "if the train stood here,
         // would its tail be clear of the switch behind it"; the destination is the last iteration, so the two cannot
@@ -429,11 +427,10 @@ final class TrainFit
         if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         if (path == null || path.isEmpty()) return null;
-        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE (Adam: "between the switch and the station, the length
-        // must be >= length of the train", and for the direction over the points "let's use any direction, that way we
-        // are guaranteed to be safe").  So this walks the route BACKWARDS and stops at the first edge that crosses a
-        // switch, adding only the part of that edge after it.  An unmeasured edge still answers null (this guard acts
-        // on measurements, not their absence).
+        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE: between the switch and the station the length must be
+        // >= the length of the train, in any direction over the points, to be safe.  So this walks the route BACKWARDS
+        // and stops at the first edge that crosses a switch, adding only the part of that edge after it.  An unmeasured
+        // edge still answers null (this guard acts on measurements, not their absence).
         int room = 0;
 
         // WHETHER ANY MEASURED TRACK WAS COUNTED: a room of 0 answered on purpose is a room, not an unknown (Adam: "We
@@ -444,12 +441,11 @@ final class TrainFit
         {
             Edge segment = path.get(i);
 
-            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does (Adam: "it can be either the reversal or the
-            // berth, depending on where switches are.  both need to be long enough."): a train that turns part way
-            // along comes to rest on the track after the turn only.  The second bound is at the turn itself, in
-            // `whyTooLongForThisRoute` (`core.testNonReversibleTrains` carries his figures).  The last edge of whatever
-            // list is handed in is exempt, because its end is the square being asked about.  ANY reversing point
-            // counts.
+            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does: a train that turns part way along comes to rest
+            // on the track after the turn only, and both the reversal and the berth need to be long enough.  The second
+            // bound is at the turn itself, in `whyTooLongForThisRoute` (`core.testNonReversibleTrains` carries the
+            // figures).  The last edge of whatever list is handed in is exempt, because its end is the square being
+            // asked about.  ANY reversing point counts.
             if (i < path.size() - 1 && segment.getEnd() != null && segment.getEnd().isReversing())
             {
                 return counted ? room : null;
@@ -457,9 +453,9 @@ final class TrainFit
 
             if (segment.crossesASwitch())
             {
-                // BOUNDED BUT UNMEASURED (-1), and what has already been counted still stands (Adam: "Generally, allow
-                // it."): two units of measured berth prove a four-unit train does not fit; an unmeasured stretch behind
-                // them cannot unprove it.  `room > 0` separates the halves of the ruling.
+                // BOUNDED BUT UNMEASURED (-1), and what has already been counted still stands: two units of measured
+                // berth prove a four-unit train does not fit; an unmeasured stretch behind them cannot unprove it.
+                // `room > 0` separates the halves of the ruling.
                 if (segment.getRoomAtTheEnd() < 0)
                 {
                     // THE SEGMENT BOUNDS THE STRETCH INSIDE IT: the room that matters is the track after the last
