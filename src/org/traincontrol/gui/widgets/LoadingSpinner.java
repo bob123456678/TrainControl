@@ -14,17 +14,8 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 /**
- * The "still drawing" mark shown in place of a track diagram while its tiles are being decoded.  Text labels appear at
- * once and the track a second later, which reads as the diagram being wrong and then correcting itself; one thing that
- * says "not yet" is honest about the same wait.
- *
- * An hourglass rather than a turning arc (FR-024).  Adam: "change the very large spinner shown on top of loading track
- * diagrams to a large gray hourglass icon instead.  animate if possible."
- *
- * Drawn rather than loaded from a GIF (one more asset to scale for high-DPI and keep in step with the theme).  The
- * turn at the end of each cycle is free: an emptied hourglass turned through half a circle is pixel for pixel a full
- * one, so the sand never jumps back up.  Only the turn rotates; the drain is drawn upright.  The timer runs only while
- * the component is visible on screen.
+ * The "still drawing" mark shown in place of a track diagram while its tiles are being decoded: an hourglass (FR-024)
+ * that turns at the end of each cycle, its timer running only while the component is visible on screen.
  */
 public class LoadingSpinner extends JPanel
 {
