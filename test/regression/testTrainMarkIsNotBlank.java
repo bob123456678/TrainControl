@@ -6,11 +6,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileAnnotation;
 
 /**
- * A square whose only annotation is "a train is standing here" is not a blank square (OB-007: "add a small white * on
- * top of the station icons to show there is a train there").  `paint()` opens with `if (isBlank()) return;` and
- * `isBlank()` lists every field that counts as content except `occupied`, so an annotation carrying nothing but a train
- * was blank and the star was never painted.  The field was added to equals and hashCode and missed here; it only bit
- * where the train was the ONLY thing to say about a square.
+ * A square whose only annotation is "a train is standing here" is not a blank square (OB-007): `isBlank()` must count
+ * `occupied`, or the star is never painted.
  *
  * @author Adam
  */
