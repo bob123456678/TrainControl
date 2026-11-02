@@ -1291,9 +1291,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Orders rename proposals so each one is applied only once its target name is free, and drops any that form a
      * cycle.
      *
-     * Sources and Central Station names are unique, so the list is a partial injective mapping and can contain cycles.
-     * The consumer applies entries one at a time, deleting whatever already holds a target name, so the order is
-     * load-bearing:
+     * The consumer applies entries one at a time, deleting whatever already holds a target name, so order matters:
      *
      * - A CHAIN (the Central Station renamed X to C and the old C to D) is safe only if "C to D" comes first, which
      *   frees the name; the other order destroys the middle locomotive.
@@ -1962,10 +1960,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             l.add(new MarklinSimpleComponent(f));
         }
         
-        // The database that would not load, kept before this one goes on top of it: a transient read failure at startup
-        // plus a normal exit would otherwise save an empty database over every locomotive customization.  The old file
-        // is copied aside first, once, and said out loud; the save still happens, but the mark is cleared only once the
-        // copy is known to exist, and until then the file is left as it is and the next save tries again.
+        // The database that would not load is copied aside first, once, and said out loud: a transient read failure at
+        // startup plus a normal exit would otherwise save an empty database over every customization.  The mark is
+        // cleared only once the copy exists; until then the next save tries again.
         if (!backup && this.databaseLoadFailed)
         {
             try
@@ -2199,12 +2196,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return false;
         }
 
-        // NOT WHILE IT RUNS, and refused before anything is deleted too.  This edits by deleting the route and adding a
-        // new object under the same id, and what a route is doing lives on its object: `isExecuting`, which
-        // runningRouteDriving asks, the route tile draws, and the route's own guard against starting twice reads.
-        // Carrying the flag across would not mend that: the thread that clears it holds the OLD object.  Refused and
-        // said in the log, and each caller leaves the route as it was.  Nothing is lost by waiting: a route runs the
-        // commands it started with (`execRoute` takes a copy), so an edit lands on the next run either way.
+        // Refused before anything is deleted: this edits by deleting the route and adding a new object under the same
+        // id, and what a route is doing (`isExecuting`) lives on its object; the thread that clears it holds the OLD
+        // one.  Waiting loses nothing: a route runs the commands it started with (`execRoute` takes a copy).
         if (existing.isExecuting())
         {
             this.logf("route.errorEditRouteWhileRunning", name);
@@ -3525,14 +3519,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // nothing when the route fires, and silently, which looks exactly like a route that ran.
             for (MarklinRoute r : this.getRoutes())
             {
-                // WHICH ROUTES LOSE COMMANDS, by name, before they lose them: "Say how many in the popup and which in
-                // the log." The count is in the confirmation; this is the other half, here because this is where the
-                // commands actually go, asked BEFORE `locomotiveDeleted` removes them.
+                // Asked BEFORE `locomotiveDeleted` removes the commands, so the log can name the routes that lose them.
                 boolean drove = r.commandsDrive(name);
 
-                // A condition naming the deleted locomotive is left in place on purpose (see locomotiveDeleted), so it
-                // is said out loud: that route will not fire again until edited, and nobody notices a route that
-                // silently stopped.
+                // A condition naming the deleted locomotive stays on purpose (see locomotiveDeleted); said out loud,
+                // since that route will not fire again until edited.
                 if (r.locomotiveDeleted(name))
                 {
                     this.logf("route.warnConditionNamesDeletedLocomotive", r.getName(), name);
@@ -3600,11 +3591,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             this.rebuildLocIdCache();
             
-            // Nothing else to repair by identity: a locomotive hashes by identity, so renaming one cannot move it out
-            // of the consists, exclusion sets or run lists that hold it (see MarklinLocomotive.hashCode).  State held
-            // by NAME does need repairing, in TWO places: the routes below, and the autonomy SETUP (each
-            // configuration's placements, homes and exclusion lists).  The running layout needs none: a Point holds the
-            // LOCOMOTIVE.
+            // A locomotive hashes by identity, so renaming one moves it out of no consist, exclusion set or run list
+            // (see MarklinLocomotive.hashCode).  State held by NAME is repaired in TWO places: the routes below and the
+            // autonomy SETUP (placements, homes, exclusion lists).  A Point holds the LOCOMOTIVE, so the running layout
+            // needs none.
             if (this.view != null) this.view.autonomyLocomotiveRenamed(name, newName);
 
             // AND THE RUNNING LAYOUT'S RECORD OF WHERE IT WAS TURNED, which is keyed by name for the reason the
@@ -4879,10 +4869,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // after await()).
                     latch.countDown();
 
-                    // AND NOTHING HERE TAKES THE NOTICE DOWN: the notice is ON the window, so doing that on every path
-                    // would hide it a moment after showing it and show it again from `display()`: **"can we avoid
-                    // having the window close and then reopen?"**  A FAILED build takes the window with it; a good one
-                    // keeps it for `display()`.
+                    // Nothing here takes the notice down: it is ON the window, and hiding it only to show it again from
+                    // `display()` made the window close and reopen.  A FAILED build takes the window with it.
                 }
             });
 
