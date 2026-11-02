@@ -48,10 +48,8 @@ public final class RunGates
     }
 
     /**
-     * Refuses to change the locomotive database while autonomy is running (Adam, MT-141: "Never allow any modifications
-     * to a running layout.  This includes locomotive database, the track diagram, the autonomy config, or the
-     * locomotive placements."), collected here so that a fifth door is one call.  True when the caller must not
-     * proceed.
+     * Refuses to change the locomotive database while autonomy is running (MT-141), collected here so that a fifth
+     * door is one call.  True when the caller must not proceed.
      */
 
     static boolean refuseWhileAutonomyRunning(TrainControlUI ui, Component source)
@@ -132,12 +130,10 @@ public final class RunGates
     }
 
     /**
-     * What stops a train being sent now, or null: the one question every door that sends a train asks (the Auto tab,
-     * the diagram's destinations, Start, Execute Timetable and Return Home; Adam: "can all the checks go through a
-     * single door?").  In order: an open editor holds the diagram, and no setup edit is made during a run (OB-047,
-     * MT-135); no route running; a setup with errors sends nothing (MT-263); the power.  What a door asks besides is
-     * its own (`whyThisPathCannotBeTaken` for a hand send's path).  `startingAutonomy`: the door is Start, which words
-     * a broken setup its own way.
+     * What stops a train being sent now, or null: the one question every door that sends a train asks.  An open editor
+     * holds the diagram and no setup edit is made during a run (OB-047); a setup with errors sends nothing (MT-263).
+     * What a door asks besides is its own (`whyThisPathCannotBeTaken` for a hand send's path).  `startingAutonomy`:
+     * the door is Start, which words a broken setup its own way.
      */
     static String whyNoTrainMayBeSent(TrainControlUI ui, boolean startingAutonomy)
     {
@@ -162,10 +158,8 @@ public final class RunGates
     }
 
     /**
-     * Why a train may not be sent by hand right now, or null when it may (MT-263).  Adam: "trains can still be moved
-     * manually via both the track diagram viewer and the autonomy tab, which should throw an error instead."  A hand
-     * send runs over the railway the same setup built, so it is refused on the question Start is refused on -
-     * `autonomyHasErrors` - asked before the reversal question; Execute Timetable and Return Home ask it too.
+     * Why a train may not be sent by hand right now, or null when it may (MT-263): a hand send is refused on the
+     * question Start is refused on, `autonomyHasErrors`, asked before the reversal question.
      *
      * @return the sentence to show, or null
      */
