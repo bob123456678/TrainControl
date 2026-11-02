@@ -118,9 +118,8 @@ public class testEveryTestIsInTheBattery
      * `MarklinControlStation.wireComponents`, in a loop after the parse.  A test that calls `parseLayout` directly
      * skips it, every switch and signal has a null accessory, and `TileGraph` refuses to trace through, so the railway
      * falls to pieces (on the sample layout, with the wiring: switches and signals with an accessory 221 of 222 against
-     * 0, reduced edges 128 against 18, isolated points 3 against 51).  Twenty test classes did it and passed, since an
-     * assertion about a square with no edges is usually an assertion about null.  `support.LayoutSandbox.wired(model,
-     * parser)` is the recipe.
+     * 0, reduced edges 128 against 18, isolated points 3 against 51), and an assertion about a square with no edges is
+     * usually an assertion about null.  `support.LayoutSandbox.wired(model, parser)` is the recipe.
      *
      * MUTATION: writing `parser.parseLayout(new LinkedList<MarklinAccessory>())` in any test outside the excused list
      * fails this.
