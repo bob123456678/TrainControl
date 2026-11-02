@@ -588,11 +588,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     }
 
     /**
-     * The Auto tab on a layout whose autonomy is an `autonomy.json` stays SHUT (MT-244; Adam: "The tab should stay
-     * shut until they import.").  This claim was inverted: nothing at start-up parses or activates `autonomy.json`
-     * any more (the only `parseAuto` caller in `src` is the diagram path, OB-254), so the tab would stand in front of
-     * an empty model.  Inverting into a guard on the new invariant beats deleting, because the scenario is still the
-     * one that matters.
+     * The Auto tab on a layout whose autonomy is an `autonomy.json` stays SHUT (MT-244): nothing at start-up parses or
+     * activates `autonomy.json` any more (OB-254), so the tab would stand in front of an empty model.
      */
     @Test
     public void testTheAutoTabStaysShutWithALegacyAutonomyJson() throws Exception
