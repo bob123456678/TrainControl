@@ -4054,6 +4054,73 @@ public class testRouteEditorValidation
     }
 
     /**
+     * Adam: ""Reads as" is hidden when there is only one condition, which it shouldn't be.  also, there is still a gap
+     * when there are 0 conditions.  The top of the table should snap to the label on those cases."  One condition
+     * reads as itself; with none, the heading's line is only as tall as the heading, so the table sits under it.
+     *
+     * MUTATION: in `readingOfTheConditions`, blank the reading below two conditions again, and one condition reads as
+     * nothing; in `HeadingLine.getPreferredSize`, count the reading's height while it is hidden, and the gap is back.
+     */
+    @Test
+    public void testOneConditionReadsAsItselfAndNoneLeavesNoGap() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            java.lang.reflect.Field named = org.traincontrol.gui.RouteEditorFrame.class.getDeclaredField("readsAs");
+
+            named.setAccessible(true);
+
+            final javax.swing.JLabel reads = (javax.swing.JLabel) named.get(frame);
+
+            // The heading's line and, first in it, the heading itself
+            int[] heights = support.Components.onTheEventThread(() -> new int[] {
+                reads.getParent().getPreferredSize().height,
+                reads.getParent().getComponent(0).getPreferredSize().height});
+
+            assertFalse(support.Components.onTheEventThread(reads::isVisible), "with no conditions, the blank reading"
+                + " still takes a line");
+
+            assertEquals(heights[0], heights[1], "with no conditions, the heading's line is " + heights[0]
+                + " pixels tall and the heading " + heights[1] + ": the table does not sit right under the heading");
+
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0, RouteCommand.RouteCommandFeedback(5, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            assertTrue(support.Components.onTheEventThread(reads::isVisible), "one condition hides the reading");
+
+            assertTrue(frame.readsAsForTest().contains("S88 #5"), "one condition does not read as itself: "
+                + frame.readsAsForTest());
+        });
+    }
+
+    /**
+     * Adam: "for the "automatically fire" checkbox, make it not focusable to follow the rest of the UI".
+     * No checkbox in the editor takes the keyboard: Automatically Fire and Capture are clicked, not typed into.
+     *
+     * MUTATION: drop `enabledBox.setFocusable(false)`, and Automatically Fire takes the focus.
+     */
+    @Test
+    public void testNoCheckBoxTakesTheKeyboard() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            java.util.List<javax.swing.JCheckBox> boxes = support.Components.all(frame, javax.swing.JCheckBox.class,
+                null);
+
+            assertTrue(boxes.size() >= 2, "precondition: the editor has no Automatically Fire and Capture to ask");
+
+            java.util.List<javax.swing.JCheckBox> focusable = support.Components.all(frame,
+                javax.swing.JCheckBox.class, javax.swing.JCheckBox::isFocusable);
+
+            assertTrue(focusable.isEmpty(), "these checkboxes take the keyboard: " + focusable.stream()
+                .map(javax.swing.JCheckBox::getText).collect(java.util.stream.Collectors.toList()));
+        });
+    }
+
+    /**
      * FR-163, Adam: "Anchor the command + to the bottom of its frame, just like the conditions."  Under the commands,
      * inside their frame and above Capture, a row of Add Command, a divider, Undo and Redo, looking as the conditions'
      * row does (the same icons, words, font and flat style); it stays put as commands are added; Undo and Redo are
@@ -5270,7 +5337,7 @@ public class testRouteEditorValidation
                 did + ": the outline the editor holds, " + names(this));
 
             assertEquals(skeleton(support.Components.onTheEventThread(frame::readsAsForTest)),
-                expected.terms().size() < 2 ? "" : expected.skeleton(), did + ": the reading's brackets and words");
+                expected.terms().isEmpty() ? "" : expected.skeleton(), did + ": the reading's brackets and words");
 
             assertTrue(org.traincontrol.base.ConditionOutline.problems(rows).isEmpty(), did + ": flagged: "
                 + names(this));

@@ -221,7 +221,71 @@ public class testManualOnlyPathsAreADifferentColour
             + "on a layout with one parking berth would be drawn as though it went there");
     }
 
+    /**
+     * The tested route's words name the colors its lines are drawn in (Adam: "the description will say yellow/amber
+     * even when the line is purple.  Since purple is used for manual route, make the text match the color"): with
+     * Manual chosen, the leg to a station only a person may send a train to says purple, the ordinary leg back amber.
+     *
+     * MUTATION: make `legColor` answer yellow or amber whatever the station, and the purple leg says yellow.
+     */
+    @Test
+    public void testTheWordsNameTheColorsTheLinesAreDrawnIn() throws Exception
+    {
+        TileKey[] pair = aConnectedPairOfStations();
+
+        AutonomyEditorPanel panel = testedToAParkedStation(pair);
+
+        // Manual chosen, as Adam had it: the tested route is redrawn for the tier
+        ((javax.swing.JRadioButton) field(panel, "pathTypeManual")).doClick();
+
+        String said = said(panel);
+
+        String purple = "(" + org.traincontrol.util.I18n.t("autosetup.ui.testColorPurple") + ")";
+        String amber = "(" + org.traincontrol.util.I18n.t("autosetup.ui.testColorAmber") + ")";
+        String yellow = "(" + org.traincontrol.util.I18n.t("autosetup.ui.testColorYellow") + ")";
+
+        assertTrue(said.contains(purple) && !said.contains(yellow), "the leg to " + pair[1] + ", drawn purple,"
+            + " is not called purple: " + said);
+
+        assertTrue(said.indexOf(purple) < said.indexOf(amber), "the leg back to " + pair[0] + ", an ordinary"
+            + " station, is not called amber after the purple one: " + said);
+    }
+
     // Fixtures
+
+    /**
+     * The second station of the pair parked (autonomy never chooses it, restored after the claim), then Test a Path
+     * armed as a person arms it, with its button, and the two clicked.
+     */
+    private static AutonomyEditorPanel testedToAParkedStation(TileKey[] pair) throws Exception
+    {
+        parked = pair[1];
+
+        session.setAutoDestination(parked, false);
+
+        AutonomyEditorPanel panel = new AutonomyEditorPanel(session, null, () -> { });
+
+        ((javax.swing.AbstractButton) field(panel, "testButton")).doClick();
+
+        java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
+            TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
+
+        applyTest.setAccessible(true);
+
+        applyTest.invoke(panel, pair[0], graph.getTiles().get(pair[0]));
+        applyTest.invoke(panel, pair[1], graph.getTiles().get(pair[1]));
+
+        return panel;
+    }
+
+    /** A station parked by one claim is an ordinary one again for the next, whichever order they run in. */
+    @org.testng.annotations.AfterMethod(alwaysRun = true)
+    public void unpark()
+    {
+        if (session != null && parked != null) session.setAutoDestination(parked, true);
+
+        parked = null;
+    }
 
     /**
      * Paints one square with a single traced segment through it and returns the line's color: the commonest color in
@@ -302,24 +366,9 @@ public class testManualOnlyPathsAreADifferentColour
     {
         TileKey[] pair = aConnectedPairOfStations();
 
-        parked = pair[1];
-
-        session.setAutoDestination(parked, false);
-
         try
         {
-            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, null, () -> { });
-
-            // ARMED AS A PERSON ARMS IT, with the Test a Path button: the tier only matters to a tool in use.
-            ((javax.swing.AbstractButton) field(panel, "testButton")).doClick();
-
-            java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
-                TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-            applyTest.setAccessible(true);
-
-            applyTest.invoke(panel, pair[0], graph.getTiles().get(pair[0]));
-            applyTest.invoke(panel, pair[1], graph.getTiles().get(pair[1]));
+            AutonomyEditorPanel panel = testedToAParkedStation(pair);
 
             String onAuto = said(panel);
 

@@ -1719,15 +1719,117 @@ public class testTheRouteListShowsWhatRuns
             System.currentTimeMillis(), modifiers, at.x, at.y, 1, popup, button)));
     }
 
-    /** Right-clicks a route's cell and gives back the menu that opened. */
+    /**
+     * A right-click as Windows sends it, the popup trigger on the release and then a click, opens the route's menu and
+     * leaves it open, with the power on and off (MT-876: "the right click menu is gone in both power on and off mode").
+     *
+     * MUTATION: drop `this.RouteList.addMouseListener(new RightClickRouteMenu(this))` from `TrainControlUI`, and no
+     * menu opens.
+     */
+    @Test
+    public void testAWindowsRightClickOpensTheRoutesMenu() throws Exception
+    {
+        final String route = aQuickRoute("Right Click Route", 248, 249);
+
+        try
+        {
+            for (boolean powerOff : new boolean[] {false, true})
+            {
+                thePowerIs(!powerOff);
+
+                rightClickTheRoute(route);
+
+                // Still open once everything the click set off has run: a menu shown and then closed is gone too
+                settle();
+                settle();
+
+                javax.swing.JPopupMenu open = support.Components.popupShowing();
+
+                assertNotNull(open, "the route's menu opened and closed again with the power " + (powerOff ? "off"
+                    : "on"));
+
+                assertNotNull(support.Components.withText(open, org.traincontrol.util.I18n.t("route.ui.menuExecute")),
+                    "the menu that stayed open is not the route's");
+
+                closeAnyMenu();
+            }
+        }
+        finally
+        {
+            thePowerIs(true);
+            closeAnyMenu();
+        }
+    }
+
+    /** One event of a right-click on a route's cell, the popup trigger only where it is said to be. */
+    private static void rightButton(String route, final int kind, final boolean popup) throws Exception
+    {
+        final JTable table = routeTable();
+
+        Rectangle cell = cellOf(route);
+
+        assertNotNull(cell, "precondition: the route " + route + " is not in the route list");
+
+        final java.awt.Point at = new java.awt.Point(cell.x + 6, (int) cell.getCenterY());
+
+        final int modifiers = kind == java.awt.event.MouseEvent.MOUSE_PRESSED
+            ? java.awt.event.InputEvent.BUTTON3_DOWN_MASK : 0;
+
+        // Through the window and the system queue, as the operating system's click arrives, so every listener on the
+        // way (the popup's own grab of the mouse included) sees it
+        SwingUtilities.invokeAndWait(() ->
+        {
+            // In sight first, as a route the user clicks is: the window hands the click to what is under it
+            table.scrollRectToVisible(new Rectangle(at.x, at.y, 1, 1));
+
+            java.awt.Window window = SwingUtilities.getWindowAncestor(table);
+            java.awt.Point there = SwingUtilities.convertPoint(table, at, window);
+
+            java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(new java.awt.event.MouseEvent(window,
+                kind, System.currentTimeMillis(), modifiers, there.x, there.y, 1, popup,
+                java.awt.event.MouseEvent.BUTTON3));
+        });
+    }
+
+    /**
+     * Right-clicks a route's cell as Windows does, the popup trigger on the release and then a click, through the
+     * window, and gives back the menu that opened: the menu's own listener on the list is part of what is tested.
+     */
     private static javax.swing.JPopupMenu rightClickTheRoute(String route) throws Exception
     {
-        clickTheRoute(route, false, java.awt.event.MouseEvent.MOUSE_PRESSED, true);
+        support.Components.select(routeTable());
+
+        settle();
+
+        rightButton(route, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
+        rightButton(route, java.awt.event.MouseEvent.MOUSE_RELEASED, true);
+        rightButton(route, java.awt.event.MouseEvent.MOUSE_CLICKED, false);
+
+        settle();
 
         assertTrue(waitFor(() -> support.Components.popupShowing() != null, 5000), "a right-click on the route opened"
             + " no menu");
 
-        return support.Components.popupShowing();
+        final javax.swing.JPopupMenu menu = support.Components.popupShowing();
+
+        // The route's own menu, or a message saying which one was found instead
+        String found = support.Components.onTheEventThread(() ->
+        {
+            StringBuilder out = new StringBuilder(menu.getClass().getName()).append(':');
+
+            for (java.awt.Component item : menu.getComponents())
+            {
+                out.append(' ').append(item instanceof javax.swing.JMenuItem ? ((javax.swing.JMenuItem) item).getText()
+                    : "|");
+            }
+
+            return out.toString();
+        });
+
+        assertTrue(found.contains(org.traincontrol.util.I18n.t("route.ui.menuExecute")), "a right-click on " + route
+            + " opened a menu that is not the route's: " + found);
+
+        return menu;
     }
 
     private static void closeAnyMenu()

@@ -302,7 +302,8 @@ public class RouteEditorFrame extends JFrame
             Dimension read = reading.isVisible() ? reading.getPreferredSize() : new Dimension();
             int widest = Math.max(heading.getPreferredSize().width, notice.getPreferredSize().width);
 
-            return new Dimension(Math.max(widest, read.width + 2), lineHeight(oneLine(available())) + read.height + 4);
+            return new Dimension(Math.max(widest, read.width + 2),
+                lineHeight(oneLine(available())) + (reading.isVisible() ? read.height + 4 : 0));
         }
 
         @Override
@@ -803,6 +804,9 @@ public class RouteEditorFrame extends JFrame
 
         // The tick first, and the sensor only when ticked: a sensor box beside an unticked box asks a question with
         // no bearing yet.
+        // Out of the tab order, as Capture is: clicked, not typed into
+        enabledBox.setFocusable(false);
+
         row.add(enabledBox);
         row.add(javax.swing.Box.createHorizontalStrut(8));
 
@@ -1367,6 +1371,7 @@ public class RouteEditorFrame extends JFrame
         {
             enabledBox.setSelected(false);
             s88Field.setText("0");
+            updateReadsAs();
             return;
         }
 
@@ -1862,6 +1867,16 @@ public class RouteEditorFrame extends JFrame
     {
         readsAs.setText(readingOfTheConditions());
 
+        // Shown for one condition or more; with none, the table sits right under the heading
+        boolean reading = !conditionsEditable || conditionCount() > 0;
+
+        if (readsAs.isVisible() != reading)
+        {
+            readsAs.setVisible(reading);
+
+            if (readsAs.getParent() != null) readsAs.getParent().revalidate();
+        }
+
         // Checked only when the route fires itself; a route run by hand ignores its conditions.
         unasked.setVisible(!enabledBox.isSelected()
             && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null));
@@ -1893,7 +1908,7 @@ public class RouteEditorFrame extends JFrame
             return I18n.f("route.ui.frameConditionsNotShown", text);
         }
 
-        if (conditions.rows.size() < 2) return " ";
+        if (conditionCount() == 0) return " ";
 
         // A run of rows joined by the same word is a group, and a change of word starts a new one.  Bold operators and
         // colored settings are markup, so everything the conditions carry is escaped on the way in.

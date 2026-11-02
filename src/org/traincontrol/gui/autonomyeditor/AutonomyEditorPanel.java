@@ -5092,7 +5092,8 @@ public class AutonomyEditorPanel extends JPanel
         // Named: the sensors it calls at say where it went.
         answer(I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)),
-            leg(there), escape(via(there)), leg(back)) + tierNote, true);
+            leg(there), escape(via(there)), leg(back), legColor(tile, true), legColor(testFrom, false)) + tierNote,
+            true);
 
         lastTestFrom = testFrom;
         lastTestTo = tile;
@@ -5157,6 +5158,20 @@ public class AutonomyEditorPanel extends JPanel
         // Asked once for the whole leg, as a color on its last square alone could be off the page.
         // `manualOnlyStations`, not `stationsAutonomyWillNotChoose`: a shut square is no manual-only point.
         trace(into, run, from, forward, to, to != null && session != null && session.manualOnlyStations().contains(to));
+    }
+
+    /**
+     * The color a tested leg is drawn in, as `trace` picks it: purple where it ends at a station only a person may
+     * send a train to, else yellow there and amber back.
+     */
+    private String legColor(TileKey to, boolean forward)
+    {
+        if (session != null && session.manualOnlyStations().contains(to))
+        {
+            return I18n.t("autosetup.ui.testColorPurple");
+        }
+
+        return I18n.t(forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
     }
 
     /** The same, in the color asked for: Why not Moving? knows which stations autonomy will never choose this train. */
