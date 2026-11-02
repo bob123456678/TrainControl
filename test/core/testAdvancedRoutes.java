@@ -174,10 +174,8 @@ public class testAdvancedRoutes
     // The autoloc condition driving a function command
 
     /**
-     * A route command parses whatever case it is typed in: `Feedback` was matched through `toLowerCase()` and every
-     * other command name with `equals`, so "feedback 12,1" parsed and "emergency stop" did not.  The canonical casing
-     * is what this program writes, so no existing route changes meaning; the lower-case forms below parse instead of
-     * failing with "unrecognised".
+     * A route command parses whatever case it is typed in: "feedback 12,1" and "emergency stop" parse rather than fail
+     * with "unrecognised".  The canonical casing is what this program writes, so no existing route changes meaning.
      *
      * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
      *
@@ -217,14 +215,14 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Asking about an accessory must not create one (C13).  `Route.evaluate` reads an accessory condition through
+     * Asking about an accessory must not create one.  `Route.evaluate` reads an accessory condition through
      * `getAccessoryState`, whose miss branch calls `newSwitch`, so merely EVALUATING a condition against an address the
-     * Central Station has never mentioned registers that address as a switch, and it persists into the database and
-     * onto the keyboard.  Conditions are evaluated on a timer while a route waits.
+     * Central Station has never mentioned would register that address as a switch, persisted into the database and onto
+     * the keyboard.  Conditions are evaluated on a timer while a route waits.
      *
      * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then returns false, so an
-     * unknown address has always read as "not switched" and routes have always fired on that.  Removing the side effect
-     * must not also flip when a route fires, which is why this asserts the answer as well as the absence.
+     * unknown address has always read as "not switched" and routes fire on that.  Removing the side effect must not
+     * flip when a route fires, which is why this asserts the answer as well as the absence.
      *
      * @throws Exception on a failure to build
      */
@@ -665,9 +663,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * Capturing a command keeps one entry per locomotive, not one per kind of command.  The filter keyed on everything
-     * before the first comma, which for a locomotive line - "prefix,name,value" - is just "locspeed", so every
-     * locomotive in the route collapsed onto one key and only the last survived.
+     * Capturing a command keeps one entry per locomotive, not one per kind of command.  A filter keyed on everything
+     * before the first comma would, for a locomotive line "prefix,name,value", key every locomotive on "locspeed" and
+     * keep only the last.
      */
     @Test
     public void testCapturingKeepsEveryLocomotivesCommands() throws Exception
@@ -740,8 +738,8 @@ public class testAdvancedRoutes
      * A name with a bracket is allowed, and survives the way routes are actually stored.
      *
      * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a line break to
-     * find the grouping.  That mattered while conditions were stored as TEXT; they are not: `MarklinRoute.fromJSON`
-     * reads them through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
+     * find the grouping.  That mattered only while conditions were stored as TEXT; `MarklinRoute.fromJSON` now reads
+     * them through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
      *
      * **Both halves are asserted**, because they now disagree: the text form still cannot carry the name, and the JSON
      * form can.  That is what makes allowing it safe.
@@ -832,7 +830,7 @@ public class testAdvancedRoutes
     /**
      * A route started again while it runs says so in the log.  The sensor that triggers a route can fire again before
      * the route has finished; the window's own doors say a route is already running (`route.ui.infoAlreadyRunning`),
-     * and this door, the one a sensor uses, said nothing.
+     * and this door, the one a sensor uses, must too.
      *
      * MUTATION: drop the line and this fails.
      *
@@ -896,7 +894,7 @@ public class testAdvancedRoutes
      * A route finishes its commands even if the locomotive it names is deleted while it runs: `deleteLoc` takes every
      * command that drives that locomotive out of every route, through `Iterator.remove()`, from the event thread, while
      * `execRoute` is part-way along the same list with 200 ms between commands.  Both list kinds are fail-fast, so
-     * that thread died mid-route and the road was left half set with nothing in the log.
+     * that thread would die mid-route and leave the road half set with nothing in the log.
      *
      * The model half is here; the door half - the UI refusing the delete while such a route runs - is
      * `runningRouteDriving`, asserted below.
@@ -982,10 +980,10 @@ public class testAdvancedRoutes
     /**
      * A running route about to CHAIN to another one is driving what that other route drives (MT-464).
      *
-     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and it asked each
-     * executing route about its OWN command list.  A route whose command is another ROUTE drives every locomotive that
-     * route drives, seconds later, on a thread nobody has started yet.  The window is as long as the delays sitting
-     * ahead of the chain command: here one accessory command with a four-second pause.
+     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and it must ask
+     * the chain, not each executing route's OWN command list.  A route whose command is another ROUTE drives every
+     * locomotive that route drives, seconds later, on a thread nobody has started yet.  The window is as long as the
+     * delays sitting ahead of the chain command: here one accessory command with a four-second pause.
      *
      * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and passes
      * `limit - 1` down, so a route fired BY a route cannot fire a third.
@@ -1208,7 +1206,7 @@ public class testAdvancedRoutes
     /**
      * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them.  The
      * delete's question says how many routes call it, as deleting a locomotive removes the commands that drive it.
-     * Left behind, a command naming a deleted route ran any route later made under that name.
+     * Left behind, a command naming a deleted route would run any route later made under that name.
      *
      * Through the door's own model method, `deleteRouteAndItsCalls`.  The model's `deleteRoute` is left as it is,
      * because `editRoute` deletes and re-adds through it, and an edit must not strip a route's callers.
@@ -1273,8 +1271,8 @@ public class testAdvancedRoutes
 
     /**
      * A route whose name carries a leading or trailing space can still be found and deleted.  The two file parsers keep
-     * the name exactly as the file has it; `newRoute` indexed it under the trimmed name while `deleteRoute` deleted by
-     * the route's own.  Central Station route names are typed by people, and a trailing space is invisible.
+     * the name exactly as the file has it, so `newRoute` must index it under the name `deleteRoute` deletes by, the
+     * route's own.  Central Station route names are typed by people, and a trailing space is invisible.
      *
      * @throws Exception from the model
      */
@@ -1305,7 +1303,7 @@ public class testAdvancedRoutes
     /**
      * A route tile on the diagram runs the route the database holds now, not the one it was wired to.  `wireComponents`
      * hands the tile the route OBJECT and every door that changes a route replaces that object, so only a full re-wire
-     * re-bound the tiles; with the Central Station as the diagram source that happens once a session.
+     * rebinds the tiles; with the Central Station as the diagram source that happens once a session.
      *
      * @throws Exception from the model
      */
