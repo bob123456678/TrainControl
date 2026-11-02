@@ -582,17 +582,12 @@ public class testAutonomyDiagramPorts
 
     /**
      * A DIRECTION THE HARDWARE REFUSES IS NOT OFFERED AS AN ANSWER (Adam: "Green arrows in the direction that can't be
-     * chosen shouldn't be offered.").  An authored direction ANDs with the tile's own restriction, so on a permanent
-     * turnout (every route directed at the toe) "toward the fork" and "both ways" restrict nothing: no train could take
-     * that road either way (OB-057, OB-090).
+     * chosen shouldn't be offered.").  On a permanent turnout (every route directed at the toe) "toward the fork" and
+     * "both ways" restrict nothing (OB-057, OB-090).
      *
-     * `TileGraph.directionIsPossible` is the question the MENU asks; whether a train MOVES is `isPassable`
-     * (`core.testTheDiagramDrawsWhatTrainsMayDo.testAShutRouteDrawsNoArrow` holds that one).  They disagree about
-     * `NONE`, which is always offerable and never passable.
-     *
-     * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED:** `into(toward, from)` builds `Route(from, toward, toward)`, so
-     * the toe is always `getB()` and rotation preserves the roles; deriving the toe and comparing it with `getA()`
-     * could not have noticed `deriveToe` breaking.
+     * `TileGraph.directionIsPossible` is the question the MENU asks; whether a train MOVES is `isPassable`.  The port
+     * map's shape is asserted, not assumed: `into(toward, from)` builds `Route(from, toward, toward)`, so the toe is
+     * always `getB()`.
      *
      * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways claims fail at every
      * orientation of every type.  (Dropping its `NONE` case catches nothing: `NONE` falls through to the `TOWARD_B`
