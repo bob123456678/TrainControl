@@ -11,20 +11,9 @@ import org.traincontrol.automationui.TilePorts.Side;
 import support.ProgramConstants;
 
 /**
- * A tested path's line stays on its rail, however many times the path crosses the square.
- *
- * Adam, OB-216: *"When running Test a path from BottomMainB to BottomMainC, the orange lines over the switch at 12,13
- * are misaligned.  A small offset as on the other tiles is OK."*
- *
- * On his railway the route out from BottomMainB leaves west straight through the switch at 12,13, runs the whole loop,
- * and comes back in from the west to take the diverging leg down to BottomMainC, and the route back does the same the
- * other way round, so that one square carries four segments (E to W and W to S going out, S to W and W to E coming
- * back) where an ordinary square carries two.  Each segment after the first was pushed sideways by a ninth of the tile
- * times its position in the list, so the fourth, the straight rail again, went two and a half ninths off its rail,
- * where an ordinary square's second segment goes half a ninth, the small offset he is content with.
- *
- * Read off the painted pixels: only the eastern quarter of the square is examined, which the diverging leg (west edge
- * to south edge) never reaches, so everything there in a line color belongs to the straight rail and must lie on it.
+ * A tested path's line stays on its rail, however many times the path crosses the square (OB-216).  Read off the
+ * painted pixels: only the eastern quarter of the square is examined, which the diverging leg (west edge to south
+ * edge) never reaches, so everything there in a line color belongs to the straight rail and must lie on it.
  *
  * @author Adam
  */
