@@ -548,7 +548,9 @@ public class testRouteEditorLocked
      * FR-163: a locked route's commands answer none of the keys: Alt+Down moves nothing, Ctrl+Z takes nothing back and
      * Delete removes nothing, and there is no Undo under them; an ordinary route's do all three and show it.
      *
-     * MUTATION: in `HandledTable.deleteSelected`, drop `!handlesWork() ||`, and Delete removes a locked route's command.
+     * The table is disabled and every action asks the lock as well, so the mutation takes both:
+     * MUTATION: drop `commands.setEnabled(false)` from `becomeReadOnly` and `!handlesWork() ||` from
+     * `HandledTable.deleteSelected`, and Delete removes a locked route's command.
      */
     @Test
     public void testALockedRoutesCommandsAnswerNoKeys() throws Exception
