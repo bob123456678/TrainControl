@@ -21,18 +21,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * An error stops the setup running, and everything that offers to run it asks the same question (OB-090).
- *
- * Adam: "the setup refuses to run when there are errors.  it runs on warnings, but on errors it should say fix it."
- * Starting autonomy is refused on any ERROR finding (OB-057), so the diagram strip must not decide what to show from
- * hasBlockingProblems(), which asks the GRAPH only and knows nothing of the CHECKS: four unnamed stations (four errors,
- * no blocking problem) must not leave a live Start button.  There is ONE definition of broken,
- * AutonomySession.errorCount(), which both the refusal and the strip ask.
+ * An error stops the setup running, and everything that offers to run it asks the same question (OB-090): starting
+ * autonomy is refused on any ERROR finding (OB-057), so the diagram strip must not decide what to show from
+ * hasBlockingProblems(), which asks the GRAPH only.  There is ONE definition of broken, AutonomySession.errorCount(),
+ * which both the refusal and the strip ask.
  *
  * The sample layout is parsed with no Central Station, so every switch is unaddressed and all its errors are blocking
- * graph problems; the state "graph builds cleanly, setup still must not run" cannot be reached.  So the gap is shown
- * as a DELTA: a mutation that adds an error WITHOUT a blocking problem proves errors the narrow question cannot see.
- * Every assertion is a delta, so none becomes a test about the fixture the first time it is edited.
+ * graph problems; the state "graph builds cleanly, setup still must not run" cannot be reached.  So the gap is shown as
+ * a DELTA, and every assertion is a delta, so none becomes a test about the fixture the first time it is edited.
  */
 public class testErrorsStopTheSetupRunning
 {
@@ -150,9 +146,8 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * The affordances that offer to start autonomy ask the same question the refusal asks.  The guard asks
-     * `hasErrors()` through `TrainControlUI.autonomyHasErrors()`, as do all three affordances; this reads them and asks
-     * whether they still consult the guard's own number rather than the narrower graph-only question OB-090 was about.
+     * The affordances that offer to start autonomy ask the same question the refusal asks: `hasErrors()` through
+     * `TrainControlUI.autonomyHasErrors()`, not the narrower graph-only question (OB-090).
      *
      * MUTATION this catches: change `canStartAutonomy()`'s last term from `!autonomyHasErrors()` to
      * `autonomyErrorCount() == 0`.  The count is the narrower question: a graph that will not build at all is not an
@@ -353,15 +348,10 @@ public class testErrorsStopTheSetupRunning
         return session;
     }
     /**
-     * The strip grays the stop it has already carried out, rather than removing it (OB-143).
-     *
-     * Adam: "the button disappears rather than being greyed out prior to replacement by the start button. make it get
-     * greyed out and then replaced."  The strip mirrors whichever real button is ENABLED; Graceful Stop disables itself
-     * at once while autonomy keeps running, so for that window "neither enabled" must not mean hide.  The rule is
-     * exercised rather than the panel, which needs a window; `testTheStripAsksThatQuestion` is the other half.
-     *
-     * The case that must NOT change is the last one: "neither enabled" has causes unrelated to stopping, and a grayed
-     * Graceful Stop shown to somebody who has never run anything would be worse than the gap.
+     * The strip grays the stop it has already carried out, rather than removing it (OB-143): the strip mirrors
+     * whichever real button is ENABLED, and Graceful Stop disables itself at once while autonomy keeps running, so for
+     * that window "neither enabled" must not mean hide.  The case that must NOT change is the last one: "neither
+     * enabled" has causes unrelated to stopping.  The rule is exercised rather than the panel, which needs a window.
      *
      * MUTATION: return HIDDEN for the pending case and the third assertion fails; return STOP_PENDING
      * whenever neither is enabled and the last one fails.
