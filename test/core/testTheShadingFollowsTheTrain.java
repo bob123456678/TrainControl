@@ -35,14 +35,13 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180): when a train was moved to
- * a new station in the track diagram viewer, its former shaded icons were not reset.
+ * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).
  *
- * The model was never wrong about which squares a moved train had stopped covering
- * (`Layout.edgesCoveredByStandingTrains`, `AutonomySession.tilesCoveredByStandingTrains`); nothing REDREW them.  The
- * wash is applied when a tile is drawn, and a tile is drawn only when its own accessory, feedback or route changes.  A
- * test asserting only on the model passes with the defect present or repaired, so this one goes all the way to the
- * ICONS: real `LayoutLabel`s registered in the real `DiagramTileRegistry`, redrawn by the real `CoveredTrackView`
+ * The model knows which squares a moved train covers (`Layout.edgesCoveredByStandingTrains`,
+ * `AutonomySession.tilesCoveredByStandingTrains`); the wash is applied when a tile is drawn, and a tile is drawn only
+ * when its own accessory, feedback or route changes.  A test asserting only on the model passes with the defect present
+ * or repaired, so this one goes all the way to the ICONS: real `LayoutLabel`s registered in the real
+ * `DiagramTileRegistry`, redrawn by the real `CoveredTrackView`
  * (reached through `TrainControlUI.refreshCoveredTrack`).  Every tile is PAINTED and looked at, since the mark is an
  * orange line along the road the train is on (MT-309): `support.Rendered.showsTheTrainMark` does it.  The redraw
  * itself is asked about, not only the paint: `support.RepaintRecorder` writes the repaints down, and a tile nothing
