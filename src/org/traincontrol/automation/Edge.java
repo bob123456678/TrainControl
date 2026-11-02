@@ -576,9 +576,8 @@ public class Edge
      * intermediate step of none, and a train stands on a sensor.
      *
      * Locks need not be symmetric (GraphEdgeEdit writes one direction only), and nothing here relies on it: the SAME
-     * list is used in both directions of the transaction - locking writes this flag onto every edge in each of its
-     * edges' lockEdges, and checking reads it off every edge in each of its edges' lockEdges - so an asymmetric
-     * relation still refuses both orderings.
+     * list is used in both directions of the transaction, locking writing this flag onto every edge in each edge's
+     * lockEdges and checking reading it off the same, so an asymmetric relation still refuses both orderings.
      *
      * @param loc the locomotive asking, kept for symmetry with isOccupied and for future ownership
      */
