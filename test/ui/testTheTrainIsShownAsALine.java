@@ -25,14 +25,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.
- *
- * One indicator, not two: the line replaces the wash, which looked confusing on double curve tiles.
- *
- * Asserted in pixels, because neither fact can be read off the model: that a covered square is marked at all, and that
- * the mark is a LINE (most of the tile drawn exactly as it would be with nothing standing; the old wash was `fillRect`
- * over the whole icon).  So the same tile is painted with the train and without, and compared.  The orange is
- * recognized by hue, not by production's constant, which would pass for any color it was changed to, gray included.
+ * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.  Asserted in
+ * pixels, because neither fact can be read off the model: that a covered square is marked at all, and that the mark is
+ * a LINE.  So the same tile is painted with the train and without, and compared.  The orange is recognized by hue, not
+ * by production's constant, which would pass for any color it was changed to, gray included.
  *
  * MUTATION: put `ImageUtil.addCoveredOverlay` back and `testTheMarkIsALineAndNotAWash` fails with every pixel of the
  * tile changed.  Draw nothing at all and `testACoveredSquareIsMarkedInOrange` fails.
@@ -451,10 +447,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The tail shows over a run line too (FR-106): a running train's tail lies on the road it has just driven, which
-     * the run draws as reached, and the tail was drawn under it.  Adam: "make the tail visible at all times".  The
-     * covered square is painted again with the run's reached line along the road the tail is drawn on: the orange is
-     * all still there.
+     * The tail shows over a run line too (FR-106): the covered square is painted again with the run's reached line
+     * along the road the tail is drawn on, and the orange is all still there.
      *
      * MUTATION: draw the tail under the run line alone, and this fails.
      */
