@@ -325,10 +325,9 @@ public class Edge
     }
     
     /**
-     * The side of the END point this edge comes in by, as the build names it.  A Point may be the far end of a run that
-     * turns corners, so the compass direction of the neighboring Point (`Layout.sideTowards`) is not the side the metal
-     * leaves by; the arrival write, the tail walk and the operator doors all read this one vocabulary (OB-182).  Null
-     * for a configuration written before this existed or built by hand; every reader then falls back to the geometry.
+     * The side of the END point this edge comes in by, as the build names it (OB-182), not the compass direction of the
+     * neighboring Point (`Layout.sideTowards`).  Null for a configuration written before this existed: readers fall
+     * back to the geometry.
      */
     private String entrySide = null;
 
@@ -349,10 +348,8 @@ public class Edge
     }
 
     /**
-     * The places this edge runs over, in order from its start, and what each measures (OB-207).  Without these an edge
-     * is covered whole or not at all.  Written by the builder from `GraphReducer.placesAlong`; the lengths sum to
-     * `getLength()`, the arriving square counting and the departing one not.  Empty for a hand-written or pre-3.0.0
-     * configuration, where every reader falls back to the whole-edge answer.
+     * The places this edge runs over, in order from its start, and what each measures (OB-207); the lengths sum to
+     * `getLength()`.  Empty for a hand-written or pre-3.0.0 configuration: readers fall back to the whole-edge answer.
      */
     private List<String> placeIds = Collections.emptyList();
 
@@ -418,10 +415,8 @@ public class Edge
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for on this edge, place by place: the key of the piece, switch or
-     * shared square each place lies in, where that still wants a length (OB-297).  The own-tail note counts these.
-     * Written by the build; a configuration built before has none (`knowsPiecesToMeasure`) and its edges are read
-     * whole.
+     * What Mass Assign Lengths would ask a length for on this edge, place by place (OB-297); the own-tail note counts
+     * these.  Empty for a configuration built before (`knowsPiecesToMeasure`): its edges are read whole.
      */
     private java.util.Map<String, String> piecesToMeasure = Collections.emptyMap();
 
@@ -457,15 +452,8 @@ public class Edge
     }
 
     /**
-     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track
-     * of no length.  Adam: *"0 lengths count as measures, so non-atomic should be allowed"*.
-     *
-     * The question every length rule asks of a leg with no length (the Atomic Routes gate, the release escape, the
-     * route in, the room walk, the tail walk, the berth rule and the own-tail rule), so they must agree: an answered
-     * leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them
-     * (`Layout.measuredThroughout`, OB-300).  Every place must be answered - a square nobody answered, a switch or
-     * crossing on it included, leaves the leg unmeasured, as Mass Assign Lengths still asks for it.  Without places,
-     * which a hand-written configuration has none of, only a length says so.
+     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose (OB-300).  Every
+     * length rule asks this one question of a leg with no length, so they must agree.
      *
      * @return true when the edge is measured
      */
@@ -502,10 +490,8 @@ public class Edge
     }
 
     /**
-     * @return whether this edge crosses a switch, and so bounds where a train may come to rest
-     *
-     * "A switch" in the room rule is what bounds a berth's room (`GraphReducer.boundsTheRoom`): a switch, or a turnout
-     * drawn permanent (FR-097), but not either square of a crossing made of two permanent Ys (OB-320).
+     * @return whether this edge crosses a switch, and so bounds where a train may come to rest (the room rule's "a
+     * switch", `GraphReducer.boundsTheRoom`: FR-097, OB-320)
      */
     public boolean crossesASwitch()
     {
@@ -586,15 +572,8 @@ public class Edge
         return occupancy > 0;
     }
     /**
-     * Whether a path is running over this rail, rather than holding it clear (OB-269): the narrow half of `isLockHeld`.
-     * A lock edge carries a claim either because a path runs over it or because it shares rail with one that does, and
-     * refusing a candidate for the second refuses it for rail nothing is on.  Adam: *"nothing should disturb the
-     * ability to go from bottominner to bottominnerotherside unless trains are crossing down, or passing through either
-     * of those stations"*.
-     *
-     * Asked in exactly two places, both in `isPathClear`: of a candidate's lock edges, and of the same rail in the
-     * other direction.  Everything else keeps `isLockHeld`, because a reserved throat's accessories must stay protected
-     * whether the reservation is direct or shared.
+     * Whether a path is running over this rail, rather than holding it clear (OB-269): the narrow half of `isLockHeld`,
+     * asked only by `isPathClear`, so a reserved throat's accessories stay protected.
      *
      * @param loc the locomotive asking, kept for symmetry with its siblings
      * @return true when some path is running over this rail
