@@ -3,12 +3,9 @@ package org.traincontrol.automationui;
 import java.awt.Color;
 
 /**
- * The colors the track diagram draws a run and its train in, in one place (Adam, FR-106: "Make sure it is easy to
- * adjust as needed").  Change one here and every square that draws it follows: the run's line and arrowheads
- * (`TileOverlay`), the station badges (`TileAnnotation`) and the train's line along its tail
- * (`LayoutLabel.TRAIN_MARK`).  Not here: the station captions' navy (`StationCaption`), a parking berth's gray, the
- * restriction arrows and the autonomy editor's traced and tested paths (`TileAnnotation`) - colors of the setup and its
- * editor, not of a run.
+ * The colors the track diagram draws a run and its train in, in one place (FR-106): change one here and every square
+ * that draws it follows.  Not here: the colors of the setup and its editor (station captions' navy, a parking berth's
+ * gray, the restriction arrows, the editor's traced and tested paths).
  */
 public final class DiagramColours
 {
@@ -69,10 +66,8 @@ public final class DiagramColours
     public static final Color DESTINATION_RING = new Color(204, 82, 0);
 
     /**
-     * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309, FR-106):
-     * a soft orange, rgb(245,140,60) (Adam: "let's go with the soft orange"), since rgb(255,102,0) was the loudest
-     * thing on a running diagram; the X of a square nothing can pass keeps that orange
-     * (`TileAnnotation.POINT_IMPASSABLE`).
+     * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309,
+     * FR-106): a soft orange, rgb(245,140,60).  The X of a square nothing can pass keeps the loud orange.
      */
     public static final Color TRAIN = new Color(245, 140, 60);
 
