@@ -394,10 +394,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
     /**
      * Every entry on the combo is a side, and a placement therefore always records one: clearing is not possible, only
-     * setting.  A "Not known" entry was taken out of the arrived-from MENU on the argument that every side the square
-     * has is offered, so a wrong answer is corrected by choosing the right one; a blank only offers a way to switch the
-     * tail blocking off.  The entries are read off what the dialog would really show, so a second row added anywhere in
-     * the wrapper is caught too.
+     * setting.  Every side the square has is offered, so a wrong answer is corrected by choosing the right one; a blank
+     * only offers a way to switch the tail blocking off.  The entries are read off what the dialog would really show,
+     * so a second row added anywhere in the wrapper is caught too.
      *
      * MUTATION: put `entries.add(NONE_LABEL);` back at the top of `buildArrivalSide` and the first claim fails, naming
      * the entry that is not a side.
@@ -442,7 +441,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
     /**
      * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).  The two lists are
-     * one question; this one wrote its own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.
+     * one question, so the limit is `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, not a list of its own.
      *
      * MUTATION: leave the limit at 20, or write this list out by hand again, and this fails.
      */
