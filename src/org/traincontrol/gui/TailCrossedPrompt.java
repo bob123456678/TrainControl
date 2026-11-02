@@ -204,7 +204,7 @@ public class TailCrossedPrompt
     /**
      * Saves what a placement door has written before its tail question waits, and answers what the save reconciled, or
      * null where it did not save (OB-305).  The question waits on the diagram as long as the operator likes with the
-     * window live (FR-100), so a crash in that wait lost the train.  Saves only where the question will be put
+     * window live (FR-100), so a crash in that wait would lose the train.  Saves only where the question will be put
      * (`wouldAsk`), and not while an editor is open or on its way, since the editor holds a copy of the setup.
      *
      * @param session the setup the door wrote to
@@ -1366,7 +1366,8 @@ public class TailCrossedPrompt
      * One road back, by the METAL it runs over: the square it comes from and the places the rail crosses (OB-276).
      * `RampDown (northbound, reverse) -> BottomSecondary` and `RampDown (southbound) -> BottomSecondary` run over
      * exactly the same places: the turning copy of the northbound lane leaves south by the same rail as the southbound
-     * lane.  Keyed by LANE they were two roads and the list offered one answer twice.  A balloon's two ends are still
+     * lane.  Keyed by LANE they would be two roads and the list would offer one answer twice.  A balloon's two ends are
+     * still
      * two roads (different rails, different places).  A rail with no places falls back to the lane.
      *
      * @param rail a rail arriving towards the train
