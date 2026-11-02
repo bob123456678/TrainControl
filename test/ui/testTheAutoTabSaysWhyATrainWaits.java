@@ -31,14 +31,13 @@ import support.Mouse;
 import support.Settle;
 
 /**
- * The Auto tab's answer to "why is this train not moving": a card whose train has no available path says so, an (i) mark
- * and a hand cursor invite the user to ask, hovering the second line gives the reasons as a tooltip, and clicking it
- * opens the whole list in a window (FR-017).  Each claim stands trains on the single-switch railway in a sandbox,
+ * The Auto tab's answer to "why is this train not moving": a card whose train has no available path says so, an (i)
+ * mark and a hand cursor invite the user to ask, hovering the second line gives the reasons as a tooltip, and clicking
+ * it opens the whole list in a window (FR-017).  Each claim stands trains on the single-switch railway in a sandbox,
  * refreshes the tab as the window does, and reads the card, its tooltip and the window the click opens.
  *
- * The tab asks what a hand-driven send meets while autonomy is not running (`explainCannotStart` has no hand reason),
- * so the reasons on show in standby are the stations': switched off, not accepting the train, occupied, a terminus it
- * could not leave.  Autonomy's own refusals (paused, switched-off start) reach a card only when it has not been redrawn
+ * The tab asks what a hand-driven send meets while autonomy is not running, so the reasons on show in standby are the
+ * stations'.  Autonomy's own refusals (paused, switched-off start) reach a card only when it has not been redrawn
  * since the run began.
  */
 public class testTheAutoTabSaysWhyATrainWaits
