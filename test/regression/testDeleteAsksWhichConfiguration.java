@@ -26,13 +26,9 @@ import static regression.testTheImportDoorReadsAnOldFile.itemCalled;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 
 /**
- * Autonomy > Manage > Delete asks which configuration, and is offered while none is loaded (OB-319; Adam: "There seems
- * to be a bug with autonomy config management. If there is a setup cant be used, it cant be selected from the list of
- * configs, which prevents subsequent deletion.").
- *
- * Delete acted on the configuration in use and was grayed until one was loaded; a configuration whose setup cannot be
- * used is refused at its load, so it never became the one in use and could not be deleted.  Here nothing is loaded - as
- * after that refusal - and the configuration deleted is not the one the store names as active.
+ * Autonomy > Manage > Delete asks which configuration, and is offered while none is loaded (OB-319).  Here nothing is
+ * loaded - as after the refusal of a configuration whose setup cannot be used - and the configuration deleted is not
+ * the one the store names as active.
  *
  * On a copy of the frozen railway, because a delete removes a file.
  *
