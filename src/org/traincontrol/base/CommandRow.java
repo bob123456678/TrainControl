@@ -151,12 +151,9 @@ public final class CommandRow
     }
 
     /**
-     * Whether this kind is something a route can DO, as against something it can ask about.
-     *
-     * AUTO_LOCOMOTIVE is a fact, not an instruction, and FEEDBACK (OB-141) does nothing when a route runs
-     * (`MarklinRoute.execRoute` has no branch for it).  Adam: "a route command should not be able to contain s88
-     * sensors. these should only be in the conditions only."  A row that already holds one still opens and shows; no
-     * new one can be added.
+     * Whether this kind is something a route can DO, as against something it can ask about.  Adam: "a route command
+     * should not be able to contain s88 sensors. these should only be in the conditions only." (OB-141)  A row that
+     * already holds one still opens and shows.
      */
     public static boolean canBeACommand(Kind kind)
     {
