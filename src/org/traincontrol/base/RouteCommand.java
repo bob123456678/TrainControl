@@ -194,16 +194,13 @@ public class RouteCommand implements java.io.Serializable
     }
     
     /**
-     * A train at a sensor, or NOT at it (FR-141).
-     *
-     * Only "not at" writes a SETTING, "false" the way a clear sensor's is.  Every route saved before FR-141 holds NAME and
-     * ADDRESS and nothing else - in routes.json and in the locomotive database - and has to go on reading as "at", and a
-     * command built here as "at" has to equal the one read back from them.
+     * A train at a sensor, or NOT at it (FR-141).  Only "not at" writes a SETTING, so every route saved before FR-141
+     * goes on reading as "at" and equals a command built here as "at".
      *
      * @param name the locomotive
      * @param s88 the sensor's address
      * @param at true for the train standing at the sensor, false for it not standing there
-     * @return 
+     * @return
      */
     public static RouteCommand RouteCommandAutoLocomotive(String name, int s88, boolean at)
     {
@@ -344,10 +341,8 @@ public class RouteCommand implements java.io.Serializable
     
     /**
      * Whether an auto locomotive condition asks for the train AT its sensor (true) or NOT at it (false) - FR-141.
-     *
-     * Not getSetting, which reads a missing SETTING as false: a missing one here is "at", which is what every such
-     * condition saved before FR-141 holds.
-     * @return 
+     * A missing SETTING here is "at", unlike getSetting.
+     * @return
      */
     public boolean isAtSensor()
     {
