@@ -11,12 +11,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The autonomy editor's Mass Assign walks: every piece of track and switch with no length, every station with no
- * maximum train length, and every train with no length, each outlined and asked about in turn (FR-136).
- *
- * The panel keeps every method something outside the walks calls, as a one-line call to the method of the same name
- * here, and every field: this reads and writes them through `editor`.  Each dialog is still parented on the editor's
- * window.
+ * The autonomy editor's Mass Assign walks (FR-136): every piece of track and switch, every station and every train with
+ * no length, each outlined and asked about in turn.  The panel keeps every method something outside the walks calls, as
+ * a one-line call to the method of the same name here, and every field, read and written here through `editor`.
  */
 final class EditorMassAssign
 {
@@ -29,11 +26,8 @@ final class EditorMassAssign
 
     /**
      * Goes through every piece of track on this page that still has no length, and then its switches (Mass Assign
-     * Lengths).  Each piece is outlined whole (one run somebody measures with one tape) and scrolled to; the prompt
-     * asks for its WHOLE length and the session shares it over the piece's squares.  Then every switch with no length
-     * is outlined and one turnout length is asked for, given to each; likewise the squares two roads share.  OK, Skip
-     * and Cancel as in Name Everything; Escape stops.  0 is an answer, kept apart from one nobody has measured
-     * (OB-274).  `setupChanged` once at the end, for the running layout.
+     * Lengths), each outlined and asked about.  0 is an answer, kept apart from one nobody has measured (OB-274).
+     * `setupChanged` once at the end.
      */
     void massAssignLengths()
     {
@@ -173,14 +167,9 @@ final class EditorMassAssign
 
     /**
      * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
-     * Train Lengths, FR-094) - and where none is missing one, through every train with the length it has, which Skip
-     * keeps (MT-533: the item is never grayed).  The trains are the list the Atomic Routes refusal names
-     * (`TrainControlUI.trainsWithoutALength`), asked again before each train.  A length is 1 to
-     * `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, the range the locomotive menu's dropdown offers; 0 is refused with a
-     * sentence saying why.  Written through `applyTrainLength`, the one door every train-length gesture uses; a train
-     * length belongs to the locomotive, not this setup, so the editor's Cancel does not take it back, and each prompt
-     * says so.  A train standing on this page is outlined and scrolled to; one elsewhere is named and nothing is
-     * outlined.
+     * Train Lengths, FR-094), and where none is missing one, through every train with the length it has, which Skip
+     * keeps (MT-533).  A length is 1 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, written through `applyTrainLength`; it
+     * belongs to the locomotive, so the editor's Cancel does not take it back.
      */
     void massAssignTrainLengths()
     {
@@ -324,9 +313,8 @@ final class EditorMassAssign
     }
 
     /**
-     * The same, the box holding a number to start from (MT-566): the length a train already has, in the walk through
-     * every train.  Selected when the box takes the keyboard, so a number typed replaces it rather than being added to
-     * it; OK or Enter keeps it, as Skip does.
+     * The same, the box holding a number to start from (MT-566): the length a train already has.  Selected when the box
+     * takes the keyboard, so a number typed replaces it rather than being added to it.
      *
      * @param question what to say above the field
      * @param titleKey the bundle key of the walk's name, which is the prompt's title
