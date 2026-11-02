@@ -17,10 +17,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * Capture, tested the way the operator meets it: a real configuration, real autonomy, real trains.
  *
- * Adam: "Make sure you validate via REALISTIC tests for the timetable issue that still persists."  The earlier
- * `testTimetableCapture` (kept as a faster unit test of the flag) built its own two-point Layout and could only see
- * the model; what had stopped was the REDRAW, because the registration that repainted the timetable was deleted with
- * the GraphStream window.  So this does the whole thing:
+ * The earlier `testTimetableCapture` (kept as a faster unit test of the flag) built its own two-point Layout and could
+ * only see the model, not the REDRAW that repaints the timetable.  So this does the whole thing:
  *
  * - a real configuration, through `model.parseAuto`, which is what loading one does
  * - capture switched on where the window switches it, on `model.getAutoLayout()`
@@ -352,10 +350,10 @@ public class testTimetableCaptureThroughARealRun
     /**
      * Takes every train off, so this test starts from a railway nobody else has arranged.
      *
-     * Adam: "let's get it to start with an empty layout onto which you place locomotives, with other locomotives
-     * removed."  `autonomy_sanity.json` places three trains on a railway with one single-track corridor, the
-     * arrangement least likely to produce a moving train on a loaded machine.  Through `moveLocomotive(null, ...,
-     * true)`, the door the diagram's Cut uses, so the state is one the application can also be in.
+     * `autonomy_sanity.json` places three trains on a railway with one single-track corridor, the arrangement least
+     * likely to produce a moving train on a loaded machine, so the test starts empty and places its own.  Through
+     * `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses, so the state is one the application can also
+     * be in.
      *
      * @param layout the freshly parsed railway
      */
