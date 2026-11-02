@@ -1081,10 +1081,9 @@ public class testLocIconCrop
     }
 
     /**
-     * Before the station has said, the picture's tools take the power as on only where start-up turned it on (OB-392;
-     * Adam: "If we know the power is on (preference to sent power on when startup), hide the icons.  Otherwise leave as
-     * is."), whatever the Startup preference says since; once it has said, by what it said.  The model takes the power
-     * as on until it hears.
+     * Before the station has said, the picture's tools take the power as on only where start-up turned it on (OB-392),
+     * whatever the Startup preference says since; once it has said, by what it said.  The model takes the power as on
+     * until it hears.
      *
      * MUTATION: take the model's power as known in `TrainControlUI.powerIsOn`, read the Startup preference there
      * instead of what start-up did, or leave out `powerHeard = true` in `updatePowerState`, and this fails.
@@ -1209,10 +1208,9 @@ public class testLocIconCrop
 
     /**
      * The picture's tools, and a right-click on the picture, wait for the power to be off; the picture says to turn it
-     * off while it is on, and to right-click once it is off (MT-591; Adam: "when right clicking the locomotive image in
-     * the main UI, only make this open the file chooser if the power is off, similar to the overlay icons.  update the
-     * tooltip to match the status").  Told through the window's own door for a change of power.  The chooser is
-     * answered with a picture that cannot be read, so its refusal says the chooser opened.
+     * off while it is on, and to right-click once it is off (MT-591), like the overlay icons.  Told through the
+     * window's own door for a change of power.  The chooser is answered with a picture that cannot be read, so its
+     * refusal says the chooser opened.
      *
      * MUTATION: offer the tools whatever the power, say nothing while it is on, open the chooser on a right-click
      * whatever the power in `locIconMouseReleased`, or leave the tooltip when `renderActiveLoc` lets the locomotive go,
