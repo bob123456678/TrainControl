@@ -17,16 +17,11 @@ import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A platform with two protecting signals throws BOTH of them (MT-023, Adam: "Does not work - only first is set to red.
- * Selection process is ok.").
+ * A platform with two protecting signals throws BOTH of them (MT-023): they are commanded together and show the same
+ * aspect, because a platform guarded at one end and open at the other looks protected.
  *
- * A station may be reachable from each end, so it may be protected by a signal on each approach.  They are commanded
- * together and show the same aspect, because a platform guarded at one end and open at the other looks protected.
- *
- * Asserted at the layout, not the editor: every link of the chain handles several (the store keeps a list, `fromJSON`
- * reads both shapes back, the aspect is memoized per ACCESSORY rather than per Point).  `refreshAllProtectingSignals`
- * is public and asks each signal directly, without the "only while running" guard, so this needs no trains and no
- * hardware.
+ * Asserted at the layout, not the editor.  `refreshAllProtectingSignals` is public and asks each signal directly,
+ * without the "only while running" guard, so this needs no trains and no hardware.
  *
  * @author Adam
  */
@@ -238,12 +233,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A dispatch does not touch a signal it has nothing to do with (OB-166).
-     *
-     * Adam: "Signals should only be touched when a route activates."  The sweep, `refreshAllProtectingSignals`,
-     * re-commanded every protecting signal from current occupancy at the first hand dispatch.  Here the platform is
-     * EMPTY and the signal RED, as a route leaves it; a dispatch between two other points is not a route activating
-     * over this signal, so nothing may command it.
+     * A dispatch does not touch a signal it has nothing to do with (OB-166).  Adam: "Signals should only be touched
+     * when a route activates."  Here the platform is EMPTY and the signal RED, as a route leaves it.
      *
      * MUTATION: putting any of the three refreshAllProtectingSignals() calls back fails this.
      */
@@ -286,12 +277,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train passing a station leaves that station's guards alone (OB-315).
-     *
-     * A locked path claims every station along it and an exit guard is red while its platform is claimed, so each
-     * station a train only passed turned its exit guard red until the path let go (Adam: *"the exit guard signals are
-     * applied for more than just the arrival station."*).  The entry guard is thrown only where a journey ends;
-     * asserted here beside the exit guard.
+     * A train passing a station leaves that station's guards alone (OB-315): the entry guard is thrown only where a
+     * journey ends; asserted here beside the exit guard.
      *
      * MUTATION: let a reservation by a passing train count again, and this fails.
      */
@@ -370,12 +357,9 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A station a train only passes reads as passed while the train hands over from its claim to its journey.
-     *
-     * The hand-over writes the journey and then takes the claim away, so the guard's rule must read the claims first
-     * (`pathHeldBy`): a refresh whose two reads straddle the hand-over would find the train in neither and turn that
-     * exit guard red for the whole passage (OB-315's symptom, by a race).  The straddle is made certain by a journeys'
-     * map whose read performs the hand-over itself.
+     * A station a train only passes reads as passed while the train hands over from its claim to its journey (OB-315):
+     * the guard's rule must read the claims first (`pathHeldBy`).  The straddle is made certain by a journeys' map
+     * whose read performs the hand-over itself.
      *
      * MUTATION: read the journey first again, and this fails.
      */
@@ -454,11 +438,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A hand dispatch does NOT touch the signal of a train standing elsewhere (OB-166).
-     *
-     * While nothing is running the protection refresh is deliberately silent, so a train placed at a protected platform
-     * while idle produces no occupancy change and nothing commands its signal.  The test next door covers the
-     * dispatched train's destination; the sweep is off all three doors.
+     * A hand dispatch does NOT touch the signal of a train standing elsewhere (OB-166): while nothing is running the
+     * protection refresh is deliberately silent.  The sweep is off all three doors.
      *
      * MUTATION: putting the `refreshAllProtectingSignals()` call back into `executePath` fails this test.
      */
@@ -517,18 +498,12 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train dispatched BY HAND protects the platform it is heading for (MT-139).
+     * A train dispatched BY HAND protects the platform it is heading for (MT-139).  `refreshProtectingSignal` returns
+     * unless `isRunning()`, and none of its three terms is true while a hand dispatch locks its path; the guard stays
+     * (hand-setup gestures must not drive hardware): the distinction is "is a train under way".
      *
-     * Adam's ruling: "The same thing should happen in manual operation vs auto - the same switches and signals set, and
-     * guards applied."
-     *
-     * `refreshProtectingSignal` returns unless `isRunning()`, and a hand dispatch never touches `locomotiveThreads`,
-     * with `activeLocomotives` written AFTER `configureAndLockPath` has reserved every point.  So during the phase that
-     * matters none of isRunning()'s three terms is true and the destination's signal is never commanded.  The guard
-     * stays (hand-setup gestures must not drive hardware): the distinction is "is a train under way".
-     *
-     * **Observed from the start callback**, which fires right after the path is locked: isRunning() has become true but
-     * nothing asks the destination again, so the callback sees the aspect chosen when the path was locked.
+     * **Observed from the start callback**, which fires right after the path is locked, so it sees the aspect chosen
+     * then.
      */
     @Test
     public void testAHandDispatchedTrainProtectsItsDestination() throws Exception
@@ -738,10 +713,8 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * A train that arrives at a station as the end of its journey throws the station's entry guard red (FR-096).
-     *
-     * Adam: *"a signal that turns red after arrival at the final designation"*.  Through a real hand dispatch, as
-     * `testAHandDispatchedTrainProtectsItsDestination`: the claim is about the call in `executePath` where the arrival
-     * is recorded.
+     * Through a real hand dispatch, as `testAHandDispatchedTrainProtectsItsDestination`: the claim is about the call in
+     * `executePath` where the arrival is recorded.
      */
     @Test
     public void testAnEntryGuardGoesRedWhenATrainArrivesThere() throws Exception
@@ -860,15 +833,8 @@ public class testBothProtectingSignalsAreThrown
     // ------------------------------------------------------------------------------------ OB-340: leaving a terminus
 
     /**
-     * A train leaving a terminus is let past its exit guard (OB-340).
-     *
-     * Adam: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped by that
-     * guard would remain stuck."*  No route out commands this guard and the journey setting off still claims the
-     * platform, so protection would hold it red; the first edge out sets it GREEN with its own accessories and holds
-     * it.
-     *
-     * Read where the train sets off and at the first station on the way: GREEN, and held GREEN.  After the run the
-     * platform is free, and the guard green.
+     * A train leaving a terminus is let past its exit guard (OB-340).  Adam: *"when departing a terminus, autonomy
+     * should make its exit guard green.  otherwise, trains stopped by that guard would remain stuck."*
      *
      * MUTATION: leave the guards out of what the first edge sets, and this fails.
      */
@@ -939,11 +905,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train standing at a terminus keeps its exit guard red - the control for the claim above (OB-340).
-     *
-     * A train run in to stand there turns the guard red as its path claims the platform and leaves it red once
-     * arrived: only the first edge out sets it green.  The guard starts GREEN, as a departure leaves it over the empty
-     * platform, so this is also the next train in after one has left.
+     * A train standing at a terminus keeps its exit guard red - the control for the claim above (OB-340): only the
+     * first edge out sets it green.  The guard starts GREEN, as a departure leaves it over the empty platform.
      *
      * MUTATION: let the last edge in set the guards of the station it reaches green, and this fails.
      */
@@ -998,12 +961,9 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train leaving a through station turns its exit guards green too (OB-340; Adam: *"extend the rule to MAY TURN
-     * stations too.  just make the exit guard green when something departs."*).
-     *
-     * Its exit signal is its route's to set, green as the route is claimed; a guard no route out commands, which the
-     * journey's own claim held red, turns green with the first edge's accessories, is held GREEN with them, and stays
-     * green asked again on the way.
+     * A train leaving a through station turns its exit guards green too (OB-340): a guard no route out commands, which
+     * the journey's own claim held red, turns green with the first edge's accessories, is held GREEN with them, and
+     * stays green asked again on the way.
      *
      * MUTATION: leave the guards out of what the first edge sets, or let protection turn red a signal a path holds
      * green, and this fails.
@@ -1120,9 +1080,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * The exit signal a train's route out turns green, shared with another platform a train stands on, stays GREEN while
-     * the route holds it, asked again on the way, and is RED for the standing train once the run is over (OB-340).  Adam's
-     * own railway pairs signals 63 and 64 with TopMainR0, R1 and R2, and only the routes out of those platforms set them.
+     * The exit signal a train's route out turns green, shared with another platform a train stands on, stays GREEN
+     * while the route holds it and is RED for the standing train once the run is over (OB-340).
      *
      * MUTATION: let protection turn red a signal a path holds green, and this fails.
      */
@@ -1138,8 +1097,7 @@ public class testBothProtectingSignalsAreThrown
     /**
      * A train leaves the terminus TX T while another stands at TX P, both guarded by `near` (OB-340).
      * `routeCommandsIt`: whether the first edge out commands `near` green, as a route out does its exit signal.
-     * Returns the guard as the train sets off; at TX M, once the other train has been taken off P and put back; and
-     * over the other train once the run is over - each as `aspectOver` reads it.
+     * Returns the guard at each step, as `aspectOver` reads it.
      */
     private List<String> leaveBesideAnotherTrain(boolean routeCommandsIt) throws Exception
     {
@@ -1197,9 +1155,8 @@ public class testBothProtectingSignalsAreThrown
 
     /**
      * With Atomic Routes off - Adam's own setting - a guard shared with a platform another train stands at is GREEN as
-     * the train leaves and still GREEN while the first edge out holds it, and RED over the other train once the tail
-     * has cleared that edge: the hold lapses there, and the start, given back at once, asks it again (OB-340).  A
-     * journey of four edges, none measured, so the tail clears the first edge when the head finishes the second.
+     * the train leaves and RED over the other train once the tail has cleared the first edge out (OB-340).  A journey
+     * of four edges, none measured, so the tail clears the first edge when the head finishes the second.
      *
      * MUTATION: leave the start unreleased where the tail clears the first edge, so nothing asks its guards then, and
      * this fails.  (Keeping the first edge's hold past its clearing does not: non-atomic routes give the edge itself
@@ -1235,10 +1192,9 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A train leaves the terminus FE T over four edges - FE M, FE N, FE O, FE B - while another stands at FE P, both
-     * guarded by `near`; this class's own feedbacks 47481-47486 (OB-340).  `atomic`: Atomic Routes.  Returns the guard
-     * as the train sets off and at FE M, then at FE N (the tail has cleared the first edge), and there once the other
-     * train has been taken off P and put back, as `aspectOver` reads it.
+     * A train leaves the terminus FE T over four edges while another stands at FE P, both guarded by `near` (OB-340);
+     * `atomic`: Atomic Routes.  Returns the guard as `aspectOver` reads it as the train sets off, at FE M, at FE N (the
+     * tail has cleared the first edge), and there once the other train has been taken off P and put back.
      */
     private List<String> leaveBesideAnotherTrainOverFourEdges(boolean atomic) throws Exception
     {
@@ -1326,10 +1282,9 @@ public class testBothProtectingSignalsAreThrown
     private static final long DEPARTURE_BOUND_MS = 3 * RACE_BOUND_MS;
 
     /**
-     * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does
-     * not turn the leaving train's exit guard RED after the departure has set it GREEN, with Atomic Routes off - nor
-     * does the same refresh made after the claim (OB-340).  The refresh reads the holds and commands the signal as one
-     * step, so it either commands first and the GREEN lands last, or reads the hold.
+     * A protection refresh on another train's thread that straddles a departure's claim does not turn the leaving
+     * train's exit guard RED after the departure has set it GREEN, with Atomic Routes off (OB-340): the refresh reads
+     * the holds and commands the signal as one step.
      *
      * MUTATION: take the signal's lock out of `Layout.refreshOneSignal`, or out of the departure's GREEN in
      * `configureAndLockPath`, and the forced reading goes RED after the refresh; command that GREEN before the claim
@@ -1361,12 +1316,11 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * The same where the first edge out commands the shared guard GREEN itself, as a route out does its exit signal, with
-     * Atomic Routes off: the edge's own command is held as the exit guards are, so it too is sent under the signal's lock
-     * once the edge is taken (OB-340).
+     * The same where the first edge out commands the shared guard GREEN itself, with Atomic Routes off (OB-340): the
+     * edge's own command is sent under the signal's lock once the edge is taken.
      *
-     * MUTATION: take the signal's lock out of `Layout.configureEdge`'s command, and the forced reading goes RED after the
-     * refresh.
+     * MUTATION: take the signal's lock out of `Layout.configureEdge`'s command, and the forced reading goes RED after
+     * the refresh.
      */
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff()
@@ -1669,8 +1623,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * Where the first edge out commands its own station's exit guard, the edge's setting stands (OB-340): one commanding it
-     * RED - under one spelling of its name where the station uses the other, one accessory - leaves it RED, held RED.
+     * Where the first edge out commands its own station's exit guard, the edge's setting stands (OB-340): one
+     * commanding it RED leaves it RED, held RED.
      *
      * MUTATION: set every guard of the station green whatever the edge commands, and this fails.
      */
@@ -1723,9 +1677,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A departure given back unrun - a stop ordered while its route was being set - leaves the station's exit guard RED
-     * over the train still standing there, though the first edge had already set it GREEN (OB-340): the route is given back
-     * and the start reserved again, which asks the guard.
+     * A departure given back unrun leaves the station's exit guard RED over the train still standing there (OB-340):
+     * the route is given back and the start reserved again, which asks the guard.
      *
      * MUTATION: give the route back without reserving the start again, and this fails.
      */
@@ -1737,9 +1690,8 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * A departure that fails while its route is being set - an accessory that cannot be commanded - leaves the station's
-     * exit guard RED over the train still standing there, though the first edge had already set it GREEN (OB-340): what
-     * was taken is released and the start reserved again, which asks the guard.
+     * A departure that fails while its route is being set leaves the station's exit guard RED over the train still
+     * standing there (OB-340): what was taken is released and the start reserved again, which asks the guard.
      *
      * MUTATION: release a failed route without reserving the start again, and this fails.
      */
@@ -1820,10 +1772,9 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
-     * Two copies of one station square, CP 1 and CP 2, each a way out to CP M and on to CP B, both guarded by `near`; a
-     * train leaves from whichever is not a terminus and the guard is read where it sets off (OB-340).  `mustTurn`:
-     * CP 1 a terminus and CP 2 the turning copy of a barred side (a reversing point, no destination), the train leaving
-     * from CP 2; else CP 1 a plain copy and the train leaves forward from it.
+     * Two copies of one station square, each a way out to CP M and on to CP B, both guarded by `near`; the train leaves
+     * from whichever is not a terminus (OB-340).  `mustTurn`: CP 2 is the turning copy of a barred side; else CP 1,
+     * plain.
      */
     private String leaveACopy(boolean mustTurn) throws Exception
     {
