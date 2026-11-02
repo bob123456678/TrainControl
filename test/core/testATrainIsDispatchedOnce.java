@@ -1976,10 +1976,8 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A route may not end at, or pass, a sensor another train's route is still waiting on.  Two places on one sensor (a
-     * feedback double curve's two arcs, two pieces of metal with one contact, OB-238) must be kept apart: two trains
-     * sent to them at once would have the first arrival end both journeys, and the second recorded as arrived with its
-     * route handed back while it was still on it.  A journey waits on every sensor of its route it has not reached.
+     * A route may not end at, or pass, a sensor another train's route is still waiting on (OB-238): two places on one
+     * sensor must be kept apart, or the first arrival ends both journeys.
      *
      * MUTATION: let a route wait on a sensor another train's route is waiting on, and this fails.
      *
@@ -2398,11 +2396,9 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Autonomy chooses and sends nothing while the track power is off, and sends once it is back.  With the power cut
-     * (from the window, by the Central Station, or by a route) switches would be commanded on a railway with no power
-     * to move them.  The loop waits, without stopping the run, and says so once.  The power is set as the Central
-     * Station's STOP and GO echoes leave it.  Not Instant Stop, which halts the trains and leaves the power on:
-     * autonomy runs on through that (OB-251).
+     * Autonomy chooses and sends nothing while the track power is off, and sends once it is back (OB-251).  The power
+     * is set as the Central Station's STOP and GO echoes leave it; not Instant Stop, which halts the trains and leaves
+     * the power on.
      *
      * MUTATION: take the wait out of autonomy's loop (`waitWhileThePowerIsOff` in `runLocomotive`), and this fails.
      *
