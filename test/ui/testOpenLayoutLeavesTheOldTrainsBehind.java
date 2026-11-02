@@ -34,11 +34,8 @@ import support.Restart;
 /**
  * File &gt; Open Layout..., answered with another railway's folder, leaves the railway that was open behind: its setup,
  * the trains standing on it and the track they claim, while its locomotives stay in the database (OB-363).  Answered
- * with the folder already open, it keeps that railway's trains standing.
- *
- * The window starts on a copy of the frozen railway, with its setup loaded and its four trains standing; Open Layout...
- * is chosen from the File menu, answered first with that railway's own folder and then with a copy of the
- * `single-switch` railway.
+ * with the folder already open, it keeps that railway's trains standing.  The window starts on a copy of the frozen
+ * railway, answered first with its own folder and then with a copy of the `single-switch` railway.
  *
  * MUTATION: each claim names the line it rests on; see its javadoc.
  *
