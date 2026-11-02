@@ -26,13 +26,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
  * A train whose tail stops at the switch behind its platform is still drawn in orange where it lies (OB-290; MT-543:
- * *"With not known, there is no orange tail.  The tiles up to the switch are greyed out, as expected."*).
- *
- * A train with no road into its platform (placed by hand, answered Not known, or re-stood after a restart or an edit)
- * has its tail decided by the side it came in by. Where more than one rail comes in by that side and they part behind
- * the platform, the walk claims the squares they share, up to the switch (MT-477), as PLACES, which is what the gray is
- * drawn from; it covers no EDGE, and the orange line was drawn only from covered edges. At BottomMainA on the frozen
- * `live-snapshot`, with this class's own four-unit train standing there, come in from the west.
+ * *"With not known, there is no orange tail.  The tiles up to the switch are greyed out, as expected."*).  At
+ * BottomMainA on the frozen `live-snapshot`, with this class's own four-unit train standing there, come in from the
+ * west.
  *
  * MUTATION: take the claimed-places drawing out of `AutonomySession.routesCoveredByStandingTrains` and the first claim
  * fails; draw every road seen on a square rather than the one they agree on, and the second does.
@@ -195,12 +191,8 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
 
     /**
      * The orange is drawn along the road the railway says the train covers, of two between one pair of sensors
-     * (OB-239). The walk stepped between a covered edge's two end squares along the FIRST reduced edge joining the
-     * pair, so where two roads join the same two sensors a train on the other was drawn on track it is not on. Built
-     * here, since no railway in `test/layouts` has two roads between one pair of sensors: a passing loop between A and
-     * B, its upper road one-way east and its lower road one-way west. A four-unit train stands at each end in turn,
-     * come along the road that ends there, so whichever road the reduction lists first, one of the two is the other
-     * road.
+     * (OB-239).  Built here, since no railway in `test/layouts` has two roads between one pair of sensors: a passing
+     * loop between A and B, its upper road one-way east and its lower road one-way west.
      *
      * MUTATION: take the first reduced edge joining a covered edge's two squares, either way round, as `pathBetween`
      * did, and this fails at one end or the other.
