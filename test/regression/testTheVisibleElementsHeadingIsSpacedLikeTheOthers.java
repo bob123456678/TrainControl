@@ -21,16 +21,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289;
- * Adam: "make it be consistent with other labels").  The autonomy editor hides Text Labels, which its caption choice
- * replaces (FR-061), so the gap above Grid must not stand at the top of the column.  In both editors, because the
- * plain one is where the column is right and has to stay right.
- *
- * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
- * status line that does not ask the window for its sentence's width keeps the column on the screen.
- *
- * And the autonomy editor's notices float over the bottom of the diagram, four lines at most, with an X to dismiss
- * them, and a notice never moves the diagram (OB-366).
+ * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289),
+ * in both editors: the autonomy editor hides Text Labels (FR-061), so the gap above Grid must not stand at the top of
+ * the column.  And the column is all there at the window's smallest size (OB-342), and the autonomy editor's notices
+ * float over the bottom of the diagram without moving it (OB-366).
  *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
@@ -150,16 +144,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam:
-     * "the min height of the autonomy editor window needs to be a few more pixels taller").
-     *
-     * HEIGHT: the column of tools needs 693 pixels to show Cancel, the last control, and the status line, where Small
-     * once left 680.  WIDTH: the status line's words are data, so its minimum width must not be its text's (521 pixels
-     * in English, 655 in German) or the tools column goes off the right edge; the sentence here is longer than any
-     * language's, so the claim does not depend on the railway's words.  SCALE: the floor is in pixels and the window
-     * is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the display as
-     * dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three diagram
-     * sizes, of every control outside the scroll panes.
+     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342): HEIGHT
+     * shows Cancel, the last control, and the status line; WIDTH, the status line's minimum must not be its text's (the
+     * sentence here is longer than any language's, so the claim does not depend on the railway's words); SCALE, the
+     * floor is in pixels and the window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`), with the
+     * look and feel installed again and put back at the end.  Asked at each of the three diagram sizes, of every
+     * control outside the scroll panes.
      *
      * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout
      * asks for in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum
@@ -185,9 +175,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * The notices float over the bottom of the diagram, across its visible width, and the diagram never moves for them:
-     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366; Adam: "I'd rather
-     * have the band float and have an x to dismiss each time it surfaces").  The band lies inside the diagram's
-     * viewport on its bottom edge, and is what a point in it finds first.
+     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366).  The band lies
+     * inside the diagram's viewport on its bottom edge, and is what a point in it finds first.
      *
      * MUTATION: mount the notices under the scroll pane again (`foot.add(autonomyBanner, BorderLayout.NORTH)` in
      * `LayoutEditor.setAutonomyMode`) and this fails.
@@ -449,9 +438,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * Scrolled to the bottom with a notice showing, the diagram's last row lies above the notice, not under it: the
-     * diagram gains the notice's height below while the notice shows, and loses it when it goes (OB-389; Adam: "add
-     * the same height of scrollable are to the diagram so the user can both see the full message and the last row of
-     * the track diagram").
+     * diagram gains the notice's height below while the notice shows, and loses it when it goes (OB-389).
      *
      * MUTATION: leave the notice's height out of `LayoutEditor.sizeTheDiagram`, and this fails.
      */
