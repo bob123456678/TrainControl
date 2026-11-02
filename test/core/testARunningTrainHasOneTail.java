@@ -22,28 +22,16 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A train part-way through a run has ONE tail, behind where it is now (MT-438).
  *
- * MT-438: an orange line along a road his train never drove, left over after it departed - *"coloring switch 99 and 100
- * is still an error regardless"*, and *"why is the tail from bottommainapre to bottommaina not orange.  it's almost as
- * if you are shifting the location of the train"*.
- *
- * Locking a path RESERVES every point on it for the locomotive (`Point.reserve`, which deliberately does not sweep,
- * because the reservation holds a junction behind the train against a second train reaching it another way).
- * `walkStandingTrains` then walks every Point that holds the locomotive, so each reserved point claims a tail of its
- * own, guessed from whatever arrival side it carries, and a point the train passed through ten minutes ago claims track
- * it is nowhere near.
- *
- * Adam: *"There is no ambiguity - the tail is certain at departure and shouldn't change. You also know which way the
- * train went when it started running. Just unlock the rest of the diagram once the tail by length is far enough away."*
- * Which is `tailHasProvablyPassed` (`behind >= trainLength`), the rule this railway already uses to hand an edge back
- * as the head pulls away from it.  So: one tail per train, anchored where the train IS, along the road it drove, and
- * everything further back released.
+ * Locking a path reserves every point on it, so the tail walk must anchor one tail where the train IS, along the road
+ * it drove, and release everything further back (`tailHasProvablyPassed`).  Adam: *"There is no ambiguity - the tail
+ * is certain at departure and shouldn't change."*
  *
  * The run is real - `executePath` with the sensors thrown by hand - because the state this is about only exists while a
  * path is locked.
  *
- * MUTATION: walk every Point that holds the locomotive again - drop the `alreadyWalked` guard and the
- * head anchor in `walkStandingTrains` - and two of the three claims below go red: the leg behind the
- * departure square and the leg ahead of the train are both claimed as its tail.
+ * MUTATION: walk every Point that holds the locomotive again - drop the `alreadyWalked` guard and the head anchor in
+ * `walkStandingTrains` - and two of the three claims below go red: the leg behind the departure square and the leg
+ * ahead of the train are both claimed as its tail.
  *
  * @author Adam
  */
@@ -185,23 +173,19 @@ public class testARunningTrainHasOneTail
     }
 
     /**
-     * A milestone part-way along a run is ordinary block, and so is the square a train comes to rest on.
+     * A milestone part-way along a run is ordinary block, and so is the square a train comes to rest on (OB-278).
      *
-     * Adam (OB-244), asked where the maximum train length should be checked: *"it is the arrival station only"*.  The
-     * tail walk once spent nothing on a running train's milestone, so the tail reached on past the square behind and
-     * `isPathClear` refused another train track that is free.  That exemption was a misreading, and since OB-278 there
-     * is none: Adam, *"the 2 length tile with the s88 consumes 2 units of the train"*, everywhere.  *"The station size
-     * is an allowance"* meant the station's maximum train length, not the length measured on its square; every square a
-     * body lies over is spent, the one it stands on first.  So the running train and the train at rest are the same
-     * arithmetic, and this asks both.
+     * Every square a body lies over is spent, the one it stands on first (Adam: *"the 2 length tile with the s88
+     * consumes 2 units of the train"*), so the running train and the train at rest are the same arithmetic, and this
+     * asks both.
      *
      * Two units, and the milestone measures two, so the train's whole body is the milestone and nothing is left to
      * reach `MR_B>MR_A` with.  The first claim is what makes the second one about the rule: a walk that produced
      * nothing at all would satisfy a negative claim on its own.
      *
-     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second claim
-     * and the third, each naming `MR_B>MR_A` - one unit survives the milestone and the walk carries on to
-     * the leg behind the departure square.
+     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second claim and the
+     * third, each naming `MR_B>MR_A` - one unit survives the milestone and the walk carries on to the leg behind the
+     * departure square.
      */
     @Test
     public void testAMidRunMilestoneIsNotAnAllowance() throws Exception
