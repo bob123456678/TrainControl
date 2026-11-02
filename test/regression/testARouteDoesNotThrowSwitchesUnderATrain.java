@@ -561,11 +561,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * A route already under way when a dispatch begins does not set the accessory either.
      *
      * The guard is asked again immediately before each accessory command, and once the answer is settled it holds for
-     * the rest of the route: the command loop takes seconds (`execRoute` sleeps `SLEEP_INTERVAL` plus each command's
-     * own delay between every pair), and a dispatch that locked a path while a route was part way through would
-     * otherwise be invisible to it, through all three doors including the s88 trigger with nobody present.  A route
-     * stopped part way with some of its ironwork set is the smaller harm than throwing a switch under a train crossing
-     * it.
+     * the rest of the route: the command loop takes seconds, and a dispatch that locked a path while a route was part
+     * way through would otherwise be invisible to it, through all three doors including the s88 trigger.  A route
+     * stopped part way is the smaller harm than throwing a switch under a train crossing it.
      *
      * A conflict appearing mid-route ASKS at the two doors with a person at them, and sets none of its accessories at
      * the s88 trigger door.  This test runs with no interface attached (`init` with `showUI` false, so `getGUI()` is
@@ -1641,12 +1639,11 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * An s88 route with nothing in its way still runs while autonomy is going.
      *
-     * `testTheStopInARefusedRouteStillRuns` says what the automatic door refuses and nothing else says what it does
-     * when there is nothing to refuse.  The rule is `heldReason(rc)`, asked of each accessory command in turn: make it
-     * answer for every command while autonomy runs and every s88-triggered route stops setting anything while a train
-     * is out, with nothing else failing.  So a route on a DIFFERENT accessory, one no edge configures, fired
-     * automatically while a train is running, must set it.  The refusal is per command (MT-247), so one busy turnout
-     * does not drop the route's other switches (`testAConflictSkipsOnlyTheSwitchUnderTheTrain`).
+     * `testTheStopInARefusedRouteStillRuns` says what the automatic door refuses; this says what it does when there is
+     * nothing to refuse.  The rule is `heldReason(rc)`, asked of each accessory command in turn: make it answer for
+     * every command while autonomy runs and every s88-triggered route stops setting anything while a train is out.  So
+     * a route on a DIFFERENT accessory, one no edge configures, must set it.  The refusal is per command (MT-247)
+     * (`testAConflictSkipsOnlyTheSwitchUnderTheTrain`).
      *
      * MUTATION this catches: dropping the `heldReason` null check so every accessory is skipped while autonomy runs
      * fails this test and leaves the one above green.
@@ -1750,7 +1747,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      *
      * `behaviour/routes.md` section 7a states this as a rule - *"an emergency stop is obeyed whatever else is true. A
      * route carrying a stop is never refused at a human door and never has its stop skipped"* - and it has two halves
-     * (Adam on MT-247: *"make test cases for this"*; *"emergency stop should never conflict or prompt."*).
+     * (Adam on MT-247: *"emergency stop should never conflict or prompt."*).
      *
      * The first half, that a route with a stop is not screened at the human door, is also held by
      * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` and, by shape, by `testBothDoorsCarveOutTheEmergencyStop`.
@@ -1882,9 +1879,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * The same one-accessory route, with an emergency stop after it.
      *
-     * The stop comes second on purpose: `hasEmergencyStop` is about the whole route *"wherever it sits in the command
-     * list"*, and a stop written first would also be the first command executed, which would pass a weaker
-     * implementation that only looked at the head.
+     * The stop comes second on purpose: `hasEmergencyStop` is about the whole route, and a stop written first would
+     * also be the first command executed, which would pass a weaker implementation that only looked at the head.
      *
      * @param id a route id nothing else uses
      * @return the route, not executed
