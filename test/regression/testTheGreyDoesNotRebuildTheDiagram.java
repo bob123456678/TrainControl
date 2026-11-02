@@ -30,32 +30,19 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-334's shape, asked of the gray wash that came back.
- *
- * Adam asked for the wash back beside the line: "That plus the line, **drawn and refreshed carefully**, should do the
- * trick."  MT-334 was the whole diagram being rebuilt because one pathing arrow changed, and he saw the page flicker.
- *
- * Two different claims are asserted:
+ * MT-334's shape, asked of the gray wash that came back (OB-180): the diagram is not rebuilt, and only what changed
+ * is redrawn.
  *
  * - **No rebuild.**  The page's tiles are collected as objects before and after the gesture and compared by identity
- *   (as `testTheDiagramIsNotRebuiltForAnArrow` does): a rebuild replaces every `LayoutLabel`, a refresh does not.
+ *   (as `testTheDiagramIsNotRebuiltForAnArrow` does).
  *
  * - **Only what changed is redrawn.**  Identity alone would pass a refresh that repaints every tile on every train
  *   movement, so a counting `RepaintManager` records which components were made dirty, and each must be a tile of a
- *   square whose state actually changed.
+ *   square whose state actually changed.  The changed squares are worked out from the railway, not from the window
+ *   (`blockedSquares()`), because asking the window what the right answer is agrees with it whatever it says.
  *
- * The changed squares are worked out from the railway, not from the window (`blockedSquares()` translates
- * `Layout.edgesCoveredByStandingTrains` through the reducer, as `ui.testBlockedTrackIsGreyWhileAutonomyRuns` does),
- * because asking the window what the right answer is agrees with it whatever it says.
- *
- * The gesture is a TRAIN LENGTH: with the gray no longer fenced on a running railway, starting autonomy changes no
- * square and would measure nothing.  Adam: "yes, this greyout should appear at idle and be regenerated if a placement
- * or train/track length is changed."  The train length is the only one of his three gestures that needs no rebuild,
- * which leaves the repaint count as the only thing moving.
- *
- * THROUGH THE DOOR: `TrainControlUI.applyTrainLength` is everything `promptTrainLength` does once its dialog has
- * answered; nothing here calls the window's own recompute.  BOTH directions: unmeasuring the train takes the wash off
- * (OB-180).
+ * The gesture is a TRAIN LENGTH, through the door: `TrainControlUI.applyTrainLength` is everything `promptTrainLength`
+ * does once its dialog has answered.  BOTH directions: unmeasuring the train takes the wash off.
  *
  * MUTATION: make `repaintTheWashWhereItChanged` repaint every registered tile and
  * `testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged` fails.  Drop the blocked set from the comparison it makes and
@@ -339,12 +326,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     /**
      * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighborhood, not the whole
-     * window it sits in.
-     *
-     * `LayoutLabel.setImageOnEDT` also repainted the tile's `parent` (the whole tab on the main window), so every
-     * switch, signal and sensor event during a run redrew everything.  The tile's own repaint already goes through the
-     * diagram's panel, which draws overlapping children together (OB-172); the squares around it are redrawn as a
-     * train's icon is (MT-642).
+     * window it sits in (OB-172, MT-642).
      *
      * MUTATION: repaint the parent again, and this fails.
      */
@@ -609,13 +591,11 @@ public class testTheGreyDoesNotRebuildTheDiagram
         }
 
         /**
-         * The DIAGRAM SQUARES among them, which is what this class is about.  `applyTrainLength` also refreshes the
-         * autonomy findings (FR-046), which dirties the strip at the top of the window: five components that belong to
-         * no square, and a `LayoutLabel` is one square and nothing else is.
+         * The DIAGRAM SQUARES among them, which is what this class is about: `applyTrainLength` also refreshes the
+         * autonomy findings (FR-046), which dirties the strip at the top of the window, and that belongs to no square.
          *
          * KNOWN LIMIT: a full-page repaint asked for by repainting the CONTAINER dirties the container, not its
-         * children, and is invisible here; the identity comparison in `testMeasuringTheTrainDoesNotRebuildThePage`
-         * catches the rebuild, and this catches the refresh that touches too many squares.
+         * children, and is invisible here; the identity comparison catches the rebuild.
          */
         synchronized Set<JComponent> seenTiles()
         {
