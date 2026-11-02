@@ -15,19 +15,10 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * Every sample file shipped for a manual test still demonstrates the thing its entry says it does.
- *
- * Adam: "Make sure all the MTs have clear, step by step tests to run, and that sample files are supplied where needed."
- * A file is supplied so that a step gets RUN rather than skipped (MT-470's step 7 said "a legacy setup, if you have one
- * to hand" for a week); a sample file that has quietly stopped showing what it was made to show is worse than none,
- * because the step is then run and passes for the wrong reason.
- *
- * What this holds is the FILE, not the door: whether unticking Atomic Routes is refused is
- * `ui.testNonAtomicRoutesNeedTheirLengths`'s business, and whether an import gap-fills is
- * `core.testASecondImportFillsGapsAndDoesNotOverwrite`'s.  This asks of each file whether it still carries the state
- * its entry sends Adam to look at.  Read as bytes wherever it can be, because a file parsed by the thing it is testing
- * cannot testify about it; the two MT-470 files are the exception, since what they claim IS what
- * `unmeasuredTrackThatCouldBeReleased` answers about them.
+ * Every sample file shipped for a manual test still demonstrates the thing its entry says it does: a file is supplied
+ * so that a step gets RUN rather than skipped (MT-470), and a sample that has quietly stopped showing what it was made
+ * to show is worse than none.  What this holds is the FILE, not the door.  Read as bytes wherever it can be, because a
+ * file parsed by the thing it is testing cannot testify about it.
  *
  * MUTATION: swap the two MT-470 file names in the claim below and both assertions fail, each naming the file it read -
  * the measured one is asserted to have nothing unmeasured and the unmeasured one to have some, so a pair that had
@@ -210,12 +201,8 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * The two shipped LAYOUT folders are still shaped the way the steps that name them assume.
-     *
-     * MT-380 sends Adam to a ONE-page layout with nothing set up, and its import step relies on four of the export's
-     * five pages having no home here; a second page, or an autonomy setup, would make the step pass with nothing left
-     * out.  MT-244's is the five-page one the other was trimmed from, and needs no autonomy setup inside the layout
-     * folder.
+     * The two shipped LAYOUT folders are still shaped the way the steps that name them assume (MT-380: a ONE-page
+     * layout with nothing set up; MT-244: the five-page one it was trimmed from).
      */
     @Test
     public void testTheTwoShippedLayoutsStillHaveTheShapeTheirStepsAssume() throws Exception
