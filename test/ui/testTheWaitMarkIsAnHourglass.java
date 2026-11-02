@@ -225,7 +225,8 @@ public class testTheWaitMarkIsAnHourglass
 
     /**
      * The window a dialog is placed against is the window itself, not what contains it (MT-182):
-     * getWindowAncestor(owner()) walks UP and is null for a top-level frame, so the centering fallback ran.  Driven
+     * getWindowAncestor(owner()) walks UP and is null for a top-level frame, so the centering fallback would run.
+     * Driven
      * with real components; no dialog is shown.
      */
     @Test
@@ -316,7 +317,7 @@ public class testTheWaitMarkIsAnHourglass
 
     /**
      * The frame is taken from the clock, so a coalesced tick lands where it should (OB-129): counting one frame per
-     * tick advanced the sand once for a second of ticks.
+     * tick would advance the sand once for a second of ticks.
      *
      * MUTATION: going back to a counter fails the third assertion; the first two pass either way.
      */
