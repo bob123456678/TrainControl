@@ -13,29 +13,14 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 /**
- * Every door from a user-interface class onto the railway's monitor is written down here.
+ * Every door from a user-interface class onto the railway's monitor is written down here (OB-192): `Layout`'s
+ * `synchronized` methods take the one monitor a driving thread holds for a whole dispatch, so a call from the event
+ * thread freezes the window.
  *
- * `Layout` has two dozen `synchronized` methods, and they all take the one monitor that a driving thread holds for the
- * whole of `configureAndLockPath` (a `CONFIGURE_SLEEP` per edge and again per accessory) and that
- * `AutoLocomotiveStatus.findPaths` holds for a whole-graph search on every panel refresh.  A user-interface class runs
- * on the event thread unless it has gone to some trouble not to, so the event thread queues on that monitor and the
- * operator sees a window that does not repaint while the trains go on running (OB-192: *"starting autonomous
- * operation from the current track state ... makes the UI unresponsive.  Trains still run, but nothing is repainted,
- * and controls are stuck."*).
- *
- * This class is the guard with the *list of `synchronized` `Layout` methods*; two guards for one rule come to
- * disagree, so there is only this one.
- *
- * What it cannot see: source cannot tell which thread a line runs on.  This is an INVENTORY, not a proof: every call
- * from a user-interface class to one of these methods must appear in the list below, saying which thread it is on and,
- * on the event thread, why that is accepted.  A NEW door cannot be added without somebody reading this and answering
- * the question.  `testTheDiagramRefreshDoesNotWaitOnTheRailway` MEASURES the two doors that matter most, with a monitor
- * actually held; that is the proof, and this is the census.
- *
- * The way past is a line, because there are legitimate calls (a question already asked on a worker, a change of state
- * made from a thread the method itself started, a menu item the operator has just clicked) and a check with no way past
- * is one people delete.  What the line may not be is silent: every entry says `OFF THE EVENT THREAD` with the thread
- * named, or `ON THE EVENT THREAD` with the reason, and `testEveryAllowanceSaysWhichThreadItIsOn` holds that shape.
+ * An INVENTORY, not a proof: source cannot tell which thread a line runs on, so every call from a user-interface
+ * class to one of these methods must appear in the list below, saying `OFF THE EVENT THREAD` with the thread named, or
+ * `ON THE EVENT THREAD` with the reason (`testEveryAllowanceSaysWhichThreadItIsOn` holds that shape).  This is the
+ * only guard with the list; `testTheDiagramRefreshDoesNotWaitOnTheRailway` MEASURES the two doors that matter most.
  *
  * MUTATION: put `layout.getPossiblePaths(locomotive, true)` back in
  * `LayoutRightclickAutonomyMenu`'s constructor, or `isChoosableByAutonomy` back in
@@ -60,21 +45,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     };
 
     /**
-     * Methods that are not themselves `synchronized` but reach one, so a call to them is a door too.
-     *
-     * The scanner reads `synchronized` METHOD DECLARATIONS, so it cannot see a member that takes the same monitor with
-     * a `synchronized (this)` BLOCK, or reaches it through a call: `executePath` on the event thread would pass in
-     * silence while holding the monitor for a whole dispatch, which is OB-192's shape.  `Layout.triageReturnToHome`
-     * builds a `HomeStaging.snapshot`, which calls the `synchronized` `Layout.getHomeStations`.
-     *
-     *   - `executePath`, `executeTimetable`, `runLocomotives` reach it through `isPathClear` and
-     *     `configureAndLockPath`, each holding it for a dispatch or a run.
-     *   - `configureAndLockPath`, `getPathValidationFailureCount`, `hasShownPathValidationAlert` use
-     *     `synchronized (this)` blocks; the last two are the shape a status panel or a tooltip reads from
-     *     `actionPerformed`.
-     *
-     * This list cannot be derived from the source (it would need a call graph), so it grows by hand when somebody finds
-     * another.
+     * Methods that are not themselves `synchronized` but reach one, so a call to them is a door too (OB-192).  The
+     * scanner reads `synchronized` METHOD DECLARATIONS, so it cannot see a `synchronized (this)` block or a call; this
+     * list cannot be derived from the source (it would need a call graph), so it grows by hand.
      */
     private static final String[] REACHES_THE_MONITOR =
     {
