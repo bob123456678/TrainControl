@@ -367,9 +367,8 @@ public class testTimetableOnDerivedGraph
      */
     private static Layout derivedLayout() throws Exception
     {
-        // The snapshot, not test/test_layout (OB-132): on test/test_layout nothing moves inside the run window, so it
-        // threw a SkipException every time, and a class that skips everything reads as green.
-        // test/test_layout_snapshot is frozen for the same reason; its README says why re-taking it would turn every
+        // The snapshot, not test/test_layout (OB-132): nothing moves inside the run window there, and a class that
+        // skips everything reads as green.  test/test_layout_snapshot is frozen: re-taking it would turn every
         // assertion here into a statement about the railway rather than the code.
         File folder = new File("test/test_layout_snapshot");
 
