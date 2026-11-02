@@ -137,8 +137,7 @@ public class AutonomyChecks
         }
 
         /**
-         * The square the finding is ABOUT, the one a sentence names as `{0}` (OB-341).  It may be filed on another: a
-         * station whose name is drawn twice is filed on the first square it is drawn on, where the reader looks.
+         * The square the finding is ABOUT, the one a sentence names as `{0}` (OB-341).
          *
          * @return the square it is about; its own square unless it was given another
          */
@@ -221,10 +220,8 @@ public class AutonomyChecks
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
     /**
-     * A station whose name the track diagram draws in more than one place on one page (OB-341), by the rule the diagram
-     * uses (`AutonomySession.isCaptionDrawn`).  An ERROR, as an unlabeled station is.  One finding per station, filed
-     * on the first square its name is drawn twice on and ABOUT the station (`Finding.getAbout`), those squares as its
-     * related ones and their number as its count.
+     * A station whose name the track diagram draws in more than one place on one page (OB-341): an ERROR, as an
+     * unlabeled station is.
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
 
@@ -294,10 +291,8 @@ public class AutonomyChecks
     public static final String NO_ARRIVALS_LEFT = "autosetup.ui.checkNoArrivalsLeft";
 
     /**
-     * A station every train must turn round at, with track reaching it from more than one side (MT-361).  An ERROR: a
-     * square marked "must turn round" is emitted as one Point per arrival side, each leaving the way it came, so two
-     * ways in become two termini.  STATIONS ONLY: a must-turn square that is not a station is a plain reversing point.
-     * Barred arrivals do not count (shutting a side is one of the remedies); counted as sides, not arriving edges.
+     * A station every train must turn round at, with track reaching it from more than one side (MT-361): an ERROR, as
+     * each arrival side becomes its own terminus.  Stations only; barred arrivals do not count.
      */
     public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
 
@@ -636,11 +631,8 @@ public class AutonomyChecks
     }
 
     /**
-     * A square trains turn round at, from which nothing can be reached (OB-113).  It fills a hole the other checks
-     * open: `ARRIVAL_TRAPPED` advises "set 'trains may change direction here'", which silences it whether or not the
-     * way ahead was ever opened, and `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` watch stations only.
-     * Reachability is the build's.  A NOTICE, not a warning: "reaches no station" is also true of a reversing point on
-     * a spur somebody is still drawing.
+     * A square trains turn round at, from which nothing can be reached (OB-113): a NOTICE, as "reaches no station" is
+     * also true of a reversing point on a spur somebody is still drawing.
      *
      * @param mayTurn squares where a train may change direction
      * @param mustTurn squares where it must
@@ -845,14 +837,10 @@ public class AutonomyChecks
 
 
     /**
-     * A home on a square every train must turn round at: such a square is emitted as turning copies only, and a turning
-     * station copy is a TERMINUS.  THIS NOTICE IS THE ONLY WARNING THERE IS: Return Home is manual operation, so
-     * staging does not refuse a terminus to a locomotive that cannot reverse; it is driven into the berth NOSE FIRST
-     * and has to back out, which nothing in the software will ask.  The wording is about backing out, not being
-     * refused.
-     *
-     * ONLY AT A PARKING BERTH NO ROUTE CAN BACK A TRAIN INTO (MT-552): non-reversible trains can still be backed into a
-     * berth a route can back them into (rested first on another terminus, or turned at a reversing point on the way).
+     * A home on a square every train must turn round at, which is emitted as a TERMINUS: the berth is entered nose
+     * first and the train has to back out.  THIS NOTICE IS THE ONLY WARNING THERE IS, as Return Home is manual
+     * operation and staging does not refuse a terminus to a locomotive that cannot reverse.  Only at a parking berth no
+     * route can back a train into (MT-552).
      *
      * @param notAutoDestinations the stations autonomy never chooses - the parking berths
      * @param berthsBackedInto the squares a route can back a train into; null where the setup does not build, and then
@@ -1057,8 +1045,7 @@ public class AutonomyChecks
     }
 
     /**
-     * Stations that must turn every train round and have more than one way in (MT-361).  Handed the answer: whether a
-     * square is a station lives on the store.
+     * Stations that must turn every train round and have more than one way in (MT-361).
      *
      * @param termini the squares, mapped to how many unbarred sides reach them
      */
