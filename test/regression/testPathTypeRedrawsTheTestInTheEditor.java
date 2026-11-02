@@ -165,8 +165,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /**
      * Test a Path outlines in orange what can be clicked: every station once it is armed, the start in blue once
      * clicked, and with the answer both ends in blue and every other station orange, when the next click starts a new
-     * test; nothing once the tool is put down (FR-159; OB-395).  No station takes Why not Moving?'s colors here
-     * (MT-854): the green/purple station highlighting belongs to "why not moving".
+     * test; nothing once the tool is put down (FR-159).  No station takes Why not Moving?'s colors here: the
+     * green/purple station highlighting belongs to "why not moving" (MT-854).
      *
      * MUTATION: drop the `annotation.markedByATool` call in `AutonomyEditorPanel.annotationFor`, mark `testFrom`
      * CLICKABLE in `toolMark`, or forget the last test's ends there, and this fails.
@@ -240,7 +240,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
      * Why not Moving? outlines in orange the squares with a train while it waits, then, with its answer, the train's
      * square in blue and each station in the answer's colors: green where it can go now, gray where it cannot right
      * now, and purple, on Auto alone, where autonomy will never choose it but it could be sent by hand (OB-394), with a
-     * line saying so (FR-159, MT-854).
+     * line saying so.
      *
      * The colors named are the colors drawn; putting the tool down, or asking about a square with no train, takes the
      * marks off (and asking about a square with no train, the lines), and an answer that lands after the tool was put
