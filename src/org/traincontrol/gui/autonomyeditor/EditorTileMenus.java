@@ -769,11 +769,10 @@ final class EditorTileMenus
     }
 
     /**
-     * Where the tail of the train standing here lies - the "arrived from" side.  Exposed in the right-click menu's
-     * advanced settings, in the autonomy editor and the track diagram viewer alike:
-     * `TrainControlUI.buildAutonomyTileMenu` serves this panel's menu to the diagram, so one implementation reaches
-     * both (two copies is how `OB-039` survived being fixed).  The sides offered are the ones the railway HAS
-     * (`ArrivalSidePrompt.sidesOf`, the placement prompt's list).
+     * Where the tail of the train standing here lies - the "arrived from" side.  `TrainControlUI.buildAutonomyTileMenu`
+     * serves this panel's menu to the diagram, so one implementation reaches the autonomy editor and the track diagram
+     * viewer alike (OB-039).  The sides offered are the ones the railway HAS (`ArrivalSidePrompt.sidesOf`, the
+     * placement prompt's list).
      *
      * @param target the square
      * @return the menu, or null when no train is standing here (a tail belongs to a train)
@@ -915,11 +914,10 @@ final class EditorTileMenus
         final org.traincontrol.automationui.TilePorts.Side recorded =
             facingOnTheRailway != null ? facingOnTheRailway : editor.session.recordedFacingAlongTheTrack(target);
 
-        // AND WHATEVER IS ACTUALLY RECORDED, even when this square cannot hold it (OB-177): the radios are ticked by
+        // And whatever is actually recorded, even when this square cannot hold it (OB-177): the radios are ticked by
         // `facing == recorded`, so one not among the offered would tick NOTHING, reading as "no facing" for a train
-        // that has one (`facingsThatCannotBeHeld` reports it).  It gets an entry rather than a silent correction, as
-        // which is wrong, the record or the track, is not this menu's to decide.  NOT WHERE NO TRACK LEADS OUT
-        // (OB-348): grayed (OB-347).
+        // that has one (`facingsThatCannotBeHeld` reports it).  It gets an entry rather than a silent correction: which
+        // is wrong, the record or the track, is not this menu's to decide.  Not where no track leads out (OB-348).
         if (recorded != null && !facings.isEmpty() && !facings.contains(recorded)) facings.add(recorded);
 
         // Shown even with one answer, so the menu explains itself instead of vanishing.  A facing has to be one the
@@ -927,8 +925,8 @@ final class EditorTileMenus
         // `startableCopy` and quietly turns the train round), so a second facing is never offered where the railway
         // holds one; the one is shown, ticked, with a line saying why there is nothing to choose.
         //
-        // Grayed, not hidden, where no track leads out (OB-347; Adam: *"rather than hiding it, grey it out."*).  ONE
-        // SUBMENU (OB-348): built once, here, so the track diagram and the editor cannot offer two that drift apart.
+        // Grayed, not hidden, where no track leads out (OB-347).  ONE SUBMENU (OB-348): built once, here, so the track
+        // diagram and the editor cannot offer two that drift apart.
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));
 
