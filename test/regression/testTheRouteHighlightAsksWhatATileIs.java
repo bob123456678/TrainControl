@@ -19,15 +19,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike (MT-462).
- *
- * Adam, having run MT-462: "(tested with route 7): links, unrelated routes (58), and S88s (10) are highlighted.  Should
- * be switches and signals and the S88 that triggers the route or is involved in conditions only.  Seems the
- * highlighting doesn't care about item type."
- *
- * `TrainControlUI.highlightAddresses` matched on `getRawAddress()` alone, and every kind of tile carries one (a page
- * link's is the page it points at, a route tile's the route's id, an s88's the sensor): three kinds of false positive
- * from one missing question.
+ * Highlight on Diagram lights a tile of the kind the address names, and not everything numbered alike (MT-462):
+ * `TrainControlUI.highlightAddresses` matched on `getRawAddress()` alone, and every kind of tile carries one.
  *
  * **The scenario has the collision built in:** `single-switch` gives WestEnd the s88 address 10 and the turnout the
  * accessory address 1, so "accessory 10" is an address nothing on the page answers to as an accessory and one that an
