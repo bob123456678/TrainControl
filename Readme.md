@@ -437,8 +437,6 @@ Tab icons provided by Freepik.
         - Routes
             - In the route editor, a route with one condition shows its `Reads as` line, and with no conditions the table starts right under the heading instead of after an empty line.
             - In the route editor, a value typed into a cell and not yet confirmed with Enter is now saved by `Save`, and `Cancel` or closing the window asks before throwing it away.
-            - In the route editor, the Delete key in a cell being typed into deletes a character instead of doing nothing.
-            - A route that belongs to the Central Station again says so above its conditions when it has none.
         - Track Diagram
             - `Save Current Track Diagram as a Picture` now asks "What diagram size do you want to save?"
 * v3.0.6 [10/30/2026]

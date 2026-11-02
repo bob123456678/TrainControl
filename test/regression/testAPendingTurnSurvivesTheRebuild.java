@@ -1100,6 +1100,9 @@ public class testAPendingTurnSurvivesTheRebuild
 
             for (int i = 0; i < 20; i++) pump();
 
+            // The resize can follow the pumps on a busy machine: waited for, and judged below either way
+            support.Components.waitFor(() -> natural[0].equals(support.Components.onTheEventThread(window::getSize)), 5000);
+
             javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = window.getSize());
 
             assertEquals(after[0], natural[0], "a page change no longer sizes the pop-up to its page");

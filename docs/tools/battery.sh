@@ -797,14 +797,16 @@ lane_flags()
         "-Dtraincontrol.preferences=$id -Djava.io.tmpdir=$(cygpath -ws "$state/tmp")\\"
 }
 
-# Every slot past the lanes, waited for one at a time, for a run that needs the machine to itself.
+# Every slot but the first, waited for one at a time, for a run that needs the machine to itself: the slots past the
+# lanes went back to workers, and each lane gave its own back as it ended.  A slot whose file still holds this run's
+# pid is held already.
 take_the_spare_slots()
 {
-    local k=$((LANES + 1))
+    local k=2
 
     while [ "$k" -le "$SLOTS" ]
     do
-        if ! echo " $HELD_SLOTS " | grep -q " $k "
+        if [ "$(cat "$(slot_file "$k")" 2>/dev/null | tr -d '\r\n ')" != "$SLOT_PID" ]
         then
             until clear_if_stale "$(slot_file "$k")" >/dev/null && take_lock_file "$(slot_file "$k")"
             do
@@ -812,14 +814,26 @@ take_the_spare_slots()
 
                 sleep 10
             done
-
-            HELD_SLOTS="$HELD_SLOTS $k"
         fi
+
+        echo " $HELD_SLOTS " | grep -q " $k " || HELD_SLOTS="$HELD_SLOTS $k"
 
         k=$((k + 1))
     done
 
     clear_waiting_marker
+}
+
+# This run's reap, and each lane's: a rerun runs under its lane's id.
+reap_the_run()
+{
+    if [ -n "$REAPER" ]
+    then
+        for id in "$RUN_ID" ${LANE_IDS:-}
+        do
+            powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" -RunId "$id" >/dev/null 2>&1
+        done
+    fi
 }
 
 run_lane()
@@ -1074,11 +1088,7 @@ done
 # definition one that is still running: taking the hash while it is alive and then killing it makes
 # a write it manages in between invisible, and the run reports the folder untouched.  Deferred work
 # landing after everybody stopped watching is the whole subject of LayoutSandbox's javadoc.
-if [ -n "$REAPER" ]
-then
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
-        -RunId "$RUN_ID" >/dev/null 2>&1
-fi
+reap_the_run
 
 live_after=$(fingerprint)
 
@@ -1099,11 +1109,7 @@ REPORTED=1
 #
 # The most likely class to do it is the last one alphabetically rather than a bad one, which is what
 # makes this hard to notice: it is not a symptom of anything being wrong.
-if [ -n "$REAPER" ]
-then
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REAPER" \
-        -RunId "$RUN_ID" >/dev/null 2>&1
-fi
+reap_the_run
 
 echo "classes green: $pass   classes with failures: $fail   classes that tested nothing: $skip"
 echo -e "$failed"

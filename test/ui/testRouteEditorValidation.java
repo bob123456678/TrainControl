@@ -3818,6 +3818,39 @@ public class testRouteEditorValidation
     }
 
     /**
+     * The application's exit asks about a value typed into a cell and not yet entered, as Cancel does: answered No, the
+     * exit stops.
+     *
+     * MUTATION: in `maySettleBeforeExit`, drop `commitOpenEdits()`, and the exit goes ahead.
+     */
+    @Test
+    public void testTheExitAsksAboutAValueTypedAndNotEntered() throws Exception
+    {
+        inAnEditor(route(11, 12), frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame);
+
+            support.RouteEditing.typeWithoutEnter(table, 0, COMMAND_TARGET, "14");
+
+            assertTrue(support.Components.onTheEventThread(table::isEditing), "precondition: the cell is still edited");
+
+            org.traincontrol.gui.RouteEditorFrame.discardAnswerForTest = Boolean.FALSE;
+
+            try
+            {
+                assertFalse(support.Components.onTheEventThread(frame::maySettleBeforeExit), "the exit went ahead over"
+                    + " 14 typed into a target and not entered");
+            }
+            finally
+            {
+                org.traincontrol.gui.RouteEditorFrame.discardAnswerForTest = null;
+            }
+
+            assertEquals(targets(frame), " 14 12", "the typed target, once the exit has asked");
+        });
+    }
+
+    /**
      * FR-163: in a cell edit begun from the table, as typing begins one, the table keeps the keyboard, and the Delete
      * key is the edit's: it takes the character after the caret, and no command.
      *

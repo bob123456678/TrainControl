@@ -2,3 +2,4 @@ date	commit	class	outcome	first failure
 2026-11-01	35f648db	ui.testTheAutoTabSaysWhyATrainWaits	flaky	ui.testTheAutoTabSaysWhyATrainWaits: Total tests run: 13, Failures: 1, Skips: 0
 2026-11-01	35f648db	ui.testTheLayoutEditorManagesPages	flaky	ui.testTheLayoutEditorManagesPages: Total tests run: 23, Failures: 1, Skips: 0
 2026-11-01	35f648db	ui.testTheLengthPromptHasTheKeyboard	flaky	ui.testTheLengthPromptHasTheKeyboard: Total tests run: 5, Failures: 1, Skips: 0
+2026-11-01	9609e70e	regression.testAPendingTurnSurvivesTheRebuild	flaky	regression.testAPendingTurnSurvivesTheRebuild: Total tests run: 16, Failures: 1, Skips: 0 (testAPopUpKeepsItsSizeAndPlaceWhenACaptionChanges)

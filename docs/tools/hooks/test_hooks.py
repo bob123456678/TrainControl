@@ -171,6 +171,26 @@ check('git commit -m "-a thing"', sh('git commit -m "-a and -n are refused"'), '
 check('git commit -S key', sh('git commit -Sabc -F msg.txt'), 'pass')
 check('git commit -C ref', sh('git commit -C HEAD~1'), 'pass')
 
+# A deny later in the call wins over an ask before it
+for cmd in ['git checkout -- src/a/B.java && git clean -fd', 'git restore x; git reset --hard',
+            'git restore x && echo y > cs2_sample_layout/a.cs2', 'git restore x; pkill java']:
+    check(cmd, sh(cmd), 'deny')
+check('git restore x; Get-Process java | Stop-Process', ps('git restore x; Get-Process java | Stop-Process'), 'deny')
+check('git restore one file', sh('git restore src/x.java'), 'ask')
+
+# File reverts by other spellings; a branch switch passes
+check('git checkout <existing file>', sh('git checkout Readme.md'), 'ask')
+check('xargs git checkout --', sh('git diff --name-only | xargs git checkout --'), 'ask')
+check('timeout git reset --hard', sh('timeout 60 git reset --hard'), 'deny')
+check('git checkout <branch>', sh('git checkout dev'), 'pass')
+
+# Each command is judged where it runs: a cd or git -C elsewhere, or a folder that only shares the layout's name
+for cmd in ['cd /tmp/clone && git reset --hard', 'git -C /tmp/clone reset --hard', 'cd /tmp/clone; git clean -fd',
+            'cp x.cs2 /tmp/cs2_sample_layout_backup/x.cs2', 'echo x > /tmp/cs2_sample_layout/a.cs2']:
+    check(cmd, sh(cmd), 'pass')
+check('cd into the repo, then reset --hard', sh('cd /tmp && cd ' + MSYS + ' && git reset --hard'), 'deny')
+check('git -C <repo> reset --hard elsewhere', sh('git -C ' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
+
 out = subprocess.run([sys.executable, GUARD], input='not json', capture_output=True, text=True)
 check('garbage on stdin', 'pass' if not out.stdout.strip() and out.returncode == 0 else 'error', 'pass')
 

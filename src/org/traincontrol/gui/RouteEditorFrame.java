@@ -633,6 +633,8 @@ public class RouteEditorFrame extends JFrame
      */
     public boolean maySettleBeforeExit()
     {
+        commitOpenEdits();
+
         if (!hasUnsavedWork()) return true;
 
         // Out of the taskbar before it asks (MT-703): toFront does not restore a minimized window.
@@ -2836,6 +2838,8 @@ public class RouteEditorFrame extends JFrame
     {
         if (parent == null) return;
 
+        commitOpenEdits();
+
         // By kind, not number (MT-462): a tile of any kind carries a number, so the kind travels with the address, and
         // the protocol too, as an accessory address is one per protocol.
         java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> commanded =
@@ -2938,6 +2942,8 @@ public class RouteEditorFrame extends JFrame
     private void testAgainstTheRailway()
     {
         if (parent == null || parent.getModel() == null) return;
+
+        commitOpenEdits();
 
         final NodeExpression conditions;
 
@@ -4991,8 +4997,10 @@ public class RouteEditorFrame extends JFrame
                 }
                 catch (IllegalArgumentException e)
                 {
-                    // A half-typed address is not a reason to refuse the keystroke; Save reports a
-                    // line that cannot be built, and names it
+                    // A value no condition can be built from is refused: the cell shows the condition as it was,
+                    // which is what Save saves
+                    java.awt.Toolkit.getDefaultToolkit().beep();
+
                     return;
                 }
 

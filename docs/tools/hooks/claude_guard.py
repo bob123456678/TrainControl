@@ -34,10 +34,26 @@ def rel(path, cwd):
     return os.path.relpath(norm(p), ROOT).replace('\\', '/')
 
 
+# The first ask, kept until everything has been judged, so a deny later in the same call still wins
+ASKED = []
+
+
 def answer(decision, why):
+    if decision == 'ask':
+        if not ASKED:
+            ASKED.append(why)
+        return
     print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': decision,
                                              'permissionDecisionReason': 'TrainControl guard: ' + why}}))
     sys.exit(0)
+
+
+def asked():
+    if ASKED:
+        ASKED[:], why = [], ASKED[0]
+        print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask',
+                                                 'permissionDecisionReason': 'TrainControl guard: ' + why}}))
+        sys.exit(0)
 
 
 def battery_running():
@@ -234,7 +250,7 @@ def base(word):
     return b[:-4] if b.endswith('.exe') else b
 
 
-PREFIXES = {'env', 'command', 'exec', 'time', 'nice', 'nohup', 'sudo', 'builtin', 'xargs', '!'}
+PREFIXES = {'env', 'command', 'exec', 'time', 'nice', 'nohup', 'sudo', 'builtin', 'xargs', 'timeout', '!'}
 
 
 def command_at(words):
@@ -249,7 +265,10 @@ def command_at(words):
         elif base(w) in PREFIXES:
             i += 1
             while i < len(words) and words[i].startswith('-'):
-                i += 2 if words[i] in ('-n', '-I', '-L', '-P', '-d', '-s', '-E', '-a', '-u') else 1
+                i += 2 if words[i] in ('-n', '-I', '-L', '-P', '-d', '-s', '-E', '-a', '-u', '-k') else 1
+            # timeout's duration comes before the command it runs
+            if base(w) == 'timeout' and i < len(words) and re.match(r'^\d+(\.\d+)?[smhd]?$', words[i]):
+                i += 1
         else:
             return i
     return i
@@ -316,7 +335,7 @@ def options(args, takes_next='', takes_rest='', long_takes=()):
 WHOLE = {'.', './', '.\\', '*', ':', ':/', ':/.', ':/*', ':.', ':*', ':(top)'}
 
 
-def judge_git(glob_opts, sub, args, text):
+def judge_git(glob_opts, sub, args, text, cwd=ROOT):
     if any('core.hookspath' in g.lower() for g in glob_opts):
         answer('deny', 'hooks are not skipped; fix what the hook found.')
     if sub in ('checkout', 'restore', 'reset', 'stash', 'clean', 'switch', 'rm', 'mv') and \
@@ -348,7 +367,9 @@ def judge_git(glob_opts, sub, args, text):
         f, pos = options(args, 'bB', long_takes=('orphan', 'conflict', 'pathspec-from-file'))
         if f & {'-f', '--force'} or any(p in WHOLE for p in pos):
             answer('deny', revert)
-        if '--' in args and pos:
+        # Paths after `--`, from xargs with none named, or a named file that exists: each reverts that file
+        if '--' in args or any(os.path.exists(os.path.join(cwd, p)) and not os.path.isdir(os.path.join(cwd, p))
+                               for p in pos):
             answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
     if sub == 'switch':
         f, _ = options(args, 'cC', long_takes=('create', 'force-create', 'orphan', 'conflict'))
@@ -442,6 +463,37 @@ def acting(segs):
             yield base(words[ci]), words[ci:]
 
 
+def absolute(path, cwd):
+    return path if os.path.isabs(path) or re.match(r'^/[a-zA-Z]/', path) else os.path.join(cwd or '', path)
+
+
+def moves_to(words, cwd):
+    """The folder a cd, pushd or Set-Location moves to, when this simple command is one; None otherwise."""
+    ci = command_at(words)
+    if ci < len(words) and base(words[ci]) in ('cd', 'pushd', 'chdir', 'set-location', 'sl'):
+        args = [a for a in words[ci + 1:] if not a.startswith('-')]
+        if args:
+            return absolute(args[0], cwd)
+    return None
+
+
+def git_dir(glob_opts, cwd):
+    """The folder git works in: the last -C, else where the command runs."""
+    here = cwd
+    for k, o in enumerate(glob_opts):
+        if o == '-C' and k + 1 < len(glob_opts):
+            here = absolute(glob_opts[k + 1], here)
+    return here
+
+
+def in_live_layout(word, cwd):
+    """Whether a word names the repository's live layout folder or a path inside it."""
+    if LIVE_DIR.rstrip('/') not in word.lower() or not in_repo(word, cwd):
+        return False
+    r = rel(word, cwd).lower()
+    return r == LIVE_DIR.rstrip('/') or r.startswith(LIVE_DIR)
+
+
 def judge_shell(cmd, cwd, ps):
     segs = segments(cmd, ps)
     for name, words in acting(segs):
@@ -452,11 +504,17 @@ def judge_shell(cmd, cwd, ps):
             answer('deny', '-ExecutionPolicy Bypass is never used; run the script another way.')
     if not (in_repo(cwd, '') or NAME.lower() in cmd.lower()):
         return
+    # Each command is judged in the folder it runs in: a cd earlier in the call moves it, and git -C names its own
+    here = cwd
     for words, targets in segs:
+        moved = moves_to(words, here)
+        if moved:
+            here = moved
+            continue
         g = git_call(words)
-        if g:
-            judge_git(g[0], g[1], g[2], ' '.join(words))
-        if writes(words, targets, lambda w: LIVE_DIR.rstrip('/') in w.lower()):
+        if g and in_repo(git_dir(g[0], here), ''):
+            judge_git(g[0], g[1], g[2], ' '.join(words), git_dir(g[0], here))
+        if writes(words, targets, lambda w: in_live_layout(w, here)):
             answer('deny', 'the live layout is never written or reverted by a session; its changes are committed.')
     # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that is
     # itself the command being run is not a name to kill by.
@@ -485,6 +543,7 @@ def main():
         judge_write(tool, ti, cwd)
     elif tool in ('Bash', 'PowerShell'):
         judge_shell(ti.get('command') or '', cwd, tool == 'PowerShell')
+    asked()
 
 
 if __name__ == '__main__':
