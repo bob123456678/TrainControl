@@ -417,9 +417,9 @@ public class LayoutGrid
     public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
 
     /**
-     * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn (MT-726): each step
-     * of the mouse wheel and each press of a scroll bar's arrow.  The diagram's panel is not Scrollable, so without
-     * this its bars step one pixel at a time.
+     * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn (MT-726): each
+     * wheel step and each press of a scroll bar's arrow.  The diagram's panel is not Scrollable, so without this its
+     * bars step one pixel at a time.
      *
      * @param pane the scroll pane the diagram is in
      * @param size the square's edge in pixels
@@ -675,8 +675,7 @@ public class LayoutGrid
             /**
              * The axis numbers, drawn last of all (OB-172), in `paint` rather than `paintChildren`, which gives each
              * child its own scratch graphics.  A `Border` is painted before the children, so a caption reaching into
-             * the gutter covers the numbers; painted again rather than moved out of the border, which reserves the
-             * gutter.
+             * the gutter would cover the numbers; they stay in the border because it reserves the gutter.
              */
             @Override
             public void paint(java.awt.Graphics g)
@@ -793,10 +792,9 @@ public class LayoutGrid
 
         // The column and row numbers, in the margin the border reserves (FR-057): a border rather than two more rows of
         // cells (see AxisRuler), so the grid inside is exactly what it was.  The numbers are the DIAGRAM's (`offsetX`,
-        // `offsetY`), so the printed number is the one an issue would quote; `width` and `height` include the spacer
-        // row and column, so the ruler is told the real counts.  Editors only: `master instanceof LayoutEditor` rather
-        // than `inEditor`, which `LayoutEditor.render()` also sets in autonomy mode; and only with the grid on, through
-        // `coordinatesVisible`.
+        // `offsetY`), so the printed number is the one an issue would quote; the ruler is told the real counts, since
+        // `width` and `height` include the spacer row and column.  Editors only: `master instanceof LayoutEditor`
+        // rather than `inEditor`, which `LayoutEditor.render()` also sets in autonomy mode; and only with the grid on.
         if (master instanceof LayoutEditor && coordinatesVisible())
         {
             // Measured, not multiplied: `column * size` is right only while every cell is exactly a tile wide, and the
