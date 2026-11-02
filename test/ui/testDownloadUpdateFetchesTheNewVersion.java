@@ -30,20 +30,13 @@ import support.Answering;
 import support.Components;
 
 /**
- * Help > Download Update asks what to do with the new version, fetches it, and says where it put it (FR-125).
- *
- * Adam: "when user clicks on the new version, they see a download, download & update, or cancel button", and "If no jar
- * in current folder, it shouldn't be offered as a menu option."  A test runs from a folder of classes, so the question
- * offers Download and Cancel.
+ * Help > Download Update asks what to do with the new version, fetches it, and says where it put it (FR-125).  A test
+ * runs from a folder of classes, so the question offers Download and Cancel; Download & Update needs a jar it can
+ * replace, so it is tested in ui.testDownloadAndUpdateFromAJar (`SelfUpdate.runningJarForTests`).
  *
  * **Nothing is fetched from the internet.**  The window's update check is turned off before the window is built, and
- * the new version is set where that check would set it, pointing at a server on this computer.  The download goes where
- * the program puts it with no jar to replace, the working directory, under a version no release will have, and is
- * deleted after each claim.  The folder the program then shows is refused by the claim's own security manager, so no
- * file manager opens on the desktop.
- *
- * Download & Update needs a jar it can replace, so it is tested in ui.testDownloadAndUpdateFromAJar
- * (`SelfUpdate.runningJarForTests`).
+ * the new version is set where that check would set it, pointing at a server on this computer.  The download is
+ * deleted after each claim.
  *
  * MUTATIONS, each seen red: the download written somewhere other than the target the notice names (the download claim);
  * the error notice dropped from the download's catch (the failure claim); Cancel taken as Download (the cancel claim
