@@ -13,7 +13,10 @@ Agents pay to read every comment line, so the detail goes on the tracker and the
   puts that text in its report under the id, for the orchestrator to file.
 - **The source keeps a high-level summary** of what a class or method is for, plus only what everyone who edits it
   must know: a contract, a constraint that breaks something when ignored, a non-obvious why.  When in doubt, the
-  detail goes on the tracker and the comment cites the id.  Never restate the code in prose.  Private and
+  detail goes on the tracker and the comment cites the id.  Never restate the code in prose.
+- **Read the id before changing the code it is on.**  When the code you change, or a comment on it, cites an OB, FR
+  or MT, run `py -3 docs/manual-tests/triagedb.py show <id>` first: the comment is the summary, and the cases, traps
+  and choices turned down are on the entry.  A change that breaks one of them is a regression, comment or not.  Private and
   package-private javadoc is 1 to 3 lines; longer is a public contract or too long.
 - **No history:** what the code used to do, which review round found it, who said what when, how a bug was found.
   That lives in the tracker row the id resolves to, and in git: write the commit message, not a comment.
