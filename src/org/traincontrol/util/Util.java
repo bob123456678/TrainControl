@@ -346,9 +346,9 @@ public class Util
     }
 
     /**
-     * Opens the operating system's file manager on the folder a file is in (FR-019).  The folder itself, not the file
-     * selected in it (OB-311): Explorer's /select, falls back to Documents, silently, on a path it cannot resolve.
-     * Never throws: failing to open a file manager must not turn a successful backup into an error dialog.
+     * Opens the operating system's file manager on the folder a file is in (FR-019): the folder itself, not the file
+     * selected in it (OB-311), as Explorer's /select, falls back to Documents on a path it cannot resolve.  Never
+     * throws.
      *
      * @param file the file whose folder to open, or null to open the folder given
      * @param folder the folder to fall back to
@@ -378,10 +378,8 @@ public class Util
     }
 
     /**
-     * Writes a set of files and folders into one zip (FR-015).  One archive rather than a folder of copies: the
-     * autonomy setup is keyed by page id, so the pieces mean nothing apart and only an archive cannot be half-copied or
-     * half-restored.  A source that does not exist is skipped, not an error (a layout held on the Central Station has
-     * no local config folder).
+     * Writes a set of files and folders into one zip (FR-015): one archive, because the autonomy setup is keyed by page
+     * id, so the pieces mean nothing apart.  A source that does not exist is skipped, not an error.
      *
      * @param zip where to write
      * @param sources entry name inside the archive -> file or folder on disk
