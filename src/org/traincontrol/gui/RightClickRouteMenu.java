@@ -30,11 +30,7 @@ public class RightClickRouteMenu extends PopupListener
 
     /**
      * Opens this menu wherever the pointer is, for a click that was not a popup trigger (FR-043).  Adam: "make all
-     * other left or clicks on the table cells open the right-click menu."  The play button on the cell executes a route
-     * without asking, so every other click opens the menu rather than doing nothing.
-     *
-     * Here rather than copied into the window, because the menu knows how to refuse: a click not over a route opens
-     * nothing.
+     * other left or clicks on the table cells open the right-click menu."  A click not over a route opens nothing.
      *
      * @param ui the main window
      * @param e the click
