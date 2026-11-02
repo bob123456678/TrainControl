@@ -31,10 +31,10 @@ import support.SourceOf;
 /**
  * A train put down on a square is standing where the drive would leave it, not turned round.
  *
- * Which way a pasted train pointed was a coin toss on the frozen copy of Adam's railway ("When 2-8-4 is pasted, it
- * should always face east.  Does it?"): `facingByPath` walks `Layout.getNeighbors`, which SHUFFLES (right for autonomy
- * choosing a journey, wrong for where one square is relative to another), and two copies of BottomMainB sit the same
- * nine edges away: `BottomMainB (eastbound)` facing E and `BottomMainB (eastbound, reverse)` facing W.
+ * Which way a pasted train pointed was a coin toss on the frozen copy of Adam's railway: `facingByPath` walks
+ * `Layout.getNeighbors`, which SHUFFLES (right for autonomy choosing a journey, wrong for where one square is relative
+ * to another), and two copies of BottomMainB sit the same nine edges away: `BottomMainB (eastbound)` facing E and
+ * `BottomMainB (eastbound, reverse)` facing W.
  *
  * The second is not an arrival at all.  A may-turn square is built as a plain copy (where a train that drove in
  * stands) and a turning copy (after deciding to turn round), reached by the same edge and facing opposite ways.
