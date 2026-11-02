@@ -582,7 +582,7 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(once.getBoolean(track), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
                 + " Dragging a Box");
 
-            // AND IT SHOWS, as the pointer (MT-661; Adam: "why not just change the cursor?"): a crosshair over the
+            // And it shows, as the pointer (MT-661): a crosshair over the
             // diagram while picking - the square already under the pointer included
             assertEquals(grid.getContainer().getCursor().getType(), java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer over the"
                 + " diagram is not a crosshair while picking");
@@ -3360,7 +3360,6 @@ public class testTheEditorNamesItsShortcuts
         throw new IllegalStateException("the palette has no piece");
     }
 
-    /** A track editor on the page, built and rendered on the event thread. */
     private static LayoutEditor aTrackEditor() throws Exception
     {
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -3374,7 +3373,6 @@ public class testTheEditorNamesItsShortcuts
         return built[0];
     }
 
-    /** An autonomy editor on the page, built and rendered on the event thread. */
     private static LayoutEditor anAutonomyEditor() throws Exception
     {
         final LayoutEditor[] built = new LayoutEditor[1];
