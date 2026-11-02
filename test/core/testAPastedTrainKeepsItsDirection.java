@@ -288,17 +288,13 @@ public class testAPastedTrainKeepsItsDirection
     }
     /**
      * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO: a station autonomy may choose exactly when it is not marked
-     * parking.  The choice of `terminus` is made by whether anything ARRIVES at the copy, so a square marked
-     * compulsory-turn AND station emits `terminus`, which is a destination, and that is right (Adam):
+     * parking, so a square marked compulsory-turn AND station emits `terminus`, a destination, and that is right
+     * (OB-195; Adam):
      *
      * > *Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one there.*
      *
-     * `AutonomyBuilder` writes `autoDestination:false` for the PARKING marking and for nothing else, and the editor's
-     * set `stationsAutonomyWillNotChoose` asks the same question since OB-195.
-     *
-     * **This pins the rule, not a fact about his railway**: BottomMainC is a compulsory turn that autonomy is left free
-     * to choose, the one square where the two markings differ.  Both kinds are asserted present, so this cannot pass by
-     * the railway losing one of them.
+     * This pins the rule, not a fact about his railway: BottomMainC is the one square where the two markings differ,
+     * and both kinds are asserted present.
      *
      * MUTATION: `AutonomyBuilder` writing `autoDestination:false` for a compulsory turn as well fails this at
      * BottomMainC; `stationsAutonomyWillNotChoose` counting `isMustTurnAround` again fails the editor half there.
@@ -361,12 +357,8 @@ public class testAPastedTrainKeepsItsDirection
     }
 
     /**
-     * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183).
-     *
-     * Nothing about a home decides where a train stands, so the suspect is the REBUILD a home change triggers.
-     * `AutonomyBuilder.placementCopy` falls back to the first copy trains may arrive at when there is no facing or none
-     * matches - an order-dependent choice, so a builder whose output depends on iteration order would move trains for
-     * reasons no one could reproduce.
+     * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183).  The suspect is the REBUILD
+     * a home change triggers: `AutonomyBuilder.placementCopy` falls back to an order-dependent choice.
      *
      * MUTATION: a builder that ordered its copies from a HashMap fails this.
      *
