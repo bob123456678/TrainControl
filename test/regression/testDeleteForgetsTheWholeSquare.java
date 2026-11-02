@@ -19,14 +19,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Deleting a square from the diagram forgets everything the setup wrote about it.
- *
- * `delete` called `forgetCaptionsAt`, which touches the captions map alone, so a deleted platform kept its station
- * membership, point name, length, facing, barred arrivals, signal pairing, blocked flag, portal, link name and its
- * `configurations.points` block, all keyed to a square that now holds nothing.  Every sibling gesture (copy, paste,
- * fill, clear) already reached `forgetTiles`; `clear()`'s own comment contrasts itself with this method: *"Deleting
- * one square tells the setup so; emptying the whole page told it nothing at all."*  The caption half is asserted too,
- * because the fix replaces the call that was doing it: a repair that forgets more must not forget less.
+ * Deleting a square from the diagram forgets everything the setup wrote about it, the captions too: a repair that
+ * forgets more must not forget less.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *
