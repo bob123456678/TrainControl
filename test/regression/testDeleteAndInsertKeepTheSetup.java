@@ -19,10 +19,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * MT-062: delete and the line inserts, which had not had the move audit.
  *
  * Everything the setup holds is keyed by SQUARE, so any operation that relocates or destroys track has to tell the
- * setup; the drag, the shift and the bulk line copy were audited, delete and the row/column inserts were not.
- * `testAutonomyStoreSettingsMatrix` pins the RULES (every setting follows a moved tile, every setting is dropped when
- * its square is built over); this pins that delete and insert produce the right moves and losses for those rules to act
- * on, the half between the editor and the store.
+ * setup.  `testAutonomyStoreSettingsMatrix` pins the RULES; this pins that delete and insert produce the right moves
+ * and losses for those rules to act on.
  *
  * @author Adam
  */
