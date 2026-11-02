@@ -251,6 +251,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         ALLOWED.put("RunningLayoutSync.java#captureRunningLayout",
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
+
+        ALLOWED.put("RouteEditorFrame.java#copied",
+            "ON THE EVENT THREAD: accepted, as no monitor is taken - a route command's own toJSON and fromJSON, which"
+            + " share a name with Layout's, for Duplicate in the route editor (FR-162)");
     }
 
     /** Each call from a user-interface class to a door onto the monitor, as {`File.java#member`, the line it is on}. */
