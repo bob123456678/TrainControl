@@ -14,13 +14,8 @@ import org.traincontrol.util.I18n;
 
 /**
  * A file chooser whose Look In list is asked of Windows once, ahead of time, rather than every time (OB-323): *"we
- * don't want to sacrifice UX"*.
- *
- * Swing's chooser lists the Desktop and This PC through the shell, over COM item by item, when it is built and at every
- * change of folder: 1.0 to 1.8 s each on a Desktop of 71 items in OneDrive.  The list is the same one, the shell's own
- * answer, asked off the event thread as the window opens and kept until a drive comes or goes or a Desktop folder
- * changes.  Swing asks the shell itself only for a chooser on the shell's own view, so this one carries a view of its
- * own that hands Swing the answer among its roots; the files, names, icons and parentage are the shell's as before.
+ * don't want to sacrifice UX"*.  The list is the shell's own answer, asked off the event thread as the window opens
+ * and kept until a drive comes or goes or a Desktop folder changes.
  *
  * Every chooser in TrainControl is one of these - `testSwingSpeaksOurLanguage` looks.
  *
@@ -92,8 +87,8 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
-     * The same, and the icons of what is in these folders too, so a chooser opening in one paints from the kept icons
-     * rather than asking the shell for each on the event thread (MT-692).
+     * The same, and the icons of what is in these folders too (MT-692), so a chooser opening in one paints from the
+     * kept icons.
      *
      * @param folders the folders the choosers open in; any that is no folder is passed over
      */
@@ -367,8 +362,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         }
 
         /**
-         * The icon the shell gives a file, kept once given (MT-692): asked per item on the event thread as it first
-         * painted, and every chooser asked again.
+         * The icon the shell gives a file, kept once given (MT-692).
          *
          * @param f a file or folder, or null
          * @return its icon, or null
