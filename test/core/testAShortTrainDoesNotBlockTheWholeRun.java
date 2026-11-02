@@ -18,18 +18,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A one-unit train does not make a station on the far side of the run unreachable (Adam, OB-207).
  *
- * *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of one.
- *
- * A standing train covers whole EDGES, and `Layout.isPathClear` then sweeps SHARED METAL: for every edge of a candidate
- * path it asks whether any edge sharing tiles with it is covered, through `getLockEdges()`.  EN57-203 stood at
- * TunnelLongPark and covered `BottomMainA (westbound) -> TunnelLongPark`, twelve tiles across three switches; the path
- * `Tunnel -> BottomMainAPre -> BottomMainA` shares the last of those tiles with it, so the path was refused by a train
- * lying inside the FIRST tile of that edge, nowhere near the shared metal.  The refusal is right in principle and wrong
- * in extent: the runtime cannot say which part of an edge a train is on, because `Edge` holds a length and no places.
- *
- * On his measured railway the train stands on his own measurements (2 on TunnelLongPark's square, 1 behind it) and
- * nothing is set by this class.  A one-unit train lies on its own square (OB-278), which is the first place of the run
- * into the park and nowhere near the metal the path shares.
+ * A standing train covers whole EDGES and `Layout.isPathClear` sweeps SHARED METAL, so a train lying inside the FIRST
+ * tile of a long edge must not refuse a path that shares only the edge's last tile.  On his measured railway a one-unit
+ * train lies on its own square (OB-278), nowhere near that metal.
  *
  * @author Adam
  */
