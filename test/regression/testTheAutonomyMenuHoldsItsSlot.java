@@ -12,13 +12,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The Autonomy menu is in the bar from the first frame, and the real one takes its place.
- *
- * Adam, OB-202: *"while the hourglass is open, the autonomy jmenu isn't visible.  the sudden appearance
- * looks odd.  I added autonomyTopMenu, anchor your menu there, and grey it out if there is no autonomy."*
- *
- * The real menu is built from the configurations on disk and cannot exist until the connect is over, so it was APPENDED
- * to the bar from `setViewListener`, part-way through start-up, in front of the operator.  The form now holds a
+ * The Autonomy menu is in the bar from the first frame, and the real one takes its place (OB-202): the form holds a
  * placeholder for the slot, and `mountAutonomyMenu` swaps the real menu into it.
  *
  * So what this measures is that the bar never changes shape: a menu with the right heading is there before the mount
