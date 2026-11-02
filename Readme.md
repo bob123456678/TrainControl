@@ -409,6 +409,12 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.8
+    - Bug Fixes
+        - Autonomy
+            - The autonomy editor window can no longer be made so short that `Save Changes` and `Cancel` are cut off, and it opens no taller than the screen; `Things to look at` shows five lines instead of seven when the window is short.
+            - The checkboxes under `Visible Elements` in the autonomy editor are now evenly spaced.
+        - Track Diagram
+            - On a curved or double curved s88 sensor, the red arrows that show it is active are now clearly visible when an autonomy train is parked there.
 * v3.0.7 [11/02/2026]
     - New Features
         - Routes
