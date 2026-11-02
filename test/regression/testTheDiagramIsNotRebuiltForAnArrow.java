@@ -20,21 +20,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-334 - changing one pathing arrow repaints the arrows, not every tile on the page.
+ * MT-334 - changing one pathing arrow repaints the arrows, not every tile on the page (OB-185).  The panel's light
+ * redraw door, `annotationsChanged`, re-sets the annotations on the labels already there; the four doors that change a
+ * direction the ordinary way must use it instead of `setupChanged`, which runs `LayoutEditor.refreshGrid` and builds
+ * every label again:
  *
- * Adam, on the fix that was meant to settle this: "it still flickers, but less"; he confirmed the whole diagram redraws
- * when a pathing arrow is changed.  Less, because only one of five doors had been moved: OB-185 gave the panel a light
- * redraw door, `annotationsChanged`, which re-sets the annotations on the labels already there, and wired exactly one
- * caller to it, the One-Way Run tool.  The four doors that change a direction the ordinary way still ended at
- * `setupChanged`, which runs `LayoutEditor.refreshGrid` and builds every label again:
- *
- * - `cycle` - LEFT-CLICKING A PIECE OF TRACK, the gesture Adam's report names;
+ * - `cycle` - LEFT-CLICKING A PIECE OF TRACK;
  * - `applyArmMask` - clicking a switch, a crossing or a double curve, and the Open/Shut arm items;
  * - `setAllBranches` - "All branches: both ways / closed";
  * - `directionItem` - the per-route radio on the right-click menu.
- *
- * Each announces because "directions are edges in the running graph", and `annotationsChanged` rebuilds the running
- * layout exactly as `setupChanged` does; what it does not do is throw the tiles away and make them again.
  *
  * Asserted by identity: a rebuild replaces every `LayoutLabel` in the grid, an annotation refresh leaves them and
  * repaints only those whose annotation differs, so the tiles are collected before and after the click and compared as
