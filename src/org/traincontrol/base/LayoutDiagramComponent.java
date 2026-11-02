@@ -769,8 +769,7 @@ public class LayoutDiagramComponent
 
     /**
      * Which icon set a square of this size is drawn from: the size's own where there is one (30 and 60), otherwise the
-     * next larger, scaled down (FR-122: the Medium size, 46, from the 60 set), which keeps detail a smaller set never
-     * had.
+     * next larger, scaled down (FR-122).
      *
      * @param size the square's edge in pixels
      * @return the icon set's size
