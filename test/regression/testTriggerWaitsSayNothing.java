@@ -16,15 +16,13 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A route sitting on its trigger sensor says nothing about it, however long it sits (MT-037; Adam: "Leave an automatic
- * route enabled and watch the log for ten minutes. It must say NOTHING about its trigger sensor"; "Add a test for this.
- * Many simultaneous auto routes, trigger them synthetically, short duration.").  So this shrinks the advisory quota to
- * a fraction of a second, puts several waits on it at once, and lets them sit for many times the quota.
+ * A route sitting on its trigger sensor says nothing about it, however long it sits (MT-037).  So this shrinks the
+ * advisory quota to a fraction of a second, puts several waits on it at once, and lets them sit for many times the
+ * quota.
  *
- * The trap is that the wait is SHARED: route triggers borrow `Locomotive`'s feedback utilities (`MarklinRoute` builds a
- * locomotive called "Dummy Loc" to get at them), so an advisory added for a dispatched train fires for every route
- * monitor on the layout as well.  The split that prevents it is that the two-argument `waitForOccupiedFeedback` passes
- * no advisory and the three-argument one does, and only the dispatch loop calls the three-argument door.
+ * The trap is that the wait is SHARED: route triggers borrow `Locomotive`'s feedback utilities, so an advisory added
+ * for a dispatched train fires for every route monitor as well.  Only the dispatch loop calls the three-argument
+ * `waitForOccupiedFeedback`, the one that passes an advisory.
  *
  * @author Adam
  */
