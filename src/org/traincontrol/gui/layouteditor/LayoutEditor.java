@@ -1924,9 +1924,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Which way round a track tile put down should lie to join the track beside it (OB-292, OB-360), by the port table
-     * the autonomy graph uses.  A switch by its base first, as a straight track would be, then by roads with every end
-     * on track, then by ends; a tie keeps the way it is held, else the nearest turn.
+     * Which way round a track tile put down should lie to join the track beside it (OB-292), by the port table the
+     * autonomy graph uses.
      * @param layout the page
      * @param placing the tile about to be put down
      * @param x its column
@@ -3346,10 +3345,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Sizes the panel the grid sits in: a row of slack below and a column beside, plus the layout's gaps, else a
-     * scrollbar pushes the last row out of sight and a too-wide CENTER row sits at a negative x no scroll reaches.  And
-     * the notice's height below that while one floats over the diagram, so the last row can be scrolled clear of it
-     * (OB-389).
+     * Sizes the panel the grid sits in, with slack so the last row and a wide CENTER row stay reachable, and room below
+     * for a notice floating over the diagram (OB-389).
      */
     private void sizeTheDiagram()
     {
@@ -3458,9 +3455,7 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Sizes the window to its diagram, capped to the screen, when the user has no preference (OB-003).  Never below
-     * what shows every control at any size, scale and language (OB-342): `EXTRA_MINIMUM_HEIGHT` over the base, the
-     * diagram's 550 plus the sidebar, and the layout's own minimum plus chrome; data-worded controls have no minimum
-     * width.
+     * what shows every control at any size, scale and language (OB-342).
      */
     private void sizeForDiagram()
     {
