@@ -667,9 +667,8 @@ public class testTheWindowTakesTheKeyboard
     /**
      * `display()` does not take the topmost flag off after showing the window (OB-170): `setViewListener` makes the
      * frame topmost before it is shown, and showing is asynchronous, so a restore on the next line would remove the
-     * style
-     * before the window manager acted.  Whether Windows grants the foreground cannot be read back, so no behavioral
-     * test can hold this; it is pinned in the source, as `testTheWindowAttachesItsRefreshCallback` does.
+     * style before the window manager acted.  Whether Windows grants the foreground cannot be read back, so no
+     * behavioral test can hold this; it is pinned in the source, as `testTheWindowAttachesItsRefreshCallback` does.
      */
     @Test
     public void testDisplayDoesNotUndoTheTopmostTrickItDependsOn() throws Exception
@@ -695,9 +694,8 @@ public class testTheWindowTakesTheKeyboard
     /**
      * The menu bar is grayed out for as long as the connecting notice is up (OB-170).  The menu bar is part of the
      * window rather than of its content, so swapping the content in would leave every menu looking ready while none
-     * could act.
-     * Exactly the ones it took are switched back, since several menus are off by state.  Neither method shows anything,
-     * so this can run in a battery.
+     * could act.  Exactly the ones it took are switched back, since several menus are off by state.  Neither method
+     * shows anything, so this can run in a battery.
      *
      * MUTATION this catches: `ungreyTheMenus` walking the menu bar instead of its own list.
      */
