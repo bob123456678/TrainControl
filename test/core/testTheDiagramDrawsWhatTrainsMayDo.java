@@ -26,11 +26,9 @@ import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
 
 /**
- * The track diagram and the autonomy editor draw the arrows trains may follow, and take the clicks that set them.
- *
- * One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136): the whole chain, from a
- * decision somebody made to the graph a train could run on.  The session and layout folder every claim starts from are
- * built by `AutonomySessionFixture`.
+ * The track diagram and the autonomy editor draw the arrows trains may follow, and take the clicks that set them: the
+ * whole chain, from a decision somebody made to the graph a train could run on (FR-136).  The session and layout folder
+ * every claim starts from are built by `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -38,8 +36,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 {
 
     /**
-     * A page left out grays the path type with the tools that test by it (FR-105: "when a page is excluded in the
-     * autonomy editor, also disable/grey out the auto/manual radio buttons"), not only Test a Path and Why not Moving?.
+     * A page left out grays the path type with the tools that test by it (FR-105), not only Test a Path and Why not
+     * Moving?.
      *
      * MUTATION: leave the path type live on a page left out, and this fails.
      */
@@ -79,8 +77,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A tooltip short enough for one line is not padded to the width a long one wraps at (MT-613: "the 'edit autonomy
-     * on page' tooltip has a large whitespace on the right side of the message"); a long one still wraps.
+     * A tooltip short enough for one line is not padded to the width a long one wraps at (MT-613); a long one still
+     * wraps.
      *
      * MUTATION: set every tooltip at the wrapping width, and this fails.
      */
@@ -112,9 +110,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * A one-way run of plain track is drawn once on the track diagram, at its first square, as the editor draws it
-     * (OB-321: "redundant arrows can shown in the viewer, on a single straight segment with multiple straight tracks
-     * that only allows travel in one direction. The editor correctly collapses then").  A run's direction is stored on
-     * every square of it.
+     * (OB-321).  A run's direction is stored on every square of it.
      *
      * MUTATION: draw every square's arrows again, or none of the run's, and this fails.
      */
@@ -146,10 +142,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * A run whose squares say different things is brought to one, its narrowest (what a train finds), and every square
-     * of it stores that, as its first square draws it (OB-361: "Any disagreement should be corrected so that the viewer
-     * displays the source of truth, and the editor flags issues, rather than surprising the user.").  A train passes
-     * every square of a run, so one square closed in a run open one way closes the run: the first draws it closed and
-     * the rest draw nothing, on the track diagram as in the editor, and the log says it once.
+     * of it stores that, as its first square draws it (OB-361): the first draws it closed and the rest draw nothing, on
+     * the track diagram as in the editor, and the log says it once.
      *
      * MUTATION: leave a run's squares as they were stored, draw a square that follows its run, or draw the first
      * square's own direction, and this fails.
@@ -309,8 +303,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * A run whose squares point opposite ways, so no train can pass it, is left as it is and is a warning about the
-     * run, naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing
-     * it in the correction would hide which way was meant behind a setting that looks chosen.
+     * run, naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.
      *
      * MUTATION: say nothing, or close the run, or name another square, and this fails.
      */
@@ -361,8 +354,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * The track diagram draws the restrictions, the directions trains may run, or both, each its own choice (FR-110,
-     * MT-675: "allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive.").
-     * The station ingress arrows follow the restrictions.
+     * MT-675).  The station ingress arrows follow the restrictions.
      *
      * MUTATION: draw the green without its option, drop it with it, draw the red without its option, or draw nothing
      * with the green alone, and this fails.
@@ -396,7 +388,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * The green arrows are a light green with a dark green edge, on the track diagram and in the autonomy editor alike,
-     * not the signals' green (MT-675: "green arrows are hard to see due to low contrast").
+     * not the signals' green (MT-675).
      *
      * MUTATION: drop the edge, or paint either surface another green, and this fails.
      */
@@ -705,9 +697,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A Y's arrows lie along its track (MT-676: "make the arrow at the base point straight down, and the left and right
-     * aligned just like on curved tiles"): the toe's straight out of the square, and each leg's along the chord from
-     * the toe, as on a curve, so the two legs mirror each other.
+     * A Y's arrows lie along its track (MT-676): the toe's straight out of the square, and each leg's along the chord
+     * from the toe, as on a curve, so the two legs mirror each other.
      *
      * MUTATION: aim a Y's arrows from one point of the square again, and this fails.
      */
@@ -756,8 +747,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
     /**
      * Allow Every Path opens both ways every square whose setting shuts a move (one-way track, closed track, and a
-     * switch still at its base-to-forks default) and says how many squares (FR-108: "add a bulk tool to allow all
-     * paths, i.e.  remove any red arrows in one go. With warning.").
+     * switch still at its base-to-forks default) and says how many squares (FR-108).
      *
      * MUTATION: leave any of the three out of the count or the opening, and this fails.
      */
@@ -803,10 +793,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default, or
-     * set to run the one way its blades do, it is not counted: it refuses nothing a train could do, though its red
-     * arrow still shows the one way its blades run.  Closed, it is counted; opened, it runs the one way the hardware
-     * does, into its toe.
+     * A turnout with no address is opened only as far as its blades let a train through (FR-108): at its default, or
+     * set to run the one way its blades do, it is not counted; closed, it is counted; opened, it runs the one way the
+     * hardware does, into its toe.
      *
      * MUTATION: count a road only the hardware restricts, or leave a closed one out, and this fails.
      */
@@ -1124,13 +1113,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (OB-238): "Imagine two parallel tracks simple appearing on
-     * one tile for visual convenience.  Two distinct, not connected paths."
-     *
-     * Occupancy is per Point, and a square is emitted as one Point per side a train can arrive by, grouped under a
-     * `block` so that two trains cannot stand on one square.  Keyed by the TILE alone, a train on one arc would make
-     * the other read occupied and `isPathClear` refuse track that is physically free; the reduction keys these tiles
-     * per ROAD, and this is the same rule at the occupancy door.
+     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (OB-238): occupancy is keyed per ROAD, not by the tile
+     * alone, so a train on one arc does not make the other read occupied.
      *
      * MUTATION: key `blockFor` by the tile alone and this finds one name where it wants two.
      */
@@ -1182,12 +1166,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712: "the station gets
-     * rendered on the track without the sensor rather than the one with the sensor").
-     *
-     * The square is two curves and one contact, and its art draws the contact on one of them (the E-S curve as drawn,
-     * turned with the square).  Which curve has the contact is read off the art itself, the white inside the contact's
-     * ring at the middle of its curve, so the claim cannot agree with a wrong rule about which road that is.
+     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712).  Which curve has the
+     * contact is read off the art itself, the white inside the contact's ring at the middle of its curve, so the claim
+     * cannot agree with a wrong rule about which road that is.
      *
      * MUTATION: badge the square's first road again, and this fails.
      */
@@ -1223,12 +1204,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * And the arrows on BOTH its curves lie along their rails (MT-712: "They are not parallel with the track on one
-     * side.").
-     *
-     * A sensor square's annotation must not say it is not curved, or an arrow is aimed from the middle of the badge's
-     * road: right on a curve, some thirty degrees off on a double curve's other one.  Both roads one-way here, so each
-     * has a red arrow at its shut end; each arrow's ink is centered on its own curve's chord.
+     * And the arrows on BOTH its curves lie along their rails (MT-712): both roads one-way here, so each has a red
+     * arrow at its shut end, and each arrow's ink is centered on its own curve's chord.
      *
      * MUTATION: annotate a sensor square as not curved again, and this fails.
      */
@@ -1395,11 +1372,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A restricted piece of TRACK gets its arrow on the ordinary diagram, not only a sensor (FR-037: "the arrows are
-     * not showing up for me when I toggle the option").  A one-way run is a property of track, and almost none of its
-     * squares carry a sensor, so marks computed only on the few squares that are Points never reach any track.
-     *
-     * The option is set through the preference the code reads, and put back afterwards.
+     * A restricted piece of TRACK gets its arrow on the ordinary diagram, not only a sensor (FR-037).  The option is
+     * set through the preference the code reads, and put back afterwards.
      *
      * MUTATION: computing the marks after the Point test fails this.
      */
@@ -1584,8 +1558,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * The autonomy editor's Show Trains switch is on until it is turned off, and says what it is set to (FR-119) - what
-     * its diagram's squares ask as they paint.
+     * The autonomy editor's Show Trains switch is on until it is turned off, and says what it is set to (FR-119).
      *
      * MUTATION: answer the squares anything but the switch's state, and this fails.
      */
@@ -1630,12 +1603,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A sensor with no name is named as it becomes a station (FR-120: "when an unnamed sensor is converted to a
-     * station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so
-     * future changes are applied.  we apply a name duplication check here.").  Through the editor's own answer to the
-     * station menu, `setUsage`, with its question answered here: Cancel, and a blank name, leave the square a sensor
-     * and unnamed; a name another square has, in any case, is refused and asked for again with the name typed and why;
-     * a free name makes it a station of that name; and a square with a name already is not asked.
+     * A sensor with no name is named as it becomes a station (FR-120), through the editor's own answer to the station
+     * menu, `setUsage`, with its question answered here: Cancel, a blank name, and a name another square has leave the
+     * square a sensor; a free name makes it a station; a square with a name already is not asked.
      *
      * MUTATION: make an unnamed sensor a station without asking, or take a name another square has, and this fails.
      */
@@ -1846,11 +1816,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A route button on a running line takes direction clicks like the track it sits on (OB-332: "sometimes a direction
-     * arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.
-     * We need the direction arrows to be editable and clickable.").  The graph runs the line through the button, so a
-     * direction is stored on it and its arrow drawn there.  Not grayed, a click changes its direction; a button beside
-     * the line, with no track through it, is still grayed and takes no click.
+     * A route button on a running line takes direction clicks like the track it sits on (OB-332); a button beside the
+     * line, with no track through it, is still grayed and takes no click.
      *
      * MUTATION: gray every route button again, and this fails.
      */
