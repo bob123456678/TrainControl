@@ -31,25 +31,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * The turn a train makes at its destination reaches the setup, and reaches it the right way round (OB-190 / OB-189).
- * Adam sends a train to a square trains may turn at, answers **"no, do not keep the direction"**, the locomotive
- * physically turns, and the diagram must not go on drawing it facing the way it set off.
- *
- * `TrainControlUI.reconcileFacingWhenIdle` is the drain that carries a destination turn from the railway into the
- * setup; `testADirectionChangeIsNotSwallowed` only reads `TrainControlUI.java` as a STRING.  This class runs a real
- * journey on a sandbox copy of the railway (OB-111), turns the train at its destination the way the manual door does,
- * drains, and asks the SETUP and the RUNNING LAYOUT what they now believe.
- *
- * Both failures come from the drain pivoting on `AutonomySession.getFacing(tile)`, the setup's STORED facing for the
- * arrival square, which behaviour/editing-while-running.md 6a declares stale at that moment:
- *
- * 1. The turn is lost.  No stored facing means `flipFacing` returns null, and the drain removed the pending record
- *    anyway, so no later refresh can heal it.
- * 2. The turn is written backwards.  A stored facing that is the POST-turn side flips to the PRE-turn side, and
- *    `moveOntoFacingCopy` stands the locomotive on the copy for the wrong facing.
- *
- * What is reliable is behaviour/facing.md 4: a train faces the way it will leave, so the facing of a train that has
- * just turned at its destination IS the side it arrived by, which the arrival wrote down itself.  The third test is
- * the other half: a turn the drain could NOT write must still be owed.
+ * A real journey on a sandbox copy of the railway (OB-111): the train is turned at its destination the way the manual
+ * door does, `TrainControlUI.reconcileFacingWhenIdle` drains, and the SETUP and the RUNNING LAYOUT are asked what they
+ * now believe.  The setup's STORED facing for the arrival square is stale at that moment
+ * (behaviour/editing-while-running.md 6a); what is reliable is that a train faces the way it will leave
+ * (behaviour/facing.md 4), so the facing of a train that has just turned IS the side it arrived by.
  *
  * @author Adam
  */
@@ -282,12 +268,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     }
 
     /**
-     * A hand placement supersedes a turn the window has not written yet.
-     *
-     * A kept record has to be able to become wrong: somebody putting the train down says where it is and which way
-     * round, both newer than a pending turn, and applying the turn afterwards would write over a placement the operator
-     * chose (Adam's OB-183 ruling one door further on: for a train whose placement the gesture was about, the gesture
-     * is the newer answer).
+     * A hand placement supersedes a turn the window has not written yet (OB-183): applying the turn afterwards would
+     * write over a placement the operator chose.
      *
      * MUTATION, run: dropping the `reversedOnArrival.remove` from `Layout.moveLocomotive` fails this.
      */
