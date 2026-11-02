@@ -110,8 +110,7 @@ public class testTheWordingSaysWhatIsThere
 
     /**
      * The Text Labels choice that names the train at each station says Standing Locs, not Parked Locs (MT-657): the
-     * caption names whichever train stands at a station, parked or waiting between two runs.  Every language says
-     * standing; Italian's "in sosta" already did.
+     * caption names whichever train stands at a station, parked or waiting between two runs.
      *
      * MUTATION: put Parked Locs back in English, or the old word in any language, and this fails.
      */
