@@ -9,13 +9,9 @@ import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
 /**
- * Find Route lands on the route the user meant, or says it cannot (FR-044).
- *
- * Adam: "addition to the route jmenu: 'Find Route' popup that asks the user for the route name.  system jumps to the
- * route page and highlights the matched cell (scrolling to it if needed), otherwise shows a notice that it doesn't
- * exist."  The jumping, scrolling and highlight are for MT-218 (they need a window and an eye); what is here is the
- * half that decides WHICH route, which has no appearance at all: get it wrong and the feature confidently highlights
- * the wrong route, or refuses one whose name was typed in full.
+ * Find Route lands on the route the user meant, or says it cannot (FR-044).  The jumping, scrolling and highlight are
+ * for MT-218 (they need a window and an eye); what is here is the half that decides WHICH route, which has no
+ * appearance at all.
  */
 public class testFindRoute
 {
@@ -90,11 +86,8 @@ public class testFindRoute
     }
 
     /**
-     * Several candidates come back as several, so the user can be asked (MT-218).
-     *
-     * Adam: "let's support partial matching if there is no exact match as entered."  A fragment that fitted more than
-     * one route used to give up; the third option besides refusing and guessing is to put the list in front of the
-     * user.
+     * Several candidates come back as several, so the user can be asked (MT-218): a fragment that fitted more than one
+     * route used to give up; the third option besides refusing and guessing is to put the list in front of the user.
      */
     @Test
     public void testEveryCandidateComesBackWhenThereIsMoreThanOne()
