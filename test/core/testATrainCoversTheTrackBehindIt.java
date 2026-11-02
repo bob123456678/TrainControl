@@ -52,9 +52,8 @@ public class testATrainCoversTheTrackBehindIt
     /**
      * A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
      *
-     * `MarklinControlStation.init` reads the layout preference and loads whatever it names, which on Adam's machine is
-     * his real railway.  The sandbox redirects the preference at a copy for the life of the class, BEFORE the model:
-     * init is what reads it.
+     * `MarklinControlStation.init` loads whatever the layout preference names, which on Adam's machine is his real
+     * railway, so the sandbox redirects the preference at a copy for the life of the class, BEFORE the model is built.
      */
     private static support.LayoutSandbox sandbox;
 
@@ -954,9 +953,6 @@ public class testATrainCoversTheTrackBehindIt
     /**
      * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).
      *
-     * Adam: **"when a train is manually moved to a new station in the track diagram viewer using control+X and V, its
-     * former shaded icons are not reset."**
-     *
      * The wash is decided when a tile is DRAWN, and tiles are drawn when their own accessory, feedback or route
      * changes, so moving a train (which changes which track its tail lies across and nothing else) repainted nothing.
      * `CoveredTrackView.workOutCoveredTrack` redraws the squares whose state changed.
@@ -1012,10 +1008,9 @@ public class testATrainCoversTheTrackBehindIt
      * are asked to re-apply the wash.  A square that has just become covered needs the mark put on, and one that has
      * stopped being covered needs it taken off.
      *
-     * **And BOTH MARKS go through this one comparison** (Adam: *"That plus the line, drawn and refreshed carefully,
-     * should do the trick."*).  A square changes what it draws when its road changes AND when it starts or stops being
-     * blocked, and the two do not move together (starting autonomy changes every blocked square and no covered one), so
-     * one pass must diff both rather than a second refresh path someone forgets to call.
+     * **And BOTH MARKS go through this one comparison.**  A square changes what it draws when its road changes AND when
+     * it starts or stops being blocked, and the two do not move together (starting autonomy changes every blocked
+     * square and no covered one), so one pass must diff both rather than a second refresh path someone forgets to call.
      *
      * @throws Exception on a failure to read the source
      */
