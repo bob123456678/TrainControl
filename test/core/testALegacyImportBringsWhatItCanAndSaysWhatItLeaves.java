@@ -642,9 +642,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
     /**
      * Running again over a settled setup changes nothing: the excluded pages are SHARED, so anything that re-asserted
-     * itself would fight the user.  Not promised: a page the user switches back on WOULD be shut again by another run,
-     * as the method keeps no record of being overruled.  The two callers protect that choice (OB-130), and Adam ruled
-     * the import may override: "yes, it may override."
+     * itself would fight the user (OB-130).  Not promised: a page the user switches back on WOULD be shut again.
      */
     @Test
     public void testRunningAgainOverASettledSetupChangesNothing() throws Exception
