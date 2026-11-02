@@ -23,16 +23,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Revealing a square ends the flash on the square revealed before it.
- *
- * Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not
- * clear the prior highlights."*  Each step of Mass Assign Lengths - and of Name Everything, which shares the door -
- * calls `LayoutEditor.reveal`, which gives the square the diagram's yellow flash for 2.25 seconds by swapping its icon
- * and starting a timer.  Nothing ended the previous flash when the walk moved on, so pressing Skip faster than that left
- * a trail of yellow squares, each one looking like the square being asked about.
- *
- * Asked of the real editor window on a copy of the live snapshot, because the fault is in how two reveals in a row
- * leave the diagram - there is no smaller piece of it to ask.
+ * Revealing a square ends the flash on the square revealed before it (MT-454).  Asked of the real editor window on a
+ * copy of the live snapshot, because the fault is in how two reveals in a row leave the diagram.
  *
  * @author Adam
  */
