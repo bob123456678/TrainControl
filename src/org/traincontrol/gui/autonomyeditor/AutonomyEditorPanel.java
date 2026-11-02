@@ -541,8 +541,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * An answer to a click, which stays until the next notice or the strip's X rather than fading (MT-864: "seems to
-     * disappear on its own after a while").
+     * An answer to a click, which stays until the next notice or the strip's X rather than fading (MT-864).
      * @param rich whether the text is mark-up this class built, as sayRich takes, rather than a sentence
      */
     private void answer(String text, boolean rich)
@@ -4547,9 +4546,8 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Left-click on a two-square crossing (OB-320): both tracks both ways, each one way with the other both ways, the
-     * four one-way pairs, both closed (Adam on MT-688: *"when cycling, there is no option for red in one direction and
-     * green in the other 3"*).  Not arms, as the tracks share a side.  Counted on the crossing's north or west square,
-     * so either click carries on alike.
+     * four one-way pairs, both closed.  Not arms, as the tracks share a side.  Counted on the crossing's north or west
+     * square, so either click carries on alike.
      */
     private void cycleCrossing(TileKey clicked)
     {
