@@ -18,20 +18,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * Route buttons placed where what they conduct is not what was drawn (OB-160).
- *
- * A route button carries no track of its own: `transparentRoutes` collects the sides where a neighbor presents a real
- * port OR is itself transparent, then joins N to S and E to W where both face, or the only two faces where there are
- * exactly two.  Adam: "make it be an error if two route tiles are next to each other (only if they are connected to
- * something else on the graph)... I am inclined to treat it as a static crossing under the hood."  Three shapes, only
- * two are errors:
- *
- *   two buttons side by side, with track running into the pair - the pair conducts a route across diagram with no rails
- *   three real arms - the through-pair wins and the third is DROPPED, silently
- *   four real arms - both pairs are emitted, a fixed crossing, left alone
- *
- * These are BLOCKING errors, so `testTheOperatorsOwnRailwayIsNotRefused` runs the checks over the frozen snapshot and
- * names every square that trips them: a rule too strict is found here rather than by a railway that will not start.
+ * Route buttons placed where what they conduct is not what was drawn (OB-160): two buttons side by side with track
+ * running into the pair, and three real arms (the third arm DROPPED silently) are errors; four real arms is a fixed
+ * crossing, left alone.  These are BLOCKING errors, so `testTheOperatorsOwnRailwayIsNotRefused` runs the checks over
+ * the frozen snapshot: a rule too strict is found here rather than by a railway that will not start.
  */
 public class testRouteTilePlacement
 {
@@ -58,9 +48,7 @@ public class testRouteTilePlacement
     }
 
     /**
-     * The road a route tile carries can be turned back into the sides it joins, which drawing it needs (OB-279): a
-     * route tile has no port map of its own, and looking its road up in the port map by index found nothing, so a
-     * train's tail across one stopped the orange line.
+     * The road a route tile carries can be turned back into the sides it joins, which drawing it needs (OB-279).
      *
      * MUTATION: `transparentRouteOf` answering null fails this; and dropping its use from `LayoutLabel.routesOf` fails
      * `core.testTheShadingFollowsTheTrain`, whose train lies across that route tile.
@@ -137,10 +125,8 @@ public class testRouteTilePlacement
     }
 
     /**
-     * Buttons reaching track at ONE end splice nothing, and are not a fault (OB-160; Adam: "since the two route icons
-     * are next to each other but there is no connect to the link nor the straight track, it should not emit an
-     * error.").  The far straight lies NORTH-SOUTH and presents no face; turned a quarter it becomes the refused test
-     * above.
+     * Buttons reaching track at ONE end splice nothing, and are not a fault (OB-160).  The far straight lies
+     * NORTH-SOUTH and presents no face; turned a quarter it becomes the refused test above.
      */
     @Test
     public void testAdjacentRouteTilesReachingTrackAtOneEndAreFine() throws Exception
