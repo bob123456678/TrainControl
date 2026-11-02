@@ -575,10 +575,9 @@ public class testAutonomyDiagramSampleLayout
     }
 
     /**
-     * A real diagram should not be refused.  A blocking problem here is a genuine finding: an unmapped switch, or the
-     * port map misreading something.  The arrows to the excluded page (the two on Main pointing at "3 - Top Parking")
-     * cannot be paired, and OB-150's unpaired-link error must not fire for them; the assertion stays that NOTHING
-     * blocks rather than excusing those two, because a test that lists what it tolerates stops being able to tell.
+     * A real diagram should not be refused: a blocking problem here is a genuine finding.  The assertion stays that
+     * NOTHING blocks rather than excusing the two arrows to the excluded page (OB-150), because a test that lists what
+     * it tolerates stops being able to tell.
      */
     @Test
     public void testTheDiagramIsNotRefused()
