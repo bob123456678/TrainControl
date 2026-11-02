@@ -720,20 +720,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     /** An autonomy editor, on screen and settled. */
     private static LayoutEditor autonomyEditor() throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-            built[0].render();
-            built[0].setAutonomyMode(session);
-        });
-
-        for (int pass = 0; pass < 10; pass++) SwingUtilities.invokeAndWait(() -> { });
-
-        assertTrue(built[0].isShowing(), "precondition: the autonomy editor did not open");
-
-        return built[0];
+        return autonomyEditorOn(null);
     }
 
     private static org.traincontrol.gui.autonomy.AutonomyBanner notices(LayoutEditor editor) throws ReflectiveOperationException
