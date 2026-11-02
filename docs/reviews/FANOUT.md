@@ -39,8 +39,8 @@ lane).  The store owns the numbers; the folder is empty by design.
   *"B IS OK."*); runs come first, so a corner case at rest while the setup is mid-edit (a link left unpaired, then a
   door of the Layouts menu) is C at most.
 - **Comments are reviewed against the comment rule in `CLAUDE.md`:** a new or changed comment that tells history
-  (what the code used to do, a review round, a date), runs past 15 lines outside a javadoc contract, or repeats the
-  code is a C finding.
+  (what the code used to do, a review round, a date), runs past 15 lines outside a javadoc contract, repeats the
+  code, or carries detail that belongs on its OB or FR (cases, reasoning, choices turned down) is a C finding.
 
 ## The round
 

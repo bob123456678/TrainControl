@@ -5,11 +5,16 @@ them away.  This file stays on the development branch (`docs/tools/release-tree.
 
 ## Comments stay lean (Adam's rule)
 
-Agents pay to read every comment line, so:
+Agents pay to read every comment line, so the detail goes on the tracker and the source keeps a summary:
 
-- A comment says only what the code cannot: a non-obvious why, a constraint, a contract.  None where the code already
-  says it; never restate the code in prose.  Private and package-private javadoc is 1 to 3 lines; longer is a public
-  contract or too long.
+- **The tracker holds the detail.**  The full account of an OB or FR (the cases, the reasoning, the choices turned
+  down, the edge cases its tests cover, the traps a later change could fall into) is a comment on its entry, written
+  at length: `py -3 docs/manual-tests/triagedb.py comment <id> "<text>"`.  A builder that does not write the tracker
+  puts that text in its report under the id, for the orchestrator to file.
+- **The source keeps a high-level summary** of what a class or method is for, plus only what everyone who edits it
+  must know: a contract, a constraint that breaks something when ignored, a non-obvious why.  When in doubt, the
+  detail goes on the tracker and the comment cites the id.  Never restate the code in prose.  Private and
+  package-private javadoc is 1 to 3 lines; longer is a public contract or too long.
 - **No history:** what the code used to do, which review round found it, who said what when, how a bug was found.
   That lives in the tracker row the id resolves to, and in git: write the commit message, not a comment.
 - **Only Adam's tracker ids** (OB-###, MT-###, FR-###), at most one per rule.  Review-finding ids (RSA52-B1, GST-C3,
@@ -23,7 +28,8 @@ Agents pay to read every comment line, so:
 - A comment-only change still runs the tests that read that file's source (grep `test/` for its file name): a few
   find code by a comment's words.
 
-Good: `// A train standing across the switch blocks both roads behind it (OB-271).`
+Good: `// A train standing across the switch blocks both roads behind it (OB-271).`, with the cases and the reasoning
+in OB-271's tracker comments.
 Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 widened it.  Before that ...`
 
 ## How to build here
