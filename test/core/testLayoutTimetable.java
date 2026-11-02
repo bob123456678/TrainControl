@@ -591,8 +591,8 @@ public class testLayoutTimetable
     /**
      * A route that ends where it starts - a lap - is refused: kept unrunnable when a timetable is read, so the run
      * stops there and says why, and refused by the run itself whatever door brings it.  No door of the application
-     * offers one; a timetable read from a file can carry one.  Run, it left the train on no Point, with that station's
-     * exit guard green under it, and in non-atomic mode freed the station while the train was still on its way there.
+     * offers one; a timetable read from a file can carry one.  Run, it would leave the train on no Point and, in
+     * non-atomic mode, free the station while the train was still on its way there.
      *
      * MUTATION: take either refusal out, and this fails.
      *
@@ -704,9 +704,8 @@ public class testLayoutTimetable
 
     /**
      * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or
-     * nothing (OB-260).  The delete held a confirmation open as long as the operator liked, then removed the row by
-     * number from the plain list capture appends to under this railway's lock; so it is asked of the entry, and taken
-     * under the lock.
+     * nothing (OB-260).  A confirmation can stay open as long as the operator likes while capture appends to the list,
+     * so the delete is asked of the entry, not of the row number, and taken under the lock.
      *
      * MUTATION: remove by the row number alone, or without the lock, and this fails.
      *
