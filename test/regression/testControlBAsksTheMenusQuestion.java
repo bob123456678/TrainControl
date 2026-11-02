@@ -15,15 +15,10 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 
 /**
- * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else.
- *
- * MT-313 was Control+S renaming plain track, because the key asked only whether the tile was null while the menu asked
- * three things; `testControlEAsksTheMenusQuestion` is the same class for Control+E.  A key and a menu item that mean
- * the same action have to ask the same question, and the only way to know they do is to put them side by side on every
- * square of a page.
- *
- * `AutonomyEditorPanel.offersAMaximumTrainLength` is the one predicate: the menu item is added inside the conditions
- * it encodes, and the key calls it.  This walks the page and fails when they part company.
+ * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else (MT-313).  A key
+ * and a menu item that mean the same action have to ask the same question:
+ * `AutonomyEditorPanel.offersAMaximumTrainLength` is the one predicate, and this walks every square of a page and fails
+ * when they part company.  `testControlEAsksTheMenusQuestion` is the same class for Control+E.
  *
  * @author Adam
  */
