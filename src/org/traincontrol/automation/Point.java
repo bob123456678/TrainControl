@@ -464,10 +464,8 @@ public class Point
     }
 
     /**
-     * The route the standing train arrived along, which its tail follows back past a junction (MT-335).  `arrivedFrom`
-     * answers the first hop; past a junction only the route of the train that drove there says which road it lies on.
-     * Cleared on the same change of occupant as `arrivedFrom`; saved with the point, and a hand-placed train can be
-     * given one (FR-085, behaviour/tail.md 5c).
+     * The route the standing train arrived along, which its tail follows back past a junction (MT-335); cleared with
+     * `arrivedFrom`, saved with the point.
      *
      * @return the edges in the order they were driven, or null when nothing was driven here
      */
@@ -601,10 +599,8 @@ public class Point
     }
 
     /**
-     * Points whose occupancy makes this station unavailable to autonomy (FR-001).  The build also emits a lock edge at
-     * each watched square, but `Edge.isLockHeld` deliberately ignores a parked train beyond it, so this covers the
-     * standing train.  The Points themselves, not names: `Layout.parseAuto` resolves names once every point exists.
-     * Never null.
+     * Points whose occupancy makes this station unavailable to autonomy (FR-001).  The Points themselves, not names:
+     * `Layout.parseAuto` resolves names once every point exists.  Never null.
      */
     private final List<Point> blockedBy = new ArrayList<>();
 
@@ -669,15 +665,11 @@ public class Point
     }
 
     /**
-     * The square holding this one back, or null when none is (FR-001), asked of every square a route arrives at, not
-     * only its destination (OB-295).  The one expression of the rule: callers supply only where to look for occupancy.
+     * The square holding this one back, or null when none is (FR-001), asked of every square a route arrives at
+     * (OB-295).  The one expression of the rule: callers supply only where to look for occupancy.  The train LEAVING
+     * the watched square is exempt.  No caller fences the rule, in any mode.
      *
-     * The train LEAVING the watched square is exempt, else a locomotive in the yard could never be sent to the
-     * platform the yard holds back.  Whether the rule is in force at all is the caller's business; no caller fences
-     * it, in any mode.
-     *
-     * @param destination the square being arrived at - a route's destination or any square on the way (OB-295); a null
-     *        square is held back by nothing
+     * @param destination the square being arrived at, or any square on the way; null is held back by nothing
      * @param arriving the locomotive arriving, exempt where it is itself the occupant
      * @param occupancy where to look for who is standing where
      * @return the watched square somebody else is standing on, or null when nobody else stands on any it watches
