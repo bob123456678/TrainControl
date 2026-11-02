@@ -301,8 +301,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
     /**
      * Closing arrivals from the side a trapped arrival comes in by clears the warning.  It is the first of the three
-     * ways out the warning offers (OB-201); the check never asked which arrivals were closed, so the operator who took
-     * the advice got the same warning back.
+     * ways out the warning offers (OB-201); the check never asked which arrivals were closed.
      *
      * MUTATION: count a closed side's copy as trapped again, and this fails.
      */
@@ -923,7 +922,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     /**
      * A pocket whose only station is one autonomy may never choose still leads nowhere.  The runtime's
      * `Layout.isSendableDestination` requires `!isReversing() && isAutoDestination()` before autonomy picks a
-     * destination, so a station that is only a parking berth read as healthy in the editor and was useless in the run.
+     * destination, so a station that is only a parking berth would read as healthy in the editor.
      * Only the two square-level clauses are checked: the other two take a locomotive, and this notice is drawn on a
      * square with no train in the question.  The fixture is the one above with one flag moved.
      *
@@ -1545,8 +1544,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
     /**
      * And the CHECKS are actually given it, which is a separate question: asked of the findings themselves, since a
-     * test of the rule alone could not fail (reverting the call site left it green).  Close the middle of a run and the
-     * station beyond it becomes unreachable.  (A barred side is passed THROUGH and merely not stopped at, OB-120.)
+     * test of the rule alone could not fail.  Close the middle of a run and the station beyond it becomes unreachable.
+     * (A barred side is passed THROUGH and merely not stopped at, OB-120.)
      *
      * MUTATION: hand `barredArrivals()` to `AutonomyChecks.run` again and the second assertion fails.
      */
@@ -1586,9 +1585,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             + "manual routes included - and the cross on the diagram says so, but the checks walked "
             + "straight through it (V31-C3).  Findings: " + session.check());
 
-        // AND THE CLOSED SQUARE IS NOT A DESTINATION EITHER: in manual mode inactive endpoints and intermediates are
-        // refused, just not inactive start points ("inactive" means nothing can pass).  The START is exempt by
-        // construction (the walk seeds `from` before the loop), so it is not tested here.
+        // The closed square is not a destination either: in manual mode inactive endpoints and intermediates are
+        // refused, just not inactive start points.  The START is exempt by construction, so it is not tested here.
         session.setStation(middle, true);
 
         session.rebuild();
