@@ -9,19 +9,19 @@ Two hooks enforce the standing rules that used to live only in instructions. Rea
 | `claude_guard.py` | The Claude Code `PreToolUse` hook. It judges every Bash, PowerShell, Edit, Write and NotebookEdit call that touches this repository, and answers deny, ask, or nothing. |
 | `pre-commit` | git's pre-commit hook. It runs `precommit.py` and lets the commit through, with a note, when there is no Python. |
 | `precommit.py` | The pre-commit checks. They read what is staged, never the working tree. |
-| `test_hooks.py` | 211 cases for both hooks. Run it after any change: `python docs/tools/hooks/test_hooks.py`. |
+| `test_hooks.py` | 221 cases for both hooks. Run it after any change: `python docs/tools/hooks/test_hooks.py`. |
 
 ## What they check
 
-It reads a shell command as the simple commands it is made of (split at `;`, `&&`, `|`, newlines and subshells), each as words with their quotes taken off. So text inside a quoted argument, a heredoc or a PowerShell here-string (a commit message, a grep pattern) is never read as a command, while `bash -c "..."`, `sh -c`, `cmd /c`, `powershell -Command`, `eval` and `Invoke-Expression` have their script judged as commands of their own. git's global options (`-C`, `-c k=v`, `--git-dir=...`) and a quoted or full-path `git` are seen through. A `cd` earlier in the call only adds a folder the rest may run in, as a `cd` can fail and a subshell ends: a command is judged if any of those folders is this checkout. git's `-C`, which git itself obeys, is the one way to run a whole-tree revert in a scratch clone from here (`git -C <clone> reset --hard`, the clone named literally). A folder the guard cannot read literally (a variable, `~`, `%VAR%`, an 8.3 short name) counts as this checkout, whether it comes from a `cd`, `Push-Location`, `env -C` or `git -C`, and such a path in a write counts as the live layout. Every command in a call is judged before the answer: a deny anywhere wins over an ask before it.
+It reads a shell command as the simple commands it is made of (split at `;`, `&&`, `|`, newlines and subshells), each as words with their quotes taken off. So text inside a quoted argument, a heredoc or a PowerShell here-string (a commit message, a grep pattern) is never read as a command, while `bash -c "..."`, `sh -c`, `cmd /c`, `powershell -Command`, `eval` and `Invoke-Expression` have their script judged as commands of their own. git's global options (`-C`, `-c k=v`, `--git-dir=...`) and a quoted or full-path `git` are seen through. A `cd` earlier in the call only adds a folder the rest may run in, as a `cd` can fail and a subshell ends: a command is judged if any of those folders is this checkout. git's `-C`, which git itself obeys, is the one way to run a whole-tree revert in a scratch clone from here (`git -C <clone> reset --hard`, the clone named literally). A folder the guard cannot read literally (a variable, `~`, `%VAR%`, an 8.3 short name), whether from a `cd`, `Push-Location`, `env -C`, `env --chdir` or `git -C`, is a folder it cannot place: a git command there is judged as if it ran here, and so is one that climbs out of it with `-C ..`; one that names `cs2_sample_layout` stands for the layout. A write of a path the guard cannot read that names `cs2_sample_layout`, or of a relative path after a `cd` into the layout or into a folder it cannot place, counts as a write into the layout. What it does not read: a folder made by `$(...)` or `Join-Path`, and `GIT_DIR` set in an earlier statement (`export`, `$env:`); the guard catches slips, and these are not ones a session types by accident. Every command in a call is judged before the answer: a deny anywhere wins over an ask before it.
 
 `claude_guard.py` refuses:
 
 * `git add` with `-A`, `--all`, `-u`, `--update` (also in a cluster such as `-Av`), `.`, `*` or `:/`; `git commit` with `-a` or `--all` (also `-am`, `-av`); `git stash` (apart from `list` and `show`); `git clean -f` or `--force`
 * `--no-verify`, `git commit -n`, and `git -c core.hooksPath=...`
 * a whole-tree revert, which reverts `cs2_sample_layout` without naming it: `git checkout` of `.` or `:/` (`git checkout -- .`, `git checkout HEAD .`), `git checkout -f`, `git switch -f` or `--discard-changes`, `git restore .` (other than `--staged` alone), `git reset --hard`
-* any git checkout, restore, reset, stash, clean, switch, rm or mv that names `cs2_sample_layout`
-* a shell write into `cs2_sample_layout`: a `>` or `>>` into it, `cp`, `Copy-Item` and the like with it as destination, `mv`, `rm`, `Set-Content`, `Out-File`, `tee` or `sed -i` naming it. Reads (`cat`, `grep`, `git diff`, `git show ... > elsewhere`) pass
+* any git checkout, restore, reset, stash, clean, switch, rm or mv that names `cs2_sample_layout`, or runs inside it
+* a shell write into `cs2_sample_layout`: a `>` or `>>` into it, `cp`, `Copy-Item` and the like with it as destination, `mv`, `rm`, `Set-Content`, `Out-File`, `tee` or `sed -i` naming it, or any of these with a relative path after a `cd` into it. Reads (`cat`, `grep`, `git diff`, `git show ... > elsewhere`) pass
 * a powershell or pwsh started with `-ExecutionPolicy Bypass` (or `-ep bypass`), or `Set-ExecutionPolicy Bypass`, in any folder. A search for the text passes
 * killing or waiting on java by name, by any common spelling: a command that names `java` or `javaw` as an argument and kills anywhere in it, across pipes (`Get-Process java | Stop-Process`, `gps java | kill`, `spps`, `pkill`, `killall`, `taskkill /IM java.exe`, `wmic ... terminate`, `.Kill()`, `Wait-Process`). `Get-Process java` alone passes, and so does a `java` that is itself the command being run
 * a Write or Edit of the root `LocDB*.data`, `UIState*.data` or `autonomy.json`, or of anything in `cs2_sample_layout/`
@@ -78,7 +78,7 @@ It also prints a note, without stopping the commit, when `cs2_sample_layout` has
 
 2. **The git hook** needs one setting in the repository: `git config core.hooksPath docs/tools/hooks`. Worktrees share it.
 
-3. **Check both**: run `python docs/tools/hooks/test_hooks.py` (211 ok, 0 missed). Then, in a new session, ask Claude to run `git stash push`. It should be refused with "TrainControl guard: no git stash".
+3. **Check both**: run `python docs/tools/hooks/test_hooks.py` (221 ok, 0 missed). Then, in a new session, ask Claude to run `git stash push`. It should be refused with "TrainControl guard: no git stash".
 
 ## Changing a rule
 

@@ -88,7 +88,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Whether this is a build on the way to a release; true puts the build ID in the log and the window title.
      * False in a release commit, true on dev between releases (docs/RELEASE.md); nothing derives it.
      */
-    public static final boolean IS_PRE_RELEASE = true;
+    public static final boolean IS_PRE_RELEASE = false;
 
     /**
      * When the running code was built, for a pre-release: the jar's timestamp, or the class file's from an IDE build

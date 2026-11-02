@@ -368,7 +368,8 @@ def judge_git(glob_opts, sub, args, text, cwds=(ROOT,)):
         if f & {'-f', '--force'} or any(p in WHOLE for p in pos):
             answer('deny', revert)
         # Paths after `--`, from xargs, or a named file or folder that exists: each reverts what it names
-        if '--' in args or any(os.path.exists(os.path.join(c, p)) for c in cwds for p in pos):
+        if '--' in args or (pos and UNREAD in cwds) or \
+                any(os.path.exists(os.path.join(norm(c), p)) for c in cwds if c != UNREAD for p in pos):
             answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
     if sub == 'switch':
         f, _ = options(args, 'cC', long_takes=('create', 'force-create', 'orphan', 'conflict'))
@@ -462,8 +463,18 @@ def acting(segs):
             yield base(words[ci]), words[ci:]
 
 
+# A folder the guard cannot place: one named with a variable, a home folder or an 8.3 short name, or one reached from
+# such a folder.  It is judged as this checkout.
+UNREAD = '<unread>'
+
+# How many folders a call is followed through; past it, the rest of the call counts as anywhere
+MAX_PLACES = 32
+
+
 def absolute(path, cwd):
-    return path if os.path.isabs(path) or re.match(r'^/[a-zA-Z](/|$)', path) else os.path.join(cwd or '', path)
+    if os.path.isabs(path) or re.match(r'^/[a-zA-Z](/|$)', path):
+        return path
+    return UNREAD if cwd == UNREAD else os.path.join(cwd or '', path)
 
 
 # A path the guard cannot read literally: a variable, a home folder, an 8.3 short name
@@ -471,10 +482,15 @@ UNRESOLVED = re.compile(r'[$~%]')
 
 
 def reached(path, places):
-    """The folders a path may name from any of these: this checkout itself when the guard cannot read the path."""
+    """The folders a path may name from any of these.  One the guard cannot read is a folder it cannot place, unless
+    it names the live layout, which it then stands for."""
     if UNRESOLVED.search(path):
-        return [ROOT]
+        return [os.path.join(ROOT, LIVE_DIR.rstrip('/'))] if LIVE_DIR.rstrip('/') in path.lower() else [UNREAD]
     return [absolute(path, p) for p in places]
+
+
+def inside_checkout(place):
+    return place == UNREAD or in_repo(place, '')
 
 
 def moves_to(words, places):
@@ -497,8 +513,10 @@ def git_places(words, glob_opts, places):
     out = list(places)
     pre = words[:command_at(words)]
     for k, w in enumerate(pre):
-        if w == '-C' and k > 0 and k + 1 < len(pre):
+        if w in ('-C', '--chdir') and k > 0 and k + 1 < len(pre):
             out = reached(pre[k + 1], out)
+        elif w.startswith('--chdir='):
+            out = reached(w.split('=', 1)[1], out)
     for k, o in enumerate(glob_opts):
         if o == '-C' and k + 1 < len(glob_opts):
             out = reached(glob_opts[k + 1], out)
@@ -507,9 +525,7 @@ def git_places(words, glob_opts, places):
               and k + 1 < len(glob_opts)]
     named += [w.split('=', 1)[1] for w in words[:command_at(words)] if re.match(r'^GIT_(DIR|WORK_TREE)=', w)]
     for n in named:
-        if UNRESOLVED.search(n):
-            return out + [ROOT]
-        out += [absolute(n, p) for p in places]
+        out += reached(n, places)
     return out
 
 
@@ -521,10 +537,10 @@ def in_live_layout(word, places):
         return True
     if LIVE_DIR.rstrip('/') not in low:
         return False
-    if UNRESOLVED.search(word):
+    if UNRESOLVED.search(word) or (UNREAD in places and absolute(word, UNREAD) == UNREAD):
         return True
     for p in places:
-        if in_repo(word, p):
+        if p != UNREAD and in_repo(word, p):
             r = rel(word, p).lower()
             if r == LIVE_DIR.rstrip('/') or r.startswith(LIVE_DIR):
                 return True
@@ -548,16 +564,21 @@ def judge_shell(cmd, cwd, ps):
         moved = moves_to(words, places)
         if moved:
             places += [m for m in moved if m not in places]
+            if len(places) > MAX_PLACES:
+                places = [p for p in places[:MAX_PLACES] if p != UNREAD] + [UNREAD]
             continue
         g = git_call(words)
         if g:
-            inside = [p for p in git_places(words, g[0], places) if in_repo(p, '')]
+            inside = [p for p in git_places(words, g[0], places) if inside_checkout(p)]
             if inside:
                 ci = command_at(words)
                 via_xargs = any(base(w) == 'xargs' for w in words[:ci])
                 judge_git(g[0], g[1], g[2] + (['--'] if via_xargs and g[1] in ('checkout', 'restore') else []),
                           ' '.join(words), inside)
-        if writes(words, targets, lambda w: in_live_layout(w, places)):
+        # Run from inside the layout folder, a write of a relative path is a write into it
+        in_layout = any(p != UNREAD and in_live_layout(p, [ROOT]) for p in places)
+        if writes(words, targets, lambda w: in_live_layout(w, places)
+                  or (in_layout and absolute(w, ROOT) != w)):
             answer('deny', 'the live layout is never written or reverted by a session; its changes are committed.')
     # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that is
     # itself the command being run is not a name to kill by.

@@ -3,7 +3,7 @@
 # Feeds claude_guard.py the calls it must refuse, ask about and let through, and checks each answer; then runs
 # precommit.py against a throwaway repository for each thing it must refuse.  Prints one line per case and exits 1 on
 # any miss.  Touches nothing in this repository.
-import json, os, shutil, subprocess, sys, tempfile
+import json, os, shutil, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
@@ -210,7 +210,28 @@ check('Push-Location src; git -C ..', ps('Push-Location src; git -C .. reset --h
 check('cd cs2_sample_layout; checkout a file', sh('cd cs2_sample_layout && git checkout gleisbild.cs2'), 'deny')
 check('cd src; checkout an existing file', sh('cd src && git checkout org'), 'ask')
 check('the layout folder by its 8.3 name', sh('echo x > CS2_SA~1/a.cs2'), 'deny')
-check('a scratch clone through -C outside', sh('git -C C:/tc-scratch/clone reset --hard', cwd='C:/elsewhere'), 'pass')
+check('a scratch clone through -C outside', sh('git -C C:/tc-scratch/TrainControl-clone reset --hard',
+                                               cwd='C:/elsewhere'), 'pass')
+
+# A folder the guard cannot place stays unplaced: -C .. from it is still judged here
+check('cd "$PWD/test"; git -C .. clean', sh('cd "$PWD/test" && git -C .. clean -fdx'), 'deny')
+check('cd $X; git checkout <path>', sh('cd "$SCRATCH" && git checkout Readme.md'), 'ask')
+
+# Inside the layout folder, by name or through a variable, a write or revert is denied
+for cmd in ['cd cs2_sample_layout && rm -f *.cs2', 'cd cs2_sample_layout && sed -i s/a/b/ gleisbild.cs2',
+            'cd cs2_sample_layout && cp /tmp/x.cs2 .', 'cd "$PWD/cs2_sample_layout" && git checkout gleisbild.cs2']:
+    check(cmd, sh(cmd), 'deny')
+check('cd cs2_sample_layout; read it', sh('cd cs2_sample_layout && ls && cat gleisbild.cs2'), 'pass')
+
+# A Git Bash path in -C, and env --chdir
+check('git -C /c/... checkout <file> outside', sh('git -C ' + MSYS + ' checkout Readme.md', cwd='C:/elsewhere'), 'ask')
+check('env --chdir=<repo> elsewhere', sh('env --chdir=' + MSYS + ' git reset --hard', cwd='C:/elsewhere'), 'deny')
+
+# Forty relative cds in one call are followed quickly, and still judged
+many = ' && '.join(['cd a%d' % k for k in range(40)])
+started = time.time()
+got = sh(many + ' && git reset --hard')
+check('forty relative cds, judged in time', got if time.time() - started < 5 else 'slow', 'deny')
 check('git -C <repo> reset --hard elsewhere', sh('git -C ' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
 check('--work-tree <repo> elsewhere', sh('git --work-tree=' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
 
