@@ -289,11 +289,9 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why.  This is the
-     * ordinary intermediate state of Mass Assign Lengths (MT-455 has the operator skip a piece): `anyMeasured` is true
-     * on the switch alone, so the walk claims every place and refuses the berth to a one-unit train as readily as to a
-     * nine-unit one.  Ruled behavior (Adam: "we want clear warnings to the user if so, then it's fine"), so this pins
-     * it; what was missing is that the refusal never named the unmeasured piece.
+     * One measured square behind an unmeasured piece closes the berth, and the refusal says why (MT-455): the ordinary
+     * intermediate state of Mass Assign Lengths, ruled behavior (Adam: "we want clear warnings to the user if so, then
+     * it's fine"), so this pins it.
      */
     @Test
     public void testAMeasuredSquareBehindAnUnmeasuredPieceSaysWhyItRefuses() throws Exception
@@ -368,11 +366,9 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * A berth whose approach nobody has measured refuses nothing: the rule has to be able to say "I do not know".
-     * Where every place measures zero the claim walk never runs out and claims the WHOLE approach, an invented refusal
-     * (MT-364: "a stretch is only indeterminate when ALL of it is zero"; Adam would rather have no check than an
-     * over-strict one).  On the frozen snapshot all 41 non-station approaches are wholly unmeasured and 26 refused a
-     * three-unit train.  Partial measurement is still judged, which the claim above asserts.
+     * A berth whose approach nobody has measured refuses nothing: the rule has to be able to say "I do not know"
+     * (MT-364: "a stretch is only indeterminate when ALL of it is zero").  Partial measurement is still judged, which
+     * the claim above asserts.
      */
     @Test
     public void testAnUnmeasuredApproachRefusesNothing() throws Exception
