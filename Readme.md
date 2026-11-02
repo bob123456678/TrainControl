@@ -426,6 +426,7 @@ Tab icons provided by Freepik.
             - `Duplicate` puts a copy of the selected commands or conditions directly below them. It is in both right-click menus, and every command and condition has a copy icon beside its trash; on a selected row it copies the whole selection.
             - The plain words reading of the conditions is above the table, and the warning that conditions are ignored while `Automatically Fire` is not selected sits on the conditions' heading, with a warning sign.
             - `Save` now comes before `Cancel` at the bottom of the route editor, and the window can no longer be made narrower than its top line.
+            - The route editor's `Help` is about half as long, and names the keys for both lists.
             - On the Routes tab, with the track power off, each route shows a wrench instead of its play button, and clicking it opens the route for editing. `Execute Route` in the right-click menu still runs it. The menu now starts with the route's name and ID, in bold.
     - Bug Fixes
         - Autonomy
