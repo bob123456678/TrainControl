@@ -526,9 +526,7 @@ public class AutonomyCompanionStore
 
     /**
      * Drops everything held for pages the operator has said are gone for good (FR-018); called only with that answer,
-     * never inferred, since a page absent from disk is held (OB-067).  An entry goes if it names a gone page anywhere,
-     * key or value, so a pointer to a deleted page never enters the live collections as a page NAME.  The recorded
-     * name goes too.  Answers how many held entries were dropped.
+     * never inferred, since a page absent from disk is held (OB-067).  Answers how many held entries were dropped.
      */
     public int forgetHeldPages(java.util.Collection<String> goneByName)
     {
@@ -1059,8 +1057,8 @@ public class AutonomyCompanionStore
 
     /**
      * Repairs a setup that nothing has open, in place on disk, so a locomotive rename reaches the placement, home and
-     * exclusions (a stale name makes `parseAuto` invalidate the whole layout, OB-062).  A bare store, not a session:
-     * a session opens every page and would fabricate a setup.json on a layout never set up.
+     * exclusions (OB-062).  A bare store, not a session: a session would fabricate a setup.json on a layout never set
+     * up.
      *
      * @param to the new name, or null when the locomotive is being deleted
      * @return true when a setup was found and rewritten, false when there was nothing to repair
@@ -3975,10 +3973,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Writes down what the setup looked like before the layout editor started changing it (OB-108).  On disk, not in
-     * memory, because the process dying while the editor is open would lose a memory snapshot: the setup is written
-     * after every drag but the diagram only at Save, so the next reconciling save would prune the difference as track
-     * that does not exist.  Put back if still there next time (the last session did not finish).  Answers whether it
+     * Writes down what the setup looked like before the layout editor started changing it (OB-108), on disk so a
+     * process dying while the editor is open loses nothing.  Put back if still there next time.  Answers whether it
      * reached the disk.
      */
     public boolean rememberBeforeEdit(JSONObject was)
@@ -4152,9 +4148,8 @@ public class AutonomyCompanionStore
 
     /**
      * A key as it is stored: the page id where one is known, the page name otherwise, so a page added since the index
-     * was read still round trips.  Ids are not distinguishable from names (a page may be called "2"), and a page whose
-     * NAME equals another's ID misroutes this and pageOf (OB-067); FR-013 dissolves it by replacing these keys with
-     * TileKey.
+     * was read still round trips.  A page whose NAME equals another's ID misroutes this and pageOf (OB-067); FR-013
+     * replaces these keys with TileKey.
      */
     private String toStored(String key)
     {
