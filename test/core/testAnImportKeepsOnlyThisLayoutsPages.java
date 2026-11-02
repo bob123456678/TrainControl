@@ -20,21 +20,10 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * Importing an export brings in only the pages this layout has, and says which it left out.
+ * Importing an export brings in only the pages this layout has, and says which it left out (MT-380).
  *
- * Adam, MT-380, on importing into a one-page layout: "the 'the setup was left alone' popup shows twice (once at first
- * import, once again when import is completed).  Then, it shows up after every time the autonomy editor is opened."
- * His ruling: "keep only the pages, and alert the user."
- *
- * `importBundle` took the exporter's whole page record, so an export of his five-page railway gave a one-page layout
- * five page names it will never have.  The store keeps the names of absent pages deliberately (a OneDrive page still
- * downloading must not be pruned), so every save found pages it could not load and refused to tidy, and the settings
- * held for them were written back on every save.
- *
- * After the import, `pagesNotLoaded` (the question every save asks) names none of the exporter's extra pages; their
- * settings are not in the file a save writes; the settings for the page this layout does have came across; and the
- * pages left out are reported.  The control: a page this layout ALREADY knew and cannot load right now is still
- * reported missing, since an import has no business deciding a OneDrive page is gone.
+ * Adam's ruling: "keep only the pages, and alert the user."  The control: a page this layout ALREADY knew and cannot
+ * load right now is still reported missing, since an import has no business deciding a OneDrive page is gone.
  *
  * Built on the store alone, in temporary folders - no window, no railway, no Preferences.
  *
