@@ -5674,9 +5674,8 @@ public class Layout
 
     /**
      * Whether a train that has just arrived here is turned round (MT-368).  A square the door asks about is the
-     * operator's call (Adam: "may reverse should always prompt in manual mode"), terminus flag or not, since the
-     * builder marks a may-turn square's turning copy a terminus; a terminus nobody is asked about turns the train
-     * (MT-245); everything else is shouldReverseAt.
+     * operator's call (Adam: "may reverse should always prompt in manual mode"), terminus flag or not; a terminus
+     * nobody is asked about turns the train (MT-245); everything else is shouldReverseAt.
      *
      * @param arrived where the train has stopped
      * @param loc the train
@@ -7746,9 +7745,8 @@ public class Layout
     }
 
     /**
-     * Whether a station autonomy may choose takes this train because the measured route in holds it (FR-087): a train
-     * there is passing and may stand across the points (a parking berth may not; see whyABerthCannotHoldIt).  It only
-     * allows, where the room rule refused, and never beyond measuredRouteIn.  Apart from whyTooLongForThisRoute so the
+     * Whether a station autonomy may choose takes this train because the measured route in holds it (FR-087).  It only
+     * allows, where the room rule refused, and never beyond measuredRouteIn; apart from whyTooLongForThisRoute so the
      * staging planner can ask it alone.
      *
      * @param path the route, in order, ending at the square the train comes to rest on
