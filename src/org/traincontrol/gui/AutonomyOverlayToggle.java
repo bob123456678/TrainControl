@@ -34,8 +34,8 @@ public class AutonomyOverlayToggle extends JPanel
         new javax.swing.JLabel(I18n.t("autosetup.ui.labelPageLeftOut"));
 
     /**
-     * Said while the setup has changes the railway has not taken yet ("Add the setup notice, but make it brief"): an
-     * edit made as a run started, or one that leaves the setup unable to build.  The tooltip says when they apply.
+     * Said while the setup has changes the railway has not taken yet: an edit made as a run started, or one that leaves
+     * the setup unable to build.  The tooltip says when they apply.
      */
     private final javax.swing.JLabel waiting = new javax.swing.JLabel(I18n.t("autosetup.ui.labelSetupNotApplied"));
 
