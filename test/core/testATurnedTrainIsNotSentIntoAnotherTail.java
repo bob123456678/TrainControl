@@ -21,18 +21,10 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A train turned where it stands is not sent out into another train's tail (OB-285).
- *
- * `Layout.isPathClear` asks three questions of each piece of track a route runs over (whose tail was traced along it,
- * whose tail lies on track sharing its metal, whose tail lies on the squares it runs over) and stopped at the first
- * answer.  Where that was the moving train itself, the other two were never asked: every train turned where it stands
- * has its tail on the side it will now leave by, so its way out runs over its own tail.  Measured on the frozen
- * railway, 10 cases on 4 squares, every one cleared.  Adam: "Add the refusal".
- *
- * The clearest case: a train comes into Tunnel from the south and is reversed, so it stands on Tunnel's southbound copy
- * with its tail to the south, and is sent back south towards BottomMainAPre; a three-unit train in TunnelRightPark lies
- * back across the points at column 7.  Return Home's planner mirrors the same exit on purpose (never refuse a move the
- * railway would make), so the two change together and both are claimed here.
+ * A train turned where it stands is not sent out into another train's tail (OB-285): its tail is on the side it will
+ * now leave by, so `Layout.isPathClear` must not stop at the moving train's own tail before asking about the others'.
+ * Return Home's planner mirrors the same exit on purpose (never refuse a move the railway would make), so the two
+ * change together and both are claimed here.
  *
  * MUTATION: stop at the moving train's own tail again, in either, and the matching claim fails.
  *
