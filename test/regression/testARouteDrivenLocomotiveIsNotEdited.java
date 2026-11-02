@@ -22,9 +22,8 @@ import support.SourceOf;
  * "make an automated test for this").  `core.testAdvancedRoutes` holds the half about the route finishing its
  * commands and the `runningRouteDriving` question; nothing asked whether the doors ask it.
  *
- * The two doors a person uses are driven here on a real window: the refusal is a message dialog, which this closes;
- * had the door gone on, the dialog it shows next is a different one, which this also closes without answering yes.
- * The third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
+ * The two doors a person uses are driven here on a real window, closing the dialogs the refusal and a wrongly open door
+ * show.  The third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
  *
  * MUTATION: take the refusal out of either door, and the matching claim fails.
  *
@@ -300,10 +299,9 @@ public class testARouteDrivenLocomotiveIsNotEdited
     private static final String SYNCED_ROUTE = "GSR-B2 route";
 
     /**
-     * A Central Station sync does not re-address a locomotive a running route drives.  A route sends its commands to a
-     * locomotive by NAME with delays between them, so a sync landing part-way along moved the locomotive to another
-     * address under the route and the remaining commands went to a different decoder.  The delete and edit doors refuse
-     * the same change (OB-287); the sync is the door nobody opens by hand.
+     * A Central Station sync does not re-address a locomotive a running route drives (OB-287): a route sends its
+     * commands by NAME with delays between them, so a sync landing part-way along would send the rest to a different
+     * decoder.  The delete and edit doors refuse the same change; the sync is the door nobody opens by hand.
      *
      * The sync's address step is asked directly, with the Central Station's description of the locomotive at another
      * address, because the whole sync needs a station on the network.  Autonomy is idle throughout.
@@ -512,9 +510,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
     private static final String TAKEN = "OB-301 taken";
 
     /**
-     * A name the edit door refuses changes nothing, not the address either (OB-301).  The door applied the new address
-     * first and checked the name after, so a train given another standing train's address and a taken name stayed on
-     * the railway beside it, every command for one reaching both.
+     * A name the edit door refuses changes nothing, not the address either (OB-301).
      *
      * MUTATION: apply the address before the name is asked, and this fails.
      */
