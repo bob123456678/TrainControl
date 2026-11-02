@@ -1226,9 +1226,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Registers a track diagram label as showing the station on a square.
-     */
+    /** Registers a track diagram label as showing the station on a square. */
     public void addLayoutStation(org.traincontrol.automationui.TileGraph.TileKey station, JLabel value)
     {
         addLayoutStation(station, value, null);
@@ -2569,7 +2567,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // And the graph when a run ends: `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`,
             // which writes a reversal made at a destination into the setup and refuses while anything moves, so it
             // needs a refresh once the railway is idle.  `Layout.announceRunFinished()` is the one door every run
-            // passes (OB-189); it takes no Layout monitor, as `refreshCoveredTrack` works on a worker (OB-192).
+            // passes; it takes no Layout monitor, as `refreshCoveredTrack` works on a worker (OB-192).
             this.updateVisiblePoints();
         });
     }
@@ -4678,13 +4676,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     final DiagramTileRegistry diagramTileRegistry = new DiagramTileRegistry();
 
-    /**
-     * Returns a reference to the image cache.
-     *
-     * No longer synchronized: the field is final and initialized with the class, so there is nothing
-     * left to guard, and this is called once per tile per repaint.
-     * @return
-     */
+    /** The image cache: final and initialized with the class, so nothing to guard; called once per tile per repaint. */
     public static Map<String,Image> getImageCache()
     {
         return imageCache;
@@ -5606,7 +5598,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         setContentPane(StartupSplash.panel(message));
 
-        // The menus too.
         greyTheMenus();
 
         // Where it is going to live, so it does not appear in one place and jump to another.
@@ -16818,10 +16809,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return session == null ? 0 : session.errorCount();
     }
 
-    /**
-     * Called externally
-     * @throws Exception 
-     */
     public void requestStartAutonomy() throws Exception
     {
         if (this.startAutonomy.isEnabled())
