@@ -123,12 +123,10 @@ public class testDiagramExport
     @Test
     public void testAnAbsurdSizeIsCapped() throws Exception
     {
-        // THREE RENDERS, no arithmetic, no tolerance.  Comparing an absurd size against MAX alone proves nothing (both
-        // go through the clamp, so a clamp written as MAX / 4 moves them together), and scaling a small render by the
-        // ratio fails because a diagram is tiles PLUS drawing that does not scale with them (seven pixels off).  What
-        // settles it is the SHAPE of the clamp: an absurd size must land on the same width as the ceiling, and the
-        // ceiling must be bigger than a quarter of it.  A clamp of min(size, MAX / 4) makes all three equal and fails
-        // the second comparison.
+        // THREE RENDERS, no arithmetic, no tolerance: scaling a small render fails because a diagram is tiles PLUS
+        // drawing that does not scale with them.  What settles it is the SHAPE of the clamp: an absurd size must land
+        // on the same width as the ceiling, and the ceiling must be bigger than a quarter of it (min(size, MAX / 4)
+        // fails that).
         int quarter = Math.max(1, DiagramExport.MAX_TILE_SIZE / 4);
 
         int absurd = render(100000).getWidth();
@@ -264,8 +262,7 @@ public class testDiagramExport
                 "activeLayoutPage() reported " + reportedActive + " while the selector was showing "
                 + onScreen + " - the shortcut would export the wrong page");
 
-            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON: the equality above established that the two lookups return
-            // the same page, so what follows is a determinism check on `render`, kept because a non-deterministic
+            // ONE OBJECT, COMPARED WITH ITSELF FROM HERE ON: a determinism check on `render`, since a non-deterministic
             // rendering would make every picture comparison in this class meaningless.
             LayoutDiagram chosenByName = model.getLayout(onScreen);
             LayoutDiagram viaShortcut = model.getLayout((String) reportedActive);
@@ -314,10 +311,9 @@ public class testDiagramExport
     }
 
     /**
-     * The preference key the column and row numbers used to have (OB-179).  A literal rather than a constant, because
-     * nothing in the application names this key any more; its VALUE is still in the operator's preferences (a retired
-     * key's stored value stays where it is), and a stored `false` there is what would haunt somebody who once turned
-     * the numbers off.  So the test writes it, and writes the value that hid the numbers.
+     * The preference key the column and row numbers once had (OB-179).  A literal, because nothing in the application
+     * names it any more; a stored `false` under it still sits in operators' preferences and must not hide the numbers,
+     * so the test writes it.
      */
     private static final String RETIRED_COORDINATES_PREF = "ShowCoordinates";
 
@@ -333,7 +329,7 @@ public class testDiagramExport
      * ruler, and BOTH WINDOWS: *"they are visible in the track diagram viewer when they shouldn't be."*  He asked for
      * the numbers "in both autonomy editor and track diagram editor", and the viewer is neither.
      *
-     * THE RETIRED KEY IS SET TO FALSE THROUGHOUT, which makes this test red against the build that still read it.
+     * THE RETIRED KEY IS SET TO FALSE THROUGHOUT.
      *
      * MUTATION this catches: removing the `setBorder` from `LayoutGrid`, restoring the retired
      * preference as a second term of `coordinatesVisible`, dropping the `LayoutEditor.showGrid()` term
