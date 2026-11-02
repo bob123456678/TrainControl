@@ -1012,8 +1012,8 @@ public class testAutonomyDiagramMonitor
      * its tile (MT-642).  A straight, both ways and both orientations, is drawn as before.
      *
      * Painted through `LayoutLabel.paintTrainOverCaptions` onto a canvas three tiles wide with the tile in the middle,
-     * so what reaches past the tile is seen, and compared with the icon drawn from first principles.  Each case is
-     * every movement over a square (parked, running through, arriving, departing) on tile sizes 30 and 60.
+     * so what reaches past the tile is seen; every movement over a square (parked, running through, arriving,
+     * departing) on tile sizes 30 and 60.
      *
      * MUTATION: draw the icon square to the tile on a curve, clip it to its tile, center it on the station's road of a
      * double curve, mirror it the wrong way, or point an arriving train at the side opposite its entry, and this fails.
@@ -1460,8 +1460,8 @@ public class testAutonomyDiagramMonitor
     /**
      * Computes where the rail is (OB-026).  The two tests above hand the answer in, so they say nothing about
      * `LayoutLabel`'s `annotation.trackCentre(getWidth(), getHeight())`: given the badge's two sides it returns their
-     * midpoint, else the middle of the square.  A 60-pixel tile whose track joins N to E has side midpoints (30,0) and
-     * (60,30), so the rail's midpoint is (45,15), clear of the center.
+     * midpoint, else the middle of the square (a 60-pixel tile joining N to E: rail midpoint (45,15), clear of the
+     * center).
      */
     @Test
     public void testTheAnnotationPutsTheTrackCentreOnTheRailOfACurve()
@@ -1483,10 +1483,9 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square nothing can use is a cross, not a square (OB-167).  Being switched OFF has a flag of its own, in neither
-     * badge-grid question (does this square turn trains, is it a station).  Switching a reversing point off draws the
-     * cross, and so does switching a station off (the editor's "out of service" leaves the station flag set); neither
-     * draws a gray block, and parking alone does not draw it.
+     * A square nothing can use is a cross, not a square (OB-167).  Being switched OFF has a flag of its own: switching
+     * a reversing point or a station off draws the cross; neither draws a gray block, and parking alone does not draw
+     * it.
      *
      * MUTATION: make `Badge.isImpassable` answer false, or answer `parking`, and the first assertion fails.
      */
@@ -1824,9 +1823,8 @@ public class testAutonomyDiagramMonitor
      * the bare X on a plain sensor, and is small enough that the sensor activation arrows still show.
      *
      * Painted on white, on straight track and a curve, at both sizes: every kind draws the same picture; the mark is
-     * round, orange-ringed with white inside, at least the contact's size and no wider than the space inside the
-     * activation arrows (16 pixels at 30, 31 at 60); and over the art of an occupied sensor the contact is covered and
-     * every pixel of its red activation arrows still shows.
+     * round and orange-ringed, no wider than the space inside the activation arrows (16 pixels at 30, 31 at 60); and
+     * over an occupied sensor every pixel of its red activation arrows still shows.
      *
      * MUTATION: draw a station out of service as its own kind again, or the circle over the activation arrows, and this
      * fails.
@@ -1996,10 +1994,9 @@ public class testAutonomyDiagramMonitor
         rgb -> channel(rgb, 16) > 200 && channel(rgb, 8) > 200 && channel(rgb, 0) < 80;
 
     /**
-     * Every station icon covers the sensor's own contact - the circle of the s88 tile, 14 pixels at 30 and 26 at 60 -
-     * with white, the track's black band drawn back across it (FR-118); the icons are no taller than the contact, so
-     * alone they would leave its edges showing.  Painted over the real tile art: nothing of the contact's gray ring
-     * may remain above and below the band.
+     * Every station icon covers the sensor's own contact (14 pixels at 30, 26 at 60) with white, the track's black band
+     * drawn back across it (FR-118).  Painted over the real tile art: nothing of the contact's gray ring may remain
+     * above and below the band.
      *
      * MUTATION: drop the cover, and this fails.
      */
@@ -2036,9 +2033,8 @@ public class testAutonomyDiagramMonitor
 
     /**
      * The turning icons' lengths (MT-710): a may-turn hexagon is 1px shorter than `round(h * 1.9)` (25 at 30, 49 at 60)
-     * in the 30px view and 2px shorter in the 60px view, a terminus 1px shorter, and a must-turn pair, both halves and
-     * the gap, no longer than the may-turn hexagon.  Measured along the middle of the track, painted eight times over,
-     * so the half pixel an antialiased edge would round away is seen.
+     * in the 30px view and 2px shorter in the 60px view, a terminus 1px shorter, a must-turn pair no longer than the
+     * may-turn hexagon.  Painted eight times over, so the half pixel an antialiased edge would round away is seen.
      *
      * MUTATION: put any of the three lengths back and this fails.
      */
@@ -2084,10 +2080,9 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A station's icon on a curve lies wholly inside its square, at both sizes, whichever way the curve turns, on the
-     * diagram and in the editor, every kind (MT-710).  A square's paint is cut off at its edges, so ink put outside is
-     * ink lost: painted here with nothing to cut it, on a canvas three squares across, nothing may land outside the
-     * middle one.  On straight track too, with the classic icons as with FR-118's.
+     * A station's icon on a curve lies wholly inside its square, at both sizes, whichever way the curve turns, every
+     * kind (MT-710): a square's paint is cut off at its edges, so it is painted here on a canvas three squares across,
+     * with nothing to cut it.  On straight track too, with the classic icons as with FR-118's.
      *
      * MUTATION: let the square's own paint of a curve's icon run past its edges (not cut off there, where the spill
      * draws the rest) and this fails.  So does clamping a classic station's mark a pixel from the edge again.
@@ -3110,8 +3105,8 @@ public class testAutonomyDiagramMonitor
     /**
      * The red and green arrows on a station's square are drawn over its icon, on the diagram and in the editor, and
      * over the icon drawn again above a running train's line (MT-710): FR-118's icons run along the track nearly the
-     * width of the square, where the arrows are.  Each kind painted with a one-way road - a red arrow at one end, a
-     * green at the other - and without its icon: the arrows' pixels are all still there with it.
+     * width of the square, where the arrows are.  Each kind painted with a one-way road, with and without its icon: the
+     * arrows' pixels are all still there.
      *
      * MUTATION: paint the icon after the arrows again, or leave them out of the icon drawn over the run, and this
      * fails.
@@ -3621,12 +3616,8 @@ public class testAutonomyDiagramMonitor
     /**
      * The EDITOR's traced path stops on the rail too, not only the running overlay's run line (OB-026): `paintTraces`
      * must start from `trackCentre` as `TileOverlay.paintRun` does, not from `{width / 2, height / 2}`, since the
-     * editor builds null ends deliberately (the first and last square of a traced path).
-     *
-     * **The trace is isolated by DIFFERENCE**: asking whether anything was drawn near the rail would pass against
-     * broken code, because the badge and the direction arrows are drawn there too.  Subtracting a rendering without
-     * the trace from one with it leaves only what the trace added.  On a 60-pixel N-E bend the rail's midpoint is
-     * (45,15) and the tile center, (30,30), is 21 pixels away.
+     * editor builds null ends deliberately.  **The trace is isolated by DIFFERENCE**: asking whether anything was drawn
+     * near the rail would pass against broken code, because the badge and the direction arrows are drawn there too.
      */
     @Test
     public void testTheEditorsTracedPathStopsOnTheRailOfABend()
@@ -3653,14 +3644,10 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A train that is running is drawn as a locomotive; one standing still keeps the dot (FR-027).  The dot says WHERE
-     * a train is; the icon says which trains are moving and which are waiting at a platform.
-     *
-     * **What is asserted is ink in a ring the dot cannot reach**, not "the two pictures differ", which a one-pixel
-     * change would satisfy, and not the color of a particular pixel, a bet on artwork that is a FILE meant to be
-     * replaced.  Ink between the dot's radius and the icon's (ICON_SCALE of the tile) is the icon and nothing else.
-     * That also makes this the test that the resource is on the classpath: TileOverlay falls back to the dot, silently,
-     * when the file is missing.
+     * A train that is running is drawn as a locomotive; one standing still keeps the dot (FR-027).  **What is asserted
+     * is ink in a ring the dot cannot reach** (between the dot's radius and the icon's, ICON_SCALE of the tile), not
+     * the color of a pixel, a bet on artwork that is a FILE meant to be replaced.  That also makes this the test that
+     * the resource is on the classpath: TileOverlay falls back to the dot, silently, when the file is missing.
      *
      * MUTATION: setting ICON_ONLY_WHILE_MOVING false fails the standing half; renaming or deleting running_train.png
      * fails the moving half; painting the icon for both fails the standing half.
@@ -4337,11 +4324,8 @@ public class testAutonomyDiagramMonitor
 
     /**
      * No frame draws a paused train on no Point as one that runs while the monitor is told which trains are paused
-     * (OB-343; FR-126): the trains and the set of the paused must be written together, or a frame on the monitor's
-     * thread between the two writes would publish the picture with no gray.
-     *
-     * A race: the monitor is told the same picture over and over while frames are taken on another thread, so a failure
-     * is a matter of chance and a pass proves nothing by itself; the mutation below fails it every time.
+     * (OB-343): the trains and the set of the paused must be written together.  A race: a failure is a matter of chance
+     * and a pass proves nothing by itself; the mutation below fails it every time.
      *
      * MUTATION: write the trains of the two-argument form and then empty the paused set before filling it, and this
      * fails.
@@ -4406,10 +4390,9 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A double-curve sensor's arrival chevrons keep off its direction arrows and off each other (MT-714).  A chevron is
-     * pushed along its side, off the middle where the arrow is, to the corner away from the track; on a double curve
-     * every side has track and so has its opposite, so each is pushed away from its OWN curve, two share each free
-     * corner and are drawn nearer the middles of their sides so they do not meet.
+     * A double-curve sensor's arrival chevrons keep off its direction arrows and off each other (MT-714): each is
+     * pushed away from its OWN curve, and two share each free corner, drawn nearer the middles of their sides so they
+     * do not meet.
      *
      * MUTATION: push a double curve's chevrons the fixed way round again, and the overlap with the arrows fails; push
      * them as far along as on any other square, and the overlap of two in one corner fails.
