@@ -6,6 +6,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -2113,9 +2114,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // THE STREAM IN ITS OWN RESOURCE, because the one wrapping it can throw before it exists: ObjectInputStream's
         // constructor throws on a corrupt header, so in a single resource the FileInputStream stays open and the
         // recovery fails, since writeAtomically's Files.move(REPLACE_EXISTING) cannot replace a file somebody has open
-        // on Windows.
+        // on Windows.  Buffered, as ObjectInputStream reads a byte at a time; the buffer holds no file handle.
         try (FileInputStream file_in = new FileInputStream(dataFile);
-            ObjectInputStream obj_in = new CustomObjectInputStream(file_in))
+            ObjectInputStream obj_in = new CustomObjectInputStream(new BufferedInputStream(file_in)))
         {
             // Read an object
             Object obj = obj_in.readObject();
