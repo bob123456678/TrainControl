@@ -270,10 +270,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         if (this.arrivalSides.size() < 2) return;
 
         // Sides only - there is deliberately no "---" here.  Adam: **"clearing should not be possible, only setting."**
-        // The arrived-from menu's "Not known" entry was taken out for the same reason: every side the square has is
-        // offered, so a wrong answer is corrected by choosing the right one, and a blank entry only offers a way to
-        // switch the tail blocking off.  `refreshArrivalSide` guarantees one: recorded, else derived, else the first
-        // side.
+        // Every side the square has is offered, so a wrong answer is corrected by choosing the right one, and a blank
+        // entry only offers a way to switch the tail blocking off.  `refreshArrivalSide` guarantees one: recorded, else
+        // derived, else the first side.
         List<String> entries = new ArrayList<>();
 
         for (String side : this.arrivalSides)
