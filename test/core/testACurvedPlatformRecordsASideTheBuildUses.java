@@ -20,34 +20,18 @@ import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train put down by hand on a CURVED station has its tail recorded on a side no track enters by.
- *
- * Found by reading, so this was written RED first: against the unrepaired door it failed in its own words on exactly
- * the two methods about the curve, while the two CONTROL methods over a straight platform passed, which is what makes
- * it a statement about the curve rather than about this test.
+ * A train put down by hand on a CURVED station has its tail recorded on a side the build enters the square by, not on
+ * the compass opposite of its facing (OB-182).  The two CONTROL methods over a straight platform show it is about the
+ * curve.
  *
  * MUTATION: put `forPlacement`'s ordinary-station branch back to `opposite(facing)` and
  * `testTheCurvedPlatformIsAnsweredWithASideTheBuildUses` and `testTheTailIsBlockedBehindTheCurvedPlatform` fail, in
  * these words - "recorded as arriving from \"W\", and the build enters that square only by [N, E]", and "blocks no rail
  * touching the square it is standing on ... what is blocked is []".  The other three stay green.
  *
- * `ArrivalSidePrompt.forPlacement` answered an ordinary (non-may-reverse) station with the compass OPPOSITE of the
- * train's facing, which is true on a straight and false on a curve.  OB-182 moved the offered sides, the written
- * arrival sides and the tail walk's comparison onto the BUILD's entry sides (`Layout.entrySideOf`) because compass and
- * metal differ on a curve; this branch was not swept with them.  On `curve-into-platform`'s CurvedPlatform the build
- * enters the square by N and by E, and `CurvedPlatform (southbound)` faces E, so the door recorded `arrivedFrom = "W"`,
- * a side the build enters it by nowhere.  `Layout.edgesCoveredByStandingTrains` then matched no candidate on its first
- * hop and took the `segment == null -> break` exit, so the track behind a standing train was silently left open (a
- * 4-length train blocked `[]`).
- *
- * It needed a new fixture: every other tail test ran on a straight chain of ordinary points, where the two vocabularies
- * agree.  `test/layouts/curve-into-platform` is the shape.
- *
- * The rule: the sides are given and the FACING chooses between them, rather than the compass answering on its own.
- * `ArrivalSidePrompt.arrivedFrom` takes the one side of the square the train is not pointing at; where several are
- * left, the documented compass assumption picks between them, but only where the build really enters by that side, and
- * otherwise nothing is recorded.  A null arrival side narrows the tail walk; a wrong one sends it down track the train
- * is not on (`behaviour/facing.md` 4).
+ * The rule: the sides are given and the FACING chooses between them, rather than the compass answering on its own.  A
+ * null arrival side narrows the tail walk; a wrong one sends it down track the train is not on (`behaviour/facing.md`
+ * 4).
  *
  * @author Adam
  */
