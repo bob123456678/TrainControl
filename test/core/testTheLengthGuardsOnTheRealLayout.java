@@ -80,8 +80,8 @@ public class testTheLengthGuardsOnTheRealLayout
     private static MarklinLocomotive ourTrain;
 
     /**
-     * The square this class starts its train from: `1 - Main:20,13` is BottomMainB, the platform Adam names in the
-     * ruling this class was rewritten for and the one square whose measured approach the snapshot carries a length on.
+     * The square this class starts its train from: `1 - Main:20,13` is BottomMainB, the one platform whose measured
+     * approach the snapshot carries a length on.
      */
     private static final TileKey BOTTOM_MAIN_B = new TileKey(MAIN, 20, 13);
 
@@ -643,9 +643,7 @@ public class testTheLengthGuardsOnTheRealLayout
      *
      * **It names none of three things, each of which goes stale:**
      *
-     * 1. The TILES to measure: it once set `1 - Main:10,9` and `10,10`, the approach to TunnelLongPark, which on the
-     * real
-     *    reduction land on track the guard never counts.
+     * 1. The TILES to measure: the approach to TunnelLongPark lands on track the guard never counts.
      * 2. The ROOM those measurements produce: `roomAtTheEnd` stops at the last switch, so how many of the units written
      *    reach the count depends on where the switches are.  It is read back.
      * 3. The BERTH itself: TunnelLongPark refuses this locomotive at eight units as firmly as at two, so a boundary
@@ -922,9 +920,9 @@ public class testTheLengthGuardsOnTheRealLayout
 
     /**
      * A route from where the borrowed engine stands to a named station, over the track alone: not from what the railway
-     * offers (the thing under test), nor from `Layout.bfs`, which since OB-229 extends no route through a terminus that
-     * is not its end (Adam: *"Search past termini"*).  The shortest route to TunnelLongPark passes one, so `bfs` finds
-     * nothing there and the room rule is asked of the track by `aRouteOverTheTrackAlone`.
+     * offers (the thing under test), nor from `Layout.bfs`, which extends no route through a terminus that is not its
+     * end (Adam: *"Search past termini"*).  The shortest route to TunnelLongPark passes one, so `bfs` finds nothing
+     * there and the room rule is asked of the track by `aRouteOverTheTrackAlone`.
      * @return the edges in order, or null when nothing connects
      */
     private List<Edge> theRouteOverTheTrackTo(String station) throws Exception
@@ -966,8 +964,8 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * The shortest route over the track, through anything: `Layout.bfs` as it was before OB-229, with no exclusions and
-     * without its check that the end is a destination.  Null when none.
+     * The shortest route over the track, through anything: `Layout.bfs` without its exclusions and its check that the
+     * end is a destination.  Null when none.
      */
     @SuppressWarnings("unchecked")
     private static List<Edge> aRouteOverTheTrackAlone(Layout built, Point start, Point end)
