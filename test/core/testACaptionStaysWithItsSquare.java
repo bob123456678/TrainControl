@@ -123,11 +123,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     }
 
     /**
-     * A legacy label naming a station the setup already shows on its page does not show it twice (OB-256; on another
-     * page it becomes a caption there, which is `testALegacyLabelOnAnotherPageStillCaptionsAStationShownOnItsOwnPage`).
-     *
-     * One caption per station per page, and the setup's is the one somebody chose, so it is kept; the label still
-     * leaves the page, or the migration would find it again at every open.
+     * A legacy label naming a station the setup already shows on its page does not show it twice (OB-256).
      *
      * MUTATION: caption the label's square whether or not the station has a caption, and this fails.
      */
