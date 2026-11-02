@@ -1952,11 +1952,10 @@ public class testHomeStaging
     /**
      * A train that cannot reverse is homed at a terminus with nothing on the way to turn it round.
      *
-     * Return home is manual, so a terminus is no longer refused to a non-reversible train: the old rule `mustBackIn`
-     * answered `NO_PLAN_FOUND` for a train that setting `reversible` true staged at once.
+     * Return home is manual, so a terminus is not refused to a non-reversible train.
      *
-     * The fixture is the plain ring with **no reversing point anywhere**: with one, the old rule would have been
-     * satisfied and this would have passed before the change.
+     * The fixture is the plain ring with **no reversing point anywhere**: with one, the train would be turned on the
+     * way and this would prove nothing.
      *
      * MUTATION: restoring `mustBackIn` at either of its two routing sites, `firstClearRoute`'s arrival test or the
      * `connected` seed, fails this.
@@ -2074,10 +2073,9 @@ public class testHomeStaging
 
     /**
      * Nothing edits the graph while the railway is using it, deletes included.  `renamePoint` refuses while
-     * `isRunning() || isStagingInProgress()`; `deletePoint` and `deleteEdge` do more damage and had no such guard.  The
-     * menu items are grayed when the popup OPENS and the action fires when it is CLICKED, so starting autonomy from
-     * another window in between leaves a live item over a running railway (the two-moment gap of OB-057 and OB-090):
-     * the guard has to be the one that actually holds.
+     * `isRunning() || isStagingInProgress()`, and `deletePoint` and `deleteEdge` must too.  The menu items are grayed
+     * when the popup OPENS and the action fires when it is CLICKED, so starting autonomy from another window in between
+     * leaves a live item over a running railway (OB-057, OB-090): the guard has to be the one that actually holds.
      *
      * Staging is the busy state because the planner walks these structures with nothing dispatched (the window a bare
      * `isAutoRunning` flag waves through).  `renamePoint` is the CONTROL: if it stops refusing, the two deletes are
@@ -2534,10 +2532,9 @@ public class testHomeStaging
     /**
      * Two homes that hold each other back are a real deadlock: HS C is held back while HS D is occupied and HS D while
      * HS C is, each the other occupant's home.  The restriction is enforced in every tier, so the planner cannot stage
-     * it and says NO_PLAN_FOUND, not IMPOSSIBLE (IMPOSSIBLE names locomotives and asserts that no arrangement exists;
-     * the scan that produced it, OB-085, was removed for proving false things about working railways).  The control is
-     * the same fixture with one hold removed, so NO_PLAN_FOUND is the mutual hold and not a ring nothing can be staged
-     * on.
+     * it and says NO_PLAN_FOUND, not IMPOSSIBLE (which names locomotives and asserts that no arrangement exists).  The
+     * control is the same fixture with one hold removed, so NO_PLAN_FOUND is the mutual hold and not a ring nothing can
+     * be staged on.
      */
     @Test
     public void testTwoHomesThatHoldEachOtherBackAreADeadlock() throws Exception
@@ -2585,10 +2582,9 @@ public class testHomeStaging
     }
 
     /**
-     * A sensor shared with an approach guard does not make an ordinary layout impossible (OB-085).  The removed scan
-     * built IMPOSSIBLE (a PROOF naming locomotives) out of `sameTrackAs`, which unions block copies AND the points
-     * reporting the same feedback address; a proof may only be built out of the relation the railway enforces, the
-     * block.  This stays as the line it drew: no verdict of IMPOSSIBLE may be built out of the sensor relation.
+     * A sensor shared with an approach guard does not make an ordinary layout impossible (OB-085).  IMPOSSIBLE is a
+     * PROOF naming locomotives, so it may only be built out of the relation the railway enforces, the block; never out
+     * of `sameTrackAs`, which also unions the points reporting the same feedback address.
      */
     @Test
     public void testASharedSensorDoesNotMakeAnOrdinaryLayoutImpossible() throws Exception
@@ -2752,8 +2748,7 @@ public class testHomeStaging
 
     /**
      * Saving a layout that has not changed produces the same file it produced last time: `Point.excludedLocs` is a set
-     * of Locomotive objects with identity hashCodes, so iteration order differs on every JVM run, and without a stable
-     * order opening and saving a layout rewrote the file with nothing changed.
+     * of Locomotive objects with identity hashCodes, so iteration order differs on every JVM run.
      *
      * Written as "two sets built in opposite orders serialise identically", the property.  The sets are
      * `LinkedHashSet`s, which keep the fixture's order: a HashSet discards insertion order, so the two strings would be
@@ -3668,10 +3663,9 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
-    // THE CLAIM WAS REMOVED RATHER THAN LEFT GREEN: seven fixtures could not produce the case, since a sensor is
-    // "explained" whenever a point reporting it holds a train, so the held section was always accounted for by its own
-    // occupant and not by a tail.  The FIX is kept: `edgesCoveredByStandingTrains` claims an edge whole, so freeing
-    // both of its ends frees a point no tail ever reached; see `HomeStaging.blockedSensors`.
+    // No claim for a sensor held by a tail: seven fixtures could not produce the case, since a sensor is "explained"
+    // whenever a point reporting it holds a train.  The FIX stays: `edgesCoveredByStandingTrains` claims an edge whole,
+    // so freeing both of its ends frees a point no tail ever reached; see `HomeStaging.blockedSensors`.
 
     @Test
     public void testATurnIsNotLaunderedThroughABerth() throws Exception
@@ -5277,9 +5271,9 @@ public class testHomeStaging
     /**
      * A train that cannot reverse gets home to its terminus WITH OR WITHOUT a reversing point on the way.
      *
-     * `mustBackIn` once refused a terminus unless the route turned the train.  Adam took it out: *"Return home is
-     * manual, take the rule out and say why."*  Pressing Return Home IS the operator asking, which is what makes it
-     * manual, and manual operation may back a non-reversible train into a terminus (`firstClearRoute`'s arrival test).
+     * Pressing Return Home IS the operator asking, which makes it manual, and manual operation may back a
+     * non-reversible train into a terminus (`firstClearRoute`'s arrival test).  Adam: *"Return home is manual, take the
+     * rule out and say why."*
      *
      * The two halves are the same railway with one flag moved, which keeps this about the rule rather than the fixture,
      * and both answer the same way.
