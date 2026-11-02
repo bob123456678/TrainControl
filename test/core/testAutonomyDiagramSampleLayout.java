@@ -125,12 +125,10 @@ public class testAutonomyDiagramSampleLayout
 
         graph = new TileGraph(pages, excluded);
 
-        // FOUND rather than written down, because a written-down coordinate went stale (it said 15,5; the arrow sits at
-        // 14,5), skipping every test in this class while the battery called it green.
-        //
-        // A link tile records its destination PAGE and nothing more, so the pairing has to be authored.  With Top
-        // Parking excluded there is exactly ONE arrow on Main pointing at Bottom and one on Bottom pointing back, so
-        // the pair is forced; the two arrows on Main pointing at Top Parking stay unpaired, as an unnamed link should.
+        // FOUND rather than written down (see `mainLink`).  A link tile records its destination PAGE and nothing more,
+        // so the pairing has to be authored.  With Top Parking excluded there is exactly ONE arrow on Main pointing at
+        // Bottom and one on Bottom pointing back, so the pair is forced; the two arrows on Main pointing at Top Parking
+        // stay unpaired, as an unnamed link should.
         mainLink = onlyLinkFrom("1 - Main", "2 - Bottom", pages);
         bottomLink = onlyLinkFrom("2 - Bottom", "1 - Main", pages);
 
