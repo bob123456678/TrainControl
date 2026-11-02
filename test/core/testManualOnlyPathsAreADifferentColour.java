@@ -356,10 +356,8 @@ public class testManualOnlyPathsAreADifferentColour
     }
 
     /**
-     * Switching Path Type redraws the tested route for the new tier, without testing it again (MT-399).
-     *
-     * What the tier changes is the verdict written under the route: on Auto, a route to a station autonomy will never
-     * choose says so; on Manual it does not.  Through the real two-click gesture and the real radio button.
+     * Switching Path Type redraws the tested route for the new tier, without testing it again (MT-399), through the
+     * real two-click gesture and the real radio button.
      */
     @Test
     public void testSwitchingPathTypeRedrawsTheTestedRoute() throws Exception
