@@ -200,9 +200,8 @@ public class testLocIconCrop
     }
 
     /**
-     * The note carries the view, and an older note still reads as a path (OB-125). The compatibility half matters:
-     * every note FR-032 wrote is a bare path with no second line, so a reader that needs two lines would break
-     * re-cropping for the whole existing set.
+     * The note carries the view, and an older note still reads as a path (OB-125): every note FR-032 wrote is a bare
+     * path with no second line, so a reader that needs two lines would break re-cropping for the whole existing set.
      *
      * MUTATION: reading the note with `trim()` over the whole file rather than taking the first line fails the path
      * assertion, because the view line comes back as part of the filename.
@@ -410,10 +409,9 @@ public class testLocIconCrop
     }
 
     /**
-     * A remembered view crops the same part of the photograph in a dialog of another shape (OB-257): the five numbers
-     * held the zoom relative to the panel, so a sixth holds the crop's width in the photograph's own pixels and the
-     * zoom is worked out from it. The control: the same view without the sixth number does crop differently there, or
-     * this would prove nothing.
+     * A remembered view crops the same part of the photograph in a dialog of another shape (OB-257): a sixth number
+     * holds the crop's width in the photograph's own pixels, and the zoom is worked out from it.  The control: the same
+     * view without the sixth number does crop differently there.
      *
      * MUTATION: open on the saved zoom alone again, and this fails.
      */
@@ -1082,8 +1080,7 @@ public class testLocIconCrop
 
     /**
      * Before the station has said, the picture's tools take the power as on only where start-up turned it on (OB-392),
-     * whatever the Startup preference says since; once it has said, by what it said.  The model takes the power as on
-     * until it hears.
+     * whatever the Startup preference says since; once it has said, by what it said.
      *
      * MUTATION: take the model's power as known in `TrainControlUI.powerIsOn`, read the Startup preference there
      * instead of what start-up did, or leave out `powerHeard = true` in `updatePowerState`, and this fails.
@@ -1208,9 +1205,8 @@ public class testLocIconCrop
 
     /**
      * The picture's tools, and a right-click on the picture, wait for the power to be off; the picture says to turn it
-     * off while it is on, and to right-click once it is off (MT-591), like the overlay icons.  Told through the
-     * window's own door for a change of power.  The chooser is answered with a picture that cannot be read, so its
-     * refusal says the chooser opened.
+     * off while it is on, and to right-click once it is off (MT-591).  The chooser is answered with a picture that
+     * cannot be read, so its refusal says the chooser opened.
      *
      * MUTATION: offer the tools whatever the power, say nothing while it is on, open the chooser on a right-click
      * whatever the power in `locIconMouseReleased`, or leave the tooltip when `renderActiveLoc` lets the locomotive go,
