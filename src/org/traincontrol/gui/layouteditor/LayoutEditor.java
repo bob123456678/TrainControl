@@ -1490,7 +1490,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(autonomyPanel.getShowLengths());
 
-                // Directly under Track Lengths: one subject.
+                // Under Track Lengths, at the same gap as every other pair: one subject, not one control.
+                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+
                 autonomyPanel.getShowUnmeasured().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowUnmeasured());
 
