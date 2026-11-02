@@ -4,12 +4,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
- * OB-187: the menus stopped being gray in stages as the connect finished ("the menu options ungrey at different
- * times").
- *
- * `showConnecting` grays every menu on the bar and `connectingFinished` gives back exactly those, one list, one
- * moment.  The autonomy menu is not on the bar when that walk happens: `mountAutonomyControls` adds it from
- * `setViewListener`, during the connect, so it arrived enabled into a gray bar and came back at its own moment.
+ * OB-187: the menus stopped being gray in stages as the connect finished.  The autonomy menu is not on the bar when
+ * `showConnecting` grays every menu and `connectingFinished` gives them back, so it arrived enabled into a gray bar.
  *
  * This drives the real start-up order (gray the bar, hand the window its model) rather than calling the mounting
  * method, because "arrives after the walk" is the defect and only the order can show it.
@@ -321,10 +317,9 @@ public class testTheMenusComeBackAtOneMoment
     }
 
     /**
-     * Every tooltip on the menu bar is short, and one too wide for a line is wrapped (FR-112).
-     *
-     * The bar's tooltips are set in the generated block and none was wrapped.  After the connect, so the Autonomy menu
-     * mounted then is walked with the rest.  A hundred characters in English and a hundred and thirty in the others.
+     * Every tooltip on the menu bar is short, and one too wide for a line is wrapped (FR-112): a hundred characters in
+     * English and a hundred and thirty in the others.  After the connect, so the Autonomy menu mounted then is walked
+     * with the rest.
      *
      * MUTATION: take the walk out of the constructor, or put a long sentence back on any item, and this fails.
      */
