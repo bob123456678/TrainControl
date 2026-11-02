@@ -46,9 +46,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
     /**
      * Draws the page into the window.
      *
-     * @param fit whether to size the window to the page and keep where it stands: true when the window is opened and when
-     *        its page is changed or refreshed, false for a redraw of the captions alone, which leaves the size and the
-     *        place the operator gave it, and saves nothing (OB-341)
+     * @param fit whether to size the window to the page and keep where it stands, false for a redraw of the captions
+     * alone (OB-341)
      */
     private void drawGrid(boolean fit)
     {
@@ -98,10 +97,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
     }
     
     /**
-     * Whether the setup still gives every square of the grid on screen the caption it was drawn with, and every caption its
-     * name (OB-341).
-     *
-     * @return false where it does not, and for a window not drawn yet
+     * Whether the setup still gives every square of the grid on screen the caption it was drawn with (OB-341); false
+     * for a window not drawn yet.
      */
     boolean captionsAreAsBuilt()
     {
@@ -114,8 +111,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
     }
 
     /**
-     * The window's title: the page's name, the autonomy configuration that is loaded in brackets when one is (FR-127), then
-     * the locomotive text the main window adds.
+     * The window's title: the page's name, the loaded autonomy configuration in brackets when there is one (FR-127),
+     * then the locomotive text.
      *
      * @param locomotive what follows the page: the active locomotive's text, or ""
      * @return the title
