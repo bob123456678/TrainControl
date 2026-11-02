@@ -8,14 +8,10 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 
 /**
- * A stand-in picture for a locomotive that has none (FR-054): "light gray and a simple electric locomotive consisting
- * of: a main rectangle, trapezoid that 1/3 it's height, 2 small closed pantographs, and 4 1/5 height circular wheels
- * in sets of two on each side, spaced evenly apart."
- *
- * With the trapezoid's base flush to the body and its sides at 45 degrees, the top width is the base less twice the
- * height, so there is one dimension to keep in agreement.  Drawn rather than shipped as a file: every place that shows
- * a locomotive asks for a different width, and the shapes are computed from the size asked for, so the outline stays
- * one pixel at every one.
+ * A stand-in picture for a locomotive that has none (FR-054): a light gray electric locomotive, drawn rather than
+ * shipped as a file, because every place that shows a locomotive asks for a different width and the outline must stay
+ * one pixel at every one.  The trapezoid's base is flush to the body and its sides at 45 degrees, so there is one
+ * dimension to keep in agreement.
  *
  * @author Adam
  */
@@ -23,9 +19,7 @@ public class LocomotivePlaceholder
 {
     /**
      * Light gray with a slightly darker outline: a single flat fill loses the wheels into the body and the trapezoid
-     * into the roof.  Opaque, not translucent, which shows the wheels through the body ("try the other way" to fading
-     * the whole drawing); then a tenth lighter, faded as a whole (FR-104: "increase the opacity of the default
-     * locomotive icon by 10%, so it's slightly lighter."), see `FADE`.
+     * into the roof.  Opaque, not translucent; faded as a whole by a tenth, see `FADE` (FR-104).
      */
     private static final Color BODY = new Color(238, 238, 238);
 
