@@ -29,24 +29,10 @@ import org.traincontrol.marklin.file.CS2File;
 import support.SourceOf;
 
 /**
- * A train put down on a square is standing where the drive would leave it, not turned round.
- *
- * Which way a pasted train pointed was a coin toss on the frozen copy of Adam's railway: `facingByPath` walks
- * `Layout.getNeighbors`, which SHUFFLES (right for autonomy choosing a journey, wrong for where one square is relative
- * to another), and two copies of BottomMainB sit the same nine edges away: `BottomMainB (eastbound)` facing E and
- * `BottomMainB (eastbound, reverse)` facing W.
- *
- * The second is not an arrival at all.  A may-turn square is built as a plain copy (where a train that drove in
- * stands) and a turning copy (after deciding to turn round), reached by the same edge and facing opposite ways.
- * Answering with the turning copy records a decision the operator did not make by dragging a train onto a square.  A
- * turning copy is emitted with `terminus: true` (or `reversing: true`), so `isTerminus()` cannot tell it from a real
- * terminus (OB-205, MT-368); `isSamePlaceAs` is the discriminator used here.
- *
- * A terminus must still reverse on paste: "for terminuses, they must reverse on paste".  A compulsory turn has no
- * plain copy, so the turning copy stays the answer.  Asserted below, not assumed.
- *
- * Read against a `LayoutSandbox` copy of the frozen snapshot (OB-111): a pinned direction needs a railway that is not
- * being edited under it.
+ * A train put down on a square is standing where the drive would leave it, not turned round.  A turning copy is
+ * emitted with `terminus: true` (or `reversing: true`), so `isTerminus()` cannot tell it from a real terminus (OB-205,
+ * MT-368); `isSamePlaceAs` is the discriminator used here.  A terminus must still reverse on paste.  Read against a
+ * `LayoutSandbox` copy of the frozen snapshot (OB-111).
  *
  * @author Adam
  */
