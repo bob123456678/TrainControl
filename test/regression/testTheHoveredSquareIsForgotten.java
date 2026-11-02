@@ -27,16 +27,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-198: a square the pointer is no longer over is not a square a shortcut may act on.
  *
- * `LayoutEditor.autonomyHover` is set when the pointer enters a label, and nothing cleared it: the window has no
- * mouse-exit hook and stepping to another page replaces the grid without touching the field.  Three shortcuts read it:
- * Control+H (set home), Control+S (rename) and, since FR-066, Control+E (set length).  A label left behind by a page
- * change is not in the grid, so `LayoutGrid.getCoordinates` answers `-1,-1` for it and the key acted on `(page, -1,
- * -1)`.
- *
+ * `LayoutEditor.autonomyHover` is set when the pointer enters a label, and nothing cleared it; three shortcuts read it
+ * (Control+H, Control+S and, since FR-066, Control+E), and a label left behind by a page change is not in the grid.
  * Asserted at the one question the three keys now ask: `hoveredSquare()` FORGETS a stale label rather than merely
- * refusing it, so nothing can read it a second time.  The stale label is a real one, built the way the grid builds them
- * and simply not in the grid; the live one is taken off the rendered editor by walking its component tree, because the
- * grid has no accessor.  ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
+ * refusing it.  The stale label is a real one, built the way the grid builds them and simply not in the grid; the live
+ * one is taken off the rendered editor by walking its component tree, because the grid has no accessor.  ON THE FROZEN
+ * RAILWAY, never `cs2_sample_layout` (OB-111).
  *
  * MUTATION: have `hoveredSquare` return the TileKey without asking the coordinates - which is what the three handlers
  * did - and `testAStaleLabelNamesNoSquare` fails.
