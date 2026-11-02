@@ -89,9 +89,8 @@ public class FacingPrompt
     }
 
     /**
-     * Asks which way a locomotive should face at a home it is not standing on (OB-282; Adam: "prompt the user for the
-     * direction"): a home is set facing the way the train stands there, and a train elsewhere has no facing on that
-     * square.
+     * Asks which way a locomotive should face at a home it is not standing on (OB-282): a train elsewhere has no
+     * facing on that square.
      *
      * @param canHold the headings a train may be homed in there - copies trains may arrive at
      * @param locomotive the locomotive being homed
@@ -147,10 +146,9 @@ public class FacingPrompt
     }
 
     /**
-     * What a heading is called on a button: "To the North (up)", not "From the North (up)" (OB-215):
-     * `ArrivalSidePrompt.labelFor` answers where the train came from, and a question about which way it FACES needs the
-     * opposite end's words.  Whole keys, one per case, as `ArrivalSidePrompt.keyFor` explains: the bundle check reads
-     * the source for the keys it must find.
+     * What a heading is called on a button: "To the North (up)" (OB-215), the opposite end's words from
+     * `ArrivalSidePrompt.labelFor`.  Whole keys, one per case, as `ArrivalSidePrompt.keyFor` explains: the bundle check
+     * reads the source for the keys it must find.
      *
      * @param heading the way the train would face
      * @return the button label, in the running language
