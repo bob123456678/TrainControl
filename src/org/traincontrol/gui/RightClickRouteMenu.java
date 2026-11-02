@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -68,9 +69,14 @@ public class RightClickRouteMenu extends PopupListener
             {
                 String routeName = route.getName();
 
-                menuItem = new JMenuItem(
-                    I18n.f("route.ui.menuExecuteRoute", getRouteTooltip(ui, routeName))
-                );
+                // The header names the route, grayed and bold, over a divider (FR-164)
+                menuItem = new JMenuItem(getRouteTooltip(ui, routeName));
+                menuItem.setEnabled(false);
+                menuItem.setFont(menuItem.getFont().deriveFont(Font.BOLD));
+                add(menuItem);
+                addSeparator();
+
+                menuItem = new JMenuItem(I18n.t("route.ui.menuExecute"));
                 menuItem.addActionListener(event -> ui.executeRoute(routeName));
                 add(menuItem);
                 addSeparator();

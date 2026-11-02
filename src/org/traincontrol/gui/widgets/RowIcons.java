@@ -428,6 +428,41 @@ public final class RowIcons
         };
     }
 
+    /**
+     * A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164).
+     *
+     * @param size how many pixels square
+     * @param colour what it is drawn in
+     * @return the icon
+     */
+    public static Icon wrench(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                // Drawn upright on a 13-unit grid around the origin, then turned a half right angle and scaled
+                java.awt.geom.Area shape = new java.awt.geom.Area(
+                    new java.awt.geom.Ellipse2D.Float(-3.3f, -7.8f, 6.6f, 6.6f));
+
+                shape.add(new java.awt.geom.Area(
+                    new java.awt.geom.RoundRectangle2D.Float(-1.35f, -5f, 2.7f, 12.5f, 2.7f, 2.7f)));
+                shape.subtract(new java.awt.geom.Area(
+                    new java.awt.geom.Rectangle2D.Float(-1.3f, -8.5f, 2.6f, 4.4f)));
+
+                java.awt.geom.AffineTransform turn = new java.awt.geom.AffineTransform();
+
+                turn.translate(width / 2.0, height / 2.0);
+                turn.scale(width / 13.0, height / 13.0);
+                turn.rotate(Math.PI / 4);
+
+                g.setColor(colour);
+                g.fill(turn.createTransformedShape(shape));
+            }
+        };
+    }
+
     /** An icon that paints itself, antialiased, on a graphics it is handed. */
     private abstract static class Painted implements Icon
     {

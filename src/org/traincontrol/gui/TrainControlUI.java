@@ -6527,6 +6527,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // AND THE PICTURE'S TOOLS, which wait for the power off (MT-591)
             showCropOverlay();
+
+            // The route list's buttons are play or wrench by the power (FR-164)
+            this.RouteList.repaint();
         });
     }
         
@@ -17773,8 +17776,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The pointer arriving on the Find Route highlight dismisses it (MT-218).
         if (under != null && under.getName().equals(foundRoute)) clearFoundRoute();
 
+        // The wrench is pressable whatever is running (FR-164): the editor opens regardless
         boolean pressable = isOverTheRoutePlayButton(evt)
-            && under != null && !routesExecuting.contains(under.getName());
+            && under != null && (routeListEditsRoutes() || !routesExecuting.contains(under.getName()));
 
         RouteList.setCursor(java.awt.Cursor.getPredefinedCursor(
             pressable ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
@@ -20331,8 +20335,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Where the triangle is drawn inside that strip.  The strip and the glyph differ in size on purpose: one number
-     * made the button unhittable.
+     * Whether the route list opens a route's editor rather than running it: the power is off (FR-140, FR-164).  The
+     * click and the wrench the renderer draws ask this one method.
+     */
+    boolean routeListEditsRoutes()
+    {
+        return this.model != null && !this.model.getPowerState();
+    }
+
+    /**
+     * Where the triangle (or, with the power off, the wrench) is drawn inside that strip.  The strip and the glyph
+     * differ in size on purpose: one number made the button unhittable.
      */
     public static java.awt.Rectangle routePlayGlyphBox(java.awt.Rectangle strip)
     {
@@ -20496,15 +20509,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // false, not one to be caught happening, which matters for a route finishing in under a second.
                 boolean running = routesExecuting.contains(paintingRoute);
 
-                g2.setColor(running ? new java.awt.Color(170, 170, 170) : new java.awt.Color(0, 150, 0));
+                if (routeListEditsRoutes())
+                {
+                    // The same spot, for the same click's other meaning (FR-164)
+                    org.traincontrol.gui.widgets.RowIcons.wrench(box.width, new java.awt.Color(110, 110, 110))
+                        .paintIcon(this, g2, box.x, box.y);
+                }
+                else
+                {
+                    g2.setColor(running ? new java.awt.Color(170, 170, 170) : new java.awt.Color(0, 150, 0));
 
-                java.awt.Polygon play = new java.awt.Polygon();
+                    java.awt.Polygon play = new java.awt.Polygon();
 
-                play.addPoint(box.x, box.y);
-                play.addPoint(box.x + box.width, box.y + box.height / 2);
-                play.addPoint(box.x, box.y + box.height);
+                    play.addPoint(box.x, box.y);
+                    play.addPoint(box.x + box.width, box.y + box.height / 2);
+                    play.addPoint(box.x, box.y + box.height);
 
-                g2.fillPolygon(play);
+                    g2.fillPolygon(play);
+                }
 
                 if (paintingExecuting) routeMarks.paint(g2, strip);
             }

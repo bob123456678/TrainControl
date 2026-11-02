@@ -268,8 +268,9 @@ final class RouteListPanel
     }
 
     /**
-     * A click on the route list: the play button runs its route, and a row asks first - or, with the power off, opens the route's
-     * editor and asks nothing (FR-140).  `TrainControlUI.RouteListMouseClicked`'s body.
+     * A click on the route list: the play button runs its route, and a row asks first - or, with the power off, the
+     * whole cell opens the route's editor and asks nothing (FR-140, FR-164).  `TrainControlUI.RouteListMouseClicked`'s
+     * body.
      */
     void RouteListMouseClicked(java.awt.event.MouseEvent evt)
     {
@@ -291,21 +292,22 @@ final class RouteListPanel
             return;
         }
 
+        // WITH THE POWER OFF, THE CELL OPENS THE ROUTE'S EDITOR (FR-140): nothing could run, so the click is taken as
+        // wanting to see or change the route.  The button, drawn as a wrench then, does the same (FR-164); the
+        // right-click menu's Execute Route still runs it.
+        if (this.ui.routeListEditsRoutes())
+        {
+            editRoute(route.getName());
+
+            return;
+        }
+
         if (isOverTheRoutePlayButton(evt))
         {
             // Disabled means disabled (MT-217): a grayed button that still fired would start the same route twice.
             // Asked in executeRoute now: this was the only door that asked, and one guard on the funnel is the
             // OB-057/OB-090 shape's answer.
             executeRoute(route.getName());
-
-            return;
-        }
-
-        // WITH THE POWER OFF, THE ROW OPENS THE ROUTE'S EDITOR (FR-140): nothing could run, so the click is taken as
-        // wanting to see or change the route.  The play button still runs it, as it always does.
-        if (this.ui.getModel() != null && !this.ui.getModel().getPowerState())
-        {
-            editRoute(route.getName());
 
             return;
         }

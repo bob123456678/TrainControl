@@ -245,6 +245,35 @@ public class testTheRoutePlayButton
     }
 
     /**
+     * The wrench the renderer draws with the power off, the click that opens the editor and the hand cursor over it ask
+     * one method whether the route list edits (FR-164): a second copy of the power question would draw a wrench that
+     * runs the route, or a triangle that opens the editor.
+     *
+     * MUTATION: put the power question inline in the renderer's `paintComponent`, the click or the hover and this
+     * fails.
+     */
+    @Test
+    public void testTheWrenchTheClickAndTheHoverAskTheSameQuestion() throws Exception
+    {
+        int declared = SourceOf.occurrences("boolean routeListEditsRoutes(");
+        int asked = SourceOf.occurrences("routeListEditsRoutes()") - declared;
+
+        assertEquals(declared, 1, "routeListEditsRoutes is declared " + declared + " times, not once");
+        assertEquals(asked, 3, "routeListEditsRoutes is asked " + asked + " times; it should be three, by the renderer"
+            + ", the click and the hover");
+
+        assertTrue(SourceOf.declaration("public class CustomTableRenderer extends DefaultTableCellRenderer")
+            .contains("routeListEditsRoutes()"), "the renderer no longer asks whether the list edits, so its button"
+            + " does not follow the power");
+
+        assertTrue(SourceOf.declaration("    void RouteListMouseClicked(java.awt.event.MouseEvent evt)")
+            .contains("routeListEditsRoutes()"), "the click no longer asks whether the list edits");
+
+        assertTrue(SourceOf.declaration("private void RouteListMouseMoved(").contains("routeListEditsRoutes()"),
+            "the hover no longer asks whether the list edits, so the wrench shows no hand");
+    }
+
+    /**
      * Whether code draws an arc, either way this program does it: `drawArc(` or an `Arc2D`.
      */
     private static boolean drawsAnArc(String code)
