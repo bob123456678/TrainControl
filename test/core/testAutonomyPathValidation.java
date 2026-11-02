@@ -631,10 +631,10 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Two paths holding one crossing, and the first to finish does not free it.  `Edge.occupied` was a boolean, so
-     * with two edges naming a third as a lock edge (what a crossing looks like when the editor writes it) the first
-     * release wrote false for both and the crossing went free with a train still on it.  This is the flag itself,
-     * shared by both modes: nothing about atomicRoutes.
+     * Two paths holding one crossing, and the first to finish does not free it.  `Edge.occupied` is a count, not a
+     * boolean: with two edges naming a third as a lock edge (what a crossing looks like when the editor writes it), the
+     * first release must not free the crossing with a train still on it.  This is the flag itself, shared by both
+     * modes.
      */
     @Test
     public void testTwoPathsHoldingOneCrossingBothHaveToLetGo() throws Exception
