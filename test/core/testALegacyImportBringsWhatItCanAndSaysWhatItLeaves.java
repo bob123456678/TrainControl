@@ -1283,7 +1283,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a user-named accessory that merely begins with the word is not a signal");
 
         // The name this program generates for anything not on the implicit protocol (`Accessory.getNameWithProtocol`
-        // appends the decoder: "Signal 116 DCC"); parsing the whole remainder as a number returned null for all of
+        // appends the decoder: "Signal 116 DCC"); parsing the whole remainder as a number would return null for all of
         // them.
         assertEquals(org.traincontrol.automationui.AutonomySession.legacySignalAddress("Signal 116 DCC"),
             Integer.valueOf(116), "a DCC signal is a signal");
