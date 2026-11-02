@@ -118,9 +118,8 @@ public class RouteEditorFrame extends JFrame
     private final JCheckBox captureBox = new JCheckBox(I18n.t("route.ui.frameCapture"));
 
     /**
-     * Where a captured accessory goes: the command list, or the conditions.  Asked rather than guessed, since a capture
-     * that quietly wrote to the wrong table would be worse than one that did nothing.  s88 is deliberately absent: a
-     * layout with trains on it reports sensors constantly, so feedback would fill the table with noise.
+     * Where a captured accessory goes: the command list, or the conditions.  Asked rather than guessed.  s88 is
+     * deliberately absent: a layout with trains on it reports sensors constantly, so feedback would fill the table.
      */
     private final JComboBox<String> captureTarget = new JComboBox<>();
 
@@ -3775,12 +3774,9 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The columns every command shares: what kind, which one, what to do, and - for the kinds that
-     * have them - which decoder speaks to it and how long to wait afterwards.
-     *
-     * Protocol and delay are columns rather than assumptions: an assumed MM2 is a DIFFERENT address space
-     * from DCC, and a dropped delay is what holds a slow point motor apart from the command behind it.  A
-     * cell the kind cannot use is grayed rather than hidden, so the table stays one shape.
+     * The columns every command shares.  Protocol and delay are columns rather than assumptions: an assumed MM2 is a
+     * DIFFERENT address space from DCC.  A cell the kind cannot use is grayed rather than hidden, so the table stays
+     * one shape.
      */
     private final class CommandTable extends HandledTable
     {
@@ -3907,10 +3903,9 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow at = entry.getRow();
 
-                // A kind the dropdown does not offer cannot be edited: it is built from canBeACommand (OB-141 excludes
-                // FEEDBACK), and a non-editable JComboBox refuses an item not in its model, so one click would write
-                // another kind back (an s88 command becoming an emergency stop).  Read-only, so the guard and the
-                // affordance ask one question.
+                // A kind the dropdown does not offer (OB-141 excludes FEEDBACK) cannot be edited: a non-editable
+                // JComboBox refuses an item not in its model, so one click would write another kind back.  Read-only,
+                // so the guard and the affordance ask one question.
                 if (column == KIND) return CommandRow.canBeACommand(at.getKind());
 
                 if (column == TARGET) return CommandRow.hasTarget(at.getKind());
@@ -3936,14 +3931,14 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow.Kind kind = column == KIND ? CommandRow.kindFor(text) : at.getKind();
 
-                // A different kind starts empty: the setting vocabularies do not overlap, and neither does the target's
-                // meaning, so carrying it over would turn "Accessory 3" into a command for a locomotive called "3".
+                // A different kind starts empty: carrying it over would turn "Accessory 3" into a command for a
+                // locomotive called "3".
                 boolean became = column == KIND && kind != at.getKind();
 
                 String target = column == TARGET ? text : at.getTarget();
 
                 // Changing the kind replaces the setting with one the new kind accepts, or Save would refuse a cell the
-                // user never touched.  A function's two halves are stored as one value, which is the model's business.
+                // user never touched.
                 String setting = at.getSetting();
 
                 if (column == KIND && kind != at.getKind()) setting = CommandRow.defaultSettingFor(kind);
@@ -3951,8 +3946,8 @@ public class RouteEditorFrame extends JFrame
                 else if (column == SETTING) setting = CommandRow.isFunction(kind)
                     ? functionNumberOf(at.getSetting()) + ":" + text : text;
 
-                // Every rebuild carries protocol and delay forward, or editing the SETTING of a DCC accessory would
-                // move it to MM2: the row is rebuilt from the columns, and anything not passed on is lost.
+                // Every rebuild carries protocol and delay forward, or editing a DCC accessory's SETTING would move it
+                // to MM2.
                 Accessory.accessoryDecoderType protocol = at.getProtocol();
                 int delay = at.getDelay();
 
@@ -3993,7 +3988,7 @@ public class RouteEditorFrame extends JFrame
                 rows.set(row, Entry.of(new CommandRow(kind, target, setting, protocol, delay)));
 
                 // Judged as it is typed (OB-246), and every row: a locomotive command's target can make a later row
-                // wrong, because problemsWith asks the layout.
+                // wrong.
                 settle();
                 noteEdit();
 
@@ -4382,10 +4377,7 @@ public class RouteEditorFrame extends JFrame
             shift(getSelectedRow(), by);
         }
 
-        /**
-         * Not "move": Component has had a move(int, int) since AWT 1.0, and overriding it by accident repositions the
-         * window.
-         */
+        /** Not "move": Component.move(int, int) exists, and overriding it by accident repositions the window. */
         void shift(int at, int by)
         {
             int to = at + by;
@@ -4398,9 +4390,8 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Works out which rows Save would refuse, and why (OB-246).  A row nobody has filled in yet is not marked: a
-         * new row is added empty, and problemsWith refuses that at once, so it would be red before a character was
-         * typed.  Save still refuses the blank row, naming its number.
+         * Works out which rows Save would refuse, and why (OB-246).  A row nobody has filled in yet is not marked: it
+         * would be red before a character was typed; Save still refuses it, naming its number.
          */
         private void settle()
         {
@@ -4923,10 +4914,9 @@ public class RouteEditorFrame extends JFrame
                     // below would put the line back to its starting address.
                     if (became == term.getKind()) return;
 
-                    // A different kind does not keep the old target (a sensor number left in an accessory row is a
-                    // valid address of something else).  Reset to something that builds, not blank: this table stores
-                    // built commands, so an empty address would throw in the rebuild below.  "Train X is at sensor N"
-                    // has a name target and an address setting, so it starts with the first locomotive on the roster.
+                    // A different kind does not keep the old target (a sensor number is a valid address of something
+                    // else).  Reset to something that builds, not blank: this table stores built commands, so an empty
+                    // address would throw in the rebuild below.
                     String starting = CommandRow.asksWhereATrainIs(became)
                         ? firstLocomotive() : (CommandRow.hasTarget(became) ? "1" : "");
 
@@ -5103,9 +5093,8 @@ public class RouteEditorFrame extends JFrame
 
             if (column == KIND) return kindEditor;
 
-            // As shown, not stored: the cell displays "red", and a dropdown built from the stored kind would offer
-            // "straight" and "turn", so a click in and out would commit its first entry (the mechanism asShown
-            // describes).
+            // As shown, not stored: a dropdown built from the stored kind would offer "straight" and "turn" for a cell
+            // that displays "red", so a click in and out would commit its first entry.
             CommandRow term = asShown(CommandRow.of(rows.get(at).getCommand()));
 
             if (term == null) return super.getCellEditor(line, column);
