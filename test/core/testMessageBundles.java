@@ -460,9 +460,7 @@ public class testMessageBundles
     /**
      * Every word of an English route-command kind starts with a capital (OB-142).
      *
-     * Adam: "the Kind dropdown in the route editor has inconsistent capitalization for its items.  make all words start
-     * with capitals."  A hyphenated pair counts as two words ("Three-Way", not "Three-way"), the case the report was
-     * about.
+     * A hyphenated pair counts as two words ("Three-Way", not "Three-way").
      *
      * **English only, deliberately.**  French, Spanish, Italian, Dutch, Danish and Polish use sentence case for
      * interface labels, and German capitalizes nouns for reasons of its own; how a language capitalizes is that
@@ -645,10 +643,8 @@ public class testMessageBundles
     /**
      * The terminus error names the menu that actually closes a side.
      *
-     * The sentence once said *"Bar one way in with the arrows"*, and the arrows are the DEPARTURE setting; Adam did
-     * what it told him and reported *"error shows, but clicking on it and making one outbound arrow red does not clear
-     * the error"*, then diagnosed it: *"can't arrive is different than can't depart.  Just make the message more
-     * explicit."*
+     * The sentence once said "Bar one way in with the arrows", and the arrows are the DEPARTURE setting: following it
+     * did not clear the error.
      *
      * **An error that stops the railway has to name a control the reader can find.**  Each bundle's sentence quotes its
      * OWN `menuArrivalsGroup` label, and this keeps the two in step: rename the menu and the error goes on naming a
@@ -750,9 +746,8 @@ public class testMessageBundles
     /**
      * The two train-length warnings name what they are about (OB-153, OB-154).
      *
-     * Adam, OB-153: "autosetup.ui.checkNoTrainLength is prefilled with the station name, not the train at that station
-     * name.  state both ({train} and {station} has no...)"  OB-154: "autosetup.ui.checkNoMaxTrainLength does not
-     * specify the station name".
+     * OB-153: {train} and {station} both belong in autosetup.ui.checkNoTrainLength; OB-154:
+     * autosetup.ui.checkNoMaxTrainLength must name the station.
      *
      * Both panels build a finding's text as
      *
@@ -1234,8 +1229,7 @@ public class testMessageBundles
     }
 
     /**
-     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes* (Adam: *"rephrase
-     * "place all at their homes" to "place all trains at their homes" in the right click menu"*).
+     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes*.
      *
      * MUTATION: put the old words back, and this fails.
      *
@@ -1253,9 +1247,8 @@ public class testMessageBundles
 
     /**
      * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
-     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (Adam: *"b,
-     * easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit, which saves nothing
-     * while anything runs, and say so).
+     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (the exit still
+     * saves nothing while anything runs, and says so).
      *
      * MUTATION: leave the settings out of the English sentence again, and this fails.
      *
