@@ -24,16 +24,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * The API examples in test/examples run, against a station that is not there (FR-138).
- *
- * The examples teach the public Java API (AutomationAPI.md points to them), and one that no longer compiles or does
- * what its words say is worse than none.  They compile with the tests, so a renamed method breaks the build; this class
- * runs each on a simulated station and reads back what it claims to have done, so a method that still exists but
- * behaves differently fails here.
- *
- * Every example takes its station as a parameter, and none connects to a real Central Station: the only call to `init`
- * is in `SimulatedStation`, and it asks for a simulation.  One station per JVM, because it binds a fixed network port,
- * so the examples share one and use names, addresses and sensors that do not meet.
+ * The API examples in test/examples run, against a station that is not there (FR-138): each runs on a simulated station
+ * and the line it reports is read back, so a method that still exists but behaves differently fails here.  Every
+ * example takes its station as a parameter, and none connects to a real Central Station.  One station per JVM, because
+ * it binds a fixed network port, so the examples share one and use names, addresses and sensors that do not meet.
  *
  * MUTATION: change a call in an example so it does something else (turn where it says straight, say), and the line it
  * reports no longer matches.
