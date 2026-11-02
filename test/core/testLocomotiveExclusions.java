@@ -181,11 +181,8 @@ public class testLocomotiveExclusions
     }
 
     /**
-     * A station whose list names the only locomotives allowed takes the named one and no other (FR-121).  Adam: "For
-     * locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just
-     * flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives
-     * that get added later when that mode is on."  Autonomy sends the named locomotive to EX_Far, the one place it may
-     * choose here, and refuses the other.
+     * A station whose list names the only locomotives allowed takes the named one and no other (FR-121).  Autonomy
+     * sends the named locomotive to EX_Far, the one place it may choose here, and refuses the other.
      *
      * MUTATION: read an allow-only list as a list of exclusions - in `pickPath`, or in the yield probe that mirrors it
      * - and this fails.
