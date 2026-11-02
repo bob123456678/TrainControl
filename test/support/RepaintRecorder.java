@@ -13,19 +13,12 @@ import javax.swing.RepaintManager;
 import javax.swing.SwingUtilities;
 
 /**
- * The repaints production asks Swing for, written down, and a picture redrawn ONLY where they were asked (FR-136, issue
- * 19).
+ * The repaints production asks Swing for, written down, and a picture redrawn ONLY where they were asked (FR-136).
  *
- * **Why this exists.**  A tile decides what it draws when it is painted, so a test that paints a tile sees the right
- * answer whether or not anything asked for it to be redrawn, while a window on screen redraws only what it is asked to.
- * OB-180 lived there: `CoveredTrackView.workOutCoveredTrack` worked the covered set out correctly and nothing told the
- * tiles, so the old squares stayed orange, yet `ui.testTheShadingIsRedrawnWhenATrainMoves` and
- * `core.testTheShadingFollowsTheTrain` stayed green with the repaint call removed.
- *
- * So this is installed as the `RepaintManager` and records every `repaint()` before passing it on, so what is counted
- * is what production asked for rather than what Swing chose to act on (a component not on screen is dropped, and every
- * component a test builds is).  `redrawWhereAsked` then plays those requests onto a picture taken earlier, the way the
- * screen would.  Swing's own manager is put back by `close`.
+ * A tile decides what it draws when it is painted, so a test that paints a tile sees the right answer whether or not
+ * anything asked for it to be redrawn (OB-180).  This is installed as the `RepaintManager` and records every
+ * `repaint()` before passing it on, so what is counted is what production asked for; `redrawWhereAsked` plays those
+ * requests onto a picture taken earlier.  Swing's own manager is put back by `close`.
  *
  * @author Adam
  */
