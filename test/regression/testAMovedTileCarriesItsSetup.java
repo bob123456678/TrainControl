@@ -22,22 +22,12 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A station, and the train standing on it, travel with the tile when it is dragged.
+ * A station, and the train standing on it, travel with the tile when it is dragged (MT-171).
  *
- * Adam, MT-171: "stations do not travel with a moved tile. they vanish until the tile is moved back, at which point the
- * loc is vanished."
- *
- * **This test does not reproduce that.**  It drives the editor's own gesture: move the component on the diagram exactly
- * as `LayoutEditor` does (clear the source square, set the component's coordinates, add it at the destination), then
- * `session.moveTiles`, the capture that runs when the editor closes, the save, and a re-read from disk.  Four variants
- * all carry the station, the name and the locomotive correctly in both directions, adding no error to the setup: to an
- * isolated empty square, one square along onto occupied track, each move in its own session, and both moves in one
- * session.
- *
- * So the data is right; what is left, and what this cannot see, is the DISPLAY: nothing is told to redraw the autonomy
- * overlay when `moveTiles` rebuilds the graph (`touched()` notifies nobody).  Unconfirmed, a lead rather than a
- * finding.  The test is kept regardless: nothing else covered a moved tile carrying its setup through a save and a
- * reload.
+ * **This test does not reproduce the report.**  It drives the editor's own gesture and reads the data back from disk,
+ * and the data is right; what is left, and what it cannot see, is the DISPLAY: nothing is told to redraw the autonomy
+ * overlay when `moveTiles` rebuilds the graph.  Unconfirmed.  The test is kept regardless: nothing else covered a
+ * moved tile carrying its setup through a save and a reload.
  */
 public class testAMovedTileCarriesItsSetup
 {
