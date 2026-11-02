@@ -633,10 +633,9 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD, THE TRAINS ARE CARRIED ACROSS RATHER THAN FOLDED:
-        // the running layout is the older of the two, so folding would take the edit away, and where its trains stand
-        // is the railway's to say (OB-183; `carryTheTrainsAcross`).  A layout that holds a path is folded as any other
-        // (`loadPrepared`), since carrying it lost the Auto tab's settings and a captured timetable.
+        // While a setup edit a run declined waits for its rebuild, the trains are carried across rather than folded:
+        // the running layout is the older of the two, so folding would take the edit away (OB-183;
+        // `carryTheTrainsAcross`).  A layout that holds a path is folded as any other (`loadPrepared`).
         if (captureRunningState && ui.isSetupNewerThanTheRunningLayout())
         {
             // The configuration running, or the one a reset forgot the name of: Unload, a deleted setup and a railway
@@ -717,11 +716,10 @@ public class AutonomyViewerPanel extends JPanel
     private void loadPrepared(String name, boolean interactive, boolean captureRunningState, boolean logAFailure)
     {
         // What was set while the outgoing configuration ran goes back into THAT configuration, by name, before anything
-        // is replaced: store-active and what-is-running can disagree after a refused load.  NOT WHILE A SETUP EDIT A
-        // RUN DECLINED WAITS FOR ITS REBUILD (folding the older running layout would take the edit away).  AND A LAYOUT
-        // HOLDING A PATH WITH EACH TRAIN UNDER WAY ON ONE POINT: a locked path holds every point on it for its train,
-        // so folded point by point the train stood on each, which the configuration refuses as one locomotive in two
-        // places; written at the point it is kept at, it stands once.
+        // is replaced: store-active and what-is-running can disagree after a refused load.  Not while a setup edit a
+        // run declined waits for its rebuild (folding the older running layout would take the edit away).  Nor a locked
+        // path's train folded point by point: it stood on each point, which the configuration refuses; it is written at
+        // the point it is kept at.
         if (captureRunningState && !ui.isSetupNewerThanTheRunningLayout() && ui.getActiveDiagramConfiguration() != null
             && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
         {
@@ -973,10 +971,10 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // NOTHING THAT REPLACES THE CONFIGURATION IN USE: a bundle or bare-shape file imported into it is followed by a
-        // reload that captures the running railway straight back over it, so "Replace it?" answered Yes did not replace
-        // (OB-183).  So they go in under another name and are run by choosing them.  An old file is not refused: it
-        // fills gaps (MT-298) and places no train on the railway running.
+        // Nothing that replaces the configuration in use: a reload would capture the running railway straight back over
+        // it, so "Replace it?" answered Yes did not replace (OB-183).  So they go in under another name and are run by
+        // choosing them.  An old file is not refused: it fills gaps (MT-298) and places no train on the railway
+        // running.
         String inUse = ui.getActiveDiagramConfiguration();
 
         final boolean intoTheOneInUse = inUse != null && inUse.equals(name.trim());
@@ -1245,9 +1243,8 @@ public class AutonomyViewerPanel extends JPanel
     private void importLegacyGraph(org.json.JSONObject file, String name)
     {
         // First, because an s88 on two squares stops an import deciding anything (those points are refused and listed):
-        // shut the repeats before reading the file, as at setup creation, since an older setup never had it applied.
-        // AND BEFORE THE SNAPSHOT BELOW (OB-302): an exclusion is the setup's shared half, so a later failure is no
-        // reason to undo it.
+        // shut the repeats before reading the file, and before the snapshot below (OB-302), since an exclusion is the
+        // setup's shared half and a later failure is no reason to undo it.
         List<String> shut = session().excludeRepeatedSensorPages();
 
         if (!shut.isEmpty())
@@ -1266,9 +1263,9 @@ public class AutonomyViewerPanel extends JPanel
         final TrainControlUI.SettingsAsBuiltNote railwaySettings = ui.noteSettingsAsBuilt();
 
         // Somewhere for the import to land, before it starts (OB-106): importLegacy writes the per-point half through
-        // setPointProperty, which addresses the ACTIVE configuration, and with none it was dropped silently.  INTO THE
-        // CONFIGURATION NAMED AT THE PROMPT, not the one in use: it is created where missing and chosen while the
-        // import writes; the configuration running is chosen again before anything is saved (below).
+        // setPointProperty, which addresses the ACTIVE configuration.  Into the configuration named at the prompt, not
+        // the one in use: created where missing, chosen while the import writes, and the running one chosen again
+        // before anything is saved (below).
         String into;
 
         try
@@ -1297,10 +1294,9 @@ public class AutonomyViewerPanel extends JPanel
             java.util.Set<String> known = ui.getModel() == null
                 ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
 
-            // INTO THE CONFIGURATION RUNNING, BY ITS NAME: what the running layout knows goes into it FIRST, and the
-            // reload after the import does not capture again, as that wrote the running railway back over the brought
-            // homes and settings.  The file places no train in it (OB-183).  While autonomy runs, the door refuses the
-            // name; nor while a declined setup edit waits for its rebuild, as the reload does not fold either (`load`).
+            // Into the configuration running, by its name: what the running layout knows goes into it FIRST, so the
+            // reload after the import does not capture again over the brought homes and settings (OB-183).  While
+            // autonomy runs, the door refuses the name; nor while a declined setup edit waits for its rebuild (`load`).
             final boolean intoTheOneRunning = into.equals(ui.getActiveDiagramConfiguration());
 
             boolean captured = false;
@@ -1398,9 +1394,8 @@ public class AutonomyViewerPanel extends JPanel
                     I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026))));
             }
 
-            // AND WHAT IT DID NOT BRING (MT-257 item 3): four things are dropped on purpose (see
-            // `AutonomySession.importLegacy`).  The list goes to the log because it is a list and this is a dialog,
-            // which says it is there.
+            // What it did not bring (MT-257): four things are dropped on purpose (`AutonomySession.importLegacy`).  The
+            // list goes to the log because it is a list and this is a dialog, which says it is there.
             if (!left.isEmpty() && ui.getModel() != null)
             {
                 ui.getModel().log(listForTheLog(I18n.t("autosetup.ui.leftBehindHeading"), left));
@@ -1799,8 +1794,8 @@ public class AutonomyViewerPanel extends JPanel
     {
         roster.clear();
 
-        // ASKED, NOT BUILT: `getAutoLayout` makes a Layout where there is none, and this runs as the panel is made
-        // (after Unload, a deleted setup, a railway switch), so `hasAutoLayout` answered yes about an empty one.
+        // Asked, not built: `getAutoLayout` makes a Layout where there is none, so `hasAutoLayout` answered yes about
+        // an empty one as the panel is made.
         Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
 
         if (layout == null) return;
