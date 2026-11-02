@@ -22,18 +22,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Return Home brings a train back facing the way it was homed, not merely onto the square. Adam: *"yes, it should
- * accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the layout.
- * we shouldn't allow an impossible facing to be saved."* And for what a home is: *"the home should just be the logical
- * point, and the direction is wherever the locomotive was facing when it started moving."*
+ * Return Home brings a train back facing the way it was homed, not merely onto the square (MT-165): a copy of the home
+ * square is a facing, and the planner used to take any copy as home.
  *
- * With BottomMainA's two plain copies both stations, a train homed on the westbound copy came back on the EASTBOUND one
- * and was called home, because the planner took any copy of the home square as home (MT-165); a copy is a facing
- * (section 3), so it came home turned round.
- *
- * The fixture: the frozen operator layout with BottomMainA's east bar lifted, as it stood at `2958fcf3` (the live
- * layout bars arrivals from the east there again, leaving the facing no choice). One train, homed on the westbound copy
- * by the running diagram's own door, moved away by hand, and sent home.
+ * The fixture: the frozen operator layout with BottomMainA's east bar lifted, as it stood at `2958fcf3`; the live
+ * layout bars arrivals from the east there again, leaving the facing no choice.
  *
  * @author Adam
  */
