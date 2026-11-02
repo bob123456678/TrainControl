@@ -24,33 +24,18 @@ import java.util.List;
  *
  * Run by the same Java the application runs on, so it works alike on Windows, macOS and Linux.
  *
- * **It never runs from the jar it replaces.**  On Windows a running jar is locked, so the application copies itself to
- * a file beside the jar and starts this class from the copy (`SelfUpdate.startUpdater`).  `main` first writes
- * `RUNNING_NAME`, which is how the application knows this started before it exits.
+ * **It never runs from the jar it replaces** (a running jar is locked on Windows): the application starts this class
+ * from a copy (`SelfUpdate.startUpdater`), and `main` first writes `RUNNING_NAME`.
  *
- * **It waits for TrainControl to close without asking for its process** (Java 8 has no `ProcessHandle`): the
- * application holds a lock on a file beside the jar until its JVM ends, and this waits until it can take that lock.
- * Past `LOCK_TIMEOUT_MS` it changes nothing and starts nothing: a second copy is the last thing wanted.
+ * **It waits for TrainControl to close** by taking the lock the application holds on a file beside the jar; past
+ * `LOCK_TIMEOUT_MS` it changes nothing and starts nothing, since a second copy is the last thing wanted.
  *
- * **Then, in order:** the old jar is renamed to `<name>_v<old version>_old.jar` (never over an existing file: a number
- * is added instead), the new jar is moved to the old jar's exact name so shortcuts keep working, and it is started with
- * the same Java, Java options, arguments and working directory.  The old jar is kept so the update can be undone by
- * hand.
- *
- * **"Started" means the new version said so.**  It is given a marker file's path in `STARTED_ENVIRONMENT` and writes it
- * once its main window is on screen, or when the user leaves it from a question before then
- * (`SelfUpdate.reportStarted`).  A version that fails before its window is put back whatever its exit code, since
- * TrainControl ends with 1 on purpose in several places; one that is up and then exits stays.  An environment variable
- * rather than a -D option, because Java options are carried into every later restart.  One that says nothing within
- * `START_CAP_MS` is kept and the log says so (FR-125).
- *
- * **A failure puts the old jar back and starts it**, and leaves `ROLLBACK_NOTE_NAME` beside the jar for the old version
- * to say so on its next start.  The note says the old version was put back only when its jar really is back under its
- * own name; otherwise it says where that version is running from.  Every step is logged to `update.log` beside the jar.
+ * **"Started" means the new version said so** (`STARTED_ENVIRONMENT`, `SelfUpdate.reportStarted`): a version that fails
+ * before its window is put back whatever its exit code.  **A failure puts the old jar back and starts it**, leaving
+ * `ROLLBACK_NOTE_NAME` beside the jar.  Every step is logged to `update.log`.
  *
  * **Self-contained on purpose**: it uses nothing of TrainControl's, so nothing the application loads at start-up can
- * stop it part way through a swap.  For the same reason its log is in English; the one sentence its small window shows
- * is handed to it already translated.
+ * stop it part way through a swap.
  *
  * The file work is in static methods that take paths, a mover and a launcher, which is how
  * `core.testTheUpdaterSwapsTheJar` runs every step without a real jar.
