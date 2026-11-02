@@ -680,10 +680,9 @@ public class TileGraph
     }
 
     /**
-     * The moves out of a square on the track a train arrived along (OB-320).  As `exits(tile, entrySide)` except on a
-     * square of a two-square crossing entered by the side its two squares meet at: both tracks pass that side, so the
-     * side alone would also offer the other track's leg, a reverse curve no train can run.  The previous square and its
-     * road (null if none) say which track.
+     * The moves out of a square on the track a train arrived along (OB-320): as `exits(tile, entrySide)` except on a
+     * two-square crossing entered at the side its squares meet at, where the side alone would offer the other track's
+     * leg.  `previous` and `previousRoute` (null if none) say which track.
      */
     public List<Exit> exits(TileKey tile, Side entrySide, TileKey previous, RouteId previousRoute)
     {
@@ -728,12 +727,9 @@ public class TileGraph
     /**
      * The other square of a two-square crossing, or null where this square is not half of one (OB-320).
      *
-     * Two permanent turnouts drawn toe to toe: the diagram's way of drawing a diagonal crossing as the two halves of an
-     * X, each track running from a leg of one square, over the toes, to the opposite leg of the other.  Qualifying
-     * pairs are two Ys, or two lefts or two rights turned half round, where every leg faces the opposite leg of the
-     * other; only toe to toe and beside each other on one page.  A permanent turnout without such a partner stays the
-     * turnout it always was (Adam: *"those without another adjacent to form a crossing are treated as switches only
-     * crossable in one direction by autonomy"*).
+     * Two permanent turnouts drawn toe to toe, the diagram's way of drawing a diagonal crossing as the two halves of an
+     * X.  One without such a partner stays a turnout (Adam: "those without another adjacent to form a crossing are
+     * treated as switches only crossable in one direction by autonomy").
      */
     public TileKey crossingPartner(TileKey tile)
     {
@@ -768,10 +764,7 @@ public class TileGraph
 
     /**
      * Makes the two halves of each two-square crossing's track agree where the directions applied to them do not
-     * (OB-320).  Halves can disagree when answers were set while the squares were permanent turnouts (an older setup);
-     * they are then read as a turnout's: towards the toe is the way the blades run and restricted nothing, so the track
-     * runs both ways; towards a leg is how a permanent turnout was closed, so the track is closed if either half was.
-     * The graph's directions only: the setup keeps what was set, and the first edit sets both halves anew.
+     * (OB-320), as an older setup may leave them.  The graph's directions only: the setup keeps what was set.
      */
     public void settleCrossingHalves()
     {
@@ -1403,10 +1396,10 @@ public class TileGraph
     }
 
     /**
-     * Whether a direction can be chosen for this route at all, given what the hardware allows.  The walk's half is
-     * `directionAllows`: an authored direction ANDs with the hardware's restriction, so one the hardware refuses
-     * restricts nothing, and offering it would be a control the guard will not honor (OB-057).  On a permanent turnout
-     * every route is directed at the toe, so "toward the fork" and "both ways" are not answers; `NONE` always is.
+     * Whether a direction can be chosen for this route at all, given what the hardware allows (OB-057):
+     * `directionAllows` ANDs an authored direction with the hardware's restriction, so offering one the hardware
+     * refuses would be a control the guard will not honor.  On a permanent turnout every route is directed at the toe;
+     * `NONE` always is possible.
      */
     public static boolean directionIsPossible(Direction direction, Route route)
     {
@@ -1581,13 +1574,9 @@ public class TileGraph
     }
 
     /**
-     * Every road of a square given the directions wanted on some of them, as its arms can hold them (OB-351; Adam:
-     * *"into spur should simply require S to be green, and out of spur should require W to be green.  Align it so that
-     * the arrows tell the full story."*).
-     *
-     * Each road wanted opens the arms it lets a train leave by and shuts the others it ends at; an arm one road opens
-     * and another shuts stays open; arms no wanted road ends at are left as they are.  Each road then takes the answer
-     * of its two arms, in force.  A square whose arms are not shared (`sharesAnArm`) takes what was wanted as it is.
+     * Every road of a square given the directions wanted on some of them, as its arms can hold them (OB-351): an arm
+     * one road opens and another shuts stays open.  A square whose arms are not shared (`sharesAnArm`) takes what was
+     * wanted as it is.
      */
     public Map<RouteId, Direction> armAnswersFor(TileKey tile, Map<RouteId, Direction> wanted)
     {
@@ -1898,9 +1887,9 @@ public class TileGraph
     }
 
     /**
-     * Which way trains run along a run of plain track, as a direction of its first square's road - or null for a square
-     * that leads no run of two or more, or a run that cannot be read (OB-361).  The narrowest of its squares, which is
-     * what a train finds and what its first square draws.
+     * Which way trains run along a run of plain track, as a direction of its first square's road: the narrowest of its
+     * squares, which is what a train finds (OB-361).  Null for a square that leads no run of two or more, or a run that
+     * cannot be read.
      *
      * @param leader a square
      * @return the run's direction, or null
@@ -1933,9 +1922,8 @@ public class TileGraph
     }
 
     /**
-     * The runs whose squares point opposite ways - one lets trains along it only forward, another only back - so no train
-     * can pass (OB-361).  `normalizeRuns` leaves them as they are: closing them would hide which way was meant behind a
-     * setting that looks chosen, so the setup check says so instead.
+     * The runs whose squares point opposite ways, so no train can pass (OB-361).  `normalizeRuns` leaves them as they
+     * are, and the setup check says so instead.
      *
      * @return each such run, by its leader
      */
@@ -1974,11 +1962,9 @@ public class TileGraph
     private final Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> normalizedRuns = new LinkedHashMap<>();
 
     /**
-     * Brings every run of two or more squares to one direction, its narrowest (OB-361; Adam: *"Any disagreement should
-     * be corrected so that the viewer displays the source of truth, and the editor flags issues, rather than surprising
-     * the user."*): a square that lets trains along it more ways than the run as a whole is given the run's way.  No
-     * train's behavior changes; every square just says it.  A run whose squares point opposite ways is left as it is
-     * (`runsPointingOppositeWays`).  The result is also kept for `getNormalizedRuns`.
+     * Brings every run of two or more squares to one direction, its narrowest, so the viewer shows the source of truth
+     * (OB-361).  A run whose squares point opposite ways is left as it is (`runsPointingOppositeWays`).  The result is
+     * also kept for `getNormalizedRuns`.
      */
     public Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> normalizeRuns()
     {
@@ -2196,10 +2182,8 @@ public class TileGraph
     }
 
     /**
-     * Whether the track leaving a square by one side runs out - at a buffer stop, or where the drawn track simply stops
-     * - before it reaches any of some squares (the sensors), over the track as DRAWN, whichever way trains may run on
-     * it (FR-118).  A walk that comes back round to the square it left goes somewhere, so that side is no dead end; nor
-     * is a side the square has no track by.
+     * Whether the track leaving a square by one side runs out (at a buffer stop, or where the drawn track stops) before
+     * it reaches any of the stops, over the track as DRAWN (FR-118).  A side the square has no track by is no dead end.
      */
     public boolean runsOutLeaving(TileKey from, Side side, Set<TileKey> stops)
     {
