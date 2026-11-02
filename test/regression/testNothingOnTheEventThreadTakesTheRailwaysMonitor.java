@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
  * and controls are stuck."*).
  *
  * This class is the guard with the *list of `synchronized` `Layout` methods*; two guards for one rule come to
- * disagree, so the narrow one that pinned `triageReturnToHome` is gone.
+ * disagree, so there is only this one.
  *
  * What it cannot see: source cannot tell which thread a line runs on.  This is an INVENTORY, not a proof: every call
  * from a user-interface class to one of these methods must appear in the list below, saying which thread it is on and,
