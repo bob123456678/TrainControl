@@ -84,11 +84,8 @@ public class testRouteCommandParity
     }
 
     /**
-     * The command list offers no kind that route execution would silently ignore (OB-141; Adam: "a route command should
-     * not be able to contain s88 sensors. these should only be in the conditions only.").  `MarklinRoute.execRoute` has
-     * no `isFeedback()` branch and no final `else`, so a feedback row sent nothing, logged nothing and was a pure
-     * delay.  The general rule: every kind `canBeACommand` allows must have a branch in `execRoute`, which also catches
-     * adding an `isFeedback` branch without re-enabling the dropdown.
+     * The command list offers no kind that route execution would silently ignore (OB-141): every kind `canBeACommand`
+     * allows must have a branch in `execRoute`.
      *
      * MUTATION: make `canBeACommand` return true for FEEDBACK again and this fails, naming it.
      */
