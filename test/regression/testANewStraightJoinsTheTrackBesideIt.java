@@ -21,25 +21,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A straight dropped between two pieces of track is turned to join them (OB-292).
- *
- * Adam: *"when new straight tracks are placed in the autonomy editor and they would connect two other tracks, they are
- * automatically oriented to connect rather than not."*  A straight came off the palette the way the palette held it, so
- * dropping one into a gap in a north-south line left it lying east-west, joining neither side.
- *
- * OB-360: the same for every other straight-shaped tile - the s88 feedback tile, the signal and the uncoupler, which
- * run through the square like a straight, and the bumper, the tunnel and the link, which end the track at one side.  The
- * through tiles are turned to lie along the track on both sides; the one-ended tiles are turned to face the track beside
- * them.  Adam: *"when placing straight segments, the layout editor will turn a new straight tile to match the path
- * around it.  however, this doesn't apply to straight s88 tiles.  check that it does, and also ake the same check for
- * tunnels, uncouplers, links, signals, and bumpers."*
- *
- * The rule grew with Adam's rulings: a tile with track on one side only meets it; only a tile newly placed from the
- * palette is turned (a pasted copy or a moved tile is not); and every track tile is turned - a curve to connect if it
- * can, a switch to have its base on the track - but not a lamp, a label or a route button.
- *
- * Asked of the editor itself - the palette pick-up and the drop - because the rule is only worth anything where the tile
- * lands.  On a page of its own, in memory: nothing is saved.
+ * A straight dropped between two pieces of track is turned to join them (OB-292), and so is every other
+ * straight-shaped tile (OB-360).  Asked of the editor itself - the palette pick-up and the drop - because the rule is
+ * only worth anything where the tile lands.  On a page of its own, in memory: nothing is saved.
  *
  * MUTATION: place the straight the way the palette holds it again, and this fails; turn it whatever is beside it, and
  * the control fails.
@@ -278,10 +262,8 @@ public class testANewStraightJoinsTheTrackBesideIt
 
     /**
      * A switch is turned so that its base - the end every position of its points shares, where a straight's end would
-     * be - is on the track, guessing among the ways that do (Adam, OB-360: *"the base of a switch behaves like a
-     * straight track would, so that at least something is aligned (for switches, there's always some guessing
-     * involved, which is ok)"*): the nearest turn from the way it was held.  One already based on the track stays as it
-     * was.
+     * be - is on the track, guessing among the ways that do: the nearest turn from the way it was held.  One already
+     * based on the track stays as it was (OB-360).
      */
     @Test
     public void testASwitchLiesWithItsBaseOnTheTrack() throws Exception
