@@ -287,19 +287,11 @@ public final class ConditionOutline
     }
 
     /**
-     * The outline with one condition moved one place up or down.
-     *
-     * Not by moving the LINE: the joining words are lines of their own, so lifting a condition one line puts it next to
-     * the word above rather than past it, and a word with nothing on one side is thrown away when the outline is
-     * straightened.  So within a level the two conditions trade places and every word and level stays where it was:
-     * "A and (B or C)" with C moved up is "A and (C or B)".
-     *
-     * A condition whose neighbor at its own level is a whole group moves past the group instead (FR-144): "(A or B or
-     * C) and D" with D moved up is "D and (A or B or C)", every line keeping its level.
-     *
-     * A condition at the edge of its group, where the word beside it is shallower, crosses into the neighboring group
-     * at its own level (OB-379): "(A and B) or (C and D)" with C moved up is "(A and B and C) or (D)".  With no group
-     * at its level across the edge it does not move: a drag is how a condition leaves a group.
+     * The outline with one condition moved one place up or down.  Within a level two conditions trade places and every
+     * word and level stays where it was ("A and (B or C)" with C moved up is "A and (C or B)"), because the joining
+     * words are lines of their own and a word with nothing on one side is thrown away when the outline is straightened.
+     * Past a whole group at its own level the condition moves past the group (FR-144); at its group's edge it crosses
+     * into the neighboring group (OB-379); with no group across the edge it does not move.
      *
      * @param by -1 for up, 1 for down
      * @return a new list in the new order, or a copy unchanged where there is nowhere to go
@@ -321,9 +313,7 @@ public final class ConditionOutline
 
     /**
      * Moves several conditions one place together (MT-868): each by the rule of `moved`, the one leading the way first,
-     * so a run keeps its order.  Where the leading one has nowhere to go, none moves.  A selection holding a whole
-     * nested group moves by pieces instead, as a drag does: each condition or whole group one item along its own group,
-     * so no group merges into its neighbor.
+     * so a run keeps its order.  A selection holding a whole nested group moves by pieces instead, as a drag does.
      *
      * @param chosen line indices of the conditions; words among them are ignored
      * @param by -1 for up, 1 for down
@@ -628,7 +618,7 @@ public final class ConditionOutline
 
     /**
      * The outline with a new condition above or below a line, at that line's level and joined by its level's word
-     * (FR-147).  On a word line it goes at the word's own level, joined by that word (FR-150), above and below alike.
+     * (FR-147); on a word line, at the word's own level, joined by that word (FR-150).
      *
      * @param by -1 for above, 1 for below
      * @return a new list, or a copy unchanged where the line is not in the outline
@@ -686,8 +676,7 @@ public final class ConditionOutline
 
     /**
      * The lines of `after` an edit changed from `before` (FR-153): those outside the longest run the two share, a word
-     * counting for more than a condition so that two traded conditions show rather than a word between them.  With
-     * nothing new, as after a delete, the first line that differs, or the last where the end went.
+     * counting for more than a condition so that two traded conditions show.
      *
      * @return line indices into `after`; empty where the two are the same
      */
@@ -1146,8 +1135,7 @@ public final class ConditionOutline
     }
 
     /**
-     * The outline with every word of one group the given word (OB-396), each pair of its items joined once: a word
-     * nested where it joins nothing goes too, so choosing a group's word settles whatever `whatIsWrong` said of it.
+     * The outline with every word of one group the given word (OB-396), each pair of its items joined once.
      *
      * @param group a group of `rows`, from `groupsOf`
      * @return a new list, or a copy unchanged where the group is not in the outline
@@ -1216,8 +1204,7 @@ public final class ConditionOutline
 
     /**
      * The outline with these conditions, a run of two or more items of one group and not all of it, wrapped in a new
-     * group one level in, joined by the word that already joined them (OB-396): grouping never changes what they mean,
-     * and the new group's rule is then chosen on its caption.
+     * group one level in, joined by the word that already joined them (OB-396).
      *
      * @param chosen condition lines
      * @return a new list, or a copy unchanged where `canGroup` says no
@@ -1306,10 +1293,7 @@ public final class ConditionOutline
 
     /**
      * The outline with a group split just above one of its conditions (OB-396): the items before it are one part, it
-     * and the items after it the other, a part of two or more items a group with the group's word, a part of one item
-     * that item, and the two parts joined by the other word.  "A and B and C" split at C is "(A and B) or C".  A nested
-     * group whose parent already joins by the other word gives the parent its two parts; otherwise the group stays, its
-     * word the other one, so the meaning is exactly the two parts joined.
+     * and the items after it the other, the two parts joined by the other word.
      *
      * @param chosen one condition line, not the first item of its group
      * @return a new list, or a copy unchanged where `canSplit` says no
@@ -1369,8 +1353,7 @@ public final class ConditionOutline
 
     /**
      * The nested groups Ungroup lifts for a selection (MT-868): the group directly holding each selected condition,
-     * leaving out the top level and any group inside another of them, so a group picked by its caption is lifted whole
-     * and its own nested groups stay groups.
+     * leaving out the top level and any group inside another of them.
      *
      * @param chosen line indices of the selected conditions; words among them are ignored
      * @return the groups, in order; empty where there is nothing to lift
@@ -1406,8 +1389,7 @@ public final class ConditionOutline
     }
 
     /**
-     * The outline with the innermost nested group holding these lines dissolved into its parent, its items joined by
-     * the parent's word (OB-396).
+     * The outline with the innermost nested group holding these lines dissolved into its parent (OB-396).
      *
      * @param word the parent's word, which a parent of one item has nowhere to say
      * @return a new list, or a copy unchanged where these lines are not inside a nested group
@@ -1461,7 +1443,7 @@ public final class ConditionOutline
 
     /**
      * The outline with these conditions moved into a group, before its item `at` (OB-396), each joined by that group's
-     * word.  A nested group all of whose conditions move goes as one; a group they leave empty goes with its word.
+     * word.
      *
      * @param moving condition lines
      * @param group where they go, a group of `rows`
@@ -1508,9 +1490,8 @@ public final class ConditionOutline
     }
 
     /**
-     * The outline with copies of these conditions directly after the last of them, as one run in their order (FR-162).
-     * The pieces are those `movedTogether` moves: a nested group all of whose conditions are chosen is copied whole,
-     * its rule and words with it.  The copies join the group holding the last piece, by its word, as a drop does.
+     * The outline with copies of these conditions directly after the last of them, as one run in their order
+     * (FR-162), the pieces being those `movedTogether` moves.
      *
      * @param chosen line indices of the conditions; words among them are ignored
      * @param word the word of the group `copiedInto` names
