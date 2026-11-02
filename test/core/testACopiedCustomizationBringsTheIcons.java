@@ -14,15 +14,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Copy Customizations carries the custom ICONS, and Cancel puts the old ones back (MT-466).
- *
- * Adam, having copied from a locomotive whose F0 carried an icon: "all icons are cleared (source locomotive only had f0
- * with an icon), but the one customized icon on f0 is not loaded on the target loc."  Both halves come from one
- * omission: the copy wrote the source's function TYPES, triggers and custom flag and never read the local image URLs,
- * and the type change altered which standard icon every other button drew.
- *
- * The rule is `Locomotive.Customizations`, captured and applied as one value, so the copy and the Cancel that undoes it
- * cannot disagree about what a customization is.
+ * Copy Customizations carries the custom ICONS, and Cancel puts the old ones back (MT-466).  The rule is
+ * `Locomotive.Customizations`, captured and applied as one value, so the copy and the Cancel that undoes it cannot
+ * disagree about what a customization is.
  *
  * MUTATION: take the `setLocalFunctionImageURLs` line out of `applyCustomizations` and the first two
  * claims go red - the copy leaves the target with no icon, and Cancel leaves it with the source's.
@@ -170,11 +164,6 @@ public class testACopiedCustomizationBringsTheIcons
     /**
      * Copy Customizations and Cancel leave the locomotive's own customized flag as it was, and saving it stores that
      * flag, not the answer its icons give (OB-245).
-     *
-     * `isCustomFunctions` is derived - any custom icon makes it true.  The Cancel's snapshot recorded that derived
-     * answer, so a locomotive customized by an icon alone came back from a canceled copy with its flag set by the copy,
-     * and the save wrote the derived answer as the flag; deleting the icon afterwards left it customized for ever, and
-     * the Central Station sync never gives a customized locomotive its function types again.
      *
      * MUTATION: snapshot or save the derived answer again, and this fails.
      */
