@@ -344,9 +344,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // If we want to view paths, locomotive must not be running
                     //
                     // A per-locomotive gate, where AutoLocomotiveStatus asks isAutoRunning() about the whole layout, so
-                    // the two disagree: a known limitation, closed on the owner's ruling (OB-164): "The user can rely
-                    // on full autonomy or the panels to send trains more clearly."  The answer is the one gathered for
-                    // this train: equality says it is about the locomotive standing here now.
+                    // the two disagree, by design (OB-164).  The answer is the one gathered for this train: equality
+                    // says it is about the locomotive standing here now.
                     if (locomotive != null && options != null && locomotive.equals(options.locomotive))
                     {
                         List<List<Edge>> paths = options.shown;
@@ -757,11 +756,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The copy a train is put on by the right-click Place, as the paste chooses it (OB-296): the heading over every
-     * copy the train could leave by - one trains may not arrive at included (*"for barred arrival directions, keep the
-     * direction"*) - by `AutonomySession.facingAfterAPaste`; then the copy facing that way by `copyFacing`.  Where no
-     * heading holds, the first copy the menu offers.  The menu's own list is not enough: the copy facing the heading at
-     * a square with a barred side is no station.
+     * The copy a right-click Place puts the train on, as the paste chooses it (OB-296): the heading over every copy the
+     * train could leave by (`AutonomySession.facingAfterAPaste`), then the copy facing it (`copyFacing`); the first
+     * copy the menu offers where no heading holds.  The menu's own list is not enough: the copy facing the heading at a
+     * square with a barred side is no station.
      *
      * @param session the setup, or null
      * @param station the square
@@ -840,11 +838,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         }
 
         // The railway's answer decides whether any of this happens: `moveLocomotive` returns false and logs rather than
-        // throwing, and the placement and facing are written into the setup and saved only for a move the railway
-        // accepted, because the setup is the half that survives a restart.  A menu is grayed when the popup opens and
-        // the action fires at the click, so autonomy started from another window in between leaves a live item over a
-        // running railway (`behaviour/editing-while-running.md` section 6a): the refusal is in the method and this
-        // caller honors it.
+        // throwing, and the setup (the half that survives a restart) is written only for a move the railway accepted.
+        // A menu is grayed when it opens, so autonomy started elsewhere since leaves a live item over a running railway
+        // (`behaviour/editing-while-running.md` section 6a): the refusal is in the method.
         // WHAT THE TRAIN HAD ON THE RAILWAY, before this door moves it.
         org.traincontrol.automation.Point wasOn = null;
 
