@@ -1753,7 +1753,7 @@ public class testMassAssignLengths
     /**
      * A route tile's place reaches the railway as answered, so a leg answered 0 around it counts as measured there
      * (*"0 lengths count as measures"*; OB-273).  A route tile is never asked, so a leg whose every other square was
-     * answered 0 still had one place with no answer.
+     * answered 0 would still have one place with no answer.
      *
      * MUTATION: mark only the squares answered 0, and this fails.
      */
@@ -2988,7 +2988,7 @@ public class testMassAssignLengths
 
     /**
      * The count stops where the berth rule does: at a permanent turnout (OB-233) and at a crossing, as well as at a
-     * switch.  Run on past either, the count left quiet a berth whose longest train the rule refuses.
+     * switch.  Run on past either, the count would leave quiet a berth whose longest train the rule refuses.
      *
      * MUTATION: stop the count at a switch only, and this fails.
      */
