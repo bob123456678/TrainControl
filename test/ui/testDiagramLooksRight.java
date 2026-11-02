@@ -2099,8 +2099,7 @@ public class testDiagramLooksRight
      * The four arrows a caption can end in can all be drawn in the font captions are drawn in.
      *
      * **It asks StationCaption for both halves, and that is the point.**  A test naming its own font and codepoints
-     * watches something other than the code (OB-116 fixed the arrows by changing the FONT, not the character).  A tofu
-     * box on a diagram is the failure this stops.
+     * watches something other than the code.  A tofu box on a diagram is the failure this stops.
      *
      * MUTATION: setting either arrow constant to a codepoint LABEL_FONT cannot draw fails this.
      */
