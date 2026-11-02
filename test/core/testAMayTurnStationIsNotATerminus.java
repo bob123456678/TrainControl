@@ -22,20 +22,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  * "EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a terminus). It is correctly
  * barred from BottomMainC, a terminus."
  *
- * This is OB-205 claim 1 reading the flag that claims 2 and 3 say cannot be read: `AutonomyBuilder` emits the turning
- * copy of a MAY-turn square with `terminus: true`, so the fix was to ask the DOOR rather than the flag.
- *
- * **The question is about the SQUARE, not about this copy of it.**  Measured on Adam's own railway:
- *
- * <pre>
- *   BottomMainB   (eastbound, reverse) terminus     (eastbound) plain
- *   BottomMainC   one copy, a terminus - a compulsory turn, emitted with no plain copy
- * </pre>
- *
- * BottomMainB has a copy a train can stand at without turning, so a non-reversible train is not stranded there.
- * BottomMainC has none: every way to be on that square turns the train, which is what "a terminus it could not leave"
- * means, and `Point.getBlock` knows which copies are one piece of track.  "Some sibling is not a terminus" is true of
- * BottomMainC too, since its westbound copy is a REVERSING point: a way through has to be neither.
+ * The question is about the SQUARE, not this copy of it: BottomMainB has a copy a train can stand at without turning,
+ * BottomMainC, a compulsory turn, has none (OB-205).
  *
  * MUTATION: drop the way-through clause and the BottomMainB claim fails; drop the whole terminus rule and the
  * BottomMainC claim fails; drop `isAutoDestination` and the berth claim fails.
@@ -139,10 +127,9 @@ public class testAMayTurnStationIsNotATerminus
      * The half of a compulsory turn that is spelled `reversing` is refused too (Adam, MT-367: "still offered it for
      * 2-8-4 3505.").
      *
-     * A turning copy carries whichever of two words the builder chose, `stops ? "terminus" : "reversing"`, and the rule
-     * read only the first: BottomMainC (eastbound, reverse) was refused and (westbound, reverse) offered, to the same
-     * locomotive.  To a train that cannot reverse the two words say one thing.  The spelling is arranged: BottomMainC
-     * builds to one copy spelled `terminus`, so it is re-spelled `reversing` here for the length of the claim.
+     * To a train that cannot reverse the builder's two spellings of a turning copy, `terminus` and `reversing`, say one
+     * thing.  BottomMainC builds to one copy spelled `terminus`, so it is re-spelled `reversing` here for the length of
+     * the claim.
      */
     @Test
     public void testTheReversingCopyOfACompulsoryTurnIsRefusedToo() throws Exception
@@ -319,8 +306,7 @@ public class testAMayTurnStationIsNotATerminus
 
     /**
      * On his railway: Return Home names a train of 4 standing on BottomMainB's turning copy, from which nothing it fits
-     * can be reached, rather than searching the whole fleet and answering that no plan was found (OB-325).  Autonomy
-     * does not send a train there; one placed or sent there by hand still stands there.
+     * can be reached, rather than answering that no plan was found (OB-325).
      *
      * MUTATION: drop the first-move scan from `HomeStaging.plan` and this fails.
      */
