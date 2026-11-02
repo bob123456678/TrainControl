@@ -11,18 +11,10 @@ import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * Renaming a locomotive does not take it off the railway.
+ * Renaming a locomotive does not take it off the railway (MT-149).
  *
- * MT-149, filed critical. Adam: "place loc on station.  Rename it.  It is now gone from the station, and in status ???
- * on the layout.  Rename it back, and it doesn't come back.  It should survive the rename everywhere."
- *
- * `sanitizeMultiUnits` evicts the locomotive it is asked about: it walks every Point and clears any that holds a
- * locomotive not `isSimultaneousMultiUnitCompatible` with the one passed in, and that method ends `return
- * !this.hasEquivalentAddress(l)`, so a locomotive compared with ITSELF is declared incompatible.  Both rename doors
- * call it straight after `renameLoc`, so a rename loses the placement, and renaming back does not restore it (the
- * "?????" on the panel is `getLocomotiveLocation` returning null).  It does not bite on placement because
- * `moveLocomotive` calls the same sweep BEFORE putting the locomotive down.  A locomotive cannot conflict with itself,
- * so the sweep skips it.
+ * `sanitizeMultiUnits` must not evict the locomotive it is asked about: a locomotive cannot conflict with itself, so
+ * the sweep skips it.
  * MUTATION this catches: dropping the self test evicts the train and both assertions fail.
  *
  * @author Adam
@@ -119,14 +111,11 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * Renaming a MEMBER of a multi-unit whose head stands on a station leaves the multi-unit on its station.
+     * Renaming a MEMBER of a multi-unit whose head stands on a station leaves the multi-unit on its station (MT-149).
      *
-     * The self-skip above covers a train renamed where it stands.  A member is not where it stands - its head is - and
-     * the sweep the window runs after a rename asks the head whether it is compatible with the renamed member.  A head
-     * is never compatible with its own member (`isLinkedTo`), so the head was cleared from its station: the same loss
-     * as MT-149, on the one rename the self-skip does not reach.  Done as the window does it: the rename, then the
-     * sweep, on a stopped railway (every edit door refuses while autonomy runs, its coast-down and Return Home's
-     * planning included: `isAutonomyRunning`).
+     * The self-skip above does not reach it: a member stands where its head does, and a head is never compatible with
+     * its own member.  Done as the window does it, the rename and then the sweep, on a stopped railway (every edit door
+     * refuses while autonomy runs).
      *
      * MUTATION: sweep for a locomotive that stands nowhere, and this fails.
      */
