@@ -15,10 +15,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 
 /**
- * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).
- *
- * `AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`, so a decision written as
- * `arrived.isTerminus() || shouldReverseAt(...)` would throw the dialog's answer away.  The decision is
+ * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).  The decision is
  * `Layout.turnsOnArrival`, and this class asks it what it DOES, not what its source says.
  *
  * MUTATION: restore the `||` and the first claim fails; drop the `asksAbout` branch and it fails too; make the branch
@@ -328,11 +325,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that cannot reverse is not turned at a square where turning is optional (MT-368).
-     *
-     * `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers FALSE, "no opinion", so `turnsOnArrival` would fall
-     * through to `arrived.isTerminus()`, TRUE at the turning copy of a may-turn square; suppressing the prompt alone
-     * would turn every such train. A COMPULSORY turn is untouched (MT-245): `hasAWayThrough` tells the two apart.
+     * A train that cannot reverse is not turned at a square where turning is optional (MT-368); a COMPULSORY turn is
+     * untouched (MT-245).
      */
     @Test
     public void testATrainThatCannotReverseIsNotTurnedWhereItNeedNot()
@@ -693,9 +687,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train sent by hand to a may-turn square and told to keep its direction is drawn facing the way it will stand
-     * from the moment it stops, not the turning copy's way until its run is done (MT-701). The caption's arrow asks
-     * `copyItWillStandOn` (OB-314), and the icon must too (OB-317). The route end is held open with the route-end
-     * callback, where the re-stand delay sits.
+     * from the moment it stops (MT-701, OB-314, OB-317).
      *
      * MUTATION: take the copy it will stand on out of `DiagramMonitor.markTrain`, and this fails.
      */
@@ -857,12 +849,8 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train told to keep its direction at a square it may turn at is turned all the same where no copy of that square
-     * faces on from the way it came: the end of a line marked "Trains May Change Direction Here", or a may-turn square
-     * one of whose ways in has no way on. Such a square is a compulsory turn in all but its flag, and so for a train
-     * that cannot reverse (MT-245): the model and the decoder agree, which keeps the next journey on its path.
-     *
-     * Two shapes, each sent with the answer keep: no other copy at all, and a plain copy the train's approach cannot
-     * reach (the second with a train that cannot reverse as well).
+     * faces on from the way it came (MT-245): such a square is a compulsory turn in all but its flag.  Two shapes, each
+     * sent with the answer keep: no other copy at all, and a plain copy the train's approach cannot reach.
      *
      * MUTATION: take the compulsory turn out of `Layout.turnsOnArrival`, and this fails.
      */
