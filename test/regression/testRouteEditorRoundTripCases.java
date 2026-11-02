@@ -96,10 +96,9 @@ public class testRouteEditorRoundTripCases
      * accessories the editor draws as one row, so each position is a PAIR of commands, and two identical pairs would
      * send the point to the wrong road.
      *
-     * What this cannot test: Adam's "enable the echo packets option ... and then see if the accessory status is
-     * correctly set, and the icon matches" is a round trip through a Central Station, and there is none on this
-     * machine. So this pins that the three positions are three distinct instructions, each an ordered pair; whether the
-     * station echoes them back stays a hands-on check, and MT-004 stays open for it.
+     * What this cannot test: Adam's echo-packets check is a round trip through a Central Station, and there is none on
+     * this machine.  This pins that the three positions are three distinct instructions, each an ordered pair; MT-004
+     * stays open for the hands-on check.
      */
     @Test
     public void testTheThreePositionsAreThreeDifferentInstructions()
