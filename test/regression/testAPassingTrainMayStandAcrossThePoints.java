@@ -14,17 +14,9 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train is refused for standing across the points only where it stops (MT-333).  Adam: "75 407 DB (len 2) can no
- * longer go from tunnel to bottommaina because of the 1+1 length split around the switch between buttommainapre and
- * bottommaina.  this SHOULD be allowed per the standing rule that this switch blocking should only affect berthes."
- *
- * It was refused one square earlier, because a square the train only PASSES was judged as though it stood there; the
- * standing rule ("make a rule that parking berths cant block any other edges, but not make that check for active
- * stations") was built at the destination only.  Still refusing: the destination (the room past its switch, or its
- * measured route in at a station autonomy may choose (FR-087), and the berth rule at one it may not) and a square the
- * train turns at.  And the protrusion: "if we made 75 407 DB have len 3 and it is parked at bottommaina, other trains
- * should be blocked from going tunnel->bottommainb and c" - a driven train's tail follows the road it came in on
- * (MT-335).
+ * A train is refused for standing across the points only where it stops (MT-333): a square the train only PASSES is not
+ * judged as though it stood there.  Still refusing: the destination and a square the train turns at.  A driven train's
+ * tail follows the road it came in on (MT-335).
  *
  * Each claim runs on its own sandbox copy of the frozen `live-snapshot`, with Adam's measurements set on it: `1 - Main`
  * 7,9 = 1, 10,10 = 2, 13,12 = 1, 19,12 = 1, and nothing else.  Two trains of its own.
@@ -125,11 +117,9 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * Three units are taken at BottomMainA because the measured route in holds them, and four are not (FR-087; Adam,
-     * MT-431: "didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the
-     * station allows the length, and the length would be tracked?").  At a station autonomy may choose, the train is
-     * accepted if the measured track of the route it drives in on holds it back from the destination: Tunnel to
-     * BottomMainA measures one unit and then two.
+     * Three units are taken at BottomMainA because the measured route in holds them, and four are not (FR-087; MT-431).
+     * At a station autonomy may choose, the train is accepted if the measured track of the route it drives in on holds
+     * it back from the destination.
      */
     @Test
     public void testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne() throws Exception
