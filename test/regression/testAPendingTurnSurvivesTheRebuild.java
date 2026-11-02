@@ -21,9 +21,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A destination turn nobody has managed to write down yet survives a setup rebuild.
  *
  * `Layout.reversedOnArrival` holds the reversals the railway performed at a destination and has not yet drained into
- * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, and the carry (OB-183) left this out, so
- * every pending turn died on any setup gesture; the RETRY matters (OB-189): a turn destroyed mid-drain never
- * self-heals, and the next dispatch is offered paths for the wrong heading.
+ * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, so the carry (OB-183) must keep them: a
+ * turn destroyed mid-drain never self-heals (OB-189).
  *
  * The rebuild is RUN, not modeled (a hand-built `Layout` cannot show a call site that does not carry something), and
  * cannot pass vacuously: it is a no-op with no active configuration, with autonomy busy or with no viewer panel, so the
@@ -212,8 +211,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A setup edit that leaves every caption as it was keeps the track diagram on screen, and one that renames a
-     * station builds it again (MT-670).  Adam: *"every click I make in the autonomy editor makes the viewer diagram
-     * flicker.  Necessary?"*
+     * station builds it again (MT-670).
      *
      * MUTATION: rebuild the grid at every setup change again, or never, and this fails.
      */
@@ -310,10 +308,8 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * While anything runs (the spinner's gate) the track diagram draws none of the directions trains may or may not
-     * take, and they come back as the spinner stops: through a run, a Graceful Stop's coast-down and a hand send.
-     * Adam: *"when trains are running in autonomy, we hide the allowances/restrictions on the track diagram."* and, on
-     * MT-686: *"Should be the same gate as the spinner."*
+     * While anything runs (the spinner's gate: a run, a Graceful Stop's coast-down, a hand send) the track diagram
+     * draws none of the directions trains may or may not take, and they come back as the spinner stops (MT-686).
      *
      * MUTATION: draw the arrows whatever runs, gate them on the run alone, or leave the spinner's refresh not asking
      * after them, and this fails.
@@ -858,11 +854,10 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).  Adam: *"It is OK to
-     * show on another page what is going on on another."*  The station map is keyed by the STATION's square, so a
-     * caption on another page is registered under the station's own key; a label is let go of only by a successor on
-     * the SAME page, and the grid stamps each caption with its page.  Two detached labels of one station on two pages
-     * under one owner; then the window writes its captions, as it does on every publish of the running diagram.
+     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).  The station map is
+     * keyed by the STATION's square, and a label is let go of only by a successor on the SAME page.  Two detached
+     * labels of one station on two pages under one owner; then the window writes its captions, as it does on every
+     * publish of the running diagram.
      * MUTATION: let a later page's label evict another page's, and this fails.
      */
     @Test
@@ -940,8 +935,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A pop-up diagram follows a caption that is taken off, and stops writing the station into it (OB-341):
-     * `autonomySetupChanged` brought only the main window's diagram into step, and a pop-up's caption labels are
-     * registered under its own owner.  "Stop Showing" is the remedy the setup check's duplicate-caption error asks for.
+     * `autonomySetupChanged` brought only the main window's diagram into step.  "Stop Showing" is the remedy the setup
+     * check's duplicate-caption error asks for.
      *
      * MUTATION: leave the pop-ups out of `autonomySetupChanged`, and this fails.
      */
@@ -989,8 +984,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /**
      * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
      * bounds remembered for it are not overwritten (OB-341); an explicit page change still sizes the window.  Modeled
-     * on the validator's probe: the Medium pop-up made 160 pixels narrower and 120 shorter and moved, one caption taken
-     * off as the editor takes it off.  Remember Window Location is switched on and put back after.
+     * on the validator's probe; Remember Window Location is switched on and put back after.
      *
      * MUTATION: let the caption redraw pack and save as `refreshDiagram` does, and this fails.
      */
