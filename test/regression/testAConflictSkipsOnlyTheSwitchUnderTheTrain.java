@@ -23,17 +23,7 @@ import org.traincontrol.marklin.MarklinRoute;
  *
  * Adam (MT-247): "1. cancel should cancel everything.  OK should fire everything.  2. if the route is auto triggered:
  * popup, just a notification in the log.  don't run the conflicting switch commands, but do run the power off and
- * others."  Asked what "conflicting" means, he was clear: an accessory command whose switch sits on track a train
- * currently occupies or has reserved.  Everything else in the route still runs.
- *
- * `execRoute` read the ruling as being about the WHOLE accessory group: it asked `accessoryHeldByAutonomy` once before
- * the loop, which returns the FIRST conflicting command, and set `skipAccessories = auto && conflict != null` for the
- * entire run.  One turnout under a train dropped every other turnout in the route, and the per-command check
- * `heldReason(rc)`, the right grain, could never run because the group skip `continue`d past it.
- *
- * "Refused whole" was argued for accessories on the ground that setting three switches of five leaves the layout in a
- * state nobody chose; that is an argument about a route interrupted PART WAY, not for refusing a switch on clear track
- * because a different switch is busy.
+ * others."  The grain is the single command, not the whole accessory group.
  *
  * MUTATION: restoring `boolean skipAccessories = auto && conflict != null;` and the
  * `if (skipAccessories) continue;` at the top of the accessory branch fails
