@@ -147,18 +147,17 @@ public class testNoSelfRecursiveWrappers
     /**
      * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
      *
-     * The extractions leave a one-line delegator on the window, the session, the track editor and the autonomy editor
-     * wherever something outside a moved cluster calls it, and the moved code calls back into its owner through `ui`,
-     * `owner` or `editor`.  A mechanical edit can make a delegator call its own name instead of the collaborator's, or
-     * make the moved body call the owner's delegator that leads straight back to it: either is a StackOverflowError the
-     * compiler accepts.
+     * The extractions leave a one-line delegator on the window, the session, the track editor and the autonomy editor,
+     * and the moved code calls back into its owner through `ui`, `owner` or `editor`.  A mechanical edit can make a
+     * delegator call its own name instead of the collaborator's, or make the moved body call the owner's delegator that
+     * leads straight back to it: either is a StackOverflowError the compiler accepts.
      *
      * Methods are told apart by name AND number of arguments: the editor's `deleteSelection()` hands to the
-     * collaborator's, which calls `editor.deleteSelection(true)`, a different method by design.  The static delegators
+     * collaborator's, which calls `editor.deleteSelection(true)`, a different method by design.  Static delegators
      * (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`, `detectImportFormat`) hand over as `Class.method(` and
      * the collaborator calls the owner's statics as `TrainControlUI.method(`, so both spellings are read.  The
-     * self-call half reads every method of the owner that shares a name with a method of the collaborator, not only
-     * those whose body still names the collaborator: a delegator rewritten to call itself names it nowhere.
+     * self-call half reads every method of the owner that shares a name with one of the collaborator's, since a
+     * delegator rewritten to call itself names the collaborator nowhere.
      *
      * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
      * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, SessionRuns' `runs()` return
@@ -735,12 +734,11 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * Whether a line calls the wrapper's own name from inside its own body, qualified or not.  The bug this file was
-     * written for was `this.syncWithCS2()`, but the mechanical rewrite that produced it also produces the UNQUALIFIED
-     * spelling `syncWithCS2()` (inside a lambda, or after a second pass tidies the `this.` away), which the substring
-     * check alone cannot see.  So a bare occurrence of the name, preceded by neither a dot nor a word character, is
-     * checked as well; it matches `-> name(` and a plain `name(` but not `this.model.name(`, the call the wrapper is
-     * supposed to make.
+     * Whether a line calls the wrapper's own name from inside its own body, qualified or not.  Besides
+     * `this.syncWithCS2()`, the mechanical rewrite also produces the UNQUALIFIED spelling (inside a lambda, or once
+     * `this.` is tidied away), so a bare occurrence of the name, preceded by neither a dot nor a word character, is
+     * checked too: it matches `-> name(` and `name(` but not `this.model.name(`, the call the wrapper is supposed to
+     * make.
      *
      * MUTATION this catches: change the recursive call this file already guards against from `this.syncWithCS2();` to
      * the unqualified `syncWithCS2();`, which the substring check on `"this." + name + "("` no longer matches.
@@ -750,8 +748,8 @@ public class testNoSelfRecursiveWrappers
         String code = withoutComments(line);
 
         // THE SAME ARITY, or it is another overload rather than recursion: `saveState(boolean)` ends `saveState(backup,
-        // !backup);`, one overload handing to the other, and reading the bare name alone reported that working code as
-        // infinite recursion.  A `this.` in front is the same call and gets the same arity test.
+        // !backup);`, one overload handing to the other.  A `this.` in front is the same call and gets the same arity
+        // test.
         java.util.regex.Matcher call = java.util.regex.Pattern.compile(
             "(^|[^.\\w]|\\bthis\\.)" + java.util.regex.Pattern.quote(name) + "\\s*\\(([^)]*)\\)")
             .matcher(code);
