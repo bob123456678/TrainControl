@@ -5,17 +5,11 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * The window still attaches the callback that redraws the timetable and the locomotive status panel.
+ * The window still attaches the callback that redraws the timetable and the locomotive status panel (OB-097).
  *
- * This is the only shape of test that would have caught the bug it exists for.  The callback mechanism was never broken
- * (`testTimetableCaptureThroughARealRun` attaches one itself and proves a real autonomy run fires it); what had gone
- * was the CALLER.  Deleting the GraphStream graph window deleted the four lines that registered this callback on
- * everyone's behalf; nothing failed to compile, no test went red, and two panels stopped being true: the timetable
- * (Adam: capture not working at all) and the locomotive status panel (OB-097).
- *
- * A behavioral test can always attach the callback itself and then tests its own wiring, so this reads the source and
- * insists the window does it: the same device `testStoreCollectionsAreHandledEverywhere` and `testEditorSurfaceRules`
- * use, since some invariants are about what the code SAYS.
+ * It reads the source and insists the window does it: a behavioral test can attach the callback itself and test its
+ * own wiring, while what had gone was the CALLER.  The same device `testStoreCollectionsAreHandledEverywhere` and
+ * `testEditorSurfaceRules` use, since some invariants are about what the code SAYS.
  */
 public class testTheWindowAttachesItsRefreshCallback
 {
