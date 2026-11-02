@@ -270,7 +270,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheSignalFocusIsAlwaysTurnedOffAgain() throws Exception
     {
-        // The CODE, with the comments taken out (a raw read matched the word "finally" inside a comment).
+        // The CODE, with the comments taken out.
         // Every clear in the program, each INSIDE a finally block: the finally's OWN brace has not closed when the
         // clear is reached.
         String source = SourceOf.allCode();
@@ -525,7 +525,6 @@ public class testEditorSurfaceRules
     private static final java.util.regex.Pattern FACING_WRITE =
         java.util.regex.Pattern.compile("(?i:session)(?:\\(\\))?\\.setFacing");
 
-    /** How many times a pattern matches in a text. */
     private static int count(java.util.regex.Pattern pattern, String text)
     {
         int found = 0;
@@ -535,7 +534,6 @@ public class testEditorSurfaceRules
         return found;
     }
 
-    /** How many times a text is in another, without overlaps. */
     private static int count(String text, String needle)
     {
         int found = 0;
@@ -546,11 +544,9 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Every door that runs a route asks whether it is already running.  `executeRoute`'s own comment says every door
-     * comes through it, so the guard belongs there: clicking the row and confirming, or right-clicking and choosing
-     * Execute, must not start a second run.  The button graying is the AFFORDANCE and the check inside executeRoute the
-     * GUARD (OB-057); the play-button branch must NOT ask again, since a second copy per door is how the other two came
-     * to be missing.
+     * Every door that runs a route asks whether it is already running.  The check sits inside `executeRoute`, which
+     * every door comes through (the GUARD, OB-057); the button graying is only the AFFORDANCE, and the play-button
+     * branch must NOT ask again, since a second copy per door is how the other two came to be missing.
      *
      * MUTATION: moving the check back out of `executeRoute` and into the play-button branch fails both halves of this;
      * putting `routesExecuting` into the window's own `RouteListMouseClicked` fails the last one.
@@ -1712,9 +1708,8 @@ public class testEditorSurfaceRules
     @Test
     public void testDrawingAnAccessoryDoesNotCreateOne() throws Exception
     {
-        // Asked by what each call is made on, since the registering form has callers that are not paints.  What may
-        // remain are the declarations, a locomotive waiting for an accessory it has commanded, its delegation to its
-        // station, and the API example.
+        // Asked by what each call is made on, since the registering form has callers that are not paints; what may
+        // remain are the declarations and a few delegations.
         int registering = SourceOf.occurrences("getAccessoryState(")
             - SourceOf.occurrences("boolean getAccessoryState(")
             - SourceOf.occurrences("this.getAccessoryState(id, type)")
@@ -2304,8 +2299,7 @@ public class testEditorSurfaceRules
      * The autonomy editor says which station the pointer is on.
      *
      * Adam: "on hover of a tile in the autonomy editor, show the station name as the tooltip." The name is asked of the
-     * SESSION, not of a nearby caption: the square under the pointer usually has none, which is the case this exists
-     * for (OB-091 put back the outline, so the tooltip is the part to guard).
+     * SESSION, not of a nearby caption: the square under the pointer usually has none.
      *
      * MUTATION: reading the name off a caption, or dropping the setToolTipText call, fails this.
      */
