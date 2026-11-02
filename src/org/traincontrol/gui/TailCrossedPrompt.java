@@ -1366,9 +1366,8 @@ public class TailCrossedPrompt
      * One road back, by the METAL it runs over: the square it comes from and the places the rail crosses (OB-276).
      * `RampDown (northbound, reverse) -> BottomSecondary` and `RampDown (southbound) -> BottomSecondary` run over
      * exactly the same places: the turning copy of the northbound lane leaves south by the same rail as the southbound
-     * lane.  Keyed by LANE they would be two roads and the list would offer one answer twice.  A balloon's two ends are
-     * still
-     * two roads (different rails, different places).  A rail with no places falls back to the lane.
+     * lane.  Keyed by LANE they would be two roads, offering one answer twice.  A balloon's two ends are still two
+     * roads (different rails, different places).  A rail with no places falls back to the lane.
      *
      * @param rail a rail arriving towards the train
      * @return the key
