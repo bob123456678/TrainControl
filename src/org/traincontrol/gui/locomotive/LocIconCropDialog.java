@@ -32,13 +32,9 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
 /**
- * FR-022 - lets the user say WHICH PART of a picture becomes a locomotive icon, instead of scaling the whole picture to
- * the icon's slot.  Hand written rather than built in the form editor, for the reason buildPathPreferenceMenu gives:
- * there is no .form file for this dialog and there must not be one.
- *
- * The crop WINDOW starts at the shape the icon is displayed at and the picture moves underneath it: zoom is a slider
- * and the wheel, panning is a drag.  Nothing here writes to disk; the dialog is handed a decoded image and hands back a
- * new one.
+ * Lets the user say WHICH PART of a picture becomes a locomotive icon, instead of scaling the whole picture to the
+ * icon's slot (FR-022).  Hand written, with no .form file, for the reason buildPathPreferenceMenu gives.  Nothing here
+ * writes to disk: the dialog is handed a decoded image and hands back a new one.
  *
  * @author Adam
  */
@@ -216,16 +212,15 @@ public class LocIconCropDialog extends JDialog
     }
 
     /**
-     * The same, opening on a remembered view and reporting back the one the user settled on (OB-125).  One array in
-     * both directions, overwritten on the way out only when there is a result: canceling must change nothing.
+     * The same, opening on a remembered view and reporting back the one the user settled on (OB-125); canceling
+     * changes nothing.
      *
      * @param parent the component to center on
      * @param source the picture to crop
      * @param outWidth width of the icon to produce
      * @param outHeight height of the icon to produce
      * @param view five numbers to open on, and where the view used is written back; may be null, and is ignored on the
-     * way
-     *        in when it does not describe a view
+     * way in when it does not describe a view
      * @return the cropped icon, or null if the user canceled
      */
     public static BufferedImage crop(Component parent, BufferedImage source, int outWidth,
@@ -646,7 +641,7 @@ public class LocIconCropDialog extends JDialog
 
         /**
          * Opens on a view taken from a previous crop, rather than on the covering center one (OB-125).  Ignored, not
-         * rejected, when it does not describe a view: the sidecar it comes from may have been written over by anything.
+         * rejected, when it does not describe a view.
          *
          * @param view five numbers as {@link #copyViewInto} writes them, or null for the default
          */
