@@ -439,10 +439,9 @@ public final class HomeStaging
 
         if (trivial != null) return new Plan(trivial, empty(), noLocs());
 
-        // A locomotive in two places at once, which nothing below this line can reason about (a locked path that failed
-        // part-way through unlocking leaves reservations that look like trains: reserve() and setLocomotive() write the
-        // same field).  Guessing an origin could drive a real train from a place it is not standing, so it is reported
-        // as NO_PLAN_FOUND with the locomotive's name and the ordinary remedy: place the train on the square it is on.
+        // A locomotive in two places at once (a locked path that failed part-way through unlocking leaves reservations
+        // that look like trains) cannot be reasoned about, and guessing an origin could drive a train from where it is
+        // not standing: NO_PLAN_FOUND with its name and the ordinary remedy, place the train on the square it is on.
         List<Locomotive> ambiguous = new ArrayList<>();
 
         for (Locomotive l : this.start.values())
@@ -497,10 +496,10 @@ public final class HomeStaging
             }
         }
 
-        // Nor one that cannot leave where it stands (OB-325): a reversible train of 4 on a turning copy from which
-        // every reachable station is shorter has its home connected by track and passes the scan above, yet has no
-        // first move, and the search would run the whole fleet for fifteen seconds and name nobody.  Asked with every
-        // other train taken off (`hasAFirstMove`), which makes it a proof: another train only takes moves away.
+        // Nor one that cannot leave where it stands (OB-325): its home is connected by track and passes the scan above,
+        // yet it has no first move, and the search would run the whole fleet for fifteen seconds and name nobody.
+        // Asked with every other train taken off (`hasAFirstMove`), which makes it a proof: another train only takes
+        // moves away.
         for (Locomotive l : this.start.values())
         {
             Point home = this.homes.get(l);
@@ -535,12 +534,11 @@ public final class HomeStaging
 
                 if (!sharesSection(a.getValue(), b.getValue())) continue;
 
-                // Both already parked: nothing arrives, so nothing is checked.  What is proved here is that the SECOND
-                // arrival onto a shared detection section is refused, and both trains stand on their own homes.
-                // Leaving the exemption out would refuse the WHOLE staging run (IMPOSSIBLE), so a third locomotive that
-                // only needed driving to the next platform never moves.  Only one of the two has to be away for the
-                // proof to hold again (testTwoActivePointsSharingASensorAreNeverBothOccupied).  Not reachable on a
-                // layout from the 3.0.0 diagram, where whyNotAHome refuses such a home.
+                // Both already parked: nothing arrives, so nothing is checked.  Leaving the exemption out would refuse
+                // the WHOLE staging run (IMPOSSIBLE), so a third locomotive that only needed driving to the next
+                // platform never moves.  Only one of the two has to be away for the proof to hold again
+                // (testTwoActivePointsSharingASensorAreNeverBothOccupied).  Not reachable on a layout from the 3.0.0
+                // diagram, where whyNotAHome refuses such a home.
                 if (atHome(a.getValue(), locationOf(this.start, a.getKey()))
                     && atHome(b.getValue(), locationOf(this.start, b.getKey()))) continue;
 
@@ -552,9 +550,8 @@ public final class HomeStaging
             }
         }
 
-        // And no cycle scan over the occupancy restrictions (OB-085).  Two homes that each hold back the square the
-        // other's occupant must end on are a real deadlock, but IMPOSSIBLE names locomotives and asserts no arrangement
-        // exists, and the scan that produced that verdict was wrong three times, each time about a railway that works.
+        // No cycle scan over the occupancy restrictions (OB-085): two homes that each hold back the square the other's
+        // occupant must end on are a real deadlock, but IMPOSSIBLE names locomotives and asserts no arrangement exists.
         // A search that exhausts and answers NO_PLAN_FOUND is the weaker and true claim
         // (`behaviour/tiers-and-choice.md` section 1; `testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock`
         // pins it).  The pairwise scan above stays: it is about two homes on ONE DETECTION SECTION, a fact about the
@@ -642,7 +639,7 @@ public final class HomeStaging
             {
                 // A destination only a lap reaches belongs on THIS side: `Layout.bfs` refuses a route that doubles back
                 // through another copy of the square it starts or ends at, so the menu (this oracle) offers none.  The
-                // planner does (Adam ruled the copy rule onto the "menu and autonomy only"), and the RUNTIME agrees:
+                // planner does ("menu and autonomy only" is where the copy rule applies), and the RUNTIME agrees:
                 // `isPathClear` exempts an intermediate copy of the train's own square.
                 if (onlyALapReachesIt(e.getKey(), p)) continue;
 
@@ -769,10 +766,9 @@ public final class HomeStaging
             if (fromTheStart != null) return fromTheStart;
         }
 
-        // And then for ANY plan, not the shortest (OB-230; Adam: "the whole point of the A* is to figure out how to
-        // rearrange other trains to park things when they belong").  On a crowded railway the shortest-plan search runs
-        // out of time while the weighted one finds a longer plan.  Not in place of the retry above: on the railway that
-        // retry exists for, the weighted search finds nothing in its time.
+        // And then for ANY plan, not the shortest (OB-230): on a crowded railway the shortest-plan search runs out of
+        // time while the weighted one finds a longer plan.  Not in place of the retry above: on the railway that retry
+        // exists for, the weighted search finds nothing in its time.
         return astar(new LinkedHashMap<>(this.start), this.searchStarted + SEARCH_BUDGET_MS, ANY_PLAN_WEIGHT);
     }
 
@@ -1032,11 +1028,11 @@ public final class HomeStaging
             {
                 Point next = e.getEnd();
 
-                // The copy rule is NOT applied here, by Adam's ruling: `Layout.bfs` refuses a route passing another
-                // copy of the square it starts or ends at, so the menu and autonomy never offer a lap, but applying it
-                // here lost Return Home plans (`core.testTrainsComeHomeToTheirPlatforms`).  He chose "menu and autonomy
-                // only".  The runtime agrees (`Layout.isPathClear` exempts an intermediate copy of the train's own
-                // square) and `auditAgainstRuntime` makes the matching exemption.
+                // The copy rule is NOT applied here ("menu and autonomy only"): `Layout.bfs` refuses a route passing
+                // another copy of the square it starts or ends at, so the menu and autonomy never offer a lap, but
+                // applying it here lost Return Home plans (`core.testTrainsComeHomeToTheirPlatforms`).  The runtime
+                // agrees (`Layout.isPathClear` exempts an intermediate copy of the train's own square) and
+                // `auditAgainstRuntime` makes the matching exemption.
                 //
                 // Whether the train has been turned round by the time it stands here: part of the STATE
                 // (Candidate.turned).
@@ -1089,7 +1085,7 @@ public final class HomeStaging
                     // static method `isPathClear` asks, so the two cannot disagree (OB-073).
                     //
                     // The room is asked as `measuredRoomAtTheEndOf`, not the whole of `whyTooLongForThisRoute`, whose
-                    // station capacity and per-square room tests made this planner STRICTER than the runtime.  A
+                    // station capacity and per-square room tests would make this planner STRICTER than the runtime: a
                     // station autonomy may choose takes a train its measured route in holds (FR-087), so the relaxation
                     // lives in `theApproachItselfHoldsIt` and both sides ask it.
                     Integer room = Layout.measuredRoomAtTheEndOf(route, loc);
