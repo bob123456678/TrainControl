@@ -817,8 +817,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * Works out why the train has nowhere to go and puts it on the line as its tooltip.  OFF the event thread (OB-079):
      * explainDestinations takes the Layout's monitor, which a dispatch holds across its per-command sleeps, so hovering
-     * while a train was being dispatched froze the window.  The tooltip arrives a moment later, and nothing is shown
-     * meanwhile because a tooltip that changes under the pointer reads as a glitch.
+     * during a dispatch would freeze the window.  The tooltip arrives a moment later, and nothing is shown meanwhile
+     * because a tooltip that changes under the pointer reads as a glitch.
      */
     private void workOutWhy()
     {
