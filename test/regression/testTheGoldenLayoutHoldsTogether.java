@@ -30,13 +30,10 @@ import org.traincontrol.marklin.file.CS2File;
  * Adam's own railway, read and checked, and never written to.  Every other test runs against `test/test_layout`, a
  * frozen copy, so the suite otherwise knows only what was true on the day the copy was taken.
  *
- * What this asserts is deliberately narrow: things that must be true of ANY layout (internal consistency: the setup
- * names track the diagram has, the numbering agrees with itself, nothing was written).  It is not a ratchet on his
- * data, because a test that counted things would go red every time he worked on the railway.
+ * What this asserts is deliberately narrow: things that must be true of ANY layout.  It is not a ratchet on his data.
  *
- * The `@AfterClass` check is about this suite, not the railway: two test classes start the real window, which loads
- * whatever the saved UI state names, and the battery once left it modified on every run unnoticed.  It runs LAST,
- * after every `@Test`, because a fingerprint taken as the first `@Test` could not see a write made by a later one.
+ * The `@AfterClass` check is about this suite, not the railway.  It runs LAST, after every `@Test`, because a
+ * fingerprint taken as the first `@Test` could not see a write made by a later one.
  *
  * Failed, not skipped, when the folder is not there: `cs2_sample_layout` is tracked, so the battery always has it
  * (FR-136).
@@ -155,13 +152,9 @@ public class testTheGoldenLayoutHoldsTogether
     }
 
     /**
-     * What the reversal-length guard can actually judge on the real railway.  `reversalsWithoutLength` is armed by
-     * `measuresAnyTrack()`: ONE measured square anywhere turns the notice on for every square trains turn round at.
-     * His railway had six measured squares, all on one test page, against 71 points, so the notice was armed with
-     * nothing to say about almost every reversal (FR-136 1b).
-     *
-     * This measures rather than demands: how much he has measured changes as he works.  What it refuses is armed and
-     * unable to answer anything.  The count is put in the message either way.
+     * What the reversal-length guard can actually judge on the real railway (FR-136 1b).  This measures rather than
+     * demands: how much he has measured changes as he works.  What it refuses is armed and unable to answer anything.
+     * The count is put in the message either way.
      */
     @Test
     public void testWhatTheReversalGuardCanJudgeHere()
