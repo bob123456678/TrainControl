@@ -7,11 +7,10 @@ import org.traincontrol.gui.widgets.AxisRuler;
 /**
  * FR-057: the column and row numbers around a track diagram.
  *
- * The one thing that can be wrong here and look right is the NUMBER.  A diagram is drawn from its left-most and
- * top-most track rather than from zero, so a ruler that printed cell indices would be neat, aligned and off by the
- * offset, while every warning names a square as `page:x,y` in the diagram's own numbering.  So the assertions read
- * the digits back off a painted image rather than trusting the drawing code; painting into a `BufferedImage` needs
- * no window.
+ * The one thing that can be wrong here and look right is the NUMBER: a diagram is drawn from its left-most and top-most
+ * track rather than from zero, so a ruler that printed cell indices would be neat and off by the offset, while every
+ * warning names a square as `page:x,y` in the diagram's own numbering.  So the digits are read back off a painted image
+ * (into a `BufferedImage`, no window).
  *
  * @author Adam
  */
@@ -229,9 +228,9 @@ public class testTheDiagramPrintsItsCoordinates
             "with nowhere usable to look this must say so, not invent a rectangle");
     }
     /**
-     * A child standing in the gutter does not rub out the number underneath it (OB-172).  `JComponent.paint` calls
-     * `paintBorder` and THEN `paintChildren`, so `LayoutGrid.newDiagramContainer` paints the ruler again at the end of
-     * its `paint()` override (the end of `paintChildren` did not work: Swing hands each child its own graphics there).
+     * A child standing in the gutter does not rub out the number underneath it (OB-172):
+     * `LayoutGrid.newDiagramContainer` paints the ruler again at the end of its `paint()` override, since
+     * `JComponent.paint` calls `paintBorder` and THEN `paintChildren`.
      *
      * MUTATION: removing that block fails this.  The first assertion is what stops the mutation passing by painting
      * nothing at all.
