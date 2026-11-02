@@ -9,13 +9,8 @@ import org.traincontrol.util.I18n;
  * Why a train cannot start, and why a station is not offered to it or cannot be reached: the sentences Why not Moving?
  * shows (FR-136).
  *
- * The railway keeps its fields, its monitor and every public and `synchronized` method; each method here is the body of
- * a one-line method there, or a private helper only these call.  Nothing here takes a lock: a caller holding the
- * railway's monitor still holds it, and a call back into the railway re-enters it.
- *
- * A call from one of these methods to another stays here: `explainCannotStart(Locomotive, boolean)` ends in this
- * class's own `explainCannotStart(Locomotive)`, because `owner.explainCannotStart(loc)` would go out to the railway's
- * delegator and come straight back (nothing overrides it; Layout has no subclass).
+ * Nothing here takes a lock: a caller holding the railway's monitor still holds it.  A call from one of these methods
+ * to another stays here, never out through the railway's delegator, which would come straight back.
  */
 final class LayoutExplanations
 {
@@ -58,17 +53,7 @@ final class LayoutExplanations
 
     /**
      * Why autonomy will never start a train standing here: nothing it may choose can be reached from this copy
-     * (OB-299).  A copy of a station can have a way out and still reach no station autonomy may choose, and a train put
-     * down on one (OB-296) is never started; the station's own reason says nothing about the copy.
-     *
-     * The remedy depends on the square's other copies.  Where one reaches a station and a train may be started from it,
-     * turning the train round puts it there.  Where none does, what helps is a station reachable from here that
-     * autonomy may choose (`canReachAnyDestination`: in service and not a turning copy).  "Turn it round" is offered
-     * only to a copy a train may be started from, or it could send the operator onto a copy that is switched off or
-     * barred.
-     *
-     * Autonomy's reason only: a train sent by hand may go to a berth autonomy never chooses, so the hand's question,
-     * `explainCannotStart(loc, true)`, does not ask it.
+     * (OB-299).  Autonomy's reason only: a train sent by hand may go to a berth autonomy never chooses.
      *
      * @return the reason, or null where a station can be reached
      */
@@ -157,18 +142,9 @@ final class LayoutExplanations
 
         if (loc != null && end.excludes(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 
-        // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (OB-205).  This narrows the terminus ruling
-        // quoted at `isPathClear`, made for a BERTH: a square autonomy never chooses (`isAutoDestination` off) is
-        // somewhere the operator deliberately puts a train away; an ordinary terminus is a place a non-reversible train
-        // cannot leave.
-        //
-        // **IT IS A QUESTION ABOUT THE SQUARE, NOT ABOUT THIS COPY OF IT** (MT-367).  `isTerminus()` cannot be read for
-        // this (`AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`), so ask whether
-        // there is ANY way to stand on the square without being turned round: `getBlock` says which Points are one
-        // piece of track, and a way through is a copy that is neither a terminus nor a reversing point.  The copy asked
-        // about is tested the same way, since a turning copy is a "terminus" or a "reversing point" by whether a train
-        // may stop there, and to this train both mean turn round here.  AND ASKED OF THE WAYS INTO THIS COPY: a copy
-        // whose ways in have no copy facing on turns a train there whatever was answered.
+        // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (OB-205), unless it is a berth: a square autonomy
+        // never chooses.  It is a question about the square, not this copy of it: `isTerminus()` cannot be read for
+        // this, so ask whether any way of standing on the square does not turn a train round (MT-367).
         if (loc != null && !loc.isReversible() && (end.isTerminus() || end.isReversing())
             && end.isAutoDestination()
             && (!owner.hasAWayThrough(end) || owner.noCopyFacesOnFromAnyWayIn(end)))
