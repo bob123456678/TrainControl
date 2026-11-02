@@ -425,8 +425,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * A rebuild does not change the lists a reader is already walking (OB-298): `AutonomyBuilder.splitSides` iterated
-     * `getEdges()` while a rebuild cleared and refilled it in place.  A rebuild now hands over new lists when whole.
+     * A rebuild does not change the lists a reader is already walking (OB-298): `AutonomyBuilder.splitSides` iterates
+     * `getEdges()`, so a rebuild hands over new lists when whole instead of clearing and refilling in place.
      *
      * MUTATION: clear and refill the lists in place again, and this fails.
      *
@@ -464,9 +464,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The session hands out a reducer only once it is reduced (OB-298).  `AutonomySession.rebuild` assigned the new
-     * reducer to the field a line before reducing it, so a build asking in between walked lists being filled; swapping
-     * lists inside the reducer would not reach that.
+     * The session hands out a reducer only once it is reduced (OB-298): a build asking in between would walk lists
+     * being filled, which swapping lists inside the reducer would not prevent.
      *
      * MUTATION: assign the field before `reduce()` again, and this fails.
      *
@@ -735,8 +734,8 @@ public class testAutonomyDiagramReducer
     /**
      * The room walk stops at a switch that can be thrown AND at a permanent turnout, but not at a crossing.
      *
-     * A berth BEYOND a permanent turnout had the track past the points counted as room, so a four-unit train was
-     * admitted to a two-unit berth and came to rest fouling the merge (OB-233).  A train passing a permanent turnout
+     * A berth BEYOND a permanent turnout must not count the track past the points as room (OB-233): a four-unit train
+     * would be admitted to a two-unit berth and come to rest fouling the merge.  A train passing a permanent turnout
      * chooses nothing, so it is not a switch for ROUTING, only for where a train may REST; a crossing is no fork at
      * all.  `isSwitch()` is shared with the drawing code and the editor, so it is not widened: both walks ask
      * `boundsTheRoom`, and this asserts the ROOM NUMBER rather than the predicate.
@@ -1020,8 +1019,8 @@ public class testAutonomyDiagramReducer
 
     /**
      * Two ways round between the same pair of sensors must not become two edges.  An edge's identity is its pair of
-     * Point NAMES, so a passing loop emitting two like-named edges made createEdge throw and parseAuto invalidate the
-     * WHOLE configuration.
+     * Point NAMES, so a passing loop emitting two like-named edges would make createEdge throw and parseAuto invalidate
+     * the WHOLE configuration.
      */
     @Test
     public void testTwoRoutesBetweenTheSameSensorsBecomeOneEdge() throws IOException
@@ -1642,8 +1641,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * A run that crosses one square twice, on the square's two separate tracks, is still a run: the walk marked a
-     * square visited by coordinates alone, so the second crossing looked like a circle and the run vanished silently.
+     * A run that crosses one square twice, on the square's two separate tracks, is still a run: a square marked visited
+     * by coordinates alone would make the second crossing look like a circle and the run vanish silently.
      */
     @Test
     public void testARunMayCrossTheSameSquareTwice() throws Exception
@@ -1769,8 +1768,8 @@ public class testAutonomyDiagramReducer
 
     /**
      * A length set on a station counts toward the edge that arrives there: the tile a train ARRIVES on is part of the
-     * journey, and counting each edge's end counts every tile once.  A sum of only the track BETWEEN sensors left a
-     * user with lengths on platforms and every edge at zero.
+     * journey, and counting each edge's end counts every tile once.  Summing only the track BETWEEN sensors would leave
+     * lengths on platforms and every edge at zero.
      */
     @Test
     public void testALengthOnAStationCountsTowardTheEdgeIntoIt() throws IOException
@@ -1806,7 +1805,7 @@ public class testAutonomyDiagramReducer
      *     A ---- X ---- R      X refuses arrivals from A's side; R is a reversing point.
      *
      * A train runs A to X the wrong way round, carries on to R, turns, and comes back into X by its other side, where
-     * it may stop.  The build says X is reachable; `findPath` refused the first hop into X, so R was never reached.
+     * it may stop.  The build says X is reachable, so `findPath` must not refuse the first hop into X.
      *
      * MUTATION: moving the refusal back onto the hop fails this.
      */
@@ -1867,8 +1866,8 @@ public class testAutonomyDiagramReducer
 
     /**
      * The two roads of a double curve are separate places; a crossing's two roads are one.  `TilePorts` gives a double
-     * curve two curves in opposite corners with no rail between them; keyed by the tile alone they were rivals, so
-     * `deriveLocks` locked them against each other and the tail walk blamed the road the train is not on.  The
+     * curve two curves in opposite corners with no rail between them; keyed by the tile alone they would be rivals, so
+     * `deriveLocks` would lock them against each other and the tail walk blame the road the train is not on.  The
      * crossing is the control.
      *
      * @throws IOException from the fixture
