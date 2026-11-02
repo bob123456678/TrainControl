@@ -32,10 +32,8 @@ import org.traincontrol.util.I18n;
 /**
  * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
  *
- * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the question about a
- * configuration of that name and the messages it shows - answered from a thread of its own, as he would answer them.
- * What each import then says, logs and leaves in the setup is what MT-491, MT-501, MT-502, MT-582 and MT-298 ask him to
- * read.
+ * The door is `AutonomyViewerPanel.importConfiguration`, answered from a thread of its own, as he would answer it.
+ * What each import then says, logs and leaves in the setup is what MT-491 and MT-298 ask him to read.
  *
  * @author Adam
  */
@@ -652,9 +650,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * A bundle imported into the configuration in use, by its name, is refused and changes nothing: it is imported
-     * under another name and chosen from there (OB-183).  The reload after it would capture the running railway
-     * straight back over the bundle, and its placements are not where the running railway's trains stand.  An old file
-     * under that name is not refused: it fills gaps and places no train, as the claims below say.
+     * under another name and chosen from there (OB-183).  An old file under that name is not refused: it fills gaps and
+     * places no train, as the claims below say.
      *
      * MUTATION: import into the configuration in use again, or refuse and then ask to replace it anyway, and
      * this fails.
@@ -724,9 +721,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old file imported into the configuration in use, by its name, fills what it does not have and places none of
-     * the file's trains: where a train stands is the running railway's to say (OB-183).  What the file brings, a
-     * priority the configuration had lost, stays after the reload, and the question asked says the file's trains are
-     * not placed.
+     * the file's trains: where a train stands is the running railway's to say (OB-183).  The question asked says the
+     * file's trains are not placed.
      *
      * MUTATION: refuse the name again, place the file's trains on the running railway, leave the capture to the reload,
      * or ask the question any configuration is asked, and this fails.
