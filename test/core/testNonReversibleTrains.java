@@ -320,8 +320,8 @@ public class testNonReversibleTrains
 
     /**
      * Every door into `executePath` either asks a person or has nobody to ask.  A new door written with four arguments
-     * inherits `ALWAYS_REVERSE` silently and would never ask, so the
-     * census counts: the two hand-driven doors pass a prompt, the two unattended ones take the shorter overload.
+     * inherits `ALWAYS_REVERSE` silently and would never ask, so the census counts: the two hand-driven doors pass a
+     * prompt, the two unattended ones take the shorter overload.
      */
     @Test
     public void testEveryManualDoorHandsOverAPrompt() throws Exception
@@ -1241,7 +1241,7 @@ public class testNonReversibleTrains
 
     /**
      * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus (OB-205): a may-turn
-     * destination was reversed without a direction prompt even when the train was reversible.
+     * destination must not be reversed without a direction prompt when the train is reversible.
      *
      * `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus: true`, so `isTerminus()` cannot
      * tell it from a compulsory terminus and both doors read that flag.  The distinction cannot be drawn from the
