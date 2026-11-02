@@ -581,10 +581,9 @@ public class testAutonomyDiagramTiles
     }
 
     /**
-     * The same link, once its destination page is left out of autonomy, is a warning (OB-150): an arrow to an excluded
-     * page cannot be paired, so an error would name a fault whose only remedy is switching the arrow off. Written
-     * beside the test above because the two must disagree; a rule that always answers "outside autonomy" would turn
-     * OB-150 off without failing anything.
+     * The same link, once its destination page is left out of autonomy, is a warning (OB-150).  Written beside the test
+     * above because the two must disagree; a rule that always answers "outside autonomy" would turn OB-150 off without
+     * failing anything.
      */
     @Test
     public void testAnUnpairedLinkToAnExcludedPageDoesNotBlock() throws Exception
