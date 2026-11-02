@@ -20,24 +20,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train is refused a berth it does not fit in, whether or not it has to back into it.
+ * A train is refused a berth it does not fit in, whether or not it has to back into it (MT-262).
  *
- * Adam, triaging MT-262: "in the current setup, '75 407 DB' (length 4) is allowed to manually be sent from
- * bottommainpost to bottomlongpark, even though track segments between the current position and there are 1+1 = 2 and
- * there is no notice that can help state/debug this.  also, that path is not shown in the 'why not moving' view."  His
- * ruling was to refuse the send.
- *
- * The room rule judges every kind of station, not only where the path ends somewhere the train would turn round
- * (`Layout.isPathClear` asks `measuredRoomToReverseInto` for any path).  A train always comes to rest with its head
- * at the destination sensor, so its tail extends back over the run in any kind of station
- * (`edgesCoveredByStandingTrains` models it that way; Adam's example is a THROUGH platform: "bottommainc should
- * currently be blocked since a train of length 4 is standing at bottommainb, which has a length of 1 leading up to
- * its switch.").
- *
- * The second half is the explanation: `explainDestinations` must not stop at `barredFromAutonomy`, so a berth marked
- * "not an automatic destination" (a parking track, where a person sends a train by hand) says why the train does
- * not fit rather than only "Set not to be chosen automatically."
- *
+ * The room rule judges every kind of station: a train always comes to rest with its head at the destination sensor,
+ * so its tail extends back over the run (`Layout.isPathClear` asks `measuredRoomToReverseInto` for any path).  And
+ * `explainDestinations` must not stop at `barredFromAutonomy`, so a manual-only berth says why the train does not fit.
  * MUTATION: putting the `isTerminus() || isReversing()` fence back around the room rule in
  * `isPathClear` fails `testAThroughBerthTooShortIsRefused`; dropping the length arm from
  * `explainDestinations` fails `testTheWhyNotMovingViewSaysSoForAManualOnlyBerth`.
@@ -225,16 +212,12 @@ public class testAManualSendIsRefusedABerthTooShort
     }
 
     /**
-     * The window's reason for a manual-only berth is the BERTH rule as well as the length rule.
-     *
-     * MT-262's ruling is that a physical refusal outranks a preference, and there are two: the train does not fit down
-     * the route, and the train fits but its body would lie across a road something else uses.  `isPathClear` asks both,
-     * and so does the staging planner; this branch must ask both.
+     * The window's reason for a manual-only berth is the BERTH rule as well as the length rule (MT-262: a physical
+     * refusal outranks a preference).
      *
      * The fixture separates the two: fifty units of room after the switch, so the length rule admits the train, and a
-     * two-unit train whose body claims the neck of the berth, metal a second road shares.  The assertion is agreement
-     * with `whyABerthCannotHoldIt` itself rather than a copy of its sentence (a second spelling of a rule is this
-     * project's most repeated defect).
+     * two-unit train whose body claims the neck of the berth.  The assertion is agreement with `whyABerthCannotHoldIt`
+     * itself rather than a copy of its sentence.
      *
      * MUTATION: drop the berth arm from `whyNoRouteFitsTo` and the reason falls back to the standing bar.
      */
