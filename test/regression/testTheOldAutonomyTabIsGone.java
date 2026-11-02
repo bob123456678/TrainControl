@@ -28,17 +28,9 @@ import support.SourceOf;
 
 /**
  * Autonomy needs a layout stored on this computer: the old JSON tab and its file are gone (OB-254), and a Central
- * Station layout's Autonomy menu offers the way in.
- *
- * The Load Autonomy Configuration tab (a JSON text area, Validate, Load, Export, a blank graph, the hidden auto-save
- * box) was a second autonomy system with a file of its own, autonomy.json, read on every start and written on every
- * exit, shown wherever a layout could not hold a diagram setup.  Adam: "Remove it, require a local copy for autonomy."
- * And of that layout's Autonomy menu, grayed whole there since OB-202: "Yes, open the autonomy menu with everything
- * but those 2 greyed" (the download offer, OB-093, and Documentation).
- *
- * On a layout with no local copy, reached as a window that STARTED on one has it: the Autonomy slot still holding the
- * placeholder the form puts there, and the switch's own reset.  A window cannot start on a Central Station layout in
- * simulation (it makes the demo layout), so it is started on a sandbox and put back into that state.
+ * Station layout's Autonomy menu offers the way in (OB-202, OB-093).  On a layout with no local copy, reached as a
+ * window that STARTED on one has it; a window cannot start on a Central Station layout in simulation (it makes the demo
+ * layout), so it is started on a sandbox and put back into that state.
  *
  * MUTATION: put the tab back for a layout with no local copy, or write autonomy.json on exit again, or gray the menu
  * there again, or leave it unbuilt for a layout with no session, and the matching claim fails.
@@ -251,11 +243,7 @@ public class testTheOldAutonomyTabIsGone
 
     /**
      * Where there is no Central Station layout to download, the Autonomy menu offers a new layout - the Layouts menu's
-     * own Create New Layout (MT-548).
-     *
-     * Adam: "works, but what is the cs3 has no layout?  give the user the choice to either download or create a new
-     * one, which redirects to the corresponding option under layouts."  Both are offered under the Layouts menu's own
-     * names, each grayed exactly when its Layouts item would do nothing.
+     * own Create New Layout (MT-548), each offer grayed exactly when its Layouts item would do nothing.
      *
      * MUTATION: offer the download alone again, or send Create New Layout anywhere but the Layouts menu's own, and this
      * fails.
@@ -350,12 +338,8 @@ public class testTheOldAutonomyTabIsGone
 
     /**
      * Open Layout starts at this computer's last layout folder, even with the Central Station's layout switched to
-     * (OB-308).
-     *
-     * Adam: "layouts -> open layout should default to the last used local layout folder.  this seems like a
-     * regression".  The chooser started at the layout folder preference, which switching to the Central Station's
-     * layout empties; the last folder is remembered on its own now and the chooser opens beside it with it selected.
-     * This class's window started on a sandbox folder and was then switched as the Central Station switch switches it.
+     * (OB-308).  This class's window started on a sandbox folder and was then switched as the Central Station switch
+     * switches it.
      *
      * MUTATION: forget the folder with the switch, or open the chooser inside it, and this fails.
      */
