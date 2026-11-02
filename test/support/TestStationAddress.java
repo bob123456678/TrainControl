@@ -37,11 +37,8 @@ public final class TestStationAddress
     }
 
     /**
-     * An address a connection to fails at once, before anything is sent: the limited broadcast address.
-     *
-     * With no address set, an init syncs from the application's own, 127.0.0.1 here, and Windows refuses a local
-     * connection only after its retries - so both of the sync's fetches waited out CS2File.CONNECT_TIMEOUT_MS, four
-     * seconds an init, for a sync that fails either way (FR-136).
+     * An address a connection to fails at once, before anything is sent: the limited broadcast address.  With no
+     * address set, an init syncs from 127.0.0.1, which Windows refuses only after its retries (FR-136).
      */
     public static final String NOWHERE = "255.255.255.255:1";
 
