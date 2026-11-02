@@ -29,17 +29,11 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train pasted onto a may-reverse square faces the way the operator said, on the railway itself.
- *
- * Adam, MT-394: "Pasting 75 407 DB on BottomMainB makes it face east regardless of the user's choice.  Check how this
- * passed our internal tests."  The claim written for the paste read the SOURCE for the lines that write the answer into
- * the setup; nothing asked where the train ended up.  The railway encodes a train's direction by which copy of a square
- * it stands on, and the paste had already chosen that copy before asking (`getAutonomyPointForTile`: "with none
- * [occupied], any copy will do"), which on an empty BottomMainB is the east one.
- *
- * So this drives a real paste through the window's own key door, with the two questions answered by the test (a modal
- * dialog hung this suite once), and asks the running layout which copy the train stands on.  Asked both ways, so
- * whichever copy a broken paste lands on, one claim is about the other heading and fails.
+ * A train pasted onto a may-reverse square faces the way the operator said, on the railway itself (MT-394).  The
+ * railway encodes a train's direction by which copy of a square it stands on, so this drives a real paste through the
+ * window's own key door, with the two questions answered by the test (a modal dialog hung this suite once), and asks
+ * the running layout which copy the train stands on.  Asked both ways, so whichever copy a broken paste lands on, one
+ * claim is about the other heading and fails.
  *
  * @author Adam
  */
@@ -153,10 +147,8 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
     /**
      * A train pasted onto a square that is no station says it can only be placed at a station, and asks nothing first
-     * (OB-365).  Through the user's own keys: Control+X over the square while it is a station puts the train on the
-     * clipboard, and Control+V over it once it is none is refused.  Real dialogs, answered by
-     * {@link support.Answering}, which keeps what each one said: the only thing asked is the notice.  The train stays
-     * on the clipboard for the next square.
+     * (OB-365).  Real dialogs, answered by {@link support.Answering}, which keeps what each one said: the only thing
+     * asked is the notice.
      *
      * MUTATION: take the station check out of the paste door in TrainControlUI and the questions are asked again, so
      * this fails.
