@@ -20,19 +20,15 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Unavailable While Occupied is answered with stations, by the list and by a click alike.
+ * Unavailable While Occupied is answered with stations, by the list and by a click alike (MT-376).
  *
- * Adam, MT-376, twice: *"works, but exclude non-station points from the list entirely"*, and
- * then *"if there are no stations on the diagram yet, the 'choose on diagram' button should be greyed out
- * to match the message."*
+ * Adam, twice: *"works, but exclude non-station points from the list entirely"*, and then *"if there are no stations
+ * on the diagram yet, the 'choose on diagram' button should be greyed out to match the message."*  The two are one
+ * rule at two doors: the click refuses what the list leaves out, with the list's own exception for an entry already
+ * stored.
  *
- * **The two are one rule at two doors.**  The list became stations only; the click on the diagram went on
- * accepting any square autonomy routes over.  A grayed button beside "nothing to choose" is only true if
- * the click it stands for would find nothing either - so the click now refuses what the list leaves out,
- * with the list's own exception for an entry already stored.
- *
- * On the frozen railway (OB-111).  The dialog itself is modal and is not opened; what it shows is built by
- * `nothingToPickButton`, and the rule a click is judged by is `whyNotABlocker`, both asked directly.
+ * On the frozen railway (OB-111).  The dialog itself is modal and is not opened; `nothingToPickButton` and
+ * `whyNotABlocker` are asked directly.
  *
  * MUTATION: delete the station clause from `whyNotABlocker` and the first claim fails.
  *
