@@ -9,11 +9,8 @@ import org.traincontrol.util.I18n;
 /**
  * The autonomy editor's answer to Why Not Moving?: for the train on the clicked square, every station it might be
  * sent to and why each was refused (FR-080), composed on the WhyRenderer thread and handed back to be painted
- * (FR-136).
- *
- * The panel keeps `composeWhy` as a one-line call to the method of the same name here, and every field: this reads
- * them through `editor`.  Its settle and await take the panel's `whySettled`; the railway's monitor is taken by the
- * Layout calls the answer is made of, off the event thread.
+ * (FR-136).  Reads the panel's fields through `editor`; the railway's monitor is taken by the Layout calls the answer
+ * is made of, off the event thread.
  */
 final class EditorWhy extends SettledQuestion
 {
@@ -25,10 +22,8 @@ final class EditorWhy extends SettledQuestion
     }
 
     /**
-     * Composes the answer on a worker thread rather than painting one: the stations autonomy could choose, then the
-     * ones it never will, each alphabetical, with the page named for a station that is not on the train's.
-     * Built into a value object and handed over: `traces` is read by the paint, so writing it from here would draw from
-     * the wrong thread.
+     * Composes the answer on a worker thread rather than painting one, into a value object handed over: `traces` is
+     * read by the paint, so writing it from here would draw from the wrong thread.
      *
      * @param layout the railway
      * @param index the square-to-Point translation
@@ -97,12 +92,8 @@ final class EditorWhy extends SettledQuestion
 
         java.util.Map<String, String> sendable = byHandToo.getReasons();
 
-        // Stations first, then berths, each alphabetical (FR-080: *"show all stations first, then show berths
-        // (non-autonomy stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups
-        // its window (a station with any copy autonomy could choose is filed with the choosable ones).  And by page
-        // first (MT-429): the page this editor shows, or where it has none the page the train stands on, then the
-        // others in page-name order.  Names as a person reads them (MT-865), so ParkingTrack4 comes before
-        // ParkingTrack10.
+        // Stations first, then berths, each alphabetical, grouped as `AutoLocomotiveStatus.whyNotReport` groups its
+        // window (FR-080); by page first (MT-429); names as a person reads them (MT-865).
         final String currentPage = editor.page != null ? editor.page : tile.getPage();
 
         final java.util.Map<String, String[]> sortKey = new java.util.HashMap<>();
