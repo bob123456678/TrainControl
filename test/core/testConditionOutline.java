@@ -411,9 +411,8 @@ public class testConditionOutline
     }
 
     /**
-     * OB-382: a delete takes each condition, or each whole group of them, with one word of its own group, and changes no
-     * other group's word: across a group boundary, in a two-level step, before a group whose first line is a word
-     * (FR-147), and in outlines already flagged, where a word left with nothing on one side goes too.
+     * OB-382: a delete takes each condition, or each whole group of them, with one word of its own group, and changes
+     * no other group's word (FR-147).
      *
      * MUTATION: in `ConditionOutline.cutOut`, set `carriesItsWord` false, and "(1 and 24) or 26" less 24 reads
      * "1 and 26".
@@ -1023,9 +1022,7 @@ public class testConditionOutline
 
     /**
      * OB-396: the editor's edits read the outline as groups and write it back, so an edit to one group leaves every
-     * other line as it was, a step of two levels included: "3 or ((1 or 2) and 4)" opens its inner bracket two levels
-     * in.  Choosing "and" for the outer group changes its one word and nothing else; dropping 4 into the innermost
-     * group, before its 1, takes that group's "or" and leaves the "and" group of one item.
+     * other line as it was, a step of two levels included.
      *
      * MUTATION: in `ConditionOutline.parse`, read a deeper run at the row's own depth rather than `depth + 1`, and
      * the inner bracket comes back one level up.
