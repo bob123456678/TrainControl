@@ -326,9 +326,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * An edit session's Cancel keeps the timetable the railway changed alone across a station's rename, naming the
-     * station as the restored setup names it (OB-343).  The carry traces a name the build lacks through the names its
-     * builds have seen, and Cancel put that memory back before the legs were carried; the names the edit's builds gave
-     * are kept in it now.
+     * station as the restored setup names it (OB-343).
      *
      * MUTATION: forget the names the builds of the edit gave when the memory is put back, and this fails.
      */
@@ -380,8 +378,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     }
 
     /**
-     * The same through Cancel's own fold, with no gesture in between (OB-343): the rebuild Cancel forces folds the
-     * railway's timetable into the restored setup, and the load after it carries the names against the memory.
+     * The same through Cancel's own fold, with no gesture in between (OB-343).
      *
      * MUTATION: forget the names the builds of the edit gave when the memory is put back, and this fails.
      */
