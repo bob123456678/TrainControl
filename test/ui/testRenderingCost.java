@@ -482,12 +482,9 @@ public class testRenderingCost
         final LayoutDiagram drawing = page;
         final javax.swing.JPanel host = new javax.swing.JPanel();
 
-        // Counted ON the thread that builds, between the reset and the constructor returning (OB-084).
-        //
-        // Read from the test thread after invokeAndWait returns, the count would be a stable floor plus however much of
-        // the deferred work had landed (LayoutGrid and LayoutLabel post further work with invokeLater), so it would
-        // pass or fail on timing, and waiting for quiet counts more the longer you wait.  Inside one EDT runnable
-        // invokeLater work cannot run, so what is counted is exactly what BUILDING THE GRID does.
+        // Counted ON the thread that builds, between the reset and the constructor returning (OB-084): read from the
+        // test thread, the count would pass or fail on timing, since invokeLater work cannot run inside one EDT
+        // runnable.
         final long[] built = new long[1];
         final long[] applied = new long[1];
 
@@ -515,12 +512,8 @@ public class testRenderingCost
 
         // Exactly ONE label per cell, and the bound is a quarter above that (OB-084).
         //
-        // Building the grid constructs one label per cell of the bounding box and no more (384 for 384, measured six
-        // times).  A bound of twice the cell count would let a grid that builds itself twice over pass; at a quarter
-        // above, it goes to 2.0 and fails.
-        //
-        // NOT MEASURED HERE: after construction the diagram goes on rebuilding labels and settles between 2.0 and 3.0
-        // per cell depending on timing (OB-053); there is nothing stable to assert.
+        // NOT MEASURED HERE: after construction the diagram goes on rebuilding labels (OB-053); there is nothing stable
+        // to assert.
         //
         // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes the count to 729
         // and fails this.
