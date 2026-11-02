@@ -12,18 +12,8 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph.TileKey;
 
 /**
- * One switch decides whether autonomy chooses a station, and turning round is not it (OB-195). Adam: *"autonomy should
- * only allow a turn at a point if the 'allow in autonomy' option is checked, otherwise the train may only pass through
- * in its current direction."*
- *
- * The two markings are independent: **Changing Direction - Never / May / Must** says what happens when a train ARRIVES,
- * **Can Be Chosen in Full Autonomy** says who may send one there. `AutonomySession.stationsAutonomyWillNotChoose` added
- * a clause of its own, `isMustTurnAround`, claiming to be the runtime's rule; it is not, since a compulsory turn is
- * built as a TERMINUS (`isReversing()` false), which `Layout.isSendableDestination` accepts. So the editor promised
- * something the railway did not do.
- *
- * It cost nothing on Adam's own railway, where every compulsory turn is also marked manual-only; this class asserts on
- * `single-switch`, where its three stub ends are compulsory turns and none is manual-only.
+ * One switch decides whether autonomy chooses a station, and turning round is not it (OB-195).  Runs on
+ * `single-switch`, whose three stub ends are compulsory turns and none is manual-only.
  *
  * @author Adam
  */
