@@ -11,8 +11,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * OB-121: the lines of the conditions list that are not conditions, the group captions (OB-396), are white, not gray
- * (Adam: "make all its cells white, not gray").
+ * OB-121: the lines of the conditions list that are not conditions, the group captions, are white, not gray.
  *
  * Reading the code said this could not happen: `greyWhatCannotBeEdited` exempts such a line.  What the reading missed
  * is that a table cell renderer hands back ONE recycled component for every cell, so the cell drawn before the caption
