@@ -190,11 +190,27 @@ for cmd in ['git -C /tmp/clone reset --hard', 'cp x.cs2 /tmp/cs2_sample_layout_b
     check(cmd, sh(cmd), 'pass')
 for cmd in ['cd /tmp/clone && git reset --hard', 'cd /tmp/clone; git clean -fd', '(cd /tmp/x && make); git reset --hard',
             'pushd /tmp/x; popd; git reset --hard', 'cd -; git reset --hard', 'cd; git stash',
-            'cmd /c "cd /d C:/x && git reset --hard"', 'echo x > $PWD/cs2_sample_layout/a.cs2',
+            'echo x > $PWD/cs2_sample_layout/a.cs2',
             'cp x.cs2 ~/TrainControl/cs2_sample_layout/a.cs2']:
     check(cmd, sh(cmd), 'deny')
 check('Set-Location then ; reset --hard', ps('Set-Location C:/scratch/clnoe; git reset --hard'), 'deny')
-check('cd into the repo, then reset --hard', sh('cd /tmp && cd ' + MSYS + ' && git reset --hard'), 'deny')
+check('cd into the repo, then reset --hard', sh('cd /tmp && cd ' + MSYS + ' && git reset --hard', cwd='C:/elsewhere'),
+      'deny')
+check('cmd /c cd /d into the repo', ps('cmd /c "cd /d ' + R + ' && git reset --hard"', cwd='C:/elsewhere'), 'deny')
+
+# From a session outside the checkout: a path the guard cannot read, Push-Location, a bare drive, env -C
+HOME_REPO = '~/OneDrive/Documents/NetBeansProjects/TrainControl'
+for cmd in ['git -C ' + HOME_REPO + ' reset --hard', 'cd ' + HOME_REPO + ' && git reset --hard',
+            'cd $HOME/OneDrive/Documents/NetBeansProjects/TrainControl && git stash',
+            'cd ' + HOME_REPO + ' && echo x > cs2_sample_layout/a.cs2',
+            'cd /c && cd ' + R[3:] + ' && git reset --hard', 'env -C ' + MSYS + ' git reset --hard']:
+    check(cmd, sh(cmd, cwd='C:/elsewhere'), 'deny')
+check('Push-Location into the repo', ps('Push-Location ' + R + '; git reset --hard', cwd='C:/elsewhere'), 'deny')
+check('Push-Location src; git -C ..', ps('Push-Location src; git -C .. reset --hard'), 'deny')
+check('cd cs2_sample_layout; checkout a file', sh('cd cs2_sample_layout && git checkout gleisbild.cs2'), 'deny')
+check('cd src; checkout an existing file', sh('cd src && git checkout org'), 'ask')
+check('the layout folder by its 8.3 name', sh('echo x > CS2_SA~1/a.cs2'), 'deny')
+check('a scratch clone through -C outside', sh('git -C C:/tc-scratch/clone reset --hard', cwd='C:/elsewhere'), 'pass')
 check('git -C <repo> reset --hard elsewhere', sh('git -C ' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
 check('--work-tree <repo> elsewhere', sh('git --work-tree=' + MSYS + ' reset --hard', cwd='C:/elsewhere'), 'deny')
 

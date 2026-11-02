@@ -15,22 +15,22 @@ def norm(path):
     if not path:
         return ''
     p = path.replace('\\', '/')
-    m = re.match(r'^/([a-zA-Z])/(.*)$', p)
+    m = re.match(r'^/([a-zA-Z])(?:/(.*))?$', p)
     if m:
-        p = m.group(1) + ':/' + m.group(2)
+        p = m.group(1) + ':/' + (m.group(2) or '')
     return os.path.normcase(os.path.abspath(p))
 
 
 def in_repo(path, cwd):
     if not path:
         return False
-    p = path if os.path.isabs(path) or re.match(r'^/[a-zA-Z]/', path) else os.path.join(cwd or '', path)
+    p = path if os.path.isabs(path) or re.match(r'^/[a-zA-Z](/|$)', path) else os.path.join(cwd or '', path)
     p = norm(p)
     return p == ROOT or p.startswith(ROOT + os.sep)
 
 
 def rel(path, cwd):
-    p = path if os.path.isabs(path) or re.match(r'^/[a-zA-Z]/', path) else os.path.join(cwd or '', path)
+    p = path if os.path.isabs(path) or re.match(r'^/[a-zA-Z](/|$)', path) else os.path.join(cwd or '', path)
     return os.path.relpath(norm(p), ROOT).replace('\\', '/')
 
 
@@ -265,7 +265,7 @@ def command_at(words):
         elif base(w) in PREFIXES:
             i += 1
             while i < len(words) and words[i].startswith('-'):
-                i += 2 if words[i] in ('-n', '-I', '-L', '-P', '-d', '-s', '-E', '-a', '-u', '-k') else 1
+                i += 2 if words[i] in ('-n', '-I', '-L', '-P', '-d', '-s', '-E', '-a', '-u', '-k', '-C') else 1
             # timeout's duration comes before the command it runs
             if base(w) == 'timeout' and i < len(words) and re.match(r'^\d+(\.\d+)?[smhd]?$', words[i]):
                 i += 1
@@ -335,11 +335,11 @@ def options(args, takes_next='', takes_rest='', long_takes=()):
 WHOLE = {'.', './', '.\\', '*', ':', ':/', ':/.', ':/*', ':.', ':*', ':(top)'}
 
 
-def judge_git(glob_opts, sub, args, text, cwd=ROOT):
+def judge_git(glob_opts, sub, args, text, cwds=(ROOT,)):
     if any('core.hookspath' in g.lower() for g in glob_opts):
         answer('deny', 'hooks are not skipped; fix what the hook found.')
     if sub in ('checkout', 'restore', 'reset', 'stash', 'clean', 'switch', 'rm', 'mv') and \
-            LIVE_DIR.rstrip('/') in text.lower():
+            (LIVE_DIR.rstrip('/') in text.lower() or any(in_live_layout(c, [ROOT]) for c in cwds)):
         answer('deny', 'the live layout is never reverted; commit its changes instead.')
     if sub == 'add':
         f, pos = options(args, long_takes=('pathspec-from-file',))
@@ -368,7 +368,7 @@ def judge_git(glob_opts, sub, args, text, cwd=ROOT):
         if f & {'-f', '--force'} or any(p in WHOLE for p in pos):
             answer('deny', revert)
         # Paths after `--`, from xargs, or a named file or folder that exists: each reverts what it names
-        if '--' in args or any(os.path.exists(os.path.join(cwd, p)) for p in pos):
+        if '--' in args or any(os.path.exists(os.path.join(c, p)) for c in cwds for p in pos):
             answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
     if sub == 'switch':
         f, _ = options(args, 'cC', long_takes=('create', 'force-create', 'orphan', 'conflict'))
@@ -463,30 +463,45 @@ def acting(segs):
 
 
 def absolute(path, cwd):
-    return path if os.path.isabs(path) or re.match(r'^/[a-zA-Z]/', path) else os.path.join(cwd or '', path)
+    return path if os.path.isabs(path) or re.match(r'^/[a-zA-Z](/|$)', path) else os.path.join(cwd or '', path)
 
 
 # A path the guard cannot read literally: a variable, a home folder, an 8.3 short name
 UNRESOLVED = re.compile(r'[$~%]')
 
 
-def moves_to(words, cwd):
-    """The folder a cd, pushd or Set-Location names, when this simple command is one; None otherwise."""
+def reached(path, places):
+    """The folders a path may name from any of these: this checkout itself when the guard cannot read the path."""
+    if UNRESOLVED.search(path):
+        return [ROOT]
+    return [absolute(path, p) for p in places]
+
+
+def moves_to(words, places):
+    """The folders a cd, pushd, Push-Location or Set-Location may reach, when this simple command is one; None
+    otherwise."""
     ci = command_at(words)
-    if ci < len(words) and base(words[ci]) in ('cd', 'pushd', 'chdir', 'set-location', 'sl'):
-        args = [a for a in words[ci + 1:] if not a.startswith('-') and not re.match(r'^/[A-Za-z]$', a)]
-        if args and not UNRESOLVED.search(args[0]):
-            return absolute(args[0], cwd)
+    if ci < len(words) and base(words[ci]) in ('cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location'):
+        args = [a for a in words[ci + 1:] if not a.startswith('-')]
+        # cmd's `cd /d <folder>`: a lone /x with a folder after it is a switch; alone, /c is the drive
+        if len(args) > 1 and re.match(r'^/[A-Za-z]$', args[0]):
+            args = args[1:]
+        if args:
+            return reached(args[0], places)
     return None
 
 
 def git_places(words, glob_opts, places):
-    """The folders a git command may work in.  -C is where git really runs; --git-dir, --work-tree and GIT_DIR only
-    add folders, as they can name this checkout from anywhere."""
+    """The folders a git command may work in.  -C is where git really runs, and env -C where it starts; --git-dir,
+    --work-tree and GIT_DIR only add folders, as they can name this checkout from anywhere."""
     out = list(places)
+    pre = words[:command_at(words)]
+    for k, w in enumerate(pre):
+        if w == '-C' and k > 0 and k + 1 < len(pre):
+            out = reached(pre[k + 1], out)
     for k, o in enumerate(glob_opts):
         if o == '-C' and k + 1 < len(glob_opts):
-            out = [absolute(glob_opts[k + 1], p) for p in out]
+            out = reached(glob_opts[k + 1], out)
     named = [o.split('=', 1)[1] for o in glob_opts if o.startswith(('--git-dir=', '--work-tree=')) and '=' in o]
     named += [glob_opts[k + 1] for k, o in enumerate(glob_opts) if o in ('--git-dir', '--work-tree')
               and k + 1 < len(glob_opts)]
@@ -501,7 +516,10 @@ def git_places(words, glob_opts, places):
 def in_live_layout(word, places):
     """Whether a word may name the repository's live layout folder or a path inside it: one the guard cannot read
     literally counts, and a relative one counts if it lands there from any folder the command may run in."""
-    if LIVE_DIR.rstrip('/') not in word.lower():
+    low = word.lower()
+    if re.search(r'cs2_sa~\d', low):
+        return True
+    if LIVE_DIR.rstrip('/') not in low:
         return False
     if UNRESOLVED.search(word):
         return True
@@ -527,9 +545,9 @@ def judge_shell(cmd, cwd, ps):
     # ends, and the shell is then still where it was.  Only git -C, which git itself obeys, moves a git command.
     places = [cwd]
     for words, targets in segs:
-        moved = moves_to(words, places[-1])
+        moved = moves_to(words, places)
         if moved:
-            places.append(moved)
+            places += [m for m in moved if m not in places]
             continue
         g = git_call(words)
         if g:
@@ -538,7 +556,7 @@ def judge_shell(cmd, cwd, ps):
                 ci = command_at(words)
                 via_xargs = any(base(w) == 'xargs' for w in words[:ci])
                 judge_git(g[0], g[1], g[2] + (['--'] if via_xargs and g[1] in ('checkout', 'restore') else []),
-                          ' '.join(words), inside[0])
+                          ' '.join(words), inside)
         if writes(words, targets, lambda w: in_live_layout(w, places)):
             answer('deny', 'the live layout is never written or reverted by a session; its changes are committed.')
     # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that is
