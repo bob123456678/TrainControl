@@ -27,9 +27,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.
  *
- * Adam: "instead of shading the entire tiles, we need to draw a line (let's say in orange) to show that the train is
- * there.  graying makes it look confusing on double curve tiles."  He chose one indicator, not two: the line replaces
- * the wash.
+ * One indicator, not two: the line replaces the wash, which looked confusing on double curve tiles.
  *
  * Asserted in pixels, because neither fact can be read off the model: that a covered square is marked at all, and that
  * the mark is a LINE (most of the tile drawn exactly as it would be with nothing standing; the old wash was `fillRect`
@@ -512,9 +510,9 @@ public class testTheTrainIsShownAsALine
 
     /**
      * A running train's line is the orange of a standing train's: the see-through orange laid over its own dark gray
-     * run line came out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69).  Adam: "brighten the color
-     * of the orange train tail while running so that it more closely matches the normal stopped color".  The covered
-     * square painted standing, and then running with the run's reached line along the road the tail lies on: the
+     * run line came out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69); it should match the
+     * standing color.  The covered square painted standing, and then running with the run's reached line along the road
+     * the tail lies on: the
      * commonest orange of each within a few shades of the other.
      *
      * MUTATION: draw the line over the run in the standing orange again, and this fails.
@@ -652,8 +650,8 @@ public class testTheTrainIsShownAsALine
     /**
      * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
      * edge, so the gaps fall at the joins on a curve as on a straight and no coach is cut short (T2 of the look's train
-     * tails).  Adam: "Do T2 only if you can maintain shape continuity across curves rather than a jagged look when it
-     * straightens out".  A dash pattern would restart at every square and leave a stub; one coach to a square has none.
+     * tails).  A dash pattern would restart at every square and leave a stub, and shape must stay continuous across
+     * curves; one coach to a square has neither problem.
      *
      * MUTATION: draw the line edge to edge again and this fails.
      */
@@ -823,8 +821,7 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The train's line ends rounded where the train ends, not cut off flat on the square's edge.  Adam: "Can we make
-     * the end of a train (orange line) rounded, not a straight jagged edge?"
+     * The train's line ends rounded where the train ends, not cut off flat on the square's edge.
      *
      * Each of the train's end squares - covered, beside a covered square, with a side whose square beside the train
      * does not reach - is painted at the large size: nothing orange on that side's edge, where a line cut off there
