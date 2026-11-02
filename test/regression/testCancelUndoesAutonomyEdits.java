@@ -204,9 +204,9 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation now says (OB-223):
-     * `tileLengths` is in the setup snapshot the editor takes when it opens.  A sentence nobody has run is how the
-     * locomotive clear came to say the wrong one, so this runs it.
+     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation says (OB-223): `tileLengths`
+     * is in the setup snapshot the editor takes when it opens.  A sentence nobody has run can be wrong, so this runs
+     * it.
      */
     @Test
     public void testCancelPutsTheLengthsBack() throws Exception
@@ -298,9 +298,9 @@ public class testCancelUndoesAutonomyEdits
 
     /**
      * And the locomotives a bulk clear took off come back with Cancel.  The discard restores the setup as the editor
-     * opened it, placements included, and the rebuild on close regenerates placements from it, so the OB-194 warning,
-     * "Cancel will not put them back", stopped being true when OB-223 made Cancel undo.  Asked through the real Bulk
-     * Tools door and the real Cancel.
+     * opened it, placements included, and the rebuild on close regenerates placements from it, so the clear must not
+     * say "Cancel will not put them back" (OB-194).  Asked through the real Bulk Tools door and the real
+     * Cancel.
      */
     @Test
     public void testCancelPutsBackTheLocomotivesABulkClearTook() throws Exception
@@ -413,8 +413,9 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * The exit asks each open window ONCE: a page with unsaved work asked twice let Discard and then Save write the
-     * discarded work on the way out, since `settleUnsavedWork` decides from `canUndo()`, which a Save does not clear.
+     * The exit asks each open window ONCE: a page with unsaved work asked twice would let Discard and then Save write
+     * the discarded work on the way out, since `settleUnsavedWork` decides from `canUndo()`, which a Save does not
+     * clear.
      * Asked of `everyOpenWindowMaySettle` by counting the dialogs it raises; a source-shape rule cannot see this.
      */
     @Test
@@ -512,8 +513,8 @@ public class testCancelUndoesAutonomyEdits
 
     /**
      * And a home set in the editor is put back by Discard on the way out.  The exit's fold carries more than placements
-     * (`active`, `maxTrainLength`, `speedMultiplier`, `priority`, `home`, `excludedLocs`), so a discarded home was
-     * written back too; the arrow claim cannot say so.  The home is set through the session and the running layout
+     * (`active`, `maxTrainLength`, `speedMultiplier`, `priority`, `home`, `excludedLocs`), so a discarded home would be
+     * written back too, which the arrow claim cannot show.  The home is set through the session and the running layout
      * rebuilt, as the editor's home door does.
      */
     @Test
@@ -690,10 +691,10 @@ public class testCancelUndoesAutonomyEdits
 
     /**
      * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it:
-     * `restoreSetup` read the note with strict accessors and a wrong type threw part way through with nothing to put
-     * back.  The wrong type is a page name that is a list, in the first field the read takes.  Asked of a session of
-     * its own over the sandbox's files: the revert says it did nothing, the setup is as it was, and the note is kept
-     * and reported as unusable.  The note is taken away however this ends.
+     * `restoreSetup` reads the note with strict accessors, so a wrong type must not throw part way through with nothing
+     * to put back.  The wrong type is a page name that is a list, in the first field the read takes.  Asked of a
+     * session of its own over the sandbox's files: the revert says it did nothing, the setup is as it was, and the note
+     * is kept and reported as unusable.  The note is taken away however this ends.
      *
      * MUTATION: let the throw out of `AutonomySession.revertUnfinishedEdit` again, and this fails.
      */
