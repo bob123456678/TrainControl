@@ -330,6 +330,8 @@ public class testTheRouteListShowsWhatRuns
     @Test
     public void testThePowerChangeRepaintsTheRouteList() throws Exception
     {
+        aQuickRoute(PREFIX + "repaint", 246);
+
         final JTable table = routeTable();
 
         final javax.swing.RepaintManager real = javax.swing.RepaintManager.currentManager(table);
@@ -379,8 +381,8 @@ public class testTheRouteListShowsWhatRuns
      * With the power off, a click on the wrench itself opens the route's editor and runs nothing (FR-164): the whole
      * cell does what a click elsewhere on the row does.
      *
-     * MUTATION: in `RouteListPanel.RouteListMouseClicked`, put the play-button branch above the power question, and
-     * this fails.
+     * MUTATION: in `RouteListPanel.RouteListMouseClicked`, change the power question to
+     * `routeListEditsRoutes() && !isOverTheRoutePlayButton(evt)`, and this fails.
      */
     @Test
     public void testWithThePowerOffAClickOnTheWrenchOpensTheEditorAndRunsNothing() throws Exception
@@ -479,8 +481,7 @@ public class testTheRouteListShowsWhatRuns
      * (FR-164).  Adam: "make sure that grey right click menu route name heading becomes bold and has a divider right
      * below it."
      *
-     * MUTATION: in `RightClickRouteMenu`, delete the `addSeparator()` after the header, or its `setFont(...)`, or
-     * `menuItem.setEnabled(false)`, and this fails.
+     * MUTATION: in `RightClickRouteMenu`, delete the header's `setFont(...)` line, and this fails.
      */
     @Test
     public void testTheMenuOpensWithAGrayHeaderAndExecuteRouteBelowIt() throws Exception
