@@ -9,12 +9,9 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import support.SourceOf;
 
 /**
- * The three rules about a station's home locomotive (MT-112).
- *
- * `HomeLocomotiveMenu` lost four of its five callers, so two safety warnings were unreachable while their tests passed.
- * A test that drives a window proves the window, and a rule with no caller passes every test written about the rule, so
- * two of the three are pure functions tested directly and the third is checked where it is decided.  Each test also
- * asserts the rule is still wired: the failure guarded against is a correct rule nobody asks.
+ * The three rules about a station's home locomotive (MT-112): two of them pure functions tested directly and the third
+ * checked where it is decided.  Each test also asserts the rule is still wired: the failure guarded against is a
+ * correct rule nobody asks.
  *
  * @author Adam
  */
