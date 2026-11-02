@@ -53,9 +53,8 @@ public class testACompulsoryTurnIsNotAQuestion
     public static void setUp() throws Exception
     {
         // OB-111: the sandbox is opened BEFORE the model is built.
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).  The SHAPE is
-        // what this class is about; where his trains stand, how long they are and which side they came in by are not,
-        // and a fixture that moves while nobody is looking makes every class over it say something different.
+        // The frozen copy, not the railway he is operating (OB-111, and `test/layouts/live-snapshot`): where his trains
+        // stand, how long they are and which side they came in by are not what this class is about.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();
@@ -75,16 +74,15 @@ public class testACompulsoryTurnIsNotAQuestion
     @AfterClass(alwaysRun = true)
     public static void tearDown() throws Exception
     {
-        // FIFTY UNITS, ON EVERY TRAIN THE SNAPSHOT HAS STANDING, put back here: `init()` opens Adam's own locomotive
+        // Fifty units on every train the snapshot has standing, put back here: `init()` opens Adam's own locomotive
         // database, so those lengths were silent writes to his railway.
         giveTheLengthsBack();
 
         if (sandbox != null) sandbox.close();
     }
     /**
-     * The lengths this class has changed on Adam's own locomotives, and what they were: `init` opens his real
-     * locomotive database and the layout sandbox does not freeze it, so a length set on a borrowed train outlives the
-     * run.  A map, because what is borrowed is "whatever is standing".
+     * The lengths this class has changed on Adam's own locomotives, and what they were: the layout sandbox does not
+     * freeze the locomotive database, so a length set on a borrowed train outlives the run.
      */
     private static final java.util.Map<org.traincontrol.base.Locomotive, Integer> LENGTHS_WE_CHANGED =
         new java.util.LinkedHashMap<>();
@@ -746,8 +744,7 @@ public class testACompulsoryTurnIsNotAQuestion
     /**
      * A train turned by hand at a may-turn station's plain copy is stood at once on the copy that faces the way it came
      * in - the copy the window's idle drain would stand it on, which then changes nothing.  The drain ran only once the
-     * railway was idle, so with another train out the next hand send set the route ahead while the decoder drove it
-     * back.
+     * railway was idle, so with another train out the next hand send would set the route ahead against the decoder.
      *
      * MUTATION: leave a turned train for the idle drain again, or stand it on another copy than the drain's, and this
      * fails.
@@ -948,9 +945,8 @@ public class testACompulsoryTurnIsNotAQuestion
                 + " onto " + standing(rail, x) + " - the plan's next leg starts from the turning copy, and is refused"
                 + " (RSA51-B1)");
 
-            // AND THE WINDOW'S IDLE DRAIN LEAVES IT THERE: the copy already faces the way the train came in, and moving
-            // it onto the other side's plain copy would leave the next entry of a timetable recorded from the turning
-            // copy unable to start
+            // The idle drain leaves it there: moving it onto the other side's plain copy would leave the next entry of
+            // a timetable recorded from the turning copy unable to start.
             theIdleDrain(rail, line);
 
             assertTrue(standing(rail, x) == turning, "the window's idle drain moved a train a plan turned off the"
