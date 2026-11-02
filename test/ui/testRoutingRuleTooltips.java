@@ -9,15 +9,10 @@ import org.traincontrol.util.I18n;
 /**
  * Every routing rule explains itself on the control that chooses it.
  *
- * Each rule has an explanation written for it and translated into all eight languages -
- * `autolayout.ui.tooltip.pathPreferenceFEWEST_STATIONS` and its siblings. Until OB-163 nothing read a
- * single one of them: the dropdown was built from the NAMES and carried only the general sentence
- * about what the control is for, so seventy-two written sentences were unreachable on the one control
- * where ten similarly-worded options have to be told apart.
- *
- * That is also how "Completely at Random" came to be the only rule with no explanation written at all.
- * A rule whose text nobody can see is a rule whose missing text nobody notices, which is the argument
- * for this test rather than for a bundle-only one: it asks the CONTROL, not the properties file.
+ * Each rule has an explanation written for it and translated into all eight languages
+ * (`autolayout.ui.tooltip.pathPreferenceFEWEST_STATIONS` and its siblings); until OB-163 nothing read them.  A rule
+ * whose text nobody can see is a rule whose missing text nobody notices, hence this asks the CONTROL, not the
+ * properties file.
  *
  * MUTATION this catches: reverting the tooltip to the general sentence fails every rule; adding a
  * rule to ROUTING_ORDER without writing its explanation fails that rule.
