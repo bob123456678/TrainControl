@@ -36,12 +36,8 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is.
-     *
-     * Why Not Moving? follows Path Type (MT-434): on Manual it answers for a hand-driven send.  `reversesAlongTheWay`
-     * is autonomy's rule (its javadoc: *"NOT asked by isPathClear, so a hand-driven move ... can still use a
-     * headshunt"*) and must not be asked by hand, or a station the menu offers reads as "cannot be sent" through a
-     * reversing station.
+     * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is (MT-434):
+     * `reversesAlongTheWay` is autonomy's rule and must not be asked by hand.
      *
      * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
      */
@@ -223,11 +219,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, a station the right-click menu does not offer is not listed as somewhere to go.
-     *
-     * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
-     * route search does.  The menu first asks `isOfferableToOperator` and leaves out two kinds of station: one that
-     * excludes this train, and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205).  The
+     * By hand, a station the right-click menu does not offer is not listed as somewhere to go (MT-434, OB-205): the
      * button and the explanation must answer the one question the same way.
      *
      * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
@@ -290,12 +282,7 @@ public class testWhyStuck
     }
 
     /**
-     * By hand, the menu's own reason outranks being too short.
-     *
-     * A physical refusal outranks a preference (MT-262), so a standing bar is replaced by "too long for the berth"
-     * where the train would not fit.  That is right for autonomy's bars and wrong for the menu's: a station the menu
-     * does not offer at all is not a station whose length matters.  Asked which the operator should see: **"The menu's
-     * reason."**
+     * By hand, the menu's own reason outranks being too short (MT-262).
      *
      * @throws Exception from the railway
      */
@@ -498,16 +485,9 @@ public class testWhyStuck
     }
 
     /**
-     * A station autonomy will never choose is reported as barred, and says WHY it is barred.
-     *
-     * FR-017. The window groups the stations - "Order them by ones that can be chosen autonomously and ones that
-     * cannot, with the autonomous ones first" - and the grouping cannot be recovered from the reason strings (two
-     * standing bars are translated sentences), so the Layout answers it and this pins that the answer is about the
-     * right stations.
-     *
-     * The second half is the interesting one: `explainDestinations` must not test "occupied" FIRST, or a barred station
-     * reports "occupied by X" whenever a train sits on it, in disagreement with the group the line is filed under.  So
-     * the fixture puts a train on the barred station; with an empty one the test passes either way round.
+     * A station autonomy will never choose is reported as barred, and says WHY it is barred (FR-017).  The fixture puts
+     * a train on the barred station: `explainDestinations` must not test "occupied" FIRST, and with an empty one the
+     * test passes either way round.
      */
     @Test
     public void testAStationBarredFromAutonomySaysSoRatherThanThatItIsBusy() throws Exception
@@ -685,10 +665,8 @@ public class testWhyStuck
 
     /**
      * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299),
-     * not given every station's own reason.  Told to turn it round where the square's other copy reaches a station,
-     * since turning puts it on that copy; and where neither does, told what would help instead.
-     *
-     * By hand it is not a reason: a train sent by hand may go where autonomy never sends one.
+     * not given every station's own reason.  By hand it is not a reason: a train sent by hand may go where autonomy
+     * never sends one.
      *
      * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave
      * the closed side out of the either-way sentence, and this fails.
