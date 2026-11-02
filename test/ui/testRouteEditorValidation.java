@@ -346,7 +346,6 @@ public class testRouteEditorValidation
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
     }
 
-    /** The frame given these condition lines, packed and showing, on the event thread. */
     private static void showRows(org.traincontrol.gui.RouteEditorFrame frame,
         java.util.List<org.traincontrol.base.ConditionOutline.Row> rows) throws Exception
     {
@@ -358,14 +357,12 @@ public class testRouteEditorValidation
         });
     }
 
-    /** The frame given these condition lines, on the event thread. */
     private static void setRows(org.traincontrol.gui.RouteEditorFrame frame,
         java.util.List<org.traincontrol.base.ConditionOutline.Row> rows) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
     }
 
-    /** The English message bundle, read from the source folder. */
     private static java.util.Properties englishBundle() throws Exception
     {
         return bundle("");
@@ -441,8 +438,8 @@ public class testRouteEditorValidation
 
     /**
      * Deleting the FIRST condition of a group takes the group's own word, not the outer one: deleting the `2` of
-     * `1 or (2 and 3)` once removed the `or`, changing when the route fires and leaving the word red.  The word that
-     * belongs to a row is the adjacent joiner at the SAME depth.
+     * `1 or (2 and 3)` must not remove the `or`.  The word that belongs to a row is the adjacent joiner at the SAME
+     * depth.
      *
      * MUTATION: in `ConditionOutline.removed`, call `cutOut` on the group holding the piece rather than the piece,
      * and the 3 goes with it.
@@ -504,7 +501,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-068 (MT-320): a nested group that is NOT the first term can be built, with Group Selected (OB-396).  Four
+     * FR-068 (MT-320): a nested group that is NOT the first term can be built, with Group Selected.  Four
      * conditions joined by "or" become `3 or (4 and (1 or 2))`: grouping 4, 1 and 2 and choosing All on the new
      * caption nests them under "and", and grouping 1 and 2 inside that and choosing At least one nests them under "or"
      * again, each step through the button and the caption.
@@ -552,9 +549,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * A condition that starts with a group can be built (Adam: "the first condition for some reason cannot be indented
-     * for proper grouping."), with Group Selected (OB-396): "2 and 3 and 1 and 4" becomes "(2 or 3) and (1 or 4)", each
-     * new group's rule chosen on its caption.
+     * A condition that starts with a group can be built, with Group Selected: "2 and 3 and 1 and 4" becomes
+     * "(2 or 3) and (1 or 4)", each new group's rule chosen on its caption.
      *
      * MUTATION: in `ConditionOutline.run`, refuse a run that starts at the group's first item (`from > 0`), and the
      * first grouping does nothing.
@@ -751,7 +747,7 @@ public class testRouteEditorValidation
 
     /**
      * A group whose words disagree, as an older route can arrive, has a red caption with a warning triangle whose
-     * tooltip says which of the two things is wrong (OB-396: a group's words show on its caption).  The caption is read
+     * tooltip says which of the two things is wrong.  The caption is read
      * as the table PAINTS it, and one label paints every caption, so a group that is fine must carry neither.
      *
      * MUTATION: in `ConditionTable.captionFor`, set the icon whatever the problem, and the second group wears the
@@ -832,7 +828,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-144, OB-396: "1 or 2 or 3 and 4", arriving mixed, becomes "(1 or 2 or 3) and 4" by selecting the first three
+     * FR-144: "1 or 2 or 3 and 4", arriving mixed, becomes "(1 or 2 or 3) and 4" by selecting the first three
      * conditions and pressing Group Selected: the new group keeps the word that joined them.
      * Alt+Up then moves 4 past the whole group and Alt+Down back, every line keeping its level; Ungroup lifts the
      * three back out, joined by their parent's "and", so it never makes a mixed level.
@@ -890,7 +886,7 @@ public class testRouteEditorValidation
 
     /**
      * OB-379: "(a and b and c) or (d and e and f)", Add Condition with f selected adds g at the end of the second
-     * group (OB-396), and Alt+Up pressed four times gives "(a and b and c and g) or (d and e and f)" with g still
+     * group, and Alt+Up pressed four times gives "(a and b and c and g) or (d and e and f)" with g still
      * selected; Alt+Down takes it back.
      *
      * MUTATION: drop the edge branch of `ConditionOutline.plan`, and g is swapped with c.
@@ -937,14 +933,13 @@ public class testRouteEditorValidation
 
     /**
      * FR-147: a right-click on a condition offers Insert Condition Above and Below and the condition's own actions,
-     * each enabled exactly where it does something (OB-396: Group Selected and Ungroup in place of Indent and
-     * Outdent); Insert joins a new condition at the line's level by its word and selects it; a right-click on the
-     * trash works no trash; below the lines it offers Add Condition.
+     * each enabled exactly where it does something; Insert joins a new condition at the line's level by its word and
+     * selects it; a right-click on the trash works no trash; below the lines it offers Add Condition.
      *
      * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and "21 or 22 and 1"
      * is flagged.
      * MUTATION: in `offerRowMenu`, add Duplicate before `table.addOwnItems(menu)`, and it sits above Group Selected
-     * (FR-163: Duplicate between dividers of its own, above Delete).
+     * (Duplicate sits between dividers of its own, above Delete).
      */
     @Test
     public void testARightClickInsertsAConditionAndOffersTheLinesActions() throws Exception
@@ -1099,7 +1094,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-147, OB-396: what an edit changed: after Alt+Up, Group Selected, Ungroup or Add Condition, the conditions it
+     * FR-147: what an edit changed: after Alt+Up, Group Selected, Ungroup or Add Condition, the conditions it
      * moved or made are selected and bold in "Reads as".
      *
      * MUTATION: in `describe`, drop the bold round a chosen condition, and no condition is bold.
@@ -1248,8 +1243,8 @@ public class testRouteEditorValidation
      *
      * MUTATION: in `ConditionOutline.removed`, take each piece out of `top` with `top.elements.remove`, and 22 and 24
      * are left in place.
-     * MUTATION: in `ConditionTable.removeRows`, flatten every row deeper than the row above plus one, as the old tidy
-     * did, and "(1 or 2)" reads "1 and 2".
+     * MUTATION: in `ConditionTable.removeRows`, flatten every row deeper than the row above plus one, and "(1 or 2)"
+     * reads "1 and 2".
      */
     @Test
     public void testDeletingASelectionAcrossAGroupBoundaryLeavesAValidOutline() throws Exception
@@ -1397,7 +1392,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-150, OB-396: a group's word shows on its caption, so a right-click on a caption offers Add Condition into that
+     * FR-150: a group's word shows on its caption, so a right-click on a caption offers Add Condition into that
      * group, joined by its word: on "(21 and 22) or (24 and 25)", each caption's group gains one at its end.
      *
      * MUTATION: in `ConditionTable.chooseOffARow`, clear the selection on a caption as below the lines, and every
@@ -1734,8 +1729,8 @@ public class testRouteEditorValidation
 
     /**
      * OB-396: the handle of each line the last edit changed carries an amber mark on its left, which stays until the
-     * next edit; the fading yellow is gone.  Move Down on the first of "21 and 22 and 23" marks the two conditions
-     * that traded places, never the 23, still a second and a half later; Add Condition then marks only the new one.
+     * next edit.  Move Down on the first of "21 and 22 and 23" marks the two conditions that traded places, never the
+     * 23, still a second and a half later; Add Condition then marks only the new one.
      *
      * MUTATION: in `ConditionTable.showChanges`, drop the `changed.add`, and no handle is marked.
      */
@@ -1775,7 +1770,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The amber of the mark on a changed line's handle (OB-396). */
+    /** The amber of the mark on a changed line's handle. */
     private static final java.awt.Color AMBER = new java.awt.Color(0xE0, 0xA5, 0x26);
 
     /** The outline rows whose handle cell, painted, shows the amber mark down its left edge. */
@@ -1976,13 +1971,12 @@ public class testRouteEditorValidation
         return table(frame, "ConditionTable");
     }
 
-    /** The route editor's table of one class, by its simple name. */
     private static javax.swing.JTable table(org.traincontrol.gui.RouteEditorFrame frame, final String kind)
     {
         return support.RouteEditing.table(frame, kind);
     }
 
-    /** The outline row of the selected line, or -1: the table shows no line for a joining word (OB-396). */
+    /** The outline row of the selected line, or -1: the table shows no line for a joining word. */
     private static int selectedLine(final javax.swing.JTable table)
     {
         return support.Components.onTheEventThread(() -> (Integer) call(table, "rowOf", table.getSelectedRow()));
@@ -2006,13 +2000,11 @@ public class testRouteEditorValidation
         });
     }
 
-    /** A right-click in one cell of the line showing an outline row. */
     private static javax.swing.JPopupMenu rightClickCell(final javax.swing.JTable table, int row, int column)
     {
         return support.RouteEditing.rightClickCell(table, row, column);
     }
 
-    /** A right-click below the last line, where the table has no line. */
     private static javax.swing.JPopupMenu rightClickBelow(final javax.swing.JTable table)
     {
         return support.RouteEditing.rightClickBelow(table);
@@ -2033,13 +2025,11 @@ public class testRouteEditorValidation
         return support.RouteEditing.call(table, name, argument);
     }
 
-    /** Presses a button of the route editor by its text, as a click does, and lets its work finish. */
     private static void press(final org.traincontrol.gui.RouteEditorFrame frame, String key)
     {
         support.RouteEditing.press(frame, key);
     }
 
-    /** Selects a line and presses Alt and an arrow on the table. */
     private static void altArrow(final javax.swing.JTable table, int row, int arrow) throws Exception
     {
         final int line = screen(table, row);
@@ -2276,7 +2266,7 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The condition table's columns (OB-396): the handle, the address, one no sensor can edit, and the trash. */
+    /** The condition table's columns: the handle, the address, one no sensor can edit, and the trash. */
     private static final int HANDLE = 0;
     private static final int ADDRESS = 2;
     private static final int NOTHING_TO_EDIT = 4;
@@ -2289,13 +2279,11 @@ public class testRouteEditorValidation
         clickCondition(table, last, NOTHING_TO_EDIT, java.awt.event.InputEvent.SHIFT_DOWN_MASK);
     }
 
-    /** A click in one cell of the line showing an outline row. */
     private static void clickCondition(javax.swing.JTable table, int row, int column, int modifiers) throws Exception
     {
         clickCell(table, screen(table, row), column, modifiers, 1);
     }
 
-    /** The same, as a click of `count` presses. */
     private static void clickCondition(javax.swing.JTable table, int row, int column, int modifiers, int count)
         throws Exception
     {
@@ -2364,7 +2352,6 @@ public class testRouteEditorValidation
         return out;
     }
 
-    /** The depths of the outline, for a failure message. */
     private static String depths(org.traincontrol.gui.RouteEditorFrame frame)
     {
         StringBuilder out = new StringBuilder();
@@ -2886,13 +2873,11 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The text of a caption, top to bottom, as it is painted. */
     private static String captionText(final javax.swing.JTable table, int caption)
     {
         return support.RouteEditing.captionText(table, caption);
     }
 
-    /** Clicks the caption on a caption line and chooses one of its rules from the menu that opens. */
     private static void chooseRule(final javax.swing.JTable table, int caption, String key) throws Exception
     {
         support.RouteEditing.chooseRule(table, caption, key);
@@ -3017,8 +3002,7 @@ public class testRouteEditorValidation
     /**
      * MT-868: the trash on a line inside a selection of several deletes every selected condition, as one edit that one
      * Undo brings back; the trash on a line outside the selection deletes that line alone, and with Shift or Ctrl held
-     * it only selects.  The Delete key deletes the
-     * selection too, but not while a cell is being edited.
+     * it only selects.  The Delete key deletes the selection too, but not while a cell is being edited.
      *
      * MUTATION: in `HandledTable.changeSelection`, drop `|| isMark(column)`, and the press selects its line alone,
      * so the trash on 22 deletes 22 only.
@@ -3684,8 +3668,7 @@ public class testRouteEditorValidation
      *
      * MUTATION: in `CommandTable.canShiftChosen`, answer `!locked && !chosen.isEmpty()`, and Move Up is offered on the
      * first command.
-     * MUTATION: in `offerRowMenu`, drop the divider after Duplicate, and Duplicate shares Delete's (FR-163: Duplicate
-     * between dividers of its own).
+     * MUTATION: in `offerRowMenu`, drop the divider after Duplicate, and Duplicate shares Delete's.
      */
     @Test
     public void testTheCommandMenuOffersWhatEachRowCanDo() throws Exception
@@ -3989,11 +3972,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Adam: ""Reads as" is hidden when there is only one condition, which it shouldn't be.  also, there is still a gap
-     * when there are 0 conditions.  The top of the table should snap to the label on those cases."  One condition
-     * reads as itself; with none, the heading's line is only as tall as the heading, so the table sits under it.
+     * One condition reads as itself in "Reads as"; with none, the heading's line is only as tall as the heading, so the
+     * table sits under it.
      *
-     * MUTATION: in `readingOfTheConditions`, blank the reading below two conditions again, and one condition reads as
+     * MUTATION: in `readingOfTheConditions`, blank the reading below two conditions, and one condition reads as
      * nothing; in `HeadingLine.getPreferredSize`, count the reading's height while it is hidden, and the gap is back.
      */
     @Test
@@ -4054,7 +4036,6 @@ public class testRouteEditorValidation
     }
 
     /**
-     * Adam: "for the "automatically fire" checkbox, make it not focusable to follow the rest of the UI".
      * No checkbox in the editor takes the keyboard: Automatically Fire and Capture are clicked, not typed into.
      *
      * MUTATION: drop `enabledBox.setFocusable(false)`, and Automatically Fire takes the focus.
@@ -4078,10 +4059,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-163, Adam: "Anchor the command + to the bottom of its frame, just like the conditions."  Under the commands,
-     * inside their frame and above Capture, a row of Add Command, a divider, Undo and Redo, looking as the conditions'
-     * row does (the same icons, words, font and flat style); it stays put as commands are added; Undo and Redo are
-     * grayed when there is nothing to undo or redo, and the tooltips name Ctrl+Z and Ctrl+Y.
+     * FR-163: under the commands, inside their frame and above Capture, a row of Add Command, a divider, Undo and Redo,
+     * looking as the conditions' row does (the same icons, words, font and flat style); it stays put as commands are
+     * added; Undo and Redo are grayed when there is nothing to undo or redo, and the tooltips name Ctrl+Z and Ctrl+Y.
      *
      * MUTATION: in `footed`, add `foot` to `framed` at `BorderLayout.NORTH`, and the row is not at the frame's foot.
      */
@@ -4164,10 +4144,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * FR-163, Adam: "add the duplicate icon to the condition rows, so the two sections look the same".  A condition's
-     * line ends in the trash and then the copy mark, as a command's row does; the copy mark on a condition outside the
-     * selection copies it alone, directly below it in its group, and on one in the selection copies the selection as
-     * Duplicate does; Undo takes a copy back.
+     * FR-163: a condition's line ends in the trash and then the copy mark, as a command's row does; the copy mark on a
+     * condition outside the selection copies it alone, directly below it in its group, and on one in the selection
+     * copies the selection as Duplicate does; Undo takes a copy back.
      *
      * MUTATION: in `duplicateRow`, return unless `table == commands`, and the copy mark on a condition copies nothing.
      */
@@ -4282,7 +4261,6 @@ public class testRouteEditorValidation
         return key.group(1);
     }
 
-    /** A route of accessory commands at these addresses, ordinary, with no conditions. */
     private static org.traincontrol.base.Route route(int... addresses)
     {
         java.util.List<RouteCommand> commands = new java.util.ArrayList<>();
@@ -4296,13 +4274,11 @@ public class testRouteEditorValidation
             org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
     }
 
-    /** Types a target into a command's cell and commits it, as closing its editor does (through the model). */
     private static void target(final javax.swing.JTable table, final int row, final String typed) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> table.getModel().setValueAt(typed, row, COMMAND_TARGET));
     }
 
-    /** The button in the commands' section saying this. */
     private static javax.swing.AbstractButton commandButton(final org.traincontrol.gui.RouteEditorFrame frame,
         String key)
     {
@@ -4344,13 +4320,11 @@ public class testRouteEditorValidation
         return levels(frame);
     }
 
-    /** A claim on a route editor of its own, its menus and the window closed after. */
     private static void inAnEditor(EditorClaim claim) throws Exception
     {
         inAnEditor(null, claim);
     }
 
-    /** The same, on an editor opened on a route. */
     private static void inAnEditor(org.traincontrol.base.Route route, EditorClaim claim) throws Exception
     {
         needsADisplay();
@@ -4428,7 +4402,6 @@ public class testRouteEditorValidation
         support.RouteEditing.drag(table, row, to);
     }
 
-    /** Whether a button of the route editor, found by its text, can be pressed. */
     private static boolean enabled(final org.traincontrol.gui.RouteEditorFrame frame, String key)
     {
         javax.swing.AbstractButton button = notOnTheCommands(frame, key);
@@ -4452,12 +4425,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396, Adam: "put the red "these conditions" warning on the same line as Only When These Conditions are Met, in
-     * the upper-right corner of its frame."  In every language, at the packed width and at the window's narrowest: the
-     * heading at the left in full, the notice at the section's right on the heading's line or, where both do not fit,
-     * on the line under it, never over the heading; the reading on a line of its own under them, above the table.  In
-     * English at the packed width they share one line; with a notice too long to share the line, at the narrowest it
-     * wraps.
+     * OB-396: in every language, at the packed width and at the window's narrowest: the heading at the left in full,
+     * the notice at the section's right on the heading's line or, where both do not fit, on the line under it, never
+     * over the heading; the reading on a line of its own under them, above the table.  In English at the packed width
+     * they share one line; with a notice too long to share the line, at the narrowest it wraps.
      *
      * MUTATION: in `HeadingLine.doLayout`, set the notice at x 0 rather than `width - note.width`, and it is not at
      * the section's right.
@@ -4599,9 +4570,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396, Adam: "enforce a minimum window width at the trigger dropdown".  In every language the window cannot be
-     * made narrower than its top line: sized down to 200 pixels, Name, Automatically Fire, S88 and Trigger stand on
-     * one line inside it and the Trigger dropdown keeps the width its longest choice asks for.
+     * OB-396: in every language the window cannot be made narrower than its top line: sized down to 200 pixels, Name,
+     * Automatically Fire, S88 and Trigger stand on one line inside it and the Trigger dropdown keeps the width its
+     * longest choice asks for.
      *
      * MUTATION: in the constructor, drop `setMinimumSize`, and the window sized down cuts the dropdown off.
      */
@@ -4669,12 +4640,11 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396, Adam: "If I have A and B and C, the current setup doesn't make it easy to change it to A and B or C."
-     * Split Here cuts the selected condition's group just above it, the two parts joined by the other rule: "21 and 22
-     * and 23" at 23 is "(21 and 22) or 23", at 22 "21 or (22 and 23)".  A nested group whose parent joins by the other
-     * rule gives the parent its two parts; one whose parent joins by the same rule stays, with the other rule.  Each
-     * by truth table against an expression written here.  Grayed with nothing selected, with two, and on a group's
-     * first condition; the button, Ctrl+Shift+S and the right-click menu do it.
+     * OB-396: Split Here cuts the selected condition's group just above it, the two parts joined by the other rule:
+     * "21 and 22 and 23" at 23 is "(21 and 22) or 23", at 22 "21 or (22 and 23)".  A nested group whose parent joins
+     * by the other rule gives the parent its two parts; one whose parent joins by the same rule stays, with the other
+     * rule.  Each by truth table against an expression written here.  Grayed with nothing selected, with two, and on a
+     * group's first condition; the button, Ctrl+Shift+S and the right-click menu do it.
      *
      * MUTATION: in `ConditionOutline.split`, join the two parts by `word` rather than `other`, and "21 and 22 and 23"
      * split at 23 still means "21 and 22 and 23".
@@ -4750,7 +4720,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The expression the editor holds. */
     private static org.traincontrol.base.NodeExpression heldBy(org.traincontrol.gui.RouteEditorFrame frame)
     {
         return org.traincontrol.base.ConditionOutline.toExpression(frame.conditionRowsForTest());
@@ -4777,19 +4746,14 @@ public class testRouteEditorValidation
     private static final String PRACTICAL = "OB396 practical ";
 
     /**
-     * OB-396, Adam: "Be sure to test this with many practical combinations/depths of conditions or nestings (such as
-     * autonomy loc not at station + all existing conditions) so that we know the editor can manage them correctly."
-     *
-     * Every kind of condition the editor offers (switch in two protocols, signal, sensor on and off, train at, train
-     * not at), alone and in nine shapes up to four levels deep, is stored in a route of a real model and opened in the
-     * real editor.  Each is checked against the shape written here by hand, not against the editor's own reading of
-     * it: one caption per group naming its word and no line for a word, the outline and what Save writes back
-     * equivalent to it by truth table, the reading's brackets and words, nothing flagged, the same conditions, and each
-     * condition drawn inside as many outlines as it has groups round it.  The deeper shapes then take a user's edits
-     * through the gestures (a caption's rule, Group Selected, Ungroup, Add Condition into a nested group set to
-     * another kind, Alt+Up and Alt+Down past and across a group's edge, drags into and out of nested groups, Delete in a
-     * nested group, Split Here), each checked the same way against the shape it should leave; every shape ends with
-     * Save and a reopen that shows it again, a nested group with its parent's rule included.
+     * OB-396: every kind of condition the editor offers (switch in two protocols, signal, sensor on and off, train at,
+     * train not at), alone and in nine shapes up to four levels deep, is stored in a route of a real model and opened
+     * in the real editor.  Each is checked against the shape written here by hand, not against the editor's own
+     * reading of it: one caption per group naming its word and no line for a word, the outline and what Save writes
+     * back equivalent to it by truth table, the reading's brackets and words, nothing flagged, the same conditions, and
+     * each condition drawn inside as many outlines as it has groups round it.  The deeper shapes then take a user's
+     * edits through the gestures (a caption's rule, Group Selected, Ungroup, Add Condition, Alt+Up and Alt+Down, drags,
+     * Delete, Split Here), each checked the same way; every shape ends with Save and a reopen that shows it again.
      *
      * MUTATION: in `ConditionOutline.grouped`, join the wrapped items by `opposite(word)`, and Group Selected on F5off
      * and S12 in shape 2 captions the new group "At least one" inside the outer "all".
@@ -5090,7 +5054,6 @@ public class testRouteEditorValidation
             javax.swing.SwingUtilities.invokeAndWait(frame::dispose);
         }
 
-        /** The outline row of the one condition that is this term. */
         int row(String term)
         {
             String key = key(terms.get(term));
@@ -5144,7 +5107,6 @@ public class testRouteEditorValidation
             rightClickAndChoose(table, row(term), "ui.delete");
         }
 
-        /** The y of the gap above a term's line. */
         int gapBefore(String term)
         {
             int line = screen(table, row(term));
@@ -5152,7 +5114,6 @@ public class testRouteEditorValidation
             return support.Components.onTheEventThread(() -> table.getCellRect(line, 1, true).y + 2);
         }
 
-        /** The y of the gap above the caption of the group a term opens. */
         int gapBeforeTheCaptionOf(String term)
         {
             int line = screen(table, row(term)) - 1;
@@ -5163,7 +5124,6 @@ public class testRouteEditorValidation
             return support.Components.onTheEventThread(() -> table.getCellRect(line, 1, true).y + 2);
         }
 
-        /** The y of the gap under the last line. */
         int gapAtEnd()
         {
             return support.Components.onTheEventThread(() ->
@@ -5206,7 +5166,6 @@ public class testRouteEditorValidation
             });
         }
 
-        /** Save, which has to find nothing wrong and close the window. */
         void save()
         {
             assertEquals(support.Components.onTheEventThread(() -> frame.problemsForTest()).toString(), "[]",
@@ -5276,7 +5235,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /** The conditions of an editor's outline by the names the terms give them, in order. */
     private static java.util.List<String> names(Practical editor)
     {
         java.util.List<String> out = new java.util.ArrayList<>();
