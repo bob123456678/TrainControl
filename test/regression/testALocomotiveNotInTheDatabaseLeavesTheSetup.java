@@ -26,16 +26,10 @@ import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.textOf;
 
 /**
- * A locomotive the database does not hold leaves the setup when a configuration naming it is loaded or imported (OB-349).
- *
- * Adam: *"suppose we import an autonomy layout with a locomotive that is not currently in the locomotive database placed on
- * a station.  when loaded, the station correctly shows empty on its label in the track diagram viewer, but right-clicking
- * that square still shows the "&lt;locomotive&gt; is facing" option, greyed out, with the name of the nonexistent
- * locomotive."*  The loader dropped the train from the railway and the setup kept it, so every reader of the setup showed
- * it, and every save wrote it back.  His ruling: *"make sure the removed locomotives are logged and that the user is
- * advised in a popup on import (manage its height if there a many locs)."*
- *
- * On the live snapshot's window, with the import door's helpers.  A class of its own, as the import door's is full.
+ * A locomotive the database does not hold leaves the setup when a configuration naming it is loaded or imported
+ * (OB-349): the loader dropped the train from the railway and the setup kept it, so every reader of the setup showed
+ * it, and every save wrote it back.  On the live snapshot's window, with the import door's helpers; a class of its own,
+ * as the import door's is full.
  *
  * @author Adam
  */
