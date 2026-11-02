@@ -57,8 +57,7 @@ public class LayoutGrid
     public static final Color AWAY_FROM_HOME_FILL = new Color(60, 60, 60, LAYOUT_STATION_OPACITY);
 
     /**
-     * Whether the column and row numbers are drawn: exactly when the grid is (OB-179).  Holds no preference of its
-     * own; the retired key is described at `TrainControlUI` and its stored value is deliberately not read.
+     * Whether the column and row numbers are drawn: exactly when the grid is (OB-179).  Holds no preference of its own.
      *
      * @return true when the numbers should be drawn
      */
@@ -69,8 +68,8 @@ public class LayoutGrid
 
     /**
      * Whether station captions are left off this diagram entirely (FR-030): in the track diagram editor, and on a page
-     * excluded from autonomy.  A method so its truth table can be asked without a window; `testEditorSurfaceRules`
-     * reads the call, to check the caller passes the right THREE booleans.
+     * excluded from autonomy.  `testEditorSurfaceRules` reads the call, to check the caller passes the right THREE
+     * booleans.
      *
      * @param inEditor whether this grid is inside an editor at all
      * @param autonomyMode whether that editor is the autonomy one
@@ -295,9 +294,8 @@ public class LayoutGrid
 
     /**
      * Whether the track on this square runs up and down rather than across (FR-028), asked of the geometry as the
-     * autonomy graph asks it, so a caption and the path through it cannot disagree.  False for a crossing, a curve, or
-     * no geometry.  A switch in its straight position answers TRUE: two identical switches saved in different states
-     * would otherwise be captioned differently.  Public so it can be checked without a grid.
+     * autonomy graph asks it, so a caption and the path through it cannot disagree.  A switch in its straight position
+     * answers TRUE.
      *
      * @param c what is drawn on the square
      * @return true when the rails run north to south and nothing else
@@ -546,8 +544,8 @@ public class LayoutGrid
     
     /**
      * The panel a diagram is built into, which paints the trains last (OB-159).  Swing has no layers, and the caption
-     * and the locomotive under it are on different components (OB-117), so the children paint in their order, then
-     * every tile is asked for its train.  Public and static so a test can build one from plain components.
+     * and the locomotive under it are on different components.  Public and static so a test can build one from plain
+     * components.
      *
      * @return a panel that draws tiles, captions, curve spills (with their arrows and captions over them), trains,
      * addresses
@@ -1203,13 +1201,9 @@ public class LayoutGrid
                     if (text.isPill())
                     {
                         // Adam: "land them so that they align just below straight tracks if the track goes east to
-                        // west, or centered over the track if north to south."  A blank square has no rails, so it
-                        // takes the east-west answer.
-                        //
-                        // A border and not gbc.anchor: this cell is gridheight = 0 (REMAINDER), so anchoring SOUTH
-                        // inside it means the bottom of the PAGE.  NORTHWEST because a caption must not vote on the
-                        // row's baseline (BASELINE_LEADING aligns every component anchored that way, OB-115).  Rotated
-                        // for track that runs up the square.
+                        // west, or centered over the track if north to south."  A border and not gbc.anchor: this cell
+                        // is gridheight = 0 (REMAINDER), so SOUTH would mean the bottom of the PAGE; NORTHWEST so a
+                        // caption does not vote on the row's baseline (OB-115).
                         boolean onEnd = runsNorthSouth(c);
 
                         text.setRotated(onEnd);
