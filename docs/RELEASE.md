@@ -1,7 +1,7 @@
 # Releasing TrainControl
 
 Development happens on `dev`.  `master` is the release: `dev`'s tree less the development records (everything under
-`docs/` except `docs/tools`, the three test classes that check those records, and the note beside the guide's
+`docs/` except `docs/tools`, the four test classes that check those records, and the note beside the guide's
 pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never has a merge to resolve.
 
 ## Before
@@ -17,7 +17,7 @@ pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never 
 
 4. `bash docs/tools/release-tree.sh dev <file holding the commit message>` writes it to the local branch `release`,
    with `master` and the `dev` commit as its parents.  `master` does not move.
-5. `git diff --stat dev release` should show only the paths above and three lines of `build.xml`.
+5. `git diff --stat dev release` should show only the paths above and four lines of `build.xml`.
 
 ## The gate
 
@@ -25,7 +25,9 @@ pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never 
    `TC_SCRATCH=<scratch folder> bash docs/tools/battery.sh > battery.log`.
    Outside the main checkout three classes are always red, because the live layout preference is kept per folder:
    `core.testMockCentralStation`, `core.testRouteInventory`, `regression.testConfirmedGoodState`.  Run those from the
-   main checkout on `dev`, with the three record tests the release tree leaves out.
+   main checkout on `dev`, with the four record tests the release tree leaves out.  On the release tree
+   `regression.testNoNewCopies` asks to lower its test-copies pin: the record tests it leaves out held copies.  Leave
+   the pin, which is green on `dev`.
 7. Anything changed after the battery: run the classes it touches and the bookkeeping classes, then rebuild the
    release commit (step 4).
 
