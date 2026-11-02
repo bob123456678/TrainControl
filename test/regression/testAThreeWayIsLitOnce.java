@@ -23,12 +23,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the
- * other (OB-286).
- *
- * A square both commanded and checked is drawn as commanded - the stronger statement.  The rule was asked per address,
- * and a three-way answers to two: commanded under its first and checked under its second, it was washed
- * yellow and then orange, and the orange stayed.  On the frozen railway's 1 - Main, which has three-ways; a route whose
- * command sets one of them and whose condition asks its other decoder.
+ * other (OB-286): a square both commanded and checked is drawn as commanded, the stronger statement.
  *
  * MUTATION: light the checked accessories without leaving out the squares already commanded, and this fails.
  *
