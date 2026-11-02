@@ -243,13 +243,8 @@ public class testAutonomySimulationSanity
     }
 
     /**
-     * A train stopped to turn on its way is where it turns, not at the sensor before.
-     *
-     * The run turns a train at a reversing point it has reached (its sensor has answered), and until the turn is
-     * recorded the railway would place the train a square back and the diagram would draw it there (OB-317).  A line A,
-     * M, R, B with R a reversing point; every place the railway gives while the train stands still between start and
-     * end is checked, and the railway says so while the train turns, so the diagram is redrawn then.  Beside the turn
-     * at the destination, which needs a run that completes.
+     * A train stopped to turn on its way is where it turns, not at the sensor before (OB-317): the railway says so
+     * while the train turns, so the diagram is redrawn then.
      *
      * MUTATION: record the turning point only after the turn again, or tell nothing at the turn's stop, and this fails.
      */
