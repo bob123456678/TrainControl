@@ -446,9 +446,9 @@ public class testPageIdsAreDurable
     /**
      * An index written in the platform's encoding is read, not refused.
      *
-     * `writeLayoutIndex` once used a default-encoding `FileWriter`, so a page called "Bahnhof Süd" written by an
-     * older build on Windows is not valid UTF-8.  Refusing to renumber on a failed read left the index unwritable, so
-     * this asserts both that the ids survive the read and that the write goes through.
+     * A page called "Bahnhof Süd" written by an older build on Windows, in the platform's encoding, is not valid UTF-8.
+     * Refusing to renumber on a failed read leaves the index unwritable, so this asserts both that the ids survive the
+     * read and that the write goes through.
      */
     @Test
     public void testAnIndexInThePlatformEncodingIsStillReadableAndWritable() throws IOException
