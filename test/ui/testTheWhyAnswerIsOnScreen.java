@@ -9,23 +9,11 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 
 /**
- * OB-191: "why not moving" painted the paths and then said nothing.  Adam: *"when i click on DRG 06 001, 'why not
- * moving' in the autonomy editor correctly paints the paths, but it does not show the list of reasons in the top
- * banner - the banner expands, but I see no text."*
- *
- * The paths are painted and the banner EXPANDS, so the message was composed, handed over and made room for: the fault
- * is in the LAYING OUT.  The banner puts its scroll pane in a `GridBagLayout` with `fill = HORIZONTAL` and
- * `anchor = CENTER`, so a short message sits in the middle of the strip (OB-151, Adam: *"center them vertically within
- * their shaded backgrounds"*).  `GridBagLayout` imposes the cell's height on a child only for `BOTH` or `VERTICAL`;
- * with `HORIZONTAL` the child keeps its PREFERRED height and `CENTER` places it at
- * `(cellHeight - preferredHeight) / 2`, negative for any message taller than the strip (capped at three lines,
- * `MOST_LINES`, OB-366).  So the scroll pane hangs above the strip, shows a slice of its middle, never gets a
- * scrollbar, and `hold`'s `setValue(0)` does nothing.
- *
- * Measured in the mounting the editor uses: `LayoutEditor` floats this banner over the bottom of the diagram's
- * viewport (`AutonomyBanner.floatOver`), which gives it the viewport's width and its own preferred height; a test that
- * set that height itself would be choosing the answer.  And asserted in ink: the geometry says WHY, the pixels are
- * what Adam is looking at.
+ * OB-191: "why not moving" painted the paths and then said nothing; the fault is in the LAYING OUT of the banner's
+ * scroll pane, since the message was composed, handed over and made room for.  Measured in the mounting the editor
+ * uses: `LayoutEditor` floats this banner over the bottom of the diagram's viewport (`AutonomyBanner.floatOver`), which
+ * gives it the viewport's width and its own preferred height; a test that set that height itself would be choosing the
+ * answer.  And asserted in ink: the geometry says WHY, the pixels are what Adam is looking at.
  *
  * MUTATION: put `middle.fill = java.awt.GridBagConstraints.HORIZONTAL` back in `AutonomyBanner`'s constructor and the
  * first two go red - the first quoting the five pixels, the second reporting no ink at all.
