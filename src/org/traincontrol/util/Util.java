@@ -838,4 +838,56 @@ public class Util
             return escaped;
         }
     }
+
+    /**
+     * Names in the order a person reads them (MT-865): case aside, and a run of digits by its value, so ParkingTrack4
+     * comes before ParkingTrack10.  Names that read the same fall back to plain order, so only equal names tie.
+     *
+     * @param a one name
+     * @param b the other
+     * @return negative, zero or positive, as Comparator
+     */
+    public static int compareAsRead(String a, String b)
+    {
+        int i = 0;
+        int j = 0;
+
+        while (i < a.length() && j < b.length())
+        {
+            char x = a.charAt(i);
+            char y = b.charAt(j);
+
+            if (Character.isDigit(x) && Character.isDigit(y))
+            {
+                int endA = i;
+                int endB = j;
+
+                while (endA < a.length() && Character.isDigit(a.charAt(endA))) endA++;
+                while (endB < b.length() && Character.isDigit(b.charAt(endB))) endB++;
+
+                // Leading zeros aside, the longer run is the larger number; equal lengths compare digit by digit
+                String m = a.substring(i, endA).replaceFirst("^0+(?=.)", "");
+                String n = b.substring(j, endB).replaceFirst("^0+(?=.)", "");
+
+                int byValue = m.length() != n.length() ? m.length() - n.length() : m.compareTo(n);
+
+                if (byValue != 0) return byValue;
+
+                i = endA;
+                j = endB;
+                continue;
+            }
+
+            int byLetter = Character.compare(Character.toLowerCase(x), Character.toLowerCase(y));
+
+            if (byLetter != 0) return byLetter;
+
+            i++;
+            j++;
+        }
+
+        int byLength = (a.length() - i) - (b.length() - j);
+
+        return byLength != 0 ? byLength : a.compareTo(b);
+    }
 }

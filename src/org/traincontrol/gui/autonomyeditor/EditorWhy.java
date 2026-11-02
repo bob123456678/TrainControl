@@ -101,7 +101,8 @@ final class EditorWhy extends SettledQuestion
         // (non-autonomy stations), both in alphabetical order"*), grouped as `AutoLocomotiveStatus.whyNotReport` groups
         // its window (a station with any copy autonomy could choose is filed with the choosable ones).  And by page
         // first (MT-429): the page this editor shows, or where it has none the page the train stands on, then the
-        // others in page-name order.
+        // others in page-name order.  Names as a person reads them (MT-865), so ParkingTrack4 comes before
+        // ParkingTrack10.
         final String currentPage = editor.page != null ? editor.page : tile.getPage();
 
         final java.util.Map<String, String[]> sortKey = new java.util.HashMap<>();
@@ -115,7 +116,7 @@ final class EditorWhy extends SettledQuestion
 
             if (byPage != 0) return byPage;
 
-            int byName = x[1].compareTo(y[1]);
+            int byName = org.traincontrol.util.Util.compareAsRead(x[1], y[1]);
 
             return byName != 0 ? byName : a.compareTo(b);
         };
@@ -202,7 +203,7 @@ final class EditorWhy extends SettledQuestion
         // say what the setup holds.
         String going = available.isEmpty()
             ? I18n.t("autosetup.ui.whyNowhere")
-            : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(join(new java.util.ArrayList<>(available))));
+            : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(String.join(", ", available)));
 
         StringBuilder blocked = new StringBuilder();
 
@@ -235,7 +236,7 @@ final class EditorWhy extends SettledQuestion
         }
 
         return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyReport", AutonomyEditorPanel.escape(standing.getName()),
-            going, colours(marks.values()) + detail + unsavedWarning()), true, drawn, marks);
+            going, detail + unsavedWarning() + colours(marks.values())), true, drawn, marks);
     }
 
     /**
@@ -364,7 +365,7 @@ final class EditorWhy extends SettledQuestion
         for (TileKey square : outOfReach) marks.putIfAbsent(square, ToolMark.NOT_NOW);
     }
 
-    /** What the stations' colors mean, naming only the colors drawn, on the line under where it can go. */
+    /** What the stations' colors mean, naming only the colors drawn, last and after an empty line (MT-865). */
     private static String colours(java.util.Collection<ToolMark> drawn)
     {
         java.util.List<String> said = new java.util.ArrayList<>();
@@ -373,7 +374,7 @@ final class EditorWhy extends SettledQuestion
         if (drawn.contains(ToolMark.NOT_NOW)) said.add(I18n.t("autosetup.ui.whyColourGray"));
         if (drawn.contains(ToolMark.NEVER)) said.add(I18n.t("autosetup.ui.whyColourPurple"));
 
-        return said.isEmpty() ? "" : "<br>" + AutonomyEditorPanel.escape(String.join("  ", said));
+        return said.isEmpty() ? "" : "<br><br>" + AutonomyEditorPanel.escape(String.join("  ", said));
     }
 
     /**
@@ -469,30 +470,6 @@ final class EditorWhy extends SettledQuestion
     {
         return editor.session != null && editor.session.isDirty()
             ? "<br><br>" + AutonomyEditorPanel.escape(I18n.t("autosetup.ui.whyUnsaved")) : "";
-    }
-
-    /** Station names, comma separated, capped so one line stays one line. */
-    private static String join(java.util.List<String> names)
-    {
-        StringBuilder out = new StringBuilder();
-
-        int shown = 0;
-
-        for (String name : names)
-        {
-            if (shown == 4)
-            {
-                out.append(", ...");
-                break;
-            }
-
-            if (shown > 0) out.append(", ");
-
-            out.append(name);
-            shown++;
-        }
-
-        return out.toString();
     }
 
     @Override

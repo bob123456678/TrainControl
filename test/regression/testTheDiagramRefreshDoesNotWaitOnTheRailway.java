@@ -497,27 +497,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
-
-        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
-
-        final java.lang.reflect.Method why = theWhyTool();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                why.invoke(panel, occupied, drawn);
-            }
-            catch (Exception failed)
-            {
-                throw new RuntimeException(failed);
-            }
-        });
-
-        assertTrue(awaitWhy(panel), "the why answer never landed");
-
-        pump();
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = answered(occupied);
 
         String said = whatTheEditorSays(panel);
 
@@ -632,29 +612,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
-
-        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
-
-        final java.lang.reflect.Method why = theWhyTool();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                why.invoke(panel, occupied, drawn);
-            }
-            catch (Exception failed)
-            {
-                throw new RuntimeException(failed);
-            }
-        });
-
-        assertTrue(awaitWhy(panel), "the why answer never landed");
-
-        pump();
-
-        String said = whatTheEditorSays(panel);
+        String said = whatTheEditorSays(answered(occupied));
 
         org.traincontrol.base.Locomotive train = trainOn(occupied);
 
@@ -825,6 +783,35 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return out;
     }
 
+    /** A Why panel that has answered for the train on a square. */
+    private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel answered(
+        final org.traincontrol.automationui.TileGraph.TileKey occupied) throws Exception
+    {
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aWhyPanel();
+
+        final org.traincontrol.base.LayoutDiagramComponent drawn = theSquareItself(occupied);
+
+        final java.lang.reflect.Method why = theWhyTool();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                why.invoke(panel, occupied, drawn);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(awaitWhy(panel), "the why answer never landed");
+
+        pump();
+
+        return panel;
+    }
+
     /** A copy in the order MT-429 asks for: page (the train's own first, then by name), then station name. */
     private static java.util.List<String> inPageOrder(java.util.List<String> names,
         final java.util.Map<String, String[]> rank)
@@ -840,12 +827,115 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
             if (byPage != 0) return byPage;
 
-            int byName = x[1].compareTo(y[1]);
+            int byName = org.traincontrol.util.Util.compareAsRead(x[1], y[1]);
 
             return byName != 0 ? byName : a.compareTo(b);
         });
 
         return copy;
+    }
+
+    /**
+     * Station names sort as a person reads them (MT-865: "Make sure you short alphabetically for all the staiton
+     * lists here"): ParkingTrack4 before ParkingTrack10, as the sample layout's parking tracks are named, and case
+     * aside.
+     *
+     * MUTATION: `compareAsRead` returning `a.compareTo(b)`, and this fails on ParkingTrack10 before ParkingTrack4.
+     */
+    @Test
+    public void testStationNamesSortAsRead() throws Exception
+    {
+        java.util.List<String> names = new java.util.ArrayList<>(java.util.Arrays.asList(
+            "ParkingTrack10", "TunnelPre", "ParkingTrack4", "parkingTrack5", "BottomMainA", "ParkingTrack12"));
+
+        java.util.Collections.sort(names, org.traincontrol.util.Util::compareAsRead);
+
+        assertEquals(names, java.util.Arrays.asList(
+            "BottomMainA", "ParkingTrack4", "parkingTrack5", "ParkingTrack10", "ParkingTrack12", "TunnelPre"),
+            "station names are not in the order they are read");
+
+        assertTrue(org.traincontrol.util.Util.compareAsRead("Track07", "Track7") != 0,
+            "two different names compare as equal, so a sorted set would keep only one of them");
+    }
+
+    /**
+     * The why answer names every station the train can go to, not the first four, and ends with what its colors mean,
+     * after an empty line (MT-865: "show all stations that it could go to, not just the first 4 ... move the color
+     * legend to the very end of the text, preceded by an empty line").
+     *
+     * MUTATION: put back the cap of four in the "can go to" list (`String.join(", ", available)` limited to four
+     * names), and this fails on the fifth station; put `colours(...)` back before `detail`, and it fails on the order.
+     */
+    @Test
+    public void testTheWhyAnswerNamesEveryStationAndEndsWithItsColors() throws Exception
+    {
+        squareWithATrainOnIt();
+
+        // The standing train with the most places to go, so a cap of four has something to cut
+        org.traincontrol.automationui.TileGraph.TileKey most = null;
+
+        int mostPlaces = -1;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getStationIndex().squares())
+        {
+            org.traincontrol.base.Locomotive standing = trainOn(square);
+
+            if (standing == null || layout.explainCannotStart(standing) != null) continue;
+
+            int places = 0;
+
+            for (String reason : layout.explainDestinationsGrouped(standing).getReasons().values())
+            {
+                if (reason == null) places++;
+            }
+
+            if (places > mostPlaces)
+            {
+                most = square;
+                mostPlaces = places;
+            }
+        }
+
+        assertNotNull(most, "no standing train on this snapshot can start, so there is no list to read");
+
+        final org.traincontrol.automationui.TileGraph.TileKey occupied = most;
+
+        String said = whatTheEditorSays(answered(occupied));
+
+        org.traincontrol.base.Locomotive train = trainOn(occupied);
+
+        assertNotNull(train, "no train stands on " + occupied + ", so there is no answer to read");
+
+        java.util.Set<String> canGo = new java.util.TreeSet<>();
+
+        for (java.util.Map.Entry<String, String> entry : layout.explainDestinationsGrouped(train).getReasons().entrySet())
+        {
+            if (entry.getValue() == null) canGo.add(shownAs(entry.getKey(), occupied));
+        }
+
+        assertTrue(canGo.size() > 4, "precondition: " + train.getName() + " can go to " + canGo.size()
+            + " stations, too few for a cap of four to show: " + canGo);
+
+        String first = said.split("<br>")[0];
+
+        for (String station : canGo)
+        {
+            assertTrue(first.contains(station.replace("&", "&amp;").replace("<", "&lt;")), station + " is a station "
+                + train.getName() + " can go to, and the answer's first line leaves it out: " + first);
+        }
+
+        String legend = org.traincontrol.util.I18n.t("autosetup.ui.whyColourGreen");
+
+        int at = said.indexOf(legend);
+
+        assertTrue(at > 0, "the answer does not say what green means: " + said);
+
+        String before = said.substring(0, at);
+
+        assertTrue(before.endsWith("<br><br>"), "the color legend is not after an empty line: " + said);
+
+        assertFalse(said.substring(at).contains("<br>"), "a line comes after the color legend, which should end the"
+            + " answer: " + said);
     }
 
     /**
