@@ -655,8 +655,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     /**
      * Puts the report into the pane, with the group headings in bold (MT-160, MT-163).  A heading is recognized by
-     * position rather than by matching its text: each is on its own line immediately before an indented block, and
-     * matching translated text would work in English and quietly do nothing in the other seven bundles.
+     * position, not by its text, which would quietly do nothing in the other seven bundles.
      *
      * @param pane the window's text
      * @param report what whyNotReport produced
@@ -815,10 +814,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Works out why the train has nowhere to go and puts it on the line as its tooltip.  OFF the event thread (OB-079):
-     * explainDestinations takes the Layout's monitor, which a dispatch holds across its per-command sleeps, so hovering
-     * during a dispatch would freeze the window.  The tooltip arrives a moment later, and nothing is shown meanwhile
-     * because a tooltip that changes under the pointer reads as a glitch.
+     * Works out why the train has nowhere to go and puts it on the line as its tooltip, OFF the event thread (OB-079):
+     * explainDestinations takes the Layout's monitor, which a dispatch holds across its per-command sleeps.
      */
     private void workOutWhy()
     {
@@ -952,11 +949,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Drops the destinations this train may not be sent to at all: `OB-205` put that rule in
-     * `Layout.isOfferableToOperator`.  The dash and this filter are not the same question and both are wanted: the dash
-     * says autonomy will not choose this (true of a parking berth the operator may pick by hand), this says you may
-     * not send this train here (a terminus it could not leave again).  This is the rule itself, not a copy, unlike the
-     * lock-free `notChosenByAutonomy` beside it.
+     * Drops the destinations this train may not be sent to at all, by `Layout.isOfferableToOperator` (OB-205); the rule
+     * itself, not a copy.  Not the same question as the dash (autonomy will not choose this), and both are wanted.
      *
      * @param paths the paths the search returned
      * @return the ones the operator may actually choose
