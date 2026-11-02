@@ -1136,6 +1136,8 @@ public final class LayoutLabel extends JLabel
             {
                 faded.dispose();
             }
+
+            paintCurvedSensorsArrowsWhole(g);
         }
         else
         {
@@ -1250,6 +1252,54 @@ public final class LayoutLabel extends JLabel
      * layout; blocked track is a fact about this minute and must be told apart at a glance.
      */
     public static final float BLOCKED_ALPHA = 0.40f;
+
+    /**
+     * An active curved sensor's red arrows, drawn again at full strength over its faded square (OB-400): they say the
+     * contact reads occupied, which the fade for a parked train must not wash out.  A straight's fade with its square.
+     */
+    private void paintCurvedSensorsArrowsWhole(java.awt.Graphics g)
+    {
+        if (component == null || !component.isFeedback()
+            || component.getType() == LayoutDiagramComponent.componentType.FEEDBACK
+            || component.getFeedback() == null || !component.getFeedback().isSet()) return;
+
+        Icon icon = getIcon();
+
+        if (!(icon instanceof ImageIcon)) return;
+
+        java.awt.image.BufferedImage arrows = ARROWS.computeIfAbsent(((ImageIcon) icon).getImage(),
+            LayoutLabel::redOf);
+
+        java.awt.Insets in = getInsets();
+
+        g.drawImage(arrows, in.left, in.top, null);
+    }
+
+    /** The red each tile picture has, worked out once: an active sensor's art draws only its arrows in red. */
+    private static final Map<Image, java.awt.image.BufferedImage> ARROWS =
+        java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /** The picture's red, with the soft edge it fades into white by, and nothing else. */
+    private static java.awt.image.BufferedImage redOf(Image picture)
+    {
+        java.awt.image.BufferedImage art = LayoutDiagramComponent.toBufferedImage(picture);
+
+        java.awt.image.BufferedImage red = new java.awt.image.BufferedImage(art.getWidth(), art.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        for (int y = 0; y < art.getHeight(); y++)
+        {
+            for (int x = 0; x < art.getWidth(); x++)
+            {
+                int argb = art.getRGB(x, y);
+                int r = (argb >> 16) & 0xFF, gr = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+                if (r >= 200 && r - gr > 20 && Math.abs(gr - b) <= 8) red.setRGB(x, y, argb);
+            }
+        }
+
+        return red;
+    }
 
     /**
      * One coach of a train, along one road of a square (T2 of the look's train tails).  Whole coaches, one to a square:

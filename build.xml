@@ -630,6 +630,7 @@
         <test-one-class class="testTestSleepsOnlyGoDown"/>
         <test-one-class class="testBuildingARouteByHand"/>
         <test-one-class class="testChangingARouteByHand"/>
+        <test-one-class class="testACurvedSensorShowsItsArrowsBesideAParkedTrain"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
