@@ -21,23 +21,17 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * FR-069: Clear All Track Lengths, on the Bulk Tools menu.
- *
- * Adam: **"to autonomy bulk tools menu, add 'clear all track lengths' - this should clear the segment lengths across
- * all pages, after the user confirms in a popup."**
+ * FR-069: Clear All Track Lengths, on the Bulk Tools menu: it clears the segment lengths across all pages, after the
+ * user confirms in a popup.
  *
  * Across all pages is the load-bearing half: lengths are keyed by a square that names its own page, so the fixture
- * measures squares on more than one page and the claim is that none survives; a per-page clear would pass a test that
- * only looked at one.
+ * measures squares on more than one page and the claim is that none survives.
  *
- * The dialog itself is not asserted (a modal cannot be opened from a test without a robot).  What stands in for it is
- * the pair the menu already keeps: the item's tooltip is the same sentence the confirmation shows, from the same
- * builder (OB-194).  The guard is asserted as well as the graying: the item disables itself when nothing is measured,
- * and `clearAllTileLengths` refuses again when pressed (OB-057, OB-090); only the first is reachable from here, the
- * second through the session door it calls.
+ * The dialog itself is not asserted (a modal cannot be opened without a robot); what stands in for it is the item's
+ * tooltip, the same sentence the confirmation shows (OB-194).  The guard is asserted too: the item disables itself when
+ * nothing is measured (OB-057).
  *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111), which carries no lengths of its own, so every length here
- * is one this class set.
+ * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111), which carries no lengths of its own.
  *
  * MUTATION: make `clearEveryTileLength` clear only the active page's squares and `testItClearsEveryPage` fails; take
  * the count out of the message and `testTheTooltipSaysHowMuchItWillForget` does.
