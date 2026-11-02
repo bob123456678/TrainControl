@@ -11,16 +11,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263).
- *
- * Start refuses with an error message saying errors must first be fixed, and trains moved manually via the track
- * diagram viewer or the autonomy tab must be refused the same way.  A hand send runs over the railway the same setup
- * built, so the same question,
- * `autonomyHasErrors`, is asked at both hand doors (the diagram's right-click destinations and the Auto tab's list of
- * paths) and at the two run doors that dispatch without Start, Execute Timetable and Return Home.
- *
- * Asked of the words, then of the doors, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioral claim
- * would have to raise the modal dialog each door shows.
+ * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263): the same
+ * question, `autonomyHasErrors`, is asked at both hand doors and at the two run doors that dispatch without Start.
+ * Asked of the words, then of the doors, as `testTheRefusalToStartSaysWhichThing` asks Start's.
  *
  * MUTATION: take the refusal out of either door, or ask it after the reversal question, and the second claim fails
  * naming the door; make the window's rule answer nothing for a broken setup, or invert its guard, and the window's
@@ -453,8 +446,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
     /**
      * Both hand doors say when a train would run into its own tail, after the berth's refusal and before the reversal
-     * question - the third standing refusal with a sentence.  `isPathClear` still refuses at dispatch without it, but
-     * with "check the log" in place of the sentence naming the longest train that goes (MT-262).
+     * question (MT-262).
      *
      * MUTATION: take the own-tail block out of either door, and this fails naming it.
      */
@@ -499,13 +491,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * Over the break MT-263, MT-573 and MT-580 make - 4 - Combined switched back on, whose sensors repeat the other
      * pages' - every door that would move a train says why it will not, each in its own words, and no train moves.
      *
-     * The claim above reads the Return Home item over a station left unnamed; this one takes the entries' own break and
-     * gestures: the diagram's right-click menu on a station, built as `showFor` builds it, with Start and Return Home
-     * read off it; then the Start Autonomy, Return Home and Execute Timetable buttons pressed, with what each says read
-     * off the dialog it raises.
-     *
-     * MUTATION: take the refusal out of Return Home or Execute Timetable, hand Return Home's item Start's sentence, offer
-     * Start's item live, or have Start's press say something other than its tooltip, and this fails naming it.
+     * MUTATION: take the refusal out of Return Home or Execute Timetable, hand Return Home's item Start's sentence,
+     * offer Start's item live, or have Start's press say something other than its tooltip, and this fails naming it.
      */
     @Test
     public void testTheEntriesBreakIsRefusedAtEveryDoor() throws Exception
