@@ -57,9 +57,13 @@ def battery_running():
 
 
 def dashed(line):
-    """An em dash, an en dash or a spaced hyphen in prose; code spans are left out."""
+    """An em dash, an en dash or a spaced hyphen in prose.  Code spans, image alt text, a bracketed date range such as
+    "[11/2025 - 3/2026]" and a table cell holding only keys such as "+ and -" are not prose.  Same as precommit.py's."""
     prose = re.sub(r'`[^`]*`', '', line)
-    return '—' in prose or '–' in prose or re.search(r'\S - \S', prose) is not None
+    prose = re.sub(r'!\[[^\]]*\]', '', prose)
+    prose = re.sub(r'\[\d[\d/.]* - [^\]]*\]', '', prose)
+    cells = prose.strip().strip('|').split('|') if prose.lstrip().startswith('|') else [prose]
+    return any('—' in c or '–' in c or re.search(r'\S - \S', c) for c in cells)
 
 
 # Root files that are Adam's live state, and the live layout folder
@@ -85,7 +89,7 @@ def judge_write(tool, ti, cwd):
         answer('deny', 'bundles are ASCII: write ' + ', '.join('\\u%04X' % ord(c) for c in bad)
                + ' instead of the characters themselves.')
     if r.lower() in ('readme.md', 'automation.md'):
-        # Only lines this call adds: the files keep a few of Adam's, such as the changelog's "[11/2025 - 3/2026]"
+        # Only lines this call adds, so a line it keeps is never judged
         if tool == 'Write':
             try:
                 before = open(path, encoding='utf-8').read()
@@ -104,30 +108,263 @@ def judge_write(tool, ti, cwd):
             answer('ask', 'a battery is running (pid ' + pid + '); a .java edit now changes what it measures.')
 
 
-GIT = r'(?:^|[;&|(`]\s*|\s)git(?:\s+-C\s+\S+)?\s+'
+# A shell command is judged as the simple commands it is made of, each a list of words with its quotes taken off, so
+# text inside a quoted argument (a commit message, a grep pattern) is never read as a command.  This catches slips,
+# not intent: a script, an alias or a variable can still hide a command.
+
+def drop_heredocs(cmd):
+    """cmd without the bodies of its heredocs and PowerShell here-strings, which are data."""
+    cmd = re.sub(r'@([\'"])[ \t]*\r?\n.*?\r?\n\1@', "''", cmd, flags=re.S)
+    out, ends = [], []
+    for line in cmd.split('\n'):
+        if ends:
+            if line.strip() == ends[0]:
+                ends.pop(0)
+            continue
+        out.append(line)
+        ends += [m.group(2) for m in re.finditer(r'(?<!<)<<-?\s*([\'"]?)([A-Za-z_][\w.-]*)\1', line)]
+    return '\n'.join(out)
 
 
-def judge_shell(cmd, cwd):
-    scoped = in_repo(cwd, '') or NAME.lower() in cmd.lower()
-    if re.search(r'-ExecutionPolicy\s+Bypass', cmd, re.I):
-        answer('deny', '-ExecutionPolicy Bypass is never used; run the script another way.')
-    if not scoped:
-        return
-    if re.search(GIT + r'add\b[^;&|]*(\s-A\b|\s--all\b|\s-u\b|\s--update\b|\s\.(\s|$)|\s\*)', cmd):
-        answer('deny', 'stage files by name: no git add -A, --all, -u or "."')
-    if re.search(GIT + r'commit\b[^;&|]*\s(-a\b|-am\b|--all\b)', cmd):
-        answer('deny', 'stage files by name: no git commit -a')
-    if re.search(GIT + r'stash\b(?!\s+(list|show)\b)', cmd):
-        answer('deny', 'no git stash: it can take Adam\'s uncommitted edits with it.')
-    if re.search(GIT + r'clean\b[^;&|]*\s-\w*f', cmd):
-        answer('deny', 'no git clean -f: it deletes untracked files outright.')
-    if re.search(r'--no-verify\b', cmd) and re.search(GIT + r'(commit|push)\b', cmd):
+def lex(cmd, ps):
+    """The simple commands in cmd as (words, output redirection targets): split at unquoted ; & | ( ) newlines,
+    backticks in bash, and { } at a word's edge.  ps: PowerShell quoting, where the backtick escapes."""
+    segs, words, targets = [], [], []
+    cur, has, redirect = [], False, None
+    esc = '`' if ps else '\\'
+    i, n = 0, len(cmd)
+
+    def flush():
+        nonlocal cur, has, redirect
+        if has:
+            w = ''.join(cur)
+            if redirect == 'out':
+                targets.append(w)
+            elif redirect is None:
+                words.append(w)
+            redirect = None
+        cur, has = [], False
+
+    def cut():
+        nonlocal words, targets, redirect
+        flush()
+        if words or targets:
+            segs.append((words, targets))
+        words, targets, redirect = [], [], None
+
+    while i < n:
+        c = cmd[i]
+        if c == esc and i + 1 < n:
+            nxt = cmd[i + 1]
+            if nxt in '\r\n':
+                i += 3 if cmd[i + 1:i + 3] == '\r\n' else 2
+            elif ps or nxt in ' \t"\'\\$`;&|<>(){}':
+                cur.append(nxt)
+                has = True
+                i += 2
+            else:
+                cur.append(c)
+                has = True
+                i += 1
+            continue
+        if c == "'":
+            j = cmd.find("'", i + 1)
+            j = n if j < 0 else j
+            cur.append(cmd[i + 1:j])
+            has, i = True, j + 1
+            continue
+        if c == '"':
+            j, buf = i + 1, []
+            while j < n and cmd[j] != '"':
+                if cmd[j] == esc and j + 1 < n and (ps or cmd[j + 1] in '"\\$`\n'):
+                    buf.append(cmd[j + 1])
+                    j += 2
+                else:
+                    buf.append(cmd[j])
+                    j += 1
+            cur.append(''.join(buf))
+            has, i = True, j + 1
+            continue
+        if c in ' \t\r':
+            flush()
+        elif c == '#' and not has:
+            while i < n and cmd[i] != '\n':
+                i += 1
+            continue
+        elif c in ';|\n()' or (c == '`' and not ps) or (c in '{}' and not has):
+            cut()
+        elif c == '&':
+            if cmd[i + 1:i + 2] == '>':
+                flush()
+                i += 3 if cmd[i + 2:i + 3] == '>' else 2
+                redirect = 'out'
+                continue
+            cut()
+        elif c == '>':
+            if has and re.match(r'^[0-9*]$', ''.join(cur)):
+                cur, has = [], False
+            flush()
+            i += 1
+            if i < n and cmd[i] in '>|':
+                i += 1
+            if i < n and cmd[i] == '&':
+                i += 1
+                while i < n and (cmd[i].isdigit() or cmd[i] == '-'):
+                    i += 1
+            else:
+                redirect = 'out'
+            continue
+        elif c == '<':
+            flush()
+            while i < n and cmd[i] == '<':
+                i += 1
+            redirect = 'in'
+            continue
+        else:
+            cur.append(c)
+            has = True
+        i += 1
+    cut()
+    return segs
+
+
+def base(word):
+    """A command word's name: no folder, no .exe, lower case."""
+    b = re.split(r'[/\\]', word)[-1].lower()
+    return b[:-4] if b.endswith('.exe') else b
+
+
+PREFIXES = {'env', 'command', 'exec', 'time', 'nice', 'nohup', 'sudo', 'builtin', 'xargs', '!'}
+
+
+def command_at(words):
+    """The index of the word naming the command, past variable assignments and prefixes such as env or xargs."""
+    i = 0
+    while i < len(words):
+        w = words[i]
+        if re.match(r'^[A-Za-z_]\w*=', w):
+            i += 1
+        elif w.startswith('$') and words[i + 1:i + 2] == ['=']:
+            i += 2
+        elif base(w) in PREFIXES:
+            i += 1
+            while i < len(words) and words[i].startswith('-'):
+                i += 2 if words[i] in ('-n', '-I', '-L', '-P', '-d', '-s', '-E', '-a', '-u') else 1
+        else:
+            return i
+    return i
+
+
+def segments(cmd, ps, depth=0):
+    """Every simple command in cmd, with the script given to bash -c, sh -c, cmd /c, powershell -Command, eval or
+    Invoke-Expression added as commands of its own."""
+    segs = lex(drop_heredocs(cmd), ps)
+    for words, _ in list(segs):
+        ci = command_at(words)
+        if depth > 3 or ci >= len(words):
+            continue
+        name, rest = base(words[ci]), words[ci + 1:]
+        inner = None
+        if name in ('bash', 'sh', 'zsh', 'dash', 'ksh'):
+            at = [k for k, w in enumerate(rest) if re.match(r'^-[a-zA-Z]*c[a-zA-Z]*$', w)]
+            if at and at[0] + 1 < len(rest):
+                inner = (rest[at[0] + 1], False)
+        elif name == 'cmd':
+            at = [k for k, w in enumerate(rest) if w.lower() in ('/c', '/k', '//c', '//k')]
+            if at:
+                inner = (' '.join(rest[at[0] + 1:]), True)
+        elif name in ('powershell', 'pwsh'):
+            at = [k for k, w in enumerate(rest) if len(w) > 1 and '-command'.startswith(w.lower())]
+            if at:
+                inner = (' '.join(rest[at[0] + 1:]), True)
+        elif name in ('eval', 'iex', 'invoke-expression'):
+            inner = (' '.join(rest), ps)
+        if inner:
+            segs += segments(inner[0], inner[1], depth + 1)
+    return segs
+
+
+def options(args, takes_next='', takes_rest='', long_takes=()):
+    """args as (flags, positionals).  A short letter in takes_next takes the rest of its cluster or the next word as its
+    value, one in takes_rest only the rest of its cluster; a long name in long_takes takes the next word unless it has
+    an =.  Everything after -- is positional."""
+    flags, pos, i = set(), [], 0
+    while i < len(args):
+        a = args[i]
+        if a == '--':
+            pos += args[i + 1:]
+            break
+        if a.startswith('--'):
+            name = a[2:].split('=', 1)[0]
+            flags.add('--' + name)
+            if '=' not in a and name in long_takes:
+                i += 1
+        elif a.startswith('-') and len(a) > 1:
+            for k, ch in enumerate(a[1:]):
+                flags.add('-' + ch)
+                if ch in takes_next or ch in takes_rest:
+                    if ch in takes_next and k == len(a) - 2:
+                        i += 1
+                    break
+        else:
+            pos.append(a)
+        i += 1
+    return flags, pos
+
+
+# Pathspecs that mean the whole tree
+WHOLE = {'.', './', '.\\', '*', ':', ':/', ':/.', ':/*', ':.', ':*', ':(top)'}
+
+
+def judge_git(glob_opts, sub, args, text):
+    if any('core.hookspath' in g.lower() for g in glob_opts):
         answer('deny', 'hooks are not skipped; fix what the hook found.')
-    if LIVE_DIR.rstrip('/') in cmd and re.search(GIT + r'(checkout|restore|reset|stash|clean)\b', cmd):
+    if sub in ('checkout', 'restore', 'reset', 'stash', 'clean', 'switch', 'rm', 'mv') and \
+            LIVE_DIR.rstrip('/') in text.lower():
         answer('deny', 'the live layout is never reverted; commit its changes instead.')
-    if re.search(GIT + r'push\b[^;&|]*\b(master|main)\b', cmd):
-        answer('ask', 'a push to master waits for Adam\'s go.')
-    if re.search(GIT + r'(merge|rebase|cherry-pick|commit)\b', cmd):
+    if sub == 'add':
+        f, pos = options(args, long_takes=('pathspec-from-file',))
+        if f & {'-A', '-u', '--all', '--update'} or any(p in WHOLE or p.startswith('*') for p in pos):
+            answer('deny', 'stage files by name: no git add -A, --all, -u, "." or ":/"')
+    elif sub == 'commit':
+        f, _ = options(args, 'mFCct', 'Su', ('message', 'file', 'author', 'date', 'reuse-message', 'reedit-message',
+                                             'fixup', 'squash', 'template', 'cleanup', 'trailer', 'pathspec-from-file'))
+        if f & {'-a', '--all'}:
+            answer('deny', 'stage files by name: no git commit -a')
+        if '-n' in f or any(x.startswith('--no-veri') for x in f):
+            answer('deny', 'hooks are not skipped; fix what the hook found.')
+    elif '--no-verify' in args:
+        answer('deny', 'hooks are not skipped; fix what the hook found.')
+    if sub == 'stash' and (not args or args[0] not in ('list', 'show')):
+        answer('deny', 'no git stash: it can take Adam\'s uncommitted edits with it.')
+    revert = 'this reverts the whole tree, the live layout and Adam\'s uncommitted edits with it.'
+    if sub == 'clean':
+        f, _ = options(args, 'e', long_takes=('exclude',))
+        if f & {'-f', '--force'}:
+            answer('deny', 'no git clean -f: it deletes untracked files outright.')
+    if sub == 'reset' and '--hard' in args:
+        answer('deny', 'no git reset --hard: ' + revert)
+    if sub == 'checkout':
+        f, pos = options(args, 'bB', long_takes=('orphan', 'conflict', 'pathspec-from-file'))
+        if f & {'-f', '--force'} or any(p in WHOLE for p in pos):
+            answer('deny', revert)
+        if '--' in args and pos:
+            answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
+    if sub == 'switch':
+        f, _ = options(args, 'cC', long_takes=('create', 'force-create', 'orphan', 'conflict'))
+        if f & {'-f', '--force', '--discard-changes'}:
+            answer('deny', revert)
+    if sub == 'restore':
+        f, pos = options(args, 's', long_takes=('source', 'pathspec-from-file', 'conflict'))
+        index_only = f & {'-S', '--staged'} and not f & {'-W', '--worktree'}
+        if any(p in WHOLE for p in pos) and not index_only:
+            answer('deny', revert)
+        answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
+    if sub == 'push':
+        f, pos = options(args, 'o', long_takes=('repo', 'push-option', 'receive-pack', 'exec'))
+        if f & {'--all', '--mirror'} or re.search(r'\b(master|main)\b', ' '.join(pos)):
+            answer('ask', 'a push to master waits for Adam\'s go.')
+    if sub in ('merge', 'rebase', 'cherry-pick', 'commit'):
         try:
             branch = subprocess.run(['git', '-C', ROOT, 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True,
                                     text=True, timeout=5).stdout.strip()
@@ -135,13 +372,104 @@ def judge_shell(cmd, cwd):
             branch = ''
         if branch == 'master':
             answer('ask', 'this checkout is on master; changes to master wait for Adam\'s go.')
-    if re.search(GIT + r'(reset\s+--hard|checkout\s+--\s|checkout\s+\.\s*$|restore\b)', cmd):
-        answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
-    if re.search(r'(taskkill\b[^;&|]*\bjava|Stop-Process\b[^;&|]*-Name\s+["\']?javaw?\b|\bkill(all)?\s+[^;&|]*\bjava)',
-                 cmd, re.I):
-        answer('deny', 'never kill java by name: Adam\'s TrainControl may be one of them.  Use the run\'s reaper.')
-    if re.search(r'(^|[\s/\\"\'])(LocDB|UIState)\.data\b|(^|[\s/\\"\'])autonomy\.json\b', cmd) and \
-            re.search(r'(>|\b(cp|mv|rm|del|Copy-Item|Move-Item|Remove-Item|Set-Content|Out-File)\b)', cmd):
+
+
+def git_call(words):
+    """(global options, subcommand, its arguments) when the command is git; None otherwise."""
+    ci = command_at(words)
+    if ci >= len(words) or base(words[ci]) != 'git':
+        return None
+    i, opts = ci + 1, []
+    while i < len(words) and words[i].startswith('-'):
+        step = 2 if words[i] in ('-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env') else 1
+        opts += words[i:i + step]
+        i += step
+    return (opts, words[i], words[i + 1:]) if i < len(words) else None
+
+
+# Commands that write every path they name, commands whose destination is the one they write, and in-place editors
+ANY_ARG = {'mv', 'move', 'move-item', 'mi', 'ren', 'rename', 'rename-item', 'rni', 'rm', 'rmdir', 'rd', 'del',
+           'erase', 'remove-item', 'ri', 'set-content', 'sc', 'add-content', 'ac', 'out-file', 'clear-content', 'clc',
+           'new-item', 'ni', 'touch', 'truncate', 'tee', 'tee-object', 'mkdir', 'md', 'unlink', 'shred'}
+COPIERS = {'cp', 'copy', 'copy-item', 'cpi', 'install', 'rsync', 'scp', 'ln', 'xcopy', 'robocopy'}
+IN_PLACE = {'sed', 'perl', 'gawk'}
+
+
+def writes(words, targets, hit):
+    """Whether this simple command writes or removes a path that hit() picks out."""
+    if any(hit(t) for t in targets):
+        return True
+    ci = command_at(words)
+    if ci >= len(words):
+        return False
+    name, args = base(words[ci]), words[ci + 1:]
+    if name in ANY_ARG:
+        return any(hit(a) for a in args)
+    if name in IN_PLACE:
+        return any(re.match(r'^(-[A-Za-z]*i|--in-place|inplace$)', a) for a in args) and any(hit(a) for a in args)
+    if name == 'find':
+        acts = '-delete' in args or any(a in ('-exec', '-execdir') and k + 1 < len(args) and
+                                        base(args[k + 1]) in ANY_ARG | COPIERS for k, a in enumerate(args))
+        return acts and any(hit(a) for a in args)
+    if name in COPIERS:
+        for k, a in enumerate(args):
+            low = a.lower()
+            if low in ('-t', '--target-directory') or (len(low) >= 3 and '-destination'.startswith(low)):
+                return k + 1 < len(args) and hit(args[k + 1])
+            if low.startswith('--target-directory=') or low.startswith('-destination:'):
+                return hit(a)
+        pos = [a for a in args if not a.startswith('-')]
+        if name in ('xcopy', 'robocopy'):
+            return len(pos) > 1 and hit(pos[1])
+        return len(pos) > 1 and hit(pos[-1])
+    return False
+
+
+# Commands whose words are only read or printed: a rule's text in them is never a call
+READERS = {'grep', 'egrep', 'fgrep', 'rg', 'ag', 'findstr', 'select-string', 'sls', 'echo', 'printf', 'write-host',
+           'write-output', 'write-error', 'cat', 'type', 'get-content', 'gc', 'head', 'tail', 'less', 'more', 'wc',
+           'git'}
+JAVA = re.compile(r'(?<![\w./\\-])javaw?(?:\.exe)?(?![\w.\\/-])', re.I)
+KILL = re.compile(r'(?<![\w.-])(p?kill(all)?|taskkill|tskill|stop-process|spps|wait-process)(?![\w-])|\.kill\b'
+                  r'|\bterminate\b', re.I)
+
+
+def acting(segs):
+    """(command name, words from the command on) of each simple command that is not a reader."""
+    for words, _ in segs:
+        ci = command_at(words)
+        if ci < len(words) and base(words[ci]) not in READERS:
+            yield base(words[ci]), words[ci:]
+
+
+def judge_shell(cmd, cwd, ps):
+    segs = segments(cmd, ps)
+    for name, words in acting(segs):
+        text = ' '.join(words)
+        if (re.search(r'(?<![\w-])(powershell|pwsh)(\.exe)?(?![\w-])', text, re.I) and
+                re.search(r'(?<![\w-])-(ep|ex\w*)[\s:]+bypass\b', text, re.I)) or \
+                re.search(r'\bset-executionpolicy\b.*\bbypass\b', text, re.I):
+            answer('deny', '-ExecutionPolicy Bypass is never used; run the script another way.')
+    if not (in_repo(cwd, '') or NAME.lower() in cmd.lower()):
+        return
+    for words, targets in segs:
+        g = git_call(words)
+        if g:
+            judge_git(g[0], g[1], g[2], ' '.join(words))
+        if writes(words, targets, lambda w: LIVE_DIR.rstrip('/') in w.lower()):
+            answer('deny', 'the live layout is never written or reverted by a session; its changes are committed.')
+    # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that is
+    # itself the command being run is not a name to kill by.
+    named = killed = False
+    for name, words in acting(segs):
+        named = named or any(JAVA.search(w) for w in words[1:])
+        killed = killed or KILL.search(' '.join(words)) is not None or \
+            (name == 'wmic' and re.search(r'\b(delete|terminate)\b', ' '.join(words), re.I) is not None)
+    if named and killed:
+        answer('deny', 'never kill or wait on java by name: Adam\'s TrainControl may be one of them.  Use the run\'s '
+                       'reaper.')
+    live = re.compile(r'(^|[/\\])(LocDB\.data|UIState\.data|autonomy\.json)$', re.I)
+    if any(writes(words, targets, live.search) for words, targets in segs):
         answer('ask', 'this may write or remove Adam\'s live LocDB.data, UIState.data or autonomy.json.')
 
 
@@ -156,7 +484,7 @@ def main():
     if tool in ('Write', 'Edit', 'NotebookEdit'):
         judge_write(tool, ti, cwd)
     elif tool in ('Bash', 'PowerShell'):
-        judge_shell(ti.get('command') or '', cwd)
+        judge_shell(ti.get('command') or '', cwd, tool == 'PowerShell')
 
 
 if __name__ == '__main__':

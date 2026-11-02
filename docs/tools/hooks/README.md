@@ -9,38 +9,47 @@ Two hooks enforce the standing rules that used to live only in instructions. Rea
 | `claude_guard.py` | The Claude Code `PreToolUse` hook. It judges every Bash, PowerShell, Edit, Write and NotebookEdit call that touches this repository, and answers deny, ask, or nothing. |
 | `pre-commit` | git's pre-commit hook. It runs `precommit.py` and lets the commit through, with a note, when there is no Python. |
 | `precommit.py` | The pre-commit checks. They read what is staged, never the working tree. |
-| `test_hooks.py` | 49 cases for both hooks. Run it after any change: `python docs/tools/hooks/test_hooks.py`. |
+| `test_hooks.py` | 169 cases for both hooks. Run it after any change: `python docs/tools/hooks/test_hooks.py`. |
 
 ## What they check
 
+It reads a shell command as the simple commands it is made of (split at `;`, `&&`, `|`, newlines and subshells), each as words with their quotes taken off. So text inside a quoted argument, a heredoc or a PowerShell here-string (a commit message, a grep pattern) is never read as a command, while `bash -c "..."`, `sh -c`, `cmd /c`, `powershell -Command`, `eval` and `Invoke-Expression` have their script judged as commands of their own. git's global options (`-C`, `-c k=v`, `--git-dir=...`) and a quoted or full-path `git` are seen through.
+
 `claude_guard.py` refuses:
 
-* `git add -A`, `--all`, `-u`, `.` or `*`; `git commit -a`; `git stash` (apart from `list` and `show`); `git clean -f`; `--no-verify`
-* any git checkout, restore, reset, stash or clean of `cs2_sample_layout`
-* `-ExecutionPolicy Bypass`, in any folder
-* killing java by name (`taskkill /IM java.exe`, `Stop-Process -Name java`)
+* `git add` with `-A`, `--all`, `-u`, `--update` (also in a cluster such as `-Av`), `.`, `*` or `:/`; `git commit` with `-a` or `--all` (also `-am`, `-av`); `git stash` (apart from `list` and `show`); `git clean -f` or `--force`
+* `--no-verify`, `git commit -n`, and `git -c core.hooksPath=...`
+* a whole-tree revert, which reverts `cs2_sample_layout` without naming it: `git checkout` of `.` or `:/` (`git checkout -- .`, `git checkout HEAD .`), `git checkout -f`, `git switch -f` or `--discard-changes`, `git restore .` (other than `--staged` alone), `git reset --hard`
+* any git checkout, restore, reset, stash, clean, switch, rm or mv that names `cs2_sample_layout`
+* a shell write into `cs2_sample_layout`: a `>` or `>>` into it, `cp`, `Copy-Item` and the like with it as destination, `mv`, `rm`, `Set-Content`, `Out-File`, `tee` or `sed -i` naming it. Reads (`cat`, `grep`, `git diff`, `git show ... > elsewhere`) pass
+* a powershell or pwsh started with `-ExecutionPolicy Bypass` (or `-ep bypass`), or `Set-ExecutionPolicy Bypass`, in any folder. A search for the text passes
+* killing or waiting on java by name, by any common spelling: a command that names `java` or `javaw` as an argument and kills anywhere in it, across pipes (`Get-Process java | Stop-Process`, `gps java | kill`, `spps`, `pkill`, `killall`, `taskkill /IM java.exe`, `wmic ... terminate`, `.Kill()`, `Wait-Process`). `Get-Process java` alone passes, and so does a `java` that is itself the command being run
 * a Write or Edit of the root `LocDB*.data`, `UIState*.data` or `autonomy.json`, or of anything in `cs2_sample_layout/`
 * non-ASCII characters written into a `.properties` file
-* an em dash, an en dash or a spaced hyphen in a line added to `Readme.md` or `Automation.md` (code spans and lines already there are left alone)
+* an em dash, an en dash or a spaced hyphen in a line added to `Readme.md` or `Automation.md`. Lines already there, code spans, image alt text, a bracketed date range such as `[11/2025 - 3/2026]` and a table cell holding only keys such as `+ and -` are left alone
+
+Commands such as `grep`, `rg`, `Select-String`, `echo` and `cat` are readers: a rule's text among their words never counts as a call.
 
 It asks first about:
 
-* a push to master
+* a push to master, or `git push --all` or `--mirror`
 * a merge, rebase, cherry-pick or commit while the checkout is on master
-* `git reset --hard`, `git checkout -- <path>` or `git restore`
-* a shell command that may write or remove the root `LocDB.data`, `UIState.data` or `autonomy.json`
+* `git checkout -- <path>` or `git restore` of named files
+* a shell command that writes or removes `LocDB.data`, `UIState.data` or `autonomy.json` (a redirection into it, a copy onto it, a move or removal of it)
 * a `.java` edit in `src/` or `test/` while a battery runs: `battery.sh` writes `%TEMP%\traincontrol-battery.lock.battery` with its pid and removes it on the way out, and a marker whose process is gone is ignored
 
 An "ask" reaches you only in a session that prompts for permission. In auto mode, Claude Code's own check decides it instead, so treat ask as a speed bump and deny as the guard.
 
 Calls outside this repository pass untouched, apart from the Bypass rule. A shell command counts as inside it when its working folder is in the repository or the command names `TrainControl`. Any error inside the script lets the call through: a broken guard must never stop work.
 
+The guard catches slips, not intent: a script, an alias or a variable can still hide a command. It judges only the tools its matcher names (below); a tool outside it, such as the terminal tool `mcp__terminal__run_in_terminal`, is not judged at all.
+
 `precommit.py` stops a commit that stages:
 
 * the root `LocDB*.data`, `UIState*.data` or `autonomy.json`
 * a `.properties` file with a non-ASCII byte
 * a `.java` file with a javadoc straight above another (`testJavadocsAreAttached`'s count, pinned at zero)
-* an added line in `Readme.md` or `Automation.md` with an em dash, an en dash or a spaced hyphen
+* an added line in `Readme.md` or `Automation.md` with an em dash, an en dash or a spaced hyphen, judged as the Claude hook judges it (dates in brackets, key table cells and image alt text are left alone)
 
 It also prints a note, without stopping the commit, when `cs2_sample_layout` has unstaged changes. The slower guards (`testCommentsStayLean` and the rest) stay in the battery.
 
@@ -69,7 +78,7 @@ It also prints a note, without stopping the commit, when `cs2_sample_layout` has
 
 2. **The git hook** needs one setting in the repository: `git config core.hooksPath docs/tools/hooks`. Worktrees share it.
 
-3. **Check both**: run `python docs/tools/hooks/test_hooks.py` (49 ok, 0 missed). Then, in a new session, ask Claude to run `git stash push`. It should be refused with "TrainControl guard: no git stash".
+3. **Check both**: run `python docs/tools/hooks/test_hooks.py` (169 ok, 0 missed). Then, in a new session, ask Claude to run `git stash push`. It should be refused with "TrainControl guard: no git stash".
 
 ## Changing a rule
 

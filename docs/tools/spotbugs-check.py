@@ -1,7 +1,7 @@
 # Usage: python docs/tools/spotbugs-check.py <spotbugs.xml> [--update]
 #
-# SpotBugs' findings against docs/tools/spotbugs-baseline.txt: lists each finding the baseline does not hold, and
-# exits 1 when there is one.  A finding is keyed by its type, class, method and field, not by its line, so an edit
+# SpotBugs' findings against docs/tools/spotbugs-baseline.txt: for each key found more often than the baseline holds,
+# names every instance of it, and exits 1 when there is one.  A finding is keyed by its type, class, method and field, not by its line, so an edit
 # elsewhere in the file does not make an old finding new; lambda and anonymous class numbers are left out for the
 # same reason.  Findings fixed since are counted, and --update rewrites the baseline to what was found, banking them.
 import collections, os, re, sys
@@ -25,11 +25,11 @@ def where(bug):
 
 
 found = collections.Counter()
-first = {}
+seen = collections.defaultdict(list)
 for bug in ET.parse(sys.argv[1]).getroot().iter('BugInstance'):
     k = key(bug)
     found[k] += 1
-    first.setdefault(k, (int(bug.get('rank')), bug.get('category'), where(bug), bug.findtext('ShortMessage') or ''))
+    seen[k].append((int(bug.get('rank')), bug.get('category'), where(bug), bug.findtext('ShortMessage') or ''))
 
 if '--update' in sys.argv:
     with open(BASELINE, 'w', encoding='utf-8', newline='\n') as f:
@@ -52,10 +52,13 @@ gone = sum(max(0, baseline[k] - found[k]) for k in baseline)
 
 print('%d findings, %d in the baseline; %d new, %d fixed since' % (sum(found.values()), sum(baseline.values()),
                                                                    sum(n for _, n in new), gone))
-for k, n in sorted(new, key=lambda kn: first[kn[0]][0]):
-    rank, category, at, message = first[k]
-    print('  NEW rank %d %s %s at %s: %s%s' % (rank, category, k.split('\t')[0], at, message, '' if n == 1 else
-                                              ' (%d more of this kind)' % n))
+# The baseline holds no lines, so which instance of a key is the new one is unknown: every instance is named
+for k, n in sorted(new, key=lambda kn: min(seen[kn[0]])[0]):
+    rank, category, _, message = min(seen[k])
+    print('  NEW rank %d %s %s: %s (%d now, %d in the baseline)' % (rank, category, k.split('\t')[0], message,
+                                                                   found[k], baseline[k]))
+    for at in sorted(set(i[2] for i in seen[k])):
+        print('      at ' + at)
 if gone and not new:
     print('Run again with --update to bank the %d fixed.' % gone)
 sys.exit(1 if new else 0)

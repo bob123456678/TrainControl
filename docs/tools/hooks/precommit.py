@@ -15,9 +15,13 @@ def staged_text(path):
 
 
 def dashed(line):
-    """An em dash, an en dash or a spaced hyphen in prose; code spans are left out."""
+    """An em dash, an en dash or a spaced hyphen in prose.  Code spans, image alt text, a bracketed date range such as
+    "[11/2025 - 3/2026]" and a table cell holding only keys such as "+ and -" are not prose.  Same as claude_guard.py's."""
     prose = re.sub(r'`[^`]*`', '', line)
-    return '—' in prose or '–' in prose or re.search(r'\S - \S', prose) is not None
+    prose = re.sub(r'!\[[^\]]*\]', '', prose)
+    prose = re.sub(r'\[\d[\d/.]* - [^\]]*\]', '', prose)
+    cells = prose.strip().strip('|').split('|') if prose.lstrip().startswith('|') else [prose]
+    return any('—' in c or '–' in c or re.search(r'\S - \S', c) for c in cells)
 
 
 def orphans(source):
@@ -53,7 +57,7 @@ for path in staged:
         if n:
             problems.append('%s has %d javadoc%s straight above another, documenting nothing' % (path, n, 's' * (n > 1)))
     elif path.lower() in ('readme.md', 'automation.md'):
-        # Added lines only: the files keep a few of Adam's, such as the changelog's "[11/2025 - 3/2026]"
+        # Added lines only, so a line already there is never judged
         for line in git('diff', '--cached', '-U0', '--', path).splitlines():
             if line.startswith('+') and not line.startswith('+++') and dashed(line[1:]):
                 problems.append('%s: no em dashes, en dashes or spaced hyphens: "%s"' % (path, line[1:].strip()[:80]))

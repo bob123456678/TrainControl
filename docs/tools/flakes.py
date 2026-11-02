@@ -5,7 +5,10 @@
 import collections, sys
 
 path = sys.argv[1] if len(sys.argv) > 1 else 'docs/tools/flakes.tsv'
-rows = [line.rstrip('\n').split('\t') for line in open(path, encoding='utf-8')][1:]
+rows = [line.rstrip('\r\n').split('\t') for line in open(path, encoding='utf-8')]
+# The battery writes no header, so a log it started has none; the tracked one has
+if rows and rows[0][0].strip().lower() == 'date':
+    rows = rows[1:]
 by = collections.OrderedDict()
 
 for date, commit, cls, outcome, first in (r + [''] * (5 - len(r)) for r in rows if r and r[0]):

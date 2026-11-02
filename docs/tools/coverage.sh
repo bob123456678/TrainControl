@@ -9,7 +9,9 @@
 # THE RUN IS IN A THROWAWAY WORKTREE of HEAD (tc-coverage-tree in %TEMP%, or TC_COVERAGE_TREE), because JaCoCo cannot
 # instrument TrainControlUI as written: its probes push the GUI Builder's initComponents past the JVM's 64 KB method
 # limit, and the whole class goes unmeasured.  split-initcomponents.py cuts that method into a chain there, keeping every line number,
-# so the report reads against the real file.  StartupSplash is left out of the agent, as in the 3.0.5 run.
+# so the report reads against the real file.  StartupSplash is left out of the agent.  An old tree is removed only when
+# git lists it as a detached worktree of this repository, outside the main checkout and this one; anything else at that
+# path is refused, never deleted.
 #
 # JaCoCo is not in the repository: TC_JACOCO names its lib folder (default C:/Users/adamo/tools/jacoco-0.8.13/lib,
 # unpacked from https://repo1.maven.org/maven2/org/jacoco/jacoco/0.8.13/jacoco-0.8.13.zip).  The report needs the
@@ -31,7 +33,26 @@ if [ ! -f "$REPO/docs/tools/battery.sh" ]; then echo "run this from the reposito
 
 if [ "${2:-}" != "--report-only" ]
 then
-    if [ -d "$TREE" ]; then git worktree remove --force "$TREE" 2>/dev/null || rm -rf "$TREE"; fi
+    if [ -e "$TREE" ]
+    then
+        canon() { cygpath -am "$1" | sed 's:/*$::' | tr '[:upper:]' '[:lower:]'; }
+        T=$(canon "$TREE")
+        M=$(canon "$(git worktree list --porcelain | sed -n '1s/^worktree //p')")
+        R=$(canon "$REPO")
+        case "$T/" in
+            "$M"/*|"$R"/*) echo "TC_COVERAGE_TREE=$TREE is a checkout or inside one; it is not removed"; exit 1 ;;
+        esac
+        # The main worktree is listed first; the script's own tree is always detached
+        if ! git worktree list --porcelain | awk -v t="$T" '
+                /^worktree / { p = tolower(substr($0, 10)); sub(/\/+$/, "", p); n++ }
+                /^detached$/ && n > 1 && p == t { found = 1 }
+                END { exit !found }'
+        then
+            echo "$TREE is not a detached worktree of this repository (git worktree list); remove it by hand or set TC_COVERAGE_TREE"
+            exit 1
+        fi
+        git worktree remove --force "$TREE" || { echo "git would not remove $TREE; it is left as it is"; exit 1; }
+    fi
     rm -rf "$OUT"
     mkdir -p "$OUT/exec"
 
