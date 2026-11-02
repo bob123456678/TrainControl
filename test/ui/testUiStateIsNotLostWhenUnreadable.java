@@ -17,14 +17,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A UIState.data that will not read is copied aside before it is written over (MT-038). The rule comes from the
- * locomotive database: one transient read failure at startup plus an ordinary exit destroyed everything the user had
- * set up, and writing atomically is no protection, since a complete successful write of nothing is not a partial write.
- *
- * This test writes where the application keeps the file (`Util.dataPath`: the working directory, or under
- * `docs/tools/one.sh` and `battery.sh` a copy of the run's own, so it never touches the operator's file there). Where
- * it is the working directory, the real `UIState.data` is copied aside before anything happens and put back afterwards,
- * whatever the outcome; if the restore ever fails, the copy is left in the scratch file named in the failure message.
+ * A UIState.data that will not read is copied aside before it is written over (MT-038).  This test writes where the
+ * application keeps the file (`Util.dataPath`), so under `docs/tools/one.sh` and `battery.sh` it never touches the
+ * operator's file there.  Where it is the working directory, the real `UIState.data` is copied aside before anything
+ * happens and put back afterwards, whatever the outcome; if the restore ever fails, the copy is left in the scratch
+ * file named in the failure message.
  */
 public class testUiStateIsNotLostWhenUnreadable
 {
