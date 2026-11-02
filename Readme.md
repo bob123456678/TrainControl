@@ -408,6 +408,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.8
 * v3.0.7 [11/02/2026]
     - New Features
         - Routes
