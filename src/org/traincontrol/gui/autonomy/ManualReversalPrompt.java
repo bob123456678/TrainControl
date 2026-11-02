@@ -70,9 +70,9 @@ public final class ManualReversalPrompt
         // **"It is unnecessary to prompt on intermediates.  We care about the reversal if it's the
         // destination, since that dictates where the train can go, and where it is facing."**
         //
-        // An intermediate turning copy exists BECAUSE the path chose to turn there, which is the route's business and
-        // behaves as it does for autonomy.  Asking about one let "keep direction" (the default, Escape and cannot-ask
-        // answer) strand the train off its path.
+        // An intermediate turning copy exists BECAUSE the path chose to turn there, which is the route's business:
+        // asking about one let "keep direction" (the default, Escape and cannot-ask answer) strand the train off its
+        // path.
         first = destinationAskedAbout(asking, railway, path);
 
         // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (MT-368): a square that MAY turn is a preference, and a
@@ -80,11 +80,10 @@ public final class ManualReversalPrompt
         // (`asksAbout`); a terminus is not reached by this line, as backing in is how a non-reversible train gets there
         // (MT-245).  `Layout.turnsOnArrival` carries the matching rule.
         //
-        // THE TWO HALVES ASK DIFFERENT QUESTIONS.  This half fires on `asksAbout`, the SETUP's `mayTurnTiles()`; the
+        // The two halves ask different questions.  This half fires on `asksAbout`, the SETUP's `mayTurnTiles()`; the
         // arrival's half on `hasAWayThrough`, the GRAPH's "some copy of this square is neither a terminus nor a
         // reversing point".  They differ at a square marked `canReverse` where an arriving train has nowhere to go but
-        // back (`AutonomyBuilder` emits no plain copy there): kept as two rules because the setup is what the operator
-        // edited.
+        // back: kept as two rules because the setup is what the operator edited.
         if (first != null && loc != null && !loc.isReversible()) return KEEP_DIRECTION;
 
         // Nothing on this journey turns anybody, so nothing is asked and nothing is carried.
@@ -107,11 +106,11 @@ public final class ManualReversalPrompt
             @Override
             public boolean asksAbout(Point at)
             {
-                // THE DESTINATION ONLY, which is what makes an intermediate turning copy behave as it does for
+                // The destination only, which is what makes an intermediate turning copy behave as it does for
                 // autonomy: `Layout.shouldReverseAt` reads this to tell a turn the operator has a say over from one the
                 // route requires.
                 //
-                // WHICH SQUARES THE OPERATOR HAS A SAY OVER, not which ones the answer acts on.  Folding the answer in
+                // Which squares the operator has a say over, not which ones the answer acts on: folding the answer in
                 // (`turn && asking.asksAbout(at)`) would make every may-reverse turning copy look compulsory after
                 // "keep direction", so the train would turn against the operator's no.
                 return at == asked && asking.asksAbout(at);
@@ -197,7 +196,7 @@ public final class ManualReversalPrompt
                 //
                 // For a must-reverse square `AutonomyBuilder` emits ONLY turning copies and flags every one
                 // `reversing`, so the flag cannot tell a may-turn square from one the railway turns every train at.
-                // Declining answers "keep direction", which sends a train forward onto track its path does not hold.
+                // Declining answers "keep direction", which would send a train onto track its path does not hold.
                 //
                 // The setup is the only source: `canReverse` is never emitted to `parseAuto`, so the runtime cannot
                 // answer this question.
