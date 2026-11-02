@@ -413,6 +413,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
             - In the autonomy editor, the answers of `Test a path` and `Why not Moving?` stay until the next message, until you close them, or until you click the button again or press Escape, in a strip up to four lines tall.
+            - `Why not Moving?` names every station the train can go to, not just the first four. Every list of stations in it is in alphabetical order, with numbers counted as numbers (ParkingTrack4 before ParkingTrack10), and what its colors mean comes last.
         - Interface
             - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with a tooltip, items whose name says what they do have none, and a few tooltips are shorter and clearer.
         - Routes
@@ -420,8 +421,9 @@ Tab icons provided by Freepik.
             - Drag a condition by its handle to move it, into another group or out of one, or move the selected conditions with Alt+Up and Alt+Down.
             - Under the conditions are `Add Condition`, `Group Selected`, `Ungroup`, `Split Here`, `Undo` and `Redo`, always at the bottom of the box. `Group Selected` keeps what the conditions mean, and `Split Here` turns `A and B and C` into `(A and B) or C` in one click. Their shortcuts are Ctrl+G, Ctrl+Shift+G, Ctrl+Shift+S, Ctrl+Z and Ctrl+Y.
             - The trash, the Delete key, `Move Up`, `Move Down` and `Ungroup` act on every selected condition.
-            - A route's commands work like its conditions: drag a command by its handle to move it, the trash removes every selected command, and right-click a command for `Insert Command Above`, `Insert Command Below`, `Move Up`, `Move Down`, `Duplicate` and `Delete`. The up and down arrows are gone.
-            - `Duplicate` puts a copy of the selected commands or conditions directly below them. It is in both right-click menus, and the copy icon beside a selected command copies the whole selection.
+            - A route's commands work like its conditions: drag a command by its handle or move the selected commands with Alt+Up and Alt+Down, and the trash and the Delete key remove every selected command. Right-click a command for `Insert Command Above`, `Insert Command Below`, `Move Up`, `Move Down`, `Duplicate` and `Delete`. The up and down arrows are gone.
+            - Under the commands are `Add Command`, `Undo` and `Redo`, at the bottom of their box as the conditions' are. Ctrl+Z and Ctrl+Y undo and redo in whichever list you are working in.
+            - `Duplicate` puts a copy of the selected commands or conditions directly below them. It is in both right-click menus, and every command and condition has a copy icon beside its trash; on a selected row it copies the whole selection.
             - The plain words reading of the conditions is above the table, and the warning that conditions are ignored while `Automatically Fire` is not selected sits on the conditions' heading, with a warning sign.
             - `Save` now comes before `Cancel` at the bottom of the route editor, and the window can no longer be made narrower than its top line.
     - Bug Fixes

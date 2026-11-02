@@ -1989,25 +1989,7 @@ public class RouteEditorFrame extends JFrame
      */
     private void actOnRowMarks(final HandledTable table, final int... marked)
     {
-        final int mark = Math.max(12, table.getRowHeight() - 10);
-
-        // Never in the selection's colors: a press on a mark keeps the selection, so the mark is not part of it.
-        final javax.swing.table.DefaultTableCellRenderer marks =
-            new javax.swing.table.DefaultTableCellRenderer()
-        {
-            @Override
-            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
-                boolean selected, boolean focused, int row, int column)
-            {
-                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, row, column);
-
-                out.setHorizontalAlignment(JLabel.CENTER);
-                out.setIcon(DELETE_ROW.equals(value) ? RowIcons.trash(mark)
-                    : COPY_ROW.equals(value) ? RowIcons.copy(mark) : null);
-
-                return out;
-            }
-        };
+        final javax.swing.table.DefaultTableCellRenderer marks = markRenderer(Math.max(12, table.getRowHeight() - 10));
 
         for (int column : marked) table.getColumnModel().getColumn(column).setCellRenderer(marks);
 
@@ -2042,6 +2024,26 @@ public class RouteEditorFrame extends JFrame
                     live ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
             }
         });
+    }
+
+    /** The trash and copy icons, never in the selection's colors: a press on a mark keeps the selection. */
+    private static javax.swing.table.DefaultTableCellRenderer markRenderer(final int mark)
+    {
+        return new javax.swing.table.DefaultTableCellRenderer()
+        {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                boolean selected, boolean focused, int row, int column)
+            {
+                JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, row, column);
+
+                out.setHorizontalAlignment(JLabel.CENTER);
+                out.setIcon(DELETE_ROW.equals(value) ? RowIcons.trash(mark)
+                    : COPY_ROW.equals(value) ? RowIcons.copy(mark) : null);
+
+                return out;
+            }
+        };
     }
 
     private static boolean isAmong(int column, int... columns)
