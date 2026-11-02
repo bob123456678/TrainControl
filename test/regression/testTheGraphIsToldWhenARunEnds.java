@@ -19,13 +19,8 @@ import support.SourceOf;
 
 /**
  * When a run ends, whoever draws the railway is told, from every door and not from two of the four (sibling of OB-189).
- *
- * A destination reversal is recorded in `Layout.reversedOnArrival` and written to the setup by
- * `TrainControlUI.reconcileFacingWhenIdle`, which refuses while anything is moving and is reached only from
- * `updateVisiblePoints()`, so a turn a run made is PENDING until a refresh happens with the railway idle.  The
- * timetable button and Return Home had no refresh at completion, and every announcement `Layout` makes during a
- * timetable fires while `isRunning()` is still true.  The remedy is one pair: a timetable announces once the railway
- * has gone idle, and the window's single refresh callback tells the graph.
+ * A turn a run made is PENDING until a refresh happens with the railway idle, so a timetable announces once the railway
+ * has gone idle and the window's single refresh callback tells the graph.
  *
  * @author Adam
  */
@@ -195,11 +190,9 @@ public class testTheGraphIsToldWhenARunEnds
     }
 
     /**
-     * A HAND DISPATCH announces once its journey is over, with nothing running (OB-189).  `isRunning()` is three things
-     * ORed (`running`, a non-empty `activeLocomotives`, a positive thread count) and the announcement has to land after
-     * all three have gone; the end-of-path callback fires with the dispatching thread still counted, so the two are
-     * counted separately.  A real journey, not a refusal, and autonomy is never started, since `running` is not cleared
-     * by a path completing.
+     * A HAND DISPATCH announces once its journey is over, with nothing running (OB-189): the announcement has to land
+     * after all three things `isRunning()` ORs have gone.  A real journey, not a refusal, and autonomy is never
+     * started.
      *
      * MUTATION: removing `announceRunFinished()` from `executePath`'s `finally` leaves announcements from the path's
      * own start, milestone and end, all made while the dispatching thread is still counted, and none with the railway
