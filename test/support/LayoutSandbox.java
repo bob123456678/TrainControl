@@ -67,7 +67,7 @@ public final class LayoutSandbox
 
         Preferences prefs = TrainControlUI.getPrefs();
 
-        // ANYTHING A KILLED JVM LEFT BEHIND IS PUT BACK FIRST: `close()` runs only if the JVM lives, and a leaked
+        // Anything a killed JVM left behind is put back first: `close()` runs only if the JVM lives, and a leaked
         // preference naming a sandbox would be read by the APPLICATION too.
         repairALeakedPreference(prefs);
 
@@ -81,8 +81,8 @@ public final class LayoutSandbox
         // For an ordinary exit that skips close() the hook is enough; the marker above covers a forced kill.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> putBack(prefs, was)));
 
-        // AND NOBODY IS WATCHING, which the window has no other way to know: a modal dialog (the new-track-diagram
-        // prompt) stops an automated run.  Set here because every test that stands a window up calls this.
+        // Nobody is watching, which the window has no other way to know: a modal dialog (the new-track-diagram prompt)
+        // stops an automated run.  Set here because every test that stands a window up calls this.
         TrainControlUI.setUnattended(true);
 
         return new LayoutSandbox(to, was);
@@ -227,9 +227,7 @@ public final class LayoutSandbox
      *
      * Parsing does not attach a tile to its accessory; `MarklinControlStation.syncLayouts` does that in a loop AFTER
      * the parse.  A second `CS2File` parser bypasses it, so every switch and signal has a null accessory, `TileGraph`
-     * reports `errorTileHasNoAddress` and refuses to trace through, and the railway arrives in pieces (on the live
-     * snapshot: 18 reduced edges re-parsed against 128 wired), so tests asserted against a graph where nothing
-     * connects.
+     * reports `errorTileHasNoAddress` and refuses to trace through, and the railway arrives in pieces.
      *
      * @param model the control station, already built with this sandbox open
      * @return its pages, in its own order
