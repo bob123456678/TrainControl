@@ -11,11 +11,7 @@ import org.traincontrol.util.I18n;
 
 /**
  * Whether a train fits a route: the room at its end, a berth that would leave it across another road, and a loop
- * that would run it into its own tail (FR-136).
- *
- * Rules of the route and the train alone, so every method here is static.  The railway keeps every public method
- * and every one a test reaches by name; each method here is the body of a one-line method there, or a helper only
- * these call.  Nothing here takes a lock.
+ * that would run it into its own tail (FR-136).  Every method is static and takes no lock.
  */
 final class TrainFit
 {
@@ -279,9 +275,7 @@ final class TrainFit
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key, or null (OB-297): the build
-     * marks each place in a piece, switch or shared square still wanting a length with that thing's key
-     * (`Edge.pieceToMeasure`); a configuration built before the marks counts each unmeasured edge as one thing.
+     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key, or null (OB-297).
      *
      * @param index the edge's place in the route, which keys an edge of the old reading
      * @param at the place's index in the edge
@@ -304,8 +298,7 @@ final class TrainFit
 
     /**
      * Whether the way round between two points of the route is measured throughout (OB-300): at least one place
-     * strictly between them, every one with a length or answered 0 on purpose.  `Edge.isMeasured`'s question, asked of
-     * places because a way round begins and ends inside a leg.
+     * strictly between them, every one with a length or answered 0 on purpose.
      *
      * @param left where the place was left, -1 for before the journey began
      * @param back where the route comes back to it
@@ -359,16 +352,10 @@ final class TrainFit
             return I18n.f("autolayout.errorTrainLengthTooLong", Layout.placeNameOf(ending));
         }
 
-        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (MT-333).  It only applies where lengths are specified; edges
-        // are already locked as trains pass through in non-dynamic mode, so this is the same mechanic.
-        //
-        // ONE WALK, ASKED OF EVERY PREFIX: `measuredRoomAtTheEndOf` of path[0..i] answers "if the train stood here,
-        // would its tail be clear of the switch behind it"; the destination is the last iteration, so the two cannot
-        // disagree.
-        //
-        // NULL IS NOT A REFUSAL: an unmeasured stretch answers "I cannot judge this" and is passed over.  THE MESSAGE
-        // NAMES THE SQUARE THAT IS SHORT, so the operator measures the right stretch.  Copied into an ArrayList:
-        // `subList` is asked for `path.size()` times and callers hand in linked lists.
+        // The track where the train comes to rest (MT-333); applies only where lengths are specified.  The room is
+        // asked of every prefix path[0..i], the destination being the last, so the two cannot disagree.  A null
+        // answer means "cannot judge" and is passed over; the message names the square that is short.  The prefix
+        // is copied into an ArrayList because callers hand in linked lists and `subList` is asked path.size() times.
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         List<Edge> ordered = new java.util.ArrayList<>(path);
@@ -392,12 +379,8 @@ final class TrainFit
 
             if (room == null || loc.getTrainLength() <= room) continue;
 
-            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN ITS MEASURED ROUTE IN HOLDS (FR-087).  At a station
-            // autonomy may choose a train is PASSING, standing across the points only until its next route, a cost
-            // accepted at a platform and refused at a parking berth, where a train is STAYING.  Safety is not what
-            // changed: a standing train's tail claims the places it lies on and `isPathClear` refuses any route over
-            // them (OB-207).  It only ever ALLOWS: the room rule above has already refused, and the bound is the
-            // measured route in, never back past a turn.  `whyABerthCannotHoldIt` is the other half.
+            // A station autonomy may choose takes a train its measured route in holds (FR-087; OB-207): it only ever
+            // ALLOWS, the room rule above having already refused.  `whyABerthCannotHoldIt` is the other half.
             if (berth && Layout.theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc))
             {
                 continue;
