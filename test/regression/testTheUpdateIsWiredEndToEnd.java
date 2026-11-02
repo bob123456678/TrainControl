@@ -18,18 +18,9 @@ import org.traincontrol.util.SelfUpdate;
 import support.SourceOf;
 
 /**
- * One-click updates are wired together end to end (FR-125).
- *
- * `core.testTheUpdaterSwapsTheJar` hands the updater its launcher, mover and starter, so it says nothing about the
- * real ones or the places that call them.  Pinned here: the started marker (written once the window is up or the user
- * leaves from one of TrainControl's own questions, and nowhere earlier, so a version that fails its start-up is put
- * back); the environment variable that tells the new version where to write it; the updater's running marker; the
- * exit's order (the update is taken after everything that can refuse the exit, and a failed start returns before the
- * editor is let go); the last step (waits out a dialog, asks what the Auto tab asks); one backup at a time; the Java
- * options carried into the restart, less a debugger.
- *
- * The real launcher and starter run against plain JVMs of `support.ReportsStarted`.  The callers cannot be run without
- * starting TrainControl or ending this JVM, so their order is read from the source, as
+ * One-click updates are wired together end to end (FR-125): `core.testTheUpdaterSwapsTheJar` hands the updater its
+ * launcher, mover and starter, so it says nothing about the real ones or the places that call them.  The callers
+ * cannot be run without starting TrainControl or ending this JVM, so their order is read from the source, as
  * `regression.testEditorSurfaceRules` reads `WindowClosed`'s: that catches a line moved or dropped, not one that
  * behaves differently at the same place.
  */
