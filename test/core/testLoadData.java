@@ -240,10 +240,8 @@ public class testLoadData
     }
 
     /**
-     * A train-at-a-sensor condition in an old database reads as "at" (FR-141).
-     *
-     * The database keeps a route's conditions as serialized commands, and one written before FR-141 has no field saying
-     * at or not at.  It has to go on meaning what it meant: the train standing at that sensor.
+     * A train-at-a-sensor condition in an old database reads as "at" (FR-141): one written before FR-141 has no field
+     * saying at or not at.
      *
      * MUTATION: read a missing SETTING as "not at" in `RouteCommand.isAtSensor` and this fails, naming the fixture.
      */
