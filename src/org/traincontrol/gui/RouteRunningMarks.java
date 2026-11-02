@@ -13,14 +13,10 @@ import javax.swing.Timer;
 import org.traincontrol.base.Route;
 
 /**
- * The turning mark beside every route that is running, on the route tab (FR-137): "in the route tab, show a spinner
- * next to any route that is currently running, similar to the autonomy spinner."  The mark is Start's and Return Home's
- * (`TrainControlUI.TurningArc`, FR-077, OB-309) on the same 60ms frame, asked by the list's renderer as
- * `Route.isExecuting()`, the route's own flag, so it is true whoever started the route and gone when
- * `MarklinRoute.execRoute` really ends.
+ * The turning mark beside every route that is running, on the route tab (FR-137): the same mark as Start's and Return
+ * Home's, asked of `Route.isExecuting()`.
  *
- * This holds only what to animate: the names `View.routeStarted` has announced and `View.routeFinished` has not.  The
- * timer runs while any is executing.  Checks and repaints are on the event thread; the notices come from the route's
+ * This holds only what to animate.  Checks and repaints are on the event thread; the notices come from the route's
  * thread and are only posted.  Nothing here takes the railway's monitor.
  */
 final class RouteRunningMarks
