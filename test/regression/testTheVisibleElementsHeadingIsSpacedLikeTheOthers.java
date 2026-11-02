@@ -251,7 +251,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * A notice longer than four lines scrolls inside a band four lines tall, never sideways, and a shorter one gets a
-     * band its own height (OB-366; MT-864: "expand its height to 4 lines"), measured in the notice text's font.
+     * band its own height (OB-366; MT-864), measured in the notice text's font.
      *
      * MUTATION: raise `AutonomyBanner.MOST_LINES` to 6, and this fails.
      */
