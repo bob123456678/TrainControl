@@ -23,9 +23,8 @@ import support.SourceOf;
 
 /**
  * A locomotive stands in one place, a home and an arrival side keep the way its train faces, and a station demoted
- * keeps its settings.  One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136): the whole
- * chain, from a decision somebody made to the graph a train could run on.  The session and layout folder every claim
- * starts from are built by `AutonomySessionFixture`.
+ * keeps its settings.  One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136).  The
+ * session and layout folder every claim starts from are built by `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -77,9 +76,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (its second half;
-     * *"we shouldn't allow an impossible facing to be saved"*, OB-282).  Otherwise a train homed facing one way and
-     * standing there the other was one Return Home called IMPOSSIBLE.
+     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (OB-282).
      *
      * MUTATION: offer a home facing on such a square, or hold a home there to one, and this fails.
      */
@@ -342,9 +339,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A home remembers which way its train was facing when it was set, and the build puts it on that copy (OB-282):
-     * *"yes, it should accomplish the facing"*, taken as *"Direction it is facing when home is set."*  The home is
-     * marked so that Return Home brings it back to that copy, and it survives a build and a capture.
+     * A home remembers which way its train was facing when it was set, and the build puts it on that copy (OB-282); it
+     * survives a build and a capture.
      *
      * MUTATION: `writeHome` not recording the facing, or the build not marking the copy, fails this.
      */
@@ -696,10 +692,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A station whose track runs out on one side, at a buffer stop or where the drawn track simply stops, before it
-     * reaches another sensor is drawn as a terminus flat against that side (FR-118; *"a station with only one way out
-     * becomes a terminus, correct?"*, confirmed).  The diagram's badge and the editor's carry the side; a station with
-     * track going on both ways carries none, and a one-way run is no dead end: the track is what is asked.
+     * A station whose track runs out on one side before it reaches another sensor is drawn as a terminus flat against
+     * that side (FR-118); a station with track going on both ways carries none, and a one-way run is no dead end: the
+     * track is what is asked.
      *
      * MUTATION: answer from the built edges, which a one-way run takes away, or drop the side from either badge, and
      * this fails.
@@ -1245,9 +1240,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A station demoted and promoted again has every setting it had as a station (*"keep them, ignored while not a
-     * station"*, as its maximum train length, OB-291, and its blockers already were): the caption, the sides it bars
-     * arrivals by, its exit guard, its entry guards, and the turn flag older setups spell "terminus".  Through the
+     * A station demoted and promoted again has every setting it had as a station (OB-291): the caption, the sides it
+     * bars arrivals by, its exit guard, its entry guards, and the turn flag older setups spell "terminus", through the
      * editor's own `setUsage`.  The caption sits two squares below the platform, where the placer never puts one, so
      * one placed afresh on promotion cannot pass for the one kept.
      *
