@@ -836,9 +836,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * Station names sort as a person reads them (MT-865: "Make sure you short alphabetically for all the staiton
-     * lists here"): ParkingTrack4 before ParkingTrack10, as the sample layout's parking tracks are named, and case
-     * aside.
+     * Station names sort as a person reads them (MT-865): ParkingTrack4 before ParkingTrack10, as the sample layout's
+     * parking tracks are named, and case aside.
      *
      * MUTATION: `compareAsRead` returning `a.compareTo(b)`, and this fails on ParkingTrack10 before ParkingTrack4.
      */
@@ -860,8 +859,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
     /**
      * The why answer names every station the train can go to, not the first four, and ends with what its colors mean,
-     * after an empty line (MT-865: "show all stations that it could go to, not just the first 4 ... move the color
-     * legend to the very end of the text, preceded by an empty line").
+     * after an empty line (MT-865).
      *
      * MUTATION: put back the cap of four in the "can go to" list (`String.join(", ", available)` limited to four
      * names), and this fails on the fifth station; put `colours(...)` back before `detail`, and it fails on the order.
