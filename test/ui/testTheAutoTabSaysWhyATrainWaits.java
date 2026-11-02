@@ -410,7 +410,6 @@ public class testTheAutoTabSaysWhyATrainWaits
      * the window are for a train standing by, not for one the run is handling.
      *
      * MUTATION: drop `this.noPathsNow = false` from `updateState`, and the started run's card still explains.
-     * MUTATION: press Start without waiting for it to be enabled: lost while the window still loads the setup (OB-388).
      */
     @Test
     public void testWhileAutonomyRunsTheCardOffersNoExplanation() throws Exception

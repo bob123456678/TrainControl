@@ -367,7 +367,6 @@ public class testTheLengthPromptHasTheKeyboard
      * stored and the taken one is not (OB-376; Adam, MT-815: "shouldn't a name that's already taken be refused?").
      *
      * MUTATION: drop the `isPointNameTaken` test from `whyNotNamed`: red, as no refusal appears.
-     * MUTATION: have `fieldIn` return the prompt's field without waiting for the keyboard: red under load (OB-387).
      */
     @Test
     public void testNameEverythingRefusesATakenName() throws Exception
