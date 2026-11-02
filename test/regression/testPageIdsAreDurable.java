@@ -161,12 +161,9 @@ public class testPageIdsAreDurable
     }
 
     /**
-     * A page named "1" does not collect the settings of the page whose id is 1 (OB-067).
-     *
-     * On disk the page part of a key is an ID and in memory a NAME; an entry for a page that is not loaded stays in id
-     * form, and writing it back through the NAME map handed it to a live page called "1".  Adam ruled the name stays
-     * legal: "A page should be allowed to be named 2 - let FR-013 dissolve it."  Both losses are asserted: the live
-     * "1" inherits nothing, and the absent page keeps everything.
+     * A page named "1" does not collect the settings of the page whose id is 1 (OB-067).  Adam ruled the name stays
+     * legal: "A page should be allowed to be named 2 - let FR-013 dissolve it."  Both losses are asserted: the live "1"
+     * inherits nothing, and the absent page keeps everything.
      */
     @Test
     public void testAPageNamedAfterAnotherPagesIdCollectsNothing() throws IOException
@@ -242,9 +239,8 @@ public class testPageIdsAreDurable
      * A retired id stays retired for longer than one write.
      *
      * `next` is derived from the ids present in the FILE, so the write after the one that drops a page would hand its
-     * id to a new page.  For a page whose file was merely absent nothing forgot its settings (OB-067), so the newcomer
-     * would inherit a stranger's stations, lengths and exclusions.  The index cannot record the floor itself without
-     * a new field in `gleisbild.cs2`, which real hardware reads, so the autonomy setup passes it in.
+     * id to a new page.  The index cannot record the floor itself without a new field in `gleisbild.cs2`, which real
+     * hardware reads, so the autonomy setup passes it in (OB-067).
      */
     @Test
     public void testARetiredIdIsNotHandedOutTwoWritesLater() throws IOException
@@ -299,9 +295,8 @@ public class testPageIdsAreDurable
     /**
      * Every held field is declared, and a save with a page absent loses none of them.
      *
-     * The held-entries mechanism (OB-067) is one map of field names and SHAPES (whether values name squares); a wrong
-     * shape cannot be caught by name-matching, only by behavior.  Put something on a page, take that page's file away,
-     * load and save, and it is all still in the file.
+     * The held-entries mechanism (OB-067) is one map of field names and SHAPES, which only behavior can check: put
+     * something on a page, take that page's file away, load and save, and it is all still in the file.
      *
      * Each of these fails it: not merging "blockedPoints" back; downgrading `captions` from SQUARE_VALUE to PLAIN
      * (caught only because the fixture puts a caption on a LOADED page pointing at a station on the absent one);
@@ -532,9 +527,8 @@ public class testPageIdsAreDurable
     /**
      * Renaming a page to something that looks like another page's id moves nothing but that page.
      *
-     * OB-092: renaming "Test" to "5" made the page holding id 5 (Main) excluded from autonomy.  `renamePage` left the
-     * store's own numbering stale, so the next save wrote the bare NAME into `excludedPages`, which `untranslatePages`
-     * reads as an ID.  Every collection is checked, and the OTHER page as hard as the renamed one.
+     * OB-092: renaming "Test" to "5" made the page holding id 5 (Main) excluded from autonomy.  Every collection is
+     * checked, and the OTHER page as hard as the renamed one.
      */
     @Test
     public void testRenamingAPageToAnotherPagesIdMovesOnlyThatPage() throws IOException
@@ -803,9 +797,6 @@ public class testPageIdsAreDurable
 
     /**
      * Told a page is gone for good, the setup lets go of it and of nothing else (FR-018).
-     *
-     * Holding an absent page's settings for ever is what makes a OneDrive placeholder survivable, and it also leaves a
-     * deleted page's settings in setup.json; only the person who deleted the page can tell the cases apart.
      *
      * Two absent pages, only one pruned: with one, emptying the whole hold and filtering it give the same file.
      * Asserted in order:
