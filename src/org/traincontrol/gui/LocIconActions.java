@@ -39,8 +39,7 @@ final class LocIconActions
 
     /**
      * The revert, drawn as the wrench is: a circular arrow, most of a ring with a solid head where it ends, wider than
-     * the ring is thick and pointing the way the ring runs (MT-591; Adam: "make the arrow at the end of the circle more
-     * prominent, right now it doesn't really look like an arrow").
+     * the ring is thick and pointing the way the ring runs, so it reads as an arrow (MT-591).
      */
     static final class RevertMark implements javax.swing.Icon
     {
@@ -277,16 +276,16 @@ final class LocIconActions
 
             fc.setAcceptAllFileFilterUsed(false);
 
-            // FR-022.  The offer lives in the chooser, beside the files, where the user is when "will the whole of this
-            // picture fit?" occurs to them.
+            // FR-022.  The offer lives in the chooser, beside the files, where the user decides whether the whole
+            // picture will fit.
             final JCheckBox crop = new JCheckBox(I18n.t("loc.ui.cropCheckbox"),
                 TrainControlUI.getPrefs().getBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false));
 
             crop.setToolTipText(I18n.t("loc.ui.tooltip.cropCheckbox"));
 
-            // Under the file name, not in the accessory panel (Adam: "is there a way to put the checkbox in a more
-            // organic place?").  SOUTH, and the constraint is the whole of it: a JFileChooser's BorderLayout CENTER
-            // holds the entire browser, so `fc.add(row)` with no constraint replaced it.
+            // Under the file name, not in the accessory panel.  SOUTH, and the constraint is the whole of it: a
+            // JFileChooser's BorderLayout CENTER holds the entire browser, so `fc.add(row)` with no constraint replaced
+            // it.
             JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
             row.setBorder(BorderFactory.createEmptyBorder(0, 2, 4, 2));
             row.add(crop);
@@ -317,7 +316,7 @@ final class LocIconActions
                 TrainControlUI.getPrefs().putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, crop.isSelected());
 
                 // The file the user picked, unless cropping produced a file of our own.  Assigned before the crop is
-                // attempted so every way the crop can fail lands on the pre-FR-022 behavior.
+                // attempted so every way the crop can fail falls back to it.
                 String chosenURL = Paths.get(f.getAbsolutePath()).toUri().toString();
 
                 // Readable at all, whether or not it is going to be cropped: the guard must not live inside the branch
