@@ -14,14 +14,9 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337).
- *
- * The track diagram places into the RUNNING layout; the autonomy editor calls `AutonomySession.placeLocomotive`, which
- * writes `loc` into the setup.  Closing the editor then (1) `whereTheTrainsAre()` records every placement in the
- * running layout, from BEFORE the edit; (2) rebuilds the layout from the setup, so it carries the edit; (3)
- * `putTheTrainsBack()` re-places everything recorded in step 1 over the top of it, and `captureRunningLayout()` writes
- * the undone version back.  Reading the order of those statements, as `testEditorSurfaceRules` does, cannot say what
- * they do to a train.
+ * A locomotive placed in the autonomy editor is still there when the editor closes (MT-337).  Closing records every
+ * placement, rebuilds the layout from the setup and puts the trains back over it; reading the order of those
+ * statements, as `testEditorSurfaceRules` does, cannot say what they do to a train.
  *
  * @author Adam
  */
