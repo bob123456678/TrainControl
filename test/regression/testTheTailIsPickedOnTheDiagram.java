@@ -31,9 +31,8 @@ import support.SourceOf;
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
  *
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
- * 12,7 on the other, both on 1 - Main.  The question is asked owned by the main window, as a placement door asks it,
- * but off the event thread so the test can click (`testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers the
- * event thread); the click is TunnelPre's own tile on the main diagram, through the listener every s88 tile has.
+ * 12,7 on the other, both on 1 - Main.  The question is asked off the event thread so the test can click
+ * (`testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers the event thread).
  *
  * MUTATION: ask with the list again, and the click answers nothing.
  *
@@ -493,12 +492,9 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A tail question answered after the square has changed writes nothing onto whatever stands there by then.
-     *
-     * The question waits on the diagram with the window live (FR-100), so a run may meanwhile bring another train onto
-     * the same copy; Cancel must not write the first train's (empty) road over the second train's driven one.  The
-     * paste door asks for train A at Tunnel; while it waits, train B is put on the same copy with the road it drove in
-     * by; then Cancel.
+     * A tail question answered after the square has changed writes nothing onto whatever stands there by then (FR-100):
+     * a run may bring another train onto the same copy while the question waits, and Cancel must not write the first
+     * train's (empty) road over the second train's driven one.
      *
      * MUTATION: write the answer without asking whether the placement still stands, and this fails.
      */
@@ -672,11 +668,9 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * While the tail question waits, the setup on disk already has the train where it was put (OB-305).  Every
-     * placement door writes the train, its facing and its side into the setup in memory, puts the question, and must
-     * save before it is answered: the question waits as long as the operator likes, and a crash in that wait would
-     * start the next session without the train where it stands.  The paste door's question is left waiting and the
-     * configuration's own file read meanwhile.
+     * While the tail question waits, the setup on disk already has the train where it was put (OB-305): every placement
+     * door must save before the question is answered, or a crash in that wait would start the next session without the
+     * train where it stands.
      *
      * MUTATION: save only after the answer again, and this fails.
      */
@@ -1318,19 +1312,18 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A tail answer given after the placement changed is written where the train now stands, or not at all, driven by
-     * the gestures MT-576's steps make: his 75 407 DB, a train of length 5 pasted at Tunnel from the north with
-     * Control+X and Control+V, the question left waiting on the diagram.  (a) While it waits, a setting on another
-     * station is changed from the right-click, which rebuilds the railway, and TunnelPre is clicked: the new railway's
-     * Tunnel gets TunnelPre's road, made of its own rails.  (b) Pasted again; the train is taken off Tunnel with its
-     * right-click Remove and TunnelPre clicked: nothing is written, and the log says Tunnel changed while the question
-     * waited.
+     * A tail answer given after the placement changed is written where the train now stands, or not at all (MT-576),
+     * driven by the gestures its steps make: a train of length 5 pasted at Tunnel from the north with Control+X and
+     * Control+V, the question left waiting on the diagram.  (a) While it waits, a setting on another station is changed
+     * from the right-click, which rebuilds the railway, and TunnelPre is clicked: the new railway's Tunnel gets
+     * TunnelPre's road.  (b) Pasted again; the train is taken off Tunnel with its right-click Remove and TunnelPre
+     * clicked: nothing is written, and the log says Tunnel changed while the question waited.
      *
      * `testAnAnswerAfterARebuildReachesTheRailway` and `testOnlyADroppedAnswerIsLogged` hold the same two rules with
      * the wait's events made by calls; this makes them by the gestures.
      *
-     * MUTATION: write the answer to the copy the paste placed the train on, or write it after the train was taken off, and
-     * this fails.
+     * MUTATION: write the answer to the copy the paste placed the train on, or write it after the train was taken off,
+     * and this fails.
      */
     @Test
     public void testTheLateAnswersOfMT576ByTheirGestures() throws Exception
