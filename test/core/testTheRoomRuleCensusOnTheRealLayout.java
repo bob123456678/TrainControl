@@ -31,13 +31,6 @@ import org.traincontrol.marklin.file.CS2File;
  * The section 5c census (`behaviour/tail.md`) as something that can be run: across every ordered station pair and each
  * of six train lengths, the journeys the widened track-room rule (MT-262) NEWLY refuses, and where they arrive.
  *
- * A journey is newly refused when the room behind its destination is measured, is shorter than the train, and the
- * destination is neither a terminus nor a reversing point.  The station-capacity rule is not counted: it is asked
- * separately in `whyTooLongForThisRoute`.
- *
- * The original probe was never committed, so this file carries the figures and the method so they can be re-derived.
- * Every newly refused journey arrives at one of the berths in BERTHS, each with ONE measured unit of room behind it.
- *
  * Runs on a `LayoutSandbox` copy of `test/layouts/live-snapshot`, with the three tight tiles set by this class, so
  * every figure is what a rule about room does on a railway with no room, not a survey of his track.
  *
