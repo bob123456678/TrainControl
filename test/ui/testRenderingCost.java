@@ -327,11 +327,10 @@ public class testRenderingCost
      * resolves by address out of the database.  Each of those tiles has to stay registered with it or it stops being
      * repainted when the accessory is thrown.
      *
-     * A pruning rule carried over from a map keyed by SQUARE into collections keyed by DEVICE evicted siblings: inside
-     * one device's entry "an older label of this window that is no longer displayable" also matches that device's OTHER
-     * squares, and LayoutGrid registers every label in its build loop and only attaches the container afterwards, so
-     * during a build none of them is displayable and only the last label survived.  Three of four tiles stopped
-     * updating, which looks like a working diagram unless you are counting.
+     * A pruning rule keyed by SQUARE must not be reused on collections keyed by DEVICE: inside one device's entry "an
+     * older label of this window that is no longer displayable" also matches that device's OTHER squares, and
+     * LayoutGrid registers every label in its build loop and only attaches the container afterwards, so during a build
+     * none of them is displayable and only the last label would survive, and three of four tiles would stop updating.
      *
      * A fresh parse rather than the shared fixture, because the accessories have to be shared by address the way the
      * control station shares them, and the fixture deliberately gives each tile its own.
@@ -521,8 +520,7 @@ public class testRenderingCost
         // above, it goes to 2.0 and fails.
         //
         // NOT MEASURED HERE: after construction the diagram goes on rebuilding labels and settles between 2.0 and 3.0
-        // per cell depending on timing (OB-053, which Adam has asked to be left alone for now); there is nothing stable
-        // to assert.
+        // per cell depending on timing (OB-053); there is nothing stable to assert.
         //
         // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes the count to 729
         // and fails this.
