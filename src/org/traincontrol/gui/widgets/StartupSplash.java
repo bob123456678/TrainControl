@@ -9,13 +9,10 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 /**
- * Says the application is starting, during the part of start-up that has nothing to show yet (FR-041): "while
- * connecting to the CS and before the main UI loads, show a loading popup/overlay like the cs2 sync one."
- *
- * Not a window of its own (OB-170): a second start-up window spends the one chance a process gets to put a window in
- * the foreground, so the main window arrived behind the application it was launched from and the keyboard never came
- * back.  So the process shows exactly one window, and this is only the notice for `TrainControlUI.showConnecting` to
- * put on it.  Nothing in this class opens anything.
+ * Says the application is starting, during the part of start-up that has nothing to show yet (FR-041).  Not a window of
+ * its own (OB-170): a second start-up window spends the one chance a process gets to put a window in the foreground.
+ * This is only the notice for `TrainControlUI.showConnecting` to put on the one window; nothing in this class opens
+ * anything.
  */
 public final class StartupSplash
 {
