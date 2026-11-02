@@ -25,15 +25,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * How many Points each of Adam's squares becomes: the guard the two-copies decision rests on.
- *
- * `docs/reference/two-copies-evaluation.md` (removed; git history, 0a5dab2a) answers his question - *"having two copies
- * seems like unnecessary complexity, I wonder if it can be done more easily by simply following the edges?"* - and its
- * first reason for leaving the copies alone is a measurement of how much complexity the railway carries.  That
- * measurement was published wrong ("every named square builds to exactly one copy") because it was taken on a diagram
- * parsed WITHOUT its accessories: `TileGraph` will not trace through a switch with no `Accessory`, so the reduction
- * falls from 128 edges to 18 and almost every square has one arrival side, hence one copy.  Whether that changes the
- * recommendation is Adam's to decide; this file makes the number true and watched.
+ * How many Points each of Adam's squares becomes: the guard the two-copies decision rests on
+ * (`docs/reference/two-copies-evaluation.md`, in git history 0a5dab2a).  The count was once published wrong because it
+ * was taken on a diagram parsed WITHOUT its accessories; this file makes the number true and watched.
  *
  * What it asserts:
  *
