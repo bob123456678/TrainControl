@@ -20,16 +20,11 @@ import org.traincontrol.marklin.MarklinControlStation;
  * A tail across a double curve grays the road it lies on, not the whole square (OB-280, MT-475 step 4).
  *
  * A double curve carries two separate tracks, and routing refuses only the one a standing train covers - so the gray,
- * which is what routing refuses, has to name that road.  Nothing claimed it: `ui.testTheGreyAppearsAtIdleToo` compares
- * squares only, and its fixture never chooses a double curve, so emptying the road set left every claim green and the
- * diagram then grayed the whole square - both tracks - for a tail on one.  Adam:
- * *"Add the double curve coverage test."*
+ * which is what routing refuses, has to name that road.  Adam: *"Add the double curve coverage test."*
  *
- * On his frozen railway: ParkingTrack7, `2 - Bottom:16,5`, is reached from the west only (its east end is a buffer),
- * through the double curve at `15,5`, whose E-S road (route 0#1) runs to it and whose N-W road (0#0) runs from
- * ParkingTrack8 to the switch at `14,5`.  A two-unit train standing in ParkingTrack7 lies on its own square and on the
- * E-S road; the N-W road is free.  The three squares are measured one each, so the claim does not rest on how the
- * snapshot happens to be measured.
+ * On his frozen railway: ParkingTrack7, `2 - Bottom:16,5`, through the double curve at `15,5`: a two-unit train
+ * standing there lies on the E-S road (route 0#1) and the N-W road (0#0) is free.  The three squares are measured one
+ * each, so the claim does not rest on how the snapshot happens to be measured.
  *
  * MUTATION: name no road for a claimed place on a double curve (`routesBlockedByStandingTrains`), and this fails.
  *
