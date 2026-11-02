@@ -19,18 +19,14 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.
+ * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.  Since OB-223 Cancel in the
+ * autonomy editor restores the setup as it opened, so the warning says Cancel puts the locomotives back and Save keeps
+ * the change.
  *
- * Since OB-223 Cancel in the autonomy editor restores the setup as it opened, so the locomotives a clear took off come
- * back (`regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it): the warning
- * says Cancel puts them back and Save keeps the change.
- *
- * Asserted by asking the editor, not by reading its source: the panel is stood up over the frozen railway
- * (never `cs2_sample_layout`, OB-111) with trains standing on it, and the warning is the string the confirmation will
- * show and the tooltip shows in short - one builder choosing both, so the two cannot say different things.  Two claims
- * are not about English: the warning must name every locomotive it is about to lift (a count cannot be checked), and it
- * must name Cancel, asked as `I18n.t("ui.cancel")` like the editor's own button, so it holds in all eight languages.
- * On the track diagram's own menu, where there is no Cancel, it must not name one.
+ * Asserted by asking the editor, not by reading its source: the panel is stood up over the frozen railway (never
+ * `cs2_sample_layout`, OB-111).  Two claims are not about English: the warning must name every locomotive it is about
+ * to lift, and it must name Cancel, asked as `I18n.t("ui.cancel")`, so it holds in all eight languages.  On the track
+ * diagram's own menu, where there is no Cancel, it must not name one.
  *
  * MUTATION: take `{1}` out of the message and the naming claim fails; take the Cancel sentence out and
  * the second does; point the tooltip back at `I18n.t` and the third does.
