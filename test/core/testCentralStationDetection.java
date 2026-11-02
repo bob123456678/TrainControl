@@ -11,14 +11,10 @@ import support.SourceOf;
 /**
  * MT-060: a Central Station that answers slowly once is still found.
  *
- * Adam, on the real railway: "it works 9 out of 10 times.  sometimes I see this without a positive detection:
- * 192.168.50.25 is reachable .......... and then it just goes on.  if I try again, it gets redetected."
- *
- * That message is printed the moment a PING succeeds, so everything after it is the web check.  The ping was retried
- * `PING_RETRY` times and the web request was not, so one 500ms timeout while ten threads ping the subnet threw away a
- * station that had just proved it existed.  The station here is a real HTTP server on a real socket that is slow the
- * first time and fine the second; `checkWebServer` is asked directly rather than through the subnet scan, which needs a
- * network with a Central Station on it.
+ * The ping was retried `PING_RETRY` times and the web request was not, so one slow answer threw away a station that had
+ * just proved it existed.  The station here is a real HTTP server on a real socket that is slow the first time and fine
+ * the second; `checkWebServer` is asked directly rather than through the subnet scan, which needs a network with a
+ * Central Station on it.
  *
  * @author Adam
  */
