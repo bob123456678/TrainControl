@@ -14,26 +14,22 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 /**
- * Every count the reference documents quote is the count the store holds.  Numbers counted by hand from a file the
- * same commit is still editing went stale three validation rounds running, so each one below is read out of the
- * document and compared with the thing it describes, and the failure message says what to write instead.
+ * Every count the reference documents quote is the count the store holds: each one is read out of the document and
+ * compared with the thing it describes, and the failure message says what to write instead.
  *
  * ROWS ARE NOT FINDINGS: a finding written up in two documents has a row for each, so the `finding` table holds more
  * rows than findings.  Both are checked here, against the catalogue's rows and its distinct refs.
  *
- * The review total is not a constant of this test: a guard whose expectation is its subject's own claim checks
- * nothing but its own arithmetic.  What the README states is four countable things (files deleted per round, reviews
- * per round, the two for-Adam notes that are the difference, and the spelled-out total), and this asks whether they
- * agree with each other.
+ * The review total is not a constant of this test: a guard whose expectation is its subject's own claim checks nothing
+ * but its own arithmetic.  What the README states is four countable things, and this asks whether they agree with each
+ * other.
  *
  * MUTATION: change by one any number a claim below reads, and the matching claim names it.  For the spelled-out
  * total, the edit is the WORDS ("Two hundred and eight" to "Two hundred and nine"), because every edit to the digits
  * is caught by an earlier claim first.
  *
- * THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136).  With the review documents deleted the folder cannot say which
- * round is next, so `catalog-findings.py --next PREFIX` reads it from the store, `--check-unused REF` refuses one
- * already there, and no mode of the tool can rebuild the catalog from the documents that remain.  The claims that
- * run it need `python` on the path, as the tool does.
+ * THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136): `catalog-findings.py --next PREFIX` reads it from the store and
+ * `--check-unused REF` refuses one already there.  The claims that run it need `python` on the path, as the tool does.
  *
  * @author Adam
  */
