@@ -15,12 +15,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * One ceiling, asked by everything that grows the page, about the right dimension. The limit on a page's size lived in
- * `growEdges`, in `addRowsAndColumns` and in the right-click menu that grays Increase Size, while Shift Down and Shift
- * Right grew the page and asked nothing. The one predicate that replaced them took both dimensions as one conjunction,
- * so `roomToGrow(0, 1)` still asked whether the page was too TALL and refused a column shift; that shape is real (a
- * page's size comes from its largest element coordinate, and three fixture pages parse at 17 x 129). It is a pure
- * function of two ints and the page's size, about the cheapest thing in this window to pin.
+ * One ceiling, asked by everything that grows the page, about the right dimension.  The one predicate takes the two
+ * dimensions apart: `roomToGrow(0, 1)` must not refuse a column shift because the page is too TALL.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111), though nothing here reads the fixture's contents, only its
  * size.
