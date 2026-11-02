@@ -35,10 +35,8 @@ import support.Components;
 
 /**
  * File > Backup TrainControl Data writes one archive of the whole railway as it is now, and says where it is (FR-015,
- * FR-019, FR-021, MT-159). Adam: *"effectively, all state."*
- *
- * Each claim clicks the menu item on a window over a sandboxed copy of the test layout and answers the real dialog that
- * ends the backup. The archive is written to the run's own data folder, and each claim deletes what it made.
+ * FR-019, FR-021, MT-159).  Each claim clicks the menu item on a window over a sandboxed copy of the test layout and
+ * answers the real dialog that ends the backup; each deletes what it made.
  *
  * MUTATIONS, each seen red: the locomotive database left out of the archive (the data claim); the routes export left
  * out (the routes claim); the layout folder stored as "config" rather than under its own name (the layout claim); Show
