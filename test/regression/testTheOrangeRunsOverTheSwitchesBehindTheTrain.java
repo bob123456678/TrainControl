@@ -23,16 +23,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train standing with no road is drawn in orange over the switches its tail lies across (OB-348).
- *
- * Adam: *"when the tail reaches bottommainbcpre, it is not drawn over the thrown arm of the switch and 7,8, even though
- * I see orange before and after."*
- *
- * A train with no road into its platform (placed by hand, answered Not known, or re-stood) has its tail claimed up to
- * where the rails arriving by its side part (MT-477), drawn along the road the rails agree on on each square (OB-290).
- * The roads were asked of every edge of the railway through the square, so a switch behind the platform whose other leg
- * carries rails that never reach the platform (7,8, and the three-way switch at 9,7) was seen run along two roads and
- * drawn along none.
+ * A train standing with no road is drawn in orange over the switches its tail lies across (OB-348): its tail is
+ * claimed up to where the rails arriving by its side part (MT-477), drawn along the road the rails agree on on each
+ * square (OB-290).
  *
  * At TunnelLeftPark on the frozen `live-snapshot`, as Adam's 02 0314-1 DDR stands there: in from the south with no
  * road, and this class's own train long enough to reach back to where the rails part.
@@ -46,8 +39,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * MUTATION: ask only the rails the railway drives, the ones that run over every place the train claims, and the third
  * claim fails at 11,3.
  *
- * And nothing past such a switch (Adam: "stop at unknown.  but if it's not thrown and the train must pass through the
- * thrown arm, then do draw it"): beyond it the tail may lie on either road.
+ * And nothing past such a switch: beyond it the tail may lie on either road.
  *
  * MUTATION: draw every claimed square the rails agree on, wherever it lies, and the third and fourth claims fail.
  *
