@@ -38,10 +38,10 @@ public class testWhyStuck
     /**
      * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is.
      *
-     * Adam, on MT-434: Why Not Moving? should follow Path Type, and on Manual answer for a hand-driven send.
-     * `reversesAlongTheWay` is autonomy's rule (its javadoc: *"NOT asked by isPathClear, so a hand-driven move ... can
-     * still use a headshunt"*) and must not be asked by hand, or a station the menu offers reads as "cannot be sent"
-     * through a reversing station.
+     * Why Not Moving? follows Path Type (MT-434): on Manual it answers for a hand-driven send.  `reversesAlongTheWay`
+     * is autonomy's rule (its javadoc: *"NOT asked by isPathClear, so a hand-driven move ... can still use a
+     * headshunt"*) and must not be asked by hand, or a station the menu offers reads as "cannot be sent" through a
+     * reversing station.
      *
      * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
      */
@@ -106,9 +106,9 @@ public class testWhyStuck
     }
 
     /**
-     * A station the train can go to by one copy is not also listed as one it cannot go to by another, whichever copy
-     * is filed first.  The editor drew Ashby green and named it under "can go to", and listed it again under "could
-     * choose, but cannot right now" with its other arrival side's reason.
+     * A station the train can go to by one copy is not also listed as one it cannot go to by another, whichever copy is
+     * filed first: Ashby, green under "can go to", must not reappear under "could choose, but cannot right now" with
+     * its other arrival side's reason.
      */
     @Test
     public void testAStationItCanGoToIsNotListedAsOneItCannot() throws Exception
@@ -227,9 +227,8 @@ public class testWhyStuck
      *
      * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
      * route search does.  The menu first asks `isOfferableToOperator` and leaves out two kinds of station: one that
-     * excludes this train (Adam: *"if it excludes the loc, don't even include it in the list"*), and a compulsory turn
-     * autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The button and the explanation must answer
-     * the one question the same way (OB-057).
+     * excludes this train, and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205).  The
+     * button and the explanation must answer the one question the same way.
      *
      * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
      */
@@ -543,9 +542,8 @@ public class testWhyStuck
      * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of `Layout.barredFromAutonomy` (the
      * rule is `synchronized` on the Layout and this runs on the event thread three times per repaint), so the two can
      * only be kept together by a test that asks both.  A test that builds one case cannot notice a limb that was never
-     * written (`!isAutoDestination()` and `!isActive()` were missing once), so this compares the two ANSWERS over every
-     * case.  Both are reached by reflection: the copy is private, and the rule is private because everything public
-     * that reaches it takes the monitor this copy exists to avoid.
+     * written, so this compares the two ANSWERS over every case.  Both are reached by reflection: the copy is private,
+     * and the rule is private because everything public that reaches it takes the monitor this copy exists to avoid.
      *
      * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one reason, and the
      * clean case pins the other direction.
@@ -662,9 +660,8 @@ public class testWhyStuck
     }
 
     /**
-     * A station that is merely occupied is NOT barred: the other half of the pair, which stops the fix above from being
-     * "call everything barred".  A station with a train on it is a busy candidate and belongs in the group the user can
-     * do something about.
+     * A station that is merely occupied is NOT barred: the other half of the pair.  A station with a train on it is a
+     * busy candidate and belongs in the group the user can do something about.
      */
     @Test
     public void testAnOccupiedStationIsStillOneAutonomyCouldChoose() throws Exception
