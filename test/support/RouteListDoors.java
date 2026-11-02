@@ -102,6 +102,9 @@ public final class RouteListDoors
      */
     public static JPopupMenu rightClick(TrainControlUI ui, String route)
     {
+        // A menu left open would take the press, and be found below as if this click had opened it
+        Mouse.closeMenus();
+
         Components.select(table(ui));
 
         Components.settle();
@@ -133,7 +136,8 @@ public final class RouteListDoors
             return out.toString();
         });
 
-        if (!found.contains(I18n.t("route.ui.menuExecute")))
+        if (!found.contains(I18n.t("route.ui.menuExecute"))
+            || !found.contains(" " + route + " (" + I18n.t("route.ui.id") + ": "))
         {
             throw new AssertionError("a right-click on " + route + " opened a menu that is not the route's: " + found);
         }

@@ -1639,7 +1639,7 @@ public class testTheRouteListShowsWhatRuns
     @Test
     public void testAWindowsRightClickOpensTheRoutesMenu() throws Exception
     {
-        final String route = aQuickRoute("Right Click Route", 248, 249);
+        final String route = aQuickRoute(PREFIX + "right click", 248, 249);
 
         try
         {

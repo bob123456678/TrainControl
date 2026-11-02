@@ -404,7 +404,17 @@ public final class RouteEditing
     /** Opens a cell's text field as a double-click does, puts this text in it, and presses Enter there. */
     public static void type(final JTable table, final int line, final int column, final String text)
     {
-        final JTextComponent field = Components.onTheEventThread(() ->
+        Keys.press(typeWithoutEnter(table, line, column, text), KeyEvent.VK_ENTER);
+
+        if (Components.onTheEventThread(table::isEditing)) throw new AssertionError("Enter left line " + line
+            + " column " + column + " being edited");
+    }
+
+    /** Opens a cell's text field as a double-click does and puts this text in it, leaving the edit open. */
+    public static JTextComponent typeWithoutEnter(final JTable table, final int line, final int column,
+        final String text)
+    {
+        return Components.onTheEventThread(() ->
         {
             JTextComponent editor = editorOf(table, line, column, JTextComponent.class);
 
@@ -412,11 +422,6 @@ public final class RouteEditing
 
             return editor;
         });
-
-        Keys.press(field, KeyEvent.VK_ENTER);
-
-        if (Components.onTheEventThread(table::isEditing)) throw new AssertionError("Enter left line " + line
-            + " column " + column + " being edited");
     }
 
     /** Starts editing a cell as a click on it does, on the event thread, and gives back its editor. */

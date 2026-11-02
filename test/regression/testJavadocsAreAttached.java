@@ -36,16 +36,16 @@ import org.testng.annotations.Test;
 public class testJavadocsAreAttached
 {
     /**
-     * What was there when this test was written. Lower it whenever some are fixed; never raise it.
+     * No javadoc in `src/` sits away from its method; one that does fails this.
      */
     private static final int ALLOWED = 0;
 
     /**
      * WHICH files carry the orphans, not just how many.
      *
-     * A bare total can absorb a repair and a new orphan landing in a different file in the same round:
-     * fix one, break another, and 96 stays 96 while this stays green. Pinning the per-file breakdown
-     * means a swap fails and names both files - the one that improved and the one that regressed.
+     * A bare total can absorb a repair and a new orphan landing in a different file in the same round. Pinning
+     * the per-file breakdown means a swap fails and names both files: the one that improved and the one that
+     * regressed.
      */
     private static final String[] ORPHANS_BY_FILE = {};
 
@@ -105,9 +105,8 @@ public class testJavadocsAreAttached
             found + " orphaned javadocs remain, fewer than the " + allowed + " recorded. Lower "
             + allowedName + " to " + found + " so the improvement is kept.");
 
-        // The total alone can absorb a repair and a new orphan in the same round: fix one
-        // file, break a different one, and 96 stays 96. Pin WHICH files carry them too, so a swap
-        // fails and names both.
+        // The total alone can absorb a repair in one file and a new orphan in another; WHICH files carry them is
+        // pinned too, so a swap fails and names both.
         List<String> sortedWorst = new ArrayList<>(worst);
         java.util.Collections.sort(sortedWorst);
 

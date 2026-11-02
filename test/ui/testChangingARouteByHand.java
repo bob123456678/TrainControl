@@ -225,12 +225,59 @@ public class testChangingARouteByHand
 
         Route saved = model.getRoute(name);
 
-        assertEquals(commandsOf(saved), yard.switch2 + ",0 | " + switch5 + ",1 | " + yard.signal + ",0,2000 | "
-            + (yard.threeWay + 1) + ",0,300 | " + yard.threeWay + ",1 | Route " + LIGHTS, "the commands Save wrote: the"
-            + " new address moved down one, and the signal's deletion taken back");
+        assertEquals(commandsOf(saved), yard.switch2 + ",0 | " + switch5 + ",1 | " + theSignalAndTheThreeWay()
+            + " | Route " + LIGHTS, "the commands Save wrote: the new address moved down one, and the signal's deletion"
+            + " taken back");
         assertEquals(conditionsOf(saved.getConditions()), "Feedback 8,1 & (" + yard.conditionSwitch
             + ",1 & Feedback 6,0)", "the conditions Save wrote: sensor 8, the group's rule All, and the added condition"
             + " taken back");
+    }
+
+    /**
+     * Scenario 3b: what a cell shows is what counts, Enter pressed or not.  On the unchanged yard route, sensor 5 is
+     * typed over with 8 and left open: Cancel asks whether to throw that away, and No keeps the editor.  The first
+     * switch is typed over with another address, also left open, and Save writes both.
+     *
+     * MUTATION: in `RouteEditorFrame.closeIfThrowingNothingAway`, drop `commitOpenEdits()`, and Cancel closes without
+     * asking.
+     * MUTATION: in `RouteEditorFrame.onSave`, drop `commitOpenEdits()`, and the first switch is saved at its old address.
+     */
+    @Test
+    public void testAnEditLeftOpenIsAskedAboutAndSaved() throws Exception
+    {
+        final String name = aYardRoute("Open edit yard");
+        final int switch7 = switchAt(model, 22);
+
+        RouteEditorFrame frame = edit(name);
+
+        try
+        {
+            JTable conditions = conditionTable(frame);
+
+            typeWithoutEnter(conditions, conditionLine(conditions, CommandRow.Kind.FEEDBACK, 5), CONDITION_TARGET, "8");
+
+            assertEquals(cancelAnswering(frame, "ui.no"), I18n.t("route.ui.confirmDiscardChanges"),
+                "Cancel's question over a sensor typed and not entered");
+
+            Components.settle();
+
+            assertTrue(Components.onTheEventThread(frame::isDisplayable), "No to Cancel's question closed the editor");
+
+            typeWithoutEnter(commandTable(frame), 0, COMMAND_TARGET, String.valueOf(switch7));
+
+            assertEquals(save(frame), "[]", "Save asked a question about an ordinary edit");
+        }
+        finally
+        {
+            closeEditors();
+        }
+
+        Route saved = model.getRoute(name);
+
+        assertEquals(commandsOf(saved), switch7 + ",1 | " + yard.switch2 + ",0 | " + theSignalAndTheThreeWay()
+            + " | Route " + LIGHTS, "the commands Save wrote: the first switch at the address left typed in its cell");
+        assertEquals(conditionsOf(saved.getConditions()), "Feedback 8,1 & (" + yard.conditionSwitch
+            + ",1 | Feedback 6,0)", "the conditions Save wrote: sensor 8, typed before Cancel was answered No");
     }
 
     /**
@@ -272,14 +319,9 @@ public class testChangingARouteByHand
             press(frame, "route.ui.menuAddCondition");
             chooseRule(conditions, 0, "route.ui.conditionCaptionAny");
 
-            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-            {
-                Components.press(Components.withText(frame, I18n.t("route.ui.frameCancel")));
-
-                assertTrue(answering.awaitAsked(1, 10000), "Cancel over a heavily edited route asked nothing");
-                assertEquals(answering.asked().get(0), I18n.t("route.ui.confirmDiscardChanges"), "Cancel's question");
-                assertTrue(Components.waitFor(() -> !frame.isDisplayable(), 10000), "Yes did not close the editor");
-            }
+            assertEquals(cancelAnswering(frame, "ui.yes"), I18n.t("route.ui.confirmDiscardChanges"),
+                "Cancel's question over a heavily edited route");
+            assertTrue(Components.waitFor(() -> !frame.isDisplayable(), 10000), "Yes did not close the editor");
         }
         finally
         {
@@ -384,8 +426,8 @@ public class testChangingARouteByHand
         assertNull(model.getRoute(copy), "the copy is still there under its first name");
         assertNotEquals(saved.getId(), model.getRouteId(name), "the copy has the original's id");
         assertEquals(commandsOf(saved) + " / " + conditionsOf(saved.getConditions()) + " / " + saved.getS88() + " "
-            + saved.isEnabled(), switch6 + ",0 | " + yard.switch2 + ",0 | " + yard.signal + ",0,2000 | "
-            + (yard.threeWay + 1) + ",0,300 | " + yard.threeWay + ",1 / Feedback 5,1 & (" + yard.conditionSwitch
+            + saved.isEnabled(), switch6 + ",0 | " + yard.switch2 + ",0 | " + theSignalAndTheThreeWay()
+            + " / Feedback 5,1 & (" + yard.conditionSwitch
             + ",1 & Feedback 6,0) / 11 true",
             "the copy as Save wrote it");
         assertEquals(everythingOf(model.getRoute(name)), original, "changing the copy changed the original");
@@ -436,6 +478,25 @@ public class testChangingARouteByHand
         Components.settle();
 
         return name;
+    }
+
+    /** The yard route's signal, green after two seconds, and its three-way set left, as the model stores them. */
+    private static String theSignalAndTheThreeWay()
+    {
+        return yard.signal + ",0,2000 | " + (yard.threeWay + 1) + ",0,300 | " + yard.threeWay + ",1";
+    }
+
+    /** Presses Cancel and answers its question with this button; gives back the question. */
+    private static String cancelAnswering(RouteEditorFrame frame, String answerKey)
+    {
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t(answerKey))))
+        {
+            Components.press(Components.withText(frame, I18n.t("route.ui.frameCancel")));
+
+            assertTrue(answering.awaitAsked(1, 10000), "Cancel asked nothing");
+
+            return answering.asked().get(0);
+        }
     }
 
     /** Opens a route's editor from the route list's Edit Route. */

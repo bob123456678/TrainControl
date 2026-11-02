@@ -413,7 +413,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
             - In the autonomy editor, the answers of `Test a path` and `Why not Moving?` stay until the next message, until you close them, or until you click the button again or press Escape, in a strip up to four lines tall.
-            - `Why not Moving?` names every station the train can go to, not just the first four. Every list of stations in it is in alphabetical order, with numbers counted as numbers (ParkingTrack4 before ParkingTrack10), and what its colors mean comes last.
+            - `Why not Moving?` names every station the train can go to, not just the first four. Every list of stations in it goes page by page, then in alphabetical order within a page, with numbers counted as numbers (ParkingTrack4 before ParkingTrack10), and what its colors mean comes last.
         - Interface
             - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with a tooltip, items whose name says what they do have none, and a few tooltips are shorter and clearer.
         - Routes
@@ -436,6 +436,9 @@ Tab icons provided by Freepik.
             - In the autonomy editor, `Test a path` names each leg by the color it is drawn in: purple for a leg ending at a station only you may send a train to, where it used to say yellow or amber.
         - Routes
             - In the route editor, a route with one condition shows its `Reads as` line, and with no conditions the table starts right under the heading instead of after an empty line.
+            - In the route editor, a value typed into a cell and not yet confirmed with Enter is now saved by `Save`, and `Cancel` or closing the window asks before throwing it away.
+            - In the route editor, the Delete key in a cell being typed into deletes a character instead of doing nothing.
+            - A route that belongs to the Central Station again says so above its conditions when it has none.
         - Track Diagram
             - `Save Current Track Diagram as a Picture` now asks "What diagram size do you want to save?"
 * v3.0.6 [10/30/2026]

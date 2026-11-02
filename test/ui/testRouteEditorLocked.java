@@ -40,6 +40,40 @@ public class testRouteEditorLocked
         close(frame);
     }
 
+    /**
+     * OB-397: a locked route with no conditions still says, above them, that it belongs to the Central Station.
+     *
+     * MUTATION: in `becomeReadOnly`, drop `readsAs.setVisible(true)`, and the line is hidden.
+     */
+    @Test
+    public void testALockedRouteWithNoConditionsSaysWhoseItIs() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open(locked(true));
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final String explains = org.traincontrol.util.I18n.t("route.ui.frameLockedExplains");
+            javax.swing.JLabel line = support.Components.find(frame, javax.swing.JLabel.class,
+                l -> explains.equals(l.getText()));
+
+            assertNotNull(line, "the locked route's window has no line saying " + explains);
+            assertTrue(support.Components.onTheEventThread(() -> line.isShowing() && line.getHeight() > 0),
+                "the line saying the route belongs to the Central Station is hidden");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
     /** And is offered on an ordinary one, or the test above would pass on a window that shows nothing. */
     @Test
     public void testAnOrdinaryRouteStillOffersIt() throws Exception

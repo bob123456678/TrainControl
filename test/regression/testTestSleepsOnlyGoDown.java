@@ -17,17 +17,21 @@ import org.testng.annotations.Test;
  * The tests' fixed sleeps can only go down.
  *
  * A sleep is a guess at how long something takes: too short on a busy machine and the claim reads too early and
- * fails (OB-387 and the recent right-click flake were both a test acting before Swing had caught up), too long and
- * every run pays for it.  `support.Components.waitFor` waits for the thing itself.  This pins the count of
- * `Thread.sleep` and `TimeUnit` sleeps in test code, outside comments; one replaced by a wait is banked by lowering
- * the pin.
+ * fails, too long and every run pays for it.  `support.Components.waitFor` waits for the thing itself.  This pins
+ * the count of `Thread.sleep` and `TimeUnit` sleeps in test code, outside comments, also when spelled through a static
+ * import; one replaced by a wait is banked by lowering the pin.  A helper that sleeps counts once, however often it is
+ * called: a new fixed wait goes into a claim, not into a helper.
  */
 public class testTestSleepsOnlyGoDown
 {
     private static final int SLEEPS_ALLOWED = 455;
 
     // Built from pieces so this file does not count itself
-    private static final Pattern SLEEP = Pattern.compile("Thread" + "\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\(");
+    private static final Pattern SLEEP = Pattern.compile("Thread" + "\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\("
+        + "|(?<![\\w.])(?:NANO|MICRO|MILLI)?SECONDS\\.sleep\\(|(?<![\\w.])(?:MINUTES|HOURS)\\.sleep\\(");
+
+    /** `sleep(` alone, which is `Thread.sleep` in a file that imports it statically. */
+    private static final Pattern BARE_SLEEP = Pattern.compile("(?<![\\w.])sleep\\(");
 
     @Test
     public void testNoNewSleepsInTheTests() throws Exception
@@ -61,6 +65,7 @@ public class testTestSleepsOnlyGoDown
     private static int sleepsIn(String source)
     {
         int found = 0;
+        boolean bare = source.contains("import static java.lang." + "Thread.");
 
         for (String line : source.split("\n"))
         {
@@ -72,6 +77,8 @@ public class testTestSleepsOnlyGoDown
             String code = comment >= 0 && line.substring(0, comment).indexOf('"') < 0 ? line.substring(0, comment) : line;
 
             for (Matcher m = SLEEP.matcher(code); m.find();) found++;
+
+            if (bare && !trimmed.startsWith("import")) for (Matcher m = BARE_SLEEP.matcher(code); m.find();) found++;
         }
 
         return found;

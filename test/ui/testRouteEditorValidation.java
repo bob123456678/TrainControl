@@ -1629,7 +1629,13 @@ public class testRouteEditorValidation
     private static void asIfFocused(final org.traincontrol.gui.RouteEditorFrame frame,
         final java.util.function.Consumer<java.awt.Component> keys)
     {
-        final java.awt.Component owner = support.Keys.focusOwnerOf(frame);
+        asIfFocusedOn(support.Keys.focusOwnerOf(frame), keys);
+    }
+
+    /** Keys go to this component, which answers as focus owner. */
+    private static void asIfFocusedOn(final java.awt.Component owner,
+        final java.util.function.Consumer<java.awt.Component> keys)
+    {
         java.awt.KeyboardFocusManager real = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager();
 
         java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(new java.awt.DefaultKeyboardFocusManager()
@@ -3812,6 +3818,39 @@ public class testRouteEditorValidation
     }
 
     /**
+     * FR-163: in a cell edit begun from the table, as typing begins one, the table keeps the keyboard, and the Delete
+     * key is the edit's: it takes the character after the caret, and no command.
+     *
+     * MUTATION: in `HandledTable.listen`, drop the Delete action's `isEnabled`, and 123 is committed whole.
+     */
+    @Test
+    public void testTheDeleteKeyInAnEditBegunFromTheTableDeletesACharacter() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame, 11, 12);
+
+            selectLines(table, 0, 0);
+            support.Components.onTheEventThread(() ->
+            {
+                table.editCellAt(0, COMMAND_TARGET);
+
+                javax.swing.text.JTextComponent field = (javax.swing.text.JTextComponent) table.getEditorComponent();
+
+                field.setText("123");
+                field.setCaretPosition(1);
+
+                return null;
+            });
+
+            asIfFocusedOn(table, owner -> support.Keys.press(owner, java.awt.event.KeyEvent.VK_DELETE));
+            commit(table);
+
+            assertEquals(targets(frame), " 13 12", "the Delete key with the caret after the 1 of 123");
+        });
+    }
+
+    /**
      * FR-163: Undo (Ctrl+Z on the commands, or the Undo under them) takes back each edit to the commands in turn: a
      * capture, a target typed, a command added by Add Command, one inserted, a drag, Move Up, Alt+Up, Duplicate, the copy
      * mark, the trash, the menu's Delete and the Delete key; Redo (Ctrl+Y, or its button) makes them again.  A route
@@ -3956,6 +3995,28 @@ public class testRouteEditorValidation
 
             assertTrue(frame.readsAsForTest().contains("S88 #5"), "one condition does not read as itself: "
                 + frame.readsAsForTest());
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            selectLines(conditionTable(frame), 0, 0);
+            support.Keys.press(conditionTable(frame), java.awt.event.KeyEvent.VK_DELETE);
+
+            assertEquals(levels(frame), "", "precondition: the Delete key took the last condition");
+            assertFalse(support.Components.onTheEventThread(reads::isVisible), "deleting the last condition left the"
+                + " blank reading taking a line");
+        });
+
+        // A saved route with none opens with no gap either
+        inAnEditor(route(11), frame ->
+        {
+            javax.swing.JLabel reads = (javax.swing.JLabel) privateField(frame, "readsAs");
+
+            assertFalse(support.Components.onTheEventThread(reads::isVisible), "a saved route with no conditions"
+                + " opens with the blank reading taking a line");
         });
     }
 

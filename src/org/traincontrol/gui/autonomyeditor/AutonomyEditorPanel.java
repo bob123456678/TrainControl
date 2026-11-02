@@ -5157,7 +5157,13 @@ public class AutonomyEditorPanel extends JPanel
     {
         // Asked once for the whole leg, as a color on its last square alone could be off the page.
         // `manualOnlyStations`, not `stationsAutonomyWillNotChoose`: a shut square is no manual-only point.
-        trace(into, run, from, forward, to, to != null && session != null && session.manualOnlyStations().contains(to));
+        trace(into, run, from, forward, to, endsManualOnly(to));
+    }
+
+    /** Whether a tested leg ending here is drawn purple; its words ask this too (OB-398). */
+    private boolean endsManualOnly(TileKey to)
+    {
+        return to != null && session != null && session.manualOnlyStations().contains(to);
     }
 
     /**
@@ -5166,7 +5172,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private String legColor(TileKey to, boolean forward)
     {
-        if (session != null && session.manualOnlyStations().contains(to))
+        if (endsManualOnly(to))
         {
             return I18n.t("autosetup.ui.testColorPurple");
         }

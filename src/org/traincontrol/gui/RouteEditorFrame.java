@@ -651,6 +651,13 @@ public class RouteEditorFrame extends JFrame
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
     }
+    /** Ends a cell edit in either table as Enter would, so what it shows is in the route. */
+    private void commitOpenEdits()
+    {
+        if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
+        if (commands.isEditing()) commands.getCellEditor().stopCellEditing();
+    }
+
     /**
      * Closes, asking first only if there is something to lose, compared against what was loaded rather than a flag:
      * a flag must be set by every path that changes anything, and a prompt that does not appear teaches that closing
@@ -658,6 +665,9 @@ public class RouteEditorFrame extends JFrame
      */
     private void closeIfThrowingNothingAway()
     {
+        // A value typed into a cell and not yet committed is work too
+        commitOpenEdits();
+
         if (!hasUnsavedWork())
         {
             dispose();
@@ -1081,8 +1091,7 @@ public class RouteEditorFrame extends JFrame
 
         out.addActionListener(e ->
         {
-            if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
-            if (commands.isEditing()) commands.getCellEditor().stopCellEditing();
+            commitOpenEdits();
 
             action.run();
         });
@@ -1491,6 +1500,9 @@ public class RouteEditorFrame extends JFrame
         if (locked) return;
 
         if (command == null || command.trim().isEmpty()) return;
+
+        // A cell being typed into keeps its own row when the capture adds one
+        commitOpenEdits();
 
         try
         {
@@ -2356,6 +2368,7 @@ public class RouteEditorFrame extends JFrame
         refreshCommandActions();
 
         readsAs.setText(I18n.t("route.ui.frameLockedExplains"));
+        readsAs.setVisible(true);
         unasked.setVisible(false);
     }
 
@@ -2985,6 +2998,9 @@ public class RouteEditorFrame extends JFrame
     /** Builds the route back up and hands it to the same code the text editor uses. */
     private void onSave()
     {
+        // What the cell being typed into shows is what is saved
+        commitOpenEdits();
+
         List<String> wrong = everythingWrong();
 
         if (!wrong.isEmpty())
@@ -3584,6 +3600,13 @@ public class RouteEditorFrame extends JFrame
             getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke("DELETE"), "deleteSelected");
             getActionMap().put("deleteSelected", new javax.swing.AbstractAction()
             {
+                // Not taken while a cell is edited, so the key goes on to the editor, even one begun by typing
+                @Override
+                public boolean isEnabled()
+                {
+                    return !isEditing();
+                }
+
                 @Override
                 public void actionPerformed(java.awt.event.ActionEvent e)
                 {

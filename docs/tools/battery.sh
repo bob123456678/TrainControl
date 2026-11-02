@@ -10,7 +10,8 @@
 #     TC_SCRATCH=/path/to/scratch bash docs/tools/battery.sh
 #
 # LANES (FR-136 Phase 1a): TC_LANES=auto, or a number, runs the classes in that many JVMs at once, each with a data
-# folder, a preference node and a temp folder of its own.  Each lane holds one slot, and at least one stays free for a
+# folder, a preference node and a temp folder of its own; auto is one lane per three processors, fewer when memory is
+# short (HOW MANY LANES, below).  Each lane holds one slot, and at least one stays free for a
 # worker's one.sh.  The classes in serial-lane.txt run last, alone, once the run has every slot back (Adam, 2026-10-24:
 # "At the end of each battery"): they need the keyboard focus, so they come to the front of the screen.  TC_DURATIONS
 # names a tng-run folder whose timings order the classes longest first (default: this scratch's own, from the last
@@ -221,8 +222,7 @@ release_the_lock()
 {
     release_all_slots
 
-    if [ "$(cat "${BATTERY_MARKER:-}" 2>/dev/null | tr -d '
- ')" = "${SLOT_PID:-}" ]; then rm -f "$BATTERY_MARKER"; fi
+    if [ "$(cat "${BATTERY_MARKER:-}" 2>/dev/null | tr -d '\r\n ')" = "${SLOT_PID:-}" ]; then rm -f "$BATTERY_MARKER"; fi
 
     # A run that waited for every slot and got them has taken its marker down already; this is the second chance.
     clear_waiting_marker
@@ -425,15 +425,17 @@ done
 JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.dataDir=$(cygpath -ws "$ISOLATED") -Dtraincontrol.preferences=$RUN_ID"
 
 # HOW MANY LANES (FR-136 Phase 1a).  None unless asked for, until the laned battery has been compared with this one
-# claim by claim.  "auto" takes one per four logical processors and one per free gigabyte past a reserve of one and a
-# half - a window class's JVM grows to about a gigabyte in its 768m heap - and always leaves one slot for a worker.
+# claim by claim.  "auto" takes one per three logical processors and one per 768 MB free past a reserve of one and a
+# half gigabytes, and always leaves one slot for a worker.  Measured on 20 threads: 6 lanes ran the battery in 19 minutes
+# against 25 for 5, each lane's JVM averaging 600 MB; 8 did a seventh more work than 6 while nothing else ran and lost to
+# it under other runs' load.  MSYS's MemFree is Windows' available memory, standby included.
 LANES="${TC_LANES:-1}"
 
 case "$LANES" in
     auto)
-        by_cpu=$(( $(nproc 2>/dev/null || echo 4) / 4 ))
+        by_cpu=$(( $(nproc 2>/dev/null || echo 4) / 3 ))
         free_mb=$(( $(awk '/^MemFree/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0) / 1024 ))
-        by_memory=$(( (free_mb - 1536) / 1024 ))
+        by_memory=$(( (free_mb - 1536) / 768 ))
 
         LANES=$by_cpu
         [ "$by_memory" -lt "$LANES" ] && LANES=$by_memory
@@ -785,6 +787,41 @@ fi
 # files, its own preference node, and its own temp folder.  A claim is a `mkdir`, which exactly one lane can win.
 # Lane 1 runs in slot 1 and the others in theirs; each but the first gives its slot back when the queue is empty,
 # so a worker's run can start while the last classes finish.
+# A lane's JVM flags: its own run id, data folder, preference node and temp folder.
+lane_flags()
+{
+    local id="$RUN_ID-lane$1"
+    local state="$S/state-$id"
+
+    echo "$LANE_FLAGS -Dtraincontrol.batteryRun=$id -Dtraincontrol.dataDir=$(cygpath -ws "$state")" \
+        "-Dtraincontrol.preferences=$id -Djava.io.tmpdir=$(cygpath -ws "$state/tmp")\\"
+}
+
+# Every slot past the lanes, waited for one at a time, for a run that needs the machine to itself.
+take_the_spare_slots()
+{
+    local k=$((LANES + 1))
+
+    while [ "$k" -le "$SLOTS" ]
+    do
+        if ! echo " $HELD_SLOTS " | grep -q " $k "
+        then
+            until clear_if_stale "$(slot_file "$k")" >/dev/null && take_lock_file "$(slot_file "$k")"
+            do
+                leave_waiting_marker >/dev/null
+
+                sleep 10
+            done
+
+            HELD_SLOTS="$HELD_SLOTS $k"
+        fi
+
+        k=$((k + 1))
+    done
+
+    clear_waiting_marker
+}
+
 run_lane()
 {
     trap - EXIT INT TERM
@@ -794,15 +831,15 @@ run_lane()
     local state="$S/state-$id"
 
     rm -rf "$state"
-    mkdir -p "$state/tmp"
+    mkdir -p "$state/tmp" "$WORK/lane-of"
 
     for DATA in LocDB.data UIState.data
     do
         if [ -f "$DATA" ]; then cp "$DATA" "$state/"; fi
     done
 
-    local flags="$LANE_FLAGS -Dtraincontrol.batteryRun=$id -Dtraincontrol.dataDir=$(cygpath -ws "$state")"
-    flags="$flags -Dtraincontrol.preferences=$id -Djava.io.tmpdir=$(cygpath -ws "$state/tmp")\\"
+    local flags
+    flags=$(lane_flags "$k")
 
     local total
     total=$(wc -l < "$WORK/queue")
@@ -813,7 +850,11 @@ run_lane()
     do
         if mkdir "$WORK/claims/$i" 2>/dev/null
         then
-            run_class "$id" "$flags" "$(sed -n "${i}p" "$WORK/queue")"
+            cls=$(sed -n "${i}p" "$WORK/queue")
+
+            echo "$k" > "$WORK/lane-of/$cls"
+
+            run_class "$id" "$flags" "$cls"
         fi
 
         i=$((i + 1))
@@ -903,23 +944,7 @@ else
     # off new single-slot runs meanwhile (slots.sh).
     if [ -s "$WORK/serial" ]
     then
-        k=$((LANES + 1))
-
-        while [ "$k" -le "$SLOTS" ]
-        do
-            until clear_if_stale "$(slot_file "$k")" >/dev/null && take_lock_file "$(slot_file "$k")"
-            do
-                leave_waiting_marker >/dev/null
-
-                sleep 10
-            done
-
-            HELD_SLOTS="$HELD_SLOTS $k"
-
-            k=$((k + 1))
-        done
-
-        clear_waiting_marker
+        take_the_spare_slots
 
         for cls in $(cat "$WORK/serial")
         do
@@ -932,10 +957,14 @@ fi
 
 # THE COUNT, in name order, from the verdicts: the summary reads as it always did.
 # ONE RERUN OF EACH FAILED CLASS, alone, so a flake reads as a flake and not as a failure.  A class that fails, then
-# passes, is "flaky": listed apart, not counted green, and not an exit 1.  Each such class, and each that fails both
-# times, gets a line in docs/tools/flakes.tsv (TC_FLAKES moves it), which `python docs/tools/flakes.py` adds up per
-# class.  More than TC_RERUN_MAX failures (10) is the tree or the machine, not flakes, and is not rerun; TC_RERUN=0
-# turns it off.
+# passes, is "flaky": listed apart, not counted green, and not an exit 1.  The rerun uses the state its first run had
+# (its lane's data folder, preference node and temp folder, with what the lane's earlier classes left there), so a
+# failure caused by a lane-mate's leftovers fails again and is counted.  Each flaky class, and each that fails both
+# times, gets a line in the flake log, naming the claims that failed first; `python docs/tools/flakes.py` adds them up
+# per class.  The log is docs/tools/flakes.tsv for a full run of the main checkout without TC_JVM_ARGS, and
+# $TC_SCRATCH/flakes.tsv for a subset, a worktree or a coverage run, so only like runs are added up; TC_FLAKES names
+# another.  The first run's console output is kept beside the rerun's, as <class>.first.out.  More than TC_RERUN_MAX
+# failures (10) is the tree or the machine, not flakes, and is not rerun; TC_RERUN=0 turns it off.
 mkdir -p "$WORK/first"
 
 firsts=0
@@ -947,6 +976,8 @@ done
 
 if [ "${TC_RERUN:-1}" != 0 ] && [ "$firsts" -gt 0 ] && [ "$firsts" -le "${TC_RERUN_MAX:-10}" ]
 then
+    if [ "$LANES" -gt 1 ]; then take_the_spare_slots; fi
+
     for cls in $(cat "$WORK/classes")
     do
         if [ "$(sed -n 1p "$WORK/verdicts/$cls" 2>/dev/null)" != fail ]; then continue; fi
@@ -956,14 +987,39 @@ then
         rm -rf "$S/tng-run/$cls.first"
 
         if [ -d "$S/tng-run/$cls" ]; then mv "$S/tng-run/$cls" "$S/tng-run/$cls.first"; fi
+        if [ -f "$S/tng-run/$cls.out" ]; then mv "$S/tng-run/$cls.out" "$S/tng-run/$cls.first.out"; fi
 
         echo "rerun: $cls"
 
-        run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
+        if [ -f "$WORK/lane-of/$cls" ]
+        then
+            lane=$(cat "$WORK/lane-of/$cls")
+
+            run_class "$RUN_ID-lane$lane" "$(lane_flags "$lane")" "$cls"
+        else
+            run_class "$RUN_ID" "$JAVA_FLAGS" "$cls"
+        fi
     done
 fi
 
-FLAKES="${TC_FLAKES:-docs/tools/flakes.tsv}"
+# The main checkout is the one whose git folder is the shared one; a worktree's is not.
+if [ -n "${TC_FLAKES:-}" ]
+then
+    FLAKES="$TC_FLAKES"
+elif [ -z "${TC_CLASSES:-}" ] && [ -z "${TC_JVM_ARGS:-}" ] \
+    && [ "$(git rev-parse --git-dir 2>/dev/null)" = "$(git rev-parse --git-common-dir 2>/dev/null)" ]
+then
+    FLAKES="docs/tools/flakes.tsv"
+else
+    FLAKES="$S/flakes.tsv"
+fi
+
+# The claims that failed in a class's first run, from its TestNG results: "testA,testB".
+first_failures()
+{
+    grep -o '<test-method[^>]*status="FAIL"[^>]*' "$S/tng-run/$1.first/testng-results.xml" 2>/dev/null \
+        | grep -o ' name="[^"]*"' | sed 's/ name="//; s/"$//' | sort -u | paste -sd, -
+}
 COMMIT=$(git rev-parse --short HEAD 2>/dev/null)
 
 pass=0
@@ -988,17 +1044,18 @@ do
 
     if [ -f "$WORK/first/$cls" ]
     then
-        first=$(sed -n 2p "$WORK/first/$cls" | tr '	' ' ')
+        first=$(sed -n 2p "$WORK/first/$cls" | tr '\t' ' ')
+        claims=$(first_failures "$cls")
+
+        if [ -n "$claims" ]; then first="$first ($claims)"; fi
 
         if [ "$kind" = pass ]; then outcome=flaky; else outcome=failed-twice; fi
 
-        printf "%s	%s	%s	%s	%s
-" "$(date +%Y-%m-%d)" "$COMMIT" "$cls" "$outcome" "$first" >> "$FLAKES"
+        printf '%s\t%s\t%s\t%s\t%s\n' "$(date +%Y-%m-%d)" "$COMMIT" "$cls" "$outcome" "$first" >> "$FLAKES"
 
         if [ "$kind" = pass ]
         then
-            flaky=$((flaky+1)); flakies="$flakies
-  $first (passed on its rerun)"
+            flaky=$((flaky+1)); flakies="$flakies\n  $first (passed on its rerun)"
 
             continue
         fi
