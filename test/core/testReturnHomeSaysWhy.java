@@ -22,10 +22,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * fails, state the reason why the layout doesn't allow a locomotive to go to its home in the log (length, blocked,
  * etc.)"; MT-346: "seems OK, just needs to be easier for the user to debug").
  *
- * Each check that puts a train on the unreachable list is a different fact with a different remedy.  Asked of the
- * words, not of a flag: each claim finds the sentence for the rule that actually refused and checks it carries the
- * numbers or names the operator would act on.  The log is read as well as the plan, since a reason never written is
- * what the request was about.
+ * Each claim finds the sentence for the rule that actually refused and checks it carries the numbers or names the
+ * operator would act on.  The log is read as well as the plan, since a reason never written is what the request was
+ * about.
  *
  * @author Adam
  */
