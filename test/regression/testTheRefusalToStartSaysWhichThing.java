@@ -9,14 +9,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * The three doors that refuse to start autonomy say the same thing, and it names the count (MT-263).
- *
- * Two of the three told the operator to wait for trains that were not running: autonomy refuses on `hasErrors()`, which
- * covers a graph that will not build at all, and there the error COUNT is zero because nothing turned the problem into
- * a finding.  The grayed Start item's tooltip and the scripting API's exception chose their wording on that count alone
- * and fell through to "wait for the trains to stop".  Then, even once that was closed, those two read "one thing has to
- * be dealt with first" for ANY number of blocking problems, because neither asked how many (MT-263's step 5: "with
- * three blocking problems, the start door should say three, not 'one thing'"; the shape OB-090 wore twice).
+ * The three doors that refuse to start autonomy say the same thing, and it names the count (MT-263; the shape OB-090
+ * wore twice): autonomy refuses on `hasErrors()`, which covers a graph that will not build at all, where the error
+ * COUNT is zero.
  *
  * **Asked of the arithmetic, and then of the doors:** the rule is asked directly with the numbers put in, so no railway
  * has to be broken three ways; the second claim reads the three call sites, because pinning the rule alone would leave
