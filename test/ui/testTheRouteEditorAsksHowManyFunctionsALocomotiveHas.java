@@ -243,8 +243,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 "the row is marked for something Save does not refuse, so the mark and the gate"
                 + " disagree.  What Save said: " + frame.problemsForTest());
 
-            // A ROW NOBODY HAS FILLED IN YET IS NOT MARKED.  It is added empty, Save refuses it, and
-            // marking on that answer alone painted every new row red before a character was typed.
+            // A ROW NOBODY HAS FILLED IN YET IS NOT MARKED: Save refuses it, but marking on that answer alone would
+            // paint every new row red before a character was typed.
             SwingUtilities.invokeAndWait(() ->
             {
                 frame.addCommandRowForTest();
