@@ -62,13 +62,9 @@ public final class BusyDialog extends JDialog
     }
 
     /**
-     * Puts the spinner up now, and hands back the thing that takes it down (OB-140).  `run` owns the work as well as
-     * the dialog, which is no use to a caller already on a background thread doing the slow thing itself: `run` would
-     * hand the work to a second thread and return before the value arrived.  That is `TrainControlUI.syncWithCS2`'s
-     * shape, and sixteen doors go through it.
-     *
-     * Safe to close from any thread, and before the dialog has appeared: both halves land on the event thread in the
-     * order posted, and the flag covers a close queued behind a show that has not run yet.
+     * Puts the spinner up now, and hands back the thing that takes it down (OB-140), for a caller already on a
+     * background thread doing the slow thing itself, where `run` would return before the value arrived.  Safe to close
+     * from any thread, and before the dialog has appeared.
      *
      * @param parent the window to center on
      * @param message what is happening, in words
