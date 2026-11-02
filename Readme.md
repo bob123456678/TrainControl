@@ -408,7 +408,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.7 [11/01/2026]
+* v3.0.7 [11/02/2026]
     - New Features
         - Routes
             - The route editor is rebuilt so its commands and conditions work alike: drag a row by its handle, move the selected rows with Alt+Up and Alt+Down, and remove them with the trash or the Delete key.
