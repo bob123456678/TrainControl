@@ -16,15 +16,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 
 /**
- * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066).
- *
- * `AutonomyEditorPanel.promptLengthFor` asks the menu's own question, but `isIgnored` is not all of it.
- * `buildTileMenu` also sends a text square to `buildTextMenu` (no length item at all) and acts on `leaderOf(tile)`
- * rather than on `tile`; the key did neither.  On a text label the key opened the dialog where the menu offers nothing;
- * on plain track it wrote the hovered tile's length, not the run leader's, so using both on one run counted it twice.
- * Both tests hold the shape the javadoc names: the guard and the affordance asking one question.
- *
- * Read-only: it builds its own diagram in a temporary folder and never touches a real railway.
+ * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066): the
+ * guard and the affordance ask one question.  Read-only: it builds its own diagram in a temporary folder.
  *
  * @author Adam
  */
