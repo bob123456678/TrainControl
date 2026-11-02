@@ -17,11 +17,9 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
 /**
- * Control+N offers a station name exactly where the right-click menu does (FR-086).
- *
- * The key asks what the menu asks, put side by side through a public predicate because the key itself opens a modal
- * dialog (the shape `testControlEAsksTheMenusQuestion` holds for Control+E).  Read-only: its own diagram in a
- * temporary folder.
+ * Control+N offers a station name exactly where the right-click menu does (FR-086): the key asks what the menu asks,
+ * side by side through a public predicate because the key itself opens a modal dialog.  Read-only: its own diagram in
+ * a temporary folder.
  *
  * @author Adam
  */
@@ -586,8 +584,7 @@ public class testControlNAsksTheMenusQuestion
 
     /**
      * "Stop Showing" is on the menu of every square a caption sits on, so the setup check's error can always be cleared
-     * from the editor (OB-341), including a switch or signal and a page left out of autonomy, which a hand-edited setup
-     * can caption.  The name item is still not offered there: a caption may not be put there, only taken off.
+     * from the editor (OB-341).
      *
      * MUTATION: leave the stop item out of either branch, and this fails.
      */
