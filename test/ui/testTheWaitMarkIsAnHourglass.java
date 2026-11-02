@@ -226,8 +226,7 @@ public class testTheWaitMarkIsAnHourglass
     /**
      * The window a dialog is placed against is the window itself, not what contains it (MT-182):
      * getWindowAncestor(owner()) walks UP and is null for a top-level frame, so the centering fallback would run.
-     * Driven
-     * with real components; no dialog is shown.
+     * Driven with real components; no dialog is shown.
      */
     @Test
     public void testAWindowIsNotAskedWhatContainsIt() throws Exception
