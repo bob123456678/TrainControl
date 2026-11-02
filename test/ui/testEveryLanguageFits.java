@@ -80,7 +80,7 @@ public class testEveryLanguageFits
      * pixels fits, the same label with a long one does not.
      *
      * MUTATION: comparing `getPreferredSize().width` against `getWidth()` again fails the second assertion, because
-     * `setPreferredSize` is how the fixture fixes the width and that is the case the old rule could not see.
+     * `setPreferredSize` is how the fixture fixes the width and that is the case that comparison cannot see.
      */
     @Test
     public void testTheClippingRuleCanActuallyFail()
@@ -349,9 +349,9 @@ public class testEveryLanguageFits
                 titles(ui[0].getContentPane(), found);
 
                 // No container-level checks: the per-component rule catches a component whose width is FIXED, since a
-                // free layout grants the wider preferred size and the overflow lands elsewhere.  Three container rules
-                // were tried and dropped: they measure this form's own geometry (11 and 12 findings in English), not
-                // translation length, and a check that reports findings every run is one nobody reads.
+                // free layout grants the wider preferred size and the overflow lands elsewhere.  Container rules
+                // measure this form's own geometry, not translation length, and a check that reports findings every run
+                // is one nobody reads.
                 localised.put(language, textByPath(ui[0]));
             });
 
