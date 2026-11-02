@@ -283,12 +283,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     private static final String RUN_IN_AT_A_PLATFORM_REFUSED = "autosetup.ui.checkRunInShorterThanThePlatformRefused";
 
     /**
-     * The platform notice names the figure a train is refused above, where there is one.
-     *
-     * `Layout.whyTooLongForThisRoute` admits a train longer than the room past the switch only as far as the measured
-     * route in holds (FR-087, `theApproachItselfHoldsIt`), so a
-     * train that sets off from the station just behind is refused above that route's length.  Here the way in from 1,1
-     * measures 4 (2, the switch, 2) and the platform is set to 6: a train of 5 stands across the switch coming from
+     * The platform notice names the figure a train is refused above, where there is one (FR-087).  Here the way in from
+     * 1,1 measures 4 (2, the switch, 2) and the platform is set to 6: a train of 5 stands across the switch coming from
      * further back, and is refused coming from 1,1.
      *
      * MUTATION: leave the figure out of the finding, or leave a station copy behind out of it, and this fails.
@@ -644,10 +640,6 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
 
     /**
      * A side trains may not arrive by is not an approach, and its run-in is not compared with the maximum (MT-552).
-     *
-     * RampDown and BottomMainPost only accept arrivals from one side, and both sides are measured.  No train comes in
-     * by the barred side, so nothing about its track can refuse one.
-     *
      * The control first: with both sides open the short side is reported, so the fixture can say it.
      *
      * MUTATION: judge every arriving edge in `runInsShorterThanTheBerth` again, and this fails.
@@ -755,8 +747,6 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * A side trains may not arrive by is not an approach, and its unmeasured track is not a half-measured one (MT-552).
      *
-     * Nothing arrives by that side, so it cannot refuse trains that would otherwise fit.
-     *
      * MUTATION: judge every arriving edge in `stationsWithAHalfMeasuredApproach` again, and this fails.
      */
     @Test
@@ -786,9 +776,6 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     /**
      * At a station autonomy may choose, a train longer than the run-in stands across the switch and blocks the railway
      * behind it; at a parking berth it is refused - and the notice says which (MT-555).
-     *
-     * `Layout.whyTooLongForThisRoute` refuses a train at a berth and, at a station autonomy may choose, admits it as
-     * far as the measured route in holds (FR-087), so "refused above x" would be wrong for the latter.
      *
      * MUTATION: word both kinds of station the same, and this fails.
      */
@@ -885,14 +872,11 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
     }
 
     /**
-     * A way to back a train into a berth counts the turns on the way.  A
-     * train rested on a terminus sets off turned, and each reversing point it passes turns it again; an odd count brings
-     * it in tail first - backed in.  A reversing point passed inline (MT-245's S - reversing M - terminus T, which Return
-     * Home drives) is a way in; one on a stub, which turns the train back where it came from, is not, nor is a rest
-     * followed by one turn, which brings it in nose first again.  Asked of small graphs written as the build writes them.
+     * A way to back a train into a berth counts the turns on the way: a train rested on a terminus sets off turned, and
+     * each reversing point it passes turns it again; an odd count brings it in tail first - backed in (MT-245).
      *
-     * MUTATION: drop the stub rule, ignore a reversing point's turn, seed a rest unturned, count any turn rather than an
-     * odd number, or walk through a square out of service, and this fails.
+     * MUTATION: drop the stub rule, ignore a reversing point's turn, seed a rest unturned, count any turn rather than
+     * an odd number, or walk through a square out of service, and this fails.
      */
     @Test
     public void testAWayToBackInCountsTheTurnsOnTheWay()
