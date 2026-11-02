@@ -172,12 +172,9 @@ final class LayoutEditorSelection
     void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
         // Guarded on "nothing at all", no narrower: Ctrl+X and Ctrl+C pass the hovered label unchecked, null while the
-        // pointer is over the palette, and arming then left `lastComponent` null.  Two callers legitimately pass one
-        // half:
-        //   the palette      a COMPONENT with a label whose `getX` is -1 (placingFromPalette is built on that state);
-        //   a column drag    a real grid LABEL and no component, since a dragged column carries its blank squares too
-        //                    (testLayoutEditorBulkEdits).
-        // No caller ever means both missing; that is reachable only from the two key branches.
+        // pointer is over the palette.  Two callers legitimately pass one half: the palette (a COMPONENT with a label
+        // whose `getX` is -1; placingFromPalette is built on that state) and a column drag (a real grid LABEL and no
+        // component, since a dragged column carries its blank squares too).
         if (label == null && component == null) return;
 
         int x = this.editor.getX(label);
@@ -463,9 +460,8 @@ final class LayoutEditorSelection
                 }
 
                 // Used up by a paste that actually moved something ("cut then paste twice is a move and then a copy").
-                // cutMoves returns an EMPTY map, never null, when no origin is both cut and still empty, and an empty
-                // map is not a move: spending the cut on it would send the next paste to forgetBuiltOver on the
-                // origins.
+                // cutMoves returns an EMPTY map when nothing moved, and spending the cut on that would send the next
+                // paste to forgetBuiltOver on the origins.
                 if (!moves.isEmpty()) this.editor.clipboardWasCut = false;
             }
             else
@@ -774,10 +770,8 @@ final class LayoutEditorSelection
      * `LayoutEditor.deleteSelection` is `synchronized`.
      *
      * @param tellAutonomy whether the setup should forget what was on those squares: TRUE for a plain delete, FALSE for
-     *        a CUT, where the paste that follows carries the setup and forgetting the captions here would destroy the
-     * one
-     *        part of it drawn on the diagram (forgetCaptionsAt deletes the caption on the square AND every caption
-     * naming it)
+     *        a CUT, where the paste that follows carries the setup and forgetting the captions here (the caption on
+     *        the square AND every caption naming it) would destroy the one part of it drawn on the diagram
      */
     boolean deleteSelection(boolean tellAutonomy)
     {
