@@ -363,8 +363,6 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * THE SAME SETUP BUILDS THE SAME RAILWAY, copy for copy and in the same order (OB-183).
      *
-     * Adam: **"Changing a home can teleport a current locomotive's location on the diagram/graph."**
-     *
      * Nothing about a home decides where a train stands, so the suspect is the REBUILD a home change triggers.
      * `AutonomyBuilder.placementCopy` falls back to the first copy trains may arrive at when there is no facing or none
      * matches - an order-dependent choice, so a builder whose output depends on iteration order would move trains for
@@ -877,8 +875,8 @@ public class testAPastedTrainKeepsItsDirection
     /**
      * Everything the setup records about a square reaches the railway, and leaving takes it away.
      *
-     * Coverage of `arrivedFrom` used to ask only **the setup** (set and read back, save and reopen) or the text of
-     * `Layout.executePathInternal`, never the **railway**, which is what blocks track.  Two defects lived in that gap:
+     * Coverage of `arrivedFrom` used to ask only **the setup**, never the **railway**, which is what blocks track.  Two
+     * defects lived in that gap:
      *
      * - **The value never arrives.** `parseAuto` applied the side while creating the points and placed the trains
      *   afterwards, and placing a train clears the side: written, then wiped, on every build.
