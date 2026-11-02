@@ -5,9 +5,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
 /**
- * What a tile is doing, and how that is painted over it.  Drawn as a wash rather than by recoloring the tile art: the
- * icon cache is shared by every tile of a type, and the yellow highlight already swaps the icon out and back, so a
- * second effect would fight it for the one slot it restores from.  Colors are `DiagramColours`' (FR-106).
+ * What a tile is doing, and how that is painted over it: a wash, not a recolored tile icon, because the yellow
+ * highlight already swaps the shared icon out and back (FR-106).  Colors are `DiagramColours`'.
  *
  * @author Adam
  */
@@ -172,8 +171,8 @@ public class TileOverlay
     }
 
     /**
-     * A train the railway holds with no path to run, drawn as the locomotive a run draws and facing the way it stands.
-     * One standing still on a path it holds is drawn the same, where it stands (OB-317).
+     * A train the railway holds with no path to run, drawn as the locomotive a run draws and facing the way it stands
+     * (OB-317).
      *
      * @param facing the side its front faces, or null where the railway records none
      * @return the mark
@@ -313,12 +312,8 @@ public class TileOverlay
     }
 
     /**
-     * Which way the rail runs under the train on a curve, from the middle of the train's road to the midpoint of the
-     * side it is heading for (MT-642); null on a straight, a switch or a crossing, where the icon stays square.  A run
-     * that ENDS here goes on through the middle of its road towards the curve's other side.
-     *
-     * @param trackCentre the middle of the train's road, or null if it is not known
-     * @return which way the rail runs, as {dx, dy}, or null
+     * Which way the rail runs under the train on a curve, as {dx, dy}; null on a straight, a switch or a crossing
+     * (MT-642).
      */
     private int[] alongTheCurve(int[] trackCentre, int width, int height)
     {
@@ -391,9 +386,8 @@ public class TileOverlay
     }
 
     /**
-     * The sides of this tile the train's own road ends at (MT-642): where a running train came in and is heading, or
-     * the side a parked train faces.  A double curve is two roads in one tile, so the caller asks
-     * `TileAnnotation.trackCentreOf` which of them these name.
+     * The sides of this tile the train's own road ends at (MT-642); the caller asks `TileAnnotation.trackCentreOf`
+     * which road of a double curve they name.
      *
      * @return the sides, possibly empty, never null
      */
@@ -552,11 +546,8 @@ public class TileOverlay
     }
 
     /**
-     * The locomotive picture, read from the resources folder the first time it is wanted (FR-027) and remembered
-     * INCLUDING the answer "there is none".  Nothing is logged on failure: people will drop in something ImageIO
-     * cannot read, and the dot says the same without a stack trace behind a cosmetic feature.
-     *
-     * @return the icon, or null if there is not one to be had
+     * The locomotive picture (FR-027), read from the resources folder the first time it is wanted and remembered,
+     * INCLUDING "there is none"; nothing is logged on failure.
      */
     private static java.awt.image.BufferedImage trainIcon()
     {
@@ -644,10 +635,8 @@ public class TileOverlay
     }
 
     /**
-     * The same, told whether the tile underneath is already faint (MT-375, OB-212): up to three washes can land on one
-     * square (`LayoutLabel`'s fade, `TileAnnotation`'s under its arrows, this one's pale held track).  Adam's rule
-     * (MT-373): *"greyed out means either edge locked or path blocked."*  One gray for either reason, so the second
-     * wash is not drawn rather than blended into a third tone.
+     * The same, told whether the tile underneath is already faint, so the second wash is not drawn: one gray for either
+     * reason (MT-373: *"greyed out means either edge locked or path blocked."*).
      *
      * @param alreadyFaded whether the caller has drawn the WHOLE tile faint already
      */
@@ -719,12 +708,10 @@ public class TileOverlay
     }
 
     /**
-     * Draws WHERE THE TRAIN IS, on a pass of its own above everything else (OB-159).  The station captions are separate
-     * components in front of every tile, and a tile in front is opaque and paints the name out (OB-117), so the
-     * container paints tiles, then captions, then asks every tile for its train.
+     * Draws WHERE THE TRAIN IS, on a pass of its own above everything else, so the station captions cannot paint it out
+     * (OB-159).
      *
-     * @param g the container's graphics, translated to this tile and not clipped to it (MT-642): on a curve the icon
-     *     reaches onto the next tiles, along the rail
+     * @param g the container's graphics, translated to this tile and not clipped to it (MT-642)
      * @param trackCentre the middle of the train's own road on this tile, or null if it is not known
      */
     public void paintTrain(Graphics2D g, int width, int height, int[] trackCentre)
@@ -855,7 +842,7 @@ public class TileOverlay
 
     /**
      * Where the train `paintTrain` draws lies, in the tile's coordinates, so a click on it counts as a click on its
-     * square (OB-354): a disc as wide as the icon, or the dot, round the middle of the train's road.
+     * square (OB-354).
      *
      * @return the area, or null when no train is drawn here
      */
