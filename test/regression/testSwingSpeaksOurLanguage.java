@@ -13,12 +13,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * Swing's own words - a popup's title and buttons, the file chooser's buttons - are in TrainControl's language (OB-318;
- * Adam: "the popup titles message and input are not always translated, nor are file chooser buttons.").
- *
- * Swing takes them from its own resources, by the computer's language, and has none for Danish, Dutch or Polish; so a
- * popup with no title of its own said "Message" or "Input", and the file chooser said Open and Cancel, in English.  They
- * are put from TrainControl's bundles as the look and feel is installed.
+ * Swing's own words - a popup's title and buttons, the file chooser's buttons - are in TrainControl's language
+ * (OB-318).  They are put from TrainControl's bundles as the look and feel is installed.
  *
  * @author Adam
  */
@@ -157,9 +153,7 @@ public class testSwingSpeaksOurLanguage
 
     /**
      * Every file chooser TrainControl makes takes its Look In list from the shell's answer asked once ahead of time,
-     * not asked again as it is built and at every change of folder (OB-323; Adam: "there is an odd (brief but
-     * noticeable) delay before the file chooser opens for Layouts -> Open Layout...": 1.0 to 1.8 s each on Adam's PC,
-     * 20 ms after).  And the list is still the shell's: every place Windows gives and the folder the chooser is in ("we
+     * not asked again as it is built and at every change of folder (OB-323).  And the list is still the shell's ("we
      * don't want to sacrifice UX").  Asked of Swing's own test, `FilePane.usesShellFolder`, of the list, and of the
      * source, which makes every chooser a `QuickFileChooser`.
      *
