@@ -23,8 +23,7 @@ import org.traincontrol.util.Util;
 
 /**
  * Locomotive icons of this computer's: choosing one, cropping it (FR-022), re-cropping it from the picture it was cut
- * from (FR-032, OB-125), cropping the Central Station's picture (FR-104), and deleting the crops nothing points at any
- * more; with the marks drawn over the big picture (FR-032, FR-104, MT-591).
+ * from, cropping the Central Station's picture, and deleting the crops nothing points at any more.
  *
  * The hover tools over the picture, and every field, stay on the window.
  */
@@ -395,10 +394,8 @@ final class LocIconActions
 
     /**
      * The array the crop dialog opens on and writes what the user settled on back into: SIX NUMBERS, the last the
-     * crop's width in the photograph's own pixels (OB-257).  An older note's five are copied in.
-     *
-     * @param opening the view the note held, or null
-     * @return the array, NaN where nothing was held
+     * crop's width in the photograph's own pixels (OB-257).  An older note's five are copied in; NaN where nothing was
+     * held.
      */
     private static double[] viewToOpenOn(double[] opening)
     {
@@ -410,20 +407,10 @@ final class LocIconActions
     }
 
     /**
-     * FR-022 - runs the crop dialog over a picture the user has just picked, and stores what comes back as a locomotive
-     * icon of our own.  The user's file is opened for READING and nothing else; the crop goes in the application's own
-     * folder, as PNG regardless of the source, since JPEG would flatten the transparency to black.
-     *
-     * @param parent the component the dialog should center on
-     * @param l the locomotive the icon is for; its name is used to make the file recognizable
-     * @param chosen the picture the user picked, never written to
-     * @param cancelled set to true when the user dismissed the crop dialog, which is NOT a failure: the caller must
-     * then change
-     *                  nothing at all
-     * @return the URL of the cropped icon, or null if there is nothing to use - the user canceled, the picture could
-     * not be
-     *         read, or the folder could not be written - in which case the caller must fall back to the uncropped
-     * original
+     * Runs the crop dialog over a picture the user has just picked, and stores what comes back as a locomotive icon of
+     * our own (FR-022).  The user's file is opened for READING only; the crop goes in the application's own folder, as
+     * PNG regardless of the source, since JPEG would flatten the transparency to black.  A canceled dialog sets
+     * `cancelled` and is NOT a failure.
      */
     private String cropLocIcon(Component parent, Locomotive l, File chosen, boolean[] cancelled,
         double[] opening)
@@ -723,12 +710,8 @@ final class LocIconActions
 
     /**
      * Crops a locomotive's Central Station picture into an icon of this computer's (FR-104).  The picture is fetched
-     * off the event thread and kept, named for the locomotive, in a folder of its own inside the icon folder; the
-     * crop's note names it, so a second crop pans over the whole picture.  Outside the crops proper
-     * (`Util.isLocIconFile`), so replacing a crop does not delete it.
-     *
-     * @param l the locomotive
-     * @param parent where the crop window centers
+     * off the event thread and kept outside the crops proper (`Util.isLocIconFile`), so replacing a crop does not
+     * delete it.
      */
     private void cropTheCentralStationPicture(Locomotive l, java.awt.Component parent)
     {
@@ -773,12 +756,8 @@ final class LocIconActions
     }
 
     /**
-     * The Central Station's picture of a locomotive, written into the icon folder's own folder for them (FR-104) - or
+     * The Central Station's picture of a locomotive, written into the icon folder's own folder for them (FR-104), or
      * null where it could not be read or written, which is logged.
-     *
-     * @param l the locomotive, whose name the file is given
-     * @param url where the station serves the picture
-     * @return the file
      */
     private File keepTheCentralStationPicture(Locomotive l, String url)
     {
