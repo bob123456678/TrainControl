@@ -16,18 +16,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * Renaming a locomotive redraws the timetable it is named in (MT-149; Adam, filed critical: "On Rename, loc vanishes
- * from the station / autonomy setup, and the timetable is not updated").
+ * Renaming a locomotive redraws the timetable it is named in (MT-149): `MarklinLocomotive` hashes by IDENTITY,
+ * deliberately, and `TimetablePath.hashCode` is built from that hash, so a rename changed the name in every row and no
+ * hash at all.  The guard in `repaintTimetable` is keyed on the TEXT of the rows now, and the rename repair asks for
+ * the repaint at all.
  *
- * The data was never the problem: a probe renamed a locomotive with a timetable entry naming it and the entry followed
- * the rename, in place.  What did not change was the number `repaintTimetable` keys its redraw on: `MarklinLocomotive`
- * hashes by IDENTITY, deliberately (a rename leaves a locomotive inside the consists, exclusion sets and run lists that
- * hold it), and `TimetablePath.hashCode` is built from that hash.  So a rename changed the name in every row and no
- * hash at all, and the table went on naming a locomotive that no longer exists.  The guard is keyed on the TEXT of the
- * rows now, and the rename repair asks for the repaint at all.
- *
- * Not covered: the locomotive vanishing from the station and the panels reading "?????".  The probe shows the model
- * right on both counts after a rename, so those are a different fault on a different surface.
+ * Not covered: the locomotive vanishing from the station and the panels reading "?????", a different fault on a
+ * different surface.
  *
  * MUTATION this catches: keying the guard on `timeTable.hashCode()` again.
  *
