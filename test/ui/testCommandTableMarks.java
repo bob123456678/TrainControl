@@ -9,16 +9,9 @@ import org.traincontrol.gui.RouteEditorFrame;
 import org.traincontrol.util.I18n;
 
 /**
- * The marks at the end of a command row, and Move Up and Move Down (FR-162), do exactly what they say.
- *
- * MT-029, Adam: "Delete removes exactly one row; the arrows move a row and leave it moved; duplicate makes one copy."
- * He asked for it programmatically: "seems to work in the UI, but this should have a programmatic test."  Exactly one
- * is the whole point: a route is a sequence of commands sent to real hardware, and a doubled command is a second throw
- * of the same accessory.
- *
- * The marks are values the table PAINTS rather than buttons in a cell, so this drives the same private methods a click
- * calls, which keeps it from becoming a second implementation of move and delete.  A move is the menu's Move Up or Move
- * Down on one row.
+ * The marks at the end of a command row, and Move Up and Move Down (FR-162), do exactly what they say (MT-029).  The
+ * marks are values the table PAINTS rather than buttons in a cell, so this drives the same private methods a click
+ * calls, which keeps it from becoming a second implementation of move and delete.
  *
  * @author Adam
  */
