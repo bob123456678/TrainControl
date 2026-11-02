@@ -613,11 +613,8 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A tail blocks every copy of the rail it lies on - the rail into a square's turning copy as well as into its plain
-     * copy.
-     *
-     * On a square a train may turn round at, the build emits the rail into it twice, over exactly the same places.  The
-     * tail walk covers the one it walks, and `isPathClear` must refuse the other too, or a train could be sent onto the
-     * turning copy of a square another train's tail lies across while the diagram shows it gray (OB-280).
+     * copy.  `isPathClear` must refuse both, or a train could be sent onto the turning copy of a square another train's
+     * tail lies across while the diagram shows it gray (OB-280).
      *
      * MUTATION: take the by-place test out of `isPathClear` and this fails.
      *
@@ -691,12 +688,7 @@ public class testATrainCoversTheTrackBehindIt
 
     /**
      * A train turned where it stands and re-stood on the other arrival's copy spends the square it stands on first, as
-     * it does everywhere (OB-278).
-     *
-     * After a train turns at a square it may turn round at, the idle drain stands it on the copy facing its new way,
-     * which can be the plain copy of the OTHER arrival, and puts back the side it came in by.  No rail arrives at that
-     * copy by that side, so the walk takes the rail running away from it, whose places begin AFTER the square the train
-     * stands on: unless the square is spent the tail reaches one square too far back, over a switch.
+     * it does everywhere (OB-278): unless the square is spent the tail reaches one square too far back, over a switch.
      *
      * MUTATION: stop the walk spending the standing square on that rail and this fails (the track behind is claimed);
      * so does stopping it claiming that square (`places.put(own, loc)`), which the overlay and `anotherTailOn` read.
@@ -890,13 +882,6 @@ public class testATrainCoversTheTrackBehindIt
      * A train with no recorded side, on a square emitted as one Point, spends that square first like every other
      * (OB-278).
      *
-     * With nothing saying which side it came in by, the walk takes the fork rule, which keeps the first rail it meets
-     * to each neighbor, and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
-     * rail's places begin after the square the train stands on, so the square would be neither claimed nor spent.  The
-     * read that spends the square off an arriving rail needs the square's block, which the build writes only where a
-     * square is split into several Points, so a square emitted once (a dead end's turning copy among them) needs it
-     * too.
-     *
      * MUTATION: let the fork rule keep the first rail it meets again and this fails.
      *
      * @throws Exception on a failure to build the fixture
@@ -951,15 +936,9 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
-     * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).
-     *
-     * The wash is decided when a tile is DRAWN, and tiles are drawn when their own accessory, feedback or route
-     * changes, so moving a train (which changes which track its tail lies across and nothing else) repainted nothing.
-     * `CoveredTrackView.workOutCoveredTrack` redraws the squares whose state changed.
-     *
-     * The redraw needs a window; what does not, and what it depends on absolutely, is that moving a train leaves a
-     * NON-EMPTY difference between the old set and the new one: were it empty the redraw would repaint nothing with
-     * every test green.
+     * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).  The redraw
+     * (`CoveredTrackView.workOutCoveredTrack`) needs a window; what does not is that moving a train leaves a NON-EMPTY
+     * difference between the old set and the new one, else the redraw would repaint nothing with every test green.
      *
      * MUTATION: making the walk keep the departed train's edges fails the second assertion.
      *
