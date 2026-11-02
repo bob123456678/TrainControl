@@ -29,16 +29,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).
  *
- * The icon of a standing train turns to the facing of the copy it stands on, or to a single copy's only way out
- * (`DiagramMonitorDriver.facingsOf`).  A square no track leads out of is emitted with neither, so the icon was drawn
- * as its picture is - east - on track that runs north and south, and the caption fell back to the setup's facing.
  * Run at TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
- * diagram monitor.
- *
- * The icon may guess, but it must lie along the track.  The facing for such a square is asked of the setup whenever
- * the captions are, so a facing a door writes reaches the icon without a rebuild; a recorded facing the track does not
- * run is shown by none of the icon, the caption and the Is Facing menu.  A train can also be put there (OB-350): the
- * diagram's Place and Control+V stand it where the editor's Place does, recording the same facing.
+ * diagram monitor.  The icon may guess, but it must lie along the track; a recorded facing the track does not run is
+ * shown by none of the icon, the caption and the Is Facing menu.  A train can also be put there (OB-350).
  *
  * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails;
  * return null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the
