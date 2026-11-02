@@ -305,8 +305,7 @@ final class RouteListPanel
         if (isOverTheRoutePlayButton(evt))
         {
             // Disabled means disabled (MT-217): a grayed button that still fired would start the same route twice.
-            // Asked in executeRoute now: this was the only door that asked, and one guard on the funnel is the
-            // OB-057/OB-090 shape's answer.
+            // The guard sits in executeRoute, the one funnel every door goes through (OB-090).
             executeRoute(route.getName());
 
             return;
