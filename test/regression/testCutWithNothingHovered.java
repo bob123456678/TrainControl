@@ -14,11 +14,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it.  The Control+V branch
- * null-checks the hovered label; Control+X and Control+C did not, so `initCopy` discarded a group already on the
- * clipboard and armed `toolFlag` with no component behind it, and the right-click Paste then reached `new
- * LayoutDiagramComponent(null)` (shown as a dialog with no message, with an undo entry for an edit that never
- * happened).
+ * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it: the right-click Paste
+ * then reached `new LayoutDiagramComponent(null)`.
  *
  * The guard is narrower than the obvious one, and the two controls forced it there: the palette hands over a component
  * with a label whose coordinates are -1 on purpose, and a column drag hands over a real grid label and NO component.
