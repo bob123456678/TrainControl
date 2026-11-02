@@ -458,14 +458,10 @@ public class testMessageBundles
     }
 
     /**
-     * Every word of an English route-command kind starts with a capital (OB-142).
+     * Every word of an English route-command kind starts with a capital (OB-142), a hyphenated pair counting as two
+     * words ("Three-Way", not "Three-way").
      *
-     * A hyphenated pair counts as two words ("Three-Way", not "Three-way").
-     *
-     * **English only, deliberately.**  French, Spanish, Italian, Dutch, Danish and Polish use sentence case for
-     * interface labels, and German capitalizes nouns for reasons of its own; how a language capitalizes is that
-     * language's business.  The bundles are checked for matching key sets, ASCII and placeholders elsewhere in this
-     * class.
+     * **English only, deliberately**: how a language capitalizes interface labels is that language's business.
      *
      * MUTATION: change any of these back to sentence case and this fails, naming the key.
      */
@@ -744,17 +740,8 @@ public class testMessageBundles
     }
 
     /**
-     * The two train-length warnings name what they are about (OB-153, OB-154).
-     *
-     * OB-153: {train} and {station} both belong in autosetup.ui.checkNoTrainLength; OB-154:
-     * autosetup.ui.checkNoMaxTrainLength must name the station.
-     *
-     * Both panels build a finding's text as
-     *
-     *     subject = finding.getTile() == null ? finding.getSubject() : describeTile(finding.getTile())
-     *
-     * which is right for every finding whose subject IS the point it is about; FR-046's train-length warning is the
-     * first whose subject is a LOCOMOTIVE, so both panels pass BOTH, leaving {0} meaning what it always meant.
+     * The two train-length warnings name what they are about (OB-153, OB-154): {train} and {station} both belong in
+     * autosetup.ui.checkNoTrainLength, and autosetup.ui.checkNoMaxTrainLength must name the station (FR-046).
      *
      * BOTH HALVES, because either alone passes while the bug is present: a message that says {1} with nothing supplying
      * it renders the literal text "{1}", and panels that pass an argument no message asks for change nothing at all.
@@ -890,15 +877,9 @@ public class testMessageBundles
      * Every message key a screen asks for is in every language, with a value - the mechanical half of MT-468; the
      * reading of the sentences is MT-291.
      *
-     * `testNothingAsksForAKeyThatIsNotThere` reads the `I18n.t` / `I18n.f` calls, in English.  The NetBeans-generated
-     * code of the older windows reads its labels another way (`bundle.getString("...")`,
-     * `ResourceBundle.getBundle(...).getString("...")`) from keys its `.form` files hold as ResourceString entries.  A
-     * key missing there throws MissingResourceException when the window is built; one whose value is empty in some
-     * language shows a blank label.  Every bundle, every key a screen asks for, by any of four roads: I18n, the
-     * generated reads, the form entries, and a key held in a constant (`static final String X = "..."`) and handed to
-     * I18n by name.
-     *
-     * A key asked for by any other road is not seen here; its value is held by `testEveryKeyHasAValueInEveryLanguage`.
+     * Every bundle, every key a screen asks for, by any of four roads: I18n, the generated reads, the form entries, and
+     * a key held in a constant handed to I18n by name.  A key asked for by any other road is held by
+     * `testEveryKeyHasAValueInEveryLanguage`.
      *
      * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
      * language, and this fails naming it.
