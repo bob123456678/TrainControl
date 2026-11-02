@@ -20,17 +20,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-337, second half: a station named twice draws its home locomotive twice.
- *
- * Adam: "if a station label is offset from the station, the home label is duplicated on the station's square, and on
- * the one with the label".  The editor keeps one station to one caption, but the store can hold more (a setup edited by
- * hand or written by an older version).  A station named on its own square and beside it is drawn once and is no error
- * for the setup check; only two captions beside a station on one page are an ERROR (OB-341); a caption on another page
- * is allowed (Adam: "It is OK to show on another page what is going on on another.").
- *
- * The rule: the home appears once, on the caption square when there is one, and otherwise on the station's own square,
- * so the self-caption gives way only when something else already names that station.  Asserted by DRAWING it: the
- * editor is built, its captions are read off the container, and the home name is counted.
+ * MT-337, second half: a station named twice draws its home locomotive twice.  The home appears once, on the caption
+ * square when there is one, and otherwise on the station's own square, so the self-caption gives way only when
+ * something else already names that station.  Only two captions beside a station on one page are an ERROR (OB-341).
+ * Asserted by DRAWING it: the editor is built, its captions are read off the container, and the home name is counted.
  *
  * MUTATION: drop the `captionsFor` clause from `TrainControlUI.autonomyCaptionAt` and
  * `testAStationNamedTwiceDrawsItsHomeOnce` fails with "drawn 2 times". Suppress the self-caption
@@ -331,10 +324,9 @@ public class testTheHomeLabelIsDrawnOnce
     }
 
     /**
-     * OB-193 (MT-293): TopMainR2, captioned twice on this railway, draws ONE label.  The other claims arrange
-     * their own state; this one pins the FIXTURE as well as the rule, which is safe because `live-snapshot` is frozen.
-     * If it fails, either the fix at `TrainControlUI.autonomyCaptionAt` was lost or the snapshot was re-taken from a
-     * railway whose labels moved; the precondition tells the two apart.
+     * OB-193 (MT-293): TopMainR2, captioned twice on this railway, draws ONE label.  This one pins the FIXTURE as well
+     * as the rule, which is safe because `live-snapshot` is frozen; the precondition tells a lost fix from a re-taken
+     * snapshot.
      */
     @Test
     public void testTopMainR2DrawsOneLabelOnTheFrozenRailway()
