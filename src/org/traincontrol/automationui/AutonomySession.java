@@ -4449,9 +4449,7 @@ public class AutonomySession
 
     /**
      * Folds the railway's settings and timetable alone, before a rebuild throws them away.  With a record of how the
-     * railway was built, only those it changed since (OB-343), and the record follows what is taken, so it stays what
-     * railway and setup last agreed on.  Paused trains are taken BY TRAIN against the record: gains and losses applied
-     * to the setup's own list, never replacing it.  A null `asBuilt` takes every setting.
+     * railway was built, only those it changed since (OB-343); a null `asBuilt` takes every setting.
      */
     public void captureTheRailwaysSettings(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
     {
@@ -6182,10 +6180,8 @@ public class AutonomySession
     }
 
     /**
-     * Takes every locomotive the database lacks out of a configuration (OB-349): placements with their facing and
-     * arrival, homes with their facing, names on square lists.  The loader drops them from the railway anyway; left,
-     * the setup would show and save trains the railway has not.  Timetable and paused trains are the loader's.
-     * Returns what was let go of, by locomotive and then square.
+     * Takes every locomotive the database lacks out of a configuration (OB-349): placements, homes, names on square
+     * lists.  Returns what was let go of, by locomotive and then square.
      */
     public java.util.List<LocomotiveLeftOut> forgetLocomotivesNotIn(String configuration,
         java.util.Collection<String> known)
@@ -7587,9 +7583,7 @@ public class AutonomySession
 
     /**
      * Puts every homed locomotive on its home and takes every other off its station, in the SETUP only (FR-115).
-     * Facing: the home's own, else `fallbackFacings`' (may be empty); no arrival side or road.  Settings travel with
-     * each train.  Every train the railway or setup has standing is in the answer, as the rebuild puts back any it is
-     * not told about.  Excluded pages are left alone.  Returns every locomotive put on a home or taken off a station.
+     * Returns every locomotive put on a home or taken off a station.
      */
     public java.util.Set<String> placeEveryTrainAtHome(Map<TileKey, Side> fallbackFacings)
     {
@@ -8514,9 +8508,8 @@ public class AutonomySession
 
     /**
      * The track a parking berth's rule spends walking back from the berth over one leg until it stops (OB-288), as
-     * `Layout.whyABerthCannotHoldIt` spends it (`squares` in order, the berth last).  Returns {measured length before
-     * the stop, squares before it with no length, how it stops}: 1 where the berth rule refuses, 2 where only the room
-     * walk ends, 0 at none.
+     * `Layout.whyABerthCannotHoldIt` spends it.  Returns {measured length before the stop, squares before it with no
+     * length, how it stops}.
      */
     private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
     {
@@ -8548,10 +8541,9 @@ public class AutonomySession
     }
 
     /**
-     * Parking berths whose approach is measured in part, the state that refuses trains that fit: one measured square
-     * makes `whyABerthCannotHoldIt` judge, and unmeasured squares hold nothing.  Asked per arriving leg, against the
-     * station's longest train (OB-288, MT-552).  The ordinary state between Mass Assign Lengths sittings.  Maps each
-     * station to how many squares of its approach before the stop still have no length.
+     * Parking berths whose approach is measured in part, the state that refuses trains that fit; asked per arriving leg
+     * against the station's longest train (OB-288, MT-552).  Maps each station to how many squares of its approach
+     * before the stop still have no length.
      */
     public java.util.Map<TileKey, Integer> stationsWithAHalfMeasuredApproach()
     {
@@ -8610,12 +8602,9 @@ public class AutonomySession
     }
 
     /**
-     * Stations told they hold more train than their run-in measures (two 2-length segments either side of a switch
-     * hold a length-4 station, so that is acceptable).  The room is the guard's own number (`getRoomAtTheEnd`), or for
-     * a parking berth the berth rule's where it refuses; at a platform, the refusing figure where there is one
-     * (FR-087).  An edge crossing no switch counts only where the train turns at its far end.  Silent without a
-     * maximum or with no track measured.  Maps each station to {the stated maximum, the smallest measured room}, and
-     * at a platform with a refusing figure under its maximum, that figure third.
+     * Stations told they hold more train than their run-in measures (FR-087).  Maps each station to {the stated
+     * maximum, the smallest measured room}, and at a platform with a refusing figure under its maximum, that figure
+     * third.  Silent without a maximum or with no track measured.
      */
     java.util.Map<TileKey, int[]> runInsShorterThanTheBerth()
     {
