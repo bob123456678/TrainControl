@@ -345,10 +345,10 @@ public class testLayoutTiles
     }
 
     /**
-     * And the second highlight is DRAWN (OB-333, OB-334).  A square changed again while its first highlight was up laid
-     * the new yellow over its picture and then ended the first highlight - whose end puts the plain picture back, over
-     * the yellow just laid - so it showed nothing for the whole hold.  Autonomy changes a square twice inside the hold,
-     * and at the Large size the picture is slow enough to arrive that it always did.
+     * And the second highlight is DRAWN (OB-333, OB-334).  A square changed again while its first highlight is up must
+     * keep the new yellow: the first highlight's end puts the plain picture back over it, and the square would show
+     * nothing for the whole hold.  Autonomy changes a square twice inside the hold, and at the Large size the picture
+     * is slow enough to arrive that it always would.
      *
      * The test above counts restores, which this left right; this one looks at the picture.
      *
