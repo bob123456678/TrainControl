@@ -144,8 +144,7 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Builds the menu, and ends it with Documentation whatever else it holds (Adam: *"Add a 'documentation' link to the
-     * autonomy JMenu that points to the same URL as the current jlabel."*).  Left enabled while an editor grays the
+     * Builds the menu, and ends it with Documentation whatever else it holds.  Left enabled while an editor grays the
      * rest: reading the guide changes nothing.
      */
     private void rebuild()
@@ -171,10 +170,9 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Grays what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not
-     * grey out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click.
-     * Autonomy Settings and Documentation stay live.  The debug export is grayed too (Adam, MT-633: "export raw graph
-     * as json should also be disabled while running"), grayed only: it writes nothing of the setup.
+     * Grays what changes the setup while autonomy runs, with the reason on each (MT-613, MT-626).  Each door still
+     * refuses on its own; this says so before the click.  Autonomy Settings and Documentation stay live.  The debug
+     * export is grayed too (MT-633), grayed only: it writes nothing of the setup.
      *
      * @param documentation the guide's item
      */
@@ -449,11 +447,10 @@ public class AutonomyMenu extends JMenu
             }));
         }
     
-        // Everything grayed while an editor has the diagram, rather than nothing shown (MT-111, Adam: "Layout greys out
-        // all options while Autonomy hides them. Grey them out in Autonomy instead."): a grayed item says "this exists
-        // and not now".  Every item here saves the setup or rebuilds the main window, and an open editor makes both
-        // unsafe: saving commits edits that editor has not saved, and the rebuild redraws the main diagram with the
-        // editor's edit flag still set on the shared page.
+        // Everything grayed while an editor has the diagram, rather than nothing shown (MT-111): a grayed item says
+        // "this exists and not now".  Every item here saves the setup or rebuilds the main window, and an open editor
+        // makes both unsafe: saving commits edits that editor has not saved, and the rebuild redraws the main diagram
+        // with the editor's edit flag still set on the shared page.
     }
 
     /**
