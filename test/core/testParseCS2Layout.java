@@ -840,9 +840,8 @@ public class testParseCS2Layout
      * `readLayoutIndexPageExtras` is keyed by page NAME, not id: two pages can resolve to one id, and
      * `writeLayoutIndex` reissues the LATER page's id, so keyed by id the page that kept the id would inherit the keys
      * of the one that lost it.  Withdrawing the contested id instead would throw away a real page's keys: `Oles kreds`,
-     * the
-     * genuine export in this repository, opens with a `seite` carrying `.xoffset=1`, `.yoffset=3` and no `.id`, which
-     * resolves to position 1 while the page after it states `.id=1`.
+     * the genuine export in this repository, opens with a `seite` carrying `.xoffset=1`, `.yoffset=3` and no `.id`,
+     * which resolves to position 1 while the page after it states `.id=1`.
      *
      * Both shapes: Alpha/Beta is the synthetic pair, Gamma/Delta the shape in the repository (the first page states no
      * id at all).
