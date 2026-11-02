@@ -7,10 +7,8 @@ import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.util.I18n;
 
 /**
- * The one autonomy control the track diagram tab has: whether the overlay is drawn.  Deliberately a single checkbox:
- * everything that changes autonomy lives in the Auto tab or the layout editor, so nothing here can be pressed by
- * accident while operating trains.  A strip above the diagram, a sibling of the scroll pane since OB-148, so it does
- * not scroll with the track.
+ * The one autonomy control the track diagram tab has: whether the overlay is drawn, a single checkbox so nothing here
+ * can be pressed by accident while operating trains.  A strip above the diagram, a sibling of the scroll pane (OB-148).
  *
  * @author Adam
  */
@@ -200,10 +198,8 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * What the strip should be showing, as a rule rather than a side effect (OB-143): "the button disappears rather
-     * than being greyed out prior to replacement by the start button. make it get greyed out and then replaced."
-     * STOP_PENDING only when a stop is genuinely pending (`isGracefulStopPending`): "neither enabled" has other
-     * causes.  Extracted so it can be exercised without a window.
+     * What the strip should be showing, as a rule rather than a side effect, extracted so it can be exercised without a
+     * window (OB-143).  STOP_PENDING only when a stop is genuinely pending (`isGracefulStopPending`).
      *
      * @param loaded whether a setup is loaded
      * @param excluded whether the page on screen is left out of it
@@ -341,9 +337,9 @@ public class AutonomyOverlayToggle extends JPanel
     }
 
     /**
-     * Sizes another button exactly as the Start button in this strip is sized, so the Load button in the banner above
-     * and the Start that replaces it look the same: font (OB-391), height (`BUTTON_HEIGHT`) and insets.  Re-applied
-     * whenever the text changes, since the preferred width follows the label.
+     * Sizes another button exactly as the Start button in this strip is sized, so the banner's Load button and the
+     * Start that replaces it look the same: font (OB-391), height (`BUTTON_HEIGHT`) and insets.  Re-applied whenever
+     * the text changes.
      *
      * @param button
      */
