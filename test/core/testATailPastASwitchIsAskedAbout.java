@@ -25,17 +25,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * A train at BottomSecondary whose tail has passed switch 51 without reaching a sensor is asked which way it lies, and
- * the answer is the rail it covers (MT-477; Adam: "that length should qualify for the prompt").
- *
- * On his measured railway two rails come into BottomSecondary from the east: RampDown's, 4 units, straight over
- * switch 51, and BottomCrossover's, 5 units, turned.  At 3 units the tail reached neither sensor, so the question,
- * which asked only where a sensor had been crossed, was not put, and the tail was laid on whichever rail the walk met
- * first.
- *
- * Three units is exactly the switch: the rails share every square up to and including switch 51 at 18,11, so a
- * three-unit tail covers the same squares on either and ends on the points.  A tail that reaches into the square where
- * the rails part has passed the switch; one that ends before it is not asked, because every answer covers the same
- * track.  The boundary is worked out from the rails' own places, so a re-measured switch moves it with the railway.
+ * the answer is the rail it covers (MT-477).  A tail that ends on the switch is not asked, because every answer covers
+ * the same track.  The boundary is worked out from the rails' own places, so a re-measured switch moves it with the
+ * railway.
  *
  * Runs on the frozen railway (OB-111).
  *
@@ -320,11 +312,8 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * A question with one answer on its list takes it, with no dialog (MT-437; Adam: "when a tail question comes up and
-     * there is only one option (len 4 on tunnel), it should auto select that option").  The two rails in from the north
-     * share every square back to the switch at 11,5, which measures nothing, so a four-unit tail spends out one square
-     * short of the switch and has reached TunnelPre by the whole-rail count (OB-226): TunnelPre is all it can offer.
-     * The dialog is closed if it is shown, so a question put to the operator comes back unanswered.
+     * A question with one answer on its list takes it, with no dialog (MT-437).  The dialog is closed if it is shown,
+     * so a question put to the operator comes back unanswered.
      *
      * MUTATION: show the dialog for one choice again, and this fails.
      */
@@ -355,9 +344,8 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * Two answers on the list are still asked about, including where the list starts on one of them: at five units
-     * the tail at Tunnel has reached TunnelPre on one rail and 12,7 on the other, and at four units at BottomSecondary
-     * the list starts on RampDown, the one sensor crossed (FR-088), which is a suggestion for OK, not an answer.
+     * Two answers on the list are still asked about, including where the list starts on one of them (FR-088): that is a
+     * suggestion for OK, not an answer.
      *
      * MUTATION: take the first entry, or the one the list starts on, whatever the list holds, and this fails.
      */
