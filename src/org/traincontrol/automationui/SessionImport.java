@@ -17,10 +17,8 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.util.I18n;
 
 /**
- * A session's imports: a legacy autonomy.json, an exported bundle, and telling the two apart (FR-136).
- *
- * The session keeps its fields, its public methods - each a one-line call to a method here - and the nested types
- * `LegacyImport`, `ImportFormat` and `LocomotiveLeftOut`.
+ * A session's imports: a legacy autonomy.json, an exported bundle, and telling the two apart (FR-136).  The session
+ * keeps its fields, its public methods (each a one-line call to a method here) and the nested types.
  */
 final class SessionImport
 {
@@ -72,12 +70,8 @@ final class SessionImport
     }
 
     /**
-     * Gives each imported train the facing the file ran it, and a guess only where the file cannot say.
-     *
-     * The file's edges decide first (2.8.1 sent a train only along the edges starting at its point); a facing the file
-     * states that no copy holds is not saved (OB-270) and is named in `facingsNotHeld`.  Otherwise the guess is the
-     * first way trains may arrive in, since the copy IS the direction, else the first copy; guesses are counted for the
-     * log.
+     * Gives each imported train the facing the file ran it, and a guess only where the file cannot say; a facing the
+     * file states that no copy holds is not saved and is named in `facingsNotHeld` (OB-270).
      */
     private void findTheImportedFacings(Map<TileKey, String> facingToFind, Map<String, List<TileKey>> edgesLeadTo,
         Set<TileKey> pointSquares, LegacyImport result)
