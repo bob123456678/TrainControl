@@ -154,12 +154,9 @@ public class testRouteRoundTrip
     }
 
     /**
-     * A "train not at a sensor" condition comes back as "not at" from every form a route is kept in (FR-141).
-     *
-     * The text line (the condition CSV and the editor's paste), the JSON a route is saved, exported and imported as, the
-     * locomotive database (Java serialization of the condition), and a duplicate of the route.  Any one of them dropping
-     * the state turns the condition into its opposite, silently: "not at" read back as "at" fires the route exactly when
-     * it was written not to.
+     * A "train not at a sensor" condition comes back as "not at" from every form a route is kept in (FR-141): the text
+     * line, the JSON, the locomotive database and a duplicate of the route.  Any one dropping the state turns the
+     * condition into its opposite, silently.
      *
      * MUTATION: drop the SETTING from `RouteCommandAutoLocomotive` and every form below reads back as "at".
      */
@@ -234,11 +231,9 @@ public class testRouteRoundTrip
     }
 
     /**
-     * A train-at-a-sensor condition saved before FR-141 reads as "at", and is written back as it was.
-     *
-     * Every route saved until now holds NAME and ADDRESS and nothing else, and its text line three fields.  Those have to
-     * mean what they always meant, and a route opened and saved again must not grow a field it did not have: the same
-     * command, equal to one built today as "at".
+     * A train-at-a-sensor condition saved before FR-141 reads as "at", and is written back as it was: every route saved
+     * until then holds NAME and ADDRESS only (three fields in its text line), and a route opened and saved again must
+     * not grow a field.
      *
      * MUTATION: read a missing SETTING as "not at" in `isAtSensor` and this fails on the sample layout's routes.
      */
