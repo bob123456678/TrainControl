@@ -36,14 +36,9 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.util.I18n;
 
 /**
- * A square's arrows are the whole of which way trains may run through it (OB-351): "Align it so that the arrows tell
- * the full story."  Arrows are drawn per arm (a side is green where any road through it lets a train out) while
- * directions were stored per road, so a road could be shut a way its arm's arrow showed open.
- *
- * Each claim asks a train's own question of the graph (entered by this side, may it leave by that one) and holds the
- * answer to the arrows drawn: a move is allowed exactly where the arm it leaves by is green and the blades run that
- * way.  The switch is `test/layouts/single-switch`'s, toe west, main line east and spur north; the other kinds are
- * drawn here.
+ * A square's arrows are the whole of which way trains may run through it (OB-351).  Each claim asks a train's own
+ * question of the graph (entered by this side, may it leave by that one) and holds the answer to the arrows drawn.  The
+ * switch is `test/layouts/single-switch`'s; the other kinds are drawn here.
  *
  * @author Adam
  */
@@ -695,9 +690,7 @@ public class testTheArrowsTellTheWholeStory
 
     /**
      * Track no station is on draws no arrows and is grayed in the editor, and a click there changes nothing; track
-     * joined to a station keeps its arrows (OB-353).  On the frozen railway: the route button at 1 - Main 9,4, which
-     * carries the line between the two buttons beside it and so reaches nothing; a route button on a line that reaches
-     * stations; and a straight, a sensor and a straight added on blank squares, joined to nothing.
+     * joined to a station keeps its arrows (OB-353).
      *
      * MUTATION: draw the arrows of every square again, and this fails.
      */
