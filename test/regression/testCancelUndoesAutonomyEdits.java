@@ -24,16 +24,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Cancel in the autonomy editor undoes the setup edits made in it (MT-406): a one-way run or any other edit to arrows
- * must not persist after Cancel.
- *
- * Every setup gesture rebuilds the running layout through `AutonomyViewerPanel.load`, which SAVES the setup and so
- * clears the session's unsaved flag; Cancel's `mayLeave` must therefore consult the snapshot `LayoutEditor` takes when
- * it opens (`autonomyAsOpened`), not that flag.
- *
- * On the real path: the click on a square (`AutonomyEditorPanel.cycle`) with an autonomy configuration loaded, because
- * the save that hid the edit happens only when the rebuild runs, and the button's own `confirmExit`.  A confirmation is
- * answered Yes by a watcher thread, so the claim is about what Cancel DOES and a second claim says it asks.  Save still
- * keeping the edits is the control.
+ * must not persist after Cancel.  Every setup gesture rebuilds the running layout through `AutonomyViewerPanel.load`,
+ * which SAVES the setup and so clears the session's unsaved flag; Cancel's `mayLeave` must therefore consult the
+ * snapshot `LayoutEditor` takes when it opens (`autonomyAsOpened`), not that flag.
  *
  * On the frozen railway, never `cs2_sample_layout` (OB-111).  Each claim puts the setup back as it found it.
  *
@@ -297,10 +290,8 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
-     * And the locomotives a bulk clear took off come back with Cancel.  The discard restores the setup as the editor
-     * opened it, placements included, and the rebuild on close regenerates placements from it, so the clear must not
-     * say "Cancel will not put them back" (OB-194).  Asked through the real Bulk Tools door and the real
-     * Cancel.
+     * And the locomotives a bulk clear took off come back with Cancel (OB-194), so the clear must not say "Cancel will
+     * not put them back".  Asked through the real Bulk Tools door and the real Cancel.
      */
     @Test
     public void testCancelPutsBackTheLocomotivesABulkClearTook() throws Exception
