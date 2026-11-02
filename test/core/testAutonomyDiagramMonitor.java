@@ -1326,7 +1326,7 @@ public class testAutonomyDiagramMonitor
 
     /**
      * A train coming to or leaving a curve repaints the tiles around it, not only its own (MT-642): its icon is not
-     * clipped to its tile and reaches onto the neighbors, so repainting the tile alone left the old front behind.
+     * clipped to its tile and reaches onto the neighbors.
      *
      * MUTATION: repaint only the tile itself, and this fails.
      */
@@ -1400,8 +1400,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The overlay painted on a transparent square with the rail's midpoint at 45,15, both passes, for the reason given
-     * on `painted` (OB-159).
+     * The overlay painted on a transparent square with the rail's midpoint at 45,15, both passes (OB-159).
      */
     private static java.awt.image.BufferedImage paintedOnTheRail(TileOverlay overlay, int size)
     {
@@ -1439,8 +1438,7 @@ public class testAutonomyDiagramMonitor
 
     /**
      * The dot marking where the train is sits on the rail too: the star is centered on `trackCentre` (MT-057) and so is
-     * the RUNNING overlay's dot (MT-117).  On a straight the two agree, but on a curve a dot mid-square would be a mark
-     * beside its own station.  Same cause and answer as OB-026.
+     * the RUNNING overlay's dot (MT-117).  On a curve a dot mid-square would be a mark beside its own station.
      */
     @Test
     public void testTheTrainDotSitsOnTheRail()
@@ -1460,10 +1458,10 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The half of the OB-026 fix that computes where the rail is.  The two tests above hand the answer in, so they say
-     * nothing about `LayoutLabel`'s `annotation.trackCentre(getWidth(), getHeight())`: given the badge's two sides it
-     * returns their midpoint, the corner the rails bend around, else the middle of the square.  A 60-pixel tile whose
-     * track joins N to E has side midpoints (30,0) and (60,30), so the rail's midpoint is (45,15), clear of the center.
+     * Computes where the rail is (OB-026).  The two tests above hand the answer in, so they say nothing about
+     * `LayoutLabel`'s `annotation.trackCentre(getWidth(), getHeight())`: given the badge's two sides it returns their
+     * midpoint, else the middle of the square.  A 60-pixel tile whose track joins N to E has side midpoints (30,0) and
+     * (60,30), so the rail's midpoint is (45,15), clear of the center.
      */
     @Test
     public void testTheAnnotationPutsTheTrackCentreOnTheRailOfACurve()
@@ -1485,10 +1483,10 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square nothing can use is a cross, not a square (OB-167).  Being switched OFF is in neither badge-grid question
-     * (does this square turn trains, is it a station); it has a flag of its own.  Switching a reversing point off
-     * changes its badge, and so does switching a station off (the editor's "out of service" leaves the station flag
-     * set).  Both draw the same cross, neither draws a gray block, and parking alone does not draw it.
+     * A square nothing can use is a cross, not a square (OB-167).  Being switched OFF has a flag of its own, in neither
+     * badge-grid question (does this square turn trains, is it a station).  Switching a reversing point off draws the
+     * cross, and so does switching a station off (the editor's "out of service" leaves the station flag set); neither
+     * draws a gray block, and parking alone does not draw it.
      *
      * MUTATION: make `Badge.isImpassable` answer false, or answer `parking`, and the first assertion fails.
      */
@@ -3353,8 +3351,7 @@ public class testAutonomyDiagramMonitor
 
     /**
      * The gray of a berth autonomy does not choose, the program's own `POINT_INACTIVE`, asked rather than restated: a
-     * matcher for a color the program no longer paints finds nothing, and every "no grey" claim below passes on
-     * nothing.
+     * stale matcher would make every "no grey" claim below pass on nothing.
      */
     private static final java.awt.Color INACTIVE = ProgramConstants.colour(TileAnnotation.class, "POINT_INACTIVE");
 
@@ -3371,8 +3368,8 @@ public class testAutonomyDiagramMonitor
     private static final java.awt.Color ARRIVAL_YELLOW = ProgramConstants.colour(TileAnnotation.class, "ARRIVAL");
 
     /**
-     * Whether a pixel is one of the arrows' own red or green, solid.  The colors are the program's: a matcher cut for a
-     * color the program has stopped painting counts nothing, and the claims asserting NONE of it then pass on nothing.
+     * Whether a pixel is one of the arrows' own red or green, solid.  The colors are the program's, so a stale matcher
+     * cannot make the "none of it" claims pass on nothing.
      */
     private static boolean isArrowInk(int r, int gr, int b)
     {
@@ -3624,8 +3621,7 @@ public class testAutonomyDiagramMonitor
     /**
      * The EDITOR's traced path stops on the rail too, not only the running overlay's run line (OB-026): `paintTraces`
      * must start from `trackCentre` as `TileOverlay.paintRun` does, not from `{width / 2, height / 2}`, since the
-     * editor builds null ends deliberately (the first and last square of a traced path).  The pixel test written for
-     * OB-026 drives `TileOverlay` only.
+     * editor builds null ends deliberately (the first and last square of a traced path).
      *
      * **The trace is isolated by DIFFERENCE**: asking whether anything was drawn near the rail would pass against
      * broken code, because the badge and the direction arrows are drawn there too.  Subtracting a rendering without
@@ -4078,7 +4074,7 @@ public class testAutonomyDiagramMonitor
 
     /**
      * A train setting its route up - every Point of it reserved, the train not yet under way - is not drawn parked on
-     * each of them: the diagram showed locomotives on sensors no train stood on for the seconds the accessories take.
+     * each of them.
      *
      * MUTATION: mark a train that holds a path as parked, and this fails.
      */
@@ -4412,9 +4408,8 @@ public class testAutonomyDiagramMonitor
     /**
      * A double-curve sensor's arrival chevrons keep off its direction arrows and off each other (MT-714).  A chevron is
      * pushed along its side, off the middle where the arrow is, to the corner away from the track; on a double curve
-     * every side has track and so has its opposite, so each chevron went the same fixed way round and half landed on
-     * their own curve, over its arrow.  Pushed away from its OWN curve, two chevrons share each free corner and are
-     * drawn nearer the middles of their sides so they do not meet.
+     * every side has track and so has its opposite, so each is pushed away from its OWN curve, two share each free
+     * corner and are drawn nearer the middles of their sides so they do not meet.
      *
      * MUTATION: push a double curve's chevrons the fixed way round again, and the overlap with the arrows fails; push
      * them as far along as on any other square, and the overlap of two in one corner fails.
