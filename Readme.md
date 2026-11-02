@@ -427,11 +427,15 @@ Tab icons provided by Freepik.
             - The plain words reading of the conditions is above the table, and the warning that conditions are ignored while `Automatically Fire` is not selected sits on the conditions' heading, with a warning sign.
             - `Save` now comes before `Cancel` at the bottom of the route editor, and the window can no longer be made narrower than its top line.
             - The route editor's `Help` is about half as long, and names the keys for both lists.
+            - In the route editor, `Automatically Fire` is no longer in the Tab order, like `Capture from the layout`.
             - On the Routes tab, with the track power off, each route shows a wrench instead of its play button, and clicking it opens the route for editing. `Execute Route` in the right-click menu still runs it. The menu now starts with the route's name and ID, in bold.
     - Bug Fixes
         - Autonomy
             - `Why not Moving?` colors a station purple only when the train could be sent there by hand; one it cannot be sent to is gray. Its lines now follow the routes the train would actually take, including a purple line to each purple station, and no stretch of track is drawn twice.
             - `Why not Moving?` and the Auto tab no longer list a station the train can go to among those it cannot go to right now.
+            - In the autonomy editor, `Test a path` names each leg by the color it is drawn in: purple for a leg ending at a station only you may send a train to, where it used to say yellow or amber.
+        - Routes
+            - In the route editor, a route with one condition shows its `Reads as` line, and with no conditions the table starts right under the heading instead of after an empty line.
         - Track Diagram
             - `Save Current Track Diagram as a Picture` now asks "What diagram size do you want to save?"
 * v3.0.6 [10/30/2026]
