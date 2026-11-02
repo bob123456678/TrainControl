@@ -11,15 +11,10 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import support.SourceOf;
 
 /**
- * What must NOT survive the editor switching page, now that the window does (OB-005: switching between the autonomy
- * view and the track diagram editor closed the window and opened a new one, which showed as a flash).
- *
- * That turns a whole class of per-window state into per-PAGE state, and every field was correct before.  The undo
- * history is the one with teeth: each entry is a snapshot of a page's components with nothing naming the page, so a
- * leftover entry would be written straight over the new page by a single Ctrl+Z.
- *
- * This test does not drive the window; it pins the CONTRACT by reading the fields directly: after a switch, nothing
- * that names a square or holds a page's components may still be holding the page that was left.
+ * What must NOT survive the editor switching page, now that the window does (OB-005).  The undo history is the one with
+ * teeth: each entry is a snapshot of a page's components with nothing naming the page, so a leftover entry would be
+ * written straight over the new page by a single Ctrl+Z.  This pins the CONTRACT by reading the fields directly: after
+ * a switch, nothing that names a square or holds a page's components may still be holding the page that was left.
  *
  * @author Adam
  */
@@ -127,11 +122,8 @@ public class testEditorSwitchClearsPageState
     }
 
     /**
-     * The viewer's LAYOUT does not depend on the shared edit flag (OB-016: the viewer was drawn in edit mode while the
-     * editor was open).  An earlier version posted arriveAt with two invokeLater calls to land behind the teardown's
-     * repaint, which cannot work: repaintLayout submits to a single-thread ExecutorService and only calls invokeLater
-     * from inside THAT.  What is pinned is the real fix: LayoutGrid decides how to lay a grid out by asking whether
-     * THAT grid is in an editor, not by reading a flag that belongs to a diagram two windows share.
+     * The viewer's LAYOUT does not depend on the shared edit flag (OB-016): LayoutGrid decides how to lay a grid out by
+     * asking whether THAT grid is in an editor, not by reading a flag that belongs to a diagram two windows share.
      */
     @Test
     public void testTheViewerLayoutIsNotDecidedByTheSharedFlag() throws Exception
