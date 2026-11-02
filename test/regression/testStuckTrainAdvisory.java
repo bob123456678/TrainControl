@@ -17,21 +17,15 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train that was sent somewhere and has not arrived says so.  A route waiting on its sensor does not (MT-037:
- * shrink the quota, put a train on a station with two or more sensors between it and its target, trigger the first by
- * hand, wait past the quota, and look at the log; simulation OFF for autonomy, because a simulated run triggers the
- * sensors for you).
+ * A train that was sent somewhere and has not arrived says so.  A route waiting on its sensor does not (MT-037).
  *
- *  - It must fire: a train sent onto a path it never completes (lifted off, power cut, a sensor that failed to make)
- *    otherwise waits silently and for ever.
+ *  - It must fire: a train sent onto a path it never completes otherwise waits silently and for ever.
  *  - It must not fire for a route: a route's trigger monitor sits on its sensor for as long as the layout runs, through
- *    the same wait, on a locomotive called "Dummy Loc"; an advisory inside the wait announced a phantom stuck train per
- *    enabled route every five minutes.
+ *    the same wait, on a locomotive called "Dummy Loc".
  *
  * So the quota is passed in by the CALLER rather than read inside the wait: "this train was dispatched and is on its
- * way" is a fact the dispatch loop has and the wait does not.  The quota is a second rather than Adam's ten, which
- * only matters for watching a real railway by hand; FEEDBACK_ADVISORY_MS is a public volatile field so a test can
- * shrink it.
+ * way" is a fact the dispatch loop has and the wait does not.  The quota is a second rather than Adam's ten, which only
+ * matters for watching a real railway by hand; FEEDBACK_ADVISORY_MS is a public volatile field so a test can shrink it.
  */
 public class testStuckTrainAdvisory
 {
