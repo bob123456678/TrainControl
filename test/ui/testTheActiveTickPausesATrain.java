@@ -23,15 +23,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * The Is Active tick on the track diagram's right-click menu and on the autonomy editor's pauses the train standing
- * there and sets it going again, in the railway and in the setup (FR-117).
- *
- * On the frozen copy of Adam's railway, with his own 75 407 DB on BottomMainB and nothing else standing.  Each of the
- * dozen trains the claims name that the loaded database lacks is made in memory, through the model's own door, and
- * taken out again; the class checks that it wrote no locomotive database file.
- *
- * The same pause is what Bulk Tools' Activate All Trains and Deactivate All Trains do for every train, and what the
- * Auto tab's commands tab sorts its cards by (FR-126), so the class also holds the order of the cards and the two
- * tools.
+ * there and sets it going again, in the railway and in the setup (FR-117).  On the frozen copy of Adam's railway, with
+ * his own 75 407 DB on BottomMainB and nothing else standing; the trains the claims name that the loaded database lacks
+ * are made in memory through the model's own door and taken out again, and the class checks that it wrote no
+ * locomotive database file.  It also holds the order of the Auto tab's cards and the two bulk tools (FR-126).
  *
  * @author Adam
  */
@@ -655,10 +650,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * A train paused from its card's pause button stays paused whatever is done to another train's Is Active tick
-     * (OB-343).  The button changes the train alone, and the setup learns of it at the next fold; the tick writes the
-     * train it is given and the setup's list together, then tells the window the railway's pauses and the setup's
-     * agree, and a railway whose pauses agree has the setup's list taken as the word on every train.  One train paused
-     * from its card; another's tick unticked, and ticked again.
+     * (OB-343).
      *
      * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
      *
@@ -711,9 +703,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * The mirror (OB-343): a train set going from its card's button, while the setup still lists it as paused, stays
-     * going whatever is done to another train's Is Active tick.  The train is paused through its own tick first, its
-     * card's button sets it going on the train alone, and a tick on another train, unticked and ticked, must not read
-     * the setup's older list as the word on it.
+     * going whatever is done to another train's Is Active tick.
      *
      * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
      *
@@ -779,9 +769,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The same through the autonomy editor's tick, which rebuilds the railway itself (OB-343): a train paused from its card's
-     * button stays paused when another train is unticked in the editor, and then, set going from its card's button while the
-     * setup lists it as paused, stays going when that train is ticked again.
+     * The same through the autonomy editor's tick, which rebuilds the railway itself (OB-343).
      *
      * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
      *
@@ -886,10 +874,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A fold of the railway into the setup that no rebuild follows leaves how the railway was built behind (OB-343):
-     * the editor opens on the running railway's settings, and its cards stay pressable (it is not modal).  A card
-     * pauses a train, the editor takes the pause into the setup, the card sets it going: the setup's list, which now
-     * names the train, wins at the next setup gesture's rebuild.
+     * A fold of the railway into the setup that no rebuild follows leaves how the railway was built behind (OB-343).
+     *
      * MUTATION: leave the record of how the railway was built as it was when a fold writes the railway's settings into
      * the setup, and this fails.
      *
@@ -940,9 +926,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The mirror, and a tick on another train in that state (OB-343): the railway was built with a train paused, the
-     * card sets it going, the editor opens and takes that into the setup, the card pauses it again, and another train's
-     * tick in the editor, with the rebuild it asks for, must not set it going.
+     * The mirror, and a tick on another train in that state (OB-343): another train's tick in the editor, with the
+     * rebuild it asks for, must not set going a train the card paused again.
      *
      * MUTATION: leave the record of how the railway was built as it was when a fold writes the railway's settings into
      * the setup, and this fails.
@@ -1006,10 +991,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * An old-format import that fails after folding the running railway into the setup puts the setup back, and the
-     * record of how the railway was built with it (OB-343).  Otherwise the railway reads to the next setup gesture's
-     * rebuild as unchanged since it was built and is rebuilt from the older setup: a timetable entry a run captured (a
-     * lost timetable, grade B), a setting moved on the Auto tab and a train paused by its card's button all go.  The
-     * import is of a file `detect` calls an old graph, which `whatALegacyImportLeaves` throws on after the fold.
+     * record of how the railway was built with it (OB-343).
      *
      * MUTATION: leave the record as the fold left it when the import puts the setup back, and this fails.
      *
@@ -1129,11 +1111,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The editor's Cancel after a fold the editor's own rebuild made keeps what the railway changed alone (OB-343).  An
-     * in-editor rebuild folds the railway's changes into the setup before it builds, and a build the setup does not
-     * allow leaves the railway running with the setup newer; Cancel restores the setup the editor opened with, which
-     * lacks the change the fold took.  The declined build is stood in for by its fold alone, which is all of it that
-     * touches the record.
+     * The editor's Cancel after a fold the editor's own rebuild made keeps what the railway changed alone (OB-343).
+     * The declined build is stood in for by its fold alone, which is all of it that touches the record.
      *
      * MUTATION: leave what the fold took out of what Cancel puts back, and this fails.
      *
@@ -1201,9 +1180,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * The editor's Cancel keeps what the railway changed alone while the editor was open, whatever was rebuilt between,
-     * and undoes what the editor changed (OB-343).  With the editor open the Auto tab and the cards are live; an edit
-     * in the editor rebuilds and REPLACES the railway, folding what it changed into the setup first.  The edit here is
-     * another train's tick: Cancel must undo it, and keep the setting and the pause.
+     * and undoes what the editor changed (OB-343).  The edit here is another train's tick.
      *
      * MUTATION: leave what the folds took from the railway out of what Cancel puts back, and this fails.
      *
@@ -1299,11 +1276,9 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The mirror (OB-343): a tick in the editor whose rebuild was refused is undone by Cancel.  A refused rebuild
-     * leaves the railway running, the train paused and the setup and the record with the tick; the record must not read
-     * the tick as a change the railway had made alone.  The refusal is stood in for by its effects, the door's own
-     * write with no rebuild after it (a refused build needs a setup the graph refuses, which a claim cannot make
-     * cheaply).
+     * The mirror (OB-343): a tick in the editor whose rebuild was refused is undone by Cancel.  The refusal is stood in
+     * for by its effects, the door's own write with no rebuild after it (a refused build needs a setup the graph
+     * refuses, which a claim cannot make cheaply).
      *
      * MUTATION: put the record back with the setup when Cancel restores it, and this fails.
      *
@@ -1348,10 +1323,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * Cancel's own fold takes a card's pause BY TRAIN and leaves the editor's tick to be undone (OB-343), scenario 1:
-     * the editor's tick pauses a train, a card then pauses another, and Cancel puts the setup it opened with back.  The
-     * record holds the tick, so what the railway has against it is the card's alone; the fold took the railway's whole
-     * list, and the tick came back with it.
+     * Cancel's own fold takes a card's pause BY TRAIN and leaves the editor's tick to be undone (OB-343), scenario 1.
      *
      * MUTATION: take the railway's whole list of the paused in a fold, and this fails.
      *
@@ -1409,8 +1381,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * Scenario 2 (OB-343): a train the setup had paused, ticked active in the editor, stays paused after Cancel when a
-     * card pauses another train in between.  The tick left the record with no list of the paused, and a fold with such
-     * a record took the railway's list as the whole, so the train the setup had paused came out running.
+     * card pauses another train in between.
      *
      * MUTATION: take the railway's whole list when the record has none, and this fails.
      *
@@ -1479,10 +1450,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A bulk tool over a train a card paused leaves that pause the card's (OB-343): Deactivate All Trains names every
-     * train standing, and must not write the card-paused one into the record as the tool's own change, or Cancel, which
-     * takes the tool out, would set it going.  One train paused by its card with the editor open, Deactivate All Trains
-     * from the editor's menu, and Cancel: the card's pause stays, the tool's does not.
+     * A bulk tool over a train a card paused leaves that pause the card's (OB-343): Deactivate All Trains must not
+     * write the card-paused one into the record as the tool's own change.
      *
      * MUTATION: have the door note in the record every train it names, and this fails.
      *
@@ -1585,9 +1554,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A locomotive renamed after a card set it going stays going (OB-343): the card's button sets the train going,
-     * which the railway alone knows, and the rename repairs the setup's list but must also repair the record of how the
-     * railway was built, or the rebuild pauses it.
+     * A locomotive renamed after a card set it going stays going (OB-343): the rename must also repair the record of
+     * how the railway was built, or the rebuild pauses it.
      *
      * MUTATION: leave the record's list of the paused as it was when a locomotive is renamed, and this fails.
      *
@@ -1657,9 +1625,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * Through Cancel (OB-343): a train the setup had paused is set going by its card with the editor open, an edit's
-     * rebuild folds that, and the train is renamed; Cancel puts back what the folds took, which must name the new
-     * train, or the train comes out paused.
+     * Through Cancel (OB-343): a rename must reach what the folds took, or the train comes out paused.
      *
      * MUTATION: leave the names in what the folds took as they were when a locomotive is renamed, and this fails.
      *
@@ -1761,8 +1727,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A locomotive deleted with the editor open is not written back by Cancel (OB-343): the pause a fold took for it is dropped
-     * with the locomotive, as the setup's list and the snapshot are by the delete.
+     * A locomotive deleted with the editor open is not written back by Cancel (OB-343).
      *
      * MUTATION: leave the names the folds noted as they were when a locomotive is deleted, and this fails.
      *
@@ -1882,9 +1847,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The same for the bulk tool that writes only some of the trains (OB-343): Deactivate All Trains pauses the trains
-     * standing on the layout and leaves the rest alone, and a train off the layout has a card whose button pauses it.  One
-     * paused by its card stays paused.
+     * The same for the bulk tool that writes only some of the trains (OB-343): a train paused by its card stays
+     * paused.
      *
      * MUTATION: have the tool note every train's pause as built, not only the ones it changed, and this fails.
      *
@@ -1994,9 +1958,7 @@ public class testTheActiveTickPausesATrain
 
     /**
      * Activate All Trains takes a train the setup lists as paused off the list when the train is going (OB-343;
-     * FR-126): the tool reads the train, so such a train is not one it counts, and it goes through the door all the
-     * same.  The setup lists a train the railway was not built pausing, and another train is paused by its card's
-     * button; what keeps the listed train going is the tool taking it off the list itself.
+     * FR-126): what keeps the listed train going is the tool taking it off the list itself.
      *
      * MUTATION: leave the trains the setup lists out of what Activate writes, and this fails.
      *
@@ -2384,9 +2346,6 @@ public class testTheActiveTickPausesATrain
      * Opening the locomotive commands tab puts the active trains first, then the paused ones, then the ones on stations
      * out of use, then one that stands nowhere, each group by name with capitals ignored (FR-126).
      *
-     * Two edges are fixed: a train both paused and on a station out of use goes with the stations out of use, and a
-     * train on no station goes last of all.
-     *
      * MUTATION: leave the tab alone when it is opened, leave the paused trains among the active, put a paused train on
      * a station out of use with the paused, put the train on no station before the stations out of use, or order the
      * names with capitals counting, and this fails.
@@ -2667,11 +2626,7 @@ public class testTheActiveTickPausesATrain
      * Activate All Trains reaches every paused train, those on no square too and a name the configuration lists that
      * the model has no train for; Deactivate All Trains pauses only the trains standing on the layout (FR-126).  Both
      * read the TRAIN's own flag where the model has the train, and the configuration's list only for a name it has none
-     * for: the Auto tab's pause button changes the train alone, and the list learns of it later.
-     *
-     * Set up: one standing train paused by its card's button (the flag, not the list); one still named by the list
-     * though its card's button set it going (the list, not the flag); a train on no square paused; one going; and a
-     * listed name with no train.
+     * for.
      *
      * MUTATION: have Activate cover only the trains standing, read the list before the train, or let Deactivate pause
      * the trains on no square, and this fails.
@@ -2859,10 +2814,8 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A paused train on no Point is drawn gray on the diagram, and the tools tell the diagram (FR-126): its gray is
-     * read from the configuration's list, which the tools change, and the diagram was told only of a train placed or
-     * put back.  The train is placed on a square it is recorded facing a way no copy there faces, so it cannot stand on
-     * a Point.
+     * A paused train on no Point is drawn gray on the diagram, and the tools tell the diagram (FR-126).  The train is
+     * placed on a square it is recorded facing a way no copy there faces, so it cannot stand on a Point.
      *
      * MUTATION: leave the diagram untold when the tools or the tick pause a train, or when a rebuild binds it again,
      * and this fails.
