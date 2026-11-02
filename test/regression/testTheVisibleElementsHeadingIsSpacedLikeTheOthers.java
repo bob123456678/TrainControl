@@ -151,9 +151,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      * look and feel installed again and put back at the end.  Asked at each of the three diagram sizes, of every
      * control outside the scroll panes.
      *
-     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout
-     * asks for in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum
-     * again, and this fails.
+     * MUTATION: take out the floor the window's own layout asks for in `sizeForDiagram`, or give the status line in
+     * `AutonomyEditorPanel` its text's width as its minimum again, and this fails.
      */
     @Test
     public void testTheAutonomyEditorShowsEveryControlAtItsSmallestSize() throws Exception
@@ -491,6 +490,231 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         {
             SwingUtilities.invokeAndWait(() -> editor.dispose());
         }
+    }
+
+    /**
+     * An autonomy editor on a 768-pixel screen (720 pixels of work area, under Windows' 48-pixel taskbar) is no taller
+     * than the work area, and Save Changes and Cancel lie wholly inside its content, as it opens and shrunk to its
+     * smallest size (OB-399; Adam: "ensure the autonomy editor window has a min height to prevent the cancel button from
+     * being hidden").  The smallest size is the column's own height, so it fits the screen rather than being cut to it.
+     *
+     * MUTATION: put the 630-pixel floor back for the autonomy editor in `LayoutEditor.sizeForDiagram`, or the 640 and
+     * 240 pixels in `AutonomyEditorPanel.setColumnWidth`, and this fails.
+     */
+    @Test
+    public void testCancelStaysInsideTheWindowOnA768PixelScreen() throws Exception
+    {
+        final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
+
+        final OnAScreen editor = autonomyEditorOn(workArea);
+
+        try
+        {
+            settle(editor);
+
+            assertTrue(editor.getHeight() <= workArea.height, "the editor opened " + editor.getHeight() + " pixels tall on a"
+                + " work area " + workArea.height + " tall (OB-399)");
+
+            assertTrue(editor.getMinimumSize().height <= workArea.height, "the editor's smallest height is "
+                + editor.getMinimumSize().height + ", more than the work area's " + workArea.height);
+
+            assertEquals(outsideTheContent(editor), "", "as it opened, at " + editor.getSize() + " (OB-399)");
+
+            SwingUtilities.invokeAndWait(() -> editor.setSize(editor.getMinimumSize()));
+
+            settle(editor);
+
+            assertEquals(outsideTheContent(editor), "", "at its smallest size, " + editor.getSize() + " (OB-399)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * The findings under the diagram show 7 rows where the window has room and 5 where it is short, and change as the
+     * window is resized: at its smallest size, just under the height that gives up two rows' worth to the list, at
+     * that height, and tall, then short again (OB-399; Adam: "Things to look at can be fewer lines (5 instead of 7) on
+     * smaller screens, resizing itself").  The list scrolls past its rows either way.
+     *
+     * MUTATION: pin the list at one height (`list.setPreferredSize(new java.awt.Dimension(100, 190))` in
+     * `LayoutEditor.setAutonomyMode`, no `sizeTheFindings`), or make `FINDINGS_ROWS_SHORT` 7, and this fails.
+     */
+    @Test
+    public void testTheFindingsShowSevenRowsWhenTallAndFiveWhenShort() throws Exception
+    {
+        final OnAScreen editor = autonomyEditorOn(null);
+
+        try
+        {
+            settle(editor);
+
+            final javax.swing.JScrollPane scroll = editor.getAutonomyPanel().getFindingsPanel();
+            final javax.swing.JList<?> list = (javax.swing.JList<?>) scroll.getViewport().getView();
+
+            assertTrue(list.getModel().getSize() > 7, "precondition: the sandbox's setup has " + list.getModel().getSize()
+                + " findings, too few to fill 7 rows");
+
+            final int chrome = editor.getHeight() - editor.getContentPane().getHeight();
+            final int[] least = new int[1];
+            final int[] extra = new int[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                least[0] = editor.getContentPane().getMinimumSize().height;
+                extra[0] = 2 * list.getCellBounds(0, 0).height;
+            });
+
+            assertEquals(resizedTo(editor, least[0] + chrome, list), 5, "rows shown at the smallest height");
+
+            assertEquals(resizedTo(editor, least[0] + extra[0] - 1 + chrome, list), 5,
+                "rows shown a pixel under the height that gives the list two more rows");
+
+            assertEquals(resizedTo(editor, least[0] + extra[0] + chrome, list), 7,
+                "rows shown at the height that gives the list two more rows");
+
+            assertEquals(resizedTo(editor, least[0] + extra[0] + 300 + chrome, list), 7, "rows shown when tall");
+
+            assertEquals(resizedTo(editor, least[0] + chrome, list), 5, "rows shown after shrinking again");
+
+            assertTrue(scroll.getVerticalScrollBar().isShowing(), "the list has more findings than rows and no way to"
+                + " scroll to them");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * A remembered window bigger than the screen's work area (set on a larger screen) opens no taller than the work
+     * area (OB-399).  The window's remembered entry is written, then removed.
+     *
+     * MUTATION: take `keepTheAutonomyEditorOnTheScreen` out of `LayoutEditor.render`, and this fails.
+     */
+    @Test
+    public void testARememberedSizeTallerThanTheScreenIsBroughtDown() throws Exception
+    {
+        final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final String entry = OnAScreen.class.getSimpleName() + "_editor_";
+        final String rememberKey = org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION;
+        final String rememberWas = prefs.get(rememberKey, null);
+
+        OnAScreen editor = null;
+
+        try
+        {
+            prefs.putInt(entry + "x", 0);
+            prefs.putInt(entry + "y", 0);
+            prefs.putInt(entry + "width", 1300);
+            prefs.putInt(entry + "height", 1100);
+            prefs.putInt(entry + "state", 0);
+            prefs.putBoolean(rememberKey, true);
+
+            editor = autonomyEditorOn(workArea);
+
+            settle(editor);
+
+            assertTrue(editor.getHeight() <= workArea.height, "a window remembered 1100 pixels tall opened "
+                + editor.getHeight() + " pixels tall on a work area " + workArea.height + " tall (OB-399)");
+        }
+        finally
+        {
+            final OnAScreen closing = editor;
+
+            if (closing != null) SwingUtilities.invokeAndWait(() -> closing.dispose());
+
+            for (String each : new String[] {"x", "y", "width", "height", "state"}) prefs.remove(entry + each);
+
+            if (rememberWas == null) prefs.remove(rememberKey);
+            else prefs.put(rememberKey, rememberWas);
+        }
+    }
+
+    /** An editor whose screen has a work area of its own, to stand for a smaller screen than the machine's. */
+    public static class OnAScreen extends LayoutEditor
+    {
+        private final java.awt.Rectangle workArea;
+
+        OnAScreen(LayoutDiagram page, TrainControlUI ui, java.awt.Rectangle workArea)
+        {
+            super(page, 30, ui, 0);
+
+            this.workArea = workArea;
+        }
+
+        @Override
+        protected java.awt.Rectangle usableScreen()
+        {
+            return workArea == null ? super.usableScreen() : workArea;
+        }
+    }
+
+    /** An autonomy editor on a screen with the work area given (null for the machine's own), opened. */
+    private static OnAScreen autonomyEditorOn(final java.awt.Rectangle workArea) throws Exception
+    {
+        final OnAScreen[] built = new OnAScreen[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new OnAScreen(page, ui, workArea);
+            built[0].render();
+            built[0].setAutonomyMode(session);
+        });
+
+        for (int pass = 0; pass < 10; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(built[0].isShowing(), "precondition: the autonomy editor did not open");
+
+        return built[0];
+    }
+
+    /** Which of Save Changes and Cancel lie even partly outside the window's content, or "" for neither. */
+    private static String outsideTheContent(final LayoutEditor editor) throws Exception
+    {
+        final StringBuilder out = new StringBuilder();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                java.awt.Rectangle content = new java.awt.Rectangle(editor.getContentPane().getSize());
+
+                for (String name : new String[] {"saveButton", "cancelButton"})
+                {
+                    Component button = (Component) field(editor, name);
+
+                    java.awt.Rectangle at = SwingUtilities.convertRectangle(button.getParent(), button.getBounds(),
+                        editor.getContentPane());
+
+                    if (!content.contains(at)) out.append(name).append(' ').append(at).append(" outside the content ")
+                        .append(content).append("; ");
+                }
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return out.toString();
+    }
+
+    /** How many findings the list shows once the window is this tall, in rows. */
+    private static int resizedTo(final LayoutEditor editor, final int height, final javax.swing.JList<?> list)
+    throws Exception
+    {
+        final int[] rows = new int[1];
+
+        SwingUtilities.invokeAndWait(() -> editor.setSize(editor.getWidth(), height));
+
+        settle(editor);
+
+        SwingUtilities.invokeAndWait(() -> rows[0] = list.getLastVisibleIndex() - list.getFirstVisibleIndex() + 1);
+
+        return rows[0];
     }
 
     /** An autonomy editor, on screen and settled. */

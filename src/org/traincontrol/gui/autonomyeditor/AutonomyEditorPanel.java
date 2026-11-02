@@ -789,11 +789,22 @@ public class AutonomyEditorPanel extends JPanel
             button.setPreferredSize(new Dimension(width, button.getPreferredSize().height));
         }
 
-        setPreferredSize(new Dimension(width, 640));
-        setMinimumSize(new Dimension(width, 240));
         setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
 
         revalidate();
+    }
+
+    /** The column's width, and the height its tools need: no more is asked of the window (OB-399). */
+    @Override
+    public Dimension getPreferredSize()
+    {
+        return new Dimension(width, super.getPreferredSize().height);
+    }
+
+    @Override
+    public Dimension getMinimumSize()
+    {
+        return new Dimension(width, super.getPreferredSize().height);
     }
 
     /**
@@ -6617,6 +6628,37 @@ public class AutonomyEditorPanel extends JPanel
     public JScrollPane getFindingsPanel()
     {
         return findingsPanel;
+    }
+
+    /** @return the height of a findings row: the taller of a notice and a heading, the same for every row */
+    public int getFindingRowHeight()
+    {
+        java.awt.Component probe = findings.getCellRenderer()
+            .getListCellRendererComponent(findings, "Ag", Integer.MAX_VALUE, false, false);
+
+        int notice = probe.getPreferredSize().height;
+
+        probe.setFont(AutonomyViewerPanel.FONT_GROUP);
+
+        return Math.max(notice, probe.getPreferredSize().height);
+    }
+
+    /**
+     * Shows that many findings at a time, the list scrolling past them (OB-399).
+     * @param rows how many rows the list is tall
+     */
+    public void setFindingRows(int rows)
+    {
+        findings.setFixedCellHeight(getFindingRowHeight());
+        findings.setVisibleRowCount(rows);
+
+        java.awt.Insets frame = findingsPanel.getInsets();
+
+        findingsPanel.setPreferredSize(new Dimension(100, frame.top + frame.bottom
+            + findings.getPreferredScrollableViewportSize().height
+            + findingsPanel.getHorizontalScrollBar().getPreferredSize().height));
+
+        findingsPanel.revalidate();
     }
 
     /** @param locomotiveNames supplies the roster, for exclusion and home lists */
