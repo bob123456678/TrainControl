@@ -315,9 +315,8 @@ public class testTheWindowTakesTheKeyboard
 
     /**
      * OB-170 proper: the keyboard comes back when the window does.  `requestFocusInWindow` does nothing while the
-     * window is not the focused window, and on Windows a starting process's window often is not one.  This reproduces
-     * that without an OS: something else in the window is given the keyboard after start-up, then the window gains
-     * focus.
+     * window is not the focused window; this reproduces that without an OS: something else in the window is given the
+     * keyboard after start-up, then the window gains focus.
      *
      * MUTATION this catches: remove the `addWindowFocusListener` block from `takeTheKeyboard` and keep the single
      * posted request; the press then leaves `currentButton` where it was.
@@ -417,13 +416,12 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * Coming to the foreground gives the always-on-top setting back (OB-170).  Windows refuses a foreground change from
-     * a process not already in the foreground, except for a topmost window, so the window is made topmost, raised, and
+     * Coming to the foreground gives the always-on-top setting back (OB-170): the window is made topmost, raised, and
      * set back to whatever the operator chose.
      *
      * Both directions, because a one-directional test passes on `setAlwaysOnTop(false)` unconditionally.  The restore
      * is on a timer (handing the flag back in the same breath as the raise loses the raise), so this waits for it, the
-     * wait bounded so a restore that never happens fails rather than hangs.
+     * wait bounded.
      *
      * MUTATION this catches: dropping the restore, or replacing it with a bare `setAlwaysOnTop(false)`.
      */
@@ -665,10 +663,9 @@ public class testTheWindowTakesTheKeyboard
         }
     }
     /**
-     * `display()` does not take the topmost flag off after showing the window (OB-170): `setViewListener` makes the
-     * frame topmost before it is shown, and showing is asynchronous, so a restore on the next line would remove the
-     * style before the window manager acted.  Whether Windows grants the foreground cannot be read back, so no
-     * behavioral test can hold this; it is pinned in the source, as `testTheWindowAttachesItsRefreshCallback` does.
+     * `display()` does not take the topmost flag off after showing the window (OB-170): showing is asynchronous, so a
+     * restore on the next line would remove the style before the window manager acted.  No behavioral test can hold
+     * this; it is pinned in the source, as `testTheWindowAttachesItsRefreshCallback` does.
      */
     @Test
     public void testDisplayDoesNotUndoTheTopmostTrickItDependsOn() throws Exception
@@ -692,10 +689,9 @@ public class testTheWindowTakesTheKeyboard
     }
 
     /**
-     * The menu bar is grayed out for as long as the connecting notice is up (OB-170).  The menu bar is part of the
-     * window rather than of its content, so swapping the content in would leave every menu looking ready while none
-     * could act.  Exactly the ones it took are switched back, since several menus are off by state.  Neither method
-     * shows anything, so this can run in a battery.
+     * The menu bar is grayed out for as long as the connecting notice is up (OB-170).  Exactly the ones it took are
+     * switched back, since several menus are off by state.  Neither method shows anything, so this can run in a
+     * battery.
      *
      * MUTATION this catches: `ungreyTheMenus` walking the menu bar instead of its own list.
      */
