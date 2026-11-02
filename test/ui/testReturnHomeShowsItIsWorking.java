@@ -13,17 +13,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Return Home shows that it is working while its plan is worked out, and stops when there is an answer (FR-077: *"there
- * needs to be a spinner on the return home button while it is calculating"*).
- *
+ * Return Home shows that it is working while its plan is worked out, and stops when there is an answer (FR-077).
  * Through the real button's door, `requestReturnToHome`, with the planning held up rather than hoped to be slow: the
- * test holds the railway's monitor, which the plan's first step (`HomeStaging.snapshot`) needs. Released, the plan
- * completes, and the mark has to go. Nothing is asked of the event thread while the monitor is held, since a repaint
- * that wanted it would wait for this test and this test for the repaint; the button is read directly, safe for a
- * reference read of an icon.
- *
- * On the frozen railway (OB-111). Whatever the plan concludes is shown in a dialog, closed at the end without being
- * read; what it says is `testReturnHomeSaysWhy`'s business.
+ * test holds the railway's monitor, which the plan's first step (`HomeStaging.snapshot`) needs.  Nothing is asked of
+ * the event thread while the monitor is held, since a repaint that wanted it would wait for this test and this test
+ * for the repaint.  On the frozen railway (OB-111).
  *
  * MUTATION: delete `this.showReturnHomeWorking(true)` from `requestReturnToHome` and the first claim fails; delete both
  * `showReturnHomeWorking(false)` calls and the second does.
