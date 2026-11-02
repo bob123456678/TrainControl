@@ -153,10 +153,10 @@ public class testMultiUnitMembership
     }
 
     /**
-     * The consist handed out is a snapshot, not the live map.  `getLinkedLocomotives()` returned the field itself, so
-     * any caller could empty a consist by accident and every caller shared one instance with the rebuild.  Nothing in
-     * the tree mutates it (checked across `src/` and `test/`), so an unmodifiable view costs nothing and closes the
-     * door for the next caller.
+     * The consist handed out is a snapshot, not the live map.  Returning the field itself from `getLinkedLocomotives()`
+     * would let any caller empty a consist by accident and share one instance with the rebuild.  Nothing in the tree
+     * mutates it (checked across `src/` and `test/`), so an unmodifiable view costs nothing and closes the door for the
+     * next caller.
      *
      * MUTATION: return `this.linkedLocomotives` unwrapped and this fails.
      */
@@ -193,7 +193,7 @@ public class testMultiUnitMembership
      * Applying a list in one call does not touch what another thread has staged.  `preSetLinkedLocomotives` writes an
      * instance field and `setLinkedLocomotives()` reads it back with nothing between them; two threads rebuild consists
      * (`syncWithCS2` off the event thread and the multi-unit dialog on it), so one thread's list could be overwritten
-     * before its own apply read it.  Both calls return success either way, which is why nothing noticed.
+     * before its own apply read it.
      *
      * What is asserted is that the one-call form does not go through the field at all: a list staged and not yet
      * applied is still there afterwards, which is the property a second thread needs (the interleaving itself cannot be
@@ -249,10 +249,10 @@ public class testMultiUnitMembership
      * *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4
      * do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
      *
-     * The head's range does not cap the consist: refusing anything the HEAD could not do answered the wrong question,
-     * since the point of a consist is that a member can do what the head cannot.  What must stay true is the part that
-     * made it a finding: nothing can be switched on that nothing can switch off.  So three things are asserted together
-     * - the function reaches the member, the consist can still SEE it afterwards, and `functionsOff` clears it.
+     * The head's range does not cap the consist: a member can do what the head cannot, so refusing anything the HEAD
+     * could not do would answer the wrong question.  What must stay true is that nothing can be switched on that
+     * nothing can switch off.  So three things are asserted together - the function reaches the member, the consist can
+     * still SEE it afterwards, and `functionsOff` clears it.
      *
      * MUTATION: put `if (this.validF(fNumber))` back around the fan-out and the first claim fails; drop
      * the `getF` override and the second does; leave `functionsOff` walking `getNumF()` and the third.
@@ -325,12 +325,11 @@ public class testMultiUnitMembership
     }
 
     /**
-     * `setSpeed` clamps its own argument the way it already clamps its members'.  `_setSpeed` is wrapped in `if (speed
+     * `setSpeed` clamps its own argument the way it clamps its members'.  `_setSpeed` is wrapped in `if (speed
      * >= 0 && speed <= 100)` with no `else`, so an out-of-range value is DISCARDED and `getSpeed()` still reports
      * whatever it was, and the head then re-transmits that old speed while every member is sent `min(speed x
-     * multiplier, 100)`: the failure the member-loop clamp was written for ("the two engines of one consist pulled
-     * against each other"), one level up.  The member clamp was also one-sided: a negative argument scaled by a
-     * multiplier stays negative and is ignored the same way.
+     * multiplier, 100)`: the failure the member-loop clamp is for ("the two engines of one consist pulled against each
+     * other"), one level up.  A negative argument scaled by a multiplier stays negative and is ignored the same way.
      *
      * `setSpeed` is public and is reached from a route, from autonomy and from the throttle, so this is worth having
      * even with the command's own clamp in place: "ignored, and the previous speed re-sent" is the worst of the three
