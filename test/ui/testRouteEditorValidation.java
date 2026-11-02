@@ -326,11 +326,17 @@ public class testRouteEditorValidation
 
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
+        return open(null);
+    }
+
+    /** An editor opened on a route, as a double-click on it opens one; null for a new route. */
+    private static org.traincontrol.gui.RouteEditorFrame open(final org.traincontrol.base.Route route) throws Exception
+    {
         final org.traincontrol.gui.RouteEditorFrame[] frame =
             new org.traincontrol.gui.RouteEditorFrame[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            frame[0] = new org.traincontrol.gui.RouteEditorFrame(null, null));
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0] = new org.traincontrol.gui.RouteEditorFrame(null,
+            route == null ? null : route.getName(), route));
 
         return frame[0];
     }
@@ -362,14 +368,21 @@ public class testRouteEditorValidation
     /** The English message bundle, read from the source folder. */
     private static java.util.Properties englishBundle() throws Exception
     {
-        java.util.Properties english = new java.util.Properties();
+        return bundle("");
+    }
 
-        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+    /** One language's message bundle, read from the source folder: "" for English, "_de" for German. */
+    private static java.util.Properties bundle(String suffix) throws Exception
+    {
+        java.util.Properties out = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages" + suffix
+            + ".properties"))
         {
-            english.load(in);
+            out.load(in);
         }
 
-        return english;
+        return out;
     }
 
     private static void needsADisplay()
@@ -930,6 +943,8 @@ public class testRouteEditorValidation
      *
      * MUTATION: in `ConditionOutline.inserted`, join the new condition with `Joiner.AND` always, and "21 or 22 and 1"
      * is flagged.
+     * MUTATION: in `offerRowMenu`, add Duplicate before `table.addOwnItems(menu)`, and it sits above Group Selected
+     * (FR-163: Duplicate between dividers of its own, above Delete).
      */
     @Test
     public void testARightClickInsertsAConditionAndOffersTheLinesActions() throws Exception
@@ -959,10 +974,9 @@ public class testRouteEditorValidation
             assertNotNull(menu, "a right-click on condition 22 opened no menu");
 
             assertEquals(offered(menu), "+route.ui.menuInsertConditionAbove +route.ui.menuInsertConditionBelow"
-                + " +route.ui.menuMoveUp -route.ui.menuMoveDown +route.ui.menuDuplicate -route.ui.menuGroupSelected"
-                + " +route.ui.menuUngroup"
-                + " +route.ui.menuSplitHere +ui.delete", "the menu on 22 in (21 or 22) and 23 and 1, enabled (+) or not"
-                + " (-)");
+                + " | +route.ui.menuMoveUp -route.ui.menuMoveDown -route.ui.menuGroupSelected +route.ui.menuUngroup"
+                + " +route.ui.menuSplitHere | +route.ui.menuDuplicate | +ui.delete", "the menu on 22 in (21 or 22) and 23"
+                + " and 1, enabled (+) or not (-), its dividers as |");
 
             assertEquals(selectedLine(table), 2, "the line right-clicked is the one selected");
 
@@ -2063,7 +2077,7 @@ public class testRouteEditorValidation
     /** Presses a button of the route editor by its text, as a click does, and lets its work finish. */
     private static void press(final org.traincontrol.gui.RouteEditorFrame frame, String key)
     {
-        javax.swing.AbstractButton button = support.Components.withText(frame, I18n.t(key));
+        javax.swing.AbstractButton button = notOnTheCommands(frame, key);
 
         assertNotNull(button, "the route editor has no button " + key);
         assertTrue(support.Components.onTheEventThread(button::isEnabled), key + " is grayed");
@@ -2082,7 +2096,7 @@ public class testRouteEditorValidation
         support.Keys.press(table, arrow, java.awt.event.InputEvent.ALT_DOWN_MASK);
     }
 
-    /** The menu's items as their message keys, each marked + when enabled and - when not. */
+    /** The menu's items as their message keys, each marked + when enabled and - when not; a divider as |. */
     private static String offered(final javax.swing.JPopupMenu menu)
     {
         String[] keys = {"route.ui.menuInsertConditionAbove", "route.ui.menuInsertConditionBelow",
@@ -2094,6 +2108,8 @@ public class testRouteEditorValidation
 
         for (java.awt.Component part : menu.getComponents())
         {
+            if (part instanceof javax.swing.JPopupMenu.Separator) out.append(" |");
+
             if (!(part instanceof javax.swing.JMenuItem)) continue;
 
             javax.swing.JMenuItem item = (javax.swing.JMenuItem) part;
@@ -2844,8 +2860,8 @@ public class testRouteEditorValidation
                 return out.toString().trim();
             });
 
-            assertEquals(painted, "-- S- S- S- S- --", "each column of the selected condition and of the caption above"
-                + " it: S where painted as selected, from the handle to the trash");
+            assertEquals(painted, "-- S- S- S- S- -- --", "each column of the selected condition and of the caption"
+                + " above it: S where painted as selected, from the handle to the copy mark");
         }
         finally
         {
@@ -3020,7 +3036,7 @@ public class testRouteEditorValidation
      * nothing for them to do.
      *
      * MUTATION: in `ConditionTable.showChanges`, drop the `remember(before)` call, and Undo has nothing to take back.
-     * MUTATION: in `ConditionTable.step`, drop `to.push(before)`, and Redo has nothing to make again.
+     * MUTATION: in `History.step`, drop the push of `now` onto the other side, and Redo has nothing to make again.
      * MUTATION: in the conditions' `setValueAt`, drop the return for a line built as it was, and Undo is offered.
      */
     @Test
@@ -3073,24 +3089,12 @@ public class testRouteEditorValidation
 
             assertTrue(enabled(frame, "route.ui.menuUndo"), "Undo is grayed after " + (seen.size() - 1) + " edits");
 
-            for (int at = seen.size() - 2; at >= 0; at--)
-            {
-                if (at % 2 == 0) press(frame, "route.ui.menuUndo");
-                else ctrl(table, java.awt.event.KeyEvent.VK_Z);
-
-                assertEquals(levels(frame), seen.get(at), "Undo back to the outline before edit " + (at + 1));
-            }
+            walk(seen, true, "outline", () -> levels(frame), key -> press(frame, key), table);
 
             assertFalse(enabled(frame, "route.ui.menuUndo"), "Undo is offered with every edit taken back");
             assertTrue(enabled(frame, "route.ui.menuRedo"), "Redo is grayed with every edit taken back");
 
-            for (int at = 1; at < seen.size(); at++)
-            {
-                if (at % 2 == 0) press(frame, "route.ui.menuRedo");
-                else ctrl(table, java.awt.event.KeyEvent.VK_Y);
-
-                assertEquals(levels(frame), seen.get(at), "Redo of edit " + at);
-            }
+            walk(seen, false, "outline", () -> levels(frame), key -> press(frame, key), table);
 
             assertFalse(enabled(frame, "route.ui.menuRedo"), "Redo is offered with every edit made again");
 
@@ -3115,49 +3119,30 @@ public class testRouteEditorValidation
         }
     }
 
-    /** Ctrl and a letter, pressed on the table as the keyboard sends it: see `chord`. */
-    private static void ctrl(final javax.swing.JTable table, final int letter) throws Exception
+    /**
+     * Undo back through every edit `seen` holds, or Redo forward through them: by the button on even steps and the key
+     * on odd ones, each step leaving the state `seen` holds before (or after) that edit.
+     */
+    private static void walk(java.util.List<String> seen, boolean back, String what,
+        java.util.function.Supplier<String> state, java.util.function.Consumer<String> button, javax.swing.JTable table)
+        throws Exception
     {
-        chord(table, letter, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+        for (int step = 0; step < seen.size() - 1; step++)
+        {
+            int at = back ? seen.size() - 2 - step : step + 1;
+
+            if (at % 2 == 0) button.accept(back ? "route.ui.menuUndo" : "route.ui.menuRedo");
+            else ctrl(table, back ? java.awt.event.KeyEvent.VK_Z : java.awt.event.KeyEvent.VK_Y);
+
+            assertEquals(state.get(), seen.get(at), back ? "Undo back to the " + what + " before edit " + (at + 1)
+                : "Redo of edit " + at);
+        }
     }
 
-    /**
-     * A key with modifiers, pressed on the table as the keyboard sends it: with its extended key code.  `support.Keys`
-     * leaves that code 0, and on a table that has the focus, Swing looks the code-0 stroke up first, finds no binding,
-     * and starts editing the selected cell: a Ctrl shortcut then never runs, and after Alt+Up a cell editor is left
-     * open that the next button commits as an edit of its own.
-     */
-    private static void chord(final javax.swing.JTable table, final int code, final int modifiers) throws Exception
+    /** Ctrl and a letter, pressed on the table as the keyboard sends it: see `support.Keys.chord`. */
+    private static void ctrl(final javax.swing.JTable table, final int letter) throws Exception
     {
-        final java.lang.reflect.Field extended = java.awt.event.KeyEvent.class.getDeclaredField("extendedKeyCode");
-
-        extended.setAccessible(true);
-
-        support.Components.onTheEventThread(() ->
-        {
-            long now = System.currentTimeMillis();
-
-            for (int id : new int[]{java.awt.event.KeyEvent.KEY_PRESSED, java.awt.event.KeyEvent.KEY_RELEASED})
-            {
-                java.awt.event.KeyEvent key = new java.awt.event.KeyEvent(table, id, now, modifiers, code,
-                    java.awt.event.KeyEvent.CHAR_UNDEFINED);
-
-                try
-                {
-                    extended.setLong(key, code);
-                }
-                catch (IllegalAccessException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-
-                table.dispatchEvent(key);
-            }
-
-            return null;
-        });
-
-        support.Components.settle();
+        support.Keys.chord(table, letter, java.awt.event.InputEvent.CTRL_DOWN_MASK);
     }
 
     /**
@@ -3168,7 +3153,7 @@ public class testRouteEditorValidation
      *
      * MUTATION: in `HandledTable.changeSelection`, drop `|| isMark(column)`, and the press selects its line alone,
      * so the trash on 22 deletes 22 only.
-     * MUTATION: in `ConditionTable.deleteSelected`, return at once, and the Delete key deletes nothing.
+     * MUTATION: in `HandledTable.deleteSelected`, return at once, and the Delete key deletes nothing.
      * MUTATION: in `actOnRowMarks`, drop the Shift-or-Ctrl return, and a Shift press on the trash deletes the range.
      */
     @Test
@@ -3284,7 +3269,7 @@ public class testRouteEditorValidation
      * MT-868: the row of actions under the conditions sits at the foot of their frame, so adding or deleting a condition
      * leaves it where it was.
      *
-     * MUTATION: in `build`, add `foot` to `framed` at `BorderLayout.NORTH`, and the row is not at the frame's foot.
+     * MUTATION: in `footed`, add `foot` to `framed` at `BorderLayout.NORTH`, and the row is not at the frame's foot.
      */
     @Test
     public void testTheActionsStayAtTheFootOfTheFrame() throws Exception
@@ -3298,15 +3283,8 @@ public class testRouteEditorValidation
             showRows(frame, fromLevels(" 0:21 0AND 0:22"));
 
             final javax.swing.JTable table = conditionTable(frame);
-            final javax.swing.AbstractButton add = support.Components.withText(frame,
-                I18n.t("route.ui.menuAddCondition"));
-            final java.awt.Container framed = javax.swing.SwingUtilities.getAncestorOfClass(
-                javax.swing.JScrollPane.class, table).getParent();
-
-            final java.util.concurrent.Callable<int[]> where = () -> new int[]{
-                javax.swing.SwingUtilities.convertPoint(add, 0, 0, frame.getRootPane()).y,
-                javax.swing.SwingUtilities.convertPoint(add.getParent(), 0, add.getParent().getHeight(),
-                    framed).y, framed.getHeight() - framed.getInsets().bottom};
+            final javax.swing.AbstractButton add = notOnTheCommands(frame, "route.ui.menuAddCondition");
+            final java.util.concurrent.Callable<int[]> where = footOf(frame, table, add);
 
             final int[] two = support.Components.onTheEventThread(where);
 
@@ -3369,7 +3347,7 @@ public class testRouteEditorValidation
 
             for (int at = 0; at < steps.length; at++)
             {
-                chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+                support.Keys.chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
 
                 assertEquals(levels(frame), steps[at], "Alt+Up " + (at + 1) + " on the new condition");
                 assertEquivalent(heldBy(frame), meant, null, "after Alt+Up " + (at + 1));
@@ -3498,13 +3476,13 @@ public class testRouteEditorValidation
             setRows(frame, fromLevels(" 1:21 1OR 1:22 0AND 1:23 1OR 1:24"));
 
             selectLines(table, 4, 6);
-            chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            support.Keys.chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
 
             assertEquals(levels(frame), " 1:23 1OR 1:24 0AND 1:21 1OR 1:22",
                 "Alt+Up on the whole group (23 or 24) should move it past (21 or 22), not into it; Reads as: "
                 + plainReading(frame));
 
-            chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            support.Keys.chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
 
             assertEquals(levels(frame), " 1:23 1OR 1:24 0AND 1:21 1OR 1:22", "and at the top it goes nowhere");
         }
@@ -3837,6 +3815,8 @@ public class testRouteEditorValidation
      *
      * MUTATION: in `CommandTable.canShiftChosen`, answer `!locked && !chosen.isEmpty()`, and Move Up is offered on the
      * first command.
+     * MUTATION: in `offerRowMenu`, drop the divider after Duplicate, and Duplicate shares Delete's (FR-163: Duplicate
+     * between dividers of its own).
      */
     @Test
     public void testTheCommandMenuOffersWhatEachRowCanDo() throws Exception
@@ -3860,11 +3840,11 @@ public class testRouteEditorValidation
 
             menu = rightClickCell(table, 3, NOTHING_TO_EDIT);
 
-            assertEquals(first + " | " + offered(menu), "+route.ui.menuInsertCommandAbove"
-                + " +route.ui.menuInsertCommandBelow -route.ui.menuMoveUp +route.ui.menuMoveDown +route.ui.menuDuplicate"
-                + " +ui.delete | +route.ui.menuInsertCommandAbove +route.ui.menuInsertCommandBelow +route.ui.menuMoveUp"
-                + " -route.ui.menuMoveDown +route.ui.menuDuplicate +ui.delete", "the menus on the first command and the"
-                + " last, enabled (+) or not (-)");
+            assertEquals(first + " / " + offered(menu), "+route.ui.menuInsertCommandAbove"
+                + " +route.ui.menuInsertCommandBelow | -route.ui.menuMoveUp +route.ui.menuMoveDown | +route.ui.menuDuplicate"
+                + " | +ui.delete / +route.ui.menuInsertCommandAbove +route.ui.menuInsertCommandBelow | +route.ui.menuMoveUp"
+                + " -route.ui.menuMoveDown | +route.ui.menuDuplicate | +ui.delete", "the menus on the first command and the"
+                + " last, enabled (+) or not (-), their dividers as |");
 
             support.Mouse.choose(item(menu, "ui.delete"));
             rightClickAndChoose(table, 1, "route.ui.menuInsertCommandAbove");
@@ -3928,6 +3908,416 @@ public class testRouteEditorValidation
         });
     }
 
+    /**
+     * FR-163: on the commands, as on the conditions, Alt+Down and Alt+Up move every selected command one place and leave
+     * them selected, and none moves past the end; the Delete key removes every selected command, but not while a cell
+     * is being edited, where Delete is the cell's own.
+     *
+     * MUTATION: in `HandledTable.listen`, drop the `alt DOWN` binding, and Alt+Down moves no command.
+     * MUTATION: in `HandledTable.deleteSelected`, return at once, and the Delete key removes no command.
+     */
+    @Test
+    public void testAltArrowsAndTheDeleteKeyActOnTheSelectedCommands() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame, 11, 12, 13, 14);
+
+            selectLines(table, 1, 2);
+            support.Keys.chord(table, java.awt.event.KeyEvent.VK_DOWN, java.awt.event.InputEvent.ALT_DOWN_MASK);
+
+            assertEquals(state(frame, table), " 11 14 12 13 [2, 3]", "Alt+Down with 12 and 13 selected");
+
+            for (int up = 0; up < 3; up++)
+            {
+                support.Keys.chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            }
+
+            assertEquals(state(frame, table), " 12 13 11 14 [0, 1]", "Alt+Up three times: twice to the top, and"
+                + " the third moves nothing");
+
+            selectLines(table, 1, 2);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
+
+            assertEquals(state(frame, table), " 12 14 [1]", "the Delete key with 13 and 11 selected");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> table.editCellAt(0, COMMAND_TARGET));
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
+
+            assertEquals(targets(frame), " 12 14", "the Delete key while a target is being edited");
+        });
+    }
+
+    /**
+     * FR-163: Undo (Ctrl+Z on the commands, or the Undo under them) takes back each edit to the commands in turn: a
+     * capture, a target typed, a command added by Add Command, one inserted, a drag, Move Up, Alt+Up, Duplicate, the copy
+     * mark, the trash, the menu's Delete and the Delete key; Redo (Ctrl+Y, or its button) makes them again.  A route
+     * opened, and a target committed as it was, leave nothing to undo; a new edit leaves nothing to redo.  Each table's
+     * Undo takes back its own edits only, and the last hundred are kept.
+     *
+     * MUTATION: in `CommandTable.noteEdit`, drop `history.remember(shown)`, and Undo has nothing to take back.
+     * MUTATION: in `Entry.sameAs`, answer false, and a target committed as it was is offered to undo.
+     * MUTATION: in `History.remember`, drop the `removeLast` past a hundred, and a hundred Undos leave one more.
+     */
+    @Test
+    public void testUndoAndRedoWalkThroughEveryCommandEdit() throws Exception
+    {
+        inAnEditor(route(11, 12, 13), frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame);
+            final java.util.List<String> seen = new java.util.ArrayList<>();
+
+            assertEquals(undoAndRedo(frame), "-Undo -Redo", "a route just opened");
+
+            target(table, 0, "11");
+
+            assertEquals(undoAndRedo(frame), "-Undo -Redo", "a target committed as it was");
+
+            seen.add(targets(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.appendCommand(RouteCommand.RouteCommandAccessory(16,
+                Accessory.accessoryDecoderType.MM2, true).toLine(null).trim()));
+            seen.add(targets(frame));
+
+            target(table, 0, "15");
+            seen.add(targets(frame));
+
+            pressOnTheCommands(frame, "route.ui.menuAddCommand");
+            seen.add(targets(frame));
+
+            rightClickAndChoose(table, 1, "route.ui.menuInsertCommandBelow");
+            seen.add(targets(frame));
+
+            final java.awt.Rectangle last = support.Components.onTheEventThread(() -> table.getCellRect(5, 1, true));
+
+            drag(table, 0, new java.awt.Point(60, last.y + last.height - 2));
+            seen.add(targets(frame));
+
+            rightClickAndChoose(table, 5, "route.ui.menuMoveUp");
+            seen.add(targets(frame));
+
+            support.Keys.chord(table, java.awt.event.KeyEvent.VK_UP, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            seen.add(targets(frame));
+
+            rightClickAndChoose(table, 0, "route.ui.menuDuplicate");
+            seen.add(targets(frame));
+
+            clickCell(table, 3, COMMAND_COPY, 0);
+            seen.add(targets(frame));
+
+            clickCell(table, 0, COMMAND_TRASH, 0);
+            seen.add(targets(frame));
+
+            rightClickAndChoose(table, 1, "ui.delete");
+            seen.add(targets(frame));
+
+            selectLines(table, 1, 1);
+            support.Keys.press(table, java.awt.event.KeyEvent.VK_DELETE);
+            seen.add(targets(frame));
+
+            for (int at = 1; at < seen.size(); at++)
+            {
+                assertNotEquals(seen.get(at), seen.get(at - 1), "edit " + at + " changed nothing: " + seen);
+            }
+
+            walk(seen, true, "commands", () -> targets(frame), key -> pressOnTheCommands(frame, key), table);
+
+            assertEquals(undoAndRedo(frame), "-Undo +Redo", "every edit taken back");
+
+            walk(seen, false, "commands", () -> targets(frame), key -> pressOnTheCommands(frame, key), table);
+
+            ctrl(table, java.awt.event.KeyEvent.VK_Z);
+            target(table, 0, "17");
+
+            assertEquals(undoAndRedo(frame), "+Undo -Redo", "a new edit after an Undo");
+
+            final javax.swing.JTable conditions = conditionTable(frame);
+
+            press(frame, "route.ui.menuAddCondition");
+            ctrl(table, java.awt.event.KeyEvent.VK_Z);
+
+            assertEquals(targets(frame) + " " + frame.conditionCount(), seen.get(seen.size() - 2) + " 1",
+                "Ctrl+Z on the commands, after a command edit and then a condition added, takes back the command edit");
+
+            ctrl(conditions, java.awt.event.KeyEvent.VK_Z);
+
+            assertEquals(targets(frame) + " " + frame.conditionCount(), seen.get(seen.size() - 2) + " 0",
+                "Ctrl+Z on the conditions takes back the condition only");
+
+            for (int edit = 1; edit <= 101; edit++) target(table, 0, String.valueOf(100 + edit));
+
+            for (int undo = 0; undo < 100; undo++) pressOnTheCommands(frame, "route.ui.menuUndo");
+
+            assertEquals(frame.commandRowForTest(0).getTarget() + " " + undoAndRedo(frame), "101 -Undo +Redo",
+                "a hundred Undos after 101 edits: back to the first, the edit before it no longer kept");
+        });
+    }
+
+    /**
+     * FR-163, Adam: "Anchor the command + to the bottom of its frame, just like the conditions."  Under the commands,
+     * inside their frame and above Capture, a row of Add Command, a divider, Undo and Redo, looking as the conditions'
+     * row does (the same icons, words, font and flat style); it stays put as commands are added; Undo and Redo are
+     * grayed when there is nothing to undo or redo, and the tooltips name Ctrl+Z and Ctrl+Y.
+     *
+     * MUTATION: in `footed`, add `foot` to `framed` at `BorderLayout.NORTH`, and the row is not at the frame's foot.
+     */
+    @Test
+    public void testTheCommandsActionsSitAtTheFootOfTheirFrame() throws Exception
+    {
+        inAnEditor(route(11, 12), frame ->
+        {
+            final javax.swing.JTable table = showCommands(frame);
+            final javax.swing.AbstractButton add = commandButton(frame, "route.ui.menuAddCommand");
+            final javax.swing.AbstractButton undo = commandButton(frame, "route.ui.menuUndo");
+            final javax.swing.AbstractButton redo = commandButton(frame, "route.ui.menuRedo");
+            final javax.swing.AbstractButton capture = commandButton(frame, "route.ui.frameCapture");
+
+            String row = support.Components.onTheEventThread(() ->
+            {
+                StringBuilder out = new StringBuilder();
+
+                for (java.awt.Component part : add.getParent().getComponents())
+                {
+                    out.append(out.length() == 0 ? "" : " ")
+                        .append(part instanceof javax.swing.AbstractButton ? ((javax.swing.AbstractButton) part).getText()
+                        : "|");
+                }
+
+                return out.toString();
+            });
+
+            assertEquals(row, I18n.t("route.ui.menuAddCommand") + " | " + I18n.t("route.ui.menuUndo") + " "
+                + I18n.t("route.ui.menuRedo"), "the row under the commands");
+            assertEquals(lookOf(add) + " / " + lookOf(undo) + " / " + lookOf(redo),
+                lookOf(notOnTheCommands(frame, "route.ui.menuAddCondition")) + " / "
+                + lookOf(notOnTheCommands(frame, "route.ui.menuUndo")) + " / "
+                + lookOf(notOnTheCommands(frame, "route.ui.menuRedo")), "the commands' row should look as the"
+                + " conditions' does");
+            assertEquals(undoAndRedo(frame), "-Undo -Redo", "nothing to undo or redo on a route just opened");
+
+            String tips = support.Components.onTheEventThread(() -> add.getToolTipText() + " / "
+                + undo.getToolTipText() + " / " + redo.getToolTipText());
+
+            assertEquals(tips, I18n.t("route.ui.tooltipAddCommand") + " / " + I18n.t("route.ui.tooltipUndoCommands")
+                + " / " + I18n.t("route.ui.tooltipRedo"), "the tooltips");
+            assertTrue(tips.contains("Ctrl+Z") && tips.contains("Ctrl+Y"), "the tooltips name the keys: " + tips);
+
+            final int[] two = support.Components.onTheEventThread(footOf(frame, table, add));
+            final int below = support.Components.onTheEventThread(() ->
+                javax.swing.SwingUtilities.convertPoint(capture, 0, 0, frame.getRootPane()).y);
+
+            assertEquals(two[1], two[2], "with two commands, the row does not end at the foot of their frame");
+            assertTrue(two[3] <= below, "the row ends at " + two[3] + ", below Capture at " + below);
+
+            for (int more = 0; more < 3; more++) pressOnTheCommands(frame, "route.ui.menuAddCommand");
+
+            assertEquals(targets(frame), " 11 12 _ _ _", "Add Command adds a command at the end");
+            assertEquals(support.Components.onTheEventThread(footOf(frame, table, add))[0], two[0],
+                "Add Command moved when three commands were added");
+            assertTrue(frame.offersToAddCommands(), "the commands no longer offer Add Command");
+            assertEquals(undoAndRedo(frame), "+Undo -Redo", "after a command was added");
+        });
+    }
+
+    /**
+     * Where a section's row of actions is, through one of its buttons: the button's top in the window, the row's bottom
+     * and the bottom inside the frame round the table, and the row's bottom in the window.
+     */
+    private static java.util.concurrent.Callable<int[]> footOf(final org.traincontrol.gui.RouteEditorFrame frame,
+        final javax.swing.JTable table, final javax.swing.AbstractButton button)
+    {
+        return () ->
+        {
+            java.awt.Container framed = javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class,
+                table).getParent();
+            java.awt.Container row = button.getParent();
+
+            return new int[]{javax.swing.SwingUtilities.convertPoint(button, 0, 0, frame.getRootPane()).y,
+                javax.swing.SwingUtilities.convertPoint(row, 0, row.getHeight(), framed).y,
+                framed.getHeight() - framed.getInsets().bottom,
+                javax.swing.SwingUtilities.convertPoint(row, 0, row.getHeight(), frame.getRootPane()).y};
+        };
+    }
+
+    /**
+     * FR-163, Adam: "add the duplicate icon to the condition rows, so the two sections look the same".  A condition's
+     * line ends in the trash and then the copy mark, as a command's row does; the copy mark on a condition outside the
+     * selection copies it alone, directly below it in its group, and on one in the selection copies the selection as
+     * Duplicate does; Undo takes a copy back.
+     *
+     * MUTATION: in `duplicateRow`, return unless `table == commands`, and the copy mark on a condition copies nothing.
+     */
+    @Test
+    public void testTheCopyMarkOnAConditionCopiesItOrTheSelection() throws Exception
+    {
+        inAnEditor(frame ->
+        {
+            final javax.swing.JTable commands = showCommands(frame, 11);
+
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
+
+            final javax.swing.JTable table = conditionTable(frame);
+            final int line = screen(table, 2);
+
+            String marks = support.Components.onTheEventThread(() ->
+            {
+                StringBuilder out = new StringBuilder();
+
+                for (javax.swing.JTable each : new javax.swing.JTable[]{commands, table})
+                {
+                    int row = each == table ? line : 0;
+                    int columns = each.getColumnCount();
+
+                    for (int column = columns - 2; column < columns; column++)
+                    {
+                        javax.swing.JLabel cell = (javax.swing.JLabel) each.prepareRenderer(
+                            each.getCellRenderer(row, column), row, column);
+
+                        out.append(" ").append(each.getValueAt(row, column)).append(cell.getIcon() != null ? "+" : "-");
+                    }
+                }
+
+                return out.toString();
+            });
+
+            String trash = org.traincontrol.gui.RouteEditorFrame.markDelete();
+            String copy = org.traincontrol.gui.RouteEditorFrame.markCopy();
+
+            assertEquals(marks, " " + trash + "+ " + copy + "+ " + trash + "+ " + copy + "+", "the last two columns of"
+                + " a command, then of a condition: the mark, + where it draws an icon");
+
+            selectLines(table, 0, 0);
+            clickCondition(table, 2, CONDITION_COPY, 0);
+
+            assertEquals(levels(frame) + selectedRows(table), " 0:21 0AND 1:22 1OR 1:22 1OR 1:23[4]", "the copy mark on"
+                + " 22, outside the selection of 21: 22 copied under it, in its 'or' group, and selected");
+
+            ctrl(table, java.awt.event.KeyEvent.VK_Z);
+
+            assertEquals(levels(frame), " 0:21 0AND 1:22 1OR 1:23", "Undo takes the copy back");
+
+            setRows(frame, fromLevels(" 0:21 0AND 0:22 0AND 0:23"));
+            selectLines(table, 0, 2);
+            clickCondition(table, 0, CONDITION_COPY, 0);
+
+            assertEquals(levels(frame) + selectedRows(table), " 0:21 0AND 0:22 0AND 0:21 0AND 0:22 0AND 0:23[4, 6]",
+                "the copy mark on 21 with 21 and 22 selected copies both below 22, and selects the copies");
+        });
+    }
+
+    /**
+     * FR-163: the route editor's Help names the commands' keys in every language, as it names the conditions': Alt with
+     * the arrows, and the Undo and Redo keys the conditions' tooltips name; the commands' Undo tooltip names the same
+     * key, and their handle's tooltip the Alt arrows.
+     *
+     * MUTATION: in messages_de.properties, drop the paragraph about the commands' keys from `route.ui.frameHelp`, and
+     * the German Help names none.
+     */
+    @Test
+    public void testTheHelpNamesTheCommandsKeys() throws Exception
+    {
+        StringBuilder missing = new StringBuilder();
+
+        for (String language : new String[]{"", "_da", "_de", "_es", "_fr", "_it", "_nl", "_pl"})
+        {
+            java.util.Properties words = bundle(language);
+            String undo = keyIn(words.getProperty("route.ui.tooltipUndo"));
+            String redo = keyIn(words.getProperty("route.ui.tooltipRedo"));
+
+            // The commands' part: from the first heading (a paragraph in capitals) to the next.
+            String commands = "";
+            int headings = 0;
+
+            for (String paragraph : words.getProperty("route.ui.frameHelp").split("\n\n"))
+            {
+                if (paragraph.equals(paragraph.toUpperCase(java.util.Locale.ROOT)) && !paragraph.isEmpty()) headings++;
+                else if (headings == 1) commands += paragraph;
+            }
+
+            String[][] asked = {{"Help", commands, "Alt+"}, {"Help", commands, undo}, {"Help", commands, redo},
+                {"Undo tooltip", words.getProperty("route.ui.tooltipUndoCommands"), undo},
+                {"handle tooltip", words.getProperty("route.ui.tooltipCommandHandle"), "Alt+"}};
+
+            for (String[] ask : asked)
+            {
+                if (!ask[1].contains(ask[2])) missing.append(" messages").append(language).append(": ").append(ask[0])
+                    .append(" lacks ").append(ask[2]).append(";");
+            }
+        }
+
+        assertEquals(missing.toString(), "", "the commands' keys, named where the conditions' are");
+    }
+
+    /** The key a tooltip names in its closing brackets: "Ctrl+Z" from "Takes back ... (Ctrl+Z)." */
+    private static String keyIn(String tooltip)
+    {
+        java.util.regex.Matcher key = java.util.regex.Pattern.compile("\\(([^()]+)\\)\\.?$").matcher(tooltip);
+
+        assertTrue(key.find(), "no key in brackets at the end of " + tooltip);
+
+        return key.group(1);
+    }
+
+    /** A route of accessory commands at these addresses, ordinary, with no conditions. */
+    private static org.traincontrol.base.Route route(int... addresses)
+    {
+        java.util.List<RouteCommand> commands = new java.util.ArrayList<>();
+
+        for (int address : addresses)
+        {
+            commands.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, true));
+        }
+
+        return new org.traincontrol.marklin.MarklinRoute(null, "Opened", 4243, commands, 0,
+            org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /** Types a target into a command's cell and commits it, as closing its editor does (through the model). */
+    private static void target(final javax.swing.JTable table, final int row, final String typed) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() -> table.getModel().setValueAt(typed, row, COMMAND_TARGET));
+    }
+
+    /** The button in the commands' section saying this. */
+    private static javax.swing.AbstractButton commandButton(final org.traincontrol.gui.RouteEditorFrame frame,
+        String key)
+    {
+        javax.swing.AbstractButton out = support.Components.withText(commandSection(frame), I18n.t(key));
+
+        assertNotNull(out, "the commands' section has no " + key);
+
+        return out;
+    }
+
+    private static void pressOnTheCommands(final org.traincontrol.gui.RouteEditorFrame frame, String key)
+    {
+        javax.swing.AbstractButton button = commandButton(frame, key);
+
+        assertTrue(support.Components.onTheEventThread(button::isEnabled), key + " is grayed on the commands");
+
+        support.Components.press(button);
+        support.Components.settle();
+    }
+
+    /** The commands' Undo and Redo, each + when it can be pressed and - when grayed: "+Undo -Redo". */
+    private static String undoAndRedo(final org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        javax.swing.AbstractButton undo = commandButton(frame, "route.ui.menuUndo");
+        javax.swing.AbstractButton redo = commandButton(frame, "route.ui.menuRedo");
+
+        return support.Components.onTheEventThread(() -> (undo.isEnabled() ? "+" : "-") + "Undo "
+            + (redo.isEnabled() ? "+" : "-") + "Redo");
+    }
+
+    /** What a flat button looks like: its words' font, its style, its icons' size, and whether it takes the keyboard. */
+    private static String lookOf(final javax.swing.AbstractButton button)
+    {
+        return support.Components.onTheEventThread(() -> button.getFont() + " "
+            + button.getClientProperty("JButton.buttonType") + " " + button.getIcon().getIconWidth() + "x"
+            + button.getIcon().getIconHeight() + " grayed " + (button.getDisabledIcon() != null) + " focusable "
+            + button.isFocusable());
+    }
+
     /** An outline, these outline rows selected, Duplicate chosen on the last: the outline it leaves. */
     private static String duplicated(org.traincontrol.gui.RouteEditorFrame frame, javax.swing.JTable table,
         String outline, int first, int last) throws Exception
@@ -3942,9 +4332,15 @@ public class testRouteEditorValidation
     /** A claim on a route editor of its own, its menus and the window closed after. */
     private static void inAnEditor(EditorClaim claim) throws Exception
     {
+        inAnEditor(null, claim);
+    }
+
+    /** The same, on an editor opened on a route. */
+    private static void inAnEditor(org.traincontrol.base.Route route, EditorClaim claim) throws Exception
+    {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorFrame frame = open(route);
 
         try
         {
@@ -3963,8 +4359,10 @@ public class testRouteEditorValidation
         void run(org.traincontrol.gui.RouteEditorFrame frame) throws Exception;
     }
 
+    private static final int COMMAND_TARGET = 3;
     private static final int COMMAND_TRASH = 8;
     private static final int COMMAND_COPY = 9;
+    private static final int CONDITION_COPY = 6;
 
     /** The frame with accessory commands at these addresses, packed and showing; its command table. */
     private static javax.swing.JTable showCommands(org.traincontrol.gui.RouteEditorFrame frame, int... addresses)
@@ -4037,11 +4435,27 @@ public class testRouteEditorValidation
     /** Whether a button of the route editor, found by its text, can be pressed. */
     private static boolean enabled(final org.traincontrol.gui.RouteEditorFrame frame, String key)
     {
-        javax.swing.AbstractButton button = support.Components.withText(frame, I18n.t(key));
+        javax.swing.AbstractButton button = notOnTheCommands(frame, key);
 
         assertNotNull(button, "the route editor has no button " + key);
 
         return support.Components.onTheEventThread(button::isEnabled);
+    }
+
+    /** The button saying this outside the commands' section: the conditions' Undo, not the commands'. */
+    private static javax.swing.AbstractButton notOnTheCommands(final org.traincontrol.gui.RouteEditorFrame frame,
+        String key)
+    {
+        final java.awt.Container commands = commandSection(frame);
+
+        return support.Components.find(frame, javax.swing.AbstractButton.class, b -> I18n.t(key).equals(b.getText())
+            && !commands.isAncestorOf(b));
+    }
+
+    /** The commands' section of the window: their frame, the row under it, and Capture. */
+    private static java.awt.Container commandSection(final org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        return support.Components.onTheEventThread(() -> section(table(frame, "CommandTable"), conditionTable(frame)));
     }
 
     /**

@@ -51,6 +51,44 @@ public final class Keys
     }
 
     /**
+     * A key with modifiers, pressed as the keyboard sends it: with its extended key code.  {@link #press} leaves that
+     * code 0, and on a table that has the focus, Swing looks the code-0 stroke up first, finds no binding, and starts
+     * editing the selected cell: a Ctrl shortcut then never runs, and after Alt+Up a cell editor is left open that the
+     * next button commits as an edit of its own.
+     */
+    public static void chord(final Component on, final int code, final int modifiers) throws Exception
+    {
+        final java.lang.reflect.Field extended = KeyEvent.class.getDeclaredField("extendedKeyCode");
+
+        extended.setAccessible(true);
+
+        Components.onTheEventThread(() ->
+        {
+            long now = System.currentTimeMillis();
+
+            for (int id : new int[]{KeyEvent.KEY_PRESSED, KeyEvent.KEY_RELEASED})
+            {
+                KeyEvent key = new KeyEvent(on, id, now, modifiers, code, KeyEvent.CHAR_UNDEFINED);
+
+                try
+                {
+                    extended.setLong(key, code);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                on.dispatchEvent(key);
+            }
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /**
      * Where this window sends the keyboard: the component that has it, or will have it once the window is focused (a
      * test window often is not); null when there is nowhere to send it.
      */

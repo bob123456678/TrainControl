@@ -243,24 +243,6 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 "the row is marked for something Save does not refuse, so the mark and the gate"
                 + " disagree.  What Save said: " + frame.problemsForTest());
 
-            // AND THE + ROW UNDER IT SAYS NOTHING: this renderer is one recycled component, so it wore the refusal of
-            // the row drawn before it.
-            final int plus = frame.commandRowCountForTest();
-            final String[] onPlus = new String[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                frame.commandCellForTest(0, 3);
-
-                java.awt.Component cell = frame.commandCellForTest(plus, 3);
-
-                onPlus[0] = cell instanceof javax.swing.JComponent
-                    ? ((javax.swing.JComponent) cell).getToolTipText() : null;
-            });
-
-            assertNull(onPlus[0], "the + row, which adds a command, carries the refusal of the row drawn"
-                + " before it: " + onPlus[0] + " (GUI-C2)");
-
             // A ROW NOBODY HAS FILLED IN YET IS NOT MARKED.  It is added empty, Save refuses it, and
             // marking on that answer alone painted every new row red before a character was typed.
             SwingUtilities.invokeAndWait(() ->
@@ -269,7 +251,24 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 frame.clearCommandSelectionForTest();
             });
 
-            int added = frame.commandRowCountForTest() - 1;
+            final int added = frame.commandRowCountForTest() - 1;
+
+            // AND IT SAYS NOTHING: this renderer is one recycled component, so it wore the refusal of the row drawn
+            // before it.
+            final String[] onAdded = new String[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame.commandCellForTest(0, 3);
+
+                java.awt.Component cell = frame.commandCellForTest(added, 3);
+
+                onAdded[0] = cell instanceof javax.swing.JComponent
+                    ? ((javax.swing.JComponent) cell).getToolTipText() : null;
+            });
+
+            assertNull(onAdded[0], "the row under it, added empty, carries the refusal of the row drawn"
+                + " before it: " + onAdded[0] + " (GUI-C2)");
 
             assertNotEquals(inkOf(frame, added), RouteEditorFrame.refusedInkForTest(),
                 "a command row is red the moment it is added, before anybody has typed into it - a"

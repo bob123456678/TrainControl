@@ -127,7 +127,7 @@ public class testRouteEditorLocked
     /**
      * No cell of a locked route's tables will accept a keystroke.  The tree walks above miss a cell editor, which is
      * not in the tree until the cell is being edited; the gate is `isCellEditable` on the table model, asked here for
-     * every cell, including the adding row.
+     * every cell.
      *
      * MUTATION: delete `if (locked) return false;` from the command table model's `isCellEditable` and this fails on
      * "row 0 column 3".
@@ -201,8 +201,8 @@ public class testRouteEditorLocked
     }
 
     /**
-     * A locked route draws none of the row marks, and an ordinary one draws them: `offersToAddCommands` asks about the
-     * plus, this about the other three, by looking for the mark strings in the tables.
+     * A locked route draws none of the row marks, and an ordinary one draws them: `offersToAddCommands` asks about Add
+     * Command, this about the marks, by looking for the mark strings in the tables.
      *
      * MUTATION: drop the lock from the drawing branch (`if (column == DELETE) return DELETE_ROW; if (column ==
      * DUPLICATE) return COPY_ROW;`); the editability gate is a different branch and does not move these.
@@ -338,9 +338,9 @@ public class testRouteEditorLocked
     }
 
     /**
-     * addTo's own guard refuses even though nothing can click its way there: a locked table's adding row never shows
-     * ADD_HERE, so the mouse listener never fires and clickCommandMarkForTest has no case for it.  The private method
-     * is called directly, standing in for anything added later that forgets to ask.
+     * addTo's own guard refuses even though nothing can click its way there: a locked route's Add Command is hidden,
+     * and clickCommandMarkForTest has no case for it.  The private method is called directly, standing in for anything
+     * added later that forgets to ask.
      *
      * MUTATION: delete "if (locked) return;" from addTo.
      */
@@ -541,6 +541,43 @@ public class testRouteEditorLocked
                 : "a drag on an ordinary route's handle moved nothing, so the locked half proves nothing");
 
             offersAMenuUnlessOwned(commands, new java.awt.Point(80, 12), owned, "commands", "");
+        });
+    }
+
+    /**
+     * FR-163: a locked route's commands answer none of the keys: Alt+Down moves nothing, Ctrl+Z takes nothing back and
+     * Delete removes nothing, and there is no Undo under them; an ordinary route's do all three and show it.
+     *
+     * MUTATION: in `HandledTable.deleteSelected`, drop `!handlesWork() ||`, and Delete removes a locked route's command.
+     */
+    @Test
+    public void testALockedRoutesCommandsAnswerNoKeys() throws Exception
+    {
+        onBothRoutes(true, "CommandTable", "command table", (frame, commands, owned) ->
+        {
+            StringBuilder seen = new StringBuilder();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> commands.setRowSelectionInterval(0, 0));
+            support.Keys.chord(commands, java.awt.event.KeyEvent.VK_DOWN, java.awt.event.InputEvent.ALT_DOWN_MASK);
+            seen.append(frame.commandsAsSaved().get(0).getAddress());
+
+            support.Keys.chord(commands, java.awt.event.KeyEvent.VK_Z, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+            seen.append(" ").append(frame.commandsAsSaved().get(0).getAddress());
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> commands.setRowSelectionInterval(0, 0));
+            support.Keys.press(commands, java.awt.event.KeyEvent.VK_DELETE);
+            seen.append(" ").append(frame.commandsAsSaved().size());
+
+            // In the commands' frame, under their table.
+            javax.swing.AbstractButton undo = support.Components.withText(javax.swing.SwingUtilities.getAncestorOfClass(
+                javax.swing.JScrollPane.class, commands).getParent(), org.traincontrol.util.I18n.t("route.ui.menuUndo"));
+
+            seen.append(undo != null && support.Components.onTheEventThread(undo::isShowing) ? " Undo" : " no Undo");
+
+            assertEquals(seen.toString(), owned ? "80 80 2 no Undo" : "81 80 1 Undo", owned
+                ? "Alt+Down, Ctrl+Z and Delete on a route belonging to the Central Station: the first address, then the"
+                    + " count, and whether an Undo shows"
+                : "the same keys on an ordinary route, or the locked half proves nothing");
         });
     }
 

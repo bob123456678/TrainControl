@@ -139,6 +139,12 @@ public class RouteEditorFrame extends JFrame
     private JButton undoButton;
     private JButton redoButton;
 
+    /** The row under the commands (FR-163): Add Command, then Undo and Redo. */
+    private JPanel commandActions;
+    private JButton addCommandButton;
+    private JButton commandUndoButton;
+    private JButton commandRedoButton;
+
     /** Name, Automatically Fire, S88 and Trigger: the line the window is never narrower than (OB-396). */
     private JPanel topLine;
 
@@ -375,6 +381,8 @@ public class RouteEditorFrame extends JFrame
 
         JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands);
 
+        footed(commandSection, commandActions());
+
         // Below the rows, the commands' menu offers Add Command (FR-162).
         final java.awt.Component belowCommands = commands.getParent();
 
@@ -411,20 +419,7 @@ public class RouteEditorFrame extends JFrame
         conditionScroll.setViewportView(conditionArea());
         conditionScroll.setColumnHeaderView(conditions.getTableHeader());
 
-        // The row of actions at the foot of the conditions' frame, inside its border: it stays put as conditions come
-        // and go, and in sight when they scroll.
-        JPanel framed = new JPanel(new BorderLayout());
-        JPanel foot = conditionActions();
-
-        framed.setBorder(conditionScroll.getBorder());
-        conditionScroll.setBorder(BorderFactory.createEmptyBorder());
-        foot.setOpaque(true);
-        foot.setBackground(java.awt.Color.WHITE);
-        foot.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(0xE0, 0xE0, 0xE0)));
-
-        framed.add(conditionScroll, BorderLayout.CENTER);
-        framed.add(foot, BorderLayout.SOUTH);
-        conditionSection.add(framed, BorderLayout.CENTER);
+        footed(conditionSection, conditionActions());
 
         readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
         readsAs.setForeground(new java.awt.Color(90, 90, 90));
@@ -860,7 +855,7 @@ public class RouteEditorFrame extends JFrame
 
         panel.add(scroll, BorderLayout.CENTER);
 
-        // No button row: add, remove and reorder are marks in the rows, so nothing depends on which row is selected.
+        // The section's own controls, under its frame: the table's actions are in `footed`'s row, inside it.
         JPanel below = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
         below.setOpaque(false);
@@ -951,9 +946,6 @@ public class RouteEditorFrame extends JFrame
      */
     private JPanel conditionActions()
     {
-        conditionActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
-        conditionActions.setOpaque(false);
-
         java.awt.Color gray = new java.awt.Color(175, 175, 175);
 
         addConditionButton = flatButton("route.ui.menuAddCondition", RowIcons.plus(16), RowIcons.plus(16, gray),
@@ -968,26 +960,96 @@ public class RouteEditorFrame extends JFrame
         splitButton = flatButton("route.ui.menuSplitHere", RowIcons.split(16), RowIcons.split(16, gray),
             "route.ui.tooltipSplitHere", conditions::splitHere);
 
-        java.awt.Color ink = new java.awt.Color(110, 110, 110);
+        undoButton = undoOrRedo(true, "route.ui.tooltipUndo", conditions);
+        redoButton = undoOrRedo(false, "route.ui.tooltipRedo", conditions);
 
-        undoButton = flatButton("route.ui.menuUndo", RowIcons.undo(16, ink), RowIcons.undo(16, gray),
-            "route.ui.tooltipUndo", conditions::undo);
-
-        redoButton = flatButton("route.ui.menuRedo", RowIcons.redo(16, ink), RowIcons.redo(16, gray),
-            "route.ui.tooltipRedo", conditions::redo);
-
-        conditionActions.add(addConditionButton);
-        conditionActions.add(divider());
-        conditionActions.add(groupButton);
-        conditionActions.add(ungroupButton);
-        conditionActions.add(splitButton);
-        conditionActions.add(divider());
-        conditionActions.add(undoButton);
-        conditionActions.add(redoButton);
+        conditionActions = actionRow(new JButton[]{addConditionButton},
+            new JButton[]{groupButton, ungroupButton, splitButton}, new JButton[]{undoButton, redoButton});
 
         refreshConditionActions();
 
         return conditionActions;
+    }
+
+    /** One table's Undo (true) or Redo button (FR-161, FR-163), its tooltip naming what Undo takes back. */
+    private JButton undoOrRedo(boolean undo, String tip, HandledTable table)
+    {
+        java.awt.Color ink = new java.awt.Color(110, 110, 110);
+        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+
+        return flatButton(undo ? "route.ui.menuUndo" : "route.ui.menuRedo",
+            undo ? RowIcons.undo(16, ink) : RowIcons.redo(16, ink),
+            undo ? RowIcons.undo(16, gray) : RowIcons.redo(16, gray), tip, undo ? table::undo : table::redo);
+    }
+
+    /** Add Command, a divider, Undo and Redo (FR-163): the commands' row, as the conditions' is. */
+    private JPanel commandActions()
+    {
+        addCommandButton = flatButton("route.ui.menuAddCommand", RowIcons.plus(16),
+            RowIcons.plus(16, new java.awt.Color(175, 175, 175)), "route.ui.tooltipAddCommand", () -> addTo(commands));
+
+        commandUndoButton = undoOrRedo(true, "route.ui.tooltipUndoCommands", commands);
+        commandRedoButton = undoOrRedo(false, "route.ui.tooltipRedo", commands);
+
+        commandActions = actionRow(new JButton[]{addCommandButton}, new JButton[]{commandUndoButton, commandRedoButton});
+
+        refreshCommandActions();
+
+        return commandActions;
+    }
+
+    private void refreshCommandActions()
+    {
+        if (addCommandButton == null) return;
+
+        refreshActions(commandActions, !locked, addCommandButton, commandUndoButton, commandRedoButton, commands);
+    }
+
+    /** A table's flat actions (OB-396, FR-163): each group of buttons, a divider between groups. */
+    private static JPanel actionRow(JButton[]... groups)
+    {
+        JPanel out = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+
+        out.setOpaque(false);
+
+        for (JButton[] group : groups)
+        {
+            if (out.getComponentCount() > 0) out.add(divider());
+
+            for (JButton each : group) out.add(each);
+        }
+
+        return out;
+    }
+
+    /**
+     * A row of actions at the foot of a section's frame, inside its border, under the table: it stays put as rows come
+     * and go, and in sight when they scroll.
+     */
+    private static void footed(JPanel section, JPanel foot)
+    {
+        JScrollPane scroll = (JScrollPane) ((BorderLayout) section.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        JPanel framed = new JPanel(new BorderLayout());
+
+        framed.setBorder(scroll.getBorder());
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        foot.setOpaque(true);
+        foot.setBackground(java.awt.Color.WHITE);
+        foot.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(0xE0, 0xE0, 0xE0)));
+
+        framed.add(scroll, BorderLayout.CENTER);
+        framed.add(foot, BorderLayout.SOUTH);
+        section.add(framed, BorderLayout.CENTER);
+    }
+
+    /** Hides a table's actions where its rows cannot change, and grays Add, Undo and Redo as they apply. */
+    private static void refreshActions(JPanel row, boolean editable, JButton add, JButton undo, JButton redo,
+        HandledTable table)
+    {
+        row.setVisible(editable);
+        add.setEnabled(editable);
+        undo.setEnabled(table.canUndo());
+        redo.setEnabled(table.canRedo());
     }
 
     /** A thin upright line between the condition row's kinds of action. */
@@ -1016,6 +1078,7 @@ public class RouteEditorFrame extends JFrame
         out.addActionListener(e ->
         {
             if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
+            if (commands.isEditing()) commands.getCellEditor().stopCellEditing();
 
             action.run();
         });
@@ -1028,15 +1091,11 @@ public class RouteEditorFrame extends JFrame
     {
         if (addConditionButton == null) return;
 
-        boolean editable = !locked && conditionsEditable;
-
-        conditionActions.setVisible(editable);
-        addConditionButton.setEnabled(editable);
+        refreshActions(conditionActions, !locked && conditionsEditable, addConditionButton, undoButton, redoButton,
+            conditions);
         groupButton.setEnabled(conditions.canGroupSelected());
         ungroupButton.setEnabled(conditions.canUngroupSelected());
         splitButton.setEnabled(conditions.canSplitHere());
-        undoButton.setEnabled(conditions.canUndo());
-        redoButton.setEnabled(conditions.canRedo());
     }
 
     /**
@@ -1357,6 +1416,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         conditions.forget();
+        commands.forget();
 
         commands.fireTableDataChanged();
         conditions.fireTableDataChanged();
@@ -1602,7 +1662,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * @return how many rows the command table holds, the plus not counted
+     * @return how many rows the command table holds
      */
     public int commandRowCountForTest()
     {
@@ -1680,7 +1740,7 @@ public class RouteEditorFrame extends JFrame
         conditions.getModel().setValueAt(CommandRow.labelFor(kind), conditions.lineOf(line), ConditionTable.KIND);
     }
 
-    /** For tests: adds an empty command row, the way the plus at the bottom of the table does. */
+    /** For tests: adds an empty command row, the way Add Command does. */
     public void addCommandRowForTest()
     {
         commands.addRow();
@@ -1730,7 +1790,7 @@ public class RouteEditorFrame extends JFrame
      * group's caption whatever the column.
      *
      * @param line which outline row
-     * @param column which column: handle 0, Kind 1, Name/Address 2, Setting 3, Protocol 4, trash 5
+     * @param column which column: handle 0, Kind 1, Name/Address 2, Setting 3, Protocol 4, trash 5, copy 6
      * @return the rendered label
      */
     public JLabel conditionCellForTest(int line, int column)
@@ -1761,19 +1821,24 @@ public class RouteEditorFrame extends JFrame
     public static String markCopy() { return COPY_ROW; }
 
     /**
-     * Whether the command list is showing its plus: a painted value, not a button, so there is no component to ask.
+     * Whether the command list offers Add Command: showing and able to be pressed.
      *
      * @return true when there is a way to add a command
      */
     public boolean offersToAddCommands()
     {
-        return ADD_HERE.equals(commands.getValueAt(commands.getRowCount() - 1, HandledTable.HANDLE));
+        return offers(commandActions, addCommandButton);
     }
 
     /** The same question of the condition list: whether its Add Condition is showing and can be pressed. */
     public boolean offersToAddConditions()
     {
-        return conditionActions != null && conditionActions.isVisible() && addConditionButton.isEnabled();
+        return offers(conditionActions, addConditionButton);
+    }
+
+    private static boolean offers(JPanel row, JButton add)
+    {
+        return row != null && row.isVisible() && add.isEnabled();
     }
 
     /** How many conditions the list holds, so a test can see that a capture arrived. */
@@ -1899,7 +1964,6 @@ public class RouteEditorFrame extends JFrame
     private static final String MOVE_DOWN = "down";
     private static final String DELETE_ROW = "delete";
     private static final String COPY_ROW = "copy";
-    private static final String ADD_HERE = "add";
 
     /**
      * Squeezes a column down to the width of the mark in it.
@@ -1921,10 +1985,9 @@ public class RouteEditorFrame extends JFrame
      * cells, because this table reorders and deletes rows constantly and would have to keep live components in step.
      *
      * @param table the table
-     * @param addOn the column the plus sits under on the last row, or -1
      * @param marked the columns that hold a mark
      */
-    private void actOnRowMarks(final HandledTable table, final int addOn, final int... marked)
+    private void actOnRowMarks(final HandledTable table, final int... marked)
     {
         final int mark = Math.max(12, table.getRowHeight() - 10);
 
@@ -1973,7 +2036,7 @@ public class RouteEditorFrame extends JFrame
 
                 boolean live = row >= 0 && column >= 0
                     && !"".equals(String.valueOf(table.getValueAt(row, column)))
-                    && ((row >= rowsOf(table) && column == addOn) || isAmong(column, marked));
+                    && isAmong(column, marked);
 
                 table.setCursor(java.awt.Cursor.getPredefinedCursor(
                     live ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
@@ -2064,9 +2127,6 @@ public class RouteEditorFrame extends JFrame
                     return unshaded(out, which, selected);
                 }
 
-                // So is the + row: it is the button that makes a row, and shading it would read as a row switched off.
-                if (which instanceof CommandTable && row >= which.getRowCount() - 1) return unshaded(out, which, selected);
-
                 // Why Save would refuse this row, said as it is typed (OB-246): the target column offers locomotive
                 // names that Save refuses, so the row is marked and the choice stays.  Set on every cell, never
                 // skipped: the recycled component would otherwise wear the tooltip of the marked row drawn before it.
@@ -2117,7 +2177,6 @@ public class RouteEditorFrame extends JFrame
 
         if (DELETE_ROW.equals(value)) deleteRow(table, row);
         else if (COPY_ROW.equals(value)) duplicateRow(table, row);
-        else if (ADD_HERE.equals(value)) addTo(table);
     }
 
     /**
@@ -2167,11 +2226,13 @@ public class RouteEditorFrame extends JFrame
             menu.addSeparator();
             menu.add(menuItem("route.ui.menuMoveUp", table.canShiftChosen(-1), () -> table.shiftChosen(-1)));
             menu.add(menuItem("route.ui.menuMoveDown", table.canShiftChosen(1), () -> table.shiftChosen(1)));
-            menu.add(menuItem("route.ui.menuDuplicate", !table.chosenRows().isEmpty(),
-                () -> table.duplicateRows(table.chosenRows())));
 
             table.addOwnItems(menu);
 
+            // Between dividers of its own, above Delete (FR-163).
+            menu.addSeparator();
+            menu.add(menuItem("route.ui.menuDuplicate", !table.chosenRows().isEmpty(),
+                () -> table.duplicateRows(table.chosenRows())));
             menu.addSeparator();
             menu.add(menuItem("ui.delete", true, () ->
             {
@@ -2190,11 +2251,6 @@ public class RouteEditorFrame extends JFrame
         item.addActionListener(e -> action.run());
 
         return item;
-    }
-
-    private int rowsOf(JTable table)
-    {
-        return table == commands ? commands.rows.size() : conditions.rows.size();
     }
 
     /**
@@ -2217,15 +2273,13 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * Puts a copy of a row directly under it: a route's order is its meaning, and the copy is nearly always wanted
-     * next.  On a row in a selection, of the selection (FR-162).
+     * next.  On a row in a selection, of the selection (FR-162); a condition into its own group (FR-163).
      */
-    private void duplicateRow(JTable table, int row)
+    private void duplicateRow(HandledTable table, int line)
     {
-        if (locked || table != commands) return;
+        if (locked) return;
 
-        if (row < 0 || row >= commands.rows.size()) return;
-
-        commands.duplicateLines(row);
+        table.duplicateLines(line);
     }
 
     private void addTo(JTable table)
@@ -2282,6 +2336,7 @@ public class RouteEditorFrame extends JFrame
         if (saveButton != null) saveButton.setEnabled(false);
 
         refreshConditionActions();
+        refreshCommandActions();
 
         readsAs.setText(I18n.t("route.ui.frameLockedExplains"));
         unasked.setVisible(false);
@@ -3207,6 +3262,73 @@ public class RouteEditorFrame extends JFrame
         {
             return kept == null ? "" : kept.toLine(null);
         }
+
+        /** Whether this says what another entry says: a cell left as it was is no edit (FR-163). */
+        boolean sameAs(Entry other)
+        {
+            if (row == null || other.row == null) return row == other.row && java.util.Objects.equals(kept, other.kept);
+
+            return row.getKind() == other.row.getKind() && row.getDelay() == other.row.getDelay()
+                && row.getProtocol() == other.row.getProtocol()
+                && java.util.Objects.equals(row.getTarget(), other.row.getTarget())
+                && java.util.Objects.equals(row.getSetting(), other.row.getSetting());
+        }
+    }
+
+    /** One table's Undo and Redo (FR-161, FR-163): its rows before each edit, the latest first, a hundred kept. */
+    private static final class History<T>
+    {
+        private final java.util.Deque<List<T>> undoable = new java.util.ArrayDeque<>();
+
+        /** The rows before each Undo, for Redo; a new edit clears it. */
+        private final java.util.Deque<List<T>> redoable = new java.util.ArrayDeque<>();
+
+        /** Set while Undo or Redo puts rows back, so that is not itself an edit to undo. */
+        private boolean restoring;
+
+        void remember(List<T> before)
+        {
+            if (restoring) return;
+
+            undoable.push(new ArrayList<>(before));
+
+            if (undoable.size() > 100) undoable.removeLast();
+
+            redoable.clear();
+        }
+
+        void forget()
+        {
+            undoable.clear();
+            redoable.clear();
+        }
+
+        boolean has(boolean undo)
+        {
+            return !(undo ? undoable : redoable).isEmpty();
+        }
+
+        /** Hands the rows on top of one side to `putBack`, keeping the rows `now` on the other side. */
+        void step(boolean undo, List<T> now, java.util.function.Consumer<List<T>> putBack)
+        {
+            java.util.Deque<List<T>> from = undo ? undoable : redoable;
+
+            if (from.isEmpty()) return;
+
+            List<T> back = from.pop();
+
+            (undo ? redoable : undoable).push(new ArrayList<>(now));
+            restoring = true;
+
+            try
+            {
+                putBack.accept(back);
+            }
+            finally
+            {
+                restoring = false;
+            }
+        }
     }
 
     /**
@@ -3270,6 +3392,62 @@ public class RouteEditorFrame extends JFrame
         /** Copies these rows directly below the last of them, as one run in their order, and selects the copies. */
         abstract void duplicateRows(java.util.SortedSet<Integer> chosen);
 
+        /** @return this table's own Undo and Redo, which no other table's edits reach */
+        abstract History<?> history();
+
+        /** Puts back the rows Undo (true) or Redo holds next, without recording that as an edit, and selects them. */
+        abstract void step(boolean undo);
+
+        boolean canUndo()
+        {
+            return handlesWork() && history().has(true);
+        }
+
+        boolean canRedo()
+        {
+            return handlesWork() && history().has(false);
+        }
+
+        void undo()
+        {
+            if (canUndo()) step(true);
+        }
+
+        void redo()
+        {
+            if (canRedo()) step(false);
+        }
+
+        /** A route loaded starts with nothing to undo. */
+        void forget()
+        {
+            history().forget();
+        }
+
+        /** The Delete key (MT-868): every selected row goes, as the menu's Delete takes them. */
+        void deleteSelected()
+        {
+            if (!handlesWork() || chosenRows().isEmpty()) return;
+
+            removeLines(lineOf(chosenRows().first()));
+        }
+
+        /** A key the table answers while it or its cell editor has the keyboard; an open edit is committed first. */
+        void keys(String stroke, String name, Runnable action)
+        {
+            getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(javax.swing.KeyStroke.getKeyStroke(stroke), name);
+            getActionMap().put(name, new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (isEditing()) getCellEditor().stopCellEditing();
+
+                    action.run();
+                }
+            });
+        }
+
         abstract void removeAt(int row);
 
         /** Takes these rows out as one edit, then selects the row nearest a line, unless that is -1. */
@@ -3281,7 +3459,7 @@ public class RouteEditorFrame extends JFrame
             clearSelection();
         }
 
-        /** The table's own items in its menu, after Duplicate. */
+        /** The table's own items in its menu, after Move Down. */
         void addOwnItems(javax.swing.JPopupMenu menu)
         {
         }
@@ -3340,7 +3518,7 @@ public class RouteEditorFrame extends JFrame
             repaint();
         }
 
-        /** The handle column, as narrow as its grip; on an adding row, the plus. */
+        /** The handle column, as narrow as its grip. */
         void handleColumn()
         {
             TableColumn handle = getColumnModel().getColumn(HANDLE);
@@ -3358,14 +3536,13 @@ public class RouteEditorFrame extends JFrame
                     JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, line, column);
 
                     boolean movable = rowOf(line) >= 0 && handlesWork();
-                    boolean adds = ADD_HERE.equals(value);
 
                     out.setOpaque(true);
-                    out.setBackground(adds ? which.getBackground() : HANDLE_GROUND);
+                    out.setBackground(HANDLE_GROUND);
                     out.setHorizontalAlignment(JLabel.CENTER);
-                    out.setVerticalAlignment(adds ? JLabel.CENTER : JLabel.TOP);
-                    out.setIcon(movable ? RowIcons.grip(LINE) : adds ? RowIcons.plus(LINE - 10) : null);
-                    out.setBorder(adds ? null : BorderFactory.createCompoundBorder(
+                    out.setVerticalAlignment(JLabel.TOP);
+                    out.setIcon(movable ? RowIcons.grip(LINE) : null);
+                    out.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 0, 0, 1, HANDLE_EDGE),
                         BorderFactory.createMatteBorder(0, isMarked(line) ? 3 : 0, 0, 0, CHANGED_MARK)));
                     out.setToolTipText(movable ? handleTip() : null);
@@ -3375,9 +3552,28 @@ public class RouteEditorFrame extends JFrame
             });
         }
 
-        /** The right-click menu and the handles' drag: after the table's own listener, so a press has selected first. */
+        /**
+         * The right-click menu and the handles' drag, after the table's own listener so a press has selected first; and
+         * the keys both tables answer (FR-163).
+         */
         void listen()
         {
+            keys("alt UP", "moveUp", () -> shiftChosen(-1));
+            keys("alt DOWN", "moveDown", () -> shiftChosen(1));
+            keys("ctrl Z", "undo", this::undo);
+            keys("ctrl Y", "redo", this::redo);
+
+            // On the table itself, not its editor: Delete in a cell being edited is the cell's own.
+            getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke("DELETE"), "deleteSelected");
+            getActionMap().put("deleteSelected", new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (!isEditing()) deleteSelected();
+                }
+            });
+
             addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
             {
                 @Override
@@ -3562,9 +3758,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getRowCount()
             {
-                // One more than there are rows: the last is where a command is added, part of the table so adding
-                // happens where the row will land.
-                return rows.size() + 1;
+                return rows.size();
             }
 
             @Override
@@ -3597,12 +3791,6 @@ public class RouteEditorFrame extends JFrame
             @Override
             public Object getValueAt(int row, int column)
             {
-                // The adding row: a plus where the handles are, and nothing else
-                if (row >= rows.size())
-                {
-                    return column == HANDLE && !locked ? ADD_HERE : "";
-                }
-
                 Entry entry = rows.get(row);
 
                 // No marks on a route that is not ours to change: a mark that declines reads as a fault.
@@ -3659,7 +3847,7 @@ public class RouteEditorFrame extends JFrame
             {
                 if (locked) return false;
 
-                // The adding row, and the columns that are pressed or read rather than typed in
+                // The columns that are pressed or read rather than typed in
                 if (row >= rows.size()) return false;
 
                 if (column == HANDLE || column == DELETE || column == DUPLICATE || column == POSITION)
@@ -3761,6 +3949,7 @@ public class RouteEditorFrame extends JFrame
                 // Judged as it is typed (OB-246), and every row: a locomotive command's target can make a later row
                 // wrong, because problemsWith asks the layout.
                 settle();
+                noteEdit();
 
                 fireTableRowsUpdated(row, row);
 
@@ -3815,7 +4004,7 @@ public class RouteEditorFrame extends JFrame
             getColumnModel().getColumn(DELAY).setPreferredWidth(70);
 
             // Both marks in one call: a second would register a second mouse listener, and both would act on every click.
-            actOnRowMarks(this, HANDLE, DELETE, DUPLICATE);
+            actOnRowMarks(this, DELETE, DUPLICATE);
 
             // Kept commands are drawn grayed, so "you cannot edit this one" is something the table
             // says rather than something the user discovers by clicking
@@ -3827,24 +4016,6 @@ public class RouteEditorFrame extends JFrame
                 {
                     java.awt.Component c = super.getTableCellRendererComponent(table, value, selected,
                         focused, row, column);
-
-                    // The row at the bottom is left alone (MT-011): it is the button that makes a row, and
-                    // greyWhatCannotBeEdited exempts it from the wash, so this renderer, running inside that one, must
-                    // too.
-                    if (row >= rows.size())
-                    {
-                        // Set, not skipped: the renderer is one shared component carrying whatever the cell above left,
-                        // and super latches setForeground/setBackground into the next row.
-                        c.setEnabled(true);
-
-                        if (!selected)
-                        {
-                            c.setForeground(table.getForeground());
-                            c.setBackground(table.getBackground());
-                        }
-
-                        return c;
-                    }
 
                     // Both kinds of "you cannot type here": a kept command row, and a cell whose kind has no such thing
                     // (a stop has no address).
@@ -3866,7 +4037,7 @@ public class RouteEditorFrame extends JFrame
             });
 
             // Wrapped around the renderer above, after it, because setDefaultRenderer replaces what was set: gray text
-            // in an empty cell shows nothing, so it adds a wash and exempts the + row.
+            // in an empty cell shows nothing, so it adds a wash.
             greyWhatCannotBeEdited(this);
 
             listen();
@@ -4220,7 +4391,69 @@ public class RouteEditorFrame extends JFrame
         void fireTableDataChanged()
         {
             settle();
+            noteEdit();
             model.fireTableDataChanged();
+        }
+
+        /** The rows before each edit, for Undo (FR-163). */
+        private final History<Entry> history = new History<>();
+
+        /** The rows as the last edit left them: every edit tells the table, so what it told last is what Undo restores. */
+        private List<Entry> shown = new ArrayList<>();
+
+        @Override
+        History<?> history()
+        {
+            return history;
+        }
+
+        /** Keeps the rows as they were before an edit that changed them, so Undo can put them back. */
+        private void noteEdit()
+        {
+            boolean same = shown.size() == rows.size();
+
+            for (int at = 0; same && at < rows.size(); at++) same = shown.get(at).sameAs(rows.get(at));
+
+            if (!same) history.remember(shown);
+
+            shown = new ArrayList<>(rows);
+            refreshCommandActions();
+        }
+
+        @Override
+        void forget()
+        {
+            super.forget();
+
+            shown = new ArrayList<>(rows);
+            refreshCommandActions();
+        }
+
+        /** The rows put back that the rows replaced did not hold are selected; where none, those that moved. */
+        @Override
+        void step(boolean undo)
+        {
+            history.step(undo, rows, back ->
+            {
+                java.util.Set<Entry> before = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+                List<Entry> was = new ArrayList<>(rows);
+
+                before.addAll(rows);
+                rows.clear();
+                rows.addAll(back);
+                fireTableDataChanged();
+
+                for (int pass = 0; pass < 2 && getSelectedRowCount() == 0; pass++)
+                {
+                    for (int at = 0; at < rows.size(); at++)
+                    {
+                        boolean differs = pass == 0 ? !before.contains(rows.get(at))
+                            : at >= was.size() || was.get(at) != rows.get(at);
+
+                        if (differs) addRowSelectionInterval(at, at);
+                    }
+                }
+            });
         }
     }
 
@@ -4317,6 +4550,7 @@ public class RouteEditorFrame extends JFrame
         static final int SETTING = 3;
         static final int PROTOCOL = 4;
         static final int TRASH = 5;
+        static final int COPY = 6;
 
         /** A line where groups end is taller than LINE by GAP for each, for their bottom edges. */
         private static final int GAP = 4;
@@ -4388,7 +4622,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         boolean isMark(int column)
         {
-            return column == TRASH;
+            return column == TRASH || column == COPY;
         }
 
         @Override
@@ -4548,7 +4782,7 @@ public class RouteEditorFrame extends JFrame
             @Override
             public int getColumnCount()
             {
-                return 6;
+                return 7;
             }
 
             @Override
@@ -4572,6 +4806,7 @@ public class RouteEditorFrame extends JFrame
                 if (at < 0 || column == HANDLE) return "";
 
                 if (column == TRASH) return conditionsEditable ? DELETE_ROW : "";
+                if (column == COPY) return conditionsEditable ? COPY_ROW : "";
 
                 ConditionOutline.Row row = rows.get(at);
                 CommandRow term = asShown(CommandRow.of(row.getCommand()));
@@ -4598,7 +4833,7 @@ public class RouteEditorFrame extends JFrame
             {
                 int at = rowOf(line);
 
-                if (!conditionsEditable || at < 0 || column == HANDLE || column == TRASH) return false;
+                if (!conditionsEditable || at < 0 || column == HANDLE || isMark(column)) return false;
 
                 // As shown, not stored (asShown): a cell whose editability is decided from another kind than the one on
                 // screen argues with itself.
@@ -4771,6 +5006,7 @@ public class RouteEditorFrame extends JFrame
             handleColumn();
 
             narrow(this, TRASH);
+            narrow(this, COPY);
 
             getColumnModel().getColumn(KIND).setPreferredWidth(220);
 
@@ -4799,51 +5035,13 @@ public class RouteEditorFrame extends JFrame
 
             greyWhatCannotBeEdited(this);
 
-            actOnRowMarks(this, -1, TRASH);
+            actOnRowMarks(this, TRASH, COPY);
 
             listen();
 
-            keys("alt UP", "moveUp", () -> shiftChosen(-1));
-            keys("alt DOWN", "moveDown", () -> shiftChosen(1));
             keys("ctrl G", "group", this::groupSelected);
             keys("ctrl shift G", "ungroup", this::ungroupSelected);
             keys("ctrl shift S", "split", this::splitHere);
-            keys("ctrl Z", "undo", this::undo);
-            keys("ctrl Y", "redo", this::redo);
-
-            // On the table itself, not its editor: Delete in a cell being edited is the cell's own.
-            getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke("DELETE"), "deleteSelected");
-            getActionMap().put("deleteSelected", new javax.swing.AbstractAction()
-            {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent e)
-                {
-                    if (!isEditing()) deleteSelected();
-                }
-            });
-        }
-
-        /** The Delete key (MT-868): every selected condition goes, as the menu's Delete takes them. */
-        void deleteSelected()
-        {
-            if (locked || !conditionsEditable || chosenRows().isEmpty()) return;
-
-            removeLines(lineOf(chosenRows().first()));
-        }
-
-        private void keys(String stroke, String name, Runnable action)
-        {
-            getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(javax.swing.KeyStroke.getKeyStroke(stroke), name);
-            getActionMap().put(name, new javax.swing.AbstractAction()
-            {
-                @Override
-                public void actionPerformed(java.awt.event.ActionEvent e)
-                {
-                    if (isEditing()) getCellEditor().stopCellEditing();
-
-                    action.run();
-                }
-            });
         }
 
         private final javax.swing.table.TableCellEditor kindEditor;
@@ -5523,7 +5721,7 @@ public class RouteEditorFrame extends JFrame
          */
         private void showChanges(List<ConditionOutline.Row> before)
         {
-            if (!restoring && (before.size() != rows.size() || !ConditionOutline.changed(before, rows).isEmpty()))
+            if (before.size() != rows.size() || !ConditionOutline.changed(before, rows).isEmpty())
             {
                 remember(before);
             }
@@ -5649,80 +5847,38 @@ public class RouteEditorFrame extends JFrame
             return !locked && conditionsEditable && ConditionOutline.movedTogether(rows, chosenRows(), by) != null;
         }
 
-        /** The outline before each edit, the latest first, for Undo (FR-161). */
-        private final java.util.Deque<List<ConditionOutline.Row>> undoable = new java.util.ArrayDeque<>();
+        /** The outline before each edit, for Undo (FR-161). */
+        private final History<ConditionOutline.Row> history = new History<>();
 
-        /** The outline before each Undo, for Redo; a new edit clears it. */
-        private final java.util.Deque<List<ConditionOutline.Row>> redoable = new java.util.ArrayDeque<>();
+        @Override
+        History<?> history()
+        {
+            return history;
+        }
 
-        /** Set while Undo or Redo puts an outline back, so that is not itself an edit to undo. */
-        private boolean restoring;
-
-        /** Keeps the outline as it was before an edit, so Undo can put it back; the oldest goes after a hundred. */
+        /** Keeps the outline as it was before an edit, so Undo can put it back. */
         private void remember(List<ConditionOutline.Row> before)
         {
-            undoable.push(new ArrayList<>(before));
-
-            if (undoable.size() > 100) undoable.removeLast();
-
-            redoable.clear();
+            history.remember(before);
             refreshConditionActions();
         }
 
-        /** A route loaded starts with nothing to undo. */
-        void forget()
+        /** The lines that differ from the outline replaced are marked and their conditions selected, as after any edit. */
+        @Override
+        void step(boolean undo)
         {
-            undoable.clear();
-            redoable.clear();
-        }
-
-        boolean canUndo()
-        {
-            return !locked && conditionsEditable && !undoable.isEmpty();
-        }
-
-        boolean canRedo()
-        {
-            return !locked && conditionsEditable && !redoable.isEmpty();
-        }
-
-        void undo()
-        {
-            if (canUndo()) step(undoable, redoable);
-        }
-
-        void redo()
-        {
-            if (canRedo()) step(redoable, undoable);
-        }
-
-        /**
-         * Puts back the outline on top of one history and keeps the one it replaces on the other (FR-161); the lines
-         * that differ are marked and their conditions selected, as after any edit.
-         */
-        private void step(java.util.Deque<List<ConditionOutline.Row>> from,
-            java.util.Deque<List<ConditionOutline.Row>> to)
-        {
-            List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            List<ConditionOutline.Row> back = from.pop();
-            List<RouteCommand> differ = new ArrayList<>();
-
-            for (int at : ConditionOutline.changed(before, back))
+            history.step(undo, rows, back ->
             {
-                if (!back.get(at).isJoiner()) differ.add(back.get(at).getCommand());
-            }
+                List<ConditionOutline.Row> before = new ArrayList<>(rows);
+                List<RouteCommand> differ = new ArrayList<>();
 
-            to.push(before);
-            restoring = true;
+                for (int at : ConditionOutline.changed(before, back))
+                {
+                    if (!back.get(at).isJoiner()) differ.add(back.get(at).getCommand());
+                }
 
-            try
-            {
                 replaceWith(back, differ, before);
-            }
-            finally
-            {
-                restoring = false;
-            }
+            });
         }
 
         /** Works out which lines disagree with their level, lays the lines out, and says what the outline means. */
