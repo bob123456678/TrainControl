@@ -410,6 +410,7 @@ public class testTheAutoTabSaysWhyATrainWaits
      * the window are for a train standing by, not for one the run is handling.
      *
      * MUTATION: drop `this.noPathsNow = false` from `updateState`, and the started run's card still explains.
+     * MUTATION: press Start without waiting for it to be enabled: lost while the window still loads the setup (OB-388).
      */
     @Test
     public void testWhileAutonomyRunsTheCardOffersNoExplanation() throws Exception
@@ -433,7 +434,14 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             Settle.simulate(layout);
 
-            Components.press(startButton());
+            // The window enables Start once the setup is loaded, which can follow the railway; `doClick` on a grayed button
+            // does nothing (OB-388).
+            final JButton start = startButton();
+
+            assertTrue(Settle.until(start::isEnabled, PATIENCE_MS),
+                "Start never became enabled, so there was nothing to press");
+
+            Components.press(start);
 
             final Layout started = layout;
 

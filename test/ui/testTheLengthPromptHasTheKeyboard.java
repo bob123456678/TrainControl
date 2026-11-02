@@ -367,6 +367,7 @@ public class testTheLengthPromptHasTheKeyboard
      * stored and the taken one is not (OB-376; Adam, MT-815: "shouldn't a name that's already taken be refused?").
      *
      * MUTATION: drop the `isPointNameTaken` test from `whyNotNamed`: red, as no refusal appears.
+     * MUTATION: have `fieldIn` return the prompt's field without waiting for the keyboard: red under load (OB-387).
      */
     @Test
     public void testNameEverythingRefusesATakenName() throws Exception
@@ -607,33 +608,13 @@ public class testTheLengthPromptHasTheKeyboard
         return null;
     }
 
-    /** The prompt's text field, found rather than waited for: this claim is about the answer, not the keyboard. */
+    /**
+     * The prompt's text field, once it has the keyboard: the AWT drops a key event dispatched to a field while nothing
+     * has the focus, so an Enter sent earlier is lost and no refusal comes (OB-387).
+     */
     private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
     {
-        final javax.swing.JTextField[] field = new javax.swing.JTextField[1];
-
-        SwingUtilities.invokeAndWait(() -> field[0] = findField(prompt.getContentPane()));
-
-        assertNotNull(field[0], "the Name Everything prompt has no text field");
-
-        return field[0];
-    }
-
-    private static javax.swing.JTextField findField(java.awt.Container container)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (child instanceof javax.swing.JTextField) return (javax.swing.JTextField) child;
-
-            if (child instanceof java.awt.Container)
-            {
-                javax.swing.JTextField found = findField((java.awt.Container) child);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
+        return focusedField(prompt, "the prompt that is typed into");
     }
 
     private static void awaitTheEditorFocused() throws Exception
