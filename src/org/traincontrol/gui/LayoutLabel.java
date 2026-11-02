@@ -1168,9 +1168,9 @@ public final class LayoutLabel extends JLabel
             // The static layer first, and the running one over it: the running line covers only the rails it claims,
             // and the path a train is actually taking is the more urgent.
             //
-            // Told which region is already faint (OB-212: one level of opacity, not stacked): `refused` drew the art at
-            // `BLOCKED_ALPHA`, and the annotation's own wash would compound with it.  A region, not a yes/no: on a
-            // double curve one road is faded, and a tile-wide "yes" would skip the wash under both roads' arrows.
+            // Told which region is already faint (OB-212): `refused` drew the art at `BLOCKED_ALPHA`, so the
+            // annotation's own wash must not compound with it.  A region, not a yes/no: on a double curve one road is
+            // faded.
             java.awt.Shape faded = !refused ? null
                 : (theRoadToFade() == null
                     ? new java.awt.Rectangle(0, 0, getWidth(), getHeight()) : theRoadToFade());
@@ -1236,13 +1236,10 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The orange a train is drawn in (MT-309).  Opaque, and the one strongly colored line on an ordinary diagram:
-     * green and red already mean "trains may run this way" and "they may not", and yellow is the transient flash.  A
-     * square autonomy will not choose is gray (MT-492); the X on a square nothing can pass is a redder orange,
-     * `TileAnnotation.POINT_IMPASSABLE`.
-     *
-     * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
-     * set otherwise.
+     * The orange a train is drawn in (MT-309): opaque, and the one strongly colored line on an ordinary diagram, since
+     * green, red and yellow already mean something else.  A square autonomy will not choose is gray (MT-492).  The
+     * solid one of two (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless set
+     * otherwise.
      */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
@@ -1688,12 +1685,8 @@ public final class LayoutLabel extends JLabel
 
     /**
      * Draws this tile's train onto the container, above the captions (OB-159): a tile is behind every station caption,
-     * deliberately (it is opaque, and a lifted one painted a name out), so the container paints its children and then
-     * asks each tile for this.
-     *
-     * Translated to this tile and not clipped to it (MT-642): on a curve the icon reaches onto the next tiles, which
-     * `setAutonomyOverlay` repaints when a train comes or goes.  The center is the train's own road (`trackCentreOf`):
-     * a double curve has two.
+     * so the container paints its children and then asks each tile for this.  Translated to this tile and not clipped
+     * to it (MT-642), since on a curve the icon reaches onto the next tiles.
      *
      * @param g the container's graphics
      */
@@ -1720,8 +1713,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): it is drawn over the
-     * captions and reaches past the tile on a curve, so a click on it can land on a caption or on the next square.
+     * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): a click on it can land
+     * on a caption or on the next square.
      *
      * @param at the point, in this square's coordinates
      * @return true where a train is drawn there
@@ -1856,9 +1849,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * The middle of the train's own road on this square, for its icon (MT-642), as x and y within the square, or null
-     * where nothing says: from the square's own ports on a curve or double curve (the annotation knows the roads only
-     * while the arrows are shown), a station's first road otherwise; from the annotation anywhere else and where the
-     * square has no track of its own.
+     * where nothing says.
      */
     private int[] theTrainsRoadCentre(TileOverlay overlay, org.traincontrol.automationui.TileAnnotation annotation)
     {
