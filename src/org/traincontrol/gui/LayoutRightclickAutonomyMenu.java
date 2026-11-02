@@ -65,14 +65,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // the setup.
         if ((station != null || here != null) && (ui == null || !ui.isAutonomyLoaded())) return;
 
-        // The railway is asked first, and not on the event thread (OB-192): the paths section needs `getPossiblePaths`
-        // (`synchronized` on the `Layout`), and a dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory,
-        // so a right-click during somebody else's departure would freeze the window.  A short-lived thread per
-        // right-click, as in `CoveredTrackRenderer`: the menu appears a moment late when the railway is busy.
-        //
-        // The square is resolved here on the event thread: `getAutonomyPointForTile` goes through the LAZY
-        // `getAutonomySession()`, which parses every page, can write to disk and can raise a dialog.  Only the Point, a
-        // value, crosses to the worker.
+        // The railway is asked first, off the event thread (OB-192): `getPossiblePaths` is `synchronized` on the
+        // `Layout`, and a dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory.  The square is resolved
+        // here, on the event thread, as `getAutonomyPointForTile` goes through the LAZY `getAutonomySession()`; only
+        // the Point, a value, crosses to the worker.
         final Point standing = ui != null && ui.getModel() != null && ui.getModel().hasAutoLayout()
             ? ui.getAutonomyPointForTile(station != null ? station : here) : null;
 
@@ -135,7 +131,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
     /**
      * Whether the menu offers the "..." at the foot of the list: only when there were more destinations than fitted
-     * (FR-058).  It counts only destinations this menu could have shown, not the squares it hides (OB-205).
+     * (FR-058), counting only those this menu could have shown (OB-205).
      *
      * @param offered how many ordinary destinations this menu has to show, after its own filtering
      * @param shown how many of them are on screen
@@ -722,9 +718,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Places the active locomotive on the copy it could leave from that faces the way it already faces (OB-296), read
-     * before the move by the paste's rule, so the same train placed the same way always faces the same way.  Where no
-     * copy can leave, the copy the build stands an unfaced train on, with no facing recorded (OB-350).
+     * Places the active locomotive on the copy it could leave from that faces the way it already faces (OB-296); where
+     * no copy can leave, on the copy the build stands an unfaced train on, with no facing recorded (OB-350).
      *
      * @param usable the copies a train can be driven away from, empty where there are none
      */
@@ -756,10 +751,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The copy a right-click Place puts the train on, as the paste chooses it (OB-296): the heading over every copy the
-     * train could leave by (`AutonomySession.facingAfterAPaste`), then the copy facing it (`copyFacing`); the first
-     * copy the menu offers where no heading holds.  The menu's own list is not enough: the copy facing the heading at a
-     * square with a barred side is no station.
+     * The copy a right-click Place puts the train on, as the paste chooses it (OB-296), not by the menu's own list: the
+     * copy facing the heading at a square with a barred side is no station.
      *
      * @param session the setup, or null
      * @param station the square
@@ -913,9 +906,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
 
     /**
-     * One "-> somewhere" item, dispatching this locomotive along this path.  Shared by the top-level list and `More
-     * Destinations` (FR-058), so the power check, the failure dialog and the off-thread dispatch cannot fall out of
-     * step.
+     * One "-> somewhere" item, dispatching this locomotive along this path; shared by the top-level list and `More
+     * Destinations` (FR-058), so the checks and the dispatch cannot fall out of step.
      *
      * @param ui the window, for the model and for the dialogs
      * @param railway the railway the path was found on, which it is sent on
