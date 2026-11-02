@@ -39,7 +39,6 @@ public class testTheAutoTabWaitsForTheTrains
      * Graceful Stop offered over nothing and the Auto tab, which counts that offer as a run, says to wait for trains
      * that are not moving.
      *
-     * And it says so (Adam: "the start says nothing").
      *
      * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
      *
@@ -1237,9 +1236,8 @@ public class testTheAutoTabWaitsForTheTrains
      * The strip above the track diagram holds its buttons to the page's own button height, at every display scaling
      * (OB-313).
      *
-     * Adam: *"The issue was on lower display scaling monitors, where the button looked too narrow vertically."*  The
-     * checkbox's font follows the display's scaling; the page's own buttons (Edit, Small, Large) are a fixed 24.  A
-     * strip button held to the checkbox's height agrees at 125% but comes out skinnier at 100%.
+     * The checkbox's font follows the display's scaling; the page's own buttons (Edit, Small, Large) are a fixed 24.  A
+     * strip button held to the checkbox's height agrees at 125% but comes out skinnier at 100%, too narrow vertically.
      *
      * Asked at the checkbox size a 100% display gives: the look and feel's own 12-point Segoe UI.
      *
@@ -1394,10 +1392,10 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * The turning mark turns about its own center (MT-650).
      *
-     * Adam: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*  Start's mark
-     * is Return Home's (FR-077); drawn on whole pixels with Java's default stroke normalization, the ring's center
-     * steps about as it turns, the more so on a scaled display.  Every frame, at the sizes the two buttons use and at
-     * 100% to 200% scaling: where the ink sits, turned back by the frame's angle, must be the same each time.
+     * Start's mark is Return Home's (FR-077); drawn on whole pixels with Java's default stroke normalization, the
+     * ring's center steps about as it turns, the more so on a scaled display, so it looks unsmooth.  Every frame, at
+     * the sizes the two buttons use and at 100% to 200% scaling: where the ink sits, turned back by the frame's angle,
+     * must be the same each time.
      *
      * MUTATION: draw the arc with `drawArc` on whole pixels again, and this fails.
      *
@@ -1503,9 +1501,8 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * Closing the editor while it switches to Track Diagram gives Edit and Edit Autonomy Paths back (MT-649).
      *
-     * Adam: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is posted
-     * and arrives after a close that lands in between; a closed window is not arrived at, or it is put back together
-     * out of sight, graying both buttons for the session.
+     * The switch's own work is posted and arrives after a close that lands in between; a closed window is not arrived
+     * at, or it is put back together out of sight, graying both buttons for the session.
      *
      * MUTATION: drop the closed-window return from `LayoutEditor.arriveAt`, and this fails.
      *
