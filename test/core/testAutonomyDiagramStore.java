@@ -662,7 +662,7 @@ public class testAutonomyDiagramStore
      * A page RENUMBERED, whose page did not load, is still reported as not loaded.  The guard on the fix above: the id
      * is believed only where `resolvePage` believes it.  Here id 2 belonged to "Yard" and now belongs to "Main Line",
      * while "Yard" is still in the index under another id and did not load; asked by id alone, the save would lose a
-     * page of settings (MT-135).  Green with and without the fix; it catches the fix done the short way.
+     * page of settings (MT-135).
      *
      * MUTATION: ask `pageIdToName.get(written.getKey())` in `pagesNotLoaded` instead of
      * `resolvePage(written.getKey())`, and this fails.
@@ -721,10 +721,8 @@ public class testAutonomyDiagramStore
 
     /**
      * A renumbered page's settings follow the PAGE, not the number.  The test above pins that a renumber is REPORTED;
-     * this pins where the settings go.  `fromStored` must not resolve every stored id through the current index, or a
-     * page of settings is handed to whatever track holds that number now (MT-135).  With
-     * testRenamingAPageCostsNothingBecauseIdsAreStored these are the whole rule: a rename goes by id, because the old
-     * name is GONE, which tells the two apart.
+     * this pins where the settings go: `fromStored` must not resolve every stored id through the current index, or a
+     * page of settings is handed to whatever track holds that number now (MT-135).
      */
     @Test
     public void testARenumberedPagesSettingsFollowTheNameNotTheNumber() throws IOException
@@ -1641,8 +1639,8 @@ public class testAutonomyDiagramStore
      * set for ever.  That matters most on a page that redraws another page's sensors (`excludeRepeatedSensorPages`),
      * because rejoining puts two Points on one sensor.
      *
-     * `renamePage` has no production caller, so every real rename is an EXTERNAL one, in the Central Station or by
-     * editing the gleisbild, which is what this test performs.
+     * `renamePage` has no production caller: every real rename is an EXTERNAL one, in the Central Station or in the
+     * gleisbild, which is what this test performs.
      */
     @Test
     public void testAnExcludedPageIsStillExcludedAfterItIsRenamed() throws IOException
@@ -1796,7 +1794,7 @@ public class testAutonomyDiagramStore
      * translates the exporter's page ids into this layout's by page name before it merges, so the claim is the outcome
      * the renumber warning exists to protect: their station names, lengths, directions, pairings and captions must not
      * attach to my pages.  A rename is still not a conflict: the deciding question is whether the old name still exists
-     * in MY index (`pageIdConflicts` compared my names with my own and was always empty).
+     * in MY index.
      */
     @Test
     public void testImportingABundleFromARenumberedLayoutLandsOnTheRightPages() throws IOException
@@ -2411,8 +2409,7 @@ public class testAutonomyDiagramStore
      * still there (while rest staying the same)."
      *
      * The second half fails in practice: a rename can take a page of settings with it on the way to disk.  So the
-     * fixture carries one of everything the store holds, on TWO pages, and the untouched page is asserted as hard as
-     * the renamed one.
+     * fixture carries one of everything the store holds, on TWO pages, and the untouched page is asserted as hard.
      */
     @Test
     public void testARenamedPageSurvivesASaveAndLoad() throws IOException
