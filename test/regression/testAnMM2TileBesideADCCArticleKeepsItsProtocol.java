@@ -23,11 +23,11 @@ import support.StandInStation;
  * editor's remedy is the tile's protocol, saved as `.prot`; MM2 was never written, so the MM2 tiles read back as DCC.
  *
  * MUTATION: write `.prot` only for a protocol other than MM2 again (LayoutDiagramComponent.exportToCS2TextFormat), and
- * every MM2 tile here reads back as DCC.
+ * every MM2 tile at an address with two protocols reads back as DCC.
  *
  * @author Adam
  */
-public class testAnMM2TileBesideADCCTwinKeepsItsProtocol
+public class testAnMM2TileBesideADCCArticleKeepsItsProtocol
 {
     // A copy of the fixture to save into; the sandbox also points the layout preference at it, which nothing here reads
     private static support.LayoutSandbox sandbox;
@@ -77,8 +77,8 @@ public class testAnMM2TileBesideADCCTwinKeepsItsProtocol
     }
 
     /**
-     * W 15 at Main Layout (5,9) and W 1R at Startpackung (10,4), set to MM2 and saved, read back as MM2; their DCC
-     * twins and an ordinary MM2 turnout are unchanged.
+     * W 15 at Main Layout (5,9) and W 1R at Startpackung (10,4), set to MM2 and saved, read back as MM2; the DCC
+     * articles at their addresses and an ordinary MM2 turnout are unchanged.
      */
     @Test
     public void testTheMM2TilesReadBackAsMM2() throws Exception
@@ -86,7 +86,7 @@ public class testAnMM2TileBesideADCCTwinKeepsItsProtocol
         List<LayoutDiagram> pages = read(true);
 
         assertEquals(page(pages, "Main Layout").getComponent(5, 9).getProtocol(), accessoryDecoderType.DCC,
-            "the fixture's premise: W 15's tile reads as its DCC twin's protocol");
+            "the fixture's premise: W 15's tile reads as the DCC article's protocol");
 
         page(pages, "Main Layout").getComponent(5, 9).setProtocol(accessoryDecoderType.MM2);
         page(pages, "Main Layout").saveChanges(null, false);

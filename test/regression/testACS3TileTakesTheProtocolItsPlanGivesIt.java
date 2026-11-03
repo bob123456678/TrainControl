@@ -321,7 +321,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
 
     /** No address with two protocols: the plans are never asked for, and nothing is warned. */
     @Test
-    public void testNoTwinsNoFetch() throws Exception
+    public void testNoAddressWithTwoProtocolsNoFetch() throws Exception
     {
         mags(".name=W 15\n .id=25\n .typ=linksweiche\n .stellung=1\n .schaltzeit=200\n .dectyp=mm2",
             ".name=W 15\n .id=25\n .typ=linksweiche\n .stellung=1\n .schaltzeit=200\n .dectyp=dcc");
@@ -494,6 +494,9 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     /**
      * A local copy, even on a CS3: its squares may have been edited, so the plans are not asked for, and the warning
      * says so rather than that the plan did not say.
+     *
+     * MUTATION: treat every folder as the station's (`fromStation = true` in CS2File.resolveTwoProtocolTiles), and the
+     * plans are asked for and the warning says the plan did not say.
      */
     @Test
     public void testALocalCopyNoFetch() throws Exception

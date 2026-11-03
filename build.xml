@@ -633,11 +633,11 @@
         <test-one-class class="testACurvedSensorShowsItsArrowsBesideAParkedTrain"/>
         <test-one-class class="testCS2InputsParseAsBefore"/>
         <test-one-class class="testACS2SyncIsAsBefore"/>
-        <test-one-class class="testACS3SyncReadsTheLocomotiveListOnceEach"/>
+        <test-one-class class="testACS3SyncProbesTheFirmwareOnce"/>
         <test-one-class class="testASwitchAndASignalOnOneAddressShareOneAccessory"/>
         <test-one-class class="testACS3TileTakesTheProtocolItsPlanGivesIt"/>
-        <test-one-class class="testAnMM2TileBesideADCCTwinKeepsItsProtocol"/>
-        <test-one-class class="testACS3TrackPlanTellsTwinsApartOrSaysItCannot"/>
+        <test-one-class class="testAnMM2TileBesideADCCArticleKeepsItsProtocol"/>
+        <test-one-class class="testACS3TrackPlanTellsTheTwoProtocolsApartOrSaysItCannot"/>
         <test-one-class class="testACS3SyncTakesTheStationsPositions"/>
         <test-one-class class="testACS3IconFollowsTheWebAppsRule"/>
         <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>

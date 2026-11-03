@@ -44,8 +44,8 @@ import support.StandInStation;
  * uncoupler that read as MM2, and only there (support.SavedProtocol).
  *
  * MUTATION: find the addresses with two protocols whatever the station (drop `control.isCS3()` from
- * CS2File.parseLayout), and railway D's page writes `.prot=MM2`.  Or count every address as mixed
- * (`this.mixedAddresses = kinds.keySet()`), and 97 is not re-created as a switch.
+ * CS2File.parseLayout), and railway D's sync asks for `/app/api/gbs` and logs a "share address" warning for 54.  Or
+ * count every address as mixed (`this.mixedAddresses = kinds.keySet()`), and 97 is not re-created as a switch.
  *
  * @author Adam
  */

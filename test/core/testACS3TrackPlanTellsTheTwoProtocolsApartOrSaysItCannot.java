@@ -29,7 +29,7 @@ import org.traincontrol.marklin.file.CS3TrackPlan;
  *
  * @author Adam
  */
-public class testACS3TrackPlanTellsTwinsApartOrSaysItCannot
+public class testACS3TrackPlanTellsTheTwoProtocolsApartOrSaysItCannot
 {
     // Main Layout's articles of one protocol voting, each from its tile four squares right of its plan square
     private static final Map<String, List<Point>> VOTES = new HashMap<>();

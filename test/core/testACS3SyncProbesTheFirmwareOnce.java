@@ -19,7 +19,7 @@ import support.StandInStation;
  *
  * @author Adam
  */
-public class testACS3SyncReadsTheLocomotiveListOnceEach
+public class testACS3SyncProbesTheFirmwareOnce
 {
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;

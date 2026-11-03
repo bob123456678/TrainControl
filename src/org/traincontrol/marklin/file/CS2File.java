@@ -190,6 +190,7 @@ public final class CS2File
         String folder = slash > 0 ? iconPath.substring(0, slash) : "";
         String url = getImageURLCS3(file.endsWith(".png") ? file.substring(0, file.length() - 4) : file);
 
+        // The folder is unencoded, as the web app sends it ("?path=".concat(u)), but for its spaces
         return folder.isEmpty() || "/home/cs3/cs3data/lokicons".equals(folder) || "/usr/local/cs3/lokicons".equals(folder)
             ? url : url + "?path=" + folder.replace(" ", "%20");
     }
@@ -2784,7 +2785,7 @@ public final class CS2File
                 continue;
             }
 
-            logMessage(I18n.f(fromStation ? "layout.cs3TwinUnresolved" : "layout.cs3TwinNotChecked",
+            logMessage(I18n.f(fromStation ? "layout.cs3TwoProtocolsUnresolved" : "layout.cs3TwoProtocolsNotChecked",
                 twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
                 kept.get(e.getKey())));
         }
@@ -2805,7 +2806,7 @@ public final class CS2File
             }
             catch (Exception e)
             {
-                logMessage("Could not read the CS3 track plans: " + e, e, true);
+                logMessage(I18n.f("layout.cs3TrackPlanUnreadable", e), e, true);
             }
 
             this.trackPlan = new CS3TrackPlan(gbs);
