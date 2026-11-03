@@ -1,0 +1,302 @@
+[gleisbildseite]
+version
+ .major=1
+page=4
+element
+ .id=0x40104
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40105
+ .typ=linksweiche
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40108
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=20
+element
+ .id=0x40109
+ .typ=linksweiche
+ .drehung=1
+ .artikel=24
+element
+ .id=0x4010f
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=26
+element
+ .id=0x40110
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40204
+ .typ=yweiche
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40205
+ .typ=yweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40208
+ .typ=doppelbogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40209
+ .typ=doppelbogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x4020c
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x4020d
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40304
+ .typ=linksweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40305
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40308
+ .typ=linksweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40309
+ .typ=dreiwegweiche
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x4030f
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=48
+element
+ .id=0x40310
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=48
+element
+ .id=0x40311
+ .typ=yweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40404
+ .typ=lampe
+ .artikel=46
+element
+ .id=0x40408
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=18
+element
+ .id=0x40409
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x4040a
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x4040b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x4040c
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=16
+element
+ .id=0x4040d
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x4040e
+ .typ=s88kontakt
+ .artikel=1
+ .deviceId=2
+element
+ .id=0x4040f
+ .typ=hosentraeger
+ .drehung=3
+ .artikel=166
+element
+ .id=0x40410
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x40411
+ .typ=hosentraeger
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40505
+ .typ=yweiche
+ .drehung=1
+ .artikel=160
+element
+ .id=0x40507
+ .typ=dkw3_li_2
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40508
+ .typ=dkw3_li
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40509
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x4050a
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x4050b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x4050c
+ .typ=dreiwegweiche
+ .drehung=1
+ .artikel=28
+element
+ .id=0x4050f
+ .typ=hosentraeger
+ .drehung=1
+ .artikel=166
+element
+ .id=0x40511
+ .typ=hosentraeger
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40610
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=2
+element
+ .id=0x40611
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=2
+element
+ .id=0x40704
+ .typ=linksweiche
+ .drehung=3
+ .artikel=50
+element
+ .id=0x40706
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=4094
+element
+ .id=0x40707
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=4094
+element
+ .id=0x40708
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40709
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x4070b
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=2000
+element
+ .id=0x4070d
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x4070e
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x4070f
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40710
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x40806
+ .typ=signal
+ .drehung=2
+ .artikel=178
+element
+ .id=0x40808
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x40809
+ .typ=doppelbogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x4080a
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x4080d
+ .typ=dkw3_re
+ .drehung=1
+ .artikel=4096
+element
+ .id=0x4080e
+ .typ=dkw3_re_2
+ .drehung=3
+ .artikel=4096
+element
+ .id=0x4080f
+ .typ=signal_hp012
+ .drehung=2
+ .artikel=4096
+element
+ .id=0x40905
+ .typ=linksweiche
+ .drehung=3
+ .artikel=50
+element
+ .id=0x40909
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x4090a
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=-1

@@ -1,0 +1,18 @@
+[gleisbild]
+readonly=1
+version
+ .major=1
+groesse
+ .width=28
+seite
+ .id=1
+ .name=Startpackung
+seite
+ .id=2
+ .name=Main
+seite
+ .id=3
+ .name=Something
+seite
+ .id=4
+ .name=Main Layout

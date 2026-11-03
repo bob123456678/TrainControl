@@ -1,0 +1,14 @@
+[gleisbildseite]
+version
+ .major=1
+page=3
+element
+ .id=0x3080a
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=18
+element
+ .id=0x3080b
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=22
