@@ -663,6 +663,15 @@ public final class CS2File
     {
         return parseLocomotivesCS3(parseJSONArray(fetchCS3LocDB()));
     }
+
+    /**
+     * The same, for a caller that probed the firmware once for the whole sync.
+     * @param is260 what isCS3Version260OrAbove answered
+     */
+    public List<MarklinLocomotive> parseLocomotivesCS3(boolean is260) throws Exception
+    {
+        return parseLocomotivesCS3(parseJSONArray(fetchURL(getCS3LocDBUrl(is260 ? 260 : 250))));
+    }
     
     /**
      * Returns whether the CS3 is at or above firmware v2.6.0
@@ -685,6 +694,15 @@ public final class CS2File
         // no-argument getCS3LocDBUrl() probes again); a failed probe here cannot strand a reader.
         boolean is260 = isCS3Version260OrAbove();
 
+        return parseRoutesCS3(is260);
+    }
+
+    /**
+     * The same, for a caller that probed the firmware once for the whole sync (each probe reads the locomotive list).
+     * @param is260 what isCS3Version260OrAbove answered
+     */
+    public List<MarklinRoute> parseRoutesCS3(boolean is260) throws Exception
+    {
         // All three in one try-with-resources, so an exception after the first is opened leaks none of them.
         try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
              BufferedReader magBR   = fetchURL(getCS3MagDBUrl());

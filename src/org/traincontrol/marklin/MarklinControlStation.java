@@ -1531,10 +1531,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             // Import locomotives
             List<MarklinRoute> parsedRoutes;
+
+            // Probed once for the routes and the locomotives: each probe reads the whole locomotive list
+            boolean cs3Is260 = false;
             
             if (this.isCS3)
             {
-                parsedRoutes = fileParser.parseRoutesCS3();
+                cs3Is260 = fileParser.isCS3Version260OrAbove();
+                parsedRoutes = fileParser.parseRoutesCS3(cs3Is260);
             }
             else
             {
@@ -1558,7 +1562,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             if (this.isCS3)
             {
-                parsedLocs = fileParser.parseLocomotivesCS3();
+                parsedLocs = fileParser.parseLocomotivesCS3(cs3Is260);
             }
             else
             {
