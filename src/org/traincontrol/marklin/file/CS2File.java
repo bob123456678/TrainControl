@@ -732,6 +732,7 @@ public final class CS2File
             }
         }
 
+        // Not read yet: s88 contacts by device, and /app/api/devs with each s88 source and its bus lengths ("kanal")
         Map<Integer, Boolean> out = new HashMap<>();
 
         for (int i = 0; i < mags.length(); i++)
@@ -831,6 +832,7 @@ public final class CS2File
                     continue;
                 }
                 
+                // Not used yet: .schaltzeit (switching time, ms) and the exact .typ (dkw_1antrieb is read as a signal here)
                 try
                 {
                     MarklinAccessory acc = new MarklinAccessory(control, 
@@ -1398,6 +1400,8 @@ public final class CS2File
                                 {
                                     protocol = Accessory.accessoryDecoderType.DCC;
                                 }
+
+                                // Not used yet: the article's "internname" (its name), "schaltzeit" (ms) and exact "typ"
 
                                 // Which command the item's own "sekunde" pause belongs on: the LAST one this item
                                 // emits.  For a three-way at stellung 1, 2 or 3 the pair is emitted
