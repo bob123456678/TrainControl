@@ -76,13 +76,12 @@ page says so itself, and that it will not be written over until the file reads a
   different roles in what they control; they are just commanded via the same protocol."* Code that looks one up must not
   key on the type, and the diagram must not tell a person the two are interchangeable.
 
-  **Known limitation, accepted.** One address drawn as a switch on one page and as a signal on another is held as one
-  accessory, and the page wired FIRST keeps a tile bound to the object the later page replaced: it shows the position it
-  had when its page was last wired. On Adam's layout that is address 131, a turnout on 3 - Top Parking and a signal on 5
-  - Test. Nothing is commanded wrongly (every door commands by address), but after any diagram save the keyboard shows
-  131 as the file has it until the next echo. Adam's ruling: *"Let's leave 5 as is and document
-  the limitation."* Changing a tile's type ON one page does update the database; red is the turnout's turn and the
-  signal's red, green the opposite.
+  **One address drawn as a switch and as a signal is one accessory** (OB-405). Every tile at it, on any page, holds the
+  database's object and follows its echo; the accessory is never re-created there for a tile of the other kind, so its
+  kind and name stay as the database has them. On Adam's layout that is address 131, a turnout on 3 - Top Parking and a
+  signal on 5 - Test. At an address with tiles of one kind, a kind changed on the station is still taken. Adam: *"If
+  there are 2 tiles with same addr, they should both update."* Red is the turnout's turn and the signal's red, green the
+  opposite.
 - **Occupancy and reservation are different facts.** A route holds track it intends to use; a standing train covers
   track it is lying on.
 - **An accessory record is a counter, not a claim.** Adam: *"there’s no reason to delete

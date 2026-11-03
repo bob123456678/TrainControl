@@ -47,5 +47,5 @@ pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never 
 
 ## After
 
-12. On `dev`: the next version in `RAW_VERSION`, `IS_PRE_RELEASE = true`, and an undated `* vX.Y.Z` heading above the
-    release just made.
+12. On `dev`: the next version in `RAW_VERSION`, `IS_PRE_RELEASE = true`, and a `* vX.Y.Z` heading above the release
+    just made, undated, or marked `[beta]` once its changelog is ready for testers.
