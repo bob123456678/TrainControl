@@ -8,7 +8,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
- * The one difference from dev a saved page may show since every accessory tile writes its protocol: an added
+ * The one difference from the goldens a saved page may show, as every accessory tile writes its protocol: an added
  * ` .prot=MM2` in the block of an addressed switch, signal or uncoupler tile that read as MM2.  The goldens were written
  * on dev, so a dump has those lines taken out before it is compared.  A tile that must now write the line and does not
  * gets a marker instead, and a line anywhere else is left in, so either differs from the golden.
@@ -27,7 +27,7 @@ public final class SavedProtocol
     {
     }
 
-    /** Whether a tile of this type, address and protocol writes ` .prot=MM2` under the new rule. */
+    /** Whether a tile of this type, address and protocol writes ` .prot=MM2`. */
     private static boolean writesMM2(String type, String address, String protocol) throws Exception
     {
         LayoutDiagramComponent c = new LayoutDiagramComponent(LayoutDiagramComponent.componentType.valueOf(type), 0, 0, 0,

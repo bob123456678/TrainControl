@@ -400,7 +400,7 @@ public class testMassAssignLengths
         assertFalse(marked(panel, key(5, 1)), "the rest of a piece that now has a length is still amber");
     }
 
-    /** A square whose only mark is "needs a length" still paints (OB-007). */
+    /** A square whose only mark is "needs a length" still paints (FR-005). */
     @Test
     public void testASquareMarkedOnlyAsUnmeasuredIsNotBlank()
     {

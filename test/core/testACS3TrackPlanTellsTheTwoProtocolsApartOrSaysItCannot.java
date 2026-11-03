@@ -19,7 +19,7 @@ import org.traincontrol.marklin.file.CS3TrackPlan;
 /**
  * The CS3's track plans (`/app/api/gbs`) read on their own, with no station and no CS2File: which articles each page
  * holds, the square each is on, and where the grid sits on the page.  A plan that will not read, in whole or in part,
- * answers "not here" and never throws.
+ * answers "not here" and never throws (OB-402).
  *
  * The fixture is Adam's CS3 plus (2.6.1), `test/cs3_v261/app/api/gbs.json`: W 14 and W 15 (both address 25) on the
  * grid page Main Layout at squares (0,7) and (1,9), which are (4,7) and (5,9) on the page; W 11 on Main Layout and

@@ -16,13 +16,12 @@ import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * Tiles of both kinds on one decoder address, a switch and a signal, all hold the database's accessory and follow its
- * echo, on a CS2 and on a CS3: CAN does not care which kind the accessory is.
+ * echo, on a CS2 and on a CS3: CAN does not care which kind the accessory is (OB-405).
  *
  * The fixture `test/cs3_v261` is a CS3 plus (2.6.1) export: W 13 (double slip, Main Layout (13,8) and (14,8)) and D 2
- * (signal, (15,8)) are both DCC 2048; a second signal at 2048 is added on Startpackung (15,0), another page.  The wiring
- * re-created the accessory for each tile of the other kind, so the last tile's kind stood in the database and the other
- * tiles kept an object the station's echoes never reach.  The database starts as that wiring left it, "Signal 2048
- * DCC", and keeps it.  The station type is set by reflection, as a sync's detection sets it.
+ * (signal, (15,8)) are both DCC 2048; a second signal at 2048 is added on Startpackung (15,0), another page.  The
+ * database starts with "Signal 2048 DCC" and keeps it, so no tile holds an object the station's echoes never reach.
+ * The station type is set by reflection, as a sync's detection sets it.
  *
  * MUTATION: drop `!this.mixedAddresses.contains(targetAddress)` from `wireComponents`' re-create condition, and the
  * slip tiles hold an accessory that is not the database's, and the echo does not move them.
@@ -67,8 +66,8 @@ public class testASwitchAndASignalOnOneAddressShareOneAccessory
     }
 
     /**
-     * Syncs the pages again, as the given station, from the database the old wiring left (a signal at DCC 2048 and at
-     * MM2 201, the three-way's switch at MM2 200), and gives the accessory at DCC 2048.
+     * Syncs the pages again, as the given station, from a database that holds a signal at DCC 2048 and at
+     * MM2 201 and the three-way's switch at MM2 200, and gives the accessory at DCC 2048.
      */
     private static MarklinAccessory sync(boolean cs3) throws Exception
     {
@@ -124,7 +123,7 @@ public class testASwitchAndASignalOnOneAddressShareOneAccessory
     /**
      * A three-way's second address with a signal tile on it (MM2 200 and 201 on Startpackung (14,0), the signal at
      * (13,0)), on a CS2 and on a CS3: the three-way's second accessory and the signal tile hold the database's object at
-     * 201, which keeps the signal the old wiring left, after two syncs.
+     * 201, which stays the signal it was, after two syncs.
      *
      * MUTATION: drop `!this.mixedAddresses.contains(targetAddress + 1)` from `wireComponents`, and the three-way
      * re-creates 201 as a switch.
@@ -146,8 +145,9 @@ public class testASwitchAndASignalOnOneAddressShareOneAccessory
     }
 
     /**
-     * At an address with tiles of one kind the old rule stands, on a CS2 and on a CS3: S 1 (MM2 4), a signal tile,
-     * held in the database as a switch, is re-created as a signal, as when the station changes an article's kind.
+     * At an address with tiles of one kind the accessory follows the tile's kind, on a CS2 and a CS3:
+     * S 1 (MM2 4), a signal tile, held in the database as a switch, is re-created as a signal, as when the station
+     * changes an article's kind.
      *
      * MUTATION: count every address as mixed (`this.mixedAddresses = kinds.keySet()` in `syncLayouts`), and S 1 stays a
      * switch.

@@ -445,7 +445,7 @@ public class CS2Message extends CANMessage
 
     /**
      * Whether a system command is addressed to every device (UID 0) rather than to one; not used yet.  A CS3 answers a
-     * stop or go twice, once to all and once to itself.
+     * stop or go twice, once to all and once to itself (FR-172).
      */
     public boolean isAddressedToAll()
     {

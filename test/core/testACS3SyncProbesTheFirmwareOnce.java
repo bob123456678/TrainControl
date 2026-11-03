@@ -10,11 +10,11 @@ import support.StandInStation;
 
 /**
  * A sync with a CS3 asks its firmware once: each probe reads the whole locomotive list (444 KB on Adam's CS3 plus), and
- * the route import and the locomotive import used to probe once each.  A CS2 sync is untouched.
+ * the route import and the locomotive import share one probe.  A CS2 sync is untouched (OB-403).
  *
  * A stand-in station counts the requests; the layout is a local sandbox, so the layout sync never reaches it.
  *
- * MUTATION: have syncWithCS2 call the no-argument parseLocomotivesCS3() again, and a 2.6 sync reads the list four times
+ * MUTATION: have syncWithCS2 call the no-argument parseLocomotivesCS3(), and a 2.6 sync reads the list four times
  * and a 2.5 sync probes twice.
  *
  * @author Adam

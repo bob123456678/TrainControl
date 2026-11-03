@@ -17,7 +17,7 @@ import support.StandInStation;
 
 /**
  * A sync with a CS3 takes each two-position accessory's position from `/app/api/mags/state`, without sending anything
- * and without counting an actuation; a station that will not say changes nothing and fails nothing.
+ * and without counting an actuation; a station that will not say changes nothing and fails nothing (FR-171).
  *
  * A stand-in station serves Adam's CS3 plus (2.6.1) with its saved `mags.json` and `mags/state.json`
  * (`test/cs3_v261`); the layout is the same station's pages as a local sandbox.  In the saved state W 2L (MM2 2) and

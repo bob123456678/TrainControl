@@ -27,7 +27,7 @@ import support.StandInStation;
  * On a CS3, a tile at an address with an MM2 and a DCC article takes the protocol of the article the station's own
  * track plan (`/app/api/gbs`) puts there; a tile the plan cannot tell keeps the first article's protocol, with a
  * warning naming the articles, the page and the squares, once per page while the parser lives (one sync).  A plan that
- * will not read, in whole or in part, costs no page.
+ * will not read, in whole or in part, costs no page (OB-402).
  *
  * The fixture `test/cs3_v261` is Adam's CS3 plus (2.6.1): W 14 (DCC) and W 15 (MM2) are both address 25 on the grid
  * page Main Layout, at (4,7) and (5,9); W 11 (DCC, a double slip on Main Layout) and W 1R (MM2, on the free plan page
@@ -227,7 +227,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
         assertEquals(protocol(pages, "Main Layout", 17, 6), accessoryDecoderType.DCC, "W 11, its second square");
     }
 
-    /** Both address-1 articles on the free plan page: no grid to tell them by, so today's choice and a warning. */
+    /** Both address-1 articles on the free plan page: no grid to tell them, so the first's protocol and a warning. */
     @Test
     public void testAPairOnAPlanPageKeepsTheFirstAndWarns() throws Exception
     {

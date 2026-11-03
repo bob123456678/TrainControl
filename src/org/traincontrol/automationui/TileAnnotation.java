@@ -547,7 +547,7 @@ public class TileAnnotation
 
     /**
      * Says a length rule reads this square and nobody has given it a length (Unmeasured Track).  Carried through
-     * `isBlank`, `equals` and `hashCode` as well as `paint` (OB-007): plain track has nothing else to say.
+     * `isBlank`, `equals` and `hashCode` as well as `paint` (FR-005): plain track has nothing else to say.
      */
     public TileAnnotation needsALength()
     {
@@ -737,7 +737,7 @@ public class TileAnnotation
 
     /**
      * Whether there is nothing here worth drawing.  paint() opens with this, so a field added to equals and hashCode
-     * belongs here too, or it is never painted when it is the ONLY thing on a square (OB-007).
+     * belongs here too, or it is never painted when it is the ONLY thing on a square (FR-005).
      */
     public boolean isBlank()
     {

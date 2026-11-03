@@ -15,7 +15,7 @@ import org.traincontrol.marklin.file.CS2File;
  * A CS3 locomotive's picture is asked for as the station's own web app asks for it: the file name without a trailing
  * ".png", and a folder other than the two standard ones passed as `?path=` (the rule in the CS3 2.6.1 web app,
  * `Ti`/`dC`, with `Vx = ["/home/cs3/cs3data/lokicons", "/usr/local/cs3/lokicons"]`).  Pictures in the standard folders,
- * which are all of Adam's 160, are asked for exactly as before.
+ * which are all of Adam's 160, are asked for exactly as before (OB-404).
  *
  * MUTATION: build the URL from the last path segment alone again (getImageURLCS3 of what follows the last "/"), and
  * the ".png" and USB cases fail.

@@ -181,7 +181,7 @@ public final class CS2File
     
     /**
      * The web app's rule for a CS3 icon path: the file name without ".png", and a folder other than the two standard
-     * ones passed as ?path=.
+     * ones passed as ?path= (OB-404).
      */
     private String cs3IconURL(String iconPath)
     {
@@ -733,7 +733,6 @@ public final class CS2File
             }
         }
 
-        // Not read yet: s88 contacts by device, and /app/api/devs with each s88 source and its bus lengths ("kanal")
         Map<Integer, Boolean> out = new HashMap<>();
 
         for (int i = 0; i < mags.length(); i++)
@@ -1402,7 +1401,7 @@ public final class CS2File
                                     protocol = Accessory.accessoryDecoderType.DCC;
                                 }
 
-                                // Not used yet: the article's "internname" (its name), "schaltzeit" (ms) and exact "typ"
+                                // Not used yet: "schaltzeit" (ms) and the exact "typ"; CS3TrackPlan decodes "internname"
 
                                 // Which command the item's own "sekunde" pause belongs on: the LAST one this item
                                 // emits.  For a three-way at stellung 1, 2 or 3 the pair is emitted
@@ -2392,7 +2391,7 @@ public final class CS2File
         // them both the first one's id
         int pageIndex = -1;
 
-        // Addresses with articles of two protocols, which a CS3 can hold; resolveTwoProtocolTiles resolves their tiles
+        // Addresses with articles of two protocols, which a CS3 can hold; resolveTwoProtocolTiles handles them (OB-402)
         Map<Integer, String> twoProtocols = control != null && control.isCS3() ? addressesWithTwoProtocols(accDB)
             : new HashMap<>();
         this.trackPlan = null;
@@ -2719,10 +2718,9 @@ public final class CS2File
     }
 
     /**
-     * Gives each tile at an address with two protocols the protocol of the article the CS3's own plan of this page puts
-     * there: the page's only article at that address, else, on a grid page, the one on the tile's square.  The tiles of
-     * an address that cannot be told keep the first article's protocol, with one warning per page while this parser
-     * lives (one sync).  A local copy is not checked against the station, whose plan may no longer match it.
+     * Gives each tile at an address with two protocols the protocol of the article this page's CS3 plan puts there (the
+     * page's only one, or on a grid page the one on its square); a tile it cannot tell keeps the first article's,
+     * warned once per page while this parser lives.  A local copy is never checked against the plan (OB-402).
      */
     private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
         Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)

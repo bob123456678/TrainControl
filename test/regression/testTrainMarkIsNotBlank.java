@@ -6,7 +6,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileAnnotation;
 
 /**
- * A square whose only annotation is "a train is standing here" is not a blank square (OB-007): `isBlank()` must count
+ * A square whose only annotation is "a train is standing here" is not a blank square (FR-005): `isBlank()` must count
  * `occupied`, or the star is never painted.
  *
  * @author Adam

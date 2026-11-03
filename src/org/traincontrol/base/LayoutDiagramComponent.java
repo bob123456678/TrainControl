@@ -908,7 +908,7 @@ public class LayoutDiagramComponent
         }
         else if (this.protocol != null && this.address > 0 && this.isAccessory())
         {
-            // MM2 too on an accessory tile, so one at an address a CS3 gives two protocols reads back as it was saved
+            // MM2 too on every addressed accessory tile, so the tile keeps the protocol it was saved with (OB-402)
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
         }
         

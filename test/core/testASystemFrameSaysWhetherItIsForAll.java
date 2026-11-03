@@ -7,7 +7,7 @@ import org.traincontrol.marklin.udp.CS2Message;
 /**
  * A system frame says whether it was addressed to every device (UID 0) or to one.  Adam's CS3 plus answered each stop
  * and go twice in the same millisecond, once to all and once to itself (UID 0x637340ea); the frames below are copied
- * from that capture.  Nothing reads the answer yet, so frame handling is unchanged.
+ * from that capture.  Nothing reads the answer yet, so frame handling is unchanged (FR-172).
  *
  * MUTATION: return false from isAddressedToAll, and the frames to all fail.
  *

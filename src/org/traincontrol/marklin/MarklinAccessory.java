@@ -140,7 +140,7 @@ public class MarklinAccessory extends Accessory
     
     /**
      * Takes the position the station reported, sending nothing and counting no actuation, unless an echo has arrived
-     * since the report was asked for.
+     * since the report was asked for (FR-171).
      * @param switched true for turned (red)
      * @param asked System.nanoTime() when the report was asked for
      */

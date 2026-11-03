@@ -16,13 +16,13 @@ import support.StandInStation;
 /**
  * An MM2 tile in a local copy of a CS3 layout keeps MM2 after a save, beside a DCC article at its address: one read
  * from the file, one drawn new and one re-addressed in the editor, one saved again while not on a CS3, and one copied
- * as the editor copies.  Every accessory tile now writes its protocol, MM2 included, on any station.
+ * as the editor copies.  Every accessory tile writes its protocol, MM2 included, on any station (OB-402).
  *
  * The fixture `test/cs3_v261` is a CS3 plus (2.6.1) export: W 14 (DCC) and W 15 (MM2) are both address 25, W 11 (DCC)
  * and W 1R (MM2) both address 1, and the pages name only the address, so every tile at 25 and 1 reads as DCC.  The
- * editor's remedy is the tile's protocol, saved as `.prot`; MM2 was never written, so the MM2 tiles read back as DCC.
+ * editor's remedy is the tile's protocol, saved as `.prot`, MM2 included.
  *
- * MUTATION: write `.prot` only for a protocol other than MM2 again (LayoutDiagramComponent.exportToCS2TextFormat), and
+ * MUTATION: write `.prot` only for a protocol other than MM2 (LayoutDiagramComponent.exportToCS2TextFormat), and
  * every MM2 tile at an address with two protocols reads back as DCC.
  *
  * @author Adam
@@ -176,8 +176,8 @@ public class testAnMM2TileBesideADCCArticleKeepsItsProtocol
 
     /**
      * On a CS2, read from the CS2 fixture `test/layout` and from the sandbox's pages: every addressed switch, signal and
-     * uncoupler tile writes `.prot`, MM2 included; every other tile keeps the old rule (`.prot` only for a protocol other
-     * than MM2), so track writes none; and the saved pages read back with every tile's protocol as before.
+     * uncoupler tile writes `.prot`, MM2 included; every other tile writes `.prot` only for a protocol other
+     * than MM2, so track writes none; and the saved pages read back with every tile's protocol as before.
      *
      * MUTATION: write `.prot=MM2` on every tile (drop the accessory test from the `else if`), and a track tile writes it.
      */

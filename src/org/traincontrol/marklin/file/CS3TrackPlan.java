@@ -11,7 +11,7 @@ import org.json.JSONObject;
 
 /**
  * The CS3's own track plans (`/app/api/gbs`): each page's articles and the squares they are on.  Read leniently: an
- * article, square or page that will not read counts as not there, and no gbs content makes it throw.
+ * article, square or page that will not read counts as not there, and no gbs content makes it throw (OB-402).
  *
  * @author Adam
  */
