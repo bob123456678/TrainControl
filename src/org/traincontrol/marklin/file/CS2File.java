@@ -2751,8 +2751,9 @@ public final class CS2File
 
         Point offset = plan == null ? null : plan.gridOffset(voters);
 
-        // The squares of each address that could not be told
+        // The squares of each address that could not be told, and the protocol its untold tiles keep
         Map<Integer, List<String>> untold = new java.util.TreeMap<>();
+        Map<Integer, Accessory.accessoryDecoderType> kept = new HashMap<>();
 
         for (LayoutDiagramComponent c : tiles)
         {
@@ -2772,6 +2773,7 @@ public final class CS2File
             else
             {
                 untold.computeIfAbsent(c.getAddress(), k -> new ArrayList<>()).add(c.getX() + "," + c.getY());
+                kept.put(c.getAddress(), c.getProtocol());
             }
         }
 
@@ -2784,7 +2786,7 @@ public final class CS2File
 
             logMessage(I18n.f(fromStation ? "layout.cs3TwinUnresolved" : "layout.cs3TwinNotChecked",
                 twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
-                tiles.stream().filter(c -> c.getAddress() == e.getKey()).findFirst().get().getProtocol()));
+                kept.get(e.getKey())));
         }
     }
 

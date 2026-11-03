@@ -376,6 +376,42 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     }
 
     /**
+     * A slip whose first square is told and whose second is not: the warning names the protocol the untold square
+     * keeps.  With W 1R on Main Layout's plan at the slip's first square (16,6) and W 11 moved off it, that square is
+     * W 1R's (MM2) and the second, (17,6), keeps the first article's DCC.
+     *
+     * MUTATION: take the warning's protocol from the address's first tile again (CS2File.resolveTwoProtocolTiles), and
+     * it says MM2.
+     */
+    @Test
+    public void testTheWarningNamesTheUntoldSquaresProtocol() throws Exception
+    {
+        gbs(doc ->
+        {
+            plan(doc, "Main Layout").getJSONArray("articles").put(new JSONObject().put("internname", "W#201R")
+                .put("x", 875).put("y", 455));
+            JSONArray all = plan(doc, "Main Layout").getJSONArray("articles");
+
+            for (int i = 0; i < all.length(); i++)
+            {
+                if ("W#2011".equals(all.getJSONObject(i).getString("internname")))
+                {
+                    all.getJSONObject(i).put("x", 35).put("y", 35);
+                }
+            }
+
+            return doc;
+        });
+
+        List<LayoutDiagram> pages = readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.MM2, 1);
+
+        assertEquals(protocol(pages, "Main Layout", 16, 6), accessoryDecoderType.MM2, "W 1R's square");
+        assertEquals(protocol(pages, "Main Layout", 17, 6), accessoryDecoderType.DCC, "the untold square");
+        assertTrue(warnings().get(0).contains("at 17,6 on page Main Layout") && warnings().get(0).contains("DCC is used"),
+            "it names the untold square and the protocol it keeps: " + warnings());
+    }
+
+    /**
      * Not a CS3, though its accessory file repeats an address with two protocols: as before, the plans are never asked
      * for, nothing is warned, and every tile has the protocol it had.
      *
