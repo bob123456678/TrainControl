@@ -586,7 +586,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (LayoutDiagramComponent c : l.getAll())
         {
-            if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+            if (c.isAccessory())
             {                            
                 int newAddress = c.getAddress() - 1;                    
                 int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, c.getProtocol());
@@ -762,7 +762,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             for (LayoutDiagramComponent c : l.getAll())
             {
-                if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+                if (c.isAccessory())
                 {
                     int uid = MarklinAccessory.UIDfromAddress(c.getAddress() - 1, c.getProtocol());
                     kinds.computeIfAbsent(uid, k -> new HashSet<>()).add(c.isSignal());

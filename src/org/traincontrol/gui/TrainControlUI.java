@@ -4552,7 +4552,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return tile.isRoute();
 
             default:
-                return tile.isSwitch() || tile.isSignal() || tile.isUncoupler();
+                return tile.isAccessory();
         }
     }
 

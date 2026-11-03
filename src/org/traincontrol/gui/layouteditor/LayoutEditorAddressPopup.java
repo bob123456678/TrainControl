@@ -94,7 +94,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             this.addressSelector.setVisible(true);
             this.address.setVisible(false);
         }
-        else if (lc.isSwitch() || lc.isSignal() || lc.isLamp() || lc.isUncoupler())
+        else if (lc.isAccessory())
         {
             this.helpLabel.setText(
                 I18n.t("layout.ui.helpAccessoryAddressRange")

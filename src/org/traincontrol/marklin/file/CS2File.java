@@ -2626,7 +2626,7 @@ public final class CS2File
                                 added.setOriginalTyp(m.get("typ"));
 
                                 if (twoProtocols.containsKey(address) && m.get("prot") == null
-                                    && (added.isSwitch() || added.isSignal() || added.isUncoupler()))
+                                    && added.isAccessory())
                                 {
                                     unresolved.add(added);
                                 }
@@ -2744,7 +2744,7 @@ public final class CS2File
             if (plan != null && plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
             {
                 voters.merge(a.getName(), page.getAll().stream()
-                    .filter(t -> (t.isSwitch() || t.isSignal() || t.isUncoupler()) && t.getAddress() == a.getAddress())
+                    .filter(t -> t.isAccessory() && t.getAddress() == a.getAddress())
                     .map(t -> new Point(t.getX(), t.getY())).collect(Collectors.toList()),
                     (x, y) -> { List<Point> both = new ArrayList<>(x); both.addAll(y); return both; });
             }

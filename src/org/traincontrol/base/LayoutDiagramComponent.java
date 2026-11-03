@@ -261,6 +261,12 @@ public class LayoutDiagramComponent
         return this.type == componentType.SWITCH_THREE;
     }
 
+    /** Whether the tile stands for an accessory: a switch, a signal (lamps included) or an uncoupler. */
+    public boolean isAccessory()
+    {
+        return this.isSwitch() || this.isSignal() || this.isUncoupler();
+    }
+
     /**
      * The state the accessory at getAddress() should be recorded as when this component is
      * imported into the accessory database.
@@ -900,7 +906,7 @@ public class LayoutDiagramComponent
         {
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
         }
-        else if (this.protocol != null && this.address > 0 && (this.isSwitch() || this.isSignal() || this.isUncoupler()))
+        else if (this.protocol != null && this.address > 0 && this.isAccessory())
         {
             // MM2 too on an accessory tile, so one at an address a CS3 gives two protocols reads back as it was saved
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
