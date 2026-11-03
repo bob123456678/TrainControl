@@ -1647,12 +1647,6 @@ public final class CS2File
                 String name = loc.getString("name");
                 String icon = loc.getString("icon");
                 
-                if (icon != null)
-                {
-                    String[] pieces = icon.split("/");
-                    icon = pieces[pieces.length - 1];
-                }
-                
                 // dir and speed may now be available from v260+
 
                 String type = loc.getString("dectyp");
@@ -1775,7 +1769,7 @@ public final class CS2File
                 
                 if (icon != null)
                 {
-                    newLoc.setImageURL(this.cs3IconURL(loc.getString("icon")));
+                    newLoc.setImageURL(this.cs3IconURL(icon));
                 }
                 
                 if (!multiUnitLocMap.isEmpty())

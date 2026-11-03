@@ -17,8 +17,8 @@ import org.traincontrol.marklin.file.CS2File;
  * `Ti`/`dC`, with `Vx = ["/home/cs3/cs3data/lokicons", "/usr/local/cs3/lokicons"]`).  Pictures in the standard folders,
  * which are all of Adam's 160, are asked for exactly as before.
  *
- * MUTATION: build the URL from the last path segment alone again (getImageURLCS3(icon)), and the ".png" and USB cases
- * fail.
+ * MUTATION: build the URL from the last path segment alone again (getImageURLCS3 of what follows the last "/"), and
+ * the ".png" and USB cases fail.
  *
  * @author Adam
  */
