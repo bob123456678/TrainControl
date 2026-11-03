@@ -664,6 +664,39 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
 
+    /**
+     * Each two-position accessory in the position the CS3 last set; nothing changes if the station will not say.
+     */
+    private void adoptCS3AccessoryStates()
+    {
+        long asked = System.nanoTime();
+
+        try
+        {
+            this.fileParser.parseAccessoryStatesCS3().forEach((uid, turned) ->
+            {
+                MarklinAccessory a = this.accDB.getById(uid);
+
+                if (a != null && a.isSwitched() != turned)
+                {
+                    a.adoptStationPosition(turned, asked);
+
+                    if (this.view != null)
+                    {
+                        this.view.repaintSwitch(a.getAddress() + 1, a.getDecoderType());
+                    }
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            if (this.debug)
+            {
+                this.log(e);
+            }
+        }
+    }
+
     private void syncLayouts() throws Exception
     {
         // ONE PARSER FOR THE WHOLE METHOD: syncWithCS2 reassigns `fileParser` outside the lock that serializes this
@@ -1565,6 +1598,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 cs3Is260 = fileParser.isCS3Version260OrAbove();
                 parsedRoutes = fileParser.parseRoutesCS3(cs3Is260);
+                this.adoptCS3AccessoryStates();
             }
             else
             {

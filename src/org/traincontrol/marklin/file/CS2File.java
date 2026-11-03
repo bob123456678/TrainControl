@@ -674,6 +674,67 @@ public final class CS2File
         return parseLocomotivesCS3(parseJSONArray(fetchURL(getCS3LocDBUrl(is260 ? 260 : 250))));
     }
     
+    // The accessory list the route import read, for the positions read after it in the same sync
+    private JSONArray cs3Mags;
+
+    /**
+     * The CS3's last position of each two-position MM2 or DCC article (/app/api/mags/state), by accessory UID, true for
+     * turned (state "0", as the CAN position byte).  The station can answer a first request with an empty body, so an
+     * empty one is asked once more.
+     */
+    public Map<Integer, Boolean> parseAccessoryStatesCS3() throws Exception
+    {
+        String body = "";
+
+        for (int attempt = 0; attempt < 2 && body.trim().isEmpty(); attempt++)
+        {
+            try (BufferedReader in = fetchURL(getCS3MagDBUrl() + "/state"))
+            {
+                body = in.lines().collect(Collectors.joining("\n"));
+            }
+        }
+
+        Map<String, String> stateById = new HashMap<>();
+        JSONArray states = new JSONArray(body);
+
+        for (int i = 0; i < states.length(); i++)
+        {
+            JSONArray pair = states.optJSONArray(i);
+
+            if (pair != null && pair.optJSONObject(1) != null)
+            {
+                stateById.put(String.valueOf(pair.get(0)), pair.getJSONObject(1).optString("state", ""));
+            }
+        }
+
+        JSONArray mags = this.cs3Mags;
+
+        if (mags == null)
+        {
+            try (BufferedReader in = fetchURL(getCS3MagDBUrl()))
+            {
+                mags = parseJSONArray(in);
+            }
+        }
+
+        Map<Integer, Boolean> out = new HashMap<>();
+
+        for (int i = 0; i < mags.length(); i++)
+        {
+            JSONObject a = mags.optJSONObject(i);
+            String state = a == null ? null : stateById.get(String.valueOf(a.opt("id")));
+
+            if (a != null && a.optInt("states") == 2 && a.optInt("address") > 0 && ("0".equals(state) || "1".equals(state))
+                && ("mm".equals(a.optString("prot")) || "dcc".equals(a.optString("prot"))))
+            {
+                out.put(MarklinAccessory.UIDfromAddress(a.optInt("address") - 1, "dcc".equals(a.optString("prot"))
+                    ? Accessory.accessoryDecoderType.DCC : Accessory.accessoryDecoderType.MM2), "0".equals(state));
+            }
+        }
+
+        return out;
+    }
+
     /**
      * Returns whether the CS3 is at or above firmware v2.6.0
      * @return
@@ -1165,6 +1226,8 @@ public final class CS2File
      */
     public List<MarklinRoute> parseRoutesCS3(JSONArray routeList, JSONArray mags, JSONArray locs)
     {
+        this.cs3Mags = mags;
+
         if (locs.isEmpty())
         {
             logMessage(I18n.f("route.warningNoLocomotivesProvidedCs3"));
