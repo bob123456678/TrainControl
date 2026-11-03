@@ -1,0 +1,18 @@
+1174	  acc uid=3843 name=Signal 68 DCC SIGNAL DCC switched=true n=0 byId=true byName=true	  acc uid=3843 name=Switch 68 DCC SWITCH DCC switched=false n=0 byId=true byName=true
+1191	  (6,4) SWITCH_LEFT addr=68 prot=DCC acc=Switch 68 DCC/SWITCH/3843 live=false	  (6,4) SWITCH_LEFT addr=68 prot=DCC acc=Switch 68 DCC/SWITCH/3843 live=true
+1193	  (7,3) SWITCH_RIGHT addr=54 prot=MM2 acc=Switch 54/SWITCH/3035 live=false	  (7,3) SWITCH_RIGHT addr=54 prot=MM2 acc=Switch 54/SWITCH/3035 live=true
+1208	  (10,10) SIGNAL addr=54 prot=MM2 acc=Signal 54/SIGNAL/3035 live=false	  (10,10) SIGNAL addr=54 prot=MM2 acc=Switch 54/SWITCH/3035 live=true
+1440	  (1,1) SIGNAL addr=68 prot=DCC acc=Signal 68 DCC/SIGNAL/3843 live=true	  (1,1) SIGNAL addr=68 prot=DCC acc=Switch 68 DCC/SWITCH/3843 live=true
+1653	  Adding Signal 54	(gone)
+1655	  Adding Signal 68 DCC	(gone)
+1656	  Adding Switch 54	(gone)
+1676	  acc uid=3843 name=Signal 68 DCC SIGNAL DCC switched=true n=0 byId=true byName=true	  acc uid=3843 name=Switch 68 DCC SWITCH DCC switched=false n=0 byId=true byName=true
+1693	  (6,4) SWITCH_LEFT addr=68 prot=DCC acc=Switch 68 DCC/SWITCH/3843 live=false	  (6,4) SWITCH_LEFT addr=68 prot=DCC acc=Switch 68 DCC/SWITCH/3843 live=true
+1695	  (7,3) SWITCH_RIGHT addr=54 prot=MM2 acc=Switch 54/SWITCH/3035 live=false	  (7,3) SWITCH_RIGHT addr=54 prot=MM2 acc=Switch 54/SWITCH/3035 live=true
+1710	  (10,10) SIGNAL addr=54 prot=MM2 acc=Signal 54/SIGNAL/3035 live=false	  (10,10) SIGNAL addr=54 prot=MM2 acc=Switch 54/SWITCH/3035 live=true
+1942	  (1,1) SIGNAL addr=68 prot=DCC acc=Signal 68 DCC/SIGNAL/3843 live=true	  (1,1) SIGNAL addr=68 prot=DCC acc=Switch 68 DCC/SWITCH/3843 live=true
+2155	  Adding Switch 68 DCC	(gone)
+2156	  Adding Signal 54	(gone)
+2158	  Adding Signal 68 DCC	(gone)
+2159	  Adding Switch 54	(gone)
+2637	  Adding Switch 68 DCC	(gone)

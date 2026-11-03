@@ -259,6 +259,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Is this a CS3?
     private boolean isCS3 = false;
+
+    // The accessory UIDs this sync's pages show as both a switch and a signal (syncLayouts); see wireComponents
+    private Set<Integer> mixedAddresses = Collections.emptySet();
     
     // Automation controller
     private Layout autoLayout;
@@ -591,12 +594,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Make sure all components are added
                 if (!this.accDB.hasId(targetAddress) ||
                     // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
-                   (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
+                   (this.accDB.hasId(targetAddress) && !this.mixedAddresses.contains(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
                         
                     // Create / convert the second accessory to switch if needed
                     c.isThreeWay() && (
                         !this.accDB.hasId(targetAddress + 1) ||
-                        (this.accDB.hasId(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
+                        (this.accDB.hasId(targetAddress + 1) && !this.mixedAddresses.contains(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
                     )
                 )
                 {
@@ -717,6 +720,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         this.clearLayouts();
+
+        // The addresses with tiles of both kinds: CAN does not care whether a switch or a signal, so every tile there
+        // shares the accessory the database holds rather than re-creating it for each tile of the other kind
+        Map<Integer, Set<Boolean>> kinds = new HashMap<>();
+
+        for (LayoutDiagram l : parsed)
+        {
+            for (LayoutDiagramComponent c : l.getAll())
+            {
+                if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+                {
+                    int uid = MarklinAccessory.UIDfromAddress(c.getAddress() - 1, c.getProtocol());
+                    kinds.computeIfAbsent(uid, k -> new HashSet<>()).add(c.isSignal());
+
+                    if (c.isThreeWay())
+                    {
+                        kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
+                    }
+                }
+            }
+        }
+
+        this.mixedAddresses = kinds.keySet().stream().filter(uid -> kinds.get(uid).size() > 1).collect(Collectors.toSet());
 
         for (LayoutDiagram l : parsed)
         {
