@@ -640,6 +640,7 @@
         <test-one-class class="testACS3TrackPlanTellsTwinsApartOrSaysItCannot"/>
         <test-one-class class="testACS3SyncTakesTheStationsPositions"/>
         <test-one-class class="testACS3IconFollowsTheWebAppsRule"/>
+        <test-one-class class="testASystemFrameSaysWhetherItIsForAll"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
