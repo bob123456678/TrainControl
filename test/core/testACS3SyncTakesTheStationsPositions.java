@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.file.CS2File;
 import support.StandInStation;
 
 /**
@@ -196,6 +197,37 @@ public class testACS3SyncTakesTheStationsPositions
 
         assertTheSavedPositions();
         assertEquals(station.requests("/app/api/mags/state"), 2, "asked twice: " + station.asked());
+    }
+
+    /**
+     * The accessory file's `.stellung` means what the station's state means, 0 for turned: on Adam's saved files the
+     * two agree for every article in the file at an address the station gives a two-position MM2 or DCC state, 22
+     * articles at 21 addresses (D 2 shares W 13's).
+     *
+     * MUTATION: read `.stellung` 0 as straight again (CS2File.parseMags), and every one of them disagrees.
+     */
+    @Test
+    public void testTheAccessoryFileReadsPositionsAsTheStationDoes() throws Exception
+    {
+        stateBodies = java.util.Arrays.asList(StandInStation.file("test/cs3_v261/app/api/mags/state.json"));
+        CS2File parser = new CS2File(station.address(), model);
+        java.util.Map<Integer, Boolean> states = parser.parseAccessoryStatesCS3();
+        int compared = 0;
+
+        for (MarklinAccessory a : parser.parseMags(CS2File.parseFile(CS2File.fetchURL(
+            new File("test/cs3_v261/config/magnetartikel.cs2").toURI().toString()))))
+        {
+            // The file's .id is the address, which the station's UIDs count from 0
+            Integer uid = MarklinAccessory.UIDfromAddress(a.getAddress() - 1, a.getDecoderType());
+
+            if (states.containsKey(uid))
+            {
+                assertEquals(a.isSwitched(), (boolean) states.get(uid), a.getName() + " at " + a.getAddress());
+                compared++;
+            }
+        }
+
+        assertEquals(compared, 22, "the articles at an address with a two-position state");
     }
 
     /** No answer that can be read: the sync succeeds and nothing moves. */

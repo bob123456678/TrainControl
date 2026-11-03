@@ -53,7 +53,7 @@ public class testACS2SyncIsAsBefore
 {
     private static final String GOLDEN = "test/baseline/cs2_sync_golden.txt";
 
-    // The lines the branch changes on purpose, each named with the golden's line; see withTheChanges
+    // The lines the branch changes on purpose, each named with the golden's line; see support.GoldenChanges
     private static final String CHANGES = "test/baseline/cs2_sync_golden_changes.tsv";
 
     private static final byte[] CS2_DEVICE = "[geraet]\ngeraet\n .produkt=Central Station 2\n"
@@ -66,8 +66,9 @@ public class testACS2SyncIsAsBefore
     public void testASyncWithACS2IsAsBefore() throws Exception
     {
         String actual = support.SavedProtocol.inSyncDump(String.join("\n", syncAll()) + "\n");
-        String golden = withTheChanges(!new File(GOLDEN).isFile() ? ""
-            : new String(Files.readAllBytes(new File(GOLDEN).toPath()), StandardCharsets.UTF_8).replace("\r\n", "\n"));
+        String golden = support.GoldenChanges.apply(!new File(GOLDEN).isFile() ? ""
+            : new String(Files.readAllBytes(new File(GOLDEN).toPath()), StandardCharsets.UTF_8).replace("\r\n", "\n"),
+            CHANGES);
 
         if (!actual.equals(golden))
         {
@@ -87,33 +88,6 @@ public class testACS2SyncIsAsBefore
             fail("differs from " + GOLDEN + " with " + CHANGES + " at line " + (i + 1) + " (written to " + out
                 + "):\n  golden: " + (i < g.length ? g[i] : "(end)") + "\n  now:    " + (i < a.length ? a[i] : "(end)"));
         }
-    }
-
-    /**
-     * The golden with the changes the branch makes on purpose: each line of CHANGES is a golden line number, the line
-     * as dev wrote it and the line now ("(gone)" when there is none), tab-separated.  A changed golden fails here.
-     */
-    private static String withTheChanges(String golden) throws Exception
-    {
-        if (!new File(CHANGES).isFile())
-        {
-            return golden;
-        }
-
-        List<String> lines = new ArrayList<>(java.util.Arrays.asList(golden.split("\n", -1)));
-
-        for (String change : Files.readAllLines(new File(CHANGES).toPath(), StandardCharsets.UTF_8))
-        {
-            String[] f = change.split("\t");
-            assertEquals(f.length, 3, CHANGES + " row is not line, was and now: " + change);
-
-            int at = Integer.parseInt(f[0]) - 1;
-            assertEquals(lines.get(at), f[1], CHANGES + " names golden line " + f[0] + " as it was");
-            lines.set(at, f[2].equals("(gone)") ? null : f[2]);
-        }
-
-        lines.removeIf(java.util.Objects::isNull);
-        return String.join("\n", lines);
     }
 
     /** Every run's dump, with the stand-in's address, the folders and timings taken out. */

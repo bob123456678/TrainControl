@@ -845,7 +845,7 @@ public final class CS2File
                             MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
                             Accessory.accessoryDecoderType.MM2,
                         m.get("name"), 
-                        !"0".equals(m.get("stellung")), 
+                        "0".equals(m.get("stellung")), // 0 is turned, as on CAN and in /app/api/mags/state
                         0);
 
                     out.add(acc);

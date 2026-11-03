@@ -24,6 +24,10 @@ import org.traincontrol.marklin.file.CS2File;
  * Since every accessory tile writes its protocol, a save may add ` .prot=MM2` to an addressed switch, signal or
  * uncoupler that read as MM2, and only there (support.SavedProtocol).
  *
+ * One change is on purpose and listed line by line in `test/baseline/cs2_parse_golden_changes.tsv`: the accessory
+ * file's `.stellung` 0 now reads as turned, as the station's state and CAN do, so each accessory's printed position is
+ * the other one.  Nothing reads that position yet.
+ *
  * MUTATION: write `.prot=MM2` on every tile (drop the accessory test from LayoutDiagramComponent's `else if`), and the
  * golden differs at the first track tile; or on none (drop the `else if`), and at the first MM2 switch.
  *
@@ -32,6 +36,9 @@ import org.traincontrol.marklin.file.CS2File;
 public class testCS2InputsParseAsBefore
 {
     private static final String GOLDEN = "test/baseline/cs2_parse_golden.txt";
+
+    // The lines the branch changes on purpose, each named with the golden's line; see support.GoldenChanges
+    private static final String CHANGES = "test/baseline/cs2_parse_golden_changes.tsv";
 
     private static final String[] LAYOUTS =
     {
@@ -151,8 +158,8 @@ public class testCS2InputsParseAsBefore
     @Test
     public void testEveryCS2InputParsesAsBefore() throws Exception
     {
-        String[] want = new String(Files.readAllBytes(new File(GOLDEN).toPath()), StandardCharsets.UTF_8)
-            .replace("\r", "").split("\n");
+        String[] want = support.GoldenChanges.apply(new String(Files.readAllBytes(new File(GOLDEN).toPath()),
+            StandardCharsets.UTF_8).replace("\r", ""), CHANGES).split("\n");
         String[] got = support.SavedProtocol.inParseDump(dump()).split("\n");
 
         for (int i = 0; i < Math.min(want.length, got.length); i++)
