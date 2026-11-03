@@ -180,6 +180,21 @@ public final class CS2File
     }
     
     /**
+     * The web app's rule for a CS3 icon path: the file name without ".png", and a folder other than the two standard
+     * ones passed as ?path=.
+     */
+    private String cs3IconURL(String iconPath)
+    {
+        int slash = iconPath.lastIndexOf('/');
+        String file = iconPath.substring(slash + 1);
+        String folder = slash > 0 ? iconPath.substring(0, slash) : "";
+        String url = getImageURLCS3(file.endsWith(".png") ? file.substring(0, file.length() - 4) : file);
+
+        return folder.isEmpty() || "/home/cs3/cs3data/lokicons".equals(folder) || "/usr/local/cs3/lokicons".equals(folder)
+            ? url : url + "?path=" + folder.replace(" ", "%20");
+    }
+
+    /**
      * Locomotive config file
      * @return 
      */
@@ -1755,7 +1770,7 @@ public final class CS2File
                 
                 if (icon != null)
                 {
-                    newLoc.setImageURL(this.getImageURLCS3(icon));
+                    newLoc.setImageURL(this.cs3IconURL(loc.getString("icon")));
                 }
                 
                 if (!multiUnitLocMap.isEmpty())
