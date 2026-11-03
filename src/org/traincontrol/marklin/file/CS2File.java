@@ -1,5 +1,6 @@
 package org.traincontrol.marklin.file;
 
+import java.awt.Point;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -2313,6 +2314,11 @@ public final class CS2File
         // by position, not by looking the name up: two pages may share a name, and a lookup would give
         // them both the first one's id
         int pageIndex = -1;
+
+        // Addresses with articles of two protocols, which a CS3 can hold; their tiles are resolved by resolveTwins
+        Map<Integer, String> twoProtocols = control != null && control.isCS3() ? addressesWithTwoProtocols(accDB)
+            : new HashMap<>();
+        this.trackPlan = null;
         
         for (String name : names)
         {
@@ -2388,6 +2394,8 @@ public final class CS2File
                 LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
 
                 layout.setPageId(index.get(pageIndex).get("id"));
+
+                List<LayoutDiagramComponent> unresolved = new ArrayList<>();
                         
                 for (Map<String, String> m : l)
                 {
@@ -2533,6 +2541,12 @@ public final class CS2File
                                 // the file distinguished.  Only the word is kept; the export derives the file's number
                                 // from it.
                                 added.setOriginalTyp(m.get("typ"));
+
+                                if (twoProtocols.containsKey(address) && m.get("prot") == null
+                                    && (added.isSwitch() || added.isSignal() || added.isUncoupler()))
+                                {
+                                    unresolved.add(added);
+                                }
                             }
                         }
                         else
@@ -2546,6 +2560,11 @@ public final class CS2File
                 }
             
                 layout.checkBounds();
+
+                if (!unresolved.isEmpty())
+                {
+                    resolveTwins(layout, unresolved, twoProtocols, accDB);
+                }
             
                 out.add(layout);
             }
@@ -2593,6 +2612,121 @@ public final class CS2File
         }
         
         return out;
+    }
+
+    // The CS3's own track plans (/app/api/gbs): fetched at most once per parse, and only for an address with two
+    // protocols
+    private CS3TrackPlan trackPlan;
+
+    // The twins this parser has warned about, by address and page, so a refresh after each edit does not repeat them
+    private final java.util.Set<String> twinsWarned = new java.util.HashSet<>();
+
+    /**
+     * The addresses with articles of more than one protocol, each naming them ("W 14 DCC, W 15 MM2").
+     */
+    private static Map<Integer, String> addressesWithTwoProtocols(List<MarklinAccessory> accDB)
+    {
+        Map<Integer, String> out = new HashMap<>();
+
+        accDB.stream().collect(Collectors.groupingBy(MarklinAccessory::getAddress)).forEach((address, articles) ->
+        {
+            if (articles.stream().map(MarklinAccessory::getDecoderType).distinct().count() > 1)
+            {
+                out.put(address, articles.stream().map(a -> a.getName() + " " + a.getDecoderType())
+                    .collect(Collectors.joining(", ")));
+            }
+        });
+
+        return out;
+    }
+
+    /**
+     * Gives each tile at an address with two protocols the protocol of the article the CS3's own plan of this page puts
+     * there: the page's only article at that address, else, on a grid page, the one on the tile's square.  The tiles of
+     * an address that cannot be told keep the first article's protocol, with one warning per page while this parser
+     * lives (one sync).  A local copy is not checked against the station, whose plan may no longer match it.
+     */
+    private void resolveTwins(LayoutDiagram page, List<LayoutDiagramComponent> tiles, Map<Integer, String> twoProtocols,
+        List<MarklinAccessory> accDB)
+    {
+        boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+        CS3TrackPlan.Page plan = fromStation ? trackPlan().page(page.getName()) : null;
+
+        // The grid's place on the page, voted by the articles of the addresses with one protocol
+        Map<String, List<Point>> voters = new HashMap<>();
+
+        for (MarklinAccessory a : accDB)
+        {
+            if (!twoProtocols.containsKey(a.getAddress()))
+            {
+                voters.merge(a.getName(), page.getAll().stream()
+                    .filter(t -> (t.isSwitch() || t.isSignal() || t.isUncoupler()) && t.getAddress() == a.getAddress())
+                    .map(t -> new Point(t.getX(), t.getY())).collect(Collectors.toList()),
+                    (x, y) -> { List<Point> both = new ArrayList<>(x); both.addAll(y); return both; });
+            }
+        }
+
+        Point offset = plan == null ? null : plan.gridOffset(voters);
+
+        // The squares of each address that could not be told
+        Map<Integer, List<String>> untold = new java.util.TreeMap<>();
+
+        for (LayoutDiagramComponent c : tiles)
+        {
+            List<MarklinAccessory> onPage = accDB.stream()
+                .filter(a -> a.getAddress() == c.getAddress() && plan != null && plan.holds(a.getName()))
+                .collect(Collectors.toList());
+
+            if (onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() > 1 && offset != null)
+            {
+                onPage.removeIf(a -> !plan.isOn(a.getName(), new Point(c.getX() - offset.x, c.getY() - offset.y)));
+            }
+
+            if (!onPage.isEmpty() && onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() == 1)
+            {
+                c.setProtocol(onPage.get(0).getDecoderType());
+            }
+            else
+            {
+                untold.computeIfAbsent(c.getAddress(), k -> new ArrayList<>()).add(c.getX() + "," + c.getY());
+            }
+        }
+
+        for (Map.Entry<Integer, List<String>> e : untold.entrySet())
+        {
+            if (!this.twinsWarned.add(e.getKey() + " " + page.getName()))
+            {
+                continue;
+            }
+
+            logMessage(I18n.f(fromStation ? "layout.cs3TwinUnresolved" : "layout.cs3TwinNotChecked",
+                twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
+                tiles.stream().filter(c -> c.getAddress() == e.getKey()).findFirst().get().getProtocol()));
+        }
+    }
+
+    /**
+     * The station's track plans, read once per parse; a read that fails gives a plan with no pages.
+     */
+    private CS3TrackPlan trackPlan()
+    {
+        if (this.trackPlan == null)
+        {
+            JSONObject gbs = null;
+
+            try (BufferedReader in = fetchURL(getCS3LayoutUrl()))
+            {
+                gbs = parseJSONObject(in);
+            }
+            catch (Exception e)
+            {
+                logMessage("Could not read the CS3 track plans: " + e, e, true);
+            }
+
+            this.trackPlan = new CS3TrackPlan(gbs);
+        }
+
+        return this.trackPlan;
     }
 
     /**

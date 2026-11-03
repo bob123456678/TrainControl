@@ -635,6 +635,9 @@
         <test-one-class class="testACS2SyncIsAsBefore"/>
         <test-one-class class="testACS3SyncReadsTheLocomotiveListOnceEach"/>
         <test-one-class class="testASwitchAndASignalOnOneAddressShareOneAccessory"/>
+        <test-one-class class="testACS3TileTakesTheProtocolItsPlanGivesIt"/>
+        <test-one-class class="testAnMM2TileBesideADCCTwinKeepsItsProtocol"/>
+        <test-one-class class="testACS3TrackPlanTellsTwinsApartOrSaysItCannot"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

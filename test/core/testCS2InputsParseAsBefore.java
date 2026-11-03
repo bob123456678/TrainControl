@@ -21,8 +21,11 @@ import org.traincontrol.marklin.file.CS2File;
  * on the code before those changes (dev at 0d2d9a24).  The CS3 plus fixture is in the list too, read as a CS2 would
  * read it: without a station, so the CS3-only paths stay shut.
  *
- * MUTATION: write `.prot` for MM2 on every accessory tile (LayoutDiagramComponent.exportToCS2TextFormat), and the
- * golden differs at the first MM2 switch.
+ * Since every accessory tile writes its protocol, a save may add ` .prot=MM2` to an addressed switch, signal or
+ * uncoupler that read as MM2, and only there (support.SavedProtocol).
+ *
+ * MUTATION: write `.prot=MM2` on every tile (drop the accessory test from LayoutDiagramComponent's `else if`), and the
+ * golden differs at the first track tile; or on none (drop the `else if`), and at the first MM2 switch.
  *
  * @author Adam
  */
@@ -150,7 +153,7 @@ public class testCS2InputsParseAsBefore
     {
         String[] want = new String(Files.readAllBytes(new File(GOLDEN).toPath()), StandardCharsets.UTF_8)
             .replace("\r", "").split("\n");
-        String[] got = dump().split("\n");
+        String[] got = support.SavedProtocol.inParseDump(dump()).split("\n");
 
         for (int i = 0; i < Math.min(want.length, got.length); i++)
         {

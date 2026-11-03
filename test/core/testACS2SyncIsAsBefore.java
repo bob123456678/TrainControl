@@ -40,6 +40,9 @@ import support.StandInStation;
  * is no longer re-created for each tile of the other kind.  So those tiles are live, 68 keeps the switch the first
  * railway made rather than becoming a signal, and the "Adding" lines of the re-creations are gone.
  *
+ * Since every accessory tile writes its protocol, a save may also add ` .prot=MM2` to an addressed switch, signal or
+ * uncoupler that read as MM2, and only there (support.SavedProtocol).
+ *
  * MUTATION: find the twinned addresses whatever the station (drop `control.isCS3()` from CS2File.parseLayout), and the
  * twin railway's page writes `.prot=MM2`.  Or count every address as mixed (`this.mixedAddresses = kinds.keySet()`),
  * and 97 is not re-created as a switch.
@@ -62,7 +65,7 @@ public class testACS2SyncIsAsBefore
     @Test
     public void testASyncWithACS2IsAsBefore() throws Exception
     {
-        String actual = String.join("\n", syncAll()) + "\n";
+        String actual = support.SavedProtocol.inSyncDump(String.join("\n", syncAll()) + "\n");
         String golden = withTheChanges(!new File(GOLDEN).isFile() ? ""
             : new String(Files.readAllBytes(new File(GOLDEN).toPath()), StandardCharsets.UTF_8).replace("\r\n", "\n"));
 

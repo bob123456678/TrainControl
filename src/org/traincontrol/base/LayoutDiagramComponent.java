@@ -900,6 +900,11 @@ public class LayoutDiagramComponent
         {
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
         }
+        else if (this.protocol != null && this.address > 0 && (this.isSwitch() || this.isSignal() || this.isUncoupler()))
+        {
+            // MM2 too on an accessory tile, so one at an address a CS3 gives two protocols reads back as it was saved
+            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
+        }
         
         // Add .artikel (raw address)  
         if (this.type != componentType.TEXT)
