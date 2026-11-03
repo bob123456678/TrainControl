@@ -43,9 +43,9 @@ import support.StandInStation;
  * Since every accessory tile writes its protocol, a save may also add ` .prot=MM2` to an addressed switch, signal or
  * uncoupler that read as MM2, and only there (support.SavedProtocol).
  *
- * MUTATION: find the twinned addresses whatever the station (drop `control.isCS3()` from CS2File.parseLayout), and the
- * twin railway's page writes `.prot=MM2`.  Or count every address as mixed (`this.mixedAddresses = kinds.keySet()`),
- * and 97 is not re-created as a switch.
+ * MUTATION: find the addresses with two protocols whatever the station (drop `control.isCS3()` from
+ * CS2File.parseLayout), and railway D's page writes `.prot=MM2`.  Or count every address as mixed
+ * (`this.mixedAddresses = kinds.keySet()`), and 97 is not re-created as a switch.
  *
  * @author Adam
  */

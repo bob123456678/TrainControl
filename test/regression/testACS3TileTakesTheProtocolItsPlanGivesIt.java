@@ -33,7 +33,7 @@ import support.StandInStation;
  * page Main Layout, at (4,7) and (5,9); W 11 (DCC, a double slip on Main Layout) and W 1R (MM2, on the free plan page
  * Startpackung) are both address 1.  A stand-in station serves it and counts the requests.
  *
- * MUTATION: make `resolveTwins` return at once, and W 15 and W 1R read as DCC.
+ * MUTATION: make `resolveTwoProtocolTiles` return at once, and W 15 and W 1R read as DCC.
  *
  * @author Adam
  */
@@ -241,8 +241,8 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     }
 
     /**
-     * A station whose plans will not read: no exception, the first article's protocol, a warning per twinned address
-     * and page: 25 and 1 on Main Layout, 1 on Startpackung.
+     * A station whose plans will not read: no exception, the first article's protocol, a warning per address with two
+     * protocols and page: 25 and 1 on Main Layout, 1 on Startpackung.
      */
     @Test
     public void testPlansThatWillNotReadKeepTheFirstAndWarn() throws Exception
@@ -334,11 +334,53 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     }
 
     /**
+     * Articles that share a name vote together for where the grid sits: with W 2 the only voter on Main Layout's plan,
+     * one W 2 in the accessory list is one vote, too few to place the grid; listed twice, it is two, and the pair at 25
+     * is told.
+     *
+     * MUTATION: keep only the last article of a name in the vote (CS2File.resolveTwoProtocolTiles), and the pair is
+     * not told.
+     */
+    @Test
+    public void testArticlesSharingANameVoteTogether() throws Exception
+    {
+        java.util.function.Predicate<String> onlyW2Votes = name -> name.equals("W#2014") || name.equals("W#2015")
+            || name.equals("W#2011") || name.equals("W#202");
+
+        articles("Main Layout", onlyW2Votes, new HashMap<String, String>());
+        readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.DCC, 1);
+
+        reset();
+        articles("Main Layout", onlyW2Votes, new HashMap<String, String>());
+        mags("artikel\n .name=W 2\n",
+            "artikel\n .name=W 2\n .id=9\n .typ=rechtsweiche\n .dectyp=mm2\nartikel\n .name=W 2\n");
+        readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.MM2, 0);
+    }
+
+    /**
+     * Each parse reads the plans afresh: a station whose plan changed between two syncs is read as it is now.
+     *
+     * MUTATION: keep the plans from one parse to the next (drop `this.trackPlan = null` from CS2File.parseLayout), and
+     * the second parse neither asks nor sees W 15 gone.
+     */
+    @Test
+    public void testTheNextParseReadsThePlansAgain() throws Exception
+    {
+        readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.MM2, 0);
+
+        articles("Main Layout", name -> !name.equals("W#2015"), new HashMap<String, String>());
+        List<LayoutDiagram> pages = parser.parseLayout(parser.getMagList(true));
+
+        assertEquals(station.requests("/app/api/gbs"), 2, "one fetch per parse: " + station.asked());
+        assertEquals(protocol(pages, "Main Layout", 5, 9), accessoryDecoderType.DCC, "W 15 is gone from the plan");
+    }
+
+    /**
      * Not a CS3, though its accessory file repeats an address with two protocols: as before, the plans are never asked
      * for, nothing is warned, and every tile has the protocol it had.
      *
-     * MUTATION: find the twinned addresses whatever the station (drop `control.isCS3()` from CS2File.parseLayout), and
-     * the plans are asked for and the tiles warned about.
+     * MUTATION: find the addresses with two protocols whatever the station (drop `control.isCS3()` from
+     * CS2File.parseLayout), and the plans are asked for and the tiles warned about.
      */
     @Test
     public void testNotACS3NoFetch() throws Exception
@@ -399,7 +441,8 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     /**
      * A refresh, as after each edit, reads the pages again with the same parser and warns no more.
      *
-     * MUTATION: drop the `twinsWarned` check (CS2File.resolveTwins), and the refresh warns three times more.
+     * MUTATION: drop the `twoProtocolsWarned` check (CS2File.resolveTwoProtocolTiles), and the refresh warns three
+     * times more.
      */
     @Test
     public void testARefreshWarnsNoMore() throws Exception
@@ -427,7 +470,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
 
         assertEquals(station.requests("/app/api/gbs"), 0, "all requests: " + station.asked());
         assertEquals(protocol(pages, "Main Layout", 5, 9), accessoryDecoderType.DCC);
-        assertEquals(warnings().size(), 3, "each twinned address is named once per page: " + warnings());
+        assertEquals(warnings().size(), 3, "each address with two protocols is named once per page: " + warnings());
         assertTrue(warnings().stream().allMatch(w -> w.contains("not checked against the Central Station")),
             "the local copy's wording: " + warnings());
     }

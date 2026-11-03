@@ -11,7 +11,7 @@ import org.json.JSONObject;
 
 /**
  * The CS3's own track plans (`/app/api/gbs`): each page's articles and the squares they are on.  Read leniently: an
- * article, square or page that will not read counts as not there, and nothing here throws.
+ * article, square or page that will not read counts as not there, and no gbs content makes it throw.
  *
  * @author Adam
  */
@@ -48,7 +48,7 @@ public final class CS3TrackPlan
     /**
      * A CS3 internname as the article's name: "#" and two hex digits stand for a byte of its UTF-8 ("W#2014" = "W 14").
      */
-    static String decodeInternname(String internname)
+    private static String decodeInternname(String internname)
     {
         try
         {
@@ -88,6 +88,12 @@ public final class CS3TrackPlan
                         : new Point((int) Math.round((x - 35) / 70), (int) Math.round((y - 35) / 70)));
                 }
             }
+        }
+
+        /** Whether the page is a grid ("stellpult"), on which an article's square can be told. */
+        public boolean isGrid()
+        {
+            return this.grid;
         }
 
         /** Whether the page holds the named article, wherever it is. */

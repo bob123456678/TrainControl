@@ -258,6 +258,31 @@ public class testACS3TrackPlanTellsTwinsApartOrSaysItCannot
     }
 
     /**
+     * A position rounds to the nearest square: W 11 at (874,455) is on (12,6), and W 1R at (503,-76) on (7,-2).
+     */
+    @Test
+    public void testAPositionRoundsToTheNearestSquare() throws Exception
+    {
+        assertTrue(new CS3TrackPlan(fixture()).page("Main Layout").isOn("W 11", new Point(12, 6)), "x 11.99");
+        assertTrue(new CS3TrackPlan(fixture()).page("Startpackung").isOn("W 1R", new Point(7, -2)), "x 6.69, y -1.59");
+    }
+
+    /**
+     * Of two articles with one name on a page, the last is the one on the plan.
+     */
+    @Test
+    public void testTheLastArticleOfANameCounts() throws Exception
+    {
+        JSONObject gbs = fixture();
+        page(gbs, "Main Layout").getJSONArray("articles").put(new JSONObject().put("internname", "W#2015").put("x", 175)
+            .put("y", 665));
+        CS3TrackPlan.Page main = new CS3TrackPlan(gbs).page("Main Layout");
+
+        assertTrue(main.isOn("W 15", new Point(2, 9)));
+        assertFalse(main.isOn("W 15", new Point(1, 9)));
+    }
+
+    /**
      * A page whose articles will not read holds none and gives no offset; Main Layout's other articles still read
      * when one of them is not an object.
      */

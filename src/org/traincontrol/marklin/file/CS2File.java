@@ -2397,7 +2397,7 @@ public final class CS2File
         // them both the first one's id
         int pageIndex = -1;
 
-        // Addresses with articles of two protocols, which a CS3 can hold; their tiles are resolved by resolveTwins
+        // Addresses with articles of two protocols, which a CS3 can hold; resolveTwoProtocolTiles resolves their tiles
         Map<Integer, String> twoProtocols = control != null && control.isCS3() ? addressesWithTwoProtocols(accDB)
             : new HashMap<>();
         this.trackPlan = null;
@@ -2645,7 +2645,7 @@ public final class CS2File
 
                 if (!unresolved.isEmpty())
                 {
-                    resolveTwins(layout, unresolved, twoProtocols, accDB);
+                    resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
                 }
             
                 out.add(layout);
@@ -2700,8 +2700,9 @@ public final class CS2File
     // protocols
     private CS3TrackPlan trackPlan;
 
-    // The twins this parser has warned about, by address and page, so a refresh after each edit does not repeat them
-    private final java.util.Set<String> twinsWarned = new java.util.HashSet<>();
+    // The addresses with two protocols this parser has warned about, by address and page, so a refresh after each edit
+    // does not repeat them
+    private final java.util.Set<String> twoProtocolsWarned = new java.util.HashSet<>();
 
     /**
      * The addresses with articles of more than one protocol, each naming them ("W 14 DCC, W 15 MM2").
@@ -2728,8 +2729,8 @@ public final class CS2File
      * an address that cannot be told keep the first article's protocol, with one warning per page while this parser
      * lives (one sync).  A local copy is not checked against the station, whose plan may no longer match it.
      */
-    private void resolveTwins(LayoutDiagram page, List<LayoutDiagramComponent> tiles, Map<Integer, String> twoProtocols,
-        List<MarklinAccessory> accDB)
+    private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
+        Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
     {
         boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
         CS3TrackPlan.Page plan = fromStation ? trackPlan().page(page.getName()) : null;
@@ -2739,7 +2740,7 @@ public final class CS2File
 
         for (MarklinAccessory a : accDB)
         {
-            if (!twoProtocols.containsKey(a.getAddress()))
+            if (plan != null && plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
             {
                 voters.merge(a.getName(), page.getAll().stream()
                     .filter(t -> (t.isSwitch() || t.isSignal() || t.isUncoupler()) && t.getAddress() == a.getAddress())
@@ -2776,7 +2777,7 @@ public final class CS2File
 
         for (Map.Entry<Integer, List<String>> e : untold.entrySet())
         {
-            if (!this.twinsWarned.add(e.getKey() + " " + page.getName()))
+            if (!this.twoProtocolsWarned.add(e.getKey() + " " + page.getName()))
             {
                 continue;
             }
