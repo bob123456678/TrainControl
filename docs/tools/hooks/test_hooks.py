@@ -367,6 +367,137 @@ try:
 finally:
     shutil.rmtree(fake, ignore_errors=True)
 
+# Shell keywords open the command after them: a delete or git command in a loop or an if body is judged
+for cmd in ['for d in build dist; do rm -rf "$d"; done', 'if [ -d C:/x ]; then rm -rf C:/x; fi',
+            'if true; then rm -rf C:/x; else echo no; fi', 'if [ -e X ]; then echo; else rm -rf C:/x; fi',
+            'while read f; do rm -f "$f"; done < list.txt', 'until true; do rm -rf C:/x; done',
+            'if false; then :; elif true; then rm -rf C:/x; fi', 'ls *.log | while read f; do rm "$f"; done',
+            'for d in /tmp/a C:/x; do rm -rf "$d"; done', 'for d in $(ls); do rm -rf "$d"; done']:
+    check('keywords: ' + cmd, sh(cmd, cwd=OUT), 'ask')
+for cmd in ['for d in /tmp/a /tmp/b; do rm -rf "$d"; done', 'for d in "$TEMP"/x*; do rm -rf "$d"; done',
+            'if [ -d /tmp/x ]; then rm -rf /tmp/x; fi', 'for f in *.log; do echo "$f"; done',
+            'if true; then echo rm -rf C:/x; fi', 'if true; then mv C:/x/a C:/x/b; fi']:
+    check('keywords: ' + cmd, sh(cmd, cwd=OUT), 'pass')
+for cmd in ['if true; then git reset --hard; fi', 'if true; then git stash; fi', 'while true; do git stash; done',
+            'for f in a; do git checkout -- cs2_sample_layout/x; done', 'if true; then git add -A; fi']:
+    check('keywords: ' + cmd, sh(cmd), 'deny')
+check('keywords: if ...; then git push origin master', sh('if git diff --quiet; then git push origin master; fi'),
+      'ask')
+check('keywords: if ...; then git push origin dev', sh('if git diff --quiet; then git push origin dev; fi'), 'pass')
+
+# git clean -f deletes untracked files: it asks outside scratch in any repository, passes in scratch, and is refused
+# in this checkout
+for cmd in ['git clean -fdx', 'git clean -f', 'git clean --force -d', 'git -C C:/x clean -fd', 'cd C:/x && git clean -f',
+            'git clean -fd ../other']:
+    check('clean: ' + cmd, sh(cmd, cwd=OUT), 'ask')
+check('clean: git clean -f ../../.. from scratch', sh('git clean -f ../../..', cwd=SCR), 'ask')
+for cmd in ['git clean -n', 'git clean -nd', 'cd /tmp/x && git clean -fdx', 'git -C /tmp/x clean -fd',
+            'git -C "$TEMP/x" clean -fdx']:
+    check('clean: ' + cmd, sh(cmd, cwd=OUT), 'pass')
+check('clean: git clean -fdx in scratch', sh('git clean -fdx', cwd=SCR), 'pass')
+check('clean: git clean -fd in this checkout', sh('git clean -fd'), 'deny')
+
+# cd X || exit and cd X || return place what follows at that level in X; ${VAR:-default}, ${VAR:?}, mktemp -p
+for cmd in ['cd /tmp/wt || exit 1; rm -rf build', 'cd /tmp/wt || exit; rm -rf build', 'cd /tmp/wt || return; rm -rf b',
+            'cd /tmp/wt || exit 1\nrm -rf build', 'cd /tmp/wt || exit 1; make; rm -rf build',
+            'cd /tmp/wt || exit 1; cd sub && rm -rf x', 'S=/tmp/s; rm -rf "${S:?}/x"', 'rm -rf "${TMPDIR:-/tmp}/x"',
+            'rm -rf "${NOPE:=$TEMP}/x"', 'rm -rf "${TEMP:-C:/x}/y"', 'T=$(mktemp -d -p "$TEMP"); rm -rf "$T"',
+            'T="$(mktemp -d -p "$TEMP")" && rm -rf "$T"', 'T=$(mktemp -d --tmpdir=/tmp); rm -rf "$T"',
+            'T=$(mktemp /tmp/fooXXXX); rm -f "$T"', 'T=$(mktemp -p /tmp/x); rm -f "$T"']:
+    check('C1: ' + cmd, sh(cmd, cwd=OUT), 'pass')
+for cmd in ['cd /tmp/wt || echo no; rm -rf build', 'cd C:/x || exit 1; rm -rf y', '(cd /tmp/wt || exit 1); rm -rf b',
+            'cd /tmp/wt || exit 1; cd C:/x; rm -rf y', 'cd $NOPE || exit 1; rm -rf y', 'cd /tmp/wt | exit; rm -rf b',
+            'rm -rf "${NOPE:?}/x"', 'rm -rf "${NOPE:-C:/x}/y"', 'S=/tmp/s; rm -rf "${S:+C:/x}"',
+            'S=/tmp/s; rm -rf "${S/tmp/c}"', 'T=$(mktemp -d -p C:/x); rm -rf "$T"', 'T=$(mktemp C:/x/fooXXXX); rm "$T"',
+            'T=$(mktemp -d -p "$NOPE"); rm -rf "$T"']:
+    check('C1: ' + cmd, sh(cmd, cwd=OUT), 'ask')
+
+# A repository's .claude/worktrees, where the Agent tool's isolated worktrees are, is scratch
+AGENT = 'C:/elsewhere/.claude/worktrees/agent-x'
+for cmd, cwd in [('rm -rf build', AGENT), ('git worktree remove --force .claude/worktrees/agent-a0', OUT),
+                 ('rm -rf C:/elsewhere/.claude/worktrees', OUT), ('git clean -fdx', AGENT),
+                 ('rm -rf ' + R + '/.claude/worktrees/agent-y/build', OUT)]:
+    check('C2: ' + cmd + ' in ' + cwd[-24:], sh(cmd, cwd=cwd), 'pass')
+for cmd in ['rm -rf C:/elsewhere/.claude', 'rm -rf C:/elsewhere/.claude/worktrees-old/x',
+            'rm -rf C:/elsewhere/.claude/worktrees/../x', 'rm -rf C:/elsewhere/claude/worktrees/x']:
+    check('C2: ' + cmd, sh(cmd, cwd=OUT), 'ask')
+
+# cd A || cd S && rm is not placed in S; S=x cmd sets S for cmd alone
+many = 'cd /tmp/wt || exit 1; ' + '; '.join(['cd a%d' % k for k in range(60)]) + '; rm -rf C:/x'
+started = time.time()
+got = sh(many, cwd=OUT)
+check('C1: sixty cds after cd || exit, judged in time', got if time.time() - started < 5 else 'slow', 'ask')
+check('C5: cd C:/x || cd /tmp/s && rm',sh('cd C:/x || cd /tmp/s && rm -rf y', cwd=OUT), 'ask')
+check('C5: cd /tmp/a || cd /tmp/s && rm, from scratch', sh('cd /tmp/a || cd /tmp/s && rm -rf y', cwd=SCR), 'pass')
+check('C5: S=x true; rm "$S"', sh('S=/tmp/x true; rm -rf "$S/y"', cwd=OUT), 'ask')
+check('C5: S=x; true; rm "$S"', sh('S=/tmp/x; true; rm -rf "$S/y"', cwd=OUT), 'pass')
+
+# Master moved in one call: switched to and then changed, or changed in a worktree that is on master
+for cmd in ['git checkout master && git merge --ff-only release',
+            'git switch master && git merge --ff-only release && git push origin',
+            'git checkout master && git merge --ff-only release && git push',
+            'git checkout master; git merge --ff-only release; git checkout dev', 'git checkout master && git commit -m x',
+            'git switch master && git reset HEAD~1', 'git checkout master && git cherry-pick abc',
+            'git checkout master && git pull', 'git checkout -q master && git revert abc', 'git rebase dev master',
+            'git rebase --onto dev x master', 'git worktree add -B master /tmp/m release',
+            'git worktree add -b master /tmp/m', 'git switch master\ngit merge release']:
+    check('B2: ' + cmd, sh(cmd), 'ask')
+check('B2: PowerShell checkout master; merge',
+      ps('git checkout master; git merge --ff-only release; git push; git checkout dev'), 'ask')
+for cmd in ['git checkout master', 'git push origin dev', 'git merge dev', 'git push', 'git push origin',
+            'git checkout -b fix master && git commit -m x', 'git switch -c fix master && git merge dev',
+            'git switch --detach master && git commit -m x', 'git checkout --detach master && git merge x',
+            'git checkout master && git log -3', 'git checkout master && git diff dev', 'git rebase master',
+            'git worktree add -b fix /tmp/m master', 'git worktree add --detach /tmp/m master',
+            'git checkout master && git merge --abort']:
+    check('B2: ' + cmd, sh(cmd), 'pass')
+fake = tempfile.mkdtemp()
+try:
+    common = os.path.abspath(os.path.join(ROOT, subprocess.run(
+        ['git', '-C', ROOT, 'rev-parse', '--git-common-dir'], capture_output=True, text=True).stdout.strip()))
+
+    def worktree(name, branch):
+        gd = os.path.join(fake, 'gd-' + name)
+        os.makedirs(gd)
+        os.makedirs(os.path.join(fake, name, 'src'))
+        open(os.path.join(gd, 'commondir'), 'w').write(common + '\n')
+        open(os.path.join(gd, 'HEAD'), 'w').write('ref: refs/heads/' + branch + '\n' if branch else 'abc123\n')
+        open(os.path.join(fake, name, '.git'), 'w').write('gitdir: ' + gd + '\n')
+        return os.path.join(fake, name).replace('\\', '/')
+    on, off, bare = worktree('m', 'master'), worktree('d', 'dev'), worktree('x', '')
+    for cmd, cwd in [('git -C ' + on + ' merge --ff-only release', R), ('cd ' + on + ' && git merge x && git push', R),
+                     ('git push', on), ('git push origin', on), ('git push -u origin', on), ('git push origin HEAD', on),
+                     ('git commit -m x', on), ('git reset HEAD~1', on), ('git merge --continue', on),
+                     ('git pull --ff-only', on), ('git -C ' + on + ' cherry-pick abc', OUT), ('git rebase dev', on)]:
+        check('B2 on master: ' + cmd.replace(on, '<m>'), sh(cmd, cwd=cwd), 'ask')
+    for cmd, cwd in [('git push origin dev', on), ('git push --tags', on), ('git reset src', on),
+                     ('git merge --abort', on), ('git log', on), ('git push origin HEAD:dev', on),
+                     ('git merge x', off), ('git push', off), ('git -C ' + off + ' commit -m x', R),
+                     ('git commit -m x', bare), ('git push origin', bare), ('cd ' + off + ' && git merge x', R)]:
+        check('B2 off master: ' + cmd.replace(off, '<d>'), sh(cmd, cwd=cwd), 'pass')
+
+    # The asks about uncommitted edits, and the live-state ask, follow the delete check's placement: work in a
+    # scratch worktree never asks, the same work in this checkout still does, and the denies stay strict
+    wt = off
+    for cmd in ['cd ' + wt + ' && git checkout -- src/a.java', 'cd ' + wt + ' && git restore src/a.java',
+                'git -C ' + wt + ' restore src/a.java', 'cd ' + wt + ' && git checkout src',
+                'cd ' + wt + ' || exit 1; git restore src/a.java', 'cp test/LocDB.data ' + wt + '/LocDB.data',
+                'cd ' + wt + ' && cp test/LocDB.data LocDB.data', 'cd ' + wt + ' && rm -f UIState.data',
+                'cd .claude/worktrees/agent-x && git checkout -- src/a.java',
+                'git -C .claude/worktrees/agent-x restore src/a.java']:
+        check('7 silent: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'pass')
+    check('7 silent: git restore in a scratch cwd', sh('git restore src/a.java', cwd=wt), 'pass')
+    for cmd in ['cd ' + wt + '; git checkout -- src/a.java', 'cd ' + wt + '\ngit restore src/a.java',
+                'git restore src/a.java', 'cd $NOPE && git restore x', 'cd ' + wt + '; cp test/LocDB.data LocDB.data',
+                'cp test/LocDB.data LocDB.data', 'cd ' + wt + ' || cd src && git checkout org']:
+        check('7 asks: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'ask')
+    check('7 asks: PowerShell Set-Location; git restore', ps('Set-Location ' + wt + '; git restore src/a.java'), 'ask')
+    for cmd in ['cd ' + wt + ' && git reset --hard', 'cd ' + wt + ' && git stash', 'cd ' + wt + ' && git checkout .',
+                'cd ' + wt + ' && echo x > ' + R + '/cs2_sample_layout/a.cs2']:
+        check('7 denies stay: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'deny')
+finally:
+    shutil.rmtree(fake, ignore_errors=True)
+
 out = subprocess.run([sys.executable, GUARD], input='not json', capture_output=True, text=True)
 check('garbage on stdin', 'pass' if not out.stdout.strip() and out.returncode == 0 else 'error', 'pass')
 
