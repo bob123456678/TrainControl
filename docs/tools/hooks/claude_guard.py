@@ -294,11 +294,13 @@ def command_at(words):
 
 
 def segments(cmd, dialect, depth=0):
-    """Every simple command in cmd as (words, redirection targets, dialect, the separators before it), with the script
-    given to bash -c, sh -c, cmd /c, powershell -Command, eval or Invoke-Expression added as commands of its own, each
-    such script starting afresh.  dialect: bash, ps or cmd."""
-    segs = [(w, t, dialect, sep) for w, t, sep in lex(drop_heredocs(cmd), dialect != 'bash')]
-    for words, _, _, _ in list(segs):
+    """Every simple command in cmd as (words, redirection targets, dialect, the separators before it).  The script
+    given to bash -c, sh -c, cmd /c, powershell -Command, eval or Invoke-Expression follows the command that runs it,
+    as a subshell of its own: opened by a ( before its first command and closed by an empty command after its last,
+    so its cds stay inside it.  dialect: bash, ps or cmd."""
+    out = []
+    for words, targets, sep in lex(drop_heredocs(cmd), dialect != 'bash'):
+        out.append((words, targets, dialect, sep))
         ci = command_at(words)
         if depth > 3 or ci >= len(words):
             continue
@@ -319,8 +321,11 @@ def segments(cmd, dialect, depth=0):
         elif name in ('eval', 'iex', 'invoke-expression'):
             inner = (' '.join(rest), dialect)
         if inner:
-            segs += segments(inner[0], inner[1], depth + 1)
-    return segs
+            script = segments(inner[0], inner[1], depth + 1)
+            if script:
+                w, t, d, s = script[0]
+                out += [(w, t, d, '(' + s)] + script[1:] + [([], [], dialect, ')')]
+    return out
 
 
 def options(args, takes_next='', takes_rest='', long_takes=()):
@@ -895,50 +900,99 @@ def sure_folder(p):
 PIPE = re.compile(r'(?<!\|)\|(?!\|)')
 OPENERS = {'if', 'while', 'until', 'for', 'case', 'select'}
 CLOSERS = {'fi', 'done', 'esac'}
+# Prefixes that run a cd in a child, where it moves nothing
+CHILDREN = {'env', 'timeout', 'nohup', 'exec', 'sudo', 'xargs', 'nice'}
+MOVERS = {'mv', 'move', 'move-item', 'mi', 'ren', 'rename', 'rename-item', 'rni'}
+
+
+def new_level(places):
+    """A shell level: where it may be, where the current && chain runs (None outside one), whether every command
+    so far in that chain is a cd sure to succeed, and the folders pushd left."""
+    return {'places': list(places), 'chain': None, 'fine': True, 'pushed': []}
 
 
 def follow(segs, cwd):
     """The call as the asks read it: (why its first delete that may reach outside the scratch folders asks, or None;
-    for each simple command, (the folders it may run in, the names assigned before it)).
+    for each simple command, (the folders it may run in, the names assigned before it, whether it surely runs)).
 
-    A cd to a local folder that exists succeeds, so everything after it at its level (pipes, loops and if bodies
-    included) runs there, whatever the separator; one inside a subshell lasts to its end.  A cd that may not run (after
-    ||, in an if or loop body, after a command that may fail and &&, or in a pipeline stage or in the background) only
-    adds its folder.  A cd to a folder that does not exist or cannot be read adds it too, and places only what is
-    joined to it by && (and, after `cd X || exit`, the rest of its level)."""
-    level = {'places': [cwd], 'chain': None, 'fine': True, 'pushed': []}
-    outer, names, prev, xargs_open, why, loops = [], {}, None, False, None, {}
-    out, last_cd, block, braces = [], None, 0, 0
+    A cd places what follows only when it surely runs in this shell and surely succeeds: a literal local folder that
+    exists, that nothing earlier in the call deletes or moves, reached by a cd at the top of its level (not after ||,
+    not after && unless every command before it in the chain is such a cd, not in an if, loop, function or skipped
+    brace body, not in a pipe stage, the background or a child such as env).  Then everything after it at its level
+    runs there, whatever the separator; in a subshell, to its end.  Any other cd only adds its folder, and places
+    only what is joined to it by && (and, after `cd X || exit` or `|| { ...; exit; }`, the rest of its level)."""
+    level = new_level([cwd])
+    outer, frames, names, prev, xargs_open, why, loops = [], [], {}, None, False, None, {}
+    out, last_cd, block, braces, ticks, gone, lost = [], None, 0, 0, False, [], False
     # Whether each simple command is in an and-or list that a lone & sends to the background, where a cd stays
     background = [False] * len(segs)
     for k in range(len(segs) - 1, -1, -1):
         after = segs[k + 1][3] if k + 1 < len(segs) else ''
         background[k] = after.strip(' \n') == '&' or bool(
             k + 1 < len(segs) and background[k + 1] and ('&&' in after or '||' in after or PIPE.search(after)))
+
+    def in_body(dialect):
+        return block > 0 or any(f['maybe'] for f in frames) if dialect == 'bash' else dialect == 'ps' and braces > 0
+
+    def gone_under(folder):
+        c = os.path.normcase(folder)
+        return lost or any(c == g or c.startswith(g.rstrip(os.sep) + os.sep) for g in gone)
+
     for k, (words, _, dialect, sep) in enumerate(segs):
         after = segs[k + 1][3] if k + 1 < len(segs) else ''
-        for _ in range(sep.count(')')):
-            if outer:
-                level = outer.pop()
-        if dialect == 'ps':
-            braces = max(0, braces + sep.count('{') - sep.count('}'))
         kind = 'or' if '||' in sep else 'pipe' if PIPE.search(sep) else 'and' if '&&' in sep else 'list'
         ci = command_at(words)
         name = base(words[ci]) if ci < len(words) else ''
-        if kind == 'or' and last_cd is not None and name in ('exit', 'return') and not background[k]:
-            level['places'], level['chain'] = last_cd, None  # cd X || exit: the rest of this level runs in X
-        elif kind == 'list':
-            level['chain'], level['fine'] = None, True
-        elif kind == 'or':
-            level['chain'], level['fine'] = None, False
-        last_cd = None
-        for _ in range(sep.count('(')):
-            outer.append(level)
-            level = {'places': list(level['chain'] if level['chain'] is not None else level['places']),
-                     'chain': None, 'fine': True, 'pushed': []}
+        was_cd, last_cd, settled = last_cd, None, False
+
+        def settle():
+            # How this command joins the one before, on the level it starts at
+            if re.match(r'^\|\|\n*$', sep) and was_cd is not None and name in ('exit', 'return') and \
+                    not background[k] and not in_body(dialect):
+                level['places'], level['chain'] = was_cd, None  # cd X || exit: the rest of this level runs in X
+            elif kind == 'list':
+                level['chain'], level['fine'] = None, True
+            elif kind == 'or':
+                level['chain'], level['fine'] = None, False
+        # The separators in order: ) and a closing ` end a subshell, ( and an opening ` start one, { and } a group
+        for at, ch in enumerate(sep):
+            if ch == ')' or (ch == '`' and ticks and dialect == 'bash'):
+                ticks = ticks and ch != '`'
+                if outer:
+                    level = outer.pop()
+                    level['fine'] = False  # the subshell may have failed
+            elif ch == '(' or (ch == '`' and dialect == 'bash'):
+                if not settled:
+                    settle()
+                    settled = True
+                ticks = ticks or ch == '`'
+                outer.append(level)
+                level = new_level(level['chain'] if level['chain'] is not None else level['places'])
+            elif ch == '{' and dialect == 'bash':
+                if not settled:
+                    settle()
+                    settled = True
+                head = sep[:at]
+                function = '()' in head or (k > 0 and segs[k - 1][0][:1] == ['function'])
+                frames.append({'maybe': function or block > 0 or '&&' in head or '||' in head or bool(PIPE.search(head)),
+                               'exit_to': was_cd if '||' in head and not function else None, 'exits': False,
+                               'depth': len(outer), 'level': level})
+            elif ch == '}' and dialect == 'bash' and frames:
+                frame = frames.pop()
+                # cd X || { echo no; exit 1; }: past the braces, the level runs in X
+                if frame['exits'] and frame['level'] is level and not in_body(dialect):
+                    level['places'], level['chain'] = frame['exit_to'], None
+        if not settled:
+            settle()
+        if dialect == 'ps':
+            braces = max(0, braces + sep.count('{') - sep.count('}'))
         lead = [w.lower() for w in words[:ci + 1]]
         if dialect == 'bash':
             block = max(0, block + sum(w in OPENERS for w in lead) - (words[0] in CLOSERS if words else 0))
+        if name in ('exit', 'return') and (kind == 'list' or sep.rstrip(' \n').endswith('{')) and frames and \
+                frames[-1]['exit_to'] is not None and frames[-1]['depth'] == len(outer):
+            frames[-1]['exits'] = True
+        runs = not (in_body(dialect) or kind in ('or', 'pipe') or PIPE.search(after) or background[k])
         # for d in a b; do ...: d is each of the listed words in turn (and PowerShell's foreach ($d in ...))
         if dialect == 'bash' and words[ci:ci + 1] == ['for'] and words[ci + 2:ci + 3] == ['in'] and \
                 re.match(r'^[A-Za-z_]\w*$', words[ci + 1]):
@@ -950,7 +1004,7 @@ def follow(segs, cwd):
             loops[words[0][1:].lower()] = [os.path.join(p, '*') for p in ps_paths(items) or ['.']] \
                 if items is not None else ps_paths(words[2:]) if not re.match(r'^[\w-]+$', words[2]) else []
             names.pop(words[0][1:].lower(), None)
-            out.append(([UNREAD], dict(names)))
+            out.append(([UNREAD], dict(names), runs))
             continue
         sets = assigned(words, ci, dialect, segs[k + 1][0] if k + 1 < len(segs) else None)
         for n, v in sets.items():
@@ -959,28 +1013,41 @@ def follow(segs, cwd):
         # xargs -I {} rm {}: the braces end the xargs words, so the rm after them reads its input too
         via_xargs, xargs_open = xargs_open or any(base(w) == 'xargs' for w in words[:ci]), \
             ci >= len(words) and any(base(w) == 'xargs' for w in words)
-        if ci >= len(words) or (dialect == 'ps' and sets) or name in ('export', 'set', 'true', ':'):
-            out.append((here, dict(names)))  # an assignment or the like succeeds: the && chain stays fine
+        if words and (ci >= len(words) or (dialect == 'ps' and sets)):
+            level['fine'] = False
+        if ci >= len(words) or (dialect == 'ps' and sets):
+            out.append((here, dict(names), runs))
             continue
         args = words[ci + 1:]
         if name in CDS or name in ('popd', 'pop-location'):
-            out.append((here, dict(names)))
-            if name in ('popd', 'pop-location'):
+            out.append((here, dict(names), runs))
+            if name in ('popd', 'pop-location') or (name in ('pushd', 'push-location') and
+                                                     not [a for a in args if not a.startswith('-')]):
+                # popd, or a bare pushd, which swaps: back where pushd left, if surely, else that is only possible
                 back = level['pushed'].pop() if level['pushed'] else None
-                if back and (kind == 'list' or (kind == 'and' and level['fine'])):
+                if back and name in ('popd', 'pop-location') and runs and \
+                        (kind == 'list' or (kind == 'and' and level['fine'])):
                     level['places'], level['chain'] = back, None
                 else:
                     level['places'] += [m for m in back or [] if m not in level['places']]
                     level['chain'], level['fine'] = None, False
                 continue
-            to = cd_target(name, args, dialect)
+            if name == 'pushd' and '-n' in args:
+                level['fine'] = False  # pushd -n only notes the folder
+                continue
+            # The path words: a second one makes cd fail (PowerShell's -Path and -ErrorAction values read as such)
+            spoken = ps_paths(args) if dialect == 'ps' else \
+                [a for a in args if not a.startswith('-') and not re.match(r'^/[A-Za-z]$', a)]
+            to = (spoken[0] if spoken else '') if dialect == 'ps' else cd_target(name, args, dialect)
             if to == '':
                 continue
             new = [UNREAD] if to == '-' else [HOME_DIR] if to is None else [place(to, p, names, dialect) for p in here]
             new = [m for n, m in enumerate(new) if m not in new[:n]]
-            maybe = (block if dialect == 'bash' else braces) > 0 or kind in ('or', 'pipe') or \
-                (kind == 'and' and not level['fine']) or PIPE.search(after) or background[k]
-            if not maybe and all(sure_folder(m) for m in new):
+            value = expand(to, names) if to else None
+            maybe = not runs or (kind == 'and' and not level['fine']) or \
+                any(base(w) in CHILDREN for w in words[:ci]) or len(spoken) > 1 or \
+                (to and '$' in to and value is not None and re.search(r'\s', value))
+            if not maybe and all(sure_folder(m) and not gone_under(m) for m in new):
                 if name in ('pushd', 'push-location'):
                     level['pushed'].append(level['places'])
                 level['places'], level['chain'] = new, None
@@ -1001,9 +1068,7 @@ def follow(segs, cwd):
                 here = [place(words[j + 1], p, names, dialect) for p in here]
             elif w.startswith('--chdir='):
                 here = [place(w.split('=', 1)[1], p, names, dialect) for p in here]
-        out.append((here, dict(names)))
-        if why:
-            continue
+        out.append((here, dict(names), runs))
         what, verb = deleted(name, args, dialect, prev, via_xargs), 'deletes '
         g = git_call(words)
         if g and g[1] in ('worktree', 'clean'):
@@ -1018,6 +1083,23 @@ def follow(segs, cwd):
                 if f & {'-f', '--force'}:
                     what, verb = [(p, True) for p in pos or ['.']], 'deletes the untracked files in '
         prev = (name, args)
+        # What this command deletes or moves away: a later cd into it may fail
+        away = what if isinstance(what, list) else []
+        if name in MOVERS:
+            sources = ps_paths(args)[:1] if dialect != 'bash' else options(args, 'tS', long_takes=(
+                'target-directory', 'suffix'))[1][:-1]
+            away = away + [(s, False) for s in sources]
+        lost = lost or what == 'input'
+        for word, _ in away:
+            for p, value in [(p, v) for p in here for v in each_value(word, loops, names)]:
+                x = expand(word, value)
+                full = full_path(re.split(r'[*?\[{]', x)[0] or '.', p, dialect) if x is not None else None
+                if full is None:
+                    lost = True
+                else:
+                    gone.append(os.path.normcase(full))
+        if why:
+            continue
         if what == 'input':
             why = 'this deletes paths it reads from its input, which may be outside the scratch folders (under ' + \
                 TEMP_DIR + '); a delete there waits for Adam\'s go.'
@@ -1049,7 +1131,7 @@ def each_value(word, loops, names):
 def git_places_loose(words, glob_opts, seen, dialect):
     """The folders a git command may work in, as the asks place it (seen: follow()'s entry for it), with -C
     and --git-dir or --work-tree read as git reads them."""
-    here, names = seen
+    here, names = seen[0], seen[1]
     for k, o in enumerate(glob_opts):
         if o == '-C' and k + 1 < len(glob_opts):
             here = [place(glob_opts[k + 1], p, names, dialect) for p in here]
@@ -1160,10 +1242,11 @@ def moves_current(sub, args, folders):
     return True
 
 
-def judge_master(sub, args, folders, mine, on_master):
+def judge_master(sub, args, folders, mine, on_master, runs=True):
     """Ask before a git command that moves master: a push to it from any repository (folders: where the command may
     run), or in this repository (mine) a command that moves it by name (moves_master) or runs on it, because the
-    worktree's HEAD is there or this call switched it there (on_master keeps those; the last switch wins)."""
+    worktree's HEAD is there or this call switched it there (on_master keeps those).  The last switch that surely
+    runs wins; one that may not (after ||, in a body) leaves master possible."""
     if sub == 'push' or mine:
         why = moves_master(sub, args)
         if why:
@@ -1172,7 +1255,7 @@ def judge_master(sub, args, folders, mine, on_master):
     heads = [(p, head_of(p)) for p in look if p != UNREAD] + ([(UNREAD, head_of(ROOT))] if UNREAD in mine else [])
     keys = [h[0] if h else p for p, h in heads]
     branch = switched_to(sub, args)
-    if branch is not None:
+    if branch == 'master' or (branch is not None and runs):
         on_master.update((key, branch == 'master') for key in keys)
     elif sub in ON_BRANCH and any(on_master[key] if key in on_master else bool(h and h[1] == 'master')
                                   for (p, h), key in zip(heads, keys)) and moves_current(sub, args, look):
@@ -1209,7 +1292,8 @@ def judge_shell(cmd, cwd, ps):
             at = git_places(words, g[0], places)
             loose = git_places_loose(words, g[0], soft[k], segs3[k][2]) if soft else at
             if g[1] in MASTER_SUBS:
-                judge_master(g[1], g[2], loose, [p for p in loose if this_repository(p, gated)], on_master)
+                judge_master(g[1], g[2], loose, [p for p in loose if this_repository(p, gated)], on_master,
+                             soft[k][2] if soft else False)
             inside = [p for p in at if inside_checkout(p)] if gated else []
             if inside:
                 ci = command_at(words)
