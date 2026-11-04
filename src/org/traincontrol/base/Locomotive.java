@@ -1154,9 +1154,7 @@ public abstract class Locomotive
     }
     
     /**
-     * How many functions this locomotive can drive: `getNumF` for anything standing on its own; a consist overrides it
-     * with the highest of its members (MT-359).  On the base class so a caller holding a plain `Locomotive`
-     * (`TrainControlUI`) can ask.
+     * How many functions this locomotive can drive: a consist overrides it with the highest of its members (MT-359).
      *
      * @return the highest function number that can be driven, exclusive
      */
@@ -1223,8 +1221,7 @@ public abstract class Locomotive
     }
     
     /**
-     * The Central Station's own picture of this locomotive, whether or not a local one is shown over it (MT-591): what
-     * clearing the local icon goes back to.
+     * The Central Station's own picture of this locomotive, whether or not a local one is shown over it (MT-591).
      *
      * @return its URL, or null
      */
@@ -1848,8 +1845,7 @@ public abstract class Locomotive
     abstract public boolean isCustomFunctions();
 
     /**
-     * Whether this locomotive's functions are marked customized in their own right, whatever icons it carries - the flag
-     * `isCustomFunctions` reads together with the icons.  What a snapshot, a Cancel and the save keep (OB-245).
+     * Whether this locomotive's functions are marked customized in their own right, whatever icons it carries (OB-245).
      *
      * @return the flag alone
      */

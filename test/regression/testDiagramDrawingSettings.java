@@ -6,10 +6,8 @@ import support.SourceOf;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * FR-037: the one-way arrows on the ordinary diagram, and what decides whether they appear. A one-way arrow is a
- * statement about an autonomy SETUP: with autonomy switched off, or with no configuration loaded, drawing arrows would
- * describe restrictions not in force on a railway somebody is driving by hand, so the preference must be the LAST of
- * several conditions rather than the only one.
+ * FR-037: the one-way arrows on the ordinary diagram, and what decides whether they appear.  A one-way arrow is a
+ * statement about an autonomy SETUP, so the preference must be the LAST of several conditions rather than the only one.
  *
  * @author Adam
  */

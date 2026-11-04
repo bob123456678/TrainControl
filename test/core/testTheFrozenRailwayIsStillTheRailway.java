@@ -152,11 +152,8 @@ public class testTheFrozenRailwayIsStillTheRailway
     }
 
     /**
-     * The scenario is a COPY, and nothing here can reach the original.
-     *
-     * Asserted rather than assumed because the whole library rests on it, and OB-111 records what it costs when a test
-     * reads the operator's own folder (his railway rewritten with different line endings, and once a change of his own
-     * masked by the churn).
+     * The scenario is a COPY, and nothing here can reach the original: asserted rather than assumed because the whole
+     * library rests on it (OB-111).
      */
     @Test
     public void testNothingIsPointedAtTheOperatorsOwnRailway() throws Exception

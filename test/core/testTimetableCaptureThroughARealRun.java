@@ -43,10 +43,9 @@ public class testTimetableCaptureThroughARealRun
     private static final String START = "Station 1";
 
     /**
-     * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).  Far above what a
-     * dispatch takes, and deliberately not derived from RUN_MS, which is how long a run is watched for.  The wait ends
-     * the moment a locomotive moves, so a higher ceiling is only ever spent on a run that is failing anyway; no
-     * wall-clock number can tell a slow machine from a railway that will never move.
+     * How long to wait for autonomy to dispatch ANYTHING before calling it a fault (OB-114).  Far above what a dispatch
+     * takes, and deliberately not derived from RUN_MS; the wait ends the moment a locomotive moves, so a higher ceiling
+     * is only spent on a run that is failing anyway.
      */
     private static final long STARTUP_CEILING_MS = 480000;
 
@@ -201,15 +200,9 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * What the railway says about each train that did not start.
-     *
-     * `explainCannotStart` is the answer the application gives an operator who presses Start and sees nothing happen;
-     * it is only reached when the assertion is already lost.  Deliberately not asserted ON: a diagnosis, not a
-     * specification.
-     *
-     * @param layout the railway that would not move
-     * @param when which reading this is, running or stopped, because the two do not agree (MT-374)
-     * @return the reasons, ready to append to a failure
+     * What the railway says about each train that did not start (`explainCannotStart`): a diagnosis to append to a
+     * failure, deliberately not asserted ON.  `when` says which reading this is, running or stopped, because the two do
+     * not agree (MT-374).
      */
     private String whyNothingMoved(Layout layout, String when)
     {
@@ -274,11 +267,9 @@ public class testTimetableCaptureThroughARealRun
     private static final long QUIET_MS = 60_000;
 
     /**
-     * Waits for the layout in force to stop driving trains, before a new one replaces it (OB-199).
-     *
-     * `stopLocomotives` stops trains gracefully, at their next station, so it returns long before the railway is quiet.
-     * The locomotives belong to the MODEL, so a second configuration parsed over a still-running one asks a fleet
-     * somebody else is driving: nothing can be dispatched and the test waits until its ceiling.
+     * Waits for the layout in force to stop driving trains, before a new one replaces it (OB-199): `stopLocomotives`
+     * stops trains gracefully, at their next station, and a configuration parsed over a still-running one asks a fleet
+     * somebody else is driving.
      */
     private static void quiesce() throws Exception
     {
@@ -331,11 +322,7 @@ public class testTimetableCaptureThroughARealRun
 
     /**
      * Puts every sensor back to clear, the other half of starting from a known railway (MT-374): a feedback left
-     * occupied by the previous run stayed occupied and a destination whose approach expects it clear was shut for ever
-     * ("Station 2 = Expects feedback 5 to be clear").  Only sensors the RAILWAY knows about, since clearing others
-     * would be the same fault the other way.
-     *
-     * @param layout the freshly parsed railway
+     * occupied by the previous run kept a destination shut for ever.  Only sensors the RAILWAY knows about.
      */
     private static void clearTheSensors(Layout layout)
     {

@@ -10,17 +10,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A Central Station that has gone away does not stop every tile in the application for ever (MT-035; Adam: "It should
- * pause about two seconds, say the power was not confirmed, and throw the switch anyway - and then the NEXT click
- * should behave the same way rather than doing nothing"; "make a simulated test case for this").
- *
- * The socket is unconnected, so a datagram sent to a station that has been switched off succeeds and disappears.  The
- * power state is written in exactly one place, the inbound GO echo, so nothing local can release a wait for it; that
- * wait had no deadline, and it runs on `LayoutLabel.SWITCHING`, ONE thread shared by every tile on every page.
- *
- * Two halves, tested apart because they can fail apart: the wait gives up (a property of the wait), and the NEXT click
- * still works (a property of the pool).  The hands-on entry stays open: what the operator sees, and whether the
- * switch is actually thrown, is a question about the diagram and not about these two mechanisms.
+ * A Central Station that has gone away does not stop every tile in the application for ever (MT-035).  Two halves,
+ * tested apart because they can fail apart: the wait gives up (a property of the wait), and the NEXT click still works
+ * (a property of the pool).
  *
  * @author Adam
  */

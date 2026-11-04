@@ -494,6 +494,16 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         initComponents();
 
+        // After the layout has settled, so the content's height is the new one (OB-399).
+        addComponentListener(new java.awt.event.ComponentAdapter()
+        {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e)
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> sizeTheFindings());
+            }
+        });
+
         // The designer's panel, kept before the sidebar wraps it: three places swap controls in its GroupLayout.
         this.formPane = getContentPane();
 
@@ -1490,7 +1500,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(autonomyPanel.getShowLengths());
 
-                // Directly under Track Lengths: one subject.
+                // Under Track Lengths, at the same gap as every other pair: one subject, not one control.
+                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+
                 autonomyPanel.getShowUnmeasured().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowUnmeasured());
 
@@ -1623,9 +1635,6 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 if (list != null)
                 {
-                    // Taller here, across the window at its own size.
-                    list.setPreferredSize(new java.awt.Dimension(100, 190));
-
                     foot.add(list, BorderLayout.CENTER);
                 }
 
@@ -1635,6 +1644,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 stack.add(foot, BorderLayout.SOUTH);
 
                 autonomyFindings = stack;
+
+                sizeTheFindings();
             }
 
             // Said in the title; posted, as render()'s own invokeLater would overwrite it.
@@ -1922,9 +1933,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Which way round a track tile put down should lie to join the track beside it (OB-292, OB-360), by the port table
-     * the autonomy graph uses.  A switch by its base first, as a straight track would be, then by roads with every end
-     * on track, then by ends; a tie keeps the way it is held, else the nearest turn.
+     * Which way round a track tile put down should lie to join the track beside it (OB-292), by the port table the
+     * autonomy graph uses.
      * @param layout the page
      * @param placing the tile about to be put down
      * @param x its column
@@ -3344,10 +3354,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Sizes the panel the grid sits in: a row of slack below and a column beside, plus the layout's gaps, else a
-     * scrollbar pushes the last row out of sight and a too-wide CENTER row sits at a negative x no scroll reaches.  And
-     * the notice's height below that while one floats over the diagram, so the last row can be scrolled clear of it
-     * (OB-389).
+     * Sizes the panel the grid sits in, with slack so the last row and a wide CENTER row stay reachable, and room below
+     * for a notice floating over the diagram (OB-389).
      */
     private void sizeTheDiagram()
     {
@@ -3456,9 +3464,7 @@ public class LayoutEditor extends PositionAwareJFrame
     
     /**
      * Sizes the window to its diagram, capped to the screen, when the user has no preference (OB-003).  Never below
-     * what shows every control at any size, scale and language (OB-342): `EXTRA_MINIMUM_HEIGHT` over the base, the
-     * diagram's 550 plus the sidebar, and the layout's own minimum plus chrome; data-worded controls have no minimum
-     * width.
+     * what shows every control at any size, scale and language (OB-342).
      */
     private void sizeForDiagram()
     {
@@ -3469,7 +3475,9 @@ public class LayoutEditor extends PositionAwareJFrame
         this.setMinimumSize(new Dimension(
             // In proportion, Small to Large (FR-122)
             Math.min(550 + sideways + Math.max(0, (this.size - 30) * 200 / 30), usable.width),
-            Math.min(630 + EXTRA_MINIMUM_HEIGHT + Math.max(0, (this.size - 30) * 320 / 30), usable.height)));
+            // The autonomy editor's column does not grow with the diagram: its own height is the floor (OB-399).
+            isAutonomyMode() ? 0
+                : Math.min(630 + EXTRA_MINIMUM_HEIGHT + Math.max(0, (this.size - 30) * 320 / 30), usable.height)));
 
         // Never smaller than the window is (MT-096): a size the user chose is a floor.
         int wide = Math.max(getWidth(), grid.maxWidth + 210 + sideways);
@@ -3482,7 +3490,7 @@ public class LayoutEditor extends PositionAwareJFrame
         pack();
 
         // Never below the layout's own minimum plus chrome (OB-342).
-        int asked = getContentPane().getMinimumSize().height + getHeight() - getContentPane().getHeight();
+        int asked = heightForTheColumn();
 
         if (asked > getMinimumSize().height)
         {
@@ -3494,6 +3502,50 @@ public class LayoutEditor extends PositionAwareJFrame
         int y = Math.max(usable.y, Math.min(getY(), usable.y + usable.height - getHeight()));
 
         if (x != getX() || y != getY()) setLocation(x, y);
+    }
+
+    /**
+     * The window height that shows the right-hand column whole, Cancel included: the content's own minimum, which the
+     * column sets, and the frame around it (OB-399).
+     */
+    private int heightForTheColumn()
+    {
+        return getContentPane().getMinimumSize().height + getHeight() - getContentPane().getHeight();
+    }
+
+    /** The findings list's rows where the window has room, and where it is short (OB-399). */
+    private static final int FINDINGS_ROWS_TALL = 7;
+    private static final int FINDINGS_ROWS_SHORT = 5;
+
+    /**
+     * Shows the findings at 7 rows, or 5 when the content is under its minimum height plus the two rows' worth: the
+     * diagram never has less room at 7 rows than at the smallest window with 5.  Asked again at every resize.
+     */
+    private void sizeTheFindings()
+    {
+        if (autonomyPanel == null) return;
+
+        java.awt.Container content = getContentPane();
+
+        int tall = content.getMinimumSize().height
+            + (FINDINGS_ROWS_TALL - FINDINGS_ROWS_SHORT) * autonomyPanel.getFindingRowHeight();
+
+        autonomyPanel.setFindingRows(content.getHeight() >= tall ? FINDINGS_ROWS_TALL : FINDINGS_ROWS_SHORT);
+    }
+
+    /**
+     * A remembered size on a bigger screen, or a screen with a taller taskbar, can leave the autonomy editor taller
+     * than the work area: brought down to it (OB-399).
+     */
+    private void keepTheAutonomyEditorOnTheScreen()
+    {
+        java.awt.Rectangle usable = usableScreen();
+
+        if (!isAutonomyMode() || getHeight() <= usable.height || isMaximized()) return;
+
+        setSize(getWidth(), usable.height);
+
+        setLocation(getX(), Math.max(usable.y, Math.min(getY(), usable.y + usable.height - getHeight())));
     }
 
     /**
@@ -3551,6 +3603,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 // Over the top, only if the user set one.
                 loadWindowBounds();
+
+                keepTheAutonomyEditorOnTheScreen();
             }
             else
             {

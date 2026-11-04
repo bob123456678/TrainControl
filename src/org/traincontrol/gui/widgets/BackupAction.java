@@ -169,12 +169,9 @@ public final class BackupAction
             String localLayout = this.ui.localLayoutPath();
 
             // The layout lives on the CENTRAL STATION, so there is nothing local to archive (FR-020): asked rather than
-            // assumed, because it is a network fetch of every page.  Declining leaves the archive as it was, and the
-            // dialog at the end says what is not in it either way.  No autonomy setup pairs with these
-            // (`AutonomyCompanionStore` refuses a layout that is not local).  Not offered without a station answering
-            // (OB-098): asking is a promise to fetch.  Through the one predicate, like the other two offers:
-            // `getNetworkCommState` alone reports whether the last SYNC succeeded, and a sync reads a local layout
-            // folder happily, so a simulated session calls itself connected.
+            // assumed, because it is a network fetch of every page.  Not offered without a station answering (OB-098),
+            // through the one predicate: `getNetworkCommState` alone says whether the last SYNC succeeded, and a
+            // simulated session calls itself connected.
             if ((localLayout == null || localLayout.isEmpty())
                 && this.ui.isCentralStationConnected()
                 && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))

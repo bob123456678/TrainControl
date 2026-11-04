@@ -460,8 +460,7 @@ public class testMockCentralStation
 
     /**
      * Stands the Central Station's OBB 1043 on one point and the member its database copy does not have on another
-     * (OB-303): a first sync brings in the two members `test/lokomotive.cs2` gives it, then the database's copy is cut
-     * back to the first member.
+     * (OB-303).
      *
      * @param made filled with the names of the locomotives this makes, for the caller to delete
      * @return the multi-unit, the member, and the railway they stand on

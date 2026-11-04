@@ -625,8 +625,8 @@ public class RouteEditorFrame extends JFrame
     public static Boolean discardAnswerForTest;
 
     /**
-     * Asked by the application's exit, which is a door out of this window too (as the layout editor's, OB-070):
-     * disposing with the process would take unsaved typing silently.  Answering No leaves the application open.
+     * Asked by the application's exit, which is a door out of this window too (OB-070).  Answering No leaves the
+     * application open.
      *
      * @return true when the exit may carry on
      */
@@ -1688,8 +1688,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The marks at the end of a command row, driven the way a click drives them (MT-029).  The marks are painted
-     * values, so there is no component to click; this calls the methods the click calls.  MOVE_UP and MOVE_DOWN move
+     * The marks at the end of a command row, driven the way a click drives them (MT-029); MOVE_UP and MOVE_DOWN move
      * the one row, as the menu's Move Up and Move Down do (FR-162).
      *
      * @param row which row
@@ -2464,9 +2463,8 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * The s88 the user typed, with an empty field meaning none (OB-178: "just treat this as 0").  One reader for the
-     * check and the save, so relaxing one cannot turn a refusal into an exception.  Still -1 for rubbish such as
-     * letters or a stray sign.
+     * The s88 the user typed, with an empty field meaning none (OB-178).  One reader for the check and the save, so
+     * relaxing one cannot turn a refusal into an exception.
      *
      * @return the sensor address, 0 for none, or -1 when what is there is not a number
      */
@@ -3145,12 +3143,8 @@ public class RouteEditorFrame extends JFrame
             // No diagram edit to complete: a tile follows its route by number (rebindRouteTiles), and
             // layoutEditingComplete would reset autonomy and re-read every page.  A route is no page of the diagram.
 
-            // A sync only when the route is NEW and its id could collide with one the station issued (OB-155).  Routes
-            // travel one way, so a sync after an edit would re-fetch everything to learn nothing.  A new route's id is
-            // the next free one in the local database, which does not know of routes added on the station since the
-            // last sync; but newRoute allocates from ROUTE_STARTING_ID up, which the station never issued ("the route
-            // page should not have to sync with the cs2 after edits/deletions for routes >= ID 1000").  Read back from
-            // the database, because newRoute picks the id.
+            // A sync only when the route is NEW and its id could collide with one the station issued (OB-155); read
+            // back from the database, because newRoute picks the id.
             org.traincontrol.base.Route saved = parent.getModel().getRoute(name);
 
             boolean couldCollide = saved == null

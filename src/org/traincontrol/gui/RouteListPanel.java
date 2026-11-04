@@ -32,12 +32,9 @@ final class RouteListPanel
      */
     void executeRoute(String route)
     {
-        // The same answer at all three doors: the play button grays itself while `routesExecuting` holds the name, and
-        // the other two (the row click with its confirmation, and the right-click menu) did not ask, so one gesture was
-        // refused at one door and accepted at two (the OB-057/OB-090 shape).  A debounce, not a lock: `execRoute`
-        // returns once it has spawned the route thread, so the name is cleared 600 ms later, and `Route.setExecuting()`
-        // already stops two threads.  Logged rather than silent, because the operator confirmed a dialog and is owed a
-        // reason.
+        // The same answer at all three doors (the OB-057/OB-090 shape).  A debounce, not a lock: `execRoute` returns
+        // once it has spawned the route thread, so the name is cleared 600 ms later.  Logged rather than silent: the
+        // operator confirmed a dialog and is owed a reason.
         if (route != null && this.ui.routesExecuting.contains(route))
         {
             this.ui.getModel().log(I18n.f("route.ui.infoAlreadyRunning", route));
@@ -361,10 +358,8 @@ final class RouteListPanel
     }
 
     /**
-     * Asks for a route by name and goes to it (FR-044).  Adam: "'Find Route' popup that asks the user for the route
-     * name.  system jumps to the route page and highlights the matched cell (scrolling to it if needed), otherwise
-     * shows a notice that it doesn't exist."  Matched case-insensitively, and on a unique CONTAINS when nothing matches
-     * exactly; ambiguity is never resolved by guessing (MT-218 asks).
+     * Asks for a route by name and goes to it (FR-044): matched case-insensitively, and on a unique CONTAINS when
+     * nothing matches exactly; ambiguity is never resolved by guessing (MT-218 asks).
      */
     void findRoute()
     {

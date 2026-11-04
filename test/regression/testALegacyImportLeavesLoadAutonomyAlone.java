@@ -5,16 +5,9 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Importing a legacy autonomy.json leaves Startup -> Load Autonomy as the operator set it.
- *
- * The box was unticked after every import, on his ruling *"Set the setting to unchecked when importing a legacy json
- * file, each time"* - made while the box still loaded the old graph at start, which a layout that had only an import
- * did not have.  OB-254 took the old graph out of start-up the same night: the box now resumes the active diagram
- * configuration, and an import makes one, so the untick was what stopped the imported setup being loaded at the next
- * start.  Asked whether to keep it: *"Drop it now."*
- *
- * The import doors open modal dialogs and load the railway, so they are read rather than driven -
- * `testTheDestinationDoorsAgree`'s shape.
+ * Importing a legacy autonomy.json leaves Startup -> Load Autonomy as the operator set it (OB-254).  The import doors
+ * open modal dialogs and load the railway, so they are read rather than driven - `testTheDestinationDoorsAgree`'s
+ * shape.
  *
  * MUTATION: have any import door write the preference or the menu item again, and this fails naming it.
  *

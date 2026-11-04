@@ -26,17 +26,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A cut train is pasted facing the way it would arrive if it drove there, and stands on that copy (Adam, OB-270).
- *
- * "Trains should not inadvertently change direction when pasted, so a loc going west from bottomsecondary should always
- * face east when pasted on bottommaina."  And, asked whether a cut train keeps the heading it was cut with (MT-368) or
- * takes the one it would have after driving there: "it should be east.  no train should inadvertently change direction
- * when pasted."
- *
- * Two defects, one gesture: the paste kept the heading the train was CUT with, because a train off the railway had
- * nowhere for the walk to start; and it put the train on whichever copy came first (`getAutonomyPointForTile`, "any
- * copy will do") while recording a heading, so the record and the copy could disagree.  Now the walk starts from the
- * square the train was cut from, and the train is put on the copy that faces the recorded heading.
+ * A cut train is pasted facing the way it would arrive if it drove there, and stands on that copy (Adam, OB-270;
+ * MT-368).
  *
  * On the frozen railway with BottomMainA's east bar lifted: the claim needs two copies facing opposite ways, and a
  * square with one placeable copy has one answer however the paste reasons.
@@ -242,9 +233,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
     /**
      * The Place Locomotive dialog puts the train on the copy facing the way it records - not on whichever copy the menu
-     * was opened on.  OB-270 is a rule about putting a train down - the copy IS the direction - fixed at the paste; the
-     * dialog is the same act by another door, and on a square with two copies facing opposite ways the setup said west
-     * while the train stood on the east copy.
+     * was opened on: the same act as the paste, by another door (OB-270).
      *
      * MUTATION: have `GraphLocAssign.commitAndRecord` commit onto the copy it was opened on again and this fails.
      */

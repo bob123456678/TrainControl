@@ -7,16 +7,10 @@ import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
 /**
- * The play button on a route cell is drawn where it can be pressed (FR-043).
- *
- * Adam: "update the route table view so that there is a green play button (execute) icon on the right side of each
- * cell... wire it so that no confirmation is needed prior to execution when this is pressed... make all other left or
- * clicks on the table cells open the right-click menu."  Whether the triangle reads as a play button is for MT-213;
- * what CAN be pinned is the part that would fail silently, a control drawn in one place and pressed in another.
- *
- * A table cell is a stamp, not a component, so no JButton's bounds answer both questions: the renderer paints from the
- * cell's rectangle and the click works out what it hit from the same rectangle, so they go through one method, and
- * this is the test that says so.
+ * The play button on a route cell is drawn where it can be pressed (FR-043): the renderer paints from the cell's
+ * rectangle and the click works out what it hit from the same rectangle, so they go through one method.  Whether the
+ * triangle reads as a play button is for MT-213; what CAN be pinned is a control drawn in one place and pressed in
+ * another.
  */
 public class testTheRoutePlayButton
 {
@@ -149,10 +143,9 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * The hand cursor asks the same question the click asks (OB-147).  Adam: "the play button in routes should show a
-     * finger/pointer icon when hovered to indicate clickability."  The cursor says "this part is a control", so it has
-     * to be true of exactly the pixels that ARE one; working it out separately puts a hand over something that does
-     * nothing (the affordance and the guard answering differently, as in OB-057 and OB-090).
+     * The hand cursor asks the same question the click asks (OB-147): it says "this part is a control", so it has to be
+     * true of exactly the pixels that ARE one (the affordance and the guard answering differently, as in OB-057 and
+     * OB-090).
      *
      * MUTATION: give the hover its own test - a bare x-coordinate comparison, say - and this fails.
      */
@@ -183,12 +176,8 @@ public class testTheRoutePlayButton
     }
 
     /**
-     * A running route's button is grayed, refuses the click, and shows no hand (MT-217).  Adam: "there is no animation
-     * / change in state while it is running.  It should gray out and then become reenabled once the route finishes."
-     *
-     * Three surfaces have to agree about one fact: what the button LOOKS like, what the click DOES, and what the cursor
-     * PROMISES.  A grayed button that still fires is a lie, a hand over it the same lie, and either would let the same
-     * route be started twice.
+     * A running route's button is grayed, refuses the click, and shows no hand (MT-217): what it LOOKS like, what the
+     * click DOES and what the cursor PROMISES must agree, or the same route could be started twice.
      *
      * MUTATION: delete any one of the three `routesExecuting.contains(...)` guards and this fails.
      */

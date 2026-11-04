@@ -183,9 +183,8 @@ public class DiagramMonitorDriver
 
     /**
      * The facings of the Points whose copy says nothing, asked of the setup again, and the diagram redrawn where one
-     * changed (OB-348).  A square no track leads out of has no copy facing and no single way out, so it is given
-     * `AutonomySession.facingWhereNoCopySays`.  Asked whenever the captions are, not only at a bind: every door that
-     * writes a facing redraws the captions (`TrainControlUI.updateVisiblePoints`) and none rebinds.  Event thread only.
+     * changed (OB-348).  Asked whenever the captions are, not only at a bind: every door that writes a facing redraws
+     * the captions and none rebinds.  Event thread only.
      */
     public void recordedFacingsChanged()
     {

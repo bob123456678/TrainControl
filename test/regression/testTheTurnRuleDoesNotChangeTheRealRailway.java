@@ -77,13 +77,10 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     }
 
     /**
-     * A reversing copy can be left by a side other than the one it is entered by - MEASURED BY THE COMPASS: the side a
-     * copy is left by is read as `entrySideOf(leaving, copy)`, which for an edge that STARTS at the copy falls to
-     * `sideTowards`, the neighbor's compass position (OB-268).  So the compass does not say which side a reversing copy
-     * is left by, and a geometric test for "does the next leg need the turn" would read such a copy as a straight run
-     * and stop turning there.  It does not refute that a turning copy's only outgoing edges leave by the side the train
-     * arrived from, which the builder guarantees in the metal and this ruler cannot see.  The copies are listed when
-     * this fails, so whoever proposes the narrowing again sees the counter-examples.
+     * A reversing copy can be left by a side other than the one it is entered by - MEASURED BY THE COMPASS (OB-268):
+     * the compass does not say which side a reversing copy is left by, so a geometric test for "does the next leg need
+     * the turn" would read such a copy as a straight run and stop turning there.  The copies are listed when this
+     * fails, so whoever proposes the narrowing again sees the counter-examples.
      */
     @Test
     public void testAReversingCopyCanBeLeftByAnotherSide() throws Exception

@@ -16,13 +16,8 @@ public class testTwoCentralStationMultiUnitsShareAMember
     private static MarklinControlStation model;
 
     /**
-     * OPENED BEFORE THE MODEL, because `init` loads whatever layout the machine has - which on
-     * Adam's is his real railway (OB-111).
-     *
-     * This class is about locomotives and needs no layout at all, which is exactly the case that
-     * gets forgotten: nothing here reads a page, so nothing here fails when the page is his.
-     * `testSwitchingToACentralStationLayout` counts the classes that skip this and would not let
-     * a fifty-sixth one through.
+     * OPENED BEFORE THE MODEL, because `init` loads whatever layout the machine has - which on Adam's is his real
+     * railway (OB-111).  `testSwitchingToACentralStationLayout` counts the classes that skip this.
      */
     private static support.LayoutSandbox sandbox;
 

@@ -16,10 +16,9 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Turning automatic execution on or off for a route the Central Station never carried does not sync with it (MT-467).
- * The guard asked whether the route's id was 1000 or more, the ids the station now hands out, and most of his own
- * routes are older (ids 1 to 87), so they synced behind the modal spinner. What says whether the station carried a
- * route is its lock, which only the sync's import sets and which travels with the route in the database.
+ * Turning automatic execution on or off for a route the Central Station never carried does not sync with it (MT-467):
+ * what says whether the station carried a route is its lock, which only the sync's import sets and which travels with
+ * the route in the database.
  *
  * How a sync is seen: the test holds the one-sync-at-a-time flag, so a sync asked for is turned away with a line in the
  * log and nothing fetched, and the lines are counted. A route the station carried (locked) still syncs, and is the

@@ -244,15 +244,9 @@ public class testMultiUnitMembership
     }
 
     /**
-     * A consist can drive every function any of its members has (Adam, MT-359).
-     *
-     * *"Make the allowed function be the highest possible for the consist - so two MM2 locs mean F0-4
-     * do something.  one mm2 loc and one dcc/mfx mean all functions are unlocked."*
-     *
-     * The head's range does not cap the consist: a member can do what the head cannot, so refusing anything the HEAD
-     * could not do would answer the wrong question.  What must stay true is that nothing can be switched on that
-     * nothing can switch off.  So three things are asserted together - the function reaches the member, the consist can
-     * still SEE it afterwards, and `functionsOff` clears it.
+     * A consist can drive every function any of its members has (Adam, MT-359).  The head's range does not cap the
+     * consist, but nothing can be switched on that nothing can switch off, so three things are asserted together: the
+     * function reaches the member, the consist can still SEE it afterwards, and `functionsOff` clears it.
      *
      * MUTATION: put `if (this.validF(fNumber))` back around the fan-out and the first claim fails; drop
      * the `getF` override and the second does; leave `functionsOff` walking `getNumF()` and the third.
@@ -382,18 +376,11 @@ public class testMultiUnitMembership
     }
 
     /**
-     * A function inside the consist's range is SENT to every locomotive in it, head included.
-     *
-     * Adam, MT-359: *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply
-     * propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out
-     * whether that means anything."*  And, asked whether the range stays: **"Send to all, keep the cap."**
-     *
-     * Passing the number through each member's own `setF` would let its `validF` refuse anything its own decoder does
-     * not list, so an MM2 member of an MFX-headed consist would never hear f6, nor would the MM2 head of an MFX member.
-     * Whether a decoder does something with f6 is the station's business, not a guess made from a function count.
-     *
-     * Read off what the locomotives asked the station to send, through the observer on `exec`: in a test the network is
-     * off, and the recorded function state cannot show a command for a function the decoder does not list.
+     * A function inside the consist's range is SENT to every locomotive in it, head included (Adam, MT-359: "Send to
+     * all, keep the cap.").  Passing the number through each member's own `setF` would let its `validF` refuse anything
+     * its own decoder does not list; whether a decoder does something with f6 is the station's business.  Read off what
+     * the locomotives asked the station to send, through the observer on `exec`: in a test the network is off, and the
+     * recorded function state cannot show a command for a function the decoder does not list.
      */
     @Test
     public void testAFunctionInTheConsistsRangeIsSentToEveryLocomotive()

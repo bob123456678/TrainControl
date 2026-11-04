@@ -18,19 +18,11 @@ import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.util.I18n;
 
 /**
- * A dispatch that fails says the right thing about restarting (MT-327, MT-328).
+ * A dispatch that fails says the right thing about restarting (MT-327, MT-328): a hand dispatch with autonomy stopped
+ * and a run each get their own sentence.
  *
- * Adam, on both entries: "I don't know how to trigger this error condition. Seems like something to test offline."
- * Reaching this sentence by hand means making a real dispatch fail part way, with a decoder that does not answer or an
- * accessory that has gone missing.
- *
- * Two doors, two sentences: `executePath` has three callers (autonomy, the commands panel, the diagram's right-click
- * menu); the last two work with autonomy stopped, and the old "Autonomy has stopped itself so the railway can be parked
- * and started again" sent the operator to press Start over a hand dispatch.
- *
- * The trap the entries name: "If both cases say the same thing, the flag that chooses between them is being read after
- * the stop has already cleared it."  `stopLocomotives()` clears `running` and the handler calls it before it logs, so
- * `wasRunning` has to be captured first.
+ * The trap: `stopLocomotives()` clears `running` and the handler calls it before it logs, so `wasRunning` has to be
+ * captured first.
  *
  * MUTATION: move the `final boolean wasRunning = this.running;` below `stopLocomotives()` and the running case fails
  * while the hand-dispatch case stays green.

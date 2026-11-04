@@ -32,11 +32,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * The sample layout Create New Layout unpacks says nothing about moves no train can make (OB-361): "it is impossible
- * for trains to arrive from the west anyway, so both these conditions should disqualify the notice."
- *
- * The shipped `sample_layout.zip`, unpacked as Create New Layout unpacks it, in a sandbox.  Trains run from either
- * station east past their exit guard (the square at 9,5), up to PostDeparture, west along the top through MainLine and
- * down to PreArrival.
+ * for trains to arrive from the west anyway, so both these conditions should disqualify the notice."  The shipped
+ * `sample_layout.zip` is unpacked as Create New Layout unpacks it, in a sandbox.
  *
  * @author Adam
  */
@@ -232,8 +229,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /**
      * The run east of MainLine is stored one way on all its squares, 10,3 included, and opening the sample has nothing
-     * to bring into line (OB-361): "Any disagreement should be corrected so that the viewer displays the source of
-     * truth".  The correction itself is claimed in
+     * to bring into line (OB-361).  The correction itself is claimed in
      * `testTheDiagramDrawsWhatTrainsMayDo.testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds`.
      *
      * MUTATION: ship the sample with 10,3 both ways again, or have the opening bring a consistent run into line, and
@@ -327,8 +323,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /**
      * The One-Way tool sets the runs of the two squares clicked, as well as the track between them, and leaves nothing
-     * for the correction to bring into line (OB-361): setting only the squares between would leave 10,3 both ways
-     * in a run one way (the shipped sample) and 5,1's run both ways from end to end.
+     * for the correction to bring into line (OB-361).
      *
      * MUTATION: leave the clicked squares' runs out again, and this fails.
      */
@@ -371,8 +366,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     /**
      * A square of a run built over in the track diagram editor (a straight dropped on it) keeps its run's direction,
-     * and nothing is said: it is the edit, not a setup that disagreed (OB-361).  The editor's drop clears what was set
-     * on the square with `forgetTiles`, after the tile is placed and turned.
+     * and nothing is said: it is the edit, not a setup that disagreed (OB-361).
      *
      * MUTATION: say it as a correction, or leave the square both ways, and this fails.
      */

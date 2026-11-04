@@ -381,10 +381,8 @@ public class GraphReducer
     }
 
     /**
-     * @param barred the sides each square refuses arrivals by - the red arrows on the diagram (OB-120).  A barred side
-     *        means a train may not come in and STOP that way, so only a destination hop is refused.  The START is
-     *        exempt, as in the build: a standing train arrived by no side, and refusing it would stop a restricted
-     *        station SENDING trains.
+     * @param barred the sides each square refuses arrivals by - the red arrows on the diagram (OB-120).  Only a
+     *        destination hop is refused; the START is exempt, as in the build.
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred)
@@ -514,8 +512,8 @@ public class GraphReducer
     }
 
     /**
-     * Whether a square refuses trains arriving by a given side (OB-120), as `AutonomyBuilder.arrivalAllowed` does for
-     * a copy of a split square.  A null side is the starting square, never barred.
+     * Whether a square refuses trains arriving by a given side (OB-120), as `AutonomyBuilder.arrivalAllowed` does.  A
+     * null side is the starting square, never barred.
      *
      * @return true when the arrival is not allowed
      */
@@ -811,12 +809,8 @@ public class GraphReducer
     }
 
     /**
-     * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set.
-     *
-     * A permanent turnout is still the last switch (OB-233): nothing can throw it, but a train standing across it fouls
-     * the merge as a throwable one would.  So it is `isSwitch()` plus the declared permanent types; `isSwitch()` stays
-     * as it is because some call sites offer an accessory address, which a permanent turnout has none of.  A TWO-SQUARE
-     * CROSSING is a crossing (OB-320): nothing merges at its squares, so it does not end the room.
+     * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set (OB-233).  A
+     * two-square crossing does not end the room (OB-320).
      *
      * @return true when the room ends here
      */
@@ -1091,11 +1085,8 @@ public class GraphReducer
     }
 
     /**
-     * The places an edge runs over, in order from its start, each with what it measures (OB-207).  `deriveLocks`
-     * intersects `locationsOf` sets between edges; handing the runtime only that RESULT would let `Layout` answer at
-     * whole-edge grain (a one-unit train in the FIRST tile of a twelve-tile run would refuse every path sharing any
-     * other).  The places are not extra nodes: splitting the graph at switches would rename every edge.  The far
-     * endpoint is included and the near one is not, as in `lengthOf`, so these lengths sum to `getLength()`.
+     * The places an edge runs over, in order from its start, each with what it measures (OB-207), so the runtime can
+     * answer at place grain.  The far endpoint is included and the near one is not, as in `lengthOf`.
      *
      * @return its places, in path order, empty for a null edge
      */

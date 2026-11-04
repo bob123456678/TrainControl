@@ -150,12 +150,8 @@ public class testAutonomyDiagramReducer
 
     /**
      * A barred arrival is not a route, for either walk (OB-120): "test a path should respect all red arrow
-     * restrictions."  Red arrows are the sides a station refuses to let trains STOP at it by; a train may still run
-     * through such a square (see `testABarredArrivalCanStillBePassedThrough`).
-     *
-     * Asserted on the path test and the build together: teaching only one about the arrows would break quietly, the
-     * test refusing a run the findings panel still counts as reachable.  The START is exempt, as in the build: a train
-     * standing on a square did not arrive by any side.
+     * restrictions."  A train may still run through such a square (see `testABarredArrivalCanStillBePassedThrough`).
+     * The START is exempt, as in the build.  Asserted on the path test and the build together.
      *
      * MUTATION: dropping the `refusesArrival` test from findPath, or the bar from `AutonomyBuilder.arrivalAllowed`,
      * fails its half of this.
@@ -334,10 +330,8 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * And it stops asking once the stretch is measured AT ALL (MT-364): the notice and the guard disagreed about
-     * "measured".  `roomAfterTheLastSwitch` answers for a partly measured stretch, so this walk must not keep naming
-     * every square without a number of its own.  A stretch with nothing measured still names every square: the guard is
-     * blind there.
+     * And it stops asking once the stretch is measured AT ALL (MT-364): `roomAfterTheLastSwitch` answers for a partly
+     * measured stretch, so this walk must not keep naming every square without a number of its own.
      *
      * MUTATION: drop the running total and the first claim fails; make an unmeasured stretch answer empty too and the
      * second does.
@@ -732,13 +726,9 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The room walk stops at a switch that can be thrown AND at a permanent turnout, but not at a crossing.
-     *
-     * A berth BEYOND a permanent turnout must not count the track past the points as room (OB-233): a four-unit train
-     * would be admitted to a two-unit berth and come to rest fouling the merge.  A train passing a permanent turnout
-     * chooses nothing, so it is not a switch for ROUTING, only for where a train may REST; a crossing is no fork at
-     * all.  `isSwitch()` is shared with the drawing code and the editor, so it is not widened: both walks ask
-     * `boundsTheRoom`, and this asserts the ROOM NUMBER rather than the predicate.
+     * The room walk stops at a switch that can be thrown AND at a permanent turnout (OB-233), but not at a crossing: a
+     * berth BEYOND a permanent turnout must not count the track past the points as room.  This asserts the ROOM NUMBER
+     * rather than the predicate.
      *
      * MUTATION: add `componentType.CROSSING` to `boundsTheRoom` and the first half fails with 5 against 10; take the
      * permanent types back out of it and the second fails with 10 against 5.

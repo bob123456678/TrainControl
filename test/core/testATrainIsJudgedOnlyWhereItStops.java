@@ -19,26 +19,12 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A train is judged for room where it stops, and not at a square it only passes (Adam, MT-333).
+ * A train is judged for room where it stops, and not at a square it only passes (MT-333): one measured unit past the
+ * switch at a square the train only passes does NOT refuse it; the destination and a square the train turns at are
+ * still judged, and a STANDING train still blocks other roads wherever it is measured.  Only where lengths are
+ * specified: unmeasured is unknown rather than zero, and unknown is not a refusal.
  *
- * Adam, on 75 407 DB refused from Tunnel to BottomMainA at a square it only runs past: "this SHOULD be allowed per the
- * standing rule that this switch blocking should only affect berthes."  The standing rule: "make a rule that parking
- * berths cant block any other edges, but not make that check for active stations."  A train passing a square stands
- * across nothing there, so one measured unit past the switch at a square the train only passes does NOT refuse it; the
- * destination and a square the train turns at are still judged.  A STANDING train's mechanic is unchanged and still
- * blocks other roads wherever it is measured.
- *
- * The room rule is Adam's ruling that "will the train fit" means the whole route: "This should only apply if lengths
- * are specified - and edges are already locked as trains pass through in non-dynamic mode.  So it's really about
- * implementing the same mechanic."  It is asked of every PREFIX of the route, so the answer at square N is "if the
- * train stood here, would its tail be clear of the switch behind it", and the destination check is the last iteration
- * rather than a separate rule.
- *
- * **Only where lengths are specified:** unmeasured is unknown rather than zero, and unknown is not a refusal.
- *
- * **The route runs from `BranchPlatform` to `WestEnd`**, the direction in which the switch comes FIRST: a short stretch
- * just past it, and ten units of berth beyond.  The other way there is no switch behind Approach, so nothing bounds it.
- *
+ * The route runs from `BranchPlatform` to `WestEnd`, the direction in which the switch comes FIRST.
  * `regression.testAPassingTrainMayStandAcrossThePoints` and
  * `core.testTheLengthGuardsOnTheRealLayout.testRampDownIsOfferedPastTheOneUnitItOnlyPasses` are the same ruling on
  * Adam's own railway.
@@ -135,8 +121,7 @@ public class testATrainIsJudgedOnlyWhereItStops
     }
 
     /**
-     * One measured unit past the switch at a square the train only passes does not refuse it (MT-333): Approach is not
-     * where the train stops, and WestEnd has ten units of room.
+     * One measured unit past the switch at a square the train only passes does not refuse it (MT-333).
      *
      * MUTATION: judge a passed square again - drop the `if (!comesToRest) continue;` in `Layout.whyTooLongForThisRoute`
      * - and WestEnd is refused and this fails.

@@ -62,11 +62,9 @@ public class testLocMappingPages
     }
 
     /**
-     * The menu that offers the page stops offering it at the ceiling.
-     *
-     * Built for real rather than read, because this is where a person meets the rule: the button that offers an action
-     * asks that action's own question (OB-057).  Grayed rather than removed, as Delete is: an item that appears and
-     * disappears reads as an interface that cannot make up its mind.
+     * The menu that offers the page stops offering it at the ceiling.  Built for real rather than read, because this is
+     * where a person meets the rule: the button that offers an action asks that action's own question (OB-057).  Grayed
+     * rather than removed, as Delete is.
      *
      * MUTATION: dropping the `canAddLocMappingPage` test from the menu leaves the item enabled and
      * fails the second assertion.
@@ -208,13 +206,9 @@ public class testLocMappingPages
     }
 
     /**
-     * The autonomy menu grays itself, and says which of the two reasons it is.
-     *
-     * `AutonomyMenu.refreshEnabled()` decides whether the menu can be opened and what the tooltip tells the operator
-     * instead.  The control that OFFERS an action has to ask the guard's own question (OB-057).  The two reasons are
-     * not interchangeable: no layout at all, and a layout straight from the Central Station, which has nowhere to keep
-     * a setup; a menu that grayed for the second and blamed the first would send somebody looking for a layout they
-     * already have.  Driven through the menu, so what is asserted is what the operator would see.
+     * The autonomy menu grays itself, and says which of the two reasons it is: no layout at all, and a layout straight
+     * from the Central Station, which has nowhere to keep a setup (OB-057).  Driven through the menu, so what is
+     * asserted is what the operator would see.
      *
      * MUTATION this catches: dropping either half of `setEnabled(hasLayout && local)`, or swapping the
      * two tooltip arms.
@@ -922,23 +916,14 @@ public class testLocMappingPages
 
     /**
      * The line over the locomotive's name is a keycap, the page's words and a decoder pill, for every kind of decoder
-     * (FR-128).
-     *
-     * The design Adam chose: the key's letter on a keycap, then the page as plain words, "5. Example", in
-     * `CurrentKeyLabel`'s own font and color with no pill, then a solid decoder pill with the type and the address
-     * parted by a white line, floated to the right.  Only the keycap and the decoder pill are shapes.
-     *
-     * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
-     * multi-unit and a consist of an MFX head with a member.  Driven through `repaintLoc`, which is what the window
-     * calls to show a locomotive, and read from the row's own layout, so there is no second account of it to drift.
-     *
-     * The keycap and the page's words stay at the left, a gap apart; the decoder pill is at the slot's right edge, with
-     * more than the least gap between it and a short page name, which is the proof that it floats and does not follow.
+     * (FR-128).  The design Adam chose: the key's letter on a keycap, then the page as plain words, "5. Example", with
+     * no pill, then a solid decoder pill with the type and the address parted by a white line, floated to the right.
+     * Driven through `repaintLoc` and read from the row's own layout, so there is no second account of it to drift.
      *
      * MUTATION: put the word Page back in the page's words (draw `getTooltip`'s page words there), put the number after
-     * the name or back in parentheses, leave the full stop off, put a line between them, put the decoder pill back beside
-     * the page's words, join the type and the address into one text, draw the divider outside its pill, or set the
-     * page's words in any font or color but the label's, and this fails.
+     * the name or back in parentheses, leave the full stop off, put a line between them, put the decoder pill back
+     * beside the page's words, join the type and the address into one text, draw the divider outside its pill, or set
+     * the page's words in any font or color but the label's, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1115,16 +1100,10 @@ public class testLocMappingPages
     }
 
     /**
-     * A wide page name is cut with an ellipsis and nothing else is, and the line never leaves its slot (FR-128).
-     *
-     * Wide page names (22 capital Ms, as in the current test data) must fit the current space.  The page NAME takes
-     * what room is left and gives way; the keycap, the page number and the decoder pill are never cut.  The slot is 296
-     * by 18 and nothing below it may move.
-     *
-     * Measured with the widest decoder text, the multi-unit's, because it leaves the least room.  The name's room is
-     * what lies between the number's segment and the decoder pill, less a gap: the name is cut to that, and never runs
-     * under the pill.  Every font in the pills is 12 point.  With the 22-M name the page's words are "5.
-     * MMMM...": the name is cut with an ellipsis and the "5. " in front of it is whole and clear of the decoder pill.
+     * A wide page name is cut with an ellipsis and nothing else is, and the line never leaves its slot (FR-128).  The
+     * page NAME takes what room is left and gives way; the keycap, the page number and the decoder pill are never cut.
+     * The slot is 296 by 18 and nothing below it may move.  Measured with the widest decoder text, the multi-unit's,
+     * because it leaves the least room.
      *
      * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
      * the page's words wider than the room they were given, take the decoder pill's width out of that room, cut the
@@ -1275,21 +1254,14 @@ public class testLocMappingPages
     }
 
     /**
-     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, the page as plain words in the label's
-     * navy with nothing round them, and a decoder pill that is solid navy at the slot's right edge, with a white line
-     * between its type and its address (FR-128).
+     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, the page as plain words in the
+     * label's navy with nothing round them, and a decoder pill that is solid navy at the slot's right edge, with a
+     * white line between its type and its address (FR-128).  Read from the pixels the row paints, over a background
+     * that is nothing else, so a fill that is not meant to be there shows as a change from it.
      *
-     * Read from the pixels the row paints, over a background that is nothing else, so a fill that is not meant to be there
-     * shows as a change from it.  Each reading is a point well inside one shape and clear of its words, so it does not
-     * depend on how the letters are drawn - only on whether the shape is filled, outlined or neither.
-     *
-     * Between the keycap and the decoder pill every pixel is the background or the label's navy words and a blend of
-     * the two (no outline, fill, line or gray), and the words are navy; the decoder's divider is white with navy above
-     * and below it, the rim unbroken; and the pill's last painted column is the slot's last.
-     *
-     * MUTATION: draw any outline, fill or line round the page's words, draw them in anything but the label's navy, put the
-     * decoder pill beside them, draw the divider to the pill's edge, draw the keycap's edge one pixel all round, or take
-     * the decoder's navy from anywhere but rgb(0,0,115), and this fails.
+     * MUTATION: draw any outline, fill or line round the page's words, draw them in anything but the label's navy, put
+     * the decoder pill beside them, draw the divider to the pill's edge, draw the keycap's edge one pixel all round, or
+     * take the decoder's navy from anywhere but rgb(0,0,115), and this fails.
      *
      * @throws Exception from the window
      */
@@ -1407,20 +1379,10 @@ public class testLocMappingPages
 
     /**
      * Twelve point text fits the 18 pixel pills cleanly, and the page's 13 point words the slot: nothing clipped,
-     * nothing touching a rim (FR-128).
+     * nothing touching a rim (FR-128).  The slot is 296 by 18 and does not grow.
      *
-     * The slot is 296 by 18 and does not grow.  A page name with letters that go above the line and below it - "Egypt
-     * jgy
-     * Alt" - a key with a tail ("Q") and a decoder in both its parts are painted, and each piece's text is looked for
-     * in the rows it may use: below the top rim and above the bottom one, with the descenders really there (a clipped
-     * descender is a text whose last row is the rim's) and the rim rows themselves untouched, one color along the whole
-     * run of the text.
-     *
-     * The page is plain words in the label's 13 point Semibold: "12. Egypt jgy Alt" must show its digits, capitals and
-     * descenders within the 18 rows, with the top and the bottom row empty.
-     *
-     * MUTATION: set the pills' fonts to 14 point, set the page's words to a size the slot cannot hold, or move the baseline
-     * down a pixel or two, and this fails.
+     * MUTATION: set the pills' fonts to 14 point, set the page's words to a size the slot cannot hold, or move the
+     * baseline down a pixel or two, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1533,13 +1495,9 @@ public class testLocMappingPages
     }
 
     /**
-     * "Show Page Numbers" is a checkbox in the Preferences menu's Locomotive submenu, off until it is asked for, and with
-     * it off the line over the locomotive's name has the page's name and no number (FR-128).
-     *
-     * The preference is removed before the window is built, so what is read is the default (off: "5. MMMM..." becomes
-     * "MMMM...").  The words are the name alone; a name too wide for the room is cut, and cut later than with the
-     * number, which takes no room; a page with no name reads "Page 5"; and the tooltip has the page's number whatever
-     * the setting.
+     * "Show Page Numbers" is a checkbox in the Preferences menu's Locomotive submenu, off until it is asked for, and
+     * with it off the line over the locomotive's name has the page's name and no number (FR-128).  The preference is
+     * removed before the window is built, so what is read is the default.
      *
      * MUTATION: default the preference on, leave the item out of the submenu or out of the form's menu, take the number
      * out of the tooltip, let an unnamed page show nothing, or let it read "5.", and this fails.
@@ -1606,12 +1564,9 @@ public class testLocMappingPages
     }
 
     /**
-     * Ticking the item shows the number and keeps the choice, and unticking takes it off (FR-128).
-     *
-     * The preference is SET before the window is built, not toggled, so the first click is known to be the one from off
-     * to on; `Panel.close` puts back what was there.  Driven by clicking the item, which runs the item's own handler:
-     * it stores the choice and the line is redrawn at once, which it can only be if what the row says includes the
-     * setting.  A page with no name reads "Page 5" ticked or not, which is read at both ends of the click.
+     * Ticking the item shows the number and keeps the choice, and unticking takes it off (FR-128).  The preference is
+     * SET before the window is built, not toggled, so the first click is known to be the one from off to on;
+     * `Panel.close` puts back what was there.
      *
      * MUTATION: leave the choice out of the handler, leave it out of what the row says, or have the handler store the
      * opposite, and this fails.
@@ -1697,13 +1652,9 @@ public class testLocMappingPages
     }
 
     /**
-     * The preference is read at start-up, as the other ticks in the Locomotive submenu are (FR-128).
-     *
-     * A window built with the preference set on has the item ticked and the number in front of the name, and one built
-     * with it set off has neither, so the state is read from the preference when the window starts, not left at the
-     * item's own default.  Set, not toggled, and put back.  The same reading reaches the page tabs and the page label
-     * between the arrows, in a name with the numbers on, a name with them off, and a page with no name, which reads
-     * "Page 5" either way.
+     * The preference is read at start-up, as the other ticks in the Locomotive submenu are (FR-128): a window built
+     * with it on has the item ticked and the number in front of the name, and one built with it off has neither.  Set,
+     * not toggled, and put back.
      *
      * MUTATION: leave the item's start-up state out of the start-up block, or word the tabs or the label without asking
      * it, and this fails.
@@ -1841,17 +1792,13 @@ public class testLocMappingPages
     }
 
     /**
-     * The rule itself, with no window: for page 5 with the name N, "Page 5" with no name, "N" with the numbers off, "5. N"
-     * with them on - and only the NAME is the caller's to cut (FR-128).
-     *
-     * There is one rule, asked by every place that follows the setting, and this
-     * is it asked directly: every case, the cuts that are the caller's, and the one thing the rule keeps for itself - a
-     * name that had no room at all leaves the number and its full stop.
-     *
-     * Asked by name, so this class still compiles - and fails, in words - on a window without the rule.
+     * The rule itself, with no window: for page 5 with the name N, "Page 5" with no name, "N" with the numbers off, "5.
+     * N" with them on - and only the NAME is the caller's to cut (FR-128).  Asked by name, so this class still compiles
+     * - and fails, in words - on a window without the rule.
      *
      * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or leave it out, cut the
-     * number or the "Page 5" with the name, ask the caller to cut an unnamed page, or lose a name's trim, and this fails.
+     * number or the "Page 5" with the name, ask the caller to cut an unnamed page, or lose a name's trim, and this
+     * fails.
      *
      * @throws Exception from the rule
      */
@@ -1925,16 +1872,12 @@ public class testLocMappingPages
     }
 
     /**
-     * The page tabs are worded by the one rule (FR-128).
+     * The page tabs are worded by the one rule (FR-128): the tabs shown with "Show Locomotive Pages as Tabs" ticked, in
+     * a window built with the numbers off and again with them on - set before the window, not toggled.  A tab has room
+     * for fourteen letters of the NAME, and the "5. " in front of those is not one of them.
      *
-     * The page tabs are the ones shown with "Show Locomotive Pages as Tabs" ticked, in a window built with the numbers off
-     * and again with them on - set before the window, not toggled - and a page is a page with no name, a page called
-     * Example and the 22-M page.  A tab has room for fourteen letters of the NAME: the 22 Ms are cut to 14, and with the
-     * numbers on the "5. " is in front of those fourteen and is not one of them.  The tab's tooltip, "Page 5", is the same
-     * in every case.
-     *
-     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or by its name's cut, let the
-     * tabs ignore the setting, cut the "5. " with the name, or change the tab's tooltip, and this fails.
+     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or by its name's cut,
+     * let the tabs ignore the setting, cut the "5. " with the name, or change the tab's tooltip, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1966,18 +1909,12 @@ public class testLocMappingPages
     }
 
     /**
-     * The page label between the arrows is worded by the one rule, in one line, and moves nothing (FR-128).
+     * The page label between the arrows is worded by the one rule, in one line, and moves nothing (FR-128): it is a
+     * generated component in a fixed layout, and this reads that nothing around it moved or was resized, whatever the
+     * page is called.
      *
-     * The label is the one shown with the tabs off: the rule's words on one
-     * line - "Page 5" for a page with no name, "N" with the numbers off, "5. N" with them on - with its own cut of
-     * forty letters of the NAME: the 22-M page is whole, a 44-M page is cut to 40.
-     *
-     * It is a generated component in a fixed layout, and this reads that nothing around it moved or was resized,
-     * whatever the page is called: the panel, the window and every other component are where they are for a page with
-     * no name, and the label is the height and the place it is for a page with no name.
-     *
-     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5.", put the name back on a line
-     * of its own over "Page 5", cut the forty letters short or not at all, or cut the "5. ", and this fails.
+     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5.", put the name back on a
+     * line of its own over "Page 5", cut the forty letters short or not at all, or cut the "5. ", and this fails.
      *
      * @throws Exception from the window
      */
@@ -2043,16 +1980,12 @@ public class testLocMappingPages
     }
 
     /**
-     * Ticking or unticking the item words the page tabs and the page label again at once (FR-128).
+     * Ticking or unticking the item words the page tabs and the page label again at once (FR-128).  The tab and the
+     * label are read in the SAME event-thread task as the click: the renders the click also asks for land on the event
+     * thread later and would word the tabs on their own, which would hide a handler that left it to them.
      *
-     * The tabs and the label are set when a page is named or chosen, so nothing about a change to the setting reaches them
-     * unless the item's own handler sends it.  Driven by clicking the item, as the operator does, with the tab and the label
-     * read in the SAME event-thread task as the click: the renders the click also asks for land on the event thread later and
-     * would word the tabs on their own, which would hide a handler that left it to them.  The line over the name is read
-     * once its render is done.  A page with no name, a page called Example and the 22-M page, each ticked and unticked.
-     *
-     * MUTATION: leave the tabs or the label out of the handler, or word them from the setting as it was before the click,
-     * and this fails.
+     * MUTATION: leave the tabs or the label out of the handler, or word them from the setting as it was before the
+     * click, and this fails.
      *
      * @throws Exception from the window
      */
@@ -2128,14 +2061,8 @@ public class testLocMappingPages
     /**
      * A page name with no room for a letter leaves the number alone, and a page with no name is drawn whole (FR-128).
      *
-     * A named page with no room for even one letter and the ellipsis reads the number and its full stop, "5.", with the
-     * numbers on or off; a page with no name reads "Page 5" at every width, and is not cut to fit.  Asked of the row in
-     * boxes from wide to narrower than the keycap and the decoder pill together, so that the cut takes the name to
-     * nothing somewhere along the way - and there the words are the number alone, and everywhere else the name, whole
-     * or cut, with its "5. " when the numbers are on.
-     *
-     * MUTATION: show nothing, or "Page 5", for a name with no room, drop the full stop, cut "Page 5" with the room, or leave
-     * the "5. " off the cut name, and this fails.
+     * MUTATION: show nothing, or "Page 5", for a name with no room, drop the full stop, cut "Page 5" with the room, or
+     * leave the "5. " off the cut name, and this fails.
      *
      * @throws Exception from the row
      */
@@ -2198,14 +2125,11 @@ public class testLocMappingPages
 
     /**
      * The item's tooltip says where the number goes: on the page tabs, beside the page arrows and over the locomotive's
-     * name (FR-128), in every language the program has.
+     * name (FR-128), in every language the program has.  Read from the files, not through the bundle, because the
+     * bundle chooses by the machine's language.
      *
-     * The English text is read from its bundle and has to name the three places; each of the other seven has to be there and
-     * not be the English text left in.  Read from the files, not through the bundle, because the bundle chooses by the
-     * machine's language.
-     *
-     * MUTATION: leave the tabs, the arrows or the locomotive out of the English text, or leave a language's untranslated,
-     * and this fails.
+     * MUTATION: leave the tabs, the arrows or the locomotive out of the English text, or leave a language's
+     * untranslated, and this fails.
      *
      * @throws Exception from reading the bundles
      */

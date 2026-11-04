@@ -2211,8 +2211,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Runs `load` while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
-     * (OB-183), as `rebuildRunningLayoutFromSetup` does.  Runs whatever `isAutonomyBusy` says: it is reached after
-     * `prepareAutonomyReload` stopped the run, and a train stopped between sensors keeps the old layout reading busy.
+     * (OB-183), as `rebuildRunningLayoutFromSetup` does.  Runs whatever `isAutonomyBusy` says: a train stopped between
+     * sensors keeps the old layout reading busy.
      *
      * @return whether a valid layout now carries the edit
      */
@@ -2293,10 +2293,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     AutonomyMenu autonomyMenu;
 
     /**
-     * Whether the autonomy menu can be opened (OB-202): a layout is loaded (`isLayoutLoaded`, not the raw list) and the
-     * connecting notice does not hold the bar.  Not whether the layout is local: a Central Station diagram can't keep a
-     * setup, yet its download offer and Documentation must stay pressable (`canUseAutonomy` says if autonomy can be
-     * used).
+     * Whether the autonomy menu can be opened (OB-202): a layout is loaded and the connecting notice does not hold the
+     * bar.  Not whether the layout is local (`canUseAutonomy` says if autonomy can be used).
      */
     public boolean autonomyMenuIsUsable()
     {
@@ -2581,8 +2579,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     org.json.JSONObject settingsAsBuilt;
 
     /**
-     * Pauses a train or sets it going (FR-117), for the Is Active tick on the diagram's right-click menu and the
-     * autonomy editor's: the train, the setup's record of it (saved), then the diagram's icon and the Auto tab.
+     * Pauses a train or sets it going (FR-117), for the Is Active tick: the train, the setup's record of it (saved),
+     * then the diagram's icon and the Auto tab.
      *
      * @param setup the setup the tick belongs to, or null where there is none: the train alone
      */
@@ -2690,9 +2688,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Notes how the railway was built, for a door that snapshots the setup it may put back (OB-343).  The record is
-     * what the railway and the setup last agreed on, so a rollback must restore it with the setup, or what the railway
-     * changed alone (a timetable entry, an Auto tab setting, a card's pause) would go with the rollback.
+     * Notes how the railway was built, for a door that snapshots the setup it may put back (OB-343): a rollback must
+     * restore this record with the setup, or what the railway changed alone would go with it.
      *
      * @return the note, or null where this window does not know how the running railway was built
      */
@@ -4555,7 +4552,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return tile.isRoute();
 
             default:
-                return tile.isSwitch() || tile.isSignal() || tile.isUncoupler();
+                return tile.isAccessory();
         }
     }
 
@@ -15652,11 +15649,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_turnOffFunctionsMenuItemActionPerformed
 
     /**
-     * Writes the data backup: one archive in `tc_backup` holding the locomotive database, the window state, the routes,
-     * the layout's folder and the cropped icons (File > Backup TrainControl Data, and Download & Update before it
-     * replaces anything, FR-125).  Never on the event thread: it may wait on `askOnEventThread`, and a second backup
-     * waits for the first, as two at once would share a staging file and an archive name.  Returns the archive, or no
-     * archive, and what could not be saved.
+     * Writes the data backup: one archive in `tc_backup` (File > Backup TrainControl Data, and Download & Update before
+     * it replaces anything, FR-125).  Never on the event thread: it may wait on `askOnEventThread`.  Returns the
+     * archive, or no archive, and what could not be saved.
      */
     public BackupAction.BackupOutcome backupData()
     {
@@ -17672,9 +17667,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Runs something on the event thread now, or once no modal dialog is showing (FR-125): the update's exit is posted
-     * for whenever its backup ends, and `System.exit` inside a modal dialog closed it with the typing unapplied.
-     * While one is showing this looks again every `pollMs`.
+     * Runs something on the event thread now, or once no modal dialog is showing, looking again every `pollMs`
+     * (FR-125): `System.exit` inside a modal dialog closed it with the typing unapplied.
      *
      * @return true when it ran at once
      */
@@ -17685,10 +17679,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Leaves through the application's own exit (settles open editors, saves the locomotive database and window state),
-     * with the updater as its last act (FR-125).  Asked again first: the download and backup took time and a run may
-     * have started.  The update is disarmed whatever the exit does (`HandOver.exitWith`), so a throwing exit cannot
-     * leave it armed for a later, ordinary exit.
+     * Leaves through the application's own exit, with the updater as its last act (FR-125).  Asked again first, and the
+     * update is disarmed whatever the exit does (`HandOver.exitWith`).
      */
     public void closeNowForTheUpdate(final File jar, final File download)
     {
@@ -19780,9 +19772,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * What the timetable table would SHOW, as one string (MT-149): the redraw is skipped when it has not changed.
-     * Built from text, not objects, because a locomotive hashes by identity.  A change under a second moves this string
-     * but not the table (the cell shows seconds); a spurious repaint is the cheap direction to be wrong in.
-     * Package-private, event thread.
+     * Built from text, not objects, because a locomotive hashes by identity.  Package-private, event thread.
      */
     String timetableSignature(List<TimetablePath> timeTable)
     {
@@ -21145,9 +21135,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Says which layout the application is on (a folder of this computer's, or "" for the Central Station's) and
-     * remembers a folder as the last local one, which switching to the Central Station does not forget (OB-308).  Every
-     * writer of the layout preference comes through here; "" is never remembered.  A folder also heads Recent Layouts
-     * (FR-145).
+     * remembers a folder as the last local one (OB-308); every writer of the layout preference comes through here.  A
+     * folder also heads Recent Layouts (FR-145).
      */
     public static void layoutFolderIs(String path)
     {
@@ -21181,10 +21170,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     static final int RECENT_LAYOUTS_SHOWN = 5;
 
     /**
-     * A chooser for a layout folder, opening beside this computer's last one (OB-308): switching to the Central Station
-     * empties the layout preference, and a chooser opened at nothing opens in Documents.  BESIDE the folder, as inside
-     * it shows only its subfolders and the folder itself could not be chosen.  `selectIt`: whether the last folder is
-     * selected (Open Layout, not Create New Layout).
+     * A chooser for a layout folder, opening BESIDE this computer's last one (OB-308), as inside it shows only its
+     * subfolders and the folder itself could not be chosen.  `selectIt`: whether the last folder is selected (Open
+     * Layout, not Create New Layout).
      */
     JFileChooser layoutFolderChooser(boolean selectIt)
     {

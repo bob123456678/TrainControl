@@ -678,16 +678,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Turning the grid off moves nothing, and hovering moves nothing either.
-     *
-     * FR-006: "make the gray grid an option you can toggle in the visible elements.  on by default, but
-     * persisted if turned off.  make sure hovering (blue/red outlines) doesn't increase tile widths
-     * when it is off."
-     *
-     * The second half has the teeth: a border occupies space, so a colored outline grows a square and pushes the rest
-     * along.  With the grid off a square rests in NO border, so its hover outline reserves nothing either; with it on
-     * both editors reserve the same room (OB-091).  Asked of the insets, with the three-argument form: the
-     * two-argument one asks the stored preference.
+     * Turning the grid off moves nothing, and hovering moves nothing either (FR-006).  The second half has the teeth: a
+     * border occupies space, so a colored outline grows a square and pushes the rest along.  With the grid off a square
+     * rests in NO border, so its hover outline reserves nothing either; with it on both editors reserve the same room
+     * (OB-091).  Asked of the insets, with the three-argument form: the two-argument one asks the stored preference.
      */
     @Test
     public void testTheGridTakesUpTheSameRoomOnAsOff()
@@ -829,15 +823,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The caption menu items name the station they are about.
-     *
-     * FR-014, Adam: "the show station name here right click menu option in the autonomy editor should
-     * clearly indicate the current station being shown, in cases where the user just sees [---] on the
-     * diagram."
-     *
-     * A station with no train draws as `GraphLocAssign.NONE_LABEL` (three dashes), so the menu is the only way to tell
-     * which station a captioned square is about.  The names have to be in `addCaptionItems`, which BOTH menus build
-     * their caption items through.  Asserted as "the un-named keys are used nowhere".
+     * The caption menu items name the station they are about (FR-014): a station with no train draws as
+     * `GraphLocAssign.NONE_LABEL` (three dashes), so the menu is the only way to tell which station a captioned square
+     * is about.  The names have to be in `addCaptionItems`, which BOTH menus build their caption items through.
+     * Asserted as "the un-named keys are used nowhere".
      */
     @Test
     public void testTheCaptionItemsNameTheStationTheyAreAbout() throws Exception
@@ -896,13 +885,9 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The shortcut to the full editor is grayed by the editor's own reasons for refusing.
-     *
-     * FR-026: "to the 'autonomy setup' right click menu on the track viewer, add a shortcut to open
-     * the full editor.  deactivate when inappropriate."
-     *
-     * `openLayoutEditor` already refuses four ways, each with its own dialog; the item asks
-     * `whyAutonomyEditorCannotOpen`, which must answer for every refusal, matched by the MESSAGE KEY each shows.
+     * The shortcut to the full editor is grayed by the editor's own reasons for refusing (FR-026): `openLayoutEditor`
+     * already refuses four ways, each with its own dialog; the item asks `whyAutonomyEditorCannotOpen`, which must
+     * answer for every refusal, matched by the MESSAGE KEY each shows.
      *
      * MUTATION: adding a fifth refusal to openLayoutEditor without answering for it here fails this;
      * so does replacing the menu item's `refusal == null` with any hand-written condition.
@@ -1063,13 +1048,9 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The arrival side is written and read in ONE vocabulary, the BUILD's (OB-182).
-     *
-     * `arrivedFrom` is written by the arrival and three operator doors and consumed by the walk that blocks the track
-     * behind a standing train, so they must agree what "N" means.  The geometry (`Layout.sideTowards`) answers by the
-     * compass direction of the neighboring POINT, wrong on a reduced run that turns corners; the build's answer is the
-     * reduced edge's entry side: `AutonomyBuilder` writes `entrySide` into each emitted edge, `parseAuto` reads it onto
-     * the `Edge`, and `Layout.entrySideOf` is the one definition both the arrival write and the tail walk call.
+     * The arrival side is written and read in ONE vocabulary, the BUILD's (OB-182): `arrivedFrom` is written by the
+     * arrival and three operator doors and consumed by the walk that blocks the track behind a standing train, and
+     * `Layout.entrySideOf` is the one definition both call, not the geometry (`Layout.sideTowards`).
      *
      * MUTATION: pointing either reader back at `sideTowards`, or handing either door `null` instead of
      * the session's arrival sides, fails this.
@@ -1209,12 +1190,9 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The station label and the facing menu answer from one place (OB-181).
-     *
-     * The label reads which COPY of a split square the train stands on, which IS its direction however it got there;
-     * the stored facing is written only when somebody places a train BY HAND, so a menu reading it would disagree for
-     * every train that has moved since.  `AutonomySession.facingOnTheRailway` is the one reading, the stored facing the
-     * fallback (an empty square has no train).
+     * The station label and the facing menu answer from one place (OB-181): `AutonomySession.facingOnTheRailway`, which
+     * reads the COPY of a split square the train stands on; the stored facing, written only when somebody places a
+     * train BY HAND, is the fallback (an empty square has no train).
      *
      * MUTATION: pointing either surface back at `getFacing(target)` alone fails this.
      *
@@ -1244,13 +1222,9 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * A rebuild does not move the trains, and closing the editor writes the file (OB-183).
-     *
-     * Adam's rulings: the railway wins (**"option 1"**), and **"on exit or editor load or editor close, save
-     * to the setup file. this is how it was in 2.8.x."**
-     *
-     * The rebuild regenerates every placement from the setup, safe only while the setup knows where the trains are.
-     * Placements only: folding the whole running layout back would delete a declined edit.
+     * A rebuild does not move the trains, and closing the editor writes the file (OB-183): the rebuild regenerates
+     * every placement from the setup, safe only while the setup knows where the trains are.  Placements only: folding
+     * the whole running layout back would delete a declined edit.
      *
      * MUTATION: dropping either helper from the rebuild restores the teleport; dropping the capture from the close
      * leaves the file saying where the trains started until the next open.
@@ -1459,14 +1433,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * What a caption says is one choice, not three switches (FR-061).
-     *
-     * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following
-     * options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be
-     * default, with the setting remembered between open."*
-     *
-     * The four options exclude one another.  Checked on the CONTROL: the four states, the default, and that the two
-     * internal flags never both set; where the label sits is asserted by source order.
+     * What a caption says is one choice, not three switches (FR-061): Text Labels offers Station Names (the default),
+     * Parked Locomotives, Home Locomotives and None, remembered between opens.  The four options exclude one another.
+     * Checked on the CONTROL: the four states, the default, and that the two internal flags never both set; where the
+     * label sits is asserted by source order.
      *
      * MUTATION: making CAPTIONS_PARKED the default fails the second assertion; setting both flags in
      * applyCaptionMode fails the exclusivity one.
@@ -1971,12 +1941,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The way OUT of the editor does what every other way out does.  The autonomy setup the gestures wrote is put back
-     * by `undoAutonomyEdits`, the CALLER'S job, so closing the APPLICATION must too: `maySettleBeforeExit` must not be
-     * a bare delegation to `settleUnsavedWork`, which completes a Discard by itself only in autonomy mode.
-     *
-     * Reads the source, a weaker thing than running it: `settleUnsavedWork` puts up a modal dialog.  The behavior is
-     * MT-201, by hand.
+     * The way OUT of the editor does what every other way out does (MT-201): `undoAutonomyEdits` puts back the setup
+     * the gestures wrote, the CALLER'S job, so closing the APPLICATION must too; `maySettleBeforeExit` must not be a
+     * bare delegation to `settleUnsavedWork`, which completes a Discard by itself only in autonomy mode.  Reads the
+     * source, a weaker thing than running it: `settleUnsavedWork` puts up a modal dialog.
      *
      * MUTATION: taking the `settledByDiscarding` test out of `completeExitDiscard`, or calling it from
      * `maySettleBeforeExit` again, each fails one of these.
@@ -2062,13 +2030,11 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Escape puts the autonomy editor's tools down, and brings their buttons up with them (OB-119).
-     *
-     * Adam: "escape should turn off test a path in the autonomy editor." A tool left LOOKING armed while the panel
-     * thinks nothing is armed sends the next click to `cycle()`, which changes a square's direction, so a read-only
-     * inspection tool would silently edit the railway.  Escape itself is bound in `LayoutEditor.escapePressed`, which
-     * `testEscapeClosesTheEditor` presses; here, that putting the tools down puts all of them down.  Read rather than
-     * run: the panel needs a session, a page and a live diagram.
+     * Escape puts the autonomy editor's tools down, and brings their buttons up with them (OB-119): a tool left LOOKING
+     * armed while the panel thinks nothing is armed sends the next click to `cycle()`, which would silently edit the
+     * railway.  Escape itself is bound in `LayoutEditor.escapePressed`, which `testEscapeClosesTheEditor` presses;
+     * here, that putting the tools down puts all of them down.  Read rather than run: the panel needs a session, a page
+     * and a live diagram.
      *
      * MUTATION: dropping the `setSelected(false)` loop from `putToolsDown`, or its early return, each fails one of
      * these.
@@ -2345,15 +2311,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Plus and minus change pages in BOTH editors, through the switch that already exists (FR-036).
-     *
-     * Adam: "make the +/- keys scroll through pages in the layout/autonomy editor.  just
-     * have them call existing components to reuse the same guards/warnings."
-     *
-     * Where the keys sit: the handler returns early in autonomy mode, so a page key below that line does nothing there
-     * (MT-109).  What they call: `leaveFor` carries the unsaved-work question and the latch that stops a second switch
-     * starting inside the first.  Read rather than run: driving a key needs a multi-page railway and the frame as
-     * focus owner.
+     * Plus and minus change pages in BOTH editors, through the switch that already exists (FR-036).  Where the keys
+     * sit: the handler returns early in autonomy mode, so a page key below that line does nothing there (MT-109).  What
+     * they call: `leaveFor` carries the unsaved-work question and the latch that stops a second switch starting inside
+     * the first.  Read rather than run: driving a key needs a multi-page railway and the frame as focus owner.
      *
      * MUTATION: moving the block below the autonomy guard fails the position assertion; having stepPage change the page
      * itself instead of calling leaveFor fails the last one.
@@ -2424,11 +2385,8 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The excluded-page label and the banner's Fix Setup bring an open editor forward, as the Edit item does.
-     *
-     * Adam, on the label: *"just make it attempt to click the edit button if it's enabled"*.  With an editor open the
-     * Edit item is enabled and `openLayoutEditor` brings that window forward (OB-058), so the label and Fix Setup must
-     * not ask `refuseWhileEditorOpen` first.  Read from the source: the dialog is modal.
+     * The excluded-page label and the banner's Fix Setup bring an open editor forward, as the Edit item does (OB-058):
+     * they must not ask `refuseWhileEditorOpen` first.  Read from the source: the dialog is modal.
      *
      * MUTATION: put `refuseWhileEditorOpen()` back in either and this fails.
      *
@@ -2608,13 +2566,12 @@ public class testEditorSurfaceRules
     /**
      * The blocked-points picker offers every stored entry, refuses the station itself, and names what it draws.
      *
-     * This dialog is the only way to edit blockedPoints, and `setBlockingPoints` REPLACES the stored list:
+     * `setBlockingPoints` REPLACES the stored list, and this dialog is the only way to edit blockedPoints:
      * - the station itself is never offered (OB-083), nor a caption pointing AT it;
      * - every stored entry is offered, whatever the filters say, or it is deleted on OK or made permanent;
      * - the check box says what it is: carried entries are squares that have lost their name, `getPointName` returns
      *   null for those, and the box would render with no text.
-     * Source-level because a dialog cannot be driven from a test here.  The self-caption qualifier changes nothing the
-     * operator can see, so it is kept for the statement it makes.
+     * Source-level because a dialog cannot be driven from a test here.
      *
      * MUTATION: in `AutonomyEditorPanel.promptBlockingPoints`, put the check-box label back to
      * `session.getStore().getPointName(tile)` and this fails.  Second: drop the `&& !already.contains(tile)` qualifier
@@ -2943,12 +2900,10 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * No dialog is raised from a background thread (OB-137).
-     *
-     * Adam: "while importing routes from Json, the route table freezes up / looks weird."  A dialog raised off the
-     * event thread has the chooser and the window behind it painted from two threads.  The scan covers every source
-     * file and every blocking dialog form, and its floors matter as much as the assertion: a scan that stops finding
-     * calls is a check that no dialogs exist.  invokeAndWait counts as marshalling; examples/ is skipped.
+     * No dialog is raised from a background thread (OB-137): a dialog raised off the event thread has the chooser and
+     * the window behind it painted from two threads.  The scan covers every source file and every blocking dialog form,
+     * and its floors matter as much as the assertion: a scan that stops finding calls is a check that no dialogs exist.
+     * invokeAndWait counts as marshalling; examples/ is skipped.
      *
      * MUTATION: wrapping any of these calls back inside a `new Thread(` in its own method fails this.
      */
@@ -3076,13 +3031,9 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Every door that writes a point property ends by announcing it (MT-246).
-     *
-     * Adam: *"Setting a home locomotive via track diagram viewer does not activate the send home button, and
-     * it is not persisted when closing the app."*  Both halves are one omission: a write never announced.  On the
-     * track diagram `onDiagramChanged` (`session.save()`) alone makes an edit outlive the process and
-     * `rebuildRunningLayoutFromSetup` alone tells the running `Layout`.  Asked of the source: these methods are private
-     * and open modal dialogs.
+     * Every door that writes a point property ends by announcing it (MT-246): a write never announced does not outlive
+     * the process (`onDiagramChanged`, `session.save()`) and does not tell the running `Layout`
+     * (`rebuildRunningLayoutFromSetup`).  Asked of the source: these methods are private and open modal dialogs.
      *
      * MUTATION: removing `setupChanged();` from any one of the nine fails this.
      */

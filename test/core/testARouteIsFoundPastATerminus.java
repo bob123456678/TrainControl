@@ -14,15 +14,9 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A station reached by a longer route is offered when the shorter one passes a terminus (OB-229).  Found through Return
- * Home's agreement check on Adam's MT-335 run: "planner allows 75 407 DB -> BottomSecondary, but the layout would
- * refuse it".  `Layout.bfs` marks a square visited once it is taken off the queue and excludes only whole paths, so
- * where the SHORTEST way to a square runs through a terminus (which `isPathClear` refuses mid-route) the longer way is
- * never extended.  Adam chose: the search does not extend a route through a terminus that is not its end.
- *
- * The shape, on sensors of its own: from S two ways reach Q and then E, S -> X -> T -> Y -> Q through the terminus T,
- * and S -> A -> B -> C -> D -> F -> Q through none.  The longer way is TWO squares longer on purpose:
- * `Layout.getNeighbors` shuffles, and one square longer would sometimes queue Q twice.  Nothing is measured.
+ * A station reached by a longer route is offered when the shorter one passes a terminus (OB-229): the search does not
+ * extend a route through a terminus that is not its end.  The longer way is TWO squares longer on purpose:
+ * `Layout.getNeighbors` shuffles, and one square longer would sometimes queue Q twice.
  *
  * @author Adam
  */

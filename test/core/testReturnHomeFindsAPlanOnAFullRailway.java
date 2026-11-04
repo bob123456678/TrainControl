@@ -21,20 +21,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * Return Home finds a plan on a crowded railway where one exists - the shortest where the time allows, and some plan
  * where it does not (OB-230).
  *
- * Adam, deferring this until his railway was measured: *"I want to do the heuristic, but I think this needs to be
- * deferred until I deliver you the fully measured layout."*  Measured on it (`test/operator_layout`), four trains come
- * home in a second or two, and six or more answered NO_PLAN_FOUND at the fifteen-second budget - and at ten times the
- * budget: fifteen seconds examined 3,852 arrangements and spent 14.4 of them in 643,129 route searches, some
- * thirty-three onward moves an arrangement.  A search for the SHORTEST plan cannot get through that breadth with any
- * estimate that never overstates the moves left, while weighting the estimate found a ten-move plan for the arrangement
- * below in under five seconds.  So the budget is shared: the shortest plan is looked for first, and the last share
- * looks for any plan from the railway as it stands.
+ * The budget is shared: the shortest plan is looked for first, and the last share looks for any plan from the railway
+ * as it stands.  The search's clock is stepped a fixed amount a read, so its budget is a count of arrangements rather
+ * than of seconds on whatever machine runs this.
  *
- * The search's clock is stepped a fixed amount a read, so its budget is a count of arrangements rather than of seconds
- * on whatever machine runs this.
- *
- * No lengths, as in `core.testTrainsComeHomeFromAPinnedArrangement` (Adam: *"i recommend relaxing restrictions
- * (track/station lengths) in the layout used for the A* tests"*): this is about the search, not the room rules.
+ * No lengths, as in `core.testTrainsComeHomeFromAPinnedArrangement`: this is about the search, not the room rules.
  *
  * @author Adam
  */

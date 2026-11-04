@@ -20,26 +20,20 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A 2.7.4c import brings the settings across, and nothing else (MT-296).
+ * A 2.7.4c import brings the settings across, and nothing else (MT-296).  The fixtures are Adam's own:
+ * `test/layouts/live-snapshot` and `config/autonomy_legacy/autonomy.json` inside it.  The file is imported into a fresh
+ * configuration and compared against the file itself rather than a list of expected values, so a settings key added to
+ * either format cannot quietly stop being carried.
  *
- * Adam: "too much manual effort, make a test case for this and validate that state matches by having two fixtures in
- * the test."  The fixtures are his own: `test/layouts/live-snapshot`, the frozen copy of his railway, and
- * `config/autonomy_legacy/autonomy.json` inside it, the frozen copy of the 2.7.4c file the upgrade path exists for.
- * The test imports the file into a fresh configuration and compares the result against the file itself rather than a
- * list of expected values, so a settings key added to either format cannot quietly stop being carried.
- *
- * The four claims are the entry's own Expected: the settings come across; the three that must not come across do not; a
- * station's capacity arrives as a capacity; and the square's track length is untouched.  The last two are one confusion
- * with two halves: `importLegacy` wrote `points[].maxTrainLength` through `setTileLength`, so every upgrading station
- * lost its limit and six squares gained lengths nobody had measured, and lengths are what the shortest- and
- * longest-track routing rules are computed from.
+ * The four claims: the settings come across; the three that must not come across do not; a station's capacity arrives
+ * as a capacity; and the square's track length is untouched.
  *
  * MUTATION: guarding the settings copy out of `importLegacy` fails the first ("What arrived: []" against the file's
  * ten); removing the `activateRoutes` exclusion fails the second; taking `maxTrainLength` out of `CARRIED_SETTINGS`
  * fails the third; and putting the old `setTileLength(tile, maxTrainLength)` line back fails the fourth, with five
  * squares gaining a length.
  *
- * On this fixture the file arrives as `skipped`, not `matched`, because the companion store's square names outlive a
+ * On this fixture the file arrives as `skipped`, not `matched`: the companion store's square names outlive a
  * configuration, so a "fresh" configuration is fresh in its settings and not in its names; the precondition below
  * counts both.
  *

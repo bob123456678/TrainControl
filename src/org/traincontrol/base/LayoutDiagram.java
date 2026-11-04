@@ -465,9 +465,7 @@ public class LayoutDiagram
      * Writes the page index and re-aims every arrow at the page it was aimed at, saving what changed.  The one place
      * the rule lives: a link tile holds a POSITION in the name-sorted page list, so adding, renaming, duplicating,
      * deleting or combining pages changes what every arrow means.  The OLD order comes from the pages this session
-     * holds, not the index file (`layoutDB` is keyed by name, so an index naming two pages alike aliases them).  A
-     * rename carries the arrows with it; a page that has gone leaves its arrows pointing at nothing
-     * (`LayoutDiagramComponent.setLinkedPageIndex`).
+     * holds, not the index file.
      *
      * @param path the layout folder
      * @param layoutList the new page list, name-sorted
@@ -1379,11 +1377,8 @@ public class LayoutDiagram
 
     /**
      * Which pages this index holds that a write would drop (FR-018).  Retiring the id of a page not in the list is
-     * deliberate (MT-135), but it cannot tell a deleted page from one whose file merely will not parse or is not there
-     * (an unhydrated OneDrive placeholder): written then, the page returns as a NEW page with its settings stranded.
-     * So this reports, the caller asks the user, and the answer goes back in through `keepAbsent`.  Deliberate removals
-     * are subtracted here rather than at each call site, since one that forgot would ask about what the operator just
-     * did.
+     * deliberate (MT-135), but it cannot tell a deleted page from one whose file will not parse or is not there; so
+     * this reports, the caller asks the user, and the answer goes back in through `keepAbsent`.
      *
      * @param path the layout folder
      * @param layoutList the pages the caller can see
@@ -1451,8 +1446,8 @@ public class LayoutDiagram
 
     /**
      * The same again, told which absent pages to hold on to rather than retire (FR-018): `keepAbsent` names pages the
-     * operator has said are coming back, written out with the id they already have so the returning file is the SAME
-     * page.  Anything absent and not named is retired, which is what every caller gets by passing null.
+     * operator has said are coming back, written out with the id they already have.  Anything absent and not named is
+     * retired.
      *
      * @param keepAbsent names to keep in the index though they are not in the list.  Null or empty
      *        for the old behavior

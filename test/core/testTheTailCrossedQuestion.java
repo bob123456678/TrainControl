@@ -234,11 +234,8 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * One road with a crossed sensor is enough to ask, when the other road has none.
-     *
-     * A -> J measures three and C -> J five.  Five units leave four past J: A is crossed with one left, C is not
-     * (five, since OB-226 offers a sensor exactly the train's length back).
-     * "A" claims A -> J; "Not known" stops at J - different track, so the question has to be put.
+     * One road with a crossed sensor is enough to ask, when the other road has none (OB-226): "A" claims A -> J;
+     * "Not known" stops at J - different track, so the question has to be put.
      */
     @Test
     public void testOneCrossedRoadIsEnoughToAsk() throws Exception
@@ -556,13 +553,6 @@ public class testTheTailCrossedQuestion
 
     /**
      * Two copies of one square leaving by the same rail are ONE road back, offered once and no reason to ask (OB-276).
-     * They are RampDown's southbound lane and its northbound TURNING copy, both leaving south over the same places;
-     * keyed by lane name they would be two roads.
-     *
-     * Built on the diagram, because the copies are the builder's: X - R - Q - A in a line, R a square trains may turn
-     * at, so R is emitted as a plain copy and a turning one for each side, and two of them leave east over the same
-     * rail towards Q.  Every square measured at one unit: a three-unit train at Q has its tail across R, the first hop;
-     * a five-unit train at A has it across Q and R, the same two copies one hop further back.
      */
     @Test
     public void testTwoCopiesLeavingByOneRailAreOneRoadBack() throws Exception

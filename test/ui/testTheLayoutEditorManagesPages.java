@@ -39,9 +39,8 @@ import support.Components;
  * FR-109: the layout editor's Manage Pages menu adds, renames, duplicates, combines and deletes pages with the main
  * window's own actions, on the page being edited, in the same window; FR-146: Layouts > Manage Pages... opens it.  The
  * user opens the editor, picks the item and answers the real dialogs; what comes of it is the layout's folder and the
- * window: the same window throughout, never closed or hidden, on the new page, the renamed one or another one, and on
- * the same page with nothing changed when the action is refused or canceled.  Unsaved work is asked about only once nothing can refuse the action, and every question
- * hangs off the editor.
+ * window, which stays the same throughout and unchanged when the action is refused or canceled.  Unsaved work is asked
+ * about only once nothing can refuse the action.
  *
  * Each claim has a window of its own over a fresh sandboxed copy of the five-page test layout.
  */

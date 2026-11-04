@@ -118,13 +118,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
-     * A side the operator has barred is not a side a train can have arrived by (OB-204).
-     *
-     * `AutonomyBuilder.splitSides`, which every placement door reads through `StationIndex.arrivalSidesAt`, collected
-     * entry sides with no reference to the barred list, so a square with one way in and one barred side looked
-     * two-sided, `ArrivalSidePrompt.suggestedFor`'s first rule could not fire, and the compass fallback read the
-     * train's FACING, which alternates.  So the claim is STABILITY, not a particular side: the same square, the same
-     * train, two facings, one answer.
+     * A side the operator has barred is not a side a train can have arrived by (OB-204).  The claim is STABILITY, not a
+     * particular side: the same square, the same train, two facings, one answer.
      *
      * The control is the other half: with the RAW geometric sides the two facings give different answers; if they stop
      * doing so the fixture can no longer show the defect and this fails out loud.  Squares are searched, not named.

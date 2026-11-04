@@ -14,22 +14,14 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Whether a square has a way through it: the question MT-367 turned on, asked directly at last.
- *
- * `hasAWayThrough` used to skip the copy it was being asked about, so asked about a plain copy it answered "there is no
- * way to stand here without being turned round" while BEING the way through.  The repair had nothing that could fail:
- * both callers inside `Layout` hand it a copy already established as a terminus or reversing point, which is never the
- * answer, and the method was private.  A rule no test can tell apart from its own defect has no coverage.  Adam: "make
- * it public and add the tests."
+ * Whether a square has a way through it: the question MT-367 turned on, asked directly (Adam: "make it public and add
+ * the tests.").
  *
  * The three shapes are the three answers the rule has:
  *
- *   - a PLAIN square answers true about its own copy - the case the old skip got wrong;
+ *   - a PLAIN square answers true about its own copy;
  *   - a COMPULSORY turn answers false from every copy - a terminus, or a reversing point with no plain sibling;
- *   - a MAY-TURN square answers true from either copy, because one of its copies is plain.  This is the case MT-367
- *     was reported against ("EN57-947 is not allowed to go to BottomMainB, even though it 'may' reverse (is not a
- *     terminus)"), and why the flag on a single copy cannot be read: `AutonomyBuilder` emits the turning copy of a
- *     may-turn square with `terminus: true`.
+ *   - a MAY-TURN square answers true from either copy, because one of its copies is plain.
  *
  * Built by hand rather than from the frozen railway, because the three shapes have to sit side by side and the middle
  * one, a square whose copies ALL turn, is what a fixture has to state rather than find.

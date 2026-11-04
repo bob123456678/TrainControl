@@ -12,11 +12,9 @@ import support.SourceOf;
 /**
  * In autonomy mode the editor knows which square the pointer is over, and the naming shortcut asks it (MT-258).
  *
- * `getLastHoveredLabel()` reads `lastHoveredX/Y`, which `receiveMoveEvent` deliberately does not set in autonomy mode:
- * they are where a paste would land, and nothing is pasted there.  So Control+S asked for the square at -1,-1 and
- * returned.  Autonomy mode now records the square in a field of its own and leaves the placement variables untouched,
- * which makes the third test the important one: a fix that fed the placement variables would pass the first two and
- * break dragging.
+ * `getLastHoveredLabel()` reads `lastHoveredX/Y`, which `receiveMoveEvent` deliberately does not set in autonomy mode
+ * (they are where a paste would land).  Autonomy mode now records the square in a field of its own, which makes the
+ * third test the important one: a fix that fed the placement variables would pass the first two and break dragging.
  */
 public class testTheAutonomyEditorKnowsWhichSquare
 {
@@ -351,8 +349,8 @@ public class testTheAutonomyEditorKnowsWhichSquare
      * A square a click changes shows a hand and says so, and one it does not shows neither (FR-112).
      *
      * Three cases: track in the run, which a click turns; a blank square, which it does not; and that track again once
-     * the Test tool is armed, with the pointer held still - the panel's refresh reaches the diagram, so the hand goes
-     * when the button is pressed rather than at the next move.
+     * the Test tool is armed, with the pointer held still, so the hand goes when the button is pressed rather than at
+     * the next move.
      *
      * MUTATION: leave the hand or the line off, or stop the refresh asking again, and this fails.
      */

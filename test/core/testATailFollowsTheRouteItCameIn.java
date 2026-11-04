@@ -16,18 +16,12 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A standing train's tail follows the route it arrived along, past a junction.
+ * A standing train's tail follows the route it arrived along, past a junction (MT-333, MT-335): a tail that runs past a
+ * junction follows the route the train actually arrived on; a train placed by hand has no route, and still stops at the
+ * fork.
  *
- * Adam, MT-333/MT-335: "With 75 407 DB at bottommaina, length 5, segment length 1+1 between bottommaina and
- * bottommainapre, and 1 between tunnel and bottommainapre past the previous station, EN57-947 may still be manually
- * sent to botommainb, and the orange blocked track is not extended to the segment between tunnel and bottommaina pre."
- *
- * Beyond the first edge the tail walk has only the graph to go on, and at a junction several roads lead back, so the
- * rule had become "end locking at the switch and call it a day".  His ruling: a tail that runs past a junction follows
- * the route the train actually arrived on; a train placed by hand has no route, and still stops at the fork.
- *
- * The fixture is that shape and nothing else: a train drives A -> J -> S, and J is a junction because a second road
- * C -> J also arrives there.  The platform's own approach is one unit and the train three, so two units lie back past J
+ * The fixture is that shape and nothing else: a train drives A -> J -> S, and J is a junction because a second road C
+ * -> J also arrives there.  The platform's own approach is one unit and the train three, so two units lie back past J
  * along A -> J, not C -> J.  The run is real (`executePath`, with the destination's sensor thrown), because what has to
  * hold is that an ARRIVAL leaves the route behind for the walk to read.
  *

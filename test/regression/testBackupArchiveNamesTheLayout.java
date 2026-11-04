@@ -14,21 +14,14 @@ import org.testng.annotations.Test;
 import org.traincontrol.util.Util;
 
 /**
- * A backup archive keeps each folder under the name it came from (MT-159; Adam: "we are missing the folder name of the
- * active layout (i.e., zip file contains 'config' instead of 'cs2_sample_layout')").
- *
- * The fix was already in the build he tested, so either it does not work or he opened an archive made before it.  This
- * settles the half that can be settled without him: whether a key with a folder in it produces a nested archive.
- * `Util.zipInto` takes a map of entry name to file and the backup passes `<layout folder name>/config`, so a flattened
- * key, or a recursion that dropped the prefix, would give a bare `config` whatever the caller asked for.  The test
- * builds its own throwaway layout folder.  The other half, which archive he opened, is his to answer.
+ * A backup archive keeps each folder under the name it came from (MT-159).  `Util.zipInto` takes a map of entry name
+ * to file and the backup passes `<layout folder name>/config`, so a flattened key, or a recursion that dropped the
+ * prefix, would give a bare `config`.  The test builds its own throwaway layout folder.
  */
 public class testBackupArchiveNamesTheLayout
 {
     /**
-     * Show Files, after a backup, opens the backup folder itself (OB-311).  On Windows it asked Explorer to select the
-     * archive (`explorer /select,`), and an Explorer that cannot take the path (spaces, a folder it will not resolve)
-     * opens its default place instead, Documents, with nothing said.  The folder is opened as a folder now.
+     * Show Files, after a backup, opens the backup folder itself (OB-311), not Explorer asked to select the archive.
      *
      * MUTATION: ask Explorer to select the file again, and this fails on Windows.
      */

@@ -15,16 +15,10 @@ import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * A square is faded once, however many reasons there are to fade it (OB-212: *"keep one level of opacity, dont
- * stack."*).
+ * stack."*).  Two washes, each right on its own, neither knowing about the other: the annotation's wash is the one to
+ * drop, since a tile drawn at 40% is not busy art competing with an arrow.
  *
- * Two washes, each right on its own: `LayoutLabel` draws the tile art at `BLOCKED_ALPHA` where the railway refuses the
- * square, and `TileAnnotation` lays a white wash at `DIM` under its arrows so thin arrows lift off busy art. Neither
- * knows about the other, so a square both blocked and annotated is faded twice. The annotation's wash is the one to
- * drop, since a tile drawn at 40% is not busy art competing with an arrow, while dropping the other would lose what the
- * fade says (the railway will not use this square).
- *
- * Painted rather than reasoned about: whether a wash lands is decided inside `paint`, and every model-level question
- * answers the same with the stacking present and absent (`support.Rendered`).
+ * Painted rather than reasoned about: whether a wash lands is decided inside `paint` (`support.Rendered`).
  *
  * MUTATION: paint the wash regardless of the flag and the second claim fails; skip it always and the first fails,
  * because an annotated tile that is NOT blocked loses the lift its arrows need.
@@ -63,10 +57,8 @@ public class testTheWashDoesNotStack
     }
 
     /**
-     * And the THIRD wash - track an active route is holding - gives way too (MT-375: *"I still see two levels of fade
-     * when a train locks the same section a second time"*). `LayoutLabel` fades refused track, `TileAnnotation` washes
-     * under its arrows and `TileOverlay` pales out held track, and the first fix addressed only the second; a class
-     * that tests one source of a stacking bug reports clean about the other two.
+     * And the THIRD wash - track an active route is holding - gives way too (MT-375): a class that tests one source of
+     * a stacking bug reports clean about the other two.
      */
     @Test
     public void testHeldTrackIsNotWashedOverAFadedTile() throws Exception

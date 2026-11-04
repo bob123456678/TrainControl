@@ -173,13 +173,8 @@ public class ArrivalSidePrompt
 
     /**
      * Behind a train that drove in forwards, named in the vocabulary the tail walk compares against.  The sides are
-     * given and the facing chooses between them, not the other way about: "the opposite of the facing" is a compass
-     * answer, which on a curve names a side no edge carries (OB-182).
-     *
-     * - **One way in that is not the way it is pointing** - the whole answer on a two-sided square, straight or curved.
-     * - **Otherwise the compass assumption (it drove straight through), but only where the build enters by that side.**
-     * - **Otherwise nothing.**  A NULL arrival side narrows the walk and blocks less, while a WRONG one sends it down
-     *   track the train is not on.  Claiming least is also what a dismissed dialog answers.
+     * given and the facing chooses between them, not the other way about (OB-182).  A null arrival side claims least,
+     * which is also what a dismissed dialog answers.
      *
      * @param sides the sides track reaches this square by - the build's where the caller has them
      * @param facing which way its front points, or null when nobody has said

@@ -15,13 +15,8 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A Return Home plan never sends a train over a tail an earlier move of the same plan left behind (OB-228). The planner
- * modeled only the tails of trains that had not moved yet; a train it has moved has a known road, the route the plan
- * gave it, and its tail lies back along that route.
- *
- * The shape, on sensors of its own: both trains' routes home share T -> P. Train A comes from Y and parks at A, three
- * units long behind a two-unit approach, so its tail lies back over T -> P. Train B comes from X and goes on past P to
- * its home H. Moved in that order B runs into A's tail; the other way round, both get home.
+ * A Return Home plan never sends a train over a tail an earlier move of the same plan left behind (OB-228): the
+ * planner modeled only the tails of trains that had not moved yet.
  *
  * Asked the way the railway would: each move is driven onto the layout as a run leaves a train, and before each move
  * the edges the trains already standing cover are asked of `Layout.edgesCoveredByStandingTrains`, the runtime's own
@@ -164,10 +159,9 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * The retry from the start still has time when the first search spends its share (OB-228's second search, for the
-     * arrangement the greedy pass boxes itself into). The X, Y, Z railway of the claim above needs the retry; sixty
-     * sidings Z can wander along keep the first search from running out of arrangements before its time does; the
-     * search's clock is stepped 300 ms a read, so the fifteen-second budget is fifty reads.
+     * The retry from the start still has time when the first search spends its share (OB-228's second search).  Sixty
+     * sidings keep the first search from running out of arrangements before its time does; the search's clock is
+     * stepped 300 ms a read, so the fifteen-second budget is fifty reads.
      */
     @Test
     public void testTheRetryFromTheStartHasTimeLeft() throws Exception
@@ -265,16 +259,9 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not.
-     * `passesTheTailsOfTrainsItHasMoved` has two arms: the edge the mover wants IS one the tail covers (pinned above),
-     * and an edge the tail does not cover but which is LOCKED against one it does ("the same piece of metal", OB-073's
-     * shape, as OB-228 was).
-     *
-     * The refinement: where BOTH edges carry places from the build, the lock alone is not enough; the tail has to lie
-     * on a place the mover's edge runs over, or the planner is stricter than its railway. Three arrangements differ in
-     * nothing else: the lock with no places refuses, the lock with places the tail is not on allows, the lock with the
-     * place the tail IS on refuses again. A starts on B's home, so A moves first, and its three-unit tail over
-     * `RS_T -> RS_HA` is on B's only road home, `RS_P -> RS_Y`, unless the shared metal is not modeled.
+     * A road that shares metal with a parked train's tail is refused, and the build's places say when it does not
+     * (OB-073's shape, as OB-228 was): where BOTH edges carry places from the build, the lock alone is not enough; the
+     * tail has to lie on a place the mover's edge runs over, or the planner is stricter than its railway.
      *
      * MUTATION, both run: dropping the lock-edge loop from `passesTheTailsOfTrainsItHasMoved` fails the first
      * arrangement. Dropping the `tailLiesOn` continue instead fails all four claims in this class, the control first:
@@ -316,13 +303,9 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
-     * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184). Here A is already
-     * home and never moves, so its tail is the one it left at the START of the plan, and the only check that sees it is
-     * `liesAcrossAtStart`, through `Layout.tailLiesOn`, once for the lock partner (the lock, with places on both edges)
-     * and once for the other copies of the same metal (no lock at all).
-     *
-     * The railway as above, with A standing at `RS_HA` from the start. B's only road home runs over `RS_P -> RS_Y`,
-     * which shares the square `RS_bridge` with A's `RS_T -> RS_HA`. The control puts the squares apart, and is READY.
+     * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184): A is already home,
+     * so its tail is the one it left at the START of the plan, seen only by `liesAcrossAtStart` through
+     * `Layout.tailLiesOn`.
      *
      * MUTATION: make `Layout.tailLiesOn` return false. Both refusals go READY (the planner offers a move
      * `Layout.isPathClear` refuses at dispatch, OB-073's shape), and the control stays READY.

@@ -103,15 +103,9 @@ public class TileAnnotation
     private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
 
     /**
-     * What a sensor has been designated as, drawn as a badge on its tile.  The SHAPE says what turning means, the SIZE
-     * whether it is a station.  Blue means autonomy uses it, gray it does not (FR-103), orange that nothing can pass.
-     *
-     *                       trains do not turn    trains MAY turn    trains ALWAYS turn
-     *     a station              big circle          big diamond         big square
-     *     a passing point       small circle        small diamond       small square
-     *
-     * Terminus and parking are independent flags: must a train leave the way it came, and does autonomy choose the
-     * station on its own.
+     * What a sensor has been designated as, drawn as a badge on its tile.  The SHAPE says what turning means (circle:
+     * trains do not turn, diamond: may, square: always), the SIZE whether it is a station (big) or a passing point
+     * (small).  Blue means autonomy uses it, gray it does not (FR-103), orange that nothing can pass.
      */
     public static class Badge
     {
@@ -553,7 +547,7 @@ public class TileAnnotation
 
     /**
      * Says a length rule reads this square and nobody has given it a length (Unmeasured Track).  Carried through
-     * `isBlank`, `equals` and `hashCode` as well as `paint` (OB-007): plain track has nothing else to say.
+     * `isBlank`, `equals` and `hashCode` as well as `paint` (FR-005): plain track has nothing else to say.
      */
     public TileAnnotation needsALength()
     {
@@ -743,7 +737,7 @@ public class TileAnnotation
 
     /**
      * Whether there is nothing here worth drawing.  paint() opens with this, so a field added to equals and hashCode
-     * belongs here too, or it is never painted when it is the ONLY thing on a square (OB-007).
+     * belongs here too, or it is never painted when it is the ONLY thing on a square (FR-005).
      */
     public boolean isBlank()
     {
@@ -1767,18 +1761,9 @@ public class TileAnnotation
     private static final double TERMINUS_POINT_SMALL = 0.66;
 
     /**
-     * A station's icon (FR-118), per the station icon page (https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB):
-     *
-     *     a station                      a rounded block, half as long again as it is tall
-     *     trains may turn                the hexagon, pointed at both ends
-     *     trains must turn               two terminus shapes back to back, the track's black line showing between
-     *     its track runs out one way     the terminus: the hexagon flat against that side, with a bar there
-     *     out of service                 a white circle, orange ring and X, drawn by `paintOutOfService` first
-     *
-     * Blue where autonomy uses it, gray a berth it does not choose; filled when named, white ringed in the color when
-     * not, and always the latter in the autonomy editor.  Laid along the road from side a to side b, the terminus's
-     * flat end on its dead-end side.  On a bend it lies along the chord, on its rails, its full size, and what falls
-     * outside the square spills onto the squares beside it (`paintSpill`).
+     * A station's icon (FR-118): a rounded block; the hexagon where trains may turn; two terminus shapes back to back
+     * where they must; the flat-ended terminus where its track runs out; out of service is drawn by
+     * `paintOutOfService` first.  What falls outside the square spills onto its neighbors (`paintSpill`).
      */
     private void paintStation(Graphics2D g, int width, int height, Color colour)
     {
@@ -2064,10 +2049,9 @@ public class TileAnnotation
     }
 
     /**
-     * Where an icon goes so that all of it is inside its square (MT-710): where asked if it fits there, else the first
-     * place that fits on the way to the middle, else the middle made smaller until it does.  A half pixel to spare at
-     * each edge.  `needs` is what the icon covers at scale 1, about its center; returns the center's x and y and the
-     * scale.
+     * Where an icon goes so that all of it is inside its square (MT-710): where asked if it fits, else the first place
+     * that fits on the way to the middle, else the middle made smaller.  `needs` is what the icon covers at scale 1,
+     * about its center; returns the center's x and y and the scale.
      */
     private static double[] fitInside(java.awt.geom.Rectangle2D needs, double scale, double x, double y, int width,
         int height)
@@ -2303,8 +2287,8 @@ public class TileAnnotation
     }
 
     /**
-     * The middle of the road a train stands on, named by the sides it is known to end at (MT-642), on a curve or a
-     * double curve (two roads in one tile); `trackCentre` elsewhere.
+     * The middle of the road a train stands on, named by the sides it is known to end at (MT-642); `trackCentre`
+     * elsewhere.
      *
      * @param sides the sides of the train's road, from `TileOverlay.trainSides`
      */

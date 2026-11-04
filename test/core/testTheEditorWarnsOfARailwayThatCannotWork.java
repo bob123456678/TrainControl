@@ -406,9 +406,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * An arrival no train can make is not said to be trapped (OB-361).  3,1 is a station with track east of it running
-     * only towards it, so a train arriving from the west could not go on; then trains stop turning round at 1,1, the
-     * end of the line west of it, and no train arrives at 3,1 from the west at all.
+     * An arrival no train can make is not said to be trapped (OB-361).
      *
      * MUTATION: say it for a copy no train reaches, and this fails.
      */
@@ -545,10 +543,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223): a page that repeats
-     * anything contributes nothing to what counts as seen, or a third page sharing one of its other sensors is blamed
-     * against the page that should itself have been switched off.  The fixture does both: "repeat" clashes on TWO
-     * sensors and must produce two findings, and "third" shares a sensor only "repeat" holds and must produce none.
+     * Every clashing sensor is reported, and a page that clashes still poisons nothing (MT-223): "repeat" clashes on
+     * TWO sensors and must produce two findings, and "third" shares a sensor only "repeat" holds and must produce none.
      */
     @Test
     public void testEveryClashingSensorIsReportedAndOnlyTheRepeatingPageIs() throws Exception
@@ -845,11 +841,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A square trains turn round at, from which no station can be reached, is reported (OB-113).  A healthy switchback
-     * never appears here, since the whole railway is reachable from it; what is left is a reversing square in a pocket
-     * of track with no station, which `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` (stations only) do not watch.
-     * The second half gives the pocket a station, which stops the notice, so the check is not one that lists every
-     * reversing point.
+     * A square trains turn round at, from which no station can be reached, is reported (OB-113).  The second half
+     * gives the pocket a station, which stops the notice, so the check is not one that lists every reversing point.
      *
      * MUTATION: dropping the `!reachesAStation` condition fails the second half; removing the call to
      * `checkReversingGoesSomewhere` fails the first.
@@ -995,7 +988,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     /**
      * What a square is called, in the three cases there are: what somebody named it, then the sensor address printed
      * beside it, then where it is.  The rule lives in the session so the diagram's right-click menu (OB-112) and the
-     * editor ask the same one.  Each case is its own assertion.
+     * editor ask the same one.
      *
      * MUTATION: dropping the feedback branch fails the second assertion; returning the coordinates always fails all
      * three.
@@ -1028,10 +1021,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * "May change direction here" is judged by where a train can GO, not by what arrives (OB-123): a square a train can
-     * only enter from one side but leave by either offers exactly the choice the setting describes; that shape needs a
-     * one-way run to build.  Both halves are in one test because `hasFinding` asks by message key and not by square:
-     * the far end, also set reversing, is a genuine dead end and must still be reported, as the control.
+     * "May change direction here" is judged by where a train can GO, not by what arrives (OB-123).  Both halves are in
+     * one test because `hasFinding` asks by message key and not by square: the far end, also set reversing, is the
+     * control.
      *
      * MUTATION: putting `arrivalSides(tile).size() < 2` back reports the middle square and fails.
      */
@@ -1136,10 +1128,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * The findings walk the railway a TRAIN can use, red arrows included (OB-120).
-     *
-     * Bars only ever REMOVE runs, so findings blind to them see more railway than a train can use.  Both halves are
-     * asserted together: without the bar the station is fine, with it the station is stranded.
+     * The findings walk the railway a TRAIN can use, red arrows included (OB-120): bars only ever REMOVE runs.  Both
+     * halves are asserted together: without the bar the station is fine, with it the station is stranded.
      *
      * MUTATION: let `AutonomyBuilder.arrivalAllowed` ignore the bars, and this fails: the findings follow the build.
      */
@@ -1245,10 +1235,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * The findings ask the build where trains can get to, and work none of it out themselves.
-     *
-     * A walk over the reduction's edges has to re-apply the four authored sets by hand, and each re-application is a
-     * second answer that can drift from the railway's (OB-120 gave a bar to one such walk and not its sibling).
+     * The findings ask the build where trains can get to, and work none of it out themselves (OB-120): a walk over the
+     * reduction's edges would be a second answer that can drift from the railway's.
      *
      * MUTATION: call `reducer.findPath` (or any reducer walk) from `AutonomyChecks`, and this fails.
      */
@@ -1357,8 +1345,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station set to No - Nothing Can Pass is said to be, once - not reported as unreachable (FR-101): the message
-     * says it is marked for nothing to be able to pass, user to validate if intentional.
+     * A station set to No - Nothing Can Pass is said to be, once - not reported as unreachable (FR-101).
      *
      * MUTATION: let the reachability sentences report a closed station again, or leave out the new one, and this fails.
      */
@@ -1396,15 +1383,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * A station every train must turn round at may have only one way in (MT-361): a square marked "must turn round" is
-     * emitted as one Point per arrival side, each leaving the way it came, so with two ways in it becomes two termini
-     * and the track out of the other side is never used.
-     *
-     * An ERROR is asserted rather than assumed: `errorCount() > 0` refuses to start autonomy at all, and a warning
-     * would let the configuration run.  The three remedies the message names all clear it: bar one way in, change the
-     * square to "may turn round", or stop calling it a station.  The last matters: a must-turn square that is not a
-     * station is a plain reversing point, and two ways into one is an ordinary mid-layout turn-round (the `BACK_mid` of
-     * `core.testNonReversibleTrains`), which a rule that reported it would get wrong.
+     * A station every train must turn round at may have only one way in (MT-361).  An ERROR is asserted rather than
+     * assumed: `errorCount() > 0` refuses to start autonomy at all.  The three remedies the message names all clear
+     * it: bar one way in, change the square to "may turn round", or stop calling it a station.
      *
      * MUTATIONS: dropping the `isStation` test reports the reversing point; dropping the barred-arrival test leaves the
      * first remedy unable to clear it; using `isTurnAround` instead of `mandatoryTurnTiles` reports the may-turn
@@ -1498,11 +1479,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
     /**
      * A station shut from every direction is reported - as INFORMATION (MT-078).  The editor will not let anybody tick
-     * the last way in, so this is for the ways round it: a diagram edited after the fact, or a file written by hand.
-     * The consequence is quiet (the station stops being somewhere autonomy sends a train), so it is said out loud.  A
-     * bar is advisory: autonomy will not route into a barred side but a person driving by hand may, so an ERROR would
-     * block the whole setup over a station the operator can still use.  The case that IS a warning, nothing can arrive
-     * by any means, is a square no track reaches: POINT_ISOLATED.
+     * the last way in, so this is for the ways round it; a bar is advisory, so an ERROR would block the whole setup
+     * over a station the operator can still use.
      */
     @Test
     public void testAStationWithEveryWayInBarredIsReported() throws Exception
@@ -1543,9 +1521,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             "nothing told the user autonomy will no longer send a train to their station");
     }
     /**
-     * And the CHECKS are actually given it, which is a separate question: asked of the findings themselves, since a
-     * test of the rule alone could not fail.  Close the middle of a run and the station beyond it becomes unreachable.
-     * (A barred side is passed THROUGH and merely not stopped at, OB-120.)
+     * And the CHECKS are actually given it (OB-120), which is a separate question: asked of the findings themselves,
+     * since a test of the rule alone could not fail.
      *
      * MUTATION: hand `barredArrivals()` to `AutonomyChecks.run` again and the second assertion fails.
      */

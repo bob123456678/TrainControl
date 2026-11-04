@@ -22,18 +22,13 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A whole setup, renamed and renamed back through the same call the menu makes. Adam: *"Do you have tests that try to
+ * A whole setup, renamed and renamed back through the same call the menu makes (Adam: *"Do you have tests that try to
  * load an entire config, and then trigger a rename via the same function that the UI calls, and then rename it back and
- * test along the way?  This is the only way to catch bugs across these complex types of features."*
+ * test along the way?  This is the only way to catch bugs across these complex types of features."*).
  *
- * A test that supplies its own order of steps (calling `AutonomyCompanionStore.renamePage` and
- * `LayoutDiagram.writeLayoutIndex` itself) agrees with itself whatever the application does, while every rename defect
- * (MT-135, OB-049, OB-092) lived in the ORDER of the steps or in a step nobody called. So this calls
- * `LayoutPageEdit.renameOrDuplicate`, what the menu item calls. NOT covered are the four refusals above that call (open
- * editor, running trains, remote layout, name taken), which stay in the window because they raise dialogs.
- *
- * The shape is a mutation, a check, a save, a load, and verification that the mutation is still there while the rest
- * stayed the same; the round TRIP is the addition, since MT-135 became visible only on the way back.
+ * It calls `LayoutPageEdit.renameOrDuplicate`, what the menu item calls: every rename defect (MT-135, OB-049, OB-092)
+ * lived in the ORDER of the steps or in a step nobody called.  NOT covered are the four refusals above that call,
+ * which stay in the window because they raise dialogs.
  */
 public class testRenameRoundTripThroughTheUIPath
 {
@@ -170,16 +165,8 @@ public class testRenameRoundTripThroughTheUIPath
 
     /**
      * The whole gesture, including what the window does AFTER the rename (MT-171, MT-135: *"renaming a page MOVES
-     * locomotives to other stations, not just deleted them."*). The test above passed while his railway was being
-     * wrecked, for two reasons.
-     *
-     * It stopped at the rename: `layoutEditingComplete` re-reads the diagrams and then `resetAutonomySession` captures
-     * the running Layout's state back into the configuration, and that capture is the step that does the damage. It
-     * compared stored settings and never ran the CHECKS: the damage is every placement existing twice, the second copy
-     * keyed to the page's old name, which "more data" does not fail in an equality, while the OPERATOR sees the check
-     * refusing to build the setup.
-     *
-     * So this asserts on the checks and drives the sequence the window drives. It reproduces on the sample layout as
+     * locomotives to other stations, not just deleted them."*).  It asserts on the CHECKS and drives the sequence the
+     * window drives: `layoutEditingComplete`, then `resetAutonomySession`.  It reproduces on the sample layout as
      * reported: four locomotives, each in two places.
      */
     @Test

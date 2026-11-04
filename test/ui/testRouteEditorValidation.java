@@ -1236,10 +1236,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-382: a delete changes no word but those of the conditions it takes.  22 and 24 of "(21 and 22) or (24 and 25)"
-     * leave "(21) or (25)", not "21 and 25"; 22 and 23 of "(21 or 22) and (23 or 24)", by the Delete key, leave
-     * "(21) and (24)"; 21 and 22 of "21 or (22 and 23)" leave 23.  And a delete outside a group whose first item is a
-     * group keeps that group's word: 4 of "3 or ((1 or 2) and 4)" leaves "3 or ((1 or 2))".
+     * OB-382: a delete changes no word but those of the conditions it takes, and a delete outside a group whose first
+     * item is a group keeps that group's word.
      *
      * MUTATION: in `ConditionOutline.removed`, take each piece out of `top` with `top.elements.remove`, and 22 and 24
      * are left in place.
@@ -3163,10 +3161,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396: a new condition added to a complex one, then moved to the top.  "21 and (22 or (23 and 24) or
-     * 25) and 26" with Add Condition, nothing selected, reads "... and 1"; Alt+Up takes 1 to the top a step at a time,
-     * past the group whole rather than into it, the meaning the same at every step, and no further.  Undo puts it back
-     * at the end, and a drag by its handle to the gap above 21 takes it to the top in one go.
+     * OB-396: a new condition added to a complex one, then moved to the top: Alt+Up takes it past the group whole
+     * rather than into it, the meaning the same at every step, and no further.
      *
      * MUTATION: in `ConditionOutline.plan`, skip the group-beside branch (`if (false)`), and 1 does not move past the
      * group as a whole.
@@ -3230,10 +3226,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396: "a or b or c or d" made "(a and b) or (c and d)", both ways the editor offers.  Group Selected
-     * on a and b, then "All of these must be true" on its caption, and the same for c and d; or "All of these must be
-     * true" on the outer caption, then Split Here at c.  Both give the same outline and the same truth table, and Undo
-     * walks the second way back to where it began.
+     * OB-396: "a or b or c or d" made "(a and b) or (c and d)", both ways the editor offers; both give the same outline
+     * and the same truth table, and Undo walks the second way back to where it began.
      *
      * MUTATION: in `ConditionOutline.split`, join the two parts by `word` rather than `opposite(word)`, and Split Here
      * gives "(a and b) and (c and d)".
@@ -4640,11 +4634,9 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396: Split Here cuts the selected condition's group just above it, the two parts joined by the other rule:
-     * "21 and 22 and 23" at 23 is "(21 and 22) or 23", at 22 "21 or (22 and 23)".  A nested group whose parent joins
-     * by the other rule gives the parent its two parts; one whose parent joins by the same rule stays, with the other
-     * rule.  Each by truth table against an expression written here.  Grayed with nothing selected, with two, and on a
-     * group's first condition; the button, Ctrl+Shift+S and the right-click menu do it.
+     * OB-396: Split Here cuts the selected condition's group just above it, the two parts joined by the other rule,
+     * each by truth table against an expression written here.  Grayed with nothing selected, with two, and on a group's
+     * first condition; the button, Ctrl+Shift+S and the right-click menu do it.
      *
      * MUTATION: in `ConditionOutline.split`, join the two parts by `word` rather than `other`, and "21 and 22 and 23"
      * split at 23 still means "21 and 22 and 23".
@@ -4746,14 +4738,10 @@ public class testRouteEditorValidation
     private static final String PRACTICAL = "OB396 practical ";
 
     /**
-     * OB-396: every kind of condition the editor offers (switch in two protocols, signal, sensor on and off, train at,
-     * train not at), alone and in nine shapes up to four levels deep, is stored in a route of a real model and opened
-     * in the real editor.  Each is checked against the shape written here by hand, not against the editor's own
-     * reading of it: one caption per group naming its word and no line for a word, the outline and what Save writes
-     * back equivalent to it by truth table, the reading's brackets and words, nothing flagged, the same conditions, and
-     * each condition drawn inside as many outlines as it has groups round it.  The deeper shapes then take a user's
-     * edits through the gestures (a caption's rule, Group Selected, Ungroup, Add Condition, Alt+Up and Alt+Down, drags,
-     * Delete, Split Here), each checked the same way; every shape ends with Save and a reopen that shows it again.
+     * OB-396: every kind of condition the editor offers, alone and in nine shapes up to four levels deep, is stored in
+     * a route of a real model and opened in the real editor.  Each is checked against the shape written here by hand,
+     * not against the editor's own reading of it.  The deeper shapes then take a user's edits through the gestures,
+     * each checked the same way; every shape ends with Save and a reopen that shows it again.
      *
      * MUTATION: in `ConditionOutline.grouped`, join the wrapped items by `opposite(word)`, and Group Selected on F5off
      * and S12 in shape 2 captions the new group "At least one" inside the outer "all".

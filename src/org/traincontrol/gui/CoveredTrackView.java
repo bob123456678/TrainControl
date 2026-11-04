@@ -1,11 +1,9 @@
 package org.traincontrol.gui;
 
 /**
- * The marks a standing train puts on the track diagram - the road it covers and the track it blocks - worked out on
- * `CoveredTrackRenderer`, never on the event thread (OB-192), coalesced so the last ask always lands, and a bounded
- * wait for them to have landed.
- *
- * The marks, the flags and the pool stay on `TrainControlUI`; the ask and the loop are `CoalescedAsk`'s.
+ * The marks a standing train puts on the track diagram, worked out on `CoveredTrackRenderer` and never on the event
+ * thread (OB-192), coalesced so the last ask always lands, with a bounded wait for them to have landed.  The marks, the
+ * flags and the pool stay on `TrainControlUI`; the ask and the loop are `CoalescedAsk`'s.
  */
 final class CoveredTrackView extends SettledQuestion
 {
@@ -19,16 +17,9 @@ final class CoveredTrackView extends SettledQuestion
     /**
      * Asks for both of the marks a standing train puts on the diagram to be worked out again.
      *
-     * **NOT ON THE EVENT THREAD, EVER (OB-192)**: starting autonomous operation made the UI unresponsive.  The answer
-     * comes from `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout`, and a dispatch holds
-     * that monitor for the whole of `configureAndLockPath`; worse, an event thread taking the railway's monitor while
-     * holding this window's was AB-BA and unrecoverable (see `Layout.getEdges`).  So it is worked out on a worker, the
-     * two sets computed and diffed together, and `repaintTheWashWhereItChanged` redraws only the squares that changed.
-     *
-     * Safe off the event thread: `coveredTrack` and `blockedTrack` are volatile and replaced wholesale;
-     * `DiagramTileRegistry` is built on `ConcurrentHashMap` and `labelsFor` hands back a copy; `refreshCoveredMark` is
-     * a `repaint()`.  The worker takes the `Layout` monitor and gives it back before it touches anything of this
-     * window's.
+     * **NOT ON THE EVENT THREAD, EVER (OB-192)**: the answer comes from `Layout.edgesCoveredByStandingTrains`, which is
+     * `synchronized` on the `Layout`, so it is worked out on a worker, and the worker gives the `Layout` monitor back
+     * before it touches anything of this window's.
      *
      * @see #awaitSettled(long) for waiting until the answer has landed
      */

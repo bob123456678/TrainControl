@@ -978,15 +978,9 @@ public class testAdvancedRoutes
     }
 
     /**
-     * A running route about to CHAIN to another one is driving what that other route drives (MT-464).
-     *
-     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and it must ask
-     * the chain, not each executing route's OWN command list.  A route whose command is another ROUTE drives every
-     * locomotive that route drives, seconds later, on a thread nobody has started yet.  The window is as long as the
-     * delays sitting ahead of the chain command: here one accessory command with a four-second pause.
-     *
-     * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and passes
-     * `limit - 1` down, so a route fired BY a route cannot fire a third.
+     * A running route about to CHAIN to another one is driving what that other route drives (MT-464):
+     * `runningRouteDriving`, which every door asks before it edits or deletes a locomotive, must ask the chain, not
+     * each executing route's OWN command list.  ONE HOP, because that is all the engine reaches.
      *
      * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim below goes red.
      *

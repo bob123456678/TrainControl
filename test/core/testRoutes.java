@@ -520,10 +520,8 @@ public class testRoutes
     }
 
     /**
-     * NOT AT is the same question with the answer turned round (FR-141).  Adam: *we need "train at a sensor" or "train
-     * not as a sensor"*.  A train is not at a sensor it is not standing at, and a train on no sensor at all (not on the
-     * autonomy graph) is not at this one either.  A name with no locomotive behind it satisfies neither form: a typo
-     * must not make a condition true.
+     * NOT AT is the same question with the answer turned round (FR-141): a train on no sensor at all is not at this one
+     * either, and a name with no locomotive behind it satisfies neither form, so a typo cannot make a condition true.
      *
      * MUTATION: have `Route.evaluate` ignore `isAtSensor` and the first assertion fails; answer "not at" for a name
      * with no locomotive and the last one does.
@@ -951,13 +949,10 @@ public class testRoutes
     }
 
     /**
-     * An ACTIVE route, exported and read back, arrives switched off (MT-352).  A route with a sensor and automatic
-     * execution ON goes out through the real exporter and comes back through the real parser (not `importRoutes`, which
-     * deletes every route in the operator's own database first; `testFailedRouteImportLeavesExistingRoutesIntact`
-     * drives the deleting half).
-     *
-     * The route is asserted to have been exported as ACTIVE, because a file that says `auto: false` would make the
-     * claim true for the wrong reason.
+     * An ACTIVE route, exported and read back, arrives switched off (MT-352): through the real exporter and parser, not
+     * `importRoutes`, which deletes every route in the operator's own database first
+     * (`testFailedRouteImportLeavesExistingRoutesIntact` drives that half).  The route is asserted to have been
+     * exported as ACTIVE, or a file that says `auto: false` would make the claim true for the wrong reason.
      *
      * MUTATION: remove the `route.disable()` from `parseRoutesFromJson` and this fails.
      */
@@ -1637,12 +1632,10 @@ public class testRoutes
     }
 
     /**
-     * Editing a route keeps it in the autonomy "Activate routes" selection.  `editRoute` works by delete-then-re-add,
-     * and `deleteRoute` strips the route's id out of `activateRouteIDs` (right for a real delete: ids are reused);
-     * `changeRouteId` restores it, and so must every door that deletes and re-adds.
-     *
-     * The loss survives to bite: a mid-session `parseAuto` rebuild restores the list from the stored configuration,
-     * the save on the way out writes the shortened list, and the NEXT launch disables the route.
+     * Editing a route keeps it in the autonomy "Activate routes" selection (MT-272): `editRoute` works by
+     * delete-then-re-add, and `deleteRoute` strips the route's id out of `activateRouteIDs`, so every door that deletes
+     * and re-adds must restore it, as `changeRouteId` does.  The loss survives to bite: the NEXT launch disables the
+     * route.
      *
      * MUTATION: removing the restore from `editRoute` fails the second assertion; removing it from the `syncWithCS2`
      * refresh is not covered here (that path needs a Central Station; MT-272 carries it).
@@ -1915,12 +1908,10 @@ public class testRoutes
     }
 
     /**
-     * A running train is at the sensor it last reached, not at one further along its path (OB-250).  Adam: *"250- the
-     * first"* - "X is at T now": the last sensor X reached, or where it stands.  A route condition "X at T" is asked
-     * when the route's own sensor fires, and past the train's last milestone it read "the Point that holds the train"
-     * (the first in the railway's hash order, and every Point of a locked path holds it), so it could answer yes for a
-     * sensor the train had not reached.  A line A - P - Q - B run both ways, asked about the two sensors beyond the
-     * next one before anything is reached: whichever Point the hash order gives first, one answer was wrong.
+     * A running train is at the sensor it last reached, not at one further along its path (OB-250).  A route condition
+     * "X at T" used to read "the Point that holds the train" (the first in hash order; every Point of a locked path
+     * holds it), so it could answer yes for a sensor the train had not reached.  A line A - P - Q - B is run both ways,
+     * asked about the two sensors beyond the next one before anything is reached.
      *
      * MUTATION: ask which Point holds the train again, and this fails.
      *
@@ -2044,11 +2035,9 @@ public class testRoutes
 
     /**
      * "Train X at sensor T" is answered for the moment it is asked, the run's bookkeeping caught up first (the rest of
-     * OB-250).  The train's driver records a sensor some 200 ms after it reads occupied
-     * (`FEEDBACK_DURATION_THRESHOLD`), and a route fired by that same sensor asked in the gap: about the sensor before,
-     * it was told yes; about the sensor the train was heading for, it waited, untimed, and fired seconds late.  Now it
-     * waits only while the train stands on the sensor its run is waiting for, and asks nothing of a sensor the train
-     * has not reached.
+     * OB-250): a route fired by a sensor asks within the ~200 ms (`FEEDBACK_DURATION_THRESHOLD`) before the train's
+     * driver records it, so it waits only while the train stands on the sensor its run is waiting for, and asks nothing
+     * of a sensor the train has not reached.
      *
      * MUTATION: wait for the sensor ahead again, or not at all, and this fails.
      *

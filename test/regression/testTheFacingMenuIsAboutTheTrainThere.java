@@ -350,11 +350,8 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
     /**
      * On its way to a square it may turn at, without turning, a train's label already faces the way it will stand
-     * (OB-314).  The path to such a square ends on its turning copy, which faces the other way, and the label reads the
-     * facing of the copy the train holds, so until it arrived the label showed it reversed.
-     *
-     * A train sent onto a turning copy with keep direction answered, the sensors played by hand so nothing arrives
-     * before the label is read.
+     * (OB-314): the label reads the facing of the copy the train holds, not the copy the path ends on.  The sensors are
+     * played by hand so nothing arrives before the label is read.
      *
      * MUTATION: let the reading take the copy the path ends on again, and this fails.
      */
@@ -438,13 +435,10 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
-     * While its route is set, before it sets off, a train's label already faces the way it will stand.  OB-314's answer
-     * was kept beside the journey, written only at the hand-over, after the claim had reserved the turning copy; it is
-     * kept with the claim now.
-     *
-     * The dispatch is held at its hand-over, its claim taken and its route set, by holding the journeys' map's monitor;
-     * the label is read on another thread with a time limit, so a reading that waits for the hand-over fails rather
-     * than hangs.
+     * While its route is set, before it sets off, a train's label already faces the way it will stand: the answer is
+     * kept with the claim, not written only at the hand-over (OB-314).  The dispatch is held at its hand-over by
+     * holding the journeys' map's monitor; the label is read on another thread with a time limit, so a reading that
+     * waits for the hand-over fails rather than hangs.
      *
      * MUTATION: keep the answer only from the hand-over again, and this fails.
      */

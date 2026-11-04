@@ -1943,10 +1943,8 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * The findings as rows {tile, text, related} by severity, in their order: the walk both finding lists make.
-     *
-     * A finding about a square says what the square is in {0}, as an unnamed Point's name is its coordinate, and keeps
-     * its own subject in {1}, as {0} alone cannot say which train (OB-153).
+     * The findings as rows {tile, text, related} by severity, in their order: the walk both finding lists make.  A
+     * finding about a square says what the square is in {0} and keeps its own subject in {1} (OB-153).
      *
      * @param findings what the check found
      * @param describeTile what a square is

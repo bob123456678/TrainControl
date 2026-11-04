@@ -8,15 +8,8 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Every door that offers a destination asks the same question, and the "..." means the list was cut short.
- *
- * Two reports, one cause.  Adam: "why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC
- * (terminus, train is non reversible, not a berth)?" - because OB-205 put that rule in `Layout.isOfferableToOperator`
- * and only the track diagram's menu asks it; the locomotive commands tab lists whatever the search returns and marks
- * what autonomy will not choose with a dash, which is a label, not a refusal.  And "why is the ... below the list of
- * options visible? shouldn't this be only shown if there are many more regular destinations than can be displayed?" -
- * because the count behind it was taken BEFORE the menu dropped anything, so for a non-reversible locomotive it fired
- * on essentially every right-click.  Both are a count or a list disagreeing with what is on screen.
+ * Every door that offers a destination asks the same question, and the "..." means the list was cut short; both are a
+ * count or a list disagreeing with what is on screen (OB-205).
  *
  * MUTATION: take `isOfferableToOperator` out of either door and the census below names it; put the
  * pre-filter count back into the ellipsis rule and the second test fails on the case where nothing was
@@ -121,15 +114,8 @@ public class testTheDestinationDoorsAgree
     }
 
     /**
-     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons.
-     *
-     * `Layout.explainCannotStart`, `explainDestinations` and `explainDestinationsGrouped` each have a form that takes
-     * `byHand`, and the one-argument form answers for autonomy.  The diagram's Why not Moving? is given the tier
-     * (OB-225, Adam: "in manual mode, I still get reasons like ... will never be chosen in autonomy"); the locomotive
-     * list's "No available paths" tooltip and its why-window kept the one-argument form, so on Manual they said a train
-     * on a copy that is no station cannot be sent anywhere while the list offered it routes.
-     *
-     * A source census over every file under `gui/`, so a door added later is counted without being listed; each tier's
+     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons (OB-225).  A
+     * source census over every file under `gui/`, so a door added later is counted without being listed; each tier's
      * answers are tested where they live (`core.testWhyStuck`).
      *
      * MUTATION: give either call in `AutoLocomotiveStatus` its one-argument form back, and this names it.

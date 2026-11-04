@@ -755,9 +755,7 @@ public class testInvalidInput
 
     /**
      * A setup refused for several reasons keeps every one of them, first first (OB-266; Adam: *"fix 266 to
-     * report all reason"*).  A refusal usually happens once for its cause and again for what follows from it, and the
-     * reason kept - the one repeated in the log when a train is sent on the refused railway - was the last of them, a
-     * consequence rather than the cause.
+     * report all reason"*).
      *
      * MUTATION: keep only the latest reason again, and this fails.
      */

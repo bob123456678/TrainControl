@@ -14,11 +14,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A locomotive with no speed loses its own leg, not everybody else's.  `runLocomotives` skips a locomotive whose
- * preferred speed is outside 1 to 100 and every other one still starts; the timetable's dispatch loop never learned it:
- * executePath refuses at once, the retry loop reads that as a busy track, declares the entry stuck after three
- * attempts, and ends the run.  On a Return Home that abandons every remaining leg because one hand-placed train has no
- * speed (MT-233 closed the file half).
+ * A locomotive with no speed loses its own leg, not everybody else's (MT-233): the timetable's dispatch loop must skip
+ * it as `runLocomotives` does, not end the run.
  *
  * Its own class because it needs debug mode (`setSimulate` refuses without it), which `testHomeStaging`, where the rest
  * of the staging tests live, inits without on purpose.

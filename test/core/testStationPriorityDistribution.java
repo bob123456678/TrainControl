@@ -19,25 +19,13 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * Where a train actually goes, counted, against the operator's own railway (MT-231, OB-156).
+ * Where a train actually goes, counted, against the operator's own railway (MT-231, OB-156).  This counts DECISIONS,
+ * not journeys: `pickPath` is the whole of the rule under test, so the sampling calls it directly and never starts a
+ * locomotive.
  *
- * Adam, after trying to test the priority rules by hand: "make an automated test case for this against the current
- * layout, by varying the priority dynamically at test time.  use bottommainA/B/C, as these are all reachable by a train
- * arriving from tunnel.  try at least 10 combinations of priorities.  as validation, make sure the distribution is as
- * expected."
- *
- * This counts DECISIONS, not journeys: `pickPath` is the whole of the rule under test, so the sampling calls it
- * directly and never starts a locomotive (executing the route would add seconds per sample and change nothing, and no
- * delay setting appears here for the same reason).
- *
- * The fixture is his railway, frozen: `test/test_layout_snapshot` carries the legacy autonomy.json this loads, and
- * BottomMainA, B and C really are the three destinations a train leaving Tunnel can reach.  Their priorities are set
- * here, per case, so the file is read and never written.
- *
- * The assertions are statistical, since `pickPath` shuffles with a Random this test cannot seed, and written to be
- * decisive rather than tight: "this station is never chosen" and "each of these is chosen at least a tenth of the time"
- * over 400 samples.  A rule that ignored priority would fail the first by hundreds of counts, and one that always
- * picked the same station would fail the second the same way.
+ * The fixture is his railway, frozen: `test/test_layout_snapshot` carries the legacy autonomy.json this loads.
+ * Priorities are set here, per case, so the file is read and never written.  The assertions are statistical, since
+ * `pickPath` shuffles with a Random this test cannot seed, and written to be decisive rather than tight.
  */
 public class testStationPriorityDistribution
 {
@@ -132,11 +120,8 @@ public class testStationPriorityDistribution
 
 
     /**
-     * A rule that respects priority never leaves the highest band that has somewhere to go (OB-156).
-     *
-     * Twelve combinations, which is Adam's "at least 10".  Each names the stations that share the top priority; every
-     * sample must land on one of those and never on the others, however reachable they are.  That is what "uses the
-     * station priority and randomly chooses from the highest available" means.
+     * A rule that respects priority never leaves the highest band that has somewhere to go (OB-156): twelve
+     * combinations, each naming the stations that share the top priority; every sample must land on one of those.
      */
     @Test
     public void testTheHighestPriorityBandIsTheOnlyOneUsed() throws Exception
@@ -198,11 +183,8 @@ public class testStationPriorityDistribution
     }
 
     /**
-     * The completely random rule ignores priority, which is the half that did not exist (OB-156).
-     *
-     * Adam: "let's have one completely random, and one that respects priority."  Same fixture, same three stations, the
-     * same lopsided priorities - and now all three have to turn up, because this rule is blind to the thing the other
-     * one obeys.  Ten per cent is far below an even third and far above the nothing the banded rule gives the losers.
+     * The completely random rule ignores priority, which is the half that did not exist (OB-156): same fixture and
+     * lopsided priorities, and now all three stations have to turn up.
      */
     @Test
     public void testTheCompletelyRandomRuleIgnoresPriority() throws Exception
@@ -237,10 +219,8 @@ public class testStationPriorityDistribution
     }
 
     /**
-     * And the two rules really do disagree, on one set of priorities (OB-156).
-     *
-     * The control: without it, both tests above pass if the two rules are the same rule, the banded one never being
-     * asked about a station it excludes.  Here they are asked the same question and have to answer differently.
+     * And the two rules really do disagree, on one set of priorities (OB-156): the control, without which both tests
+     * above pass if the two rules are the same rule.
      */
     @Test
     public void testTheTwoRandomRulesAreNotTheSameRule() throws Exception

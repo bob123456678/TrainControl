@@ -18,24 +18,15 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * A train reversed on the throttle turns round in autonomy, from the throttle's call to the setup's facing (MT-488).
  *
- * Adam, running TrainControl in simulation: *"reversing it on the throttle has no effect on autonomy.  when no
- * autonomy or manual path is running, have the throttle change its autonomy direction."*  The window follows a turn
- * from the direction MESSAGE (`followDirectionChanges`), which a Central Station sends back for every command, and a
- * simulation sends back nothing unless it echoes packets.  Adam: *"You don't need to add that workaround - we can just
- * require the test to echo packets."*
+ * Adam: *"reversing it on the throttle has no effect on autonomy.  when no autonomy or manual path is running, have
+ * the throttle change its autonomy direction."*  The window follows a turn from the direction MESSAGE
+ * (`followDirectionChanges`), which a simulation sends back only if it echoes packets (Adam: *"You don't need to add
+ * that workaround - we can just require the test to echo packets."*).
  *
- * `core.testATrainIsPutOnlyWhereItCanStart` calls `flipFacing` itself; this reverses the train as the throttle does,
- * with packets echoed as a station would, and asks the setup.  On the frozen `live-snapshot`, at BottomMainA, with this
- * class's own train standing there facing east.
- *
- * A reversal made while a route runs with autonomy idle is not written then (no setup edit during a run) and is
- * followed once the route has finished, through the same `followTheTurn`; two reversals during the route leave the
- * facing as it was (Adam: *"it should reverse, but be careful to avoid duplication in code mechanisms on how this is
- * done"*).
- *
- * A followed turn turns the train's icon on the diagram too, to the facing the caption's arrow shows (MT-759; Adam:
- * "make sure the icon matches the label").  While autonomy or Return Home runs, a direction command from the throttle
- * or the Central Station changes neither, then or after.
+ * On the frozen `live-snapshot`, at BottomMainA, with this class's own train standing there facing east.  A reversal
+ * made while a route runs with autonomy idle is followed once the route has finished; two reversals leave the facing
+ * as it was.  A followed turn turns the train's icon too (MT-759).  While autonomy or Return Home runs, a direction
+ * command from the throttle or the Central Station changes neither.
  *
  * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the
  * `routeFinished` call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.
@@ -298,11 +289,9 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     }
 
     /**
-     * While autonomy runs, a direction command from the throttle or from the Central Station changes nothing: not the setup,
-     * not the copy the train stands on (which the caption reads) and not the icon, then or after the run (Adam, on MT-759:
-     * "while autonomy is running, make sure manual/central station direction commands don't alter the config, since at
-     * that point it would be the user correcting an invalid facing").  A hand send runs the railway as autonomy does
-     * (`Layout.isRunning`), so this is its guard too.
+     * While autonomy runs, a direction command from the throttle or from the Central Station changes nothing: not the
+     * setup, not the copy the train stands on, not the icon, then or after the run (MT-759).  A hand send runs the
+     * railway as autonomy does (`Layout.isRunning`), so this is its guard too.
      */
     @Test
     public void testADirectionCommandWhileAutonomyRunsChangesNothing() throws Exception

@@ -116,18 +116,12 @@ public class testTheCheckerAgreesWithTheBuild
     }
 
     /**
-     * A square the checker calls trapped is a square the build emits a Point it cannot leave.
+     * A square the checker calls trapped is a square the build emits a Point it cannot leave (OB-361).
      *
      * The builder's `nodesFor` answers the same question by NOT emitting a way out of the copy, deliberately, so the
-     * sensor is not lost from the graph; the two are one rule with two authors and this is its witness.
-     *
-     * Two squares are excluded, both because the checker cannot be about them:
-     *   - a square with no arrival side at all is a sensor whose every connection has been closed, emitted whole with
-     *     no way in or out; `checkIsolatedPoints` names it;
-     *   - a square where trains may turn round gets a turning copy of every arrival, so an arrival with no way forward
-     *     there is the turn, not a trap.
-     *
-     * Neither is told about a square that is no station, nor an arrival no train makes (OB-361).
+     * sensor is not lost from the graph; the two are one rule with two authors and this is its witness.  Two kinds of
+     * square are excluded because the checker cannot be about them: one with no arrival side at all, and one where
+     * trains may turn round.
      *
      * Mutation this must fail: in `AutonomySession.check`, delete the `if (isTurnAround(tile)) continue;` that opens
      * the trapped walk, so the parking berths, whose only copy is the turning one, are named as places a train cannot
@@ -350,13 +344,10 @@ public class testTheCheckerAgreesWithTheBuild
     /**
      * Every facing the build gives a copy is a facing the editor would have offered for that square.
      *
-     * `AutonomySession.onwardFrom` walks `getRoutes(tile)` to decide what the menu offers and
-     * `AutonomyBuilder.facingOf` walks the same routes to name a copy; when they drift the menu offers a facing the
-     * build has no copy for (MT-125's defect class).  Two shapes are accepted, because the build emits two kinds of
-     * copy:
-     *   - a plain copy is a train that arrived and carried on, its facing the far end of the track it came in on;
-     *   - a turning copy is a train that turned round, pointing back at the side it came in by: an arrival side, never
-     *     offered as a facing because a train standing there has not turned round yet.
+     * `AutonomySession.onwardFrom` and `AutonomyBuilder.facingOf` walk the same routes; when they drift the menu offers
+     * a facing the build has no copy for (MT-125's defect class).  Two shapes are accepted: a plain copy, its facing
+     * the far end of the track it came in on, and a turning copy, pointing back at the side it came in by (an arrival
+     * side, never offered as a facing).
      *
      * Mutation this must fail: in `AutonomyBuilder.facingOf`, answer the compass rule instead of the track
      * (`if (true) return node.arrival.opposite();` before the route loop).  `testFacingFollowsTheTrack` cannot catch

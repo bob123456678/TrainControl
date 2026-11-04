@@ -238,14 +238,9 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * Sets the return home button to match what the layout can actually do right now.  Called wherever the button would
-     * otherwise simply be switched back on, and whenever the autonomy locomotive list is repainted.  Only the cheap
-     * half of the question is asked: whether a plan exists needs a search.
-     *
-     * The cheap half is NOT asked here either (OB-192): this runs on the event thread, and `Layout.triageReturnToHome`
-     * builds a `HomeStaging.snapshot`, which calls the `synchronized` `Layout.getHomeStations`; `isAutonomyBusy` says
-     * nothing about every OTHER holder of that monitor (the nearest is `AutoLocomotiveStatus.findPaths` from the
-     * refresh itself).  So the question goes to a worker and the answer comes back to be painted.
+     * Sets the return home button to match what the layout can actually do right now.  Only the cheap half of the
+     * question is asked, and on a worker, not the event thread (OB-192): `Layout.triageReturnToHome` takes the
+     * `synchronized` `Layout.getHomeStations`.
      *
      * @see #askForReturnHomeTriage(org.traincontrol.automation.Layout)
      */
@@ -385,10 +380,8 @@ final class ReturnHomeController extends SettledQuestion
     }
 
     /**
-     * Return Home's right-click menu, freshly built: Run Trains to Their Homes (the button itself, grayed with the
-     * button's own reason), then Place All Trains at Their Homes, which puts each homed train on its home in the setup
-     * and takes the others off the layout without sending anything to the railway (FR-129), grayed with its reason
-     * while `whyTheTrainsCannotBePlacedAtTheirHomes` says no.
+     * Return Home's right-click menu, freshly built: Run Trains to Their Homes, then Place All Trains at Their Homes,
+     * which sends nothing to the railway (FR-129).
      */
     javax.swing.JPopupMenu buildReturnHomeMenu()
     {

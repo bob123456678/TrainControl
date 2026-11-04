@@ -1136,6 +1136,8 @@ public final class LayoutLabel extends JLabel
             {
                 faded.dispose();
             }
+
+            paintCurvedSensorsArrowsWhole(g);
         }
         else
         {
@@ -1168,9 +1170,9 @@ public final class LayoutLabel extends JLabel
             // The static layer first, and the running one over it: the running line covers only the rails it claims,
             // and the path a train is actually taking is the more urgent.
             //
-            // Told which region is already faint (OB-212: one level of opacity, not stacked): `refused` drew the art at
-            // `BLOCKED_ALPHA`, and the annotation's own wash would compound with it.  A region, not a yes/no: on a
-            // double curve one road is faded, and a tile-wide "yes" would skip the wash under both roads' arrows.
+            // Told which region is already faint (OB-212): `refused` drew the art at `BLOCKED_ALPHA`, so the
+            // annotation's own wash must not compound with it.  A region, not a yes/no: on a double curve one road is
+            // faded.
             java.awt.Shape faded = !refused ? null
                 : (theRoadToFade() == null
                     ? new java.awt.Rectangle(0, 0, getWidth(), getHeight()) : theRoadToFade());
@@ -1236,13 +1238,10 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The orange a train is drawn in (MT-309).  Opaque, and the one strongly colored line on an ordinary diagram:
-     * green and red already mean "trains may run this way" and "they may not", and yellow is the transient flash.  A
-     * square autonomy will not choose is gray (MT-492); the X on a square nothing can pass is a redder orange,
-     * `TileAnnotation.POINT_IMPASSABLE`.
-     *
-     * **The solid one of two** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless
-     * set otherwise.
+     * The orange a train is drawn in (MT-309): opaque, and the one strongly colored line on an ordinary diagram, since
+     * green, red and yellow already mean something else.  A square autonomy will not choose is gray (MT-492).  The
+     * solid one of two (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is see-through unless set
+     * otherwise.
      */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
@@ -1253,6 +1252,54 @@ public final class LayoutLabel extends JLabel
      * layout; blocked track is a fact about this minute and must be told apart at a glance.
      */
     public static final float BLOCKED_ALPHA = 0.40f;
+
+    /**
+     * An active curved sensor's red arrows, drawn again at full strength over its faded square (OB-400): they say the
+     * contact reads occupied, which the fade for a parked train must not wash out.  A straight's fade with its square.
+     */
+    private void paintCurvedSensorsArrowsWhole(java.awt.Graphics g)
+    {
+        if (component == null || !component.isFeedback()
+            || component.getType() == LayoutDiagramComponent.componentType.FEEDBACK
+            || component.getFeedback() == null || !component.getFeedback().isSet()) return;
+
+        Icon icon = getIcon();
+
+        if (!(icon instanceof ImageIcon)) return;
+
+        java.awt.image.BufferedImage arrows = ARROWS.computeIfAbsent(((ImageIcon) icon).getImage(),
+            LayoutLabel::redOf);
+
+        java.awt.Insets in = getInsets();
+
+        g.drawImage(arrows, in.left, in.top, null);
+    }
+
+    /** The red each tile picture has, worked out once: an active sensor's art draws only its arrows in red. */
+    private static final Map<Image, java.awt.image.BufferedImage> ARROWS =
+        java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /** The picture's red, with the soft edge it fades into white by, and nothing else. */
+    private static java.awt.image.BufferedImage redOf(Image picture)
+    {
+        java.awt.image.BufferedImage art = LayoutDiagramComponent.toBufferedImage(picture);
+
+        java.awt.image.BufferedImage red = new java.awt.image.BufferedImage(art.getWidth(), art.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        for (int y = 0; y < art.getHeight(); y++)
+        {
+            for (int x = 0; x < art.getWidth(); x++)
+            {
+                int argb = art.getRGB(x, y);
+                int r = (argb >> 16) & 0xFF, gr = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+                if (r >= 200 && r - gr > 20 && Math.abs(gr - b) <= 8) red.setRGB(x, y, argb);
+            }
+        }
+
+        return red;
+    }
 
     /**
      * One coach of a train, along one road of a square (T2 of the look's train tails).  Whole coaches, one to a square:
@@ -1688,12 +1735,8 @@ public final class LayoutLabel extends JLabel
 
     /**
      * Draws this tile's train onto the container, above the captions (OB-159): a tile is behind every station caption,
-     * deliberately (it is opaque, and a lifted one painted a name out), so the container paints its children and then
-     * asks each tile for this.
-     *
-     * Translated to this tile and not clipped to it (MT-642): on a curve the icon reaches onto the next tiles, which
-     * `setAutonomyOverlay` repaints when a train comes or goes.  The center is the train's own road (`trackCentreOf`):
-     * a double curve has two.
+     * so the container paints its children and then asks each tile for this.  Translated to this tile and not clipped
+     * to it (MT-642), since on a curve the icon reaches onto the next tiles.
      *
      * @param g the container's graphics
      */
@@ -1720,8 +1763,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): it is drawn over the
-     * captions and reaches past the tile on a curve, so a click on it can land on a caption or on the next square.
+     * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): a click on it can land
+     * on a caption or on the next square.
      *
      * @param at the point, in this square's coordinates
      * @return true where a train is drawn there
@@ -1856,9 +1899,7 @@ public final class LayoutLabel extends JLabel
 
     /**
      * The middle of the train's own road on this square, for its icon (MT-642), as x and y within the square, or null
-     * where nothing says: from the square's own ports on a curve or double curve (the annotation knows the roads only
-     * while the arrows are shown), a station's first road otherwise; from the annotation anywhere else and where the
-     * square has no track of its own.
+     * where nothing says.
      */
     private int[] theTrainsRoadCentre(TileOverlay overlay, org.traincontrol.automationui.TileAnnotation annotation)
     {

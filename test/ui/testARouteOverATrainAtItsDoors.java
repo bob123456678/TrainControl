@@ -34,15 +34,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * The train is on switch A with its path locked by a dispatch, as
  * `regression.testARouteDoesNotThrowSwitchesUnderATrain` builds it, and the route is fired from inside that dispatch;
  * commands are echoed back as the Central Station would (`DEBUG_SIMULATE_PACKETS`, put back after), so a switch reads
- * thrown only when its command went out.  The tile is one of the route tiles on his own diagram, given this route for
- * the length of the claim.
+ * thrown only when its command went out.
  *
  * A route carrying an emergency stop is never asked about (Adam: "Emergency stop should never conflict or prompt."), so
  * the question MT-507 describes is asked of the same route without its stop, and the route with its stop is fired too.
- * A stop stands in a route of its own (Adam: "if a route has emergency stop, it cannot have any other types of
- * commands"; "routes with an emergency stop should still fire"), so the entry's route is switches A and B, then a Route
- * command firing a route that is only the stop, which is what a mixed route is split into
- * (`core.testAStopRouteStandsAlone`).
  *
  * @author Adam
  */

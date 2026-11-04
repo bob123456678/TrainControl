@@ -554,8 +554,6 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     /**
      * Whether the function on show differs from what the locomotive holds for it - what Apply would write (FR-098).
      *
-     * Its icon, its trigger, and its custom picture: a picture chosen that it does not have, or one it has taken off.
-     *
      * @return true when Apply has something to write
      */
     private boolean somethingToApply()

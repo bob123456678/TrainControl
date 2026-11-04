@@ -35,26 +35,12 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).
+ * A train runs to the next station and back, and the diagram's gray wash follows it (OB-180).  A test asserting only
+ * on the model passes with the defect present or repaired, so this one goes all the way to the ICONS: every tile is
+ * PAINTED and looked at (MT-309), and the redraw itself is asked about (`support.RepaintRecorder`).
  *
- * The model knows which squares a moved train covers (`Layout.edgesCoveredByStandingTrains`,
- * `AutonomySession.tilesCoveredByStandingTrains`); the wash is applied when a tile is drawn, and a tile is drawn only
- * when its own accessory, feedback or route changes.  A test asserting only on the model passes with the defect present
- * or repaired, so this one goes all the way to the ICONS: real `LayoutLabel`s registered in the real
- * `DiagramTileRegistry`, redrawn by the real `CoveredTrackView`
- * (reached through `TrainControlUI.refreshCoveredTrack`).  Every tile is PAINTED and looked at, since the mark is an
- * orange line along the road the train is on (MT-309): `support.Rendered.showsTheTrainMark` does it.  The redraw
- * itself is asked about, not only the paint: `support.RepaintRecorder` writes the repaints down, and a tile nothing
- * has asked to repaint still shows the wash it was drawn with.
- *
- * The fixture is Adam's own railway in a sandbox copy (OB-111), never the folder itself: the squares that gray are a
- * product of the diagram (`AutonomySession` needs a reducer and a station index to turn a runtime `Edge` into the
- * tiles lying along it), which a synthetic graph lacks.  Every tile of the reduced graph is measured at
- * {@link #TILE_LENGTH}, so the wash comes from the measurement and not from which squares he has measured.
- *
- * The train is driven by `executePath`, not `runLocomotives` (autonomy's own Start, whose threads pick their own
- * destinations and raced with the test): the switches are thrown, the path locked, the sensors tripped and the
- * arrival recorded exactly as under autonomy.
+ * The fixture is Adam's own railway in a sandbox copy (OB-111), never the folder itself.  The train is driven by
+ * `executePath`, not `runLocomotives`, whose threads pick their own destinations and raced with the test.
  *
  * @author Adam
  */
@@ -144,24 +130,8 @@ public class testTheShadingFollowsTheTrain
 
     /**
      * The whole journey: standing, away, and home again, with the icons checked at each stop.  One method rather than
-     * four: these are stages of one run on one railway and TestNG does not promise the order.
-     *
-     * WHAT IT PINS, in order:
-     *
-     * 1. A train standing somewhere covers track, and the labels for that track are drawn WITH the wash (else this is a
-     *    test that nothing is ever shaded, which passes on a railway where the feature does not work at all).
-     * 2. Once it has run to the next station, the squares behind where it stood are no longer covered AND their labels
-     *    have been redrawn without the wash.  That second half is OB-180: the model was always right and the screen was
-     *    not.
-     * 3. Where it is standing now covers something, so the wash moved rather than merely vanishing.  4. Sent home and
-     * round the SAME circuit a second time, the covered set and the icons come back to exactly what they
-     *    were after the first return, and are still not empty: the shading is a function of where trains are standing,
-     *    not a residue of where they have been.
-     *
-     * Stage 4 compares two returns rather than the start: the train comes home to the same square, facing the same way,
-     * but its tail is on DIFFERENT track (two roads converge short of the platform; the setup's recorded arrival side
-     * names one and the route back drives the other, and `arrivedFrom` is what the tail walk follows), so the railway
-     * is right to shade the two states differently.
+     * four: these are stages of one run on one railway and TestNG does not promise the order.  Stage 4 compares two
+     * returns rather than the start, because the tail is on DIFFERENT track the second time.
      *
      * MUTATIONS that fail it: deleting the `repaintTheWashWhereItChanged(...)` call from
      * `CoveredTrackView.workOutCoveredTrack` fails stage 2's screen assertion (the old squares were never asked to

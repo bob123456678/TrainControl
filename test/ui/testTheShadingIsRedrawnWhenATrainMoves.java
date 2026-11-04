@@ -24,30 +24,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * The covered-track shading on the SCREEN follows the train, and comes off when it leaves (OB-180).
  *
- * Adam: "when a train is manually moved to a new station in the track diagram viewer using control+X and V, its former
- * shaded icons are not reset."
- *
- * **This asserts about drawn pixels rather than the model.**  The covered set was computed correctly the whole time;
- * nothing repainted the tiles whose state had changed, since a tile decides its wash when it is DRAWN and is only drawn
- * when its own accessory, feedback or route changes.  Every model assertion answered identically with the defect
- * present and fixed.
- *
- * **The grid is held open across the whole test:** `DiagramExport.render` builds a fresh grid per call, and a fresh
- * label always works its wash out correctly.  `support.Rendered` keeps one grid and paints it again, so what is
- * compared is what an operator looking at an open window would have seen.
- *
- * **But painting the whole grid again is not what an open window does** (FR-136, issue 19): a snapshot paints every
- * tile, so the AFTER state came out right with nothing asking for a redraw.  The AFTER state is also taken the way a
- * window does it: the COVERED picture with only the areas production asked to repaint painted again
+ * **This asserts about drawn pixels rather than the model:** every model assertion answered identically with the defect
+ * present and fixed, since nothing repainted the tiles whose state had changed.  **The grid is held open across the
+ * whole test** (`support.Rendered` keeps one grid and paints it again), because `DiagramExport.render` builds a fresh
+ * grid per call and a fresh label always works its wash out correctly.  **And the AFTER state is taken the way a window
+ * does it** (FR-136): the COVERED picture with only the areas production asked to repaint painted again
  * (`support.RepaintRecorder`), and every square the train marked must be back to the BARE picture there.
  *
- * Three snapshots of one grid:
- *
- * | | |
- * |---|---|
- * | BARE | nothing standing anywhere |
- * | COVERED | the train placed, and a square its tail lies across carries the orange mark (MT-309) |
- * | AFTER | the train moved away, and that square is EXACTLY the bare image again |
+ * Three snapshots of one grid: BARE (nothing standing anywhere), COVERED (the train placed, and a square its tail lies
+ * across carries the orange mark, MT-309) and AFTER (the train moved away, and that square is EXACTLY the bare image
+ * again).
  *
  * MUTATION: removing the `repaintTheWashWhereItChanged` call from `CoveredTrackView.workOutCoveredTrack` leaves the
  * AFTER picture orange: the train has gone and the track it lay across still carries its mark, which is the defect,

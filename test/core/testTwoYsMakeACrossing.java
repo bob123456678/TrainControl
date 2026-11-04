@@ -30,13 +30,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
  * Two permanent Y turnouts drawn toe to toe are one crossing (OB-320), as are two permanent lefts or two rights toe
- * to toe turned half round from each other (the straight legs a straight track through both toes, the diverging legs
- * the diagonal).
- *
- * Each claim builds a small railway round the Ys and reads what the reduction makes of it: the edges a train may run
- * between the sensors, which is what autonomy plans with.  A sensor stands at each end, so an edge is a track and a
- * missing one a track no train can run.  A permanent Y that is not half of such a pair is the turnout with no address
- * it always was: "Be careful with edge cases."
+ * to toe turned half round from each other.  Each claim builds a small railway round the Ys and reads what the
+ * reduction makes of it: the edges a train may run between the sensors, which is what autonomy plans with.
  *
  * @author Adam
  */
@@ -193,8 +188,7 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A run that crosses on one track and comes back over the other is not going in circles (OB-320): the two tracks
-     * share the side the squares meet at, so a walk remembered by square and side alone stopped there the second time.
+     * A run that crosses on one track and comes back over the other is not going in circles (OB-320).
      *
      * MUTATION: remember the walk without the track, or let it change track at the toes.
      */

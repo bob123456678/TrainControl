@@ -22,10 +22,6 @@ import org.traincontrol.util.I18n;
  * The autonomy editor's pairing of a station with its signals: the exit guard that is red while the platform is
  * claimed and the entry guard that is red when a train arrives to stay (FR-096), chosen in a window beside the
  * editor, by clicking one on the diagram, or by address (FR-136).
- *
- * The panel keeps every method something outside the pairing calls, as a one-line call to the method of the same
- * name here, and every field: this reads and writes them through `editor`.  Each dialog is still parented on the
- * editor's window.
  */
 final class EditorSignals
 {
@@ -250,8 +246,7 @@ final class EditorSignals
 
     /**
      * Puts a dialog beside the diagram rather than over the middle of it, for the windows that describe something drawn
-     * behind them (OB-107).  Offset from the owner's center, not pinned to a corner, and clamped to the owner so it
-     * stays on the same monitor.
+     * behind them (OB-107).
      *
      * @param dialog a packed dialog, ready to show
      */

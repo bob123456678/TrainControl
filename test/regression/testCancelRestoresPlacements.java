@@ -16,14 +16,10 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * Cancel in the track diagram editor puts back everything the edit took, not most of it (MT-072: "stations stay,
- * locomotives are removed and no longer shown in the labels").
- *
- * Cancel is two undos that have to agree.  The DIAGRAM is undone by re-reading the pages from disk; the SETUP by
- * restoring a snapshot taken when the window opened.  A station lives in the shared half, in setup.json, and a
- * locomotive PLACEMENT lives inside a configuration file, so a snapshot that covers one and not the other looks
- * correct until somebody deletes a square that has both on it.  This drives the session directly (the same
- * forgetTiles the editor calls), so it needs no display and no railway.
+ * Cancel in the track diagram editor puts back everything the edit took, not most of it (MT-072): Cancel is two undos
+ * that have to agree, the DIAGRAM re-read from disk and the SETUP restored from a snapshot taken when the window
+ * opened.  This drives the session directly (the same forgetTiles the editor calls), so it needs no display and no
+ * railway.
  *
  * @author Adam
  */
@@ -159,10 +155,8 @@ public class testCancelRestoresPlacements
 
     /**
      * An editing session that never ended is put back to how it was before it started (OB-108; Adam: "revert to pre
-     * save state").  The in-memory Cancel covers every ordinary ending but not the process dying while the editor is
-     * open: the setup is written after every gesture, the diagram only at Save, so a crash leaves a setup keyed to
-     * squares the user dragged and the next reconciling save prunes the difference.  A snapshot in memory is lost by
-     * exactly the event it exists to survive.  The crash is played by opening a new session on the same folder.
+     * save state"): the setup is written after every gesture, the diagram only at Save, so a crash leaves a setup keyed
+     * to squares the user dragged.  The crash is played by opening a new session on the same folder.
      *
      * MUTATION: making `rememberBeforeEdit` return false without writing the sidecar - so the note is
      * never taken - fails this test.  So does dropping the `forgetBeforeEdit` from `endEditSession`,

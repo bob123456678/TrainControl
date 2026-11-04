@@ -20,12 +20,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
 
 /**
- * Answering "no, do not keep the direction" turns the train round when it gets there (OB-189: *"add tests to confirm
- * reversal commands are emitted."*).
- *
- * Every reversal test before this checked a decision (`shouldReverseAt` returning true, `asksAbout` naming the right
- * square, the prompt's polarity) and none followed whether `switchDirection()` then reached the locomotive: a chain of
- * five correct answers ending in nothing happening looks like a chain with one wrong answer. So these assert the
+ * Answering "no, do not keep the direction" turns the train round when it gets there (OB-189): these assert the
  * DIRECTION OF THE TRAIN after the journey, the only thing the operator can see, running the real `executePath`.
  *
  * @author Adam
@@ -271,12 +266,10 @@ public class testAReversalCommandIsEmitted
     }
 
     /**
-     * The same answer, on a journey of two legs, the shape Adam's was. If a reversal is applied twice and cancels
-     * itself out, this is where it shows: the loop in `executePathInternal` offers `path.get(i).getEnd()` to the
-     * mid-path reversal branch for every edge INCLUDING THE LAST, and the arrival block below asks the same question of
-     * the same square.
+     * The same answer, on a journey of two legs, the shape Adam's was (OB-189): if a reversal is applied twice and
+     * cancels itself out, this is where it shows.
      *
-     * MUTATION: none; this is OB-189's test of the double-turn theory, and a pass says the theory is wrong.
+     * MUTATION: none; this is the test of the double-turn theory, and a pass says the theory is wrong.
      */
     @Test
     public void testTwoLegsStillTurnTheTrainExactlyOnce() throws Exception

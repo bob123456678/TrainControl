@@ -12,9 +12,8 @@ import org.traincontrol.util.I18n;
  * The autonomy editor's right-click menus for a square: the tile menu, the text-square menu, and the facing and
  * arrived-from submenus the track diagram's own menu carries too (FR-136).
  *
- * The panel keeps every method something outside these menus calls, as a one-line call to the method of the same
- * name here, and every field: this reads and writes them through `editor`.  Each dialog is still parented on the
- * editor's window.
+ * The panel keeps every field and every method something outside these menus calls; this reads and writes them through
+ * `editor`.
  */
 final class EditorTileMenus
 {
@@ -704,14 +703,9 @@ final class EditorTileMenus
         // is.  Here because both menus build their caption items through this method.
         String showing = captioned == null ? null : editor.describeTile(captioned);
 
-        // The name is NOT repeated here (MT-162): the item below already reads "Stop Showing <name>".  The two keys
-        // still differ ("a Station Name" when the square shows none, "a Different Station" when it already shows one).
-        // A station square has three states, and `promptStationLabel` captions it with itself whatever it is showing,
-        // so none is offered a choice; what differs is whether choosing it would CHANGE anything:
-        //   already showing itself    nothing to do.  Grayed, and the label says why (its tooltip carries the reason).
-        //   showing another station   resets it to its own.  Live - a drag can produce this.
-        //   showing nothing           captions it with itself.  Live: graying it would make Stop Showing one-way.
-        // Neither live case reads "a DIFFERENT station", because a station square cannot show one.
+        // The name is NOT repeated here (MT-162): the item below already reads "Stop Showing <name>".  A station square
+        // is offered no choice (`promptStationLabel` captions it with itself); the item is grayed only when it would
+        // change nothing, because the square already shows itself.
         boolean showsItself = editor.session.getStore().isStation(tile) && tile.equals(captioned);
 
         boolean aStationSquare = editor.session.getStore().isStation(tile);
@@ -770,9 +764,8 @@ final class EditorTileMenus
 
     /**
      * Where the tail of the train standing here lies - the "arrived from" side.  `TrainControlUI.buildAutonomyTileMenu`
-     * serves this panel's menu to the diagram, so one implementation reaches the autonomy editor and the track diagram
-     * viewer alike (OB-039).  The sides offered are the ones the railway HAS (`ArrivalSidePrompt.sidesOf`, the
-     * placement prompt's list).
+     * serves this panel's menu to the diagram, so one implementation reaches both (OB-039).  The sides offered are the
+     * ones the railway HAS.
      *
      * @param target the square
      * @return the menu, or null when no train is standing here (a tail belongs to a train)
@@ -878,9 +871,8 @@ final class EditorTileMenus
 
     /**
      * The "{loc} Is Facing..." submenu for a square, or null unless a locomotive is standing there.  Handed out on its
-     * own so the track diagram's right-click menu can carry it beside the train's other items; the deep menu does not
-     * offer it.  Where no track leads out of the square the submenu is there and grayed, with the reason in its tooltip
-     * (OB-347).
+     * own so the track diagram's right-click menu can carry it.  Where no track leads out of the square the submenu is
+     * there and grayed, with the reason in its tooltip (OB-347).
      *
      * @param target the square
      * @return the submenu, or null
@@ -921,12 +913,9 @@ final class EditorTileMenus
         if (recorded != null && !facings.isEmpty() && !facings.contains(recorded)) facings.add(recorded);
 
         // Shown even with one answer, so the menu explains itself instead of vanishing.  A facing has to be one the
-        // BUILD can hold (`placementCopy` matches it against the copies the split made; anything else falls back to
-        // `startableCopy` and quietly turns the train round), so a second facing is never offered where the railway
-        // holds one; the one is shown, ticked, with a line saying why there is nothing to choose.
-        //
-        // Grayed, not hidden, where no track leads out (OB-347).  ONE SUBMENU (OB-348): built once, here, so the track
-        // diagram and the editor cannot offer two that drift apart.
+        // BUILD can hold (`placementCopy`, else `startableCopy` quietly turns the train round).  Grayed, not hidden,
+        // where no track leads out (OB-347).  ONE SUBMENU (OB-348): built once, here, so the track diagram and the
+        // editor cannot offer two that drift apart.
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));
 
@@ -1001,8 +990,7 @@ final class EditorTileMenus
     /**
      * The "farthest sensor the tail crossed" choices for the train standing here, where the answer matters: only when
      * `TailCrossedPrompt.wouldAsk` says a junction behind the train has two roads back that put the tail on different
-     * track (MT-477).  The ticked entry is the recorded road, the running layout's since that blocks track, matched as
-     * the longest choice it ends with, as a driven train's road starts wherever it set off.
+     * track (MT-477).
      */
     private void appendTailCrossed(javax.swing.JMenu menu, final TileKey target)
     {

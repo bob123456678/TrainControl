@@ -85,18 +85,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A route that cuts the power is never asked about, at EITHER door.
-     *
-     * Adam: **"emergency stop should never conflict or prompt."**
-     *
-     * Two places decide whether a conflict is a question: `conflictingAccessoryAndReason` screens a route BEFORE it
-     * runs (it opens with `if (this.hasEmergencyStop()) return null;`), and the per-accessory check inside
-     * `execRoute`'s loop.  Both must excuse a route carrying a stop; if only the screen does, the route is asked
-     * midway, where Cancel returns out of the whole route and silently declines a power cut the dialog never mentioned.
-     * MT-247 governs every route that IS asked: cancel cancels everything, OK fires everything.
-     *
-     * Checked as the agreement between the two doors rather than by driving a route, because a test of either one alone
-     * passes when they disagree.
+     * A route that cuts the power is never asked about, at EITHER door (MT-247): `conflictingAccessoryAndReason`
+     * (before the run) and the per-accessory check inside `execRoute`'s loop must both excuse a route carrying a stop,
+     * or the route is asked midway, where Cancel silently declines a power cut.  Checked as the agreement between the
+     * two doors rather than by driving a route, because a test of either one alone passes when they disagree.
      *
      * MUTATION: take `!this.hasEmergencyStop()` out of the midway condition again and this fails.
      */
@@ -126,18 +118,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             + "cutting it");
     }
     /**
-     * What a route does about a conflicting accessory command depends on who is there (MT-247).
-     *
-     * Adam: **"1. cancel should cancel everything.  OK should fire everything.  2. if the route is auto triggered:
-     * popup, just a notification in the log.  don't run the conflicting switch commands, but do run the power off and
-     * others.  make test cases for this."**
-     *
-     * Each answer is whole: declining cancels the route, speeds, functions and chained routes included.  The s88 door
-     * asks nobody: the conflicting ironwork is left alone and everything else runs, which is how a route that cuts the
-     * power still cuts it (`testTheStopInARefusedRouteStillRuns`).  A route carrying a stop is not asked at all.
-     *
-     * Run as the rule, because reaching the manual branch through the route needs a `View` (sixteen methods of stub for
-     * one boolean); the call site is pinned separately below.
+     * What a route does about a conflicting accessory command depends on who is there (MT-247): declining cancels the
+     * whole route; the s88 door asks nobody, leaves the conflicting ironwork alone and runs everything else; a route
+     * carrying a stop is not asked at all.  Run as the rule, because reaching the manual branch through the route needs
+     * a `View`; the call site is pinned separately below.
      */
     @Test
     public void testWhatAConflictDoesDependsOnWhoIsThere()
@@ -472,9 +456,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
     /**
      * The exit guard of a terminus a train is leaving is held GREEN by its journey's first edge (OB-340): a route may
-     * not turn it red in front of the train, and may set the green it shows.  No route out commands that guard - it
-     * stands on the station's own track - so the first edge out sets it green with its own accessories, and holds it as
-     * it holds them.  Asked at the first station on the way, the first edge still held.
+     * not turn it red in front of the train, and may set the green it shows.
      *
      * MUTATION: leave the guard out of what the first edge holds, and both claims fail.
      *
@@ -558,18 +540,13 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A route already under way when a dispatch begins does not set the accessory either.
+     * A route already under way when a dispatch begins does not set the accessory either (MT-189): the guard is asked
+     * again immediately before each accessory command, and once the answer is settled it holds for the rest of the
+     * route.  A route stopped part way is the smaller harm than throwing a switch under a train crossing it.
      *
-     * The guard is asked again immediately before each accessory command, and once the answer is settled it holds for
-     * the rest of the route: the command loop takes seconds, and a dispatch that locked a path while a route was part
-     * way through would otherwise be invisible to it, through all three doors including the s88 trigger.  A route
-     * stopped part way is the smaller harm than throwing a switch under a train crossing it.
-     *
-     * A conflict appearing mid-route ASKS at the two doors with a person at them, and sets none of its accessories at
-     * the s88 trigger door.  This test runs with no interface attached (`init` with `showUI` false, so `getGUI()` is
-     * null), so it exercises the branch with nobody to ask, which must never move the switch.  The branch where
-     * somebody says yes is not reachable from here (the model's View is final); its model half is
-     * testSomebodyCanRunTheRouteAnyway, and the dialog itself is MT-189.
+     * This test runs with no interface attached (`init` with `showUI` false, so `getGUI()` is null), so it exercises
+     * the branch with nobody to ask, which must never move the switch.  The branch where somebody says yes is not
+     * reachable from here (the model's View is final); its model half is testSomebodyCanRunTheRouteAnyway.
      *
      * The window is opened deliberately with a command delay, rather than raced: the first command carries a delay long
      * enough for the dispatch to lock the path while the route sits between its two commands.
@@ -1068,18 +1045,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * Somebody who says so can run the route anyway.
-     *
-     * Adam: "conflicting routes should still be executable in case of a transient accessory failure.  Add a
-     * confirmation dialog to the UI similar to how individual clicks currently work when an accessory has an active
-     * route."
-     *
-     * A turnout that did not take the command is exactly when somebody needs to set it, and exactly when it will be on
-     * a locked path.  So the s88 trigger door refuses, because nobody is there to ask; the two doors with a person at
-     * them ask, as clicking an accessory on an active route always has, and call this when the answer is yes.
-     *
-     * This tests the MODEL half: that saying yes really does set the accessory.  The dialog is
-     * `TrainControlUI.askAboutRouteConflict`, one method for both doors; MT-189 checks it by hand.
+     * Somebody who says so can run the route anyway (MT-189): the MODEL half, that saying yes really does set the
+     * accessory.  The dialog is `TrainControlUI.askAboutRouteConflict`, one method for both doors; MT-189 checks it by
+     * hand.
      *
      * MUTATION: making `execRouteOverridingConflicts` pass `false` - so the override does nothing - fails this test.
      */
@@ -1162,14 +1130,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
     /**
      * OK on a route that would switch track under a train fires all of it (MT-508) - and a route that also carries an
-     * emergency stop is not asked about at all, so it has no OK: it fires the ordinary way (Adam: *"Emergency stop
-     * should never conflict or prompt."*).
+     * emergency stop is not asked about at all, so it has no OK: it fires the ordinary way.
      *
      * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop (a Route command firing a
-     * stop-only route, as a route must carry a stop: `core.testAStopRouteStandsAlone`).  With the stop, the route
-     * list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there is nothing to
-     * confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the train, is skipped.
-     * Without the stop the question is asked, and OK (`execRouteOverridingConflicts`) throws both switches.
+     * stop-only route, as a route must carry a stop: `core.testAStopRouteStandsAlone`).
      *
      * MUTATION: have the override skip the held switch, have a route with a stop ask, or have the guarded run throw the
      * held switch or drop the stop, and this fails.
@@ -1348,15 +1312,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A refused route still cuts the power, if that is what it also says.
-     *
-     * Refusing a held accessory must not discard the rest of the route.  A route that cuts the power AND sets a trap
-     * point, the shape a safety route on an s88 trigger naturally has, would otherwise lose its emergency stop with
-     * nobody present, on the door that fires by itself.  A stop is safe to obey whatever else is true, so the held
-     * accessory is skipped and everything else in the route runs.
-     *
-     * The refusal is per command (MT-247) and the route here has one accessory; the point pinned is that a refusal must
-     * not take the stop with it.  `testAConflictSkipsOnlyTheSwitchUnderTheTrain` holds the grain itself.
+     * A refused route still cuts the power, if that is what it also says (MT-247): refusing a held accessory must not
+     * discard the rest of the route, or a safety route on an s88 trigger would lose its emergency stop with nobody
+     * present.  The refusal is per command and the route here has one accessory;
+     * `testAConflictSkipsOnlyTheSwitchUnderTheTrain` holds the grain itself.
      *
      * MUTATION: making the refusal `return` instead of `continue` fails this test - the power stays on.
      */
@@ -1637,13 +1596,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * An s88 route with nothing in its way still runs while autonomy is going.
-     *
-     * `testTheStopInARefusedRouteStillRuns` says what the automatic door refuses; this says what it does when there is
-     * nothing to refuse.  The rule is `heldReason(rc)`, asked of each accessory command in turn: make it answer for
-     * every command while autonomy runs and every s88-triggered route stops setting anything while a train is out.  So
-     * a route on a DIFFERENT accessory, one no edge configures, must set it.  The refusal is per command (MT-247)
-     * (`testAConflictSkipsOnlyTheSwitchUnderTheTrain`).
+     * An s88 route with nothing in its way still runs while autonomy is going (MT-247): a route on a DIFFERENT
+     * accessory, one no edge configures, must set it.  `testTheStopInARefusedRouteStillRuns` says what the automatic
+     * door refuses; this says what it does when there is nothing to refuse.
      *
      * MUTATION this catches: dropping the `heldReason` null check so every accessory is skipped while autonomy runs
      * fails this test and leaves the one above green.
@@ -1743,16 +1698,10 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
-     * A route that cuts the power is never held back, and its stop always goes out.
-     *
-     * `behaviour/routes.md` section 7a states this as a rule - *"an emergency stop is obeyed whatever else is true. A
-     * route carrying a stop is never refused at a human door and never has its stop skipped"* - and it has two halves
-     * (Adam on MT-247: *"emergency stop should never conflict or prompt."*).
-     *
-     * The first half, that a route with a stop is not screened at the human door, is also held by
+     * A route that cuts the power is never held back, and its stop always goes out (MT-247; `behaviour/routes.md`
+     * section 7a): this adds the second half, that the stop actually goes out, since being excused the question is
+     * worth nothing if the command is then dropped.  The first half is also held by
      * `testARouteThatCutsThePowerIsNeverHeldUpByTheQuestion` and, by shape, by `testBothDoorsCarveOutTheEmergencyStop`.
-     * This test adds the second: that the stop actually goes out, since being excused the question is worth nothing if
-     * the command is then dropped.
      *
      * **Two claims and two controls**, in the one state where the hazard exists - inside a dispatch, with the path
      * locked and the turnout reserved:

@@ -160,19 +160,8 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * With atomic routes off, the track a train has passed is given back - lock edges and all.
-     *
-     * Adam, on MT-087: "WORKS FINE in atomic mode.  In non atomic mode, locks aren't getting released.
-     * Example: EN57-203 is started from BottomSecondary to TopMainR2Inter.  After it passes Tunnel,
-     * EN57-947 should be able to go from TopMainR2 to BottomSecondary, but no movement is allowed at
-     * all."
-     *
-     * **Non-atomic mode exists to give track back as the train clears it.** executePath gives the EDGE back the moment
-     * `tailHasProvablyPassed` says the train is clear of it, and it kept every LOCK EDGE that edge had taken until the
-     * whole path finished: on a railway where routes cross, a throat held is a route refused.  The proof is the one the
-     * edge itself is released on: if the train is clear of the edge, it is clear of the throat that edge needed.
-     *
-     * Written as a run: the early release happens inside executePath's progress loop and there is no other door to it.
+     * With atomic routes off, the track a train has passed is given back - lock edges and all (MT-087).  Written as a
+     * run: the early release happens inside executePath's progress loop and there is no other door to it.
      *
      * MUTATION this catches: putting `setLockedEdgeUnoccupied()` back at the early release leaves the
      * crossing held while the train is still going, and the assertion fails.

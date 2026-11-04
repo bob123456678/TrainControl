@@ -22,11 +22,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * OB-192: the window froze while autonomy ran; the trains kept moving but nothing repainted.
  *
- * The event thread was blocked on a lock someone else held (`Layout.java`'s comment above `getEdges` names the
- * deadlock); one test per half: the railway must not take the window's monitor while holding its own
- * (`testADrivingThreadNeverWaitsForTheWindowsMonitor`), and the window must never take the railway's, nor on the event
- * thread at all (this class).  The measured doors are here; `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is the
- * census of the rest.
+ * The event thread was blocked on a lock someone else held; one test per half: the railway must not take the window's
+ * monitor while holding its own (`testADrivingThreadNeverWaitsForTheWindowsMonitor`), and the window must never take
+ * the railway's, nor on the event thread at all (this class).  `testNothingOnTheEventThreadTakesTheRailwaysMonitor` is
+ * the census of the rest.
  *
  * Bounded: a helper's monitor is released on a timer and every wait is a `Future.get(timeout)`, so a failure is a
  * message, not a hang.  The free cost of a refresh is measured first, so a red result is attributable.
@@ -439,10 +438,8 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      * The sixth door: the autonomy editor's "why is this train not moving" tool.
      *
      * `AutonomyEditorPanel.applyWhy` must not ask `Layout.explainDestinations` (synchronized, a whole-graph walk per
-     * candidate) straight from the click: the editor cannot be open while autonomy runs (OB-047), but
-     * `AutoLocomotiveStatus.findPaths` can hold the monitor with nothing running, as this fixture does.  The question
-     * goes to `WhyRenderer` and the answer is painted by an `invokeLater`; the capture stays on the event thread
-     * because `layoutSource.get()` and `getStationIndex` may build state.
+     * candidate) straight from the click: `AutoLocomotiveStatus.findPaths` can hold the monitor with nothing running,
+     * as this fixture does (OB-047).  The question goes to `WhyRenderer` and the answer is painted by an `invokeLater`.
      *
      * MUTATION: call `composeWhy` directly from `applyWhy` instead of submitting it, and this times
      * out with the event thread parked on `Layout.explainDestinations`.

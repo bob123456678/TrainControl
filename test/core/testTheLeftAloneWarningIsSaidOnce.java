@@ -8,15 +8,9 @@ import org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 
 /**
- * "The setup was left alone" is said once for a set of missing pages, not on every save.
- *
- * Adam (MT-380): the warning "shows twice (once at first import, once again when import is completed).  Then, it shows
- * up after every time the autonomy editor is opened."  His ruling: it "should stop repeating."
- *
- * The refusal is right and stays: a save declines to tidy while a page the setup knows about is not loaded (a OneDrive
- * page that has not downloaded yet must not be pruned), and five doors show that as a dialog, useful once and useless
- * the tenth time.  So a given set of missing pages is warned about once in a session, and again only when the set
- * changes.
+ * "The setup was left alone" is said once for a set of missing pages, not on every save (MT-380).  Adam's ruling: it
+ * "should stop repeating."  A given set of missing pages is warned about once in a session, and again only when the
+ * set changes.
  *
  * Asked of `AutonomyReport.worthSaying`, the rule the dialog asks, so no dialog is shown here.  Each claim uses page
  * names of its own: the memory of what has been said lasts the session.

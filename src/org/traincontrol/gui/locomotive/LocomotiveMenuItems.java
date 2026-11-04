@@ -8,13 +8,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The menu items that belong to a locomotive rather than to the place it was right-clicked (FR-047).  Adam: "SAFELY
- * consolidate the code between these two right click menus to minimize duplication."
- *
- * Eight items were written out twice, in {@link RightClickMenuListener} and {@link RightClickSelectorMenu}.  Safe
- * because each one-argument form (`setLocIcon(l)`, changeLocAddress, changeLocNotes, deleteLoc) is a delegate that
- * passes null, so a single item taking a nullable event makes the same call as whichever copy it replaces.  The order
- * is deliberately NOT consolidated: each menu adds these among its own items and separators.
+ * The menu items that belong to a locomotive rather than to the place it was right-clicked (FR-047), shared by
+ * {@link RightClickMenuListener} and {@link RightClickSelectorMenu}.  The order is deliberately NOT consolidated: each
+ * menu adds these among its own items and separators.
  *
  * @author Adam
  */
@@ -121,10 +117,8 @@ final class LocomotiveMenuItems
     }
 
     /**
-     * How long this train is, or null when there is no reason to ask (FR-047).  Adam: "visible only when autonomy is
-     * loaded." The number decides only whether a train is refused a platform too short for it (the other half of the
-     * FR-046 warning).  Null rather than a disabled item, because a grayed entry invites "why not" and this menu cannot
-     * say there is no autonomy.
+     * How long this train is, or null when there is no reason to ask (FR-047).  Null rather than a disabled item,
+     * because a grayed entry invites "why not" and this menu cannot say there is no autonomy.
      *
      * @return the item, or null when autonomy is not loaded
      */

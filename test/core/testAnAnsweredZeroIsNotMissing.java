@@ -21,11 +21,9 @@ import org.traincontrol.util.I18n;
 /**
  * A square answered 0 on purpose is not called unmeasured when a berth is refused.
  *
- * A berth refused because its approach is partly unmeasured says how many squares "still have no length", and a square
- * the operator answered 0 on purpose (OB-274) was counted among them.  The rule itself is unchanged: an answered 0 is
- * still read as nothing, the walk still claims it, and the berth is still refused.  The build now marks a place
- * answered and the runtime keeps the mark.  Run on Adam's measured TunnelLongPark: its approach from BottomMainA
- * crosses squares he left at 0, and a four-unit train lies back over them onto the road to BottomMainAPre.
+ * A berth refused because its approach is partly unmeasured counted a square the operator answered 0 on purpose
+ * (OB-274) among those that "still have no length".  The rule itself is unchanged; the build now marks a place answered
+ * and the runtime keeps the mark.  Run on Adam's measured TunnelLongPark.
  *
  * @author Adam
  */
@@ -177,10 +175,8 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * The refusing figures on his frozen railway are the railway's own refusals, each asked (MT-583).  TopMainR1Inter
-     * gives 3 and LowerFront 4: a train that long is admitted on a route in and one a unit longer refused
-     * (`Layout.whyTooLongForThisRoute`), over every route rather than the one a shuffled search returns first.  The
-     * other three platforms have the notice and no figure.
+     * The refusing figures on his frozen railway are the railway's own refusals, each asked (MT-583): a train that long
+     * is admitted on a route in and one a unit longer refused (`Layout.whyTooLongForThisRoute`), over every route.
      *
      * MUTATION: give the figure a unit high, or give it at a platform where it is not under the maximum, and this
      * fails.
@@ -207,9 +203,7 @@ public class testAnAnsweredZeroIsNotMissing
 
     /**
      * The editor's Worth tidying list, as the panel builds it over his frozen railway, says what MT-559 and MT-583 ask
-     * Adam to read: five platforms each say a longer train stands across the switch (MT-559), and TopMainR1Inter and
-     * LowerFront add the figure above which a train coming in the shortest way is refused (MT-583).  Read off the list
-     * model the panel fills (`refresh`), under the Worth tidying heading.
+     * Adam to read, off the list model the panel fills (`refresh`).
      *
      * MUTATION: drop the refusing figure from the sentence, put a platform's notice under another heading, or give a
      * platform the berth's "is refused" notice, and this fails.

@@ -27,17 +27,12 @@ import org.traincontrol.util.JarUpdater;
 import org.traincontrol.util.SelfUpdate;
 
 /**
- * One-click updates swap the jar safely, or not at all (FR-125).
- *
- * Adam: *"after downloading the new jar, it should take a backup, then start the update script and close
- * TrainControl."*  The updater is `JarUpdater`, run by the same Java once TrainControl has closed: it renames the old
- * jar aside, moves the new one to its name, starts it, and puts the old one back when it does not start.  The
- * application's half is `SelfUpdate`: whether a download is whole, starting the updater from a copy of the jar and
- * hearing that it runs, and one update at a time.
+ * One-click updates swap the jar safely, or not at all (FR-125).  `JarUpdater` runs once TrainControl has closed; the
+ * application's half is `SelfUpdate`.
  *
  * Nothing here starts TrainControl or the updater, ends this JVM or touches a real jar: every jar is built in a
- * temporary folder, the updater's renames and launcher are handed in, and the lock TrainControl holds until it exits
- * is held by this test instead (except `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM of its own,
+ * temporary folder, the updater's renames and launcher are handed in, and the lock TrainControl holds until it exits is
+ * held by this test instead (except `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM of its own,
  * `support.HoldsALock`, to hold it across a process boundary).
  *
  * MUTATIONS, each seen red: `backupName` not looking for a free name (the swap claim); `swap` not moving the backup

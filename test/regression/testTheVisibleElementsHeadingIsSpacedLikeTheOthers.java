@@ -21,16 +21,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289;
- * Adam: "make it be consistent with other labels").  The autonomy editor hides Text Labels, which its caption choice
- * replaces (FR-061), so the gap above Grid must not stand at the top of the column.  In both editors, because the
- * plain one is where the column is right and has to stay right.
- *
- * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
- * status line that does not ask the window for its sentence's width keeps the column on the screen.
- *
- * And the autonomy editor's notices float over the bottom of the diagram, four lines at most, with an X to dismiss
- * them, and a notice never moves the diagram (OB-366).
+ * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289),
+ * in both editors: the autonomy editor hides Text Labels (FR-061), so the gap above Grid must not stand at the top of
+ * the column.  And the column is all there at the window's smallest size (OB-342), and the autonomy editor's notices
+ * float over the bottom of the diagram without moving it (OB-366).
  *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
@@ -127,7 +121,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     /**
      * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312): the form
      * leaves 4 pixels between its own checkboxes, so the columns built beside it must not leave the heading's gap
-     * between them.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
+     * between them (Adam: "make sure that in the autonomy editor, all the checkboxes are separated by the same gap
+     * size").
      *
      * MUTATION: leave a heading's gap between two of the checkboxes, and this fails.
      */
@@ -150,20 +145,15 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam:
-     * "the min height of the autonomy editor window needs to be a few more pixels taller").
+     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342): HEIGHT
+     * shows Cancel, the last control, and the status line; WIDTH, the status line's minimum must not be its text's (the
+     * sentence here is longer than any language's, so the claim does not depend on the railway's words); SCALE, the
+     * floor is in pixels and the window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`), with the
+     * look and feel installed again and put back at the end.  Asked at each of the three diagram sizes, of every
+     * control outside the scroll panes.
      *
-     * HEIGHT: the column of tools needs 693 pixels to show Cancel, the last control, and the status line, where Small
-     * once left 680.  WIDTH: the status line's words are data, so its minimum width must not be its text's (521 pixels
-     * in English, 655 in German) or the tools column goes off the right edge; the sentence here is longer than any
-     * language's, so the claim does not depend on the railway's words.  SCALE: the floor is in pixels and the window
-     * is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`, which `TrainControlUI` sets from the display as
-     * dpi / 96), with the look and feel installed again and put back at the end.  Asked at each of the three diagram
-     * sizes, of every control outside the scroll panes.
-     *
-     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout
-     * asks for in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum
-     * again, and this fails.
+     * MUTATION: take out the floor the window's own layout asks for in `sizeForDiagram`, or give the status line in
+     * `AutonomyEditorPanel` its text's width as its minimum again, and this fails.
      */
     @Test
     public void testTheAutonomyEditorShowsEveryControlAtItsSmallestSize() throws Exception
@@ -185,9 +175,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * The notices float over the bottom of the diagram, across its visible width, and the diagram never moves for them:
-     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366; Adam: "I'd rather
-     * have the band float and have an x to dismiss each time it surfaces").  The band lies inside the diagram's
-     * viewport on its bottom edge, and is what a point in it finds first.
+     * not with none, nor when one of one, two or six lines arrives, nor when it is dismissed (OB-366).  The band lies
+     * inside the diagram's viewport on its bottom edge, and is what a point in it finds first.
      *
      * MUTATION: mount the notices under the scroll pane again (`foot.add(autonomyBanner, BorderLayout.NORTH)` in
      * `LayoutEditor.setAutonomyMode`) and this fails.
@@ -449,9 +438,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * Scrolled to the bottom with a notice showing, the diagram's last row lies above the notice, not under it: the
-     * diagram gains the notice's height below while the notice shows, and loses it when it goes (OB-389; Adam: "add
-     * the same height of scrollable are to the diagram so the user can both see the full message and the last row of
-     * the track diagram").
+     * diagram gains the notice's height below while the notice shows, and loses it when it goes (OB-389).
      *
      * MUTATION: leave the notice's height out of `LayoutEditor.sizeTheDiagram`, and this fails.
      */
@@ -506,14 +493,271 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
     }
 
-    /** An autonomy editor, on screen and settled. */
-    private static LayoutEditor autonomyEditor() throws Exception
+    /**
+     * An autonomy editor on a 768-pixel screen (720 pixels of work area, under Windows' 48-pixel taskbar) is no taller
+     * than the work area, and Save Changes and Cancel lie wholly inside its content, as it opens and shrunk to its
+     * smallest size (OB-399; Adam: "ensure the autonomy editor window has a min height to prevent the cancel button from
+     * being hidden").  The smallest size is the column's own height, so it fits the screen rather than being cut to it.
+     *
+     * MUTATION: give `AutonomyEditorPanel` its 640-pixel preferred and 240-pixel minimum height again, and this fails.
+     */
+    @Test
+    public void testCancelStaysInsideTheWindowOnA768PixelScreen() throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
+
+        final OnAScreen editor = autonomyEditorOn(oneScreen(workArea));
+
+        try
+        {
+            settle(editor);
+
+            assertTrue(editor.getHeight() <= workArea.height, "the editor opened " + editor.getHeight() + " pixels tall on a"
+                + " work area " + workArea.height + " tall (OB-399)");
+
+            assertTrue(editor.getMinimumSize().height <= workArea.height, "the editor's smallest height is "
+                + editor.getMinimumSize().height + ", more than the work area's " + workArea.height);
+
+            assertEquals(outsideTheContent(editor), "", "as it opened, at " + editor.getSize() + " (OB-399)");
+
+            SwingUtilities.invokeAndWait(() -> editor.setSize(editor.getMinimumSize()));
+
+            settle(editor);
+
+            assertEquals(outsideTheContent(editor), "", "at its smallest size, " + editor.getSize() + " (OB-399)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * The findings under the diagram show 7 rows where the window has room and 5 where it is short, and change as the
+     * window is resized: at its smallest size, just under the height that gives up two rows' worth to the list, at
+     * that height, and tall, then short again (OB-399; Adam: "Things to look at can be fewer lines (5 instead of 7) on
+     * smaller screens, resizing itself").  The list scrolls past its rows either way.
+     *
+     * MUTATION: pin the list at one height (`list.setPreferredSize(new java.awt.Dimension(100, 190))` in
+     * `LayoutEditor.setAutonomyMode`, no `sizeTheFindings`), or make `FINDINGS_ROWS_SHORT` 7, and this fails.
+     */
+    @Test
+    public void testTheFindingsShowSevenRowsWhenTallAndFiveWhenShort() throws Exception
+    {
+        final OnAScreen editor = autonomyEditorOn(null);
+
+        try
+        {
+            settle(editor);
+
+            final javax.swing.JScrollPane scroll = editor.getAutonomyPanel().getFindingsPanel();
+            final javax.swing.JList<?> list = (javax.swing.JList<?>) scroll.getViewport().getView();
+
+            assertTrue(list.getModel().getSize() > 7, "precondition: the sandbox's setup has " + list.getModel().getSize()
+                + " findings, too few to fill 7 rows");
+
+            final int chrome = editor.getHeight() - editor.getContentPane().getHeight();
+            final int[] least = new int[1];
+            final int[] extra = new int[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                least[0] = editor.getContentPane().getMinimumSize().height;
+                extra[0] = 2 * list.getCellBounds(0, 0).height;
+            });
+
+            assertEquals(resizedTo(editor, least[0] + chrome, list), 5, "rows shown at the smallest height");
+
+            assertEquals(resizedTo(editor, least[0] + extra[0] - 1 + chrome, list), 5,
+                "rows shown a pixel under the height that gives the list two more rows");
+
+            assertEquals(resizedTo(editor, least[0] + extra[0] + chrome, list), 7,
+                "rows shown at the height that gives the list two more rows");
+
+            assertEquals(resizedTo(editor, least[0] + extra[0] + 300 + chrome, list), 7, "rows shown when tall");
+
+            assertEquals(resizedTo(editor, least[0] + chrome, list), 5, "rows shown after shrinking again");
+
+            assertTrue(scroll.getVerticalScrollBar().isShowing(), "the list has more findings than rows and no way to"
+                + " scroll to them");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
+     * A remembered window bigger than the screen's work area (set on a larger screen) opens no taller than the work
+     * area (OB-399).  The window's remembered entry is written, then removed.
+     *
+     * MUTATION: take `keepTheAutonomyEditorOnTheScreen` out of `LayoutEditor.render`, and this fails.
+     */
+    @Test
+    public void testARememberedSizeTallerThanTheScreenIsBroughtDown() throws Exception
+    {
+        final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
+
+        java.awt.Rectangle opened = openedFromMemory(new java.awt.Rectangle(0, 0, 1300, 1100), 0, oneScreen(workArea), false);
+
+        assertTrue(opened.height <= workArea.height, "a window remembered 1100 pixels tall opened "
+            + opened.height + " pixels tall on a work area " + workArea.height + " tall (OB-399)");
+    }
+
+    /**
+     * A remembered window is measured against the screen it opens on, the one its bounds overlap most, with that
+     * screen's taskbar, and the default screen when it overlaps none: on a taller second screen it keeps its height,
+     * on a shorter one it is brought down and into it (OB-399).
+     *
+     * MUTATION: measure the screen the window was built on (`getGraphicsConfiguration()`) in
+     * `PositionAwareJFrame.usableScreen`, and this fails.
+     */
+    @Test
+    public void testARememberedWindowIsMeasuredOnItsOwnScreen() throws Exception
+    {
+        final StringBuilder wrong = new StringBuilder();
+
+        java.awt.Rectangle opened = openedBeside(new java.awt.Rectangle(0, 0, 1920, 1248));
+
+        if (opened.height != 1000) wrong.append("on a taller second screen: ").append(opened).append("; ");
+
+        opened = openedBeside(new java.awt.Rectangle(0, 100, 1920, 768));
+
+        if (opened.height != 720 || opened.y != 100) wrong.append("on a shorter second screen at y=100: ").append(opened)
+            .append("; ");
+
+        opened = openedBeside(new java.awt.Rectangle(3000, 0, 1920, 1248));
+
+        if (opened.height != 720 || opened.y != 0) wrong.append("on no screen, so the default: ").append(opened);
+
+        assertEquals(wrong.toString(), "", "a window remembered at (100, 0), 900 by 1000, opened where its work area is"
+            + " not the one it was measured against");
+    }
+
+    /**
+     * Where an autonomy editor remembered at (100, 0), 900 by 1000, opens with this second screen and a default screen
+     * 768 tall at its left, both under a 48-pixel taskbar.
+     */
+    private static java.awt.Rectangle openedBeside(java.awt.Rectangle second) throws Exception
+    {
+        java.awt.Insets taskbar = new java.awt.Insets(0, 0, 48, 0);
+        java.util.Map<java.awt.Rectangle, java.awt.Insets> screens = new java.util.LinkedHashMap<>();
+
+        screens.put(new java.awt.Rectangle(-1366, 0, 1366, 768), taskbar);
+        screens.put(second, taskbar);
+
+        return openedFromMemory(new java.awt.Rectangle(100, 0, 900, 1000), 0, screens, false);
+    }
+
+    /**
+     * A window remembered maximized keeps its remembered size under the maximize, as a maximized one does: brought back
+     * to normal, it has that size, not the work area's height (OB-399).
+     *
+     * MUTATION: ask only `getExtendedState()` for the maximize in `LayoutEditor.keepTheAutonomyEditorOnTheScreen`, and
+     * this fails.
+     */
+    @Test
+    public void testARememberedMaximizedWindowKeepsItsSizeUnderneath() throws Exception
+    {
+        java.awt.Rectangle restored = openedFromMemory(new java.awt.Rectangle(0, 0, 1300, 900),
+            java.awt.Frame.MAXIMIZED_BOTH, oneScreen(new java.awt.Rectangle(0, 0, 1366, 720)), true);
+
+        assertEquals(restored.height, 900, "a window remembered maximized over a size 900 pixels tall, on a work area"
+            + " 720 tall, came back to " + restored);
+    }
+
+    /**
+     * The bounds of an autonomy editor opened where it is remembered at these bounds and state, on these screens (null
+     * for the machine's), and, with `unmaximized`, then brought back to normal.  The window's remembered entry is
+     * written, then removed.
+     */
+    private static java.awt.Rectangle openedFromMemory(final java.awt.Rectangle remembered, final int state,
+        final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens, final boolean unmaximized) throws Exception
+    {
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final String entry = OnAScreen.class.getSimpleName() + "_editor_";
+        final String rememberKey = org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION;
+        final String rememberWas = prefs.get(rememberKey, null);
+        final java.awt.Rectangle[] opened = new java.awt.Rectangle[1];
+
+        OnAScreen editor = null;
+
+        try
+        {
+            prefs.putInt(entry + "x", remembered.x);
+            prefs.putInt(entry + "y", remembered.y);
+            prefs.putInt(entry + "width", remembered.width);
+            prefs.putInt(entry + "height", remembered.height);
+            prefs.putInt(entry + "state", state);
+            prefs.putBoolean(rememberKey, true);
+
+            editor = autonomyEditorOn(screens);
+
+            settle(editor);
+
+            final OnAScreen shown = editor;
+
+            if (unmaximized)
+            {
+                assertTrue((shown.getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0, "precondition: the window"
+                    + " remembered maximized opened " + shown.getBounds() + ", not maximized");
+
+                SwingUtilities.invokeAndWait(() -> shown.setExtendedState(java.awt.Frame.NORMAL));
+
+                settle(editor);
+            }
+
+            SwingUtilities.invokeAndWait(() -> opened[0] = shown.getBounds());
+        }
+        finally
+        {
+            final OnAScreen closing = editor;
+
+            if (closing != null) SwingUtilities.invokeAndWait(() -> closing.dispose());
+
+            for (String each : new String[] {"x", "y", "width", "height", "state"}) prefs.remove(entry + each);
+
+            if (rememberWas == null) prefs.remove(rememberKey);
+            else prefs.put(rememberKey, rememberWas);
+        }
+
+        return opened[0];
+    }
+
+    /** An editor on screens of the test's own, the default first, to stand for screens the machine does not have. */
+    public static class OnAScreen extends LayoutEditor
+    {
+        private final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens;
+
+        OnAScreen(LayoutDiagram page, TrainControlUI ui, java.util.Map<java.awt.Rectangle, java.awt.Insets> screens)
+        {
+            super(page, 30, ui, 0);
+
+            this.screens = screens;
+        }
+
+        @Override
+        protected java.util.Map<java.awt.Rectangle, java.awt.Insets> screens()
+        {
+            return screens == null ? super.screens() : screens;
+        }
+    }
+
+    /** One screen with this work area and no taskbar. */
+    private static java.util.Map<java.awt.Rectangle, java.awt.Insets> oneScreen(java.awt.Rectangle workArea)
+    {
+        return java.util.Collections.singletonMap(workArea, new java.awt.Insets(0, 0, 0, 0));
+    }
+
+    /** An autonomy editor on the screens given (null for the machine's own), opened. */
+    private static OnAScreen autonomyEditorOn(final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens)
+        throws Exception
+    {
+        final OnAScreen[] built = new OnAScreen[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0] = new OnAScreen(page, ui, screens);
             built[0].render();
             built[0].setAutonomyMode(session);
         });
@@ -523,6 +767,58 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         assertTrue(built[0].isShowing(), "precondition: the autonomy editor did not open");
 
         return built[0];
+    }
+
+    /** Which of Save Changes and Cancel lie even partly outside the window's content, or "" for neither. */
+    private static String outsideTheContent(final LayoutEditor editor) throws Exception
+    {
+        final StringBuilder out = new StringBuilder();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                java.awt.Rectangle content = new java.awt.Rectangle(editor.getContentPane().getSize());
+
+                for (String name : new String[] {"saveButton", "cancelButton"})
+                {
+                    Component button = (Component) field(editor, name);
+
+                    java.awt.Rectangle at = SwingUtilities.convertRectangle(button.getParent(), button.getBounds(),
+                        editor.getContentPane());
+
+                    if (!content.contains(at)) out.append(name).append(' ').append(at).append(" outside the content ")
+                        .append(content).append("; ");
+                }
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return out.toString();
+    }
+
+    /** How many findings the list shows once the window is this tall, in rows. */
+    private static int resizedTo(final LayoutEditor editor, final int height, final javax.swing.JList<?> list)
+    throws Exception
+    {
+        final int[] rows = new int[1];
+
+        SwingUtilities.invokeAndWait(() -> editor.setSize(editor.getWidth(), height));
+
+        settle(editor);
+
+        SwingUtilities.invokeAndWait(() -> rows[0] = list.getLastVisibleIndex() - list.getFirstVisibleIndex() + 1);
+
+        return rows[0];
+    }
+
+    /** An autonomy editor, on screen and settled. */
+    private static LayoutEditor autonomyEditor() throws Exception
+    {
+        return autonomyEditorOn(null);
     }
 
     private static org.traincontrol.gui.autonomy.AutonomyBanner notices(LayoutEditor editor) throws ReflectiveOperationException
@@ -921,10 +1217,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
     }
 
-    /**
-     * The gaps between one checkbox and the next under Visible Elements, top to bottom, in one editor: "A - B: n".  Not
-     * the pair Track Lengths and Show Unmeasured, which are one subject.
-     */
+    /** The gaps between one checkbox and the next under Visible Elements, top to bottom, in one editor: "A - B: n". */
     private static java.util.List<String> checkboxGaps(final boolean autonomy) throws Exception
     {
         final LayoutEditor built = builtEditor(autonomy, 30);
@@ -949,8 +1242,6 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                     boxes.sort((a, b) -> Integer.compare(SwingUtilities.convertPoint(a.getParent(), a.getLocation(), pane).y,
                         SwingUtilities.convertPoint(b.getParent(), b.getLocation(), pane).y));
 
-                    javax.swing.JCheckBox unmeasured = autonomy ? built.getAutonomyPanel().getShowUnmeasured() : null;
-
                     for (int i = 1; i < boxes.size(); i++)
                     {
                         javax.swing.JCheckBox above = boxes.get(i - 1);
@@ -961,8 +1252,6 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
                         // The column ends where the next control is far below it
                         if (gap > 30) break;
-
-                        if (below == unmeasured) continue;
 
                         out.add(above.getText() + " - " + below.getText() + ": " + gap);
                     }

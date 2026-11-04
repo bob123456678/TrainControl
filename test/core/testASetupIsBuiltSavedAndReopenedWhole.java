@@ -19,9 +19,9 @@ import org.traincontrol.automationui.TilePorts.Side;
 import support.SourceOf;
 
 /**
- * A setup is built into the railway, saved, reopened and captured back without losing what was decided, and a
- * page that would not read is never judged.  One of the topic classes split from `testAutonomyDiagramSession`
- * (FR-136 Phase 3); `AutonomySessionFixture` builds the session and layout folder every claim starts from.
+ * A setup is built into the railway, saved, reopened and captured back without losing what was decided, and a page that
+ * would not read is never judged (FR-136).  `AutonomySessionFixture` builds the session and layout folder every claim
+ * starts from.
  *
  * @author Adam
  */
@@ -29,15 +29,10 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 {
 
     /**
-     * A stand-in for a page that would not read is not a page autonomy may judge.  `CS2File` substitutes a blank page
-     * (same NAME and ID) so that link tiles after it still resolve; `pagesNotLoaded` compares names, so the stand-in
-     * made the session think it saw the whole railway and the next `save()` reconciled the real page's setup against
-     * one text tile (MT-135, "all stations are gone", by a third route).
-     *
-     * Three loops in this class build that name set, and a repair reaching two of them is worse than one reaching none
-     * (the prune is declined while `wasDeclined()` reads false), so this asserts the ANSWER, whatever the copies.
-     * MUTATION: take `if (page.isUnreadable()) continue;` out of `pagesSafeToJudge` or out of `open`
-     * and this fails.
+     * A stand-in for a page that would not read is not a page autonomy may judge (MT-135): `CS2File` substitutes a
+     * blank page of the same NAME and ID, and `pagesNotLoaded` compares names.  Three loops build that name set, so
+     * this asserts the ANSWER, whatever the copies.  MUTATION: take `if (page.isUnreadable()) continue;` out of
+     * `pagesSafeToJudge` or out of `open` and this fails.
      */
     @Test
     public void testAPageThatWouldNotReadIsNotJudged() throws IOException
@@ -144,9 +139,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A station's allow-only mode goes into the railway with its list and comes back from it (FR-121): the build writes
-     * `excludedLocsMode` on the station's point, and a capture of a railway whose point no longer carries it takes it
-     * off the setup.
+     * A station's allow-only mode goes into the railway with its list and comes back from it (FR-121).
      *
      * MUTATION: leave the mode out of the settings a capture carries back, and this fails.
      */
@@ -974,10 +967,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * A page that did not load keeps its setup (OB-068).  `CS2File.parseLayout` skips a page whose file will not parse
-     * or is not there, quietly and on purpose (an unhydrated OneDrive placeholder is enough), so `save()` must not
-     * reconcile against only the pages that DID load, which would prune everything on the missing one.
-     * The mutation here is the absence itself: set up two pages, then reopen holding only one.
+     * A page that did not load keeps its setup (OB-068): `save()` must not reconcile against only the pages that DID
+     * load.  The mutation here is the absence itself: set up two pages, then reopen holding only one.
      */
     @Test
     public void testAPageThatDidNotLoadKeepsItsSetup() throws IOException

@@ -132,12 +132,8 @@ final class StandingTrains
     void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places,
         java.util.function.Predicate<Locomotive> which)
     {
-        // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438).  Adam: "There is no ambiguity - the
-        // tail is certain at departure and shouldn't change."  A locked path reserves every point on it
-        // (`Point.reserve`), so walking a tail from each anchored phantom claims at a destination it has not reached.
-        // A running train's body is at its last MILESTONE and the road behind it is the part of its path already
-        // driven; the walk is read generously (head at the far end of its milestone's square) so
-        // `tailHasProvablyPassed` never releases an edge ahead of this walk.
+        // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438): a locked path reserves every point on
+        // it, so walking a tail from each anchored phantom claims at a destination the train has not reached.
         Set<Locomotive> alreadyWalked = new LinkedHashSet<>();
 
         for (Point standing : owner.points.values())
@@ -254,9 +250,7 @@ final class StandingTrains
 
     /**
      * One standing train's tail, walked (OB-228): the body `walkStandingTrains` runs for each train.  The side and road
-     * are handed in rather than read off the Point, so the Return Home planner can ask about an imagined train without
-     * writing onto the running layout.  `covered` and `places` are filled with every covered edge / claimed place and
-     * this train.
+     * are handed in so the Return Home planner can ask about an imagined train without writing onto the running layout.
      */
     private void walkOneTail(Point standing, Locomotive loc, String arrivedFrom, List<Edge> arrivedAlong,
         Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
@@ -464,14 +458,8 @@ final class StandingTrains
                 }
             }
 
-            // THE SQUARE IT STANDS ON, WHERE THE RAIL TAKEN DOES NOT ARRIVE AT IT (OB-278 spends it by reading the
-            // first hop's places from the end, which holds only when the hop arrives at this copy).  A train turned
-            // where it stands and re-stood on the other arrival's copy has no rail arriving by that side, so the square
-            // is read off a rail that does arrive here, claimed and spent first.
-            //
-            // ONLY WHERE THAT PLACE IS PROVABLY THIS SQUARE: a hand-written graph's places are the track alone, so
-            // spending its last place as "the square" would use up the train on track not yet walked.  A split square's
-            // copies carry the square as their block.
+            // THE SQUARE IT STANDS ON, WHERE THE RAIL TAKEN DOES NOT ARRIVE AT IT, is read off a rail that does arrive
+            // here, claimed and spent first, and only where that place is provably this square (OB-278).
             if (here == standingHere && segment.getEnd() != here && here.getBlock() != null)
             {
                 for (Edge arriving : owner.getIncomingEdges(here))
@@ -500,12 +488,8 @@ final class StandingTrains
                 if (remaining <= 0) break;
             }
 
-            // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment.  One answered 0 throughout is
-            // measured, at no length (`Edge.isMeasured`): claimed, free, and the walk goes on behind it, which lets the
-            // route in count past it.  `getLength()` is the path PLUS the square the edge arrives at, which on the
-            // first hop is the one the train stands on and counts (OB-278): a berth measured on an unmeasured approach
-            // is a measured segment, so a train that fits is spent there and claims nothing behind
-            // (`whyABerthCannotHoldIt` takes the same approach).
+            // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment; one answered 0 throughout is
+            // measured, at no length (`Edge.isMeasured`): claimed, free, and the walk goes on behind it (OB-278).
             if (segment.getLength() <= 0 && !segment.isMeasured()) break;
 
             // BOTH DIRECTIONS OF THE SAME RAIL: the graph writes a rail as two `Edge` objects and `isPathClear` looks

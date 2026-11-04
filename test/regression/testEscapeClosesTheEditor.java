@@ -15,17 +15,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * FR-065: Escape closes the editor, after it has let go of whatever the editor was holding.
- *
- * Adam: *"escape closes autonomy/track editor - same as closing via button, with warning shown as needed."*
- *
- * The order is the whole design.  Escape in autonomy mode was handled nowhere: `AutonomyEditorPanel.installEscape`
- * binds it `WHEN_IN_FOCUSED_WINDOW`, which is dead in this window (the focus owner is the frame, a non-JComponent), and
- * the frame's `formKeyPressed` had its Escape branch BELOW `if (isAutonomyMode()) return;`.  Made to close outright,
- * Escape would take a half-finished gesture with it, through `mayLeave`: a user who armed "Test a path" by mistake and
- * pressed Escape to think again would be asked whether to throw their edits away.  Pressing Escape twice costs nothing
- * and there is no way back from a window that closed, so Escape lets go first and closes only when there is nothing
- * left to let go of.
+ * FR-065: Escape closes the editor, after it has let go of whatever the editor was holding.  The order is the whole
+ * design: made to close outright, Escape would take a half-finished gesture with it, through `mayLeave`, and a user who
+ * armed "Test a path" by mistake would be asked whether to throw their edits away.
  *
  * Behaviorally, at the key: every test dispatches a real `KEY_PRESSED` to the frame (not posted to the queue, which
  * routes by the OS's idea of the focus owner; see `testTheWindowTakesTheKeyboard`) and asks what happened to the

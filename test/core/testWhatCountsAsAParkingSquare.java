@@ -21,14 +21,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * What TrainControl treats as a parking berth, now that it is two facts rather than a flag (FR-060; Adam: "For now, we
- * consider anything with autodestination=false and only one way in/out as a parking square.  We can revisit dedicated
- * marking if this doesn't work out with clean logic, or if it gets too confusing to the user to manage.").
- *
- * The designation is derivable, so there is nothing to mark or migrate.  Each half lets something through alone, so
- * both directions are asserted rather than a count: `autoDestination` off alone would call a platform he keeps for
- * himself a berth, and one way in and out alone would call a headshunt one.  It is not the berth rule's gate:
- * `whyABerthCannotHoldIt` applies wherever autonomy will not choose the square, which is deliberately wider.
+ * What TrainControl treats as a parking berth, now that it is two facts rather than a flag (FR-060): `autoDestination`
+ * off AND only one way in/out.  Each half lets something through alone, so both directions are asserted rather than a
+ * count.  It is not the berth rule's gate: `whyABerthCannotHoldIt` applies wherever autonomy will not choose the
+ * square, which is deliberately wider.
  *
  * @author Adam
  */

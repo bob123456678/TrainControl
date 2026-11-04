@@ -257,10 +257,9 @@ public class AutonomyBuilder
     private Map<TileKey, List<String>> entrySignals = Collections.emptyMap();
 
     /**
-     * Stations unavailable to autonomy while another square is occupied (FR-001), expressed as lock edges so the model
-     * needs no new concept: every edge into the station gains every edge ending at the watched square.  A lock edge
-     * asks whether that track is held by a route, not whether a train stands beyond it (Edge.isLockHeld), so the
-     * station is held back while something runs over the watched approach.
+     * Stations unavailable to autonomy while another square is occupied (FR-001), expressed as lock edges: every edge
+     * into the station gains every edge ending at the watched square.  A lock edge asks whether that track is held by
+     * a route, not whether a train stands beyond it (Edge.isLockHeld).
      */
     public AutonomyBuilder withBlockingPoints(Map<TileKey, List<TileKey>> blocking)
     {
@@ -358,13 +357,8 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which copies of a square are the same piece of metal, and so cannot hold two trains at once.  Occupancy is
-     * recorded per Point and a square is emitted as one Point per arrival side, so a sibling copy would read free while
-     * a train stands on its twin.  The tile says which copies those are, not the s88: different places share a sensor.
-     *
-     * Except where the square is two pieces of metal (OB-238): a double curve or an overpass is two distinct,
-     * unconnected paths, and grouping all its copies would refuse a second train a track that is free.  The road is
-     * named by its lowest side, so both copies of one arc land on the same name.
+     * Which copies of a square are the same piece of metal, and so cannot hold two trains at once; a double curve or
+     * an overpass is keyed per road instead (OB-238).
      *
      * @return the block name, or null where there is nothing to group
      */
@@ -749,12 +743,9 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which way a train that arrived by this side is pointing, for the name only: the straight-through answer.
-     * facingOf is better on a curve or a diverging leg, so there the copy is called "(eastbound)" while facingsAt
-     * reports its train faces south: left that way deliberately, since a Point's name is what every configuration
-     * refers to and changing the word needs a migration (MT-138).
-     *
-     * Nothing routes on this text: StationIndex.withoutArrivalSuffix strips all four words.
+     * Which way a train that arrived by this side is pointing, for the name only: the straight-through answer.  It
+     * differs from facingOf on a curve or diverging leg, deliberately: a Point's name is what every configuration
+     * refers to, so changing the word needs a migration (MT-138).  Nothing routes on this text.
      */
     private static String heading(TilePorts.Side arrival)
     {
@@ -1221,9 +1212,7 @@ public class AutonomyBuilder
     }
 
     /**
-     * The ways a locomotive may be homed facing on a square: the facings of the copies trains may arrive at (OB-282).
-     * A copy trains may not arrive at is not one a train can be brought home to, so its facing is not offered and
-     * `homeCopy` would not honor it.
+     * The facings a locomotive may be homed with on a square: those of the copies trains may arrive at (OB-282).
      *
      * @return the facings, empty on a square that is not split
      */

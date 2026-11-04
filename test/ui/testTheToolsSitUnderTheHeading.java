@@ -17,9 +17,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * The autonomy editor's Test a Path button sits right under the window's heading, with only the form's own gap between
- * (Adam: *just remove the gap between the label and the "test path" "why isn't it moving" buttons in the autonomy
- * editor.*), and Page Settings sits under the mode buttons in Autonomy Setup only.
+ * The autonomy editor's Test a Path button sits right under the window's heading, with only the form's own gap between,
+ * and Page Settings sits under the mode buttons in Autonomy Setup only.
  *
  * Measured in shown editor windows on the frozen railway, never `cs2_sample_layout` (OB-111).
  *

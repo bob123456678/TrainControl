@@ -26,14 +26,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * MT-309, third ruling: the drawing says "track is blocked" again, and says it in gray ("train is here" also means
- * "track is blocked").  The orange line as long as the train and the gray on the tiles stand together, so the drawing
- * and the guard agree: orange on a square (a train lies there), gray and no orange (track a train's presence has made
- * unusable), neither (free).
- *
- * The gray is not bounded to a run, as the refusal it draws never was; `ui.testTheGreyAppearsAtIdleToo` carries the
- * idle half. The blocked extent is worked out here from the railway, not asked of the window under test: what is drawn
- * must be what `Layout.edgesCoveredByStandingTrains` refuses, endpoint squares excluded. Asserted in pixels, because
+ * MT-309, third ruling: the drawing says "track is blocked" again, in gray.  The orange line as long as the train and
+ * the gray on the tiles stand together, so the drawing and the guard agree: orange on a square (a train lies there),
+ * gray and no orange (track a train's presence has made unusable), neither (free).  Asserted in pixels, because
  * whether a square is grayed is decided when the tile is PAINTED (OB-180, `support.Rendered`).
  *
  * MUTATION: fence the wash on `isAutonomyBusy()` again and `testAStoppedRailwayShowsTheSameGrey` fails. Draw it only

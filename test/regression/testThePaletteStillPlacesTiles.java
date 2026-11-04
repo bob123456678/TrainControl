@@ -9,16 +9,12 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * Picking a tile out of "new components" and clicking a square puts that tile on the square.
+ * Picking a tile out of "new components" and clicking a square puts that tile on the square, and stays in place mode
+ * until escape is pressed or another action taken (OB-169).
  *
- * Adam, OB-169: "clicking a tile in 'new components' followed by a square on the diagram no longer places that tile.
- * it should place it and stay in place mode until escape is pressed or another action taken."
- *
- * **The square he was clicking already had track on it.**  Pressing the mouse on a square that carries a component
- * picks the tile up to be dragged, so the press handler armed a MOVE and threw away the palette selection; the release
- * then saw press and release on the same square, called it a click, and cleared the clipboard, leaving no tool for the
- * click event.  On an EMPTY square a press picks nothing up, which is why this went unnoticed and why the test places
- * over occupied track.
+ * The square Adam was clicking already had track on it: pressing on a square that carries a component picks the tile
+ * up to be dragged, which threw away the palette selection.  On an EMPTY square a press picks nothing up, so the test
+ * places over occupied track.
  *
  * The gesture is driven through the editor's own three handlers in the order a mouse produces them - beginDrag,
  * endDrag, receiveClickEvent - rather than through executeTool, which was never the broken part.

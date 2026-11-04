@@ -261,6 +261,12 @@ public class LayoutDiagramComponent
         return this.type == componentType.SWITCH_THREE;
     }
 
+    /** Whether the tile stands for an accessory: a switch, a signal (lamps included) or an uncoupler. */
+    public boolean isAccessory()
+    {
+        return this.isSwitch() || this.isSignal() || this.isUncoupler();
+    }
+
     /**
      * The state the accessory at getAddress() should be recorded as when this component is
      * imported into the accessory database.
@@ -769,8 +775,7 @@ public class LayoutDiagramComponent
 
     /**
      * Which icon set a square of this size is drawn from: the size's own where there is one (30 and 60), otherwise the
-     * next larger, scaled down (FR-122: the Medium size, 46, from the 60 set), which keeps detail a smaller set never
-     * had.
+     * next larger, scaled down (FR-122).
      *
      * @param size the square's edge in pixels
      * @return the icon set's size
@@ -899,6 +904,11 @@ public class LayoutDiagramComponent
         // Custom state
         if (this.protocol != null && this.protocol != Accessory.accessoryDecoderType.MM2)
         {
+            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
+        }
+        else if (this.protocol != null && this.address > 0 && this.isAccessory())
+        {
+            // MM2 too on every addressed accessory tile, so the tile keeps the protocol it was saved with (OB-402)
             builder.append(" .prot=").append(this.protocol.toString()).append("\n");
         }
         

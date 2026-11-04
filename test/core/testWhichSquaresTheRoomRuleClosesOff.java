@@ -26,22 +26,12 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * The route-wide room rule leaves no train with nowhere to go.
+ * The route-wide room rule leaves no train with nowhere to go (MT-333): this asks the door the operator asks,
+ * `Layout.getPossiblePaths(loc, true)`, from every square a train can stand on, for each of the census's six lengths,
+ * on a railway with nothing else on it.  Both numbers are ZERO, and that is the claim.  A train with no destination is
+ * one autonomy never dispatches and a Return Home that reports `NO_PLAN_FOUND`.
  *
- * The census (`core.testTheRoomRuleCensusOnTheRealLayout`) counts JOURNEYS, which is not the number that decides
- * whether the railway runs: a third of journeys refused evenly strands nobody, while a third refused because three
- * one-unit tiles sit on every road out of the bottom main strands every train standing there. So this asks the door the
- * operator asks, `Layout.getPossiblePaths(loc, true)`, from every square a train can stand on, for each of the census's
- * six lengths, on a railway with nothing else on it.
- *
- * Since MT-333 both numbers are ZERO, and that is the claim: with a passed square no longer judged, no square is closed
- * to a longer train. Before it, a train of two units or more was offered nothing at all from seven squares (the bottom
- * main berths) that had offered it 31 to 34 destinations under the berth-only rule. A train with no destination is one
- * autonomy never dispatches and a Return Home that reports `NO_PLAN_FOUND`; the remedy is to measure the track
- * (`behaviour/length.md` section 5a).
- *
- * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot`, with the three tight tiles set by this class:
- * these figures are what a rule about room does on a railway with no room, not a survey of his track.
+ * Read against a `LayoutSandbox` copy of `test/layouts/live-snapshot`, with the three tight tiles set by this class.
  *
  * @author Adam
  */
@@ -129,10 +119,9 @@ public class testWhichSquaresTheRoomRuleClosesOff
     }
 
     /**
-     * (square, length) pairs that had somewhere to go before the ruling and have nowhere after it, on
-     * `test/layouts/live-snapshot` with the three tight tiles this class sets. A pin, not an endorsement: nobody
-     * changes the number without saying so. 0 since MT-333; every one of the 35 before it was closed by a square the
-     * train only passed, which was never what the rule was for (*"this switch blocking should only affect berthes"*).
+     * (square, length) pairs that had somewhere to go before the ruling (MT-333) and have nowhere after it, on
+     * `test/layouts/live-snapshot` with the three tight tiles this class sets.  A pin, not an endorsement: nobody
+     * changes the number without saying so.
      */
     private static final int CLOSED_BY_THE_RULING = 0;
 

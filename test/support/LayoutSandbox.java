@@ -14,9 +14,8 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * A throwaway copy of the fixture layout, with the window pointed at it (OB-111).
  *
- * Three classes construct the real window, which opens whatever the saved layout preference names, and a full battery
- * left `cs2_sample_layout` modified.  So the preference is what this changes, to a COPY rather than to
- * `test/test_layout`: the window writes as well as reads, and the fixture is tracked.
+ * Pointing the saved layout preference at a COPY rather than at `test/test_layout` keeps the real window, which writes
+ * as well as reads, off the tracked fixture.
  *
  * Usage, in @BeforeClass and @AfterClass:
  *

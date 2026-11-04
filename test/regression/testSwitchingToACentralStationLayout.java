@@ -8,12 +8,9 @@ import org.traincontrol.base.LayoutDiagram;
 import support.SourceOf;
 
 /**
- * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded.
- *
- * The switch stores an EMPTY STRING in the layout-path preference and clears the layout list.  `isLocalLayout` and
- * `getLocalLayoutPath` disagreed about what the empty string meant (`new File("")` is the working directory), so the
- * index question was asked about whatever index lay there and every page came back absent.  Two halves, tested
- * separately because they fail separately: the mechanism, and the agreement.
+ * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded.  The switch stores
+ * an EMPTY STRING in the layout-path preference, and `isLocalLayout` and `getLocalLayoutPath` disagreed about what it
+ * meant.  Two halves, tested separately because they fail separately: the mechanism, and the agreement.
  *
  * @author Adam
  */

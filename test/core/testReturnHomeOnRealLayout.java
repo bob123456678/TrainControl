@@ -388,22 +388,15 @@ public class testReturnHomeOnRealLayout
     }
 
     /**
-     * A train standing on a square that turns trains can still be brought home (MT-463).
-     *
-     * The rule is `behaviour/return-home.md` section 6: a plan may rest a train that cannot reverse on a terminus or
-     * reversing point only when its next move takes it home, and a train the railway already had standing on one moves
-     * as before.  The code asked the SQUARE whether it turns trains, and a square cannot say who turned the train
-     * standing on it, so a train merely FOUND on one was planned nowhere but its own home (NO_PLAN_FOUND where that
-     * home was occupied or there was none).  `core.testHomeStaging` covers the two halves on hand-built fixtures; this
-     * meets the arrangement on the real railway, where the turning squares are real berths with real approaches.
+     * A train standing on a square that turns trains can still be brought home (MT-463): the real-railway meeting of
+     * the rule `behaviour/return-home.md` section 6, whose two halves `core.testHomeStaging` covers on hand-built
+     * fixtures.
      *
      * THE PLACEMENTS ARE STAGED, NOT WAITED FOR: each train is put on a turning square through the same
-     * `moveLocomotive` door the operator uses, and put back afterwards.  A hand placement does not re-home an
-     * already-homed locomotive (`Layout.claimHome` returns at `containsKey`), which makes the arrangement stageable.
+     * `moveLocomotive` door the operator uses, and put back afterwards.
      *
-     * THE CONTROL: a plan can be impossible for reasons unrelated to this rule (an occupied approach, a berth nothing
-     * may enter, a square the train is excluded from), so each train is asked twice on the same square: as it is, and
-     * unable to reverse; both must produce a plan.  A train whose own control fails is passed over and named.
+     * THE CONTROL: each train is asked twice on the same square, as it is and unable to reverse; both must produce a
+     * plan.  A train whose own control fails is passed over and named.
      *
      * MUTATION: drop `&& this.movedAlong.containsKey(l)` from `turnedByThePlan` in `HomeStaging` and this goes red on
      * the real railway, together with both claims in `testHomeStaging`.
@@ -438,12 +431,9 @@ public class testReturnHomeOnRealLayout
             Point home = layout.getHomeStation(l);
             Point was = standingAt(layout, l);
 
-            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME: `moveLocomotive` calls
-            // `claimHome`, which claims an unclaimed square for a locomotive that has none, so the plan would be asked
-            // about a train standing where it belongs, which this claim's own guard excludes (and it would count toward
-            // the floor).  MT-463's step 4 is the homeless case and
-            // `core.testHomeStaging.testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt` holds it on a fixture
-            // built for it.
+            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME (`moveLocomotive` calls
+            // `claimHome`); `core.testHomeStaging.testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt` holds it
+            // (MT-463's step 4).
             if (home == null) continue;
 
             for (Point onto : turning)

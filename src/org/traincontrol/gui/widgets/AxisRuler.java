@@ -11,26 +11,13 @@ import java.util.function.IntFunction;
 import javax.swing.border.Border;
 
 /**
- * Column and row numbers along the top and the left of a track diagram (FR-057).
- *
- * Adam: **"coordinates are referenced in issues but not visible to the user.  add a grid around the diagram"**, and
- * **"axis labels can be printed in both autonomy editor and track diagram editor, with an optional toggle"**.
- *
- * Every warning, finding and manual test names a square as `page:x,y`, and the numbers let a reader find it without
- * counting cells from the corner.
- *
- * **A Border rather than two more rows of components.** The diagram is a `GridBagLayout` whose cells are addressed by
- * their own coordinates; putting a ruler INTO that grid would shift every cell by one, and `LayoutGrid` hands out
- * `getValueAt(x, y)` and `getCoordinates(label)` to callers all over the application, each of which would have to undo
- * the shift.  A border paints in the margin the layout manager already reserves, and the grid inside is untouched.
- *
- * **It asks the grid where the cells ARE; it does not work them out from the tile size.**  Multiplying the tile size by
- * the column index is right only while every cell is exactly a tile wide, and with the gray grid on each square wears a
- * line border that reserves room, so the error is cumulative: the first numbers sit over their squares and the
- * twentieth is a whole square out.  A ruler that measures cannot drift.
- *
- * **It draws the diagram's own numbers, not the cell indices**: a diagram whose left-most track is at x = 4 is rendered
- * from x = 4, so the printed number is the one an issue would quote.
+ * Column and row numbers along the top and the left of a track diagram (FR-057), so a reader can find the `page:x,y`
+ * a warning or finding names.  Three rules hold it together:
+ * - A Border, not more rows of components: a ruler inside the diagram's `GridBagLayout` would shift every cell's
+ *   coordinates, which `LayoutGrid` hands out all over the application.
+ * - It asks the grid where the cells ARE, never working them out from the tile size, which drifts under the gray
+ *   grid's line borders.
+ * - It draws the diagram's own numbers, not the cell indices.
  *
  * @author Adam
  */
@@ -87,13 +74,8 @@ public class AxisRuler implements Border
     }
 
     /**
-     * The first usable rectangle among several places one might be found (OB-172).
-     *
-     * A column's number was positioned from the one cell in the top row (a row's from the left-hand column), and
-     * `paintBorder` skips on `cell == null || cell.width <= 0`, so one absent or not-yet-sized square deleted the label
-     * for the whole column (Adam: *"some axis labels vanish when switching between track diagram editor and autonomy
-     * editor"*).  The caller offers a few places to look, all the same column, so any gives the same x; this just stops
-     * one missing square being fatal.
+     * The first usable rectangle among several places one might be found, so one absent or not-yet-sized square cannot
+     * delete the label of a whole column (OB-172).
      *
      * @param at the places to look, in order of preference
      * @param index the column or row being asked about

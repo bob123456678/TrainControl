@@ -33,6 +33,9 @@ public class MarklinAccessory extends Accessory
     // while updateTiles iterates and prunes from a Central Station message thread.  A plain HashSet
     // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
+
+    // System.nanoTime() of the last echo, so a position the station reported before it does not undo it
+    private long lastEchoAt;
     
     // Delay between threeway switches
     public static final int THREEWAY_DELAY_MS = 350;
@@ -135,6 +138,24 @@ public class MarklinAccessory extends Accessory
         }
     }
     
+    /**
+     * Takes the position the station reported, sending nothing and counting no actuation, unless an echo has arrived
+     * since the report was asked for (FR-171).
+     * @param switched true for turned (red)
+     * @param asked System.nanoTime() when the report was asked for
+     */
+    synchronized public void adoptStationPosition(boolean switched, long asked)
+    {
+        if (this.lastEchoAt != 0 && this.lastEchoAt - asked >= 0)
+        {
+            return;
+        }
+
+        this._setSwitched(switched);
+        this.stateAtLastActuation = switched;
+        this.updateTiles(false);
+    }
+
     @Override
     synchronized public void parseMessage(CS2Message m)
     {
@@ -171,6 +192,7 @@ public class MarklinAccessory extends Accessory
                 // Any echo is an acknowledgment from the Central Station, whether or not it moved the accessory, so it
                 // confirms the position and wakes the waiter either way.  Set before the notify so a woken waiter sees
                 // it.
+                this.lastEchoAt = System.nanoTime();
                 this.actuationConfirmed = true;
 
                 // Wake anyone waiting for a CS-confirmed actuation (e.g. autonomy path validation).

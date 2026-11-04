@@ -17,14 +17,9 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * A station with one arrival side barred does not offer that side as somewhere to stop.
- *
- * MT-078, Adam: "Not always honored. In manual operation, I was able to send a train from Tunnel to BottomMainA.
- * BottomMainA had barred arrivals from the west."  The rule lives in the BUILD, not in the search: a square trains can
- * reach from two sides is emitted as two Points (how the model records which way a train faces), and barring a side
- * makes THAT copy a non-station.  Every destination list filters on `isDestination()`, so it cannot end a path.  If
- * the copy is a destination every list downstream is right to offer it and the defect is here; if not, a train that
- * arrived there arrived at the OTHER copy, which is legal, and the two share a base name.
+ * A station with one arrival side barred does not offer that side as somewhere to stop (MT-078).  The rule lives in the
+ * BUILD, not in the search: barring a side makes THAT copy of a two-sided square a non-station, and every destination
+ * list filters on `isDestination()`.
  *
  * @author Adam
  */
@@ -156,16 +151,9 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * A barred copy still carries the protecting signal, because it is still the same platform.
-     *
-     * The builder emits the pairing under `protecting != null && !protecting.isEmpty() && stops`; `stops` is false
-     * exactly when the copy's arrival side is barred, and a person may still drive a train onto it (Adam, MT-078:
-     * autonomy will not route into a barred side, a person may), so nothing would protect the occupied platform:
-     * `refreshOneSignal` asks every Point whose protecting signals contain the accessory, and this one is not among
-     * them.
-     *
-     * Nothing refuses a protecting signal on a non-station (`setProtectingSignals` stores what it is given); `stops`
-     * exists for a case where the model DOES refuse: a terminus that is not a destination invalidates the whole layout.
+     * A barred copy still carries the protecting signal, because it is still the same platform: a person may still
+     * drive a train onto it (MT-078), and `refreshOneSignal` asks every Point whose protecting signals contain the
+     * accessory.
      */
     @Test
     public void testABarredCopyStillHoldsItsProtectingSignal() throws IOException
@@ -409,12 +397,8 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Barring every way in is INFORMATION, because a person can still drive a train there.
-     *
-     * MT-078: barred arrivals are advisory.  Autonomy will not route into a barred side; a person may.  Adam: "We
-     * should let the user know a train can't come in in any way (warning). If manual only, it's info."  A station with
-     * every side barred is reachable BY HAND, so blocking the setup from starting over it would be wrong; the case
-     * where nothing can arrive by any means is a square no track reaches, POINT_ISOLATED, a warning already.
+     * Barring every way in is INFORMATION, because a person can still drive a train there (MT-078): barred arrivals are
+     * advisory, so blocking the setup from starting over it would be wrong.
      */
     @Test
     public void testAStationWithEveryArrivalBarredIsOnlyInformation() throws IOException
@@ -446,11 +430,8 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * Autonomy can be set up FROM AN IMPORT, with no setup here to begin with.
-     *
-     * FR-007: "it should be possible to initially load autonomy from an import, not just forcing the creation of a new
-     * one."  This is the model half: a session on a folder that has never held a setup takes a bundle and comes out
-     * with a working configuration; the menu half is one item in AutonomyMenu.
+     * Autonomy can be set up FROM AN IMPORT, with no setup here to begin with (FR-007): a session on a folder that has
+     * never held a setup takes a bundle and comes out with a working configuration.
      */
     @Test
     public void testASetupCanBeCreatedByImportingOne() throws Exception
@@ -528,13 +509,9 @@ public class testBarredArrivalIsNotADestination
     }
 
     /**
-     * A terminus with one side barred still loads (MT-079): "Mark a terminus 'trains may turn round here', bar one of
-     * its sides, reload. It loads - no 'configuration is invalid and must be reloaded'."
-     *
-     * This is the case `testABarredCopyStillHoldsItsProtectingSignal` singles out as dangerous: the `stops` variable
-     * exists for a terminus that is not a destination, which invalidates the whole layout, and barring a side is
-     * exactly what makes a copy stop being a destination.  The failure is the whole configuration refusing to load,
-     * days after somebody set it.
+     * A terminus with one side barred still loads (MT-079): barring a side is what makes a copy stop being a
+     * destination, and a terminus that is not a destination invalidates the whole layout (see
+     * `testABarredCopyStillHoldsItsProtectingSignal`).
      */
     @Test
     public void testATerminusWithABarredSideStillLoads() throws IOException

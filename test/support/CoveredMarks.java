@@ -6,11 +6,9 @@ import org.traincontrol.gui.TrainControlUI;
 /**
  * Asking the window to recompute the marks a standing train puts on the diagram, and WAITING for the answer (OB-192).
  *
- * `TrainControlUI.refreshCoveredTrack` is private, and every test of the orange line or the gray wash calls it by
- * reflection to get at the recompute the window makes on every refresh of a running layout.  Since OB-192 the work is
- * on a worker, so the answer lands slightly later than the ask and a test that reads `coveredTrack` straight afterwards
- * reads whatever was there before.  The wait lives here once rather than in each of the five classes: forgotten at one
- * call site, a class does not fail, it passes or fails on the state before the gesture.
+ * The work is on a worker, so a test that reads `coveredTrack` straight after the ask reads whatever was there before.
+ * The wait lives here once rather than in each of the five classes: forgotten at one call site, a class does not fail,
+ * it passes or fails on the state before the gesture.
  *
  * @author Adam
  */

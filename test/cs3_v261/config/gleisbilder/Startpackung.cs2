@@ -1,0 +1,195 @@
+[gleisbildseite]
+version
+ .major=1
+page=1
+element
+ .id=0x10408
+ .typ=bogen
+ .artikel=-1
+element
+ .id=0x10409
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1040a
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=2
+element
+ .id=0x1040b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1040c
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1040d
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1040e
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1040f
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10410
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10411
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10412
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10507
+ .typ=bogen
+ .artikel=-1
+element
+ .id=0x10508
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x10510
+ .typ=prellbock
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10512
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10513
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10607
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10613
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10707
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10708
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10709
+ .typ=bogen
+ .artikel=-1
+element
+ .id=0x1070a
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1070b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1070c
+ .typ=signal_hp012s
+ .artikel=8
+element
+ .id=0x1070d
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1070e
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1070f
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10710
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10711
+ .typ=bogen
+ .artikel=-1
+element
+ .id=0x10712
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x10713
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x10808
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10809
+ .typ=linksweiche
+ .drehung=3
+ .artikel=4
+element
+ .id=0x1080a
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1080b
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1080c
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1080d
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1080e
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x1080f
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x10810
+ .typ=rechtsweiche
+ .drehung=1
+ .artikel=6
+element
+ .id=0x10811
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x1090f
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x10910
+ .typ=signal_hp012s
+ .drehung=2
+ .artikel=12

@@ -11,12 +11,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 
 /**
- * FR-056: right-clicking a tunnel flashes the square it is joined to.
- *
- * The menu already offered to go to the partner, which is right for ends on different pages but wrong when the pair is
- * on the page being looked at, where jumping moves the view away from the square asked about.  So the flash is limited
- * to a partner on the page being looked at, and the third test holds that limit: a highlight on a page nobody is
- * looking at is indistinguishable from none.
+ * FR-056: right-clicking a tunnel flashes the square it is joined to, limited to a partner on the page being looked at:
+ * the third test holds that limit.
  *
  * @author Adam
  */
@@ -59,12 +55,10 @@ public class testTheMenuShowsWhereALinkGoes
     }
 
     /**
-     * Bulk tools is the last thing on the menu, and nothing dangles after it.
-     *
-     * Everything else on the menu is about the clicked square; bulk tools is about the whole setup, so it belongs at
-     * the bottom behind a divider (MT-257).  Three claims, since "last" alone is not enough: it is last, what precedes
-     * it is a divider, and the menu does not end with one.  `buildTileMenu` rather than a mouse gesture, for the reason
-     * `menuOn` gives.
+     * Bulk tools is the last thing on the menu, and nothing dangles after it (MT-257): it is about the whole setup, so
+     * it belongs at the bottom behind a divider.  Three claims, since "last" alone is not enough: it is last, what
+     * precedes it is a divider, and the menu does not end with one.  `buildTileMenu` rather than a mouse gesture, for
+     * the reason `menuOn` gives.
      *
      * MUTATION: put `menu.addSeparator(); menu.add(bulkTools());` back where it was - above the caption
      * items - and the first claim fails, naming what is last instead.

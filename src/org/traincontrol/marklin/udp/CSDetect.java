@@ -199,8 +199,7 @@ public class CSDetect
     }
 
     /**
-     * The same, with the number of attempts named - the way in for a test (MT-060).  `host` may carry a port so a fake
-     * server can time out once and then answer; the scan passes a bare address and the URL reads the same either way.
+     * The same, with the number of attempts named - the way in for a test (MT-060).
      *
      * @param host the host, which may carry a port
      * @param path the path that identifies a Central Station

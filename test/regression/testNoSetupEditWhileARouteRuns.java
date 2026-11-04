@@ -33,10 +33,9 @@ import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 
 /**
  * No setup edit is made while a route runs with autonomy idle, at any door that refuses one while autonomy is busy
- * (Adam: *"There should be no setup edit possible during a run"*; of a route: *"yes, refuse"*).  One question,
- * `TrainControlUI.somethingIsRunning` (FR-129), and each door keeps its own way of refusing: grayed, hidden, or said at
- * the click.  On the live snapshot's window, with a route marked running as `MarklinRoute.execRoute` marks it, so
- * nothing is sent; each door is asked again at rest, where it does not refuse.
+ * (Adam: "There should be no setup edit possible during a run").  One question, `TrainControlUI.somethingIsRunning`
+ * (FR-129), and each door keeps its own way of refusing.  On the live snapshot's window, with a route marked running as
+ * `MarklinRoute.execRoute` marks it, so nothing is sent; each door is asked again at rest, where it does not refuse.
  *
  * @author Adam
  */
@@ -831,9 +830,9 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * The configuration doors, Import, Delete Everything, a page ticked out, and the page doors refuse while a route
-     * runs, saying why before anything is asked, and none of them changes the setup or the pages; at rest they ask
-     * their own questions instead.  Each says "Edits are not allowed while autonomy or routes are running." (OB-370).
+     * The configuration doors (Import, Delete Everything, a page ticked out, the page doors) refuse while a route runs,
+     * saying why before anything is asked, and none of them changes the setup or the pages (OB-370); at rest they ask
+     * their own questions.  Each says "Edits are not allowed while autonomy or routes are running."
      *
      * MUTATION: let any of them ask autonomy alone again, and this fails naming it; so does
      * `RunGates.refuseWhileARunHoldsTheSetup` giving a door another sentence.
@@ -2126,9 +2125,6 @@ public class testNoSetupEditWhileARouteRuns
 
     /**
      * What a door says while the probe route runs: one dialog, naming the route and wrapped to a width (MT-760).
-     *
-     * @param said what the doors asked, in order
-     * @param door which door, for the message
      */
     private static void assertNamesTheRoute(List<String> said, String door)
     {
@@ -2142,9 +2138,8 @@ public class testNoSetupEditWhileARouteRuns
     }
 
     /**
-     * The refusal names the first few routes and says how many more, shortens a long name, and wraps at a fixed width, so
-     * that a railway of running routes does not make a dialog as big as the screen (Adam, MT-760: *"Be sure to manage its
-     * width/height."*).
+     * The refusal names the first few routes and says how many more, shortens a long name, and wraps at a fixed width,
+     * so a railway of running routes does not make a dialog as big as the screen (MT-760).
      *
      * MUTATION: name every route, or leave a name whole, or take the width out, and this fails.
      */

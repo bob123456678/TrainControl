@@ -6,14 +6,11 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 
 /**
- * Telling the window that a train has set off or arrived, so the panels that describe it redraw: the timetable (an
- * entry for each path dispatched with capture on) and the locomotive status panel have no other reason to redraw.
+ * Telling the window that a train has set off or arrived, so the panels that describe it redraw: the timetable and the
+ * locomotive status panel have no other reason to redraw.
  *
- * Its own class rather than lines in TrainControlUI, because the callback once rode with the GraphStream graph window
- * and went when that window was deleted (`d8db4879`), after which two panels quietly stopped being true (OB-097).
- * Deleting a caller breaks nothing a behavioral test can see, so `testTheWindowAttachesItsRefreshCallback` fails the
- * build if TrainControlUI stops calling it, and `testTimetableCapturesThroughARealRun` attaches exactly this over a
- * real run.
+ * Its own class so that deleting a caller breaks something visible: `testTheWindowAttachesItsRefreshCallback` fails
+ * the build if TrainControlUI stops calling it (OB-097).
  */
 public final class AutonomyRefreshCallback
 {

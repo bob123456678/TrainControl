@@ -24,23 +24,15 @@ import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
  * The station's size is an allowance; the squares a train stands on are track, its own square included (OB-278).
+ * "The station size" is the station's MAXIMUM TRAIN LENGTH (`whyTooLongForThisRoute`), not the length MEASURED on its
+ * own square.
  *
- * Adam: **"if the segment length is shorter, more should be blocked.  The station size is an allowance, not a
- * length."**  And, when a two-unit train was refused TunnelLongPark: **"the 2 length tile with the s88 consumes 2 units
- * of the train"** - asked whether that holds at every station, *"Everywhere"*, and *"This shouldn't be a major ruling
- * reversal."*
+ * The rule: every measured square a train lies over is spent, the square it stands on first.  Three walks read it and
+ * must agree - `Layout.walkStandingTrains`, `Layout.whyABerthCannotHoldIt` and `AutonomySession.walkBackFrom` - and
+ * this class asks each of them.
  *
- * "The station size" is the station's MAXIMUM TRAIN LENGTH, how much train it may HOLD (`whyTooLongForThisRoute`), not
- * the length MEASURED on the station's own square: every walk that works out where a standing train's body lies spends
- * that square first, so the tail does not go over the switch behind a berth.
- *
- * The rule: every measured square a train lies over is spent, the square it stands on first; a train no longer than
- * that square blocks nothing behind it.  Three walks read it and must agree - `Layout.walkStandingTrains` (what the
- * railway blocks), `Layout.whyABerthCannotHoldIt` (whether a berth can take a train) and `AutonomySession.walkBackFrom`
- * (the orange line) - and this class asks each of them.
- *
- * On a sandbox copy of the frozen `live-snapshot`, which carries his measurements; where he has not measured the
- * squares a claim needs, they are set here and say so.  The train is this class's own.
+ * On a sandbox copy of the frozen `live-snapshot`; where Adam has not measured the squares a claim needs, they are set
+ * here and say so.
  *
  * @author Adam
  */
@@ -175,9 +167,7 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The square with the sensor consumes its own length of the train (OB-278).  Adam: *"the 2 length tile with the s88
-     * consumes 2 units of the train."*  So a two-unit train at TunnelLongPark lies on that square and nowhere else, and
-     * a three-unit one reaches the square behind and stops short of the switch.
+     * The square with the sensor consumes its own length of the train (OB-278).
      *
      * MUTATION: leaving the standing square unspent in `Layout.walkOneTail` claims 10,10 for the two-unit train and the
      * switch for the three-unit one.
@@ -208,9 +198,7 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The berth rule takes what the berth measures (OB-278).  Adam: *"75 407 DB can't go to TunnelLongPark from
-     * BottomMainPost unless it is length 1, whereas up to length 3 should be allowed (both measured and max on the
-     * station)."*
+     * The berth rule takes what the berth measures (OB-278).
      *
      * MUTATION: leaving the berth's own span unspent in `Layout.whyABerthCannotHoldIt` refuses two units here.
      */
@@ -299,8 +287,7 @@ public class testAStationsSizeIsAnAllowance
     }
 
     /**
-     * The orange line stops where the train does (OB-278): the picture is the third walk and has to agree with the
-     * other two.
+     * The orange line stops where the train does (OB-278): the third walk, which has to agree with the other two.
      *
      * MUTATION: leaving the standing square unspent in `AutonomySession.walkBackFrom` draws 10,10 behind a two-unit
      * train at TunnelLongPark.

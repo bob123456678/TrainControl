@@ -45,7 +45,7 @@ public class testNoSetupEditDuringARun
      * setup's shared half, not the imported configuration, so the import's rollback must not undo it.
      *
      * "4 - Combined" repeats "1 - Main"'s sensors and is put back in as a page nobody has decided about, the state the
-     * import acts on.  The timetable is broken as `testAFileItCannotReadLeavesTheSetupAsItWas` breaks it.
+     * import acts on.
      *
      * MUTATION: take the snapshot before the exclusion again, and this fails.
      */
@@ -1788,8 +1788,8 @@ public class testNoSetupEditDuringARun
 
     /**
      * A train's length is not changed while trains run (Adam, MT-141: *"Never allow any modifications to a running
-     * layout.  This includes locomotive database"*).  The Autonomy train length item wrote the length onto the running
-     * train, 0 included.  Refused at the click, and at OK for a dialog open when a run began; at rest it writes.
+     * layout.  This includes locomotive database"*).  Refused at the click, and at OK for a dialog open when a run
+     * began; at rest it writes.
      *
      * MUTATION: let the dialog's answer, or the click, through while trains run, and this fails.
      */
@@ -1877,9 +1877,9 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * The Auto tab sends no train while Return Home owns the railway: autonomy's own flag is down while Return Home
-     * plans, so a hand send then ran under the planner.  A second hand send while another runs stays allowed from the
-     * Auto tab (Adam, OB-164: *"The user can rely on full autonomy or the panels to send trains more clearly."*).
+     * The Auto tab sends no train while Return Home owns the railway.  A second hand send while another runs stays
+     * allowed from the Auto tab (Adam, OB-164: *"The user can rely on full autonomy or the panels to send trains more
+     * clearly."*).
      *
      * MUTATION: let the Auto tab's double-click ask only whether autonomy is running, and this fails.
      */
@@ -3580,11 +3580,10 @@ public class testNoSetupEditDuringARun
 
     /**
      * Layouts > Create New Layout is refused while autonomy runs, before its folder window opens, as every other Layout
-     * menu door that changes the diagram is (MT-141): a folder chosen would switch the layout and reset the autonomy
-     * session under the moving trains.
+     * menu door that changes the diagram is (MT-141).
      *
-     * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhileARunHoldsTheSetup` giving a layout
-     * door the locomotive sentence again (OB-370).
+     * MUTATION: open the folder window whatever runs, and this fails; so does `RunGates.refuseWhileARunHoldsTheSetup`
+     * giving a layout door the locomotive sentence again (OB-370).
      */
     @Test
     public void testCreateNewLayoutWaitsForAutonomyToStop() throws Exception

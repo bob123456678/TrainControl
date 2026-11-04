@@ -127,10 +127,9 @@ public class testTimetableCapture
     }
 
     /**
-     * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose (MT-262): the berth-room
-     * rule in `Layout.isPathClear` judges B, a plain through station, on the track leading into it, and
-     * `firstLocomotive()` comes from the operator's real database, three units long.  A dispatch refused for length
-     * never reaches the capture, which also makes the capture-off test pass for the wrong reason.
+     * How long the run from A to B is measured, and it is LONGER THAN THE TRAIN on purpose (MT-262): a dispatch refused
+     * for length by the berth-room rule in `Layout.isPathClear` never reaches the capture, which also makes the
+     * capture-off test pass for the wrong reason.
      */
     private static final int APPROACH = 20;
 

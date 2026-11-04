@@ -273,9 +273,8 @@ public class testThePlaceDoorsKeepTheHeading
      * Placed from the autonomy editor, the tail question is the list, in front of the editor, and choosing TunnelPre in
      * it answers it (MT-575).
      *
-     * His 75 407 DB, given a length of 5, put on Tunnel from the editor's own Place door with "arrived from the north".
-     * The question must not wait on the main window's diagram, whose squares the editor covers: it is the list, owned
-     * by the editor so it opens over it.
+     * His 75 407 DB, given a length of 5, put on Tunnel from the editor's own Place door with "arrived from the north";
+     * the question must not wait on the main window's diagram, whose squares the editor covers.
      *
      * MUTATION: put the question on the diagram with the editor open, or hang the list from the main window, and this
      * fails.

@@ -12,14 +12,8 @@ import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.NetworkProxy;
 
 /**
- * A message handed to the proxy arrives on the wire, byte for byte.
- *
- * From the test suite audit, inside [OB-089]: "nothing anywhere asserts an outgoing datagram".  `testNetworkProxy`
- * covers the socket's LIFECYCLE and `testSendReopensAClosedSocket` asserts that `sendMessage` returned true, but
- * neither says anything about what was sent.  This is the one path that reaches the physical railway, and "returned
- * true" is a statement about a method, not about a locomotive moving; the receive port is now optionally ephemeral and
- * opened through a shared method used by the constructor and the reopen inside `sendMessage`, which nothing would have
- * noticed breaking transmission.
+ * A message handed to the proxy arrives on the wire, byte for byte (OB-089): nothing else asserts an outgoing datagram,
+ * and "returned true" is a statement about a method, not about a locomotive moving.
  *
  * No model, no layout, no fixture: a `NetworkProxy` is constructed directly against loopback, independent of everything
  * that makes the rest of the battery fragile.

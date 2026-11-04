@@ -13,8 +13,8 @@ import org.traincontrol.gui.TrainControlUI;
  * panels in the autonomy tab.
  *
  * A JLabel subclass, because the caption is registered, colored, re-texted and clicked from a dozen places that all
- * know it as a JLabel.  What changes is the painting: the fill comes from `getBackground()`, so every color the running
- * diagram already uses to say something still says it, and the text is legible on top of it.
+ * know it as a JLabel.  The fill comes from `getBackground()`, so every color the running diagram already uses still
+ * says what it said.
  *
  * @author Adam
  */
@@ -494,10 +494,8 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * The font the diagram's labels are drawn in, and the four arrows that go in them (OB-116).  In Segoe UI the
-     * horizontal triangles are half the height of the vertical ones and the geometric ones come out as empty boxes;
-     * `Segoe UI Symbol` draws the four arrows as one matched set.  Chosen once, at class load, and guarded: on a
-     * machine without that font the pointers stay, since a squat arrow is better than an empty box.
+     * The font the diagram's labels are drawn in, and the four arrows that go in them (OB-116).  Chosen once, at class
+     * load, and guarded: on a machine without `Segoe UI Symbol` the pointers stay.
      */
     public static final String LABEL_FONT;
 

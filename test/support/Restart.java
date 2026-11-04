@@ -9,15 +9,10 @@ import org.traincontrol.marklin.MarklinControlStation;
  * The program started with its window on a throwaway copy of a railway, closed as the window's close box closes it, and
  * started again over the same railway and the same saved data: a restart, inside one test.
  *
- * The close is the window's own exit (`TrainControlUI.WindowClosed`) without its `System.exit`: the model saves the
- * locomotive database, the window saves its state and folds the running autonomy layout back into the setup, and the
- * window goes.  The start is `MarklinControlStation.init` with a window, in simulation and with no Central Station,
- * which reads the layout the sandbox points at and the database the run's data folder holds; and, as the window does
- * at start when Autonomy &gt; Load at Start is ticked, the setup's active configuration is loaded.
- *
- * The sandbox is opened here, before the first model, so the program never reads the operator's own railway (OB-111),
- * and closed by `close()`.  Every window this starts is the model's own (`getGUI`), so a class using it builds no
- * `TrainControlUI` itself.
+ * The close is the window's own exit (`TrainControlUI.WindowClosed`) without its `System.exit`.  The sandbox is opened
+ * here, before the first model, so the program never reads the operator's own railway (OB-111), and closed by
+ * `close()`.  Every window this starts is the model's own (`getGUI`), so a class using it builds no `TrainControlUI`
+ * itself.
  *
  *     restart = support.Restart.open(support.Scenario.folderFor("live-snapshot"));
  *     MarklinControlStation first = restart.getModel();

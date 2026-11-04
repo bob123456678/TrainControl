@@ -17,14 +17,10 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * MT-074 and MT-075, which Adam could not run by hand and asked to have tested instead.
- *
- * Both are Tier 2 - data safety - and both are about what is left on DISK afterwards, which the person at the screen
- * cannot see: "it loaded and looked right" is not the claim.
- *
- * MT-074 adds a requirement Adam wrote when he deferred it: "validate that the source files are unchanged afterwards",
- * so the round trip is checked byte-for-byte against copies taken before it, not by reading the setup back through the
- * same code that wrote it.
+ * MT-074 and MT-075, which Adam could not run by hand and asked to have tested instead: both are about what is left
+ * on DISK afterwards, which the person at the screen cannot see.  MT-074 adds a requirement Adam wrote when he
+ * deferred it: "validate that the source files are unchanged afterwards", so the round trip is checked byte-for-byte
+ * against copies taken before it.
  *
  * @author Adam
  */

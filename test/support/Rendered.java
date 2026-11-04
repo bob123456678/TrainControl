@@ -12,21 +12,11 @@ import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * A page of the track diagram, held open, so a test can look at what is actually drawn.
- *
- * Adam: "let's make the suite able to see rendered output when needed."  Nothing in the suite did, and OB-180 is what
- * that cost: the covered-track wash was computed correctly, but nothing REPAINTED the tiles whose state had changed, so
- * every assertion on the covered set, the model or the source answered identically with the bug present and fixed.
- *
- * Held open is the whole design: `DiagramExport.render` renders a page offscreen but constructs a FRESH grid every
- * call, and a fresh label always computes its wash correctly.  The defect only exists for a label already on screen and
- * never told to redraw.  So this builds the grid ONCE; `snapshot()` paints that same grid again, and between two
- * snapshots a test can move a train and call the production refresh.
- *
- * Not an editor: the grid is built with a null master, so `inEditor` is false and the viewer's rules apply, which is
- * where the wash is drawn.
- *
- * Needs a display: callers skip when `GraphicsEnvironment.isHeadless()`, as the other rendering tests do.
+ * A page of the track diagram, held open, so a test can look at what is actually drawn (OB-180).  Held open is the
+ * whole design: `DiagramExport.render` constructs a FRESH grid every call, and a fresh label always computes its wash
+ * correctly, while the defect only exists for a label already on screen and never told to redraw.  `snapshot()` paints
+ * the same grid again.  Not an editor: the grid is built with a null master, so the viewer's rules apply.  Needs a
+ * display: callers skip when `GraphicsEnvironment.isHeadless()`.
  *
  * @author Adam
  */
@@ -252,12 +242,9 @@ public final class Rendered
     }
 
     /**
-     * Whether this tile is drawing the mark that says a train is lying across it (MT-309).  The mark is a line PAINTED
-     * over the icon, which is not in the object at all, so the only honest way to ask is to paint the tile and look.
-     *
-     * By hue rather than against `LayoutLabel.TRAIN_MARK`: a check reading production's own constant would agree with
-     * any value it was changed to, gray included.  `paint` and not `printAll`: both of the others begin with an
-     * isShowing() check and do nothing for a component that is not on screen.
+     * Whether this tile is drawing the mark that says a train is lying across it (MT-309), asked by painting the tile.
+     * By hue rather than against `LayoutLabel.TRAIN_MARK`, which would agree with any value it was changed to; `paint`
+     * and not `printAll`, which do nothing for a component that is not on screen.
      */
     public static boolean showsTheTrainMark(final java.awt.Component tile) throws Exception
     {

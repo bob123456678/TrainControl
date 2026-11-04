@@ -170,9 +170,8 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Grays what changes the setup while autonomy runs, with the reason on each (MT-613, MT-626).  Each door still
-     * refuses on its own; this says so before the click.  Autonomy Settings and Documentation stay live.  The debug
-     * export is grayed too (MT-633), grayed only: it writes nothing of the setup.
+     * Grays what changes the setup while autonomy runs, with the reason on each (MT-613).  Each door still refuses on
+     * its own; this says so before the click.  The debug export is grayed only (MT-633).
      *
      * @param documentation the guide's item
      */
@@ -213,16 +212,10 @@ public class AutonomyMenu extends JMenu
 
         if (actions == null || session == null)
         {
-            // A dead sentence, unless a download would answer it (OB-093; Adam: "the 'autonomy needs a layout stored on
-            // this computer' notice should be clickable and allow the user to download one."): grayed, it leaves the
-            // reader knowing what is wrong and not what to do.  Only when a download is the answer: this branch is also
-            // taken for reasons it would not touch (no viewer panel yet, a session that failed to open).  The handler's
-            // own question, both halves: downloadCSLayoutMenuItemActionPerformed also requires a non-empty page list.
-            //
-            // A choice, download or create (Adam, on MT-548: *"what is the cs3 has no layout?  give the user the choice
-            // to either download or create a new one, which redirects to the corresponding option under layouts."*):
-            // both of the Layouts menu's ways to a layout on this computer, the download grayed with its reason where
-            // it would do nothing, and Create New Layout grayed exactly when its Layouts item is.
+            // A dead sentence, unless a download would answer it (OB-093), so it is offered as a choice, download or
+            // create (MT-548): the download is grayed with its reason where it would do nothing, and Create New Layout
+            // is grayed exactly when its Layouts item is.  Only when a download is the answer: this branch is also
+            // taken for reasons it would not touch.
             if (ui.isRemoteLayout())
             {
                 javax.swing.JMenu offer = new javax.swing.JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));

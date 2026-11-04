@@ -58,11 +58,8 @@ public final class UpdateFlow
     }
 
     /**
-     * Help > Download Update: asks what to do with the new version, then does it (FR-125).
-     *
-     * Download & Update is offered only when TrainControl runs from a jar it can replace - the jar it was loaded from,
-     * in a folder that can be written.  Run from an IDE or from a folder of classes there is no jar, and the question
-     * offers Download alone.
+     * Help > Download Update: asks what to do with the new version, then does it (FR-125).  Download & Update is
+     * offered only when TrainControl runs from a jar it can replace; otherwise the question offers Download alone.
      */
     public void offerTheUpdate()
     {
@@ -76,9 +73,8 @@ public final class UpdateFlow
 
     /**
      * Downloads the new version with its progress on the menu item; then Download says where it is, and Download &
-     * Update installs it (FR-125).  Saved beside the running jar where there is one, else in the working directory.
-     * One Download & Update at a time: a second, while one is under way, is refused rather than stacked; whatever ends
-     * it short of the exit ends it here, and once it reaches `closeForTheUpdate`, that ends it.
+     * Update installs it (FR-125).  One Download & Update at a time: a second, while one is under way, is refused
+     * rather than stacked.
      *
      * @param jar the running jar, or null
      * @param install whether to update as well
@@ -207,8 +203,8 @@ public final class UpdateFlow
     /**
      * Download & Update, once the file is here (FR-125): checks it is a whole jar, takes the data backup, then closes
      * TrainControl for the updater.  On the download's worker thread, until the exit, which is the event thread's.
-     * Each failure stops here, says why in words of its own, and leaves everything as it was: the old jar is not
-     * touched until TrainControl has closed.
+     * Each failure stops here and leaves everything as it was: the old jar is not touched until TrainControl has
+     * closed.
      *
      * @param jar the running jar
      * @param download the downloaded file, beside it

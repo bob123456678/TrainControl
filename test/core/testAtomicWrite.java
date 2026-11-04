@@ -268,16 +268,8 @@ public class testAtomicWrite
     }
 
     /**
-     * The backup archive holds the whole layout folder, not a file from it.
-     *
-     * FR-015. The autonomy setup is keyed by PAGE ID, and those ids are defined by
-     * `config/gleisbild.cs2` - so `setup.json` on its own means nothing, and a `gleisbild.cs2` from a
-     * different day silently reattaches every station to the wrong page. That is not a hypothetical:
-     * it is what the 23 August restore had to undo, and the reason it took a bracketed comparison of
-     * three snapshots to do it.
-     *
-     * So what this pins is not "a zip was written" but that the pieces which are only meaningful
-     * together are in the same archive, under paths that say where they came from.
+     * The backup archive holds the whole layout folder, not a file from it (FR-015): what this pins is that the pieces
+     * which are only meaningful together are in the same archive, under paths that say where they came from.
      */
     @Test
     public void testTheBackupArchiveHoldsEveryPieceOfTheState() throws Exception

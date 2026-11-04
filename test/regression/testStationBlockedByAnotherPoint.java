@@ -21,12 +21,9 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 
 /**
- * A station can be held back while another point is occupied (FR-001), as a locomotive can be excluded from it.
- *
- * The setting is remembered against SQUARES in the setup, and the build turns it into LOCK EDGES: every edge arriving
- * at the held-back station gains every edge that ends at the watched square.  `Edge.isLockHeld` asks whether the track
- * is HELD BY A ROUTE, not whether a train stands beyond it, so the station is unavailable while something runs over the
- * watched approach.  This tests the BUILD; the refusal itself is the existing lock behavior.
+ * A station can be held back while another point is occupied (FR-001), as a locomotive can be excluded from it.  The
+ * setting is remembered against SQUARES in the setup, and the build turns it into LOCK EDGES.  This tests the BUILD;
+ * the refusal itself is the existing lock behavior.
  *
  * @author Adam
  */
@@ -375,11 +372,8 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A train STANDING on the watched point takes the station out of autonomy's choices (FR-001's other half).  The
-     * build emits the setting as LOCK EDGES (a route running over the watched approach) and as the names below (a train
-     * standing there); `Edge.isLockHeld` cannot do the second.  It is safe to ask the harder question here: a lock edge
-     * is track a route must CROSS, and this is asked only of a path's DESTINATION and only about squares somebody
-     * named.
+     * A train STANDING on the watched point takes the station out of autonomy's choices (FR-001's other half):
+     * `Edge.isLockHeld` cannot do it, so the build emits the names below as well as the lock edges.
      */
     @Test
     public void testATrainStandingOnTheWatchedPointHoldsTheStationBack() throws Exception
@@ -614,10 +608,8 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * The reason names the watched square, rather than saying the station is busy (FR-017).  `firstClearOrWhyNot` reads
-     * `Layout.lastError`, a static, and while autonomy runs it substitutes a generic "blocked by a train or a route in
-     * progress", which covered this clause every time.  `blockingOccupantOf` is now one method called by the runtime
-     * check and by this explanation, so the two cannot drift.
+     * The reason names the watched square, rather than saying the station is busy (FR-017): `blockingOccupantOf` is one
+     * method called by the runtime check and by this explanation, so the two cannot drift.
      */
     @Test
     public void testTheReasonNamesTheWatchedSquareRatherThanSayingBusy() throws Exception
@@ -674,9 +666,7 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * A train STANDING on the watched point closes a square trains only pass, as well as a station (OB-295).  The
-     * standing half was asked only of a path's destination, which a square trains only pass never
-     * is.
+     * A train STANDING on the watched point closes a square trains only pass, as well as a station (OB-295).
      *
      * MUTATION: ask the standing half of the destination only, and this fails.
      */
@@ -730,10 +720,9 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * How long the run into BK B is measured, LONGER THAN THE TRAINS on purpose: since MT-262 `measuredRoomAtTheEndOf`
-     * reads it, and with a short approach five tests refused the path before the FR-001 rule was reached and the
-     * refusal tests passed without it.  The room rule is tested in `core.testATrainTooLongIsRefusedTheBerth` and
-     * `core.testAManualSendIsRefusedABerthTooShort`.
+     * How long the run into BK B is measured, LONGER THAN THE TRAINS on purpose (MT-262): with a short approach the
+     * room rule refused the path before the FR-001 rule was reached.  The room rule is tested in
+     * `core.testATrainTooLongIsRefusedTheBerth` and `core.testAManualSendIsRefusedABerthTooShort`.
      */
     private static final int APPROACH = 20;
 

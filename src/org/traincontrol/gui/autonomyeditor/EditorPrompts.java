@@ -11,11 +11,9 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 
 /**
- * The autonomy editor's questions about a square that the tile menus and the keys ask: a number, which
- * locomotives, a length, a link's name, and which squares hold a station back (FR-136).
- *
- * The panel keeps every one of these as a one-line call to the method of the same name here, and every field: this
- * reads and writes them through `editor`.  Each dialog is still parented on the editor's window.
+ * The autonomy editor's questions about a square that the tile menus and the keys ask: a number, which locomotives, a
+ * length, a link's name, and which squares hold a station back (FR-136).  The panel keeps every one of these as a
+ * one-line call to the method of the same name here, and every field: this reads and writes them through `editor`.
  */
 final class EditorPrompts
 {
@@ -368,11 +366,9 @@ final class EditorPrompts
 
     /**
      * Sets the length of the square under the pointer, from outside this panel (FR-066): Control+E, the key handler
-     * living in `LayoutEditor`; `applyLength` is package-private, for the editor's own helpers only, and this decides
-     * who may ask.  It asks `offersALength`, the menu's own question, and writes where the menu writes
-     * (`leaderOf(tile)`, the square that speaks for a run of plain track): a key acting on the hovered square would
-     * measure a run through both doors and count it twice, and one acting where the menu offers nothing is the shape of
-     * MT-313, so it says a sentence.
+     * living in `LayoutEditor`.  It asks `offersALength`, the menu's own question, and writes where the menu writes
+     * (`leaderOf(tile)`), so a key cannot measure a run through both doors and count it twice; where the menu offers
+     * nothing it says a sentence (MT-313).
      *
      * @param tile the square to measure, ignored when null
      */

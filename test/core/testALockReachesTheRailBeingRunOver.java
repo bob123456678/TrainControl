@@ -17,21 +17,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * A running path blocks the rail it runs over and the same rail the other way, and nothing beyond that (OB-269). Adam:
- * *"nothing should disturb the ability to go from bottominner to bottominnerotherside unless trains are crossing down,
- * or passing through either of those stations."*
- *
- * `Edge.setOccupied` marks every edge in each locked edge's `lockEdges` and `isPathClear` read the flag off every edge
- * in each CANDIDATE's `lockEdges`: each is deliberate (one list walked both ways makes a one-directional relation
- * refuse either ordering), but together they reached two hops, so a third edge sharing rail with each of two others
- * made those two conflict. The fix is a narrower question, not a narrower relation: `Edge.runOver` counts only the
- * edges a path actually runs over and `isRunOver` asks it, while `occupancy` and `isLockHeld` are untouched, so a held
- * throat's accessories stay protected (`getActiveAccs`).
- *
- * The reverse direction is refused on its own account, which is not optional: `GraphReducer.deriveLocks` does not pair
- * the two directions of one rail, so the second hop was refusing it by accident. The third claim below is that control.
- * Every train is taken off the railway first: a train parked on `BottomInnerOtherside` refuses the hop whatever the
- * locking does.
+ * A running path blocks the rail it runs over and the same rail the other way, and nothing beyond that (OB-269).
+ * `Edge.runOver` counts only the edges a path actually runs over and `isRunOver` asks it, while `occupancy` and
+ * `isLockHeld` are untouched.  The reverse direction is refused on its own account, which is not optional.  Every train
+ * is taken off the railway first: a train parked on `BottomInnerOtherside` refuses the hop whatever the locking does.
  *
  * MUTATIONS, each reddening exactly the claims it should: ask `isLockHeld` in the candidate scan again and the first
  * claim and Adam's own list fail (the three refusal controls stay green); drop the reverse-rail check and both refusal
@@ -331,17 +320,8 @@ public class testALockReachesTheRailBeingRunOver
     }
 
     /**
-     * Adam's own list of pairs that must be able to run at once (OB-269), given when he offered *"a list of allowed
-     * concurrent paths if it helps"*: while `BottomInner -> BottomInnerOtherside` (or the reverse) runs, any of
-     * `TopMainR1 -> BottomSecondary`, `TopMainR2 -> BottomSecondary`, `BottomSecondary -> BottomMainA`,
-     * `BottomSecondary -> BottomMainC`; and while `BottomMainA -> TopMainR1` runs, any of `TopMainR2 ->
-     * BottomSecondary`, `BottomInner -> BottomMainB`, `TopMainR2Pre -> TopMainR2`.
-     *
-     * This is an ORACLE, not a fixture chosen here: a narrowing right about one hop and wrong in general fails. Both
-     * his lists are marked *non exhaustive*, so nothing asserts that anything ELSE is refused; the refusal side is the
-     * three controls beside this claim. Every pair is checked and they are reported together, since how much of his
-     * list a change gets wrong is the useful number. A pair whose name this railway does not have is reported rather
-     * than skipped silently, so a renamed square reads as a question and not as a pass.
+     * Adam's own list of pairs that must be able to run at once (OB-269): an ORACLE, not a fixture chosen here.  A
+     * pair whose name this railway does not have is reported rather than skipped silently.
      */
     @Test
     public void testHisAllowedConcurrentPathsAreAllowed() throws Exception

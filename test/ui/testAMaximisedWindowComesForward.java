@@ -9,12 +9,9 @@ import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
- * A window remembered maximized is maximized once it is on screen, not before (OB-328; Adam, on MT-705:
- * "When a track diagram popup is maximized, it will not appear on top of the window (or any other windows) after the
- * button is clicked ... same for the editor.  Both work when the window is not previously maximized").
- *
- * The diagram's own windows and the editor are built anew at each click and take their remembered place, size and state
- * from the window base they share, `PositionAwareJFrame` - here one of its own, given a remembered maximized state.
+ * A window remembered maximized is maximized once it is on screen, not before (OB-328; MT-705).  The diagram's own
+ * windows and the editor take their remembered place, size and state from `PositionAwareJFrame` - here one of its own,
+ * given a remembered maximized state.
  */
 public class testAMaximisedWindowComesForward
 {

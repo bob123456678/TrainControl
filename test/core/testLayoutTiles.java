@@ -345,12 +345,8 @@ public class testLayoutTiles
     }
 
     /**
-     * And the second highlight is DRAWN (OB-333, OB-334).  A square changed again while its first highlight is up must
-     * keep the new yellow: the first highlight's end puts the plain picture back over it, and the square would show
-     * nothing for the whole hold.  Autonomy changes a square twice inside the hold, and at the Large size the picture
-     * is slow enough to arrive that it always would.
-     *
-     * The test above counts restores, which this left right; this one looks at the picture.
+     * And the second highlight is DRAWN (OB-333, OB-334): a square changed again while its first highlight is up must
+     * keep the new yellow.  The test above counts restores; this one looks at the picture.
      *
      * MUTATION: end the first highlight after laying the second's yellow again, and this fails.
      *
@@ -606,19 +602,10 @@ public class testLayoutTiles
     }
 
     /**
-     * The exit itself asks every open window, and a route editor holding unsaved typing can refuse it.
-     *
-     * `WindowClosed` must ask the route editor as well as the open layout editor (OB-070): otherwise File > Exit and
-     * the main window's X dispose it with the process and take whatever had been typed with them - silently, because
-     * that window's own discard question lives on its X and on Escape.
-     *
-     * **The decision, not the predicate under it**.  The handler ends in `System.exit`, so what is asked
-     * here is `everyOpenWindowMaySettle` - everything the exit does before it saves anything - with the discard
-     * dialog answered through the route editor's test hook.  Answering No must stop the exit; answering Yes must
-     * let it carry on.
-     *
-     * Here rather than in a class of its own because it needs exactly what this one already opens: the real main
-     * window, on a sandbox.
+     * The exit itself asks every open window, and a route editor holding unsaved typing can refuse it (OB-070).  What
+     * is asked is `everyOpenWindowMaySettle`, the decision rather than the predicate under it, with the discard dialog
+     * answered through the route editor's test hook.  Here rather than in a class of its own because it needs exactly
+     * what this one already opens: the real main window, on a sandbox.
      *
      * @throws Exception from the event thread
      */
@@ -677,10 +664,8 @@ public class testLayoutTiles
     }
 
     /**
-     * The exit brings a minimized route editor back before it asks about its unsaved typing (MT-703): the question is
-     * owned by the route editor, and a minimized window hides what it owns - so closing TrainControl with the route
-     * editor in the taskbar would ask where nobody could see it, and the exit would wait on it.  `toFront` does not
-     * restore a minimized window.
+     * The exit brings a minimized route editor back before it asks about its unsaved typing (MT-703): `toFront` does
+     * not restore a minimized window.
      *
      * MUTATION: ask without bringing the route editor back, and this fails.
      *

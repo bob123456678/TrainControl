@@ -13,9 +13,8 @@ import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
  * simple electric locomotive consisting of: a main rectangle, trapezoid that 1/3 it's height, 2 small closed
  * pantographs, and 4 1/5 height circular wheels in sets of two on each side, spaced evenly apart."
  *
- * Measured out of the pixels rather than read off the code: a drawing test that asserts the arithmetic the drawing used
- * proves only that the file has not changed.  Four wheels means four separate runs of ink across the wheel line, and
- * "in sets of two on each side" means the gap in the middle is the biggest of the three.
+ * Measured out of the pixels rather than read off the code: four wheels means four separate runs of ink across the
+ * wheel line, and "in sets of two on each side" means the gap in the middle is the biggest of the three.
  *
  * @author Adam
  */
@@ -277,9 +276,8 @@ public class testThePlaceholderLocomotive
     /**
      * It is a tenth lighter than solid, faded as a whole (FR-104).
      *
-     * Adam: "increase the opacity of the default locomotive icon by 10%, so it's slightly lighter."  Faded AS A WHOLE,
-     * so that where its own parts overlap nothing shows through them: fading each part as it was painted gave the
-     * see-through wheels of the first translucent version.
+     * Faded AS A WHOLE (Adam: "increase the opacity of the default locomotive icon by 10%, so it's slightly lighter."),
+     * so that where its own parts overlap nothing shows through them.
      *
      * MUTATION: leave it solid, or fade each part as it is painted, and this fails.
      */

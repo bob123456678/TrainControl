@@ -605,11 +605,9 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * The window repairs the setup on disk when it has no session to repair in memory.
-     *
-     * Testing the rule leaves the CALL as the only uncovered part, and that is where the defect usually is
-     * (`renamePage` had no caller for weeks, MT-135; OB-062 is the same shape): this asks the source whether the
-     * null-session path actually calls `repairLocomotiveOnDisk`.
+     * The window repairs the setup on disk when it has no session to repair in memory (MT-135): this asks the source
+     * whether the null-session path actually calls `repairLocomotiveOnDisk`, the CALL being where the defect usually
+     * is.
      */
     @Test
     public void testTheWindowRepairsTheSetupOnDiskWithNoSession() throws Exception
@@ -624,12 +622,9 @@ public class testLocomotiveIdentityPropagates
     }
 
     /**
-     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does.
-     *
-     * Both rename doors call `updateVisiblePoints()` and `repaintTimetable()`; the delete door called neither.
-     * `refreshUI()` is not the same: the station captions are written only by `updateVisiblePoints` (OB-081).  A source
+     * Deleting a locomotive rewrites the station labels and the timetable, as renaming one does (OB-081).  A source
      * rule, because the caption is drawn by a window and the door calling the method that draws it is the property
-     * worth pinning (MT-149's fix went to the guard inside `repaintTimetable` and never to the doors).
+     * worth pinning.
      *
      * MUTATION, stated exactly: removing `updateVisiblePoints()` from the delete door fails the first assertion, and
      * removing `repaintTimetable()` fails the second.

@@ -704,8 +704,8 @@ public class testLayoutTimetable
 
     /**
      * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or
-     * nothing (OB-260).  A confirmation can stay open as long as the operator likes while capture appends to the list,
-     * so the delete is asked of the entry, not of the row number, and taken under the lock.
+     * nothing (OB-260): a confirmation can stay open while capture appends to the list, so the delete is asked of the
+     * entry, not of the row number.
      *
      * MUTATION: remove by the row number alone, or without the lock, and this fails.
      *

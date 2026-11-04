@@ -5,12 +5,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * A pre-release build says which build it is.
- *
- * Adam: "add a flag after RAW_VERSION that says IS_PRE_RELEASE True/False.  If true, put the build ID in the log at
- * startup and main UI title."  Every release candidate calls itself 3.0.0, so a tester reporting a result against one
- * cannot say which, and an MT-273 result carried a provenance line naming a commit three days older than the code
- * actually run.
+ * A pre-release build says which build it is (MT-273).  Adam: "add a flag after RAW_VERSION that says IS_PRE_RELEASE
+ * True/False.  If true, put the build ID in the log at startup and main UI title."
  *
  * @author Adam
  */

@@ -789,11 +789,22 @@ public class AutonomyEditorPanel extends JPanel
             button.setPreferredSize(new Dimension(width, button.getPreferredSize().height));
         }
 
-        setPreferredSize(new Dimension(width, 640));
-        setMinimumSize(new Dimension(width, 240));
         setMaximumSize(new Dimension(width, Integer.MAX_VALUE));
 
         revalidate();
+    }
+
+    /** The column's width, and the height its tools need: no more is asked of the window (OB-399). */
+    @Override
+    public Dimension getPreferredSize()
+    {
+        return new Dimension(width, super.getPreferredSize().height);
+    }
+
+    @Override
+    public Dimension getMinimumSize()
+    {
+        return new Dimension(width, super.getPreferredSize().height);
     }
 
     /**
@@ -1987,9 +1998,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Moves a station label (FR-035): the caption command run twice, so no stored position needs carrying (Adam: *"it
-     * is equivalent to just adding the label at the destination when the mouse is released, since the command is
-     * wired."*).  Every refusal is spoken.
+     * Moves a station label (FR-035): the caption command run twice, so no stored position needs carrying.  Every
+     * refusal is spoken.
      * @param from the square the label is on now
      * @param to the square it was dropped on
      * @param onTarget what is drawn on that square
@@ -3537,9 +3547,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Control+E: the length of the square under the pointer (FR-066; Adam: *"a keyboard shortcut for setting a square's
-     * length"*), asked by `offersALength` and written where the menu writes, the run's leader, or a run would be
-     * counted twice.  Where the menu offers nothing it says so (MT-313).
+     * Control+E: the length of the square under the pointer (FR-066), asked by `offersALength` and written where the
+     * menu writes, the run's leader, or a run would be counted twice.  Where the menu offers nothing it says so
+     * (MT-313).
      * @param tile the square to measure, ignored when null
      */
     public void promptLengthFor(TileKey tile)
@@ -4403,9 +4413,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether an ordinary click here changes a direction, as the pointer and tooltip offer (FR-112; Adam: *"it is not
-     * clear to the user that tiles with arrows can be clicked"*): `tileClicked` and `cycle`'s questions in their order
-     * (`regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree`).
+     * Whether an ordinary click here changes a direction, as the pointer and tooltip offer (FR-112): `tileClicked` and
+     * `cycle`'s questions in their order (`regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree`).
      * @param tile a square, or null
      * @return true where a click there changes a direction
      */
@@ -4798,15 +4807,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Says why the train on this square is not going anywhere, and draws where it could go.
      *
-     * Every station the train might be sent to and why each was refused, against the layout as last loaded (the hint
-     * says unsaved edits are not in it).
-     *
-     * Not on the event thread (Adam: *"I would rather take it off EDT.  It's not critical now, but we want to avoid
-     * these pitfalls."*; OB-192): `Layout.explainDestinations` takes the Layout's monitor.  The station index and the
-     * layout, which can derive or build, are captured here on the event thread and handed to the worker.
-     *
-     * @param tile the square that was clicked
-     * @param component what is drawn on it
+     * Every station the train might be sent to and why each was refused, against the layout as last loaded.  Not on the
+     * event thread (OB-192): `Layout.explainDestinations` takes the Layout's monitor, so the station index and the
+     * layout are captured on the event thread and handed to the worker.
      */
     private void applyWhy(TileKey tile, LayoutDiagramComponent component)
     {
@@ -5301,8 +5304,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether the diagram is pointing at signals, while the protecting-signals window is up or its click awaited
-     * (OB-040: *"while the window is open, de-clutter the diagram as much as possible so users can clearly see the
-     * signals.  turn off arrows, labels, etc."*).
+     * (OB-040), so everything that is not a signal gets out of the way.
      * @return whether everything that is not a signal should get out of the way
      */
     public boolean isFocusedOnSignals()
@@ -6450,9 +6452,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * What the bulk clear says before it takes every locomotive off, naming them (OB-194).  Adam, on MT-311: **"bug:
-     * clearning locomotives in the autonomy editor cannot be undone by a cancel.  Make this clear in the popup."**  In
-     * the editor Cancel puts them back (OB-223); on the track diagram's menu they are saved at once
+     * What the bulk clear says before it takes every locomotive off, naming them (OB-194).  In the editor Cancel puts
+     * them back (OB-223); on the track diagram's menu they are saved at once
      * (`regression.testTheBulkClearSaysWhatCancelDoes`).
      * @return the warning, already translated
      */
@@ -6627,6 +6628,37 @@ public class AutonomyEditorPanel extends JPanel
     public JScrollPane getFindingsPanel()
     {
         return findingsPanel;
+    }
+
+    /** @return the height of a findings row: the taller of a notice and a heading, the same for every row */
+    public int getFindingRowHeight()
+    {
+        java.awt.Component probe = findings.getCellRenderer()
+            .getListCellRendererComponent(findings, "Ag", Integer.MAX_VALUE, false, false);
+
+        int notice = probe.getPreferredSize().height;
+
+        probe.setFont(AutonomyViewerPanel.FONT_GROUP);
+
+        return Math.max(notice, probe.getPreferredSize().height);
+    }
+
+    /**
+     * Shows that many findings at a time, the list scrolling past them (OB-399).
+     * @param rows how many rows the list is tall
+     */
+    public void setFindingRows(int rows)
+    {
+        findings.setFixedCellHeight(getFindingRowHeight());
+        findings.setVisibleRowCount(rows);
+
+        java.awt.Insets frame = findingsPanel.getInsets();
+
+        findingsPanel.setPreferredSize(new Dimension(100, frame.top + frame.bottom
+            + findings.getPreferredScrollableViewportSize().height
+            + findingsPanel.getHorizontalScrollBar().getPreferredSize().height));
+
+        findingsPanel.revalidate();
     }
 
     /** @param locomotiveNames supplies the roster, for exclusion and home lists */

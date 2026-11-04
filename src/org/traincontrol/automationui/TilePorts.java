@@ -303,10 +303,7 @@ public class TilePorts
 
     /**
      * The road of a sensor square its contact is on, at this orientation: its only road on a straight or a curve, and
-     * on a double curve the E-S curve as drawn, turned with the square (MT-712; Adam: *"the station gets rendered on
-     * the track without the sensor rather than the one with the sensor"*).  That is the second of `ports` at every
-     * orientation, and where a station's badge is drawn.  Which track is wired to the contact on the other curve is not
-     * in the diagram, and the reduction makes one Point of the square.
+     * on a double curve the E-S curve as drawn, turned with the square (MT-712).  Where a station's badge is drawn.
      *
      * @return the road, or null for a square with none
      */
@@ -375,10 +372,8 @@ public class TilePorts
     }
 
     /**
-     * True if a square of this type is never given a length and no length rule reads one (OB-273).  Adam: *"a route
-     * tile should not need or accept a length.  it just implicitly connects things as if it were a crossing."*  So it
-     * is in no piece of Mass Assign Lengths, takes no share of one, and is never reported as unmeasured.  **The one
-     * list of such types**, asked once here because two lists that must agree drift apart (OB-233).
+     * True if a square of this type is never given a length and no length rule reads one (OB-273).  **The one list of
+     * such types**, asked once here because two lists that must agree drift apart (OB-233).
      */
     public static boolean takesNoLength(componentType type)
     {

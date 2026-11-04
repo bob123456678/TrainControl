@@ -9,9 +9,8 @@ import org.traincontrol.model.ViewListener;
 /**
  * Renaming, duplicating and blanking a layout page, as one operation that can be run without a window.
  *
- * This owns the sequence (what happens once the answer is yes); the window still owns the refusals and dialogs.  Every
- * rename defect (MT-135, OB-049, OB-092) lived in the ORDER of the steps or in a step not called, so a test must run
- * this same function rather than supply its own order.
+ * This owns the sequence (what happens once the answer is yes); the window still owns the refusals and dialogs.  A test
+ * must run this same function rather than supply its own order (MT-135).
  */
 public class LayoutPageEdit
 {
@@ -108,8 +107,8 @@ public class LayoutPageEdit
     }
 
     /**
-     * The same, told which absent pages the operator has said are coming back (FR-018).  An overload because the answer
-     * can only come from a person; callers without one keep the old behavior, an absent page's id retired.
+     * The same, told which absent pages the operator has said are coming back (FR-018); callers without one retire an
+     * absent page's id.
      *
      * @param keepAbsent names to keep in the index though they are not in the list; null for the behavior above
      */

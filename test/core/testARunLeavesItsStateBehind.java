@@ -26,14 +26,12 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * What a run leaves behind (FR-136 Phase 6; Adam: "Don't limit this to UI interactions, it can also be state outcomes"):
- * where the train stands and the side it came in by, the track it holds, the switch, the statistics, and the setup saved and
- * read back.
+ * What a run leaves behind (FR-136 Phase 6; Adam: "Don't limit this to UI interactions, it can also be state
+ * outcomes"): where the train stands and the side it came in by, the track it holds, the switch, the statistics, and
+ * the setup saved and read back.
  *
- * On the `single-switch` scenario, simulated.  One train sets off from WestEnd under autonomy and makes three journeys or
- * more; Graceful Stop then lets it finish, and `support.Settle` waits until the railway says it is idle.  A second run
- * sends it home to BranchPlatform with Return Home, over the switch.  Each run is made once, in `setUpClass`, and what it
- * left is read by the claims.
+ * On the `single-switch` scenario, simulated.  Each run is made once, in `setUpClass`, and what it left is read by the
+ * claims.
  *
  * @author Adam
  */

@@ -18,26 +18,15 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * Two windows, and no Control key doing two things in either of them.
+ * Two windows, and no Control key doing two things in either of them (FR-066: Control+D was taken twice over, so the
+ * answer to "which key" was a list measured off both key handlers; Adam chose **E**).
  *
- * FR-066 asked for Control+D, which is taken twice over (the layout editor toggles addresses with it, the main window
- * opens the locomotive adder), so the answer to "which key" was a list measured off both key handlers by reading them;
- * Adam chose **E**.  This class does that reading on every run.  A collision is invisible: both are `else if` chains on
- * one keycode, so the second branch is never reached, and the shortcut that stops working is the one added last.
+ * A source-shape guard that knows only the spellings the two files use, so `testItFoundTheHandlersItThinksItIsReading`
+ * asserts a floor on how many it found: a regex that silently stopped matching would otherwise report a clean bill of
+ * health.  It does NOT require the two windows to agree, only that neither has two answers to one key.
  *
- * **What this is, and what it is not.**  It is a source-shape guard and knows only the spellings the two files use
- * (`evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, `e.` in the editor, `controlPressed && keyCode ==
- * KeyEvent.VK_X` in the main window), so `testItFoundTheHandlersItThinksItIsReading` asserts a floor on how many it
- * found: a regex that silently stopped matching would otherwise report a clean bill of health.
- *
- * It does NOT require the two windows to agree (Control+S means Rename in one and Swap in the other); only that neither
- * window has two answers to one key.
- *
- * **THE MAIN WINDOW HAD NO FREE LETTERS AT ALL UNTIL OB-197.**  Its chain ended `else if
- * (this.buttonMapping.containsKey(keyCode))` with no `!controlPressed`, so Control plus any letter not caught above
- * selected a locomotive button.  Adam: "it should stop doing that.  that was not intended."
- * `testTheFallThroughStillFiltersControl` keeps it filtering, because everything this class prints about free keys
- * rests on it.
+ * The main window's chain must keep filtering Control (OB-197, `testTheFallThroughStillFiltersControl`), because
+ * everything this class prints about free keys rests on it.
  *
  * @author Adam
  */

@@ -192,16 +192,10 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
-     * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round.
-     *
-     * A fresh upgrade: the frozen railway with the diagram's directions and the barred arrivals taken out, as a 2.8.1
-     * user meets the diagram (plain track both ways, a switch out of its toe only).  TopMainR1's one legacy edge leads
-     * north and 2.8.1 drove the 2-8-4 standing there no other way, but the square is arrived at from both sides by
-     * default, so the first copy faces south and the import stood the train facing south.
-     *
-     * Where the diagram cannot hold the file's facing, no impossible facing is saved (OB-270) and the import names the
-     * square; `testTheOperatorsOwnDirectionIsKept` claims that branch.  Tunnel is not split on a fresh upgrade, so it
-     * has no facing to give.
+     * A 2.8.1 file's edges say which way each train it places runs, and the import stands it that way round, on a fresh
+     * upgrade (the frozen railway with the diagram's directions and the barred arrivals taken out).  Where the diagram
+     * cannot hold the file's facing, no impossible facing is saved (OB-270) and the import names the square;
+     * `testTheOperatorsOwnDirectionIsKept` claims that branch.
      *
      * MUTATION: ignore the file's edges and guess, and this fails.
      */
@@ -343,13 +337,8 @@ public class testAnImportedFacingGuessCanStart
 
     /**
      * Onto a diagram whose directions have been set, nothing is carried: it is counted, and the diagram is left as it
-     * is.
-     *
-     * A direction left at its default is stored as nothing, so filling the gaps cannot tell track the operator left
-     * running both ways on purpose from track nobody has looked at.  On Adam's railway the gap-fill made 176 pieces of
-     * track one-way (170 of them plain track he runs both ways) in `setup.json`, which every configuration shares, so
-     * an import into a new configuration (MT-491) would have changed the railway under all of them.  The upgrade Adam
-     * ruled on is a fresh diagram, which has none set.
+     * is.  A direction left at its default is stored as nothing, so filling the gaps cannot tell track the operator
+     * left running both ways on purpose from track nobody has looked at (MT-491).
      *
      * MUTATION: carry onto a diagram whose directions have been set, and this fails.
      */
@@ -385,16 +374,11 @@ public class testAnImportedFacingGuessCanStart
 
     /**
      * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
-     * import says so (Adam: "to the extent possible"; OB-270).
-     *
-     * Every piece of track the old file's edges run one way is set the other way round beforehand, by an operator who
-     * drew the railway backwards.  Every one stays so; TopMainR1Inter, which the file entered from the north and left
-     * east, is now entered from the east only and cannot hold the east the file ran its train, and the import names it.
-     *
-     * Beside it, a baseline: the same file imported onto a diagram tuned by one direction on a square no old edge
-     * crosses.  The log's count of "pieces the file ran one way that this diagram does not" leaves out the operator's
-     * own roads, so the backwards railway's count falls short of the baseline's by exactly those; nothing is written
-     * either way, so this count is the only place the operator's-own rule shows.
+     * import says so (Adam: "to the extent possible"; OB-270).  Every piece of track the old file's edges run one way
+     * is set the other way round beforehand; TopMainR1Inter then cannot hold the east the file ran its train, and the
+     * import names it.  A baseline, the same file onto a diagram tuned by one direction no old edge crosses, shows the
+     * log's count leaving out the operator's own roads: nothing is written either way, so that count is the only place
+     * the operator's-own rule shows.
      *
      * MUTATION: overwrite a direction the operator set, and this fails; so does dropping the operator's-own `continue`
      * in `SessionImport.carryTheOldDirections`.

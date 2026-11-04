@@ -1486,15 +1486,10 @@ public class testAutoLayout
     }
 
     /**
-     * Switching a protecting signal by hand asks only in the direction that removes protection (MT-256).
-     *
-     * The question needs no running railway, standing train or fighting route: `clearsProtection` is the one rule all
-     * three doors consult (the diagram tile, the switch keyboard and the route), and the caller supplies the direction.
-     * The aspect is half the rule: turning protection ON is what the protection mechanism would do anyway, and refusing
-     * it was over-strictness the route door had already had removed.  So green with a train standing there is asked;
-     * red there never; either way with the platform empty never.  Those are steps 2, 3 and 4 of the manual test; step 5
-     * (a route setting the same signal green is still refused) is `heldReason`, covered by
-     * `testARouteDoesNotThrowSwitchesUnderATrain`.
+     * Switching a protecting signal by hand asks only in the direction that removes protection (MT-256): green with a
+     * train standing there is asked; red there never; either way with the platform empty never.  `clearsProtection` is
+     * the one rule all three doors consult (the diagram tile, the switch keyboard and the route), and the caller
+     * supplies the direction.
      *
      * MUTATION: drop `commandingGreen` from `clearsProtection` and the second assertion fails; drop the occupancy half
      * and the third does.
@@ -2425,13 +2420,10 @@ public class testAutoLayout
     }
 
     /**
-     * The diagram menu's split: what autonomy would choose, and what it never would (FR-058).
-     *
-     * The top-level menu shows only the active stations that can be chosen in full autonomy; More Destinations lists
-     * the points that cannot be but are still valid.  The cap matters: the top level shows twelve and then an ellipsis,
-     * so a parking track autonomy never picks would cost a line an ordinary platform wants.  The menu needs a window,
-     * so the predicate it splits on, `isChoosableByAutonomy` (which the "no available paths" window and the caption
-     * rule ask too), is asserted.
+     * The diagram menu's split: what autonomy would choose, and what it never would (FR-058).  The top-level menu shows
+     * only the active stations that can be chosen in full autonomy; More Destinations lists the points that cannot be
+     * but are still valid.  The menu needs a window, so the predicate it splits on, `isChoosableByAutonomy`, is
+     * asserted.
      *
      * MUTATION: making `isChoosableByAutonomy` ignore `isAutoDestination` puts the parking track in the top-level list
      * and fails this.
@@ -2475,15 +2467,9 @@ public class testAutoLayout
     }
 
     /**
-     * A BERTH stays in the base list, and an excluded square leaves the menu (Adam).
-     *
-     * Two rulings on one gesture: *"We should still show the same number of base options (unless unselectable)"* and
-     * *"if it excludes the loc, don't even include it in the list."*  The menu asks `isOfferableToOperator` and not
-     * `isChoosableByAutonomy(end, locomotive)`, which would move a terminus out of the base list.
-     *
-     * The terminus rule is about a berth (OB-205, MT-367): *"75 407 DB can go from Tunnel to BottomMainC manually, even
-     * though it is not reversible and THIS IS NOT A PARKING BERTH (excluded from autonomy). it should not be allowed to
-     * be chosen."*  So a berth is offered to a train that cannot reverse, and an ORDINARY terminus is not.
+     * A BERTH stays in the base list, and an excluded square leaves the menu (Adam).  The menu asks
+     * `isOfferableToOperator` and not `isChoosableByAutonomy(end, locomotive)`, which would move a terminus out of the
+     * base list.  A berth is offered to a train that cannot reverse, and an ORDINARY terminus is not (OB-205).
      *
      * MUTATION: dropping `isAutoDestination()` from `isOfferableToOperator`'s terminus clause fails the first
      * assertion; dropping the clause entirely fails the second; dropping the exclusion clause fails the third; dropping

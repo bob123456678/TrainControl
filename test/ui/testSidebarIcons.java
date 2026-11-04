@@ -9,20 +9,14 @@ import org.traincontrol.gui.TrainControlUI;
 import support.SourceOf;
 
 /**
- * The sidebar icons are one flat color, and that color is the theme's.
+ * The sidebar icons are one flat color, and that color is the theme's (FR-029).
  *
- * FR-029. Adam: "the sidebar icons (locomotive, track, autonomy, signal, route, stats, log), while nice, date the
- * application.  use modernized, simple icons with a plain blue color matching the flatlaf theme."  Then: "Try using
- * dark gray like 333 for the icons, rather than the blue."  So the color asserted here is #333333, and the flat-color
- * rule is what it always was.
- *
+ * Adam: "Try using dark gray like 333 for the icons, rather than the blue."  So the color asserted here is #333333.
  * Safe on this application because there is exactly one look and feel (`FlatLightLaf.setup()`, no dark variant); if a
  * dark theme is ever added this has to be revisited.
  *
- * These are assets, not code, which is why they are worth a test: nothing compiles them or refers to them by anything
- * but a string, and a file that goes missing or comes back as a photograph fails silently at the top left of the
- * window.  Asserted: the file is there, it is one color, and it is the color the rest of the window is painted in.  The
- * size is deliberately NOT asserted: `getTabIcon` scales whatever it finds to 30 pixels tall.
+ * Asserted: the file is there, it is one color, and it is the color the rest of the window is painted in.  The size is
+ * deliberately NOT asserted: `getTabIcon` scales whatever it finds to 30 pixels tall.
  *
  * @author Adam
  */

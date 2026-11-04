@@ -529,11 +529,8 @@ public class MarklinRoute extends Route
     /**
      * Adam's ruling, as a function of who is there and what they said (MT-247): "1. cancel should cancel everything.
      * OK should fire everything.  2. if the route is auto triggered: popup, just a notification in the log.  don't run
-     * the conflicting switch commands, but do run the power off and others."
-     *
-     * A person who said no cancels the whole route; with nobody there (the s88 door) only THIS accessory is left alone
-     * and everything else still runs, so a route that cuts the power still does.  Named so the ruling can be run
-     * without a View.
+     * the conflicting switch commands, but do run the power off and others."  Named so the ruling can be run without a
+     * View.
      *
      * @param askable whether there is somebody to ask - a person's door, with a window attached
      * @param saidYes what they answered, meaningless when askable is false
@@ -584,18 +581,11 @@ public class MarklinRoute extends Route
                 // route silently returned false for the rest of the session.
                 try
                 {
-                    // Not onto track a train is running over: route execution and autonomy path locking never consulted
-                    // each other, so a route set back an accessory that a locked path had just configured.  Refused
-                    // rather than confirmed at the door with nobody at it (an s88 trigger); the two doors with a person
-                    // at them ask first.
-                    //
-                    // One command at a time (MT-247): being on track a train is using is a property of the accessory,
-                    // so a switch on clear track is thrown whatever a different switch is doing, and the stop,
-                    // functions, lights, speeds and chained routes all run.
-                    //
-                    // Unless somebody has said to go ahead: a turnout that did not take the command is exactly when it
-                    // needs setting, and exactly when it is on a locked path.  A local, as the parameter cannot be
-                    // assigned inside the thread; the mid-route question below moves this one.
+                    // Not onto track a train is running over (MT-247): refused rather than confirmed where nobody is at
+                    // the door (an s88 trigger); the two doors with a person at them ask first.  One command at a time:
+                    // a switch on clear track is thrown whatever a different switch is doing, and the stop, functions,
+                    // lights, speeds and chained routes all run.  Unless somebody has said to go ahead.  A local, as
+                    // the parameter cannot be assigned inside the thread; the mid-route question below moves this one.
                     boolean override = overrideConflicts;
 
                     // Nothing is decided for the whole route here (MT-247): the per-command check below is the right

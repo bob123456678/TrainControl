@@ -410,12 +410,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
     /**
      * For every train on the page and both tiers, Why not Moving?'s colors and lines agree with the routes the track
      * diagram's own menu offers (`Layout.getPossiblePaths`), worked out here without the answer's reasons (OB-394).
-     *
-     * A square is green where a route its tier accepts reaches one of its copies (on Auto, one autonomy may choose
-     * that does not turn on the way); on Auto, gray where autonomy could choose a copy, else purple where a person
-     * could send the train to one; gray otherwise.  Every green and purple square has a line ending at it, a green
-     * one's not drawn as a hand send, its route's stations all carry the line, and no square draws one stretch of track
-     * twice.  Under a ranked Routing Logic the route is autonomy's pick, the cheapest.
+     * Every green and purple square has a line ending at it, and no square draws one stretch of track twice.  Under a
+     * ranked Routing Logic the route is autonomy's pick, the cheapest.
      *
      * MUTATION: mark a never-chosen station purple without asking whether it could be sent there by hand in
      * `EditorWhy.composeWhy`, draw no purple routes there, stop a route one edge short in `EditorWhy.drawRoute`, add

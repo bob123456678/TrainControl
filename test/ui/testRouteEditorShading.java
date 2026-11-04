@@ -11,13 +11,9 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * OB-121: the lines of the conditions list that are not conditions, the group captions, are white, not gray.
- *
- * Reading the code said this could not happen: `greyWhatCannotBeEdited` exempts such a line.  What the reading missed
- * is that a table cell renderer hands back ONE recycled component for every cell, so the cell drawn before the caption
- * line paints that shared label gray, and the exemption handed the same label back for each of its cells.  So the
- * order below is the test: ask for a grayed cell FIRST and the caption line's cells after it, as the table paints
- * them; the other way round passes with the defect present.
+ * OB-121: the lines of the conditions list that are not conditions, the group captions, are white, not gray.  A table
+ * cell renderer hands back ONE recycled component for every cell, so the order is the test: ask for a grayed cell FIRST
+ * and the caption line's cells after it, as the table paints them; the other way round passes with the defect present.
  *
  * @author Adam
  */

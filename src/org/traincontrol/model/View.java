@@ -97,26 +97,16 @@ public interface View
     public void routeFinished(Route r);
 
     /**
-     * Asks whether to carry on with a route that has hit a conflict PART WAY THROUGH.  The model hands the question to
-     * whoever is at the door, as emergencyStopTriggered hands over the fact that a route cut the power.
+     * Asks whether to carry on with a route that has hit a conflict PART WAY THROUGH.  Only asked when a person started
+     * the route; the s88 trigger door has nobody to ask, so it sets none of its accessories and runs the rest.
      *
-     * Only asked when a person started the route (the routes tab or the diagram's route tile).  The s88 trigger door
-     * has nobody to ask, so it sets none of its accessories and runs the rest.
-     *
-     * THIS BLOCKS THE ROUTE, not merely its accessories: it is called on the route's own thread, and everything after
-     * the conflicting accessory (speeds, functions off, chained routes) waits for the answer, because running a route's
-     * speeds while its turnouts are not set is worse than making the operator answer first.
-     *
-     * A route carrying an emergency stop never gets here: `MarklinRoute` tests `hasEmergencyStop()` before asking
-     * (MT-247), as "emergency stop should never conflict or prompt".  Both doors carve it out.
+     * THIS BLOCKS THE ROUTE, not merely its accessories: it is called on the route's own thread.  A route carrying an
+     * emergency stop never gets here (MT-247).
      *
      * @param r the route part way through executing
      * @param accessory the accessory autonomy has taken since the route started
-     * @param reason the message key the route would have logged for this refusal, so the question names the right
-     *  one: a turnout on a locked path, or a signal protecting a platform with a train parked at it
-     * @return true to set this accessory and run the rest of the route; false to CANCEL THE ROUTE: "cancel should
-     *  cancel everything.  OK should fire everything."  What has already gone out before the conflicting command has
-     *  gone out; the cancel is about the rest
+     * @param reason the message key the route would have logged for this refusal, so the question names the right one
+     * @return true to set this accessory and run the rest of the route; false to CANCEL THE ROUTE
      */
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason);
 

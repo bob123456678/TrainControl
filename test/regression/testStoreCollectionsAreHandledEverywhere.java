@@ -13,24 +13,16 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import support.SourceOf;
 
 /**
- * Every collection the store keeps is in the registry, and the registry is what the sites walk.
+ * Every collection the store keeps is in the registry, and the registry is what the sites walk (OB-025).
  *
- * OB-025. `AutonomyCompanionStore` keeps eleven collections and repeats the same per-collection shape at fourteen sites
- * (saving, loading, clearing, renaming a page, moving and forgetting squares, snapshotting and restoring a page,
- * reconciling against the diagram, applying to another store).  Adding one collection used to mean finding all
- * fourteen, and the omissions were each found afterwards as a bug (a rename turned every switched-off link back on;
- * `clear()` missed `stationSignals`; `captions` missing from `KNOWN_SHARED` reverted every caption edit).
+ * The sites walk `kept()`, so adding a collection is one entry, and what is left to check is smaller:
  *
- * The sites now walk `kept()`, so adding a collection is one entry, and what is left to check is smaller:
- *
- *   - Nothing the store holds is unclassified: a collection nobody classified is how the eleventh took five commits.
+ *   - Nothing the store holds is unclassified.
  *   - Every kept collection is IN the registry.  The compiler cannot check this: a collection that is never registered
  *     builds perfectly and does nothing.
- *   - Every site that lists them walks the registry, which guards against a collection being re-inlined at one
- * site.
+ *   - Every site that lists them walks the registry, which guards against a collection being re-inlined at one site.
  *   - `reconcile` and `applyTo` still name every collection, because those two are written by hand on purpose: each
- * asks a
- *     question the registry cannot express.
+ *     asks a question the registry cannot express.
  *
  * The exemptions below are the comment "this is deliberate" for a decision, in a place that fails if it stops being
  * true.

@@ -304,9 +304,7 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
 
     /**
-     * The build's own arrival sides for this square, where there is a setup to ask: the geometric answer names where
-     * the neighboring Point lies and a reduced edge may turn corners, while the builder splits the square on the side
-     * the track actually comes in by (OB-182).
+     * The build's own arrival sides for this square, where there is a setup to ask (OB-182).
      *
      * @return the sides, or null when there is no setup - `choicesFor` then falls back to the geometry
      */

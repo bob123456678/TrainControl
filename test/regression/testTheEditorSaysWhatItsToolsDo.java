@@ -65,10 +65,8 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * The exit and entry guard items on a station's menu say what the two guards do (OB-293).
-     *
-     * Each its OWN guard's text: the two items read alike, and a tooltip on the wrong one says the exit guard does
-     * what the entry guard does.
+     * The exit and entry guard items on a station's menu say what the two guards do (OB-293), each its OWN guard's
+     * text.
      *
      * MUTATION: leave either tooltip out, or give the two items each other's.
      */
@@ -281,9 +279,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * On the frozen railway, a station's exit guard chosen as its entry guard is refused, with the sentence saying the
-     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504).  Both
-     * guards are given as the steps give them (menu item, window, Click It on the Diagram, a click on the signal), the
-     * exit guard first, because the frozen railway has none.
+     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504).
      * `core.testASignalGuardsItsStationAndTheNoticeNamesIt.testAStationsEntryGuardIsNeverItsExitGuard` holds the
      * store's own refusal below this.
      *
@@ -949,11 +945,8 @@ public class testTheEditorSaysWhatItsToolsDo
 
     /**
      * Every tooltip on the autonomy right-click menus is short, in every language, and one too wide for a line is
-     * wrapped (FR-112).
-     *
-     * Asked of the built menus over the frozen railway, every square of every page, from both doors (the editor's own
-     * menu and the track diagram's), with the menus a standing train adds.  A hundred characters in English and a
-     * hundred and thirty in the others, which run longer for the same sentence.
+     * wrapped (FR-112).  Asked of the built menus over the frozen railway, from both doors, with the menus a standing
+     * train adds.
      *
      * MUTATION: put a long sentence back in any of these tooltips, or a bulk tool's whole confirmation.
      */
@@ -1088,13 +1081,9 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * The pointer's rule and the click agree about every kind of square (FR-112).
-     *
-     * `clickChangesDirections` is the diagram's second copy of the questions `tileClicked` and `cycle` ask, and two
-     * copies part company when a condition is added to one.  Every kind of square is clicked on a fresh setup (a page
-     * left out of autonomy and a blank square among them), and what the click did is set beside what the rule said.
-     * With the Test tool armed the rule says no everywhere.  Both answers have to occur, or the agreement is between
-     * two constants.
+     * The pointer's rule and the click agree about every kind of square (FR-112): `clickChangesDirections` is the
+     * diagram's second copy of the questions `tileClicked` and `cycle` ask.  Both answers have to occur, or the
+     * agreement is between two constants.
      *
      * MUTATION: drop the link, the ignored or the armed question from the rule.
      */

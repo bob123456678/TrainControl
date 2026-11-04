@@ -25,22 +25,16 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * from.
  *
  * **The copy IS the direction.**  The runtime never commands an absolute direction, it only reverses at a turning
- * square, so a train stood on a copy facing the other way from the way it really points is dispatched along a route
- * locked one way while its decoder drives it the other, over track nothing reserved.  Where no copy trains may arrive
- * at faces the recorded way, the train stands on one that faces it anyway: autonomy will not start it there, and says
- * so - that it faces the way trains may not arrive at that square, and what to do: turn it round, or open that side.
+ * square, so a train stood on a copy facing the other way from the way it really points would be dispatched along a
+ * route locked one way while its decoder drives it the other.  Where no copy trains may arrive at faces the recorded
+ * way, the train stands on one that faces it anyway: autonomy will not start it there, and says so.
  *
  * Among the copies facing the recorded way, one trains may arrive at is chosen first, and the train is never turned
- * round to get it (OB-270: an impossible facing is not allowed to be saved).  A facing only a barred copy holds can
- * still reach the setup (the editor's Place door, the Place Locomotive dialog, an older setup), and the build, the
- * Facing door and the idle drain after a turn must prefer a copy trains may arrive at.
+ * round to get it (OB-270).
  *
- * **On the frozen railway, as he has it**: BottomMainA with arrivals from the east barred, so its westbound copy is no
- * station; BottomMainPost, which trains may turn at and which has arrivals from the north barred.
- *
- * MUTATION: have `placementCopy` or `moveOntoFacingCopy` take the first copy facing that way again, and its claim fails;
- * let either fall back to a copy trains may arrive at before one facing the recorded way, and the facing claims fail;
- * return copy zero with no facing recorded, and the no-facing claim fails.
+ * MUTATION: have `placementCopy` or `moveOntoFacingCopy` take the first copy facing that way again, and its claim
+ * fails; let either fall back to a copy trains may arrive at before one facing the recorded way, and the facing claims
+ * fail; return copy zero with no facing recorded, and the no-facing claim fails.
  *
  * @author Adam
  */
@@ -81,12 +75,8 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
-     * The diagram's right-click **Place** keeps the train's heading as the other three placement doors do: over every
-     * copy it could leave by, one trains may not arrive at included, onto the copy the paste would take - the plain one
-     * before its turning twin - and the same copy every time (OB-296).
-     *
-     * On the frozen railway BottomMainA takes no arrivals from the east, so its copy facing west is no station.  The
-     * paste, the dialog and the editor's Place stand a train facing west there on that copy (OB-284).
+     * The diagram's right-click **Place** keeps the train's heading as the other three placement doors do, onto the
+     * copy the paste would take, and the same copy every time (OB-296, OB-284).
      *
      * MUTATION: choose among the station copies only, take the first copy facing the way rather than the paste's,
      * ignore the heading at the door, or move with the form of `moveLocomotive` that refuses a barred copy - and this
@@ -702,11 +692,8 @@ public class testATrainIsPutOnlyWhereItCanStart
 
     /**
      * At a square every train must turn round at, a train facing the barred way is told to drive it off by hand or turn
-     * it round - not to open the side.
-     *
-     * A terminus reached from two sides is an error (MT-361), whose own remedy is to close one of them - so "open that
-     * side" there sends the operator from one refusal into a loop.  BottomMainA made a compulsory turn, its east side
-     * still barred: the train turned to face east stands on the barred turning copy.
+     * it round - not to open the side, which a terminus reached from two sides (MT-361) would answer with another
+     * refusal.
      *
      * MUTATION: offer the three remedies whatever the square, and this fails.
      */
@@ -746,14 +733,8 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
-     * A placement keeps a heading a train can leave by, and turns only one it cannot (OB-284).
-     *
-     * Barred departure directions are checked, not arrival ones: a barred arrival direction keeps the heading, a barred
-     * departure direction turns it to a way trains may arrive in.  At BottomMainA,
-     * arrivals from the east barred, a train facing west stands on a copy trains may not arrive at and can leave by the
-     * west, so a paste, the editor's Place and the Place Locomotive dialog keep it facing west.  Made one-way eastward
-     * on its approach, the west copy has no way out: then the placement turns the train east, a way trains may arrive
-     * in.
+     * A placement keeps a heading a train can leave by, and turns only one it cannot (OB-284): barred departure
+     * directions are checked, not arrival ones.
      *
      * MUTATION: keep only headings trains may arrive in, and the first half fails; keep any heading, and the second
      * does.

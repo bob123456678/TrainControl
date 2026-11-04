@@ -92,12 +92,9 @@ public class testNonReversibleTrains
 
     /**
      * Autonomy never picks a square a train that cannot reverse would have to turn on.  Adam: **"Never, unless it's
-     * part of a 'return home' backing in manoeuvre."**
-     *
-     * A TERMINUS copy is refused by `pickPath`'s own filter, a REVERSING copy by `isSendableDestination`; nothing asked
-     * the door whether the two add up to his sentence.  Return Home plans through `HomeStaging` with `ALWAYS_REVERSE`,
-     * which the execution tier permits, so it is not this door (MT-245).  The control is the same train made
-     * reversible, with the terminus given a way back out.
+     * part of a 'return home' backing in manoeuvre."**  A TERMINUS copy is refused by `pickPath`'s own filter, a
+     * REVERSING copy by `isSendableDestination`; this asks the door whether the two add up to his sentence (MT-245).
+     * The control is the same train made reversible, with the terminus given a way back out.
      *
      * MUTATIONS: deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath` fails this; deleting
      * `!end.isReversing()` from `isSendableDestination` does not, since the execution tier refuses a reversing point
@@ -827,11 +824,8 @@ public class testNonReversibleTrains
     }
     /**
      * ...but it may BACK INTO one, when the way there turns it round (MT-245): that is why there is a reversing point
-     * at feedback 2013.
-     *
-     * The rule above is about a train that would have to reverse to LEAVE; one that passes a reversing point on the
-     * way arrives already turned and leaves forwards.  The escape is here and not in canRest: whether a train can be
-     * turned on the way is a property of the route, and only a route can answer it.
+     * at feedback 2013.  The escape is here and not in canRest: whether a train can be turned on the way is a property
+     * of the route.
      *
      * MUTATION: dropping the reversesAlongTheWay clause fails this; dropping the whole terminus rule fails the method
      * above, whose fixture has no reversing point.
@@ -1184,9 +1178,6 @@ public class testNonReversibleTrains
      * to BottomMainC manually when it is not reversible and the terminus is not a parking berth (excluded from
      * autonomy).
      *
-     * This narrows his earlier ruling rather than reversing it: a berth, which autonomy never chooses, is still
-     * offered by hand.
-     *
      * MUTATION: dropping `isAutoDestination` from the clause fails the third assertion.
      */
     @Test
@@ -1240,13 +1231,9 @@ public class testNonReversibleTrains
     }
 
     /**
-     * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus (OB-205): a may-turn
-     * destination must not be reversed without a direction prompt when the train is reversible.
-     *
-     * `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus: true`, so `isTerminus()` cannot
-     * tell it from a compulsory terminus and both doors read that flag.  The distinction cannot be drawn from the
-     * graph, so the DOOR is asked; this drives that directly, the same call twice with only what the policy says it
-     * asks about different.
+     * The operator is asked about a turn at a MAY-turn destination, and not at a real terminus (OB-205).
+     * `AutonomyBuilder` emits the turning copy of a may-turn square with `terminus: true`, so the DOOR is asked: the
+     * same call twice with only what the policy says it asks about different.
      *
      * MUTATION: taking `!reversals.asksAbout(destination)` back out fails the second half.
      */

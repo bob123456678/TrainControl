@@ -408,6 +408,25 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.8 [11/04/2026]
+    - New Features
+        - Central Station
+            - When you sync with a CS3, TrainControl now takes the position of each switch and signal with two positions from the Central Station, so one thrown while TrainControl was closed shows correctly.
+    - Bug Fixes
+        - Autonomy
+            - The autonomy editor window can no longer be made so short that `Save Changes` and `Cancel` are cut off, and it opens no taller than the screen; `Things to look at` shows five lines instead of seven when the window is short.
+            - The checkboxes under `Visible Elements` in the autonomy editor are now evenly spaced.
+        - Track Diagram
+            - On a curved or double curved s88 sensor, the red arrows that show it is active are drawn a little further out, so they stay clearly visible, including when an autonomy train is parked there.
+            - When a switch and a signal share an address, both now change together when either one is thrown.
+            - On a CS3 with an MM2 and a DCC accessory at the same address, each square now controls the right one when you use the Central Station's layout; where TrainControl can't tell which is which, including in a local copy, the log names the squares whose protocol to set in the editor.
+        - Central Station
+            - Locomotive pictures stored outside the CS3's standard picture folders now show in TrainControl.
+            - Syncing with a CS3 is faster, because the locomotive list is downloaded fewer times.
+        - General
+            - TrainControl starts a little faster, because it reads its saved locomotive database more quickly.
+    - Notes
+        - Saving a track diagram page now records the protocol of every switch, signal and uncoupler, MM2 included, so it stays as you set it even if the Central Station's accessory list changes later.
 * v3.0.7 [11/02/2026]
     - New Features
         - Routes

@@ -48,13 +48,8 @@ public class testLengthRulesUnderRandomLayouts
     private static final int RAILWAYS = 200;
 
     /**
-     * A THROWAWAY COPY OF THE LAYOUT, opened before the model is built (OB-111).
-     *
-     * `MarklinControlStation.init` reads the layout preference and loads whatever it names, which on
-     * Adam's machine is his real railway. This class does not mean to read it and has no business
-     * doing so; the sandbox redirects the preference at a copy for the life of the class.
-     *
-     * BEFORE the model, because init is the thing that reads it - after would redirect nothing.
+     * A THROWAWAY COPY OF THE LAYOUT, opened BEFORE the model is built, because `init` is what reads the layout
+     * preference (OB-111).
      */
     private static support.LayoutSandbox sandbox;
 

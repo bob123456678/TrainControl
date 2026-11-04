@@ -23,13 +23,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * way run' and 'name everything' into the bulk tools menu, available only in the autonomy editor itself (not track
  * diagram)."
  *
- * Both halves are asked of the real panel: the menu is built through `buildBulkMenuForTest`, which calls the same
- * `bulkTools()` the right-click menu does, and the column is the panel's own component tree.  A move that added the
- * items and left the buttons passes the first claim and fails the second; removing the buttons and forgetting the
- * menu fails the first.
+ * Both halves are asked of the real panel: the menu through `buildBulkMenuForTest` (the same `bulkTools()` the
+ * right-click menu calls), and the column as the panel's own component tree.
  *
- * Not asserted: the track diagram's menus leave them out.  That host serves the same panel with no page, and building
- * one needs the whole main window's diagram tab; `bulkTools` keys the two items on `page != null` in one place.
+ * Not asserted: the track diagram's menus leave them out, as that host serves the same panel with no page; `bulkTools`
+ * keys the two items on `page != null` in one place.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout` (OB-111).
  *

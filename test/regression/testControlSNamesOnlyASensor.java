@@ -15,16 +15,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * Control+S names a sensor, and does nothing on plain track.
- *
- * Adam (MT-313): "it works on any tile in the autonomy editor, not just sensors. fix that.  correctly does not fire
- * outside of the autonomy editor."  The right-click menu offers Rename only inside `if (isPoint)` (a square the reducer
- * knows as a Point, one with a sensor), while Control+S reached `promptNameFor`, which asked only whether the tile was
- * null, so the key put a naming dialog on plain track where a name is held by nothing.  The repair is the usual one:
- * the panel owns the predicate and both doors ask it.
- *
- * Measured against the real sample layout rather than a fixture, because a hand-built graph cannot tell "which squares
- * are Points": every point in one is a Point by construction.
+ * Control+S names a sensor, and does nothing on plain track (MT-313): the panel owns the predicate and both doors ask
+ * it.  Measured against the real sample layout rather than a fixture, because a hand-built graph cannot tell "which
+ * squares are Points": every point in one is a Point by construction.
  *
  * @author Adam
  */

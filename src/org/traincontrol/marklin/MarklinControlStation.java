@@ -6,6 +6,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -82,7 +83,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.0.7";
+    public static final String RAW_VERSION = "3.0.8";
 
     /**
      * Whether this is a build on the way to a release; true puts the build ID in the log and the window title.
@@ -258,6 +259,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Is this a CS3?
     private boolean isCS3 = false;
+
+    // The accessory UIDs this sync's pages show as both a switch and a signal (syncLayouts); see wireComponents (OB-405)
+    private Set<Integer> mixedAddresses = Collections.emptySet();
     
     // Automation controller
     private Layout autoLayout;
@@ -582,20 +586,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (LayoutDiagramComponent c : l.getAll())
         {
-            if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+            if (c.isAccessory())
             {                            
                 int newAddress = c.getAddress() - 1;                    
                 int targetAddress = MarklinAccessory.UIDfromAddress(newAddress, c.getProtocol());
                 
                 // Make sure all components are added
                 if (!this.accDB.hasId(targetAddress) ||
-                    // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
-                   (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
+                    // The accessory exists as the other kind: re-create it unless tiles of both kinds share it (OB-405)
+                   (this.accDB.hasId(targetAddress) && !this.mixedAddresses.contains(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
                         
                     // Create / convert the second accessory to switch if needed
                     c.isThreeWay() && (
                         !this.accDB.hasId(targetAddress + 1) ||
-                        (this.accDB.hasId(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
+                        (this.accDB.hasId(targetAddress + 1) && !this.mixedAddresses.contains(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
                     )
                 )
                 {
@@ -624,7 +628,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 else
                 {            
-                    // The station only updates its file on boot, so there is no newer state to synchronize from it.
+                    // The station's accessory file is written only at start-up; a CS3 sync takes the positions (FR-171)
                 }  
 
                 c.setAccessory(this.accDB.getById(targetAddress));
@@ -656,6 +660,39 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 
                 c.setRoute(r);
+            }
+        }
+    }
+
+    /**
+     * Each two-position accessory in the position the CS3 last set; nothing changes if the station does not answer (FR-171).
+     */
+    private void adoptCS3AccessoryStates()
+    {
+        long asked = System.nanoTime();
+
+        try
+        {
+            this.fileParser.parseAccessoryStatesCS3().forEach((uid, turned) ->
+            {
+                MarklinAccessory a = this.accDB.getById(uid);
+
+                if (a != null && a.isSwitched() != turned)
+                {
+                    a.adoptStationPosition(turned, asked);
+
+                    if (this.view != null)
+                    {
+                        this.view.repaintSwitch(a.getAddress() + 1, a.getDecoderType());
+                    }
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            if (this.debug)
+            {
+                this.log(e);
             }
         }
     }
@@ -716,6 +753,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         this.clearLayouts();
+
+        // The addresses with tiles of both kinds: CAN does not care whether a switch or a signal, so every tile there
+        // shares the accessory the database holds rather than re-creating it for each tile of the other kind (OB-405)
+        Map<Integer, Set<Boolean>> kinds = new HashMap<>();
+
+        for (LayoutDiagram l : parsed)
+        {
+            for (LayoutDiagramComponent c : l.getAll())
+            {
+                if (c.isAccessory())
+                {
+                    int uid = MarklinAccessory.UIDfromAddress(c.getAddress() - 1, c.getProtocol());
+                    kinds.computeIfAbsent(uid, k -> new HashSet<>()).add(c.isSignal());
+
+                    if (c.isThreeWay())
+                    {
+                        kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
+                    }
+                }
+            }
+        }
+
+        this.mixedAddresses = kinds.keySet().stream().filter(uid -> kinds.get(uid).size() > 1).collect(Collectors.toSet());
 
         for (LayoutDiagram l : parsed)
         {
@@ -1351,9 +1411,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * The locomotives a Central Station sync changed while autonomy ran, by name, swept by the first sync that finds it
-     * stopped (OB-303).  An address change is held back until the run stops, but a multi-unit's new members are taken
-     * at once, so one arriving during a run is remembered here; otherwise a train standing as a member of a standing
-     * multi-unit would stay on the graph.  By name: a locomotive renamed or deleted since is swept by those doors.
+     * stopped (OB-303): a multi-unit's new members are taken at once, unlike an address change, which is held back.
      */
     private final java.util.Set<String> sweepsHeldBackByARun =
         java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
@@ -1532,10 +1590,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             // Import locomotives
             List<MarklinRoute> parsedRoutes;
+
+            // Probed once for the routes and the locomotives: each probe reads the whole locomotive list (OB-403)
+            boolean cs3Is260 = false;
             
             if (this.isCS3)
             {
-                parsedRoutes = fileParser.parseRoutesCS3();
+                cs3Is260 = fileParser.isCS3Version260OrAbove();
+                parsedRoutes = fileParser.parseRoutesCS3(cs3Is260);
+                this.adoptCS3AccessoryStates();
             }
             else
             {
@@ -1559,7 +1622,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             
             if (this.isCS3)
             {
-                parsedLocs = fileParser.parseLocomotivesCS3();
+                parsedLocs = fileParser.parseLocomotivesCS3(cs3Is260);
             }
             else
             {
@@ -1646,11 +1709,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.rebuildLocIdCache();
 
         // AND THE GRAPH ASKED WHAT THE SYNC MADE CONFLICT.  The sync writes a locomotive's address and is the door a
-        // Central Station multi-unit's members come in by, so it asks the graph as the window's edit doors do:
-        // otherwise a standing train given another's address would be left standing twice.  Not while autonomy runs: an
-        // address change is held back and swept by the sync that makes it, new multi-unit members that arrive during a
-        // run are remembered (`sweepsHeldBackByARun`), and the railway is redrawn where a sweep took a train off
-        // (OB-303).
+        // Central Station multi-unit's members come in by, so it asks the graph as the window's edit doors do
+        // (OB-303).  Not while autonomy runs: what arrives then is remembered and swept later (`sweepsHeldBackByARun`).
         // Asked once, not built: the event thread can clear the railway between two questions
         final Layout loadedNow = this.getAutoLayoutIfLoaded();
 
@@ -1805,13 +1865,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
         )
         {
-            // Deferred while anything is running.  setAddress changes which decoder this locomotive commands, so
-            // applying it mid-run sends every later speed and function command to a different engine while the graph
-            // tracks this one.  A rename and a manual address change are both refused while running; a sync is
-            // triggered from a dozen places, so the check belongs here.  A locomotive hashes by identity (see
-            // MarklinLocomotive.hashCode), so no repair of the collections is needed.  AND WHILE A ROUTE DRIVES IT: a
-            // route sends commands by name with delays between, each to whatever address the name has then, so an
-            // adopted address would send the rest of the route to a different decoder (OB-287).
+            // Deferred while anything is running (OB-287): setAddress changes which decoder this locomotive commands,
+            // so applying it mid-run sends every later command to a different engine while the graph tracks this one;
+            // a sync is triggered from a dozen places, so the check belongs here.  AND WHILE A ROUTE DRIVES IT: a route
+            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.
             if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null)
             {
                 this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
@@ -2113,9 +2170,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // THE STREAM IN ITS OWN RESOURCE, because the one wrapping it can throw before it exists: ObjectInputStream's
         // constructor throws on a corrupt header, so in a single resource the FileInputStream stays open and the
         // recovery fails, since writeAtomically's Files.move(REPLACE_EXISTING) cannot replace a file somebody has open
-        // on Windows.
+        // on Windows.  Buffered, as ObjectInputStream reads a byte at a time; the buffer holds no file handle.
         try (FileInputStream file_in = new FileInputStream(dataFile);
-            ObjectInputStream obj_in = new CustomObjectInputStream(file_in))
+            ObjectInputStream obj_in = new CustomObjectInputStream(new BufferedInputStream(file_in)))
         {
             // Read an object
             Object obj = obj_in.readObject();
@@ -2304,15 +2361,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
-     * Whether a route id is one this application allocated rather than one the station could know about (OB-155).
-     * newRoute hands out ids from ROUTE_STARTING_ID upwards, so a route at or above it was never told to the station,
-     * and a sync after editing one is a whole-database round trip behind a modal spinner that buys nothing.
-     *
-     * Adam: "the route page should not have to sync with the cs2 after edits/deletions for routes >=
-     * ID 1000."
-     *
-     * **It says what an id could collide with, not where a route came from.**  Routes made here before February 2025
-     * have ids below 1000 - most of Adam's do - and the station never carried them.  Whether it carried a route is the
+     * Whether a route id is one this application allocated rather than one the station could know about (OB-155):
+     * newRoute hands out ids from ROUTE_STARTING_ID upwards, so a route at or above it was never told to the station.
+     * It says what an id could collide with, not where a route came from: whether the station carried a route is the
      * route's lock, which only the sync's import sets (MT-467).
      *
      * @param id the route id in question
@@ -3453,10 +3504,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Whether a route this running one will FIRE drives the locomotive (MT-464).  A route command that is another ROUTE
-     * drives everything that route drives, seconds later on a thread nobody has started yet, so every door was open for
-     * as long as the chain was pending.  ONE HOP, because that is all the engine reaches (`execRoute` hands `limit - 1`
-     * to the route it fires and refuses below zero); asking further would refuse a delete for a route that cannot fire.
+     * Whether a route this running one will FIRE drives the locomotive (MT-464).  ONE HOP, because that is all the
+     * engine reaches (`execRoute` hands `limit - 1` to the route it fires and refuses below zero); asking further would
+     * refuse a delete for a route that cannot fire.
      *
      * @param running the route now executing
      * @param name the locomotive
@@ -4765,14 +4815,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
             initIP = null;
         }
         
-        // SOMETHING ON SCREEN while the station is reached (FR-041): a station that is not answering takes its whole
-        // timeout to say so, and until the window is built a slow start is indistinguishable from a failed one.  Only
-        // when a window was asked for: every test passes showUI false.
+        // SOMETHING ON SCREEN while the station is reached (FR-041): until the window is built a slow start is
+        // indistinguishable from a failed one.  Only when a window was asked for: every test passes showUI false.
         //
         // ON THE WINDOW ITSELF, not a splash of its own (OB-170): a second always-on-top window spends the process's
-        // single chance at the foreground, so the main window would arrive behind it with no way to get the keyboard
-        // back.  `ui` is built at the third statement of this method and put on screen now with a spinner and a line of
-        // words, on the event thread and waited for (a window put together off it is a race that usually wins).
+        // single chance at the foreground, so the main window would arrive behind it.  `ui` is built at the third
+        // statement of this method and put on screen now with a spinner, on the event thread and waited for.
         if (showUI && ui != null)
         {
             final org.traincontrol.gui.TrainControlUI showing = ui;

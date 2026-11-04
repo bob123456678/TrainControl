@@ -10,19 +10,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * OB-124: every window in the application wears the TrainControl icon.
- *
- * Adam: "the popup window for cropping images doesn't have the traincontrol icon in the title bar.  add it back, and
- * check for other popups with the same issue."
- *
- * The icon was set in seven places, each spelling out the same three-part line - resource, toolkit, setIconImage - and
- * a rule written seven times is a rule the eighth window does not get.  `LocIconCropDialog`, `BusyDialog` and two
- * dialogs built inline had never had it, because a dialog LOOKS as though it should inherit its owner's icon and does
- * not reliably do so.
- *
- * A window added next month is required to ask, and fails here if it does not.  Read from the source rather than by
- * opening windows, which needs a railway, a display and a great deal of patience; what can silently go wrong is a new
- * class that never calls this, which is visible in the text.
+ * OB-124: every window in the application wears the TrainControl icon.  A window added next month is required to ask,
+ * and fails here if it does not.  Read from the source rather than by opening windows, which needs a railway and a
+ * display.
  *
  * @author Adam
  */
@@ -147,10 +137,8 @@ public class testEveryWindowWearsTheIcon
     }
 
     /**
-     * A dialog built inline is a window too, and is asked about ONE AT A TIME.
-     *
-     * Asked per FILE, one `applyWindowIcon` anywhere in TrainControlUI.java would excuse every window built in it, and
-     * two of the windows OB-124 was about are inline dialogs in files that already call the helper elsewhere.
+     * A dialog built inline is a window too, and is asked about ONE AT A TIME: asked per FILE, one `applyWindowIcon`
+     * anywhere in TrainControlUI.java would excuse every window built in it (OB-124).
      *
      * MUTATION: adding a `new JDialog(...)` with no icon call after it fails this.
      */

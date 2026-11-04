@@ -16,17 +16,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * Importing a 2.7.4c graph does not switch your routes off (MT-297).
- *
- * Adam: *"write a test case for this, should be trivial to see if the treads are live."*  Twice, because the entry
- * says twice: *"Run the setup, and look again - the disabling used to happen on load rather than on import, so it has
- * to be checked after autonomy has actually parsed the configuration."*
- *
- * The mechanism it guards against is real: `parseAuto` ends in `applyAutonomyRouteActivations`, which walks the LIVE
- * Central Station route database and disables every route whose id is not in `activateRouteIDs`.  Adam's own legacy
- * file says `activateRoutes: true` with an EMPTY list, so an import that carried those two keys would switch off every
- * route he has, on import and on every diagram edit.  The last test turns that mechanism on by hand and checks it
- * fires, so the two claims above cannot pass because nothing was capable of disabling anything.
+ * Importing a 2.7.4c graph does not switch your routes off (MT-297): `parseAuto` ends in
+ * `applyAutonomyRouteActivations`, which disables every live Central Station route whose id is not in
+ * `activateRouteIDs`.  The last test turns that mechanism on by hand, so the other claims cannot pass because nothing
+ * was capable of disabling anything.
  *
  * MUTATION: let `importLegacy` carry `activateRoutes`/`activateRouteIDs` and the second claim fails.
  *

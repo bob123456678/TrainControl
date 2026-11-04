@@ -8,13 +8,10 @@ import javax.swing.Timer;
 import org.traincontrol.util.I18n;
 
 /**
- * A strip of autonomy notices: the message wrapped to the strip's width, as tall as it needs up to four lines, and
- * scrolled past that (OB-366, MT-864).  Hidden while it has nothing to say.
- *
- * In the autonomy editor it floats over the bottom of the diagram (see floatOver) with an X that hides it until the
- * next notice, so the diagram never moves.  Above the main window's diagram it is a header with no X: what it says
- * there is a state with a button to act on it, which a dismissed strip would leave nowhere to act.  Not a popup: a
- * modal for "that tile is now one way" would be worse than saying nothing.
+ * A strip of autonomy notices, wrapped to its width, up to four lines tall and scrolled past that (OB-366, MT-864);
+ * hidden while it has nothing to say.  In the autonomy editor it floats over the bottom of the diagram (see floatOver)
+ * with an X; above the main window's diagram it is a header with no X, since a dismissed strip would leave its state
+ * nowhere to act.  Not a popup.
  *
  * @author Adam
  */
@@ -181,10 +178,8 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Floats this strip over the bottom of a diagram's visible area, inside its frame and just above its horizontal
-     * scrollbar, with an X at its top right that hides it until the next notice (OB-366).  A JLayeredPane holds the
-     * two: the diagram fills it and never moves for a notice, and the strip lies on a higher layer that is painted
-     * again over whatever the diagram repaints or scrolls under it.
+     * Floats this strip over the bottom of a diagram's visible area, with an X at its top right that hides it until the
+     * next notice (OB-366), on a higher layer of a JLayeredPane so the diagram never moves for a notice.
      *
      * @param diagram the diagram's scroll pane
      * @return what to mount where the scroll pane was
@@ -587,11 +582,9 @@ public class AutonomyBanner extends JPanel
     }
 
     /**
-     * Centers one child in its container, and never lays it out taller than the container is.  Centered (OB-151): a
-     * shorter message gets the leftover space split above and below.  Never taller than the band (OB-191): a LONGER
-     * message is given exactly the band, which makes the scroll pane's viewport smaller than its contents, the only
-     * condition under which an AS_NEEDED scrollbar appears.  `GridBagLayout` can express neither half safely (`BOTH`
-     * loses the centring; `HORIZONTAL` shrinks toward the child's five-pixel minimum).  ONE CHILD, deliberately.
+     * Centers one child in its container and never lays it out taller than the container is (OB-151, OB-191): a LONGER
+     * message is given exactly the band, so the scroll pane's AS_NEEDED scrollbar appears.  `GridBagLayout` cannot
+     * express both.  ONE CHILD, deliberately.
      */
     private static final class CentredButNeverTaller implements java.awt.LayoutManager
     {

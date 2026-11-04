@@ -18,14 +18,11 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Adam: "it should take the keystrokes - any part of the app should respect the key mapping (locomotive selector) and
  * all related keyboard shortcuts."
  *
- * The map is a `KeyListener`, which hears only the component that holds the keyboard; putting the focus back on the
- * tabbed pane (OB-170) cannot work when the operator is USING what has it, such as a route table row.
- * `letTheWholeWindowDriveTrains` registers a key event POST processor instead: the focus manager runs it after the
- * focused component has been offered the key, and only for keys that came back unconsumed, so a component that wants a
- * key keeps it.
- *
- * The three claims are that rule's halves: it reaches a component that is not the keyboard, it does NOT fire twice when
- * the focused component is one the map already listens to, and it leaves a text component's letters alone.
+ * The map is a `KeyListener`, which hears only the component that holds the keyboard, and putting the focus back on the
+ * tabbed pane (OB-170) cannot work when the operator is USING what has it.  `letTheWholeWindowDriveTrains` registers a
+ * key event POST processor instead, for keys that came back unconsumed.  The three claims are that rule's halves: it
+ * reaches a component that is not the keyboard, it does NOT fire twice when the focused component is one the map
+ * already listens to, and it leaves a text component's letters alone.
  *
  * ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
  *

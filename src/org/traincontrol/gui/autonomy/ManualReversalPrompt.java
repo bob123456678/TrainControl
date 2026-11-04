@@ -49,8 +49,7 @@ public final class ManualReversalPrompt
         //
         // `Layout.shouldReverseAt` answers a journey to a terminus from the flag and ignores any policy, because the
         // reversal on the way is how a train backs into a terminus (MT-245,
-        // `testATrainThatCannotReverseMayBackIntoATerminus`).  A question whose answer is thrown away teaches the
-        // operator that the setting does something.
+        // `testATrainThatCannotReverseMayBackIntoATerminus`).
         if (path != null && !path.isEmpty())
         {
             org.traincontrol.automation.Edge last = path.get(path.size() - 1);
@@ -77,13 +76,10 @@ public final class ManualReversalPrompt
 
         // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (MT-368): a square that MAY turn is a preference, and a
         // locomotive that may not run backwards has no preference to express.  Only where the turn is optional
-        // (`asksAbout`); a terminus is not reached by this line, as backing in is how a non-reversible train gets there
-        // (MT-245).  `Layout.turnsOnArrival` carries the matching rule.
+        // (`asksAbout`); `Layout.turnsOnArrival` carries the matching rule.
         //
-        // The two halves ask different questions.  This half fires on `asksAbout`, the SETUP's `mayTurnTiles()`; the
-        // arrival's half on `hasAWayThrough`, the GRAPH's "some copy of this square is neither a terminus nor a
-        // reversing point".  They differ at a square marked `canReverse` where an arriving train has nowhere to go but
-        // back: kept as two rules because the setup is what the operator edited.
+        // This half fires on the SETUP's `mayTurnTiles()`, the arrival's on the GRAPH's `hasAWayThrough`: kept as two
+        // rules because the setup is what the operator edited.
         if (first != null && loc != null && !loc.isReversible()) return KEEP_DIRECTION;
 
         // Nothing on this journey turns anybody, so nothing is asked and nothing is carried.

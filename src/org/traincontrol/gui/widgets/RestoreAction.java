@@ -34,9 +34,7 @@ import org.traincontrol.util.Util;
  * before anything is written, the user is shown what each part replaces, and a full backup of the data as it is now is
  * taken first, named as taken before a restore, so the restore can be undone by restoring that file.
  *
- * Nothing is reloaded in place: the locomotive database is read only by the model's constructor and the window state
- * only as the window starts.  So TrainControl closes without the exit's saves once anything is written, and nothing it
- * holds in memory can be saved over the restored files.
+ * Nothing is reloaded in place, so TrainControl closes without the exit's saves once anything is written.
  */
 public final class RestoreAction
 {

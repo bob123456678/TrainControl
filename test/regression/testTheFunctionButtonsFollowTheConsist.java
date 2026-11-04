@@ -17,21 +17,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * The function buttons offer what the CONSIST can drive, not what its head can (MT-359; Adam: "does it propagate to
- * the UI check that determines which function buttons are active?").
- *
- * The model half was right: `setF` accepts the whole consist's range, so an MM2 head with an MFX member drives f6
- * through the member (`core.testMultiUnitMembership`).  The window went on lighting buttons from `getNumF()`, the
- * HEAD's own count, so the function worked from a shortcut, a route or autonomy and was grayed on screen.  The guard
- * and the affordance asking different questions is OB-057/OB-090 arriving in a third place.
- *
- * Driven through `repaintLoc`, which the window calls when the active locomotive changes, because whether a button is
- * enabled is decided there and every model-level question answers the same before and after the fix.
- *
- * No icons past the head's range, on Adam's word ("the buttons show no icons if the head is mm2"): `getFunctionType`
- * and `getFunctionIconUrl` read tables sized to the head's own decoder.  And no TEXT either (OB-213: "keep the label
- * blank as is the default"): they are ordinary buttons whose decoder has no picture, and a number on some and not
- * others reads as a difference in kind.
+ * The function buttons offer what the CONSIST can drive, not what its head can (MT-359).  Driven through `repaintLoc`,
+ * which the window calls when the active locomotive changes, because whether a button is enabled is decided there and
+ * every model-level question answers the same before and after the fix.  No icons and no TEXT past the head's range
+ * (OB-213): they are ordinary buttons whose decoder has no picture.
  *
  * MUTATION: put `getNumF()` back in either loop and the first claim fails; light every button regardless
  * and the two-MM2 control fails; write the number back into the label and the blank-label claim fails.

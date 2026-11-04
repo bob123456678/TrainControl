@@ -148,11 +148,9 @@ public class testPlaceAllAtTheirHomes
     }
 
     /**
-     * A locomotive homed on two squares - an older or hand-edited setup, since the editor's own door refuses it - is
-     * put on ONE of them, the one the loader keeps, and counted once (FR-115).  The loader
-     * (`Layout.rebuildHomeStations`) drops the second with a warning, and a locomotive placed on both squares
-     * invalidates the whole configuration.  Every pair of four stations is tried, because which of two the loader keeps
-     * is the order its points iterate in.
+     * A locomotive homed on two squares (an older or hand-edited setup) is put on ONE of them, the one the loader keeps
+     * (`Layout.rebuildHomeStations` drops the second), and counted once (FR-115).  Every pair of four stations is
+     * tried, because which of two the loader keeps is the order its points iterate in.
      *
      * MUTATION: offer the locomotive on every square it is homed on, or offer the one the loader drops, and this fails.
      */

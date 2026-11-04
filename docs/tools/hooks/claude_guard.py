@@ -1,8 +1,9 @@
 # The Claude Code PreToolUse hook for this repository: README.md beside it says how it is installed and what it checks.
 #
-# Reads the hook's JSON on stdin and answers with a permissionDecision of "deny" or "ask", or with nothing (the tool
-# goes ahead).  Only calls that touch this repository are judged; anything else passes untouched.  It must never
-# stop a call because it broke itself, so any error inside it lets the call through.
+# Reads the hook's JSON on stdin and answers with a permissionDecision of "deny" or "ask", with a note and no decision,
+# or with nothing (the tool goes ahead).  Calls that touch this repository are judged; elsewhere only deletes outside
+# the scratch folders, moves of this repository's master and -ExecutionPolicy Bypass are.  It must never stop a call
+# because it broke itself, so any error inside it lets the call through.
 import glob, json, os, re, subprocess, sys
 
 ROOT = os.path.normcase(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
@@ -34,8 +35,10 @@ def rel(path, cwd):
     return os.path.relpath(norm(p), ROOT).replace('\\', '/')
 
 
-# The first ask, kept until everything has been judged, so a deny later in the same call still wins
+# The first ask, kept until everything has been judged, so a deny later in the same call still wins; and notes, which
+# tell Adam and Claude something without stopping the call
 ASKED = []
+NOTES = []
 
 
 def answer(decision, why):
@@ -48,12 +51,21 @@ def answer(decision, why):
     sys.exit(0)
 
 
-def asked():
+def note(why):
+    NOTES.append('TrainControl guard: ' + why)
+
+
+def finish():
+    out = {}
     if ASKED:
-        ASKED[:], why = [], ASKED[0]
-        print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask',
-                                                 'permissionDecisionReason': 'TrainControl guard: ' + why}}))
-        sys.exit(0)
+        out['hookSpecificOutput'] = {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask',
+                                     'permissionDecisionReason': 'TrainControl guard: ' + ASKED[0]}
+    if NOTES:
+        text = '\n'.join(NOTES)
+        out['systemMessage'] = text
+        out.setdefault('hookSpecificOutput', {'hookEventName': 'PreToolUse'})['additionalContext'] = text
+    if out:
+        print(json.dumps(out))
 
 
 def battery_running():
@@ -121,7 +133,7 @@ def judge_write(tool, ti, cwd):
     if r.endswith('.java') and (r.startswith('src/') or r.startswith('test/')):
         pid = battery_running()
         if pid:
-            answer('ask', 'a battery is running (pid ' + pid + '); a .java edit now changes what it measures.')
+            note('a battery is running (pid ' + pid + '); a .java edit now changes what it measures.')
 
 
 # A shell command is judged as the simple commands it is made of, each a list of words with its quotes taken off, so
@@ -143,9 +155,10 @@ def drop_heredocs(cmd):
 
 
 def lex(cmd, ps):
-    """The simple commands in cmd as (words, output redirection targets): split at unquoted ; & | ( ) newlines,
-    backticks in bash, and { } at a word's edge.  ps: PowerShell quoting, where the backtick escapes."""
-    segs, words, targets = [], [], []
+    """The simple commands in cmd as (words, output redirection targets, the separators before it, such as "&&" or
+    ";"): split at unquoted ; & | ( ) newlines, backticks in bash, and { } at a word's edge.
+    ps: PowerShell quoting, where the backtick escapes."""
+    segs, words, targets, between = [], [], [], []
     cur, has, redirect = [], False, None
     esc = '`' if ps else '\\'
     i, n = 0, len(cmd)
@@ -161,11 +174,13 @@ def lex(cmd, ps):
             redirect = None
         cur, has = [], False
 
-    def cut():
+    def cut(sep=''):
         nonlocal words, targets, redirect
         flush()
         if words or targets:
-            segs.append((words, targets))
+            segs.append((words, targets, ''.join(between)))
+            between[:] = []
+        between.append(sep)
         words, targets, redirect = [], [], None
 
     while i < n:
@@ -208,14 +223,14 @@ def lex(cmd, ps):
                 i += 1
             continue
         elif c in ';|\n()' or (c == '`' and not ps) or (c in '{}' and not has):
-            cut()
+            cut(c)
         elif c == '&':
             if cmd[i + 1:i + 2] == '>':
                 flush()
                 i += 3 if cmd[i + 2:i + 3] == '>' else 2
                 redirect = 'out'
                 continue
-            cut()
+            cut(c)
         elif c == '>':
             if has and re.match(r'^[0-9*]$', ''.join(cur)):
                 cur, has = [], False
@@ -251,6 +266,8 @@ def base(word):
 
 
 PREFIXES = {'env', 'command', 'exec', 'time', 'nice', 'nohup', 'sudo', 'builtin', 'xargs', 'timeout', '!'}
+# Shell keywords in front of the command they open: `if true; then rm x; fi` runs rm
+KEYWORDS = {'if', 'then', 'else', 'elif', 'while', 'until', 'do', '{'}
 
 
 def command_at(words):
@@ -262,6 +279,8 @@ def command_at(words):
             i += 1
         elif w.startswith('$') and words[i + 1:i + 2] == ['=']:
             i += 2
+        elif w.lower() in KEYWORDS:
+            i += 1
         elif base(w) in PREFIXES:
             i += 1
             while i < len(words) and words[i].startswith('-'):
@@ -274,11 +293,12 @@ def command_at(words):
     return i
 
 
-def segments(cmd, ps, depth=0):
-    """Every simple command in cmd, with the script given to bash -c, sh -c, cmd /c, powershell -Command, eval or
-    Invoke-Expression added as commands of its own."""
-    segs = lex(drop_heredocs(cmd), ps)
-    for words, _ in list(segs):
+def segments(cmd, dialect, depth=0):
+    """Every simple command in cmd as (words, redirection targets, dialect, the separators before it), with the script
+    given to bash -c, sh -c, cmd /c, powershell -Command, eval or Invoke-Expression added as commands of its own, each
+    such script starting afresh.  dialect: bash, ps or cmd."""
+    segs = [(w, t, dialect, sep) for w, t, sep in lex(drop_heredocs(cmd), dialect != 'bash')]
+    for words, _, _, _ in list(segs):
         ci = command_at(words)
         if depth > 3 or ci >= len(words):
             continue
@@ -287,17 +307,17 @@ def segments(cmd, ps, depth=0):
         if name in ('bash', 'sh', 'zsh', 'dash', 'ksh'):
             at = [k for k, w in enumerate(rest) if re.match(r'^-[a-zA-Z]*c[a-zA-Z]*$', w)]
             if at and at[0] + 1 < len(rest):
-                inner = (rest[at[0] + 1], False)
+                inner = (rest[at[0] + 1], 'bash')
         elif name == 'cmd':
             at = [k for k, w in enumerate(rest) if w.lower() in ('/c', '/k', '//c', '//k')]
             if at:
-                inner = (' '.join(rest[at[0] + 1:]), True)
+                inner = (' '.join(rest[at[0] + 1:]), 'cmd')
         elif name in ('powershell', 'pwsh'):
             at = [k for k, w in enumerate(rest) if len(w) > 1 and '-command'.startswith(w.lower())]
             if at:
-                inner = (' '.join(rest[at[0] + 1:]), True)
+                inner = (' '.join(rest[at[0] + 1:]), 'ps')
         elif name in ('eval', 'iex', 'invoke-expression'):
-            inner = (' '.join(rest), ps)
+            inner = (' '.join(rest), dialect)
         if inner:
             segs += segments(inner[0], inner[1], depth + 1)
     return segs
@@ -335,7 +355,9 @@ def options(args, takes_next='', takes_rest='', long_takes=()):
 WHOLE = {'.', './', '.\\', '*', ':', ':/', ':/.', ':/*', ':.', ':*', ':(top)'}
 
 
-def judge_git(glob_opts, sub, args, text, cwds=(ROOT,)):
+def judge_git(glob_opts, sub, args, text, cwds=(ROOT,), ask_cwds=(ROOT,)):
+    """Deny or ask about a git command that may run in this checkout: cwds are where it may run, read strictly, for
+    the denies; ask_cwds where the delete check places it, for the asks."""
     if any('core.hookspath' in g.lower() for g in glob_opts):
         answer('deny', 'hooks are not skipped; fix what the hook found.')
     if sub in ('checkout', 'restore', 'reset', 'stash', 'clean', 'switch', 'rm', 'mv') and \
@@ -368,8 +390,8 @@ def judge_git(glob_opts, sub, args, text, cwds=(ROOT,)):
         if f & {'-f', '--force'} or any(p in WHOLE for p in pos):
             answer('deny', revert)
         # Paths after `--`, from xargs, or a named file or folder that exists: each reverts what it names
-        if '--' in args or (pos and UNREAD in cwds) or \
-                any(os.path.exists(os.path.join(norm(c), p)) for c in cwds if c != UNREAD for p in pos):
+        if ask_cwds and ('--' in args or (pos and UNREAD in ask_cwds) or
+                         any(os.path.exists(os.path.join(norm(c), p)) for c in ask_cwds if c != UNREAD for p in pos)):
             answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
     if sub == 'switch':
         f, _ = options(args, 'cC', long_takes=('create', 'force-create', 'orphan', 'conflict'))
@@ -380,19 +402,90 @@ def judge_git(glob_opts, sub, args, text, cwds=(ROOT,)):
         index_only = f & {'-S', '--staged'} and not f & {'-W', '--worktree'}
         if any(p in WHOLE for p in pos) and not index_only:
             answer('deny', revert)
-        answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
+        if ask_cwds:
+            answer('ask', 'this can throw away uncommitted edits, which may be Adam\'s.')
+
+
+def moves_master(sub, args):
+    """Why this git command moves master, when it does: a push to it, or a local branch, ref or fetch that sets,
+    renames, copies over or deletes it; None otherwise."""
+    moves = False
     if sub == 'push':
         f, pos = options(args, 'o', long_takes=('repo', 'push-option', 'receive-pack', 'exec'))
         if f & {'--all', '--mirror'} or re.search(r'\b(master|main)\b', ' '.join(pos)):
-            answer('ask', 'a push to master waits for Adam\'s go.')
-    if sub in ('merge', 'rebase', 'cherry-pick', 'commit'):
-        try:
-            branch = subprocess.run(['git', '-C', ROOT, 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True,
-                                    text=True, timeout=5).stdout.strip()
-        except Exception:
-            branch = ''
-        if branch == 'master':
-            answer('ask', 'this checkout is on master; changes to master wait for Adam\'s go.')
+            return 'a push to master waits for Adam\'s go.'
+    elif sub == 'branch':
+        f, pos = options(args, 'u', long_takes=('set-upstream-to', 'contains', 'no-contains', 'merged', 'no-merged',
+                                                'points-at', 'sort', 'format'))
+        moves = (f & {'-f', '--force'} and pos[:1] == ['master']) or \
+            (f & {'-d', '-D', '--delete', '-m', '-M', '--move'} and 'master' in pos) or \
+            (f & {'-c', '-C', '--copy'} and pos[-1:] == ['master'])
+    elif sub == 'update-ref':
+        _, pos = options(args, 'm')
+        moves = any(p in ('refs/heads/master', 'heads/master') for p in pos)
+    elif sub in ('checkout', 'switch'):
+        # checkout -B and switch -C reset the branch they name to the start point
+        for k, a in enumerate(args):
+            if re.match(r'^-[A-Za-z]*' + ('B' if sub == 'checkout' else 'C') + '$', a) or a == '--force-create':
+                moves = moves or args[k + 1:k + 2] == ['master']
+            moves = moves or a in ('-Bmaster' if sub == 'checkout' else '-Cmaster', '--force-create=master')
+    elif sub == 'fetch':
+        _, pos = options(args, 'oj', long_takes=('depth', 'deepen', 'shallow-since', 'shallow-exclude', 'refmap',
+                                                 'server-option', 'upload-pack', 'jobs'))
+        moves = any(':' in p and p.rsplit(':', 1)[1] in ('master', 'refs/heads/master') for p in pos)
+    elif sub == 'rebase':
+        # git rebase <upstream> master checks master out and rebases it
+        _, pos = options(args, 'sXxC', long_takes=('onto', 'strategy', 'strategy-option', 'exec', 'empty'))
+        moves = pos[1:2] == ['master']
+    elif sub == 'worktree' and args[:1] == ['add']:
+        moves = any((re.match(r'^-[A-Za-z]*[bB]$', a) and args[k + 1:k + 2] == ['master']) or
+                    a in ('-bmaster', '-Bmaster') for k, a in enumerate(args))
+    return 'this moves master; changes to master wait for Adam\'s go.' if moves else None
+
+
+def git_dir_of(folder):
+    """The common git folder of the repository holding folder, read from its .git (a worktree's .git is a file naming
+    its folder under the main .git); '' when there is none, or on a share or network drive."""
+    if not is_local(folder):
+        return ''
+    f = norm(folder)
+    for _ in range(64):
+        dot = os.path.join(f, '.git')
+        if os.path.isdir(dot):
+            return os.path.normcase(dot)
+        if os.path.isfile(dot):
+            try:
+                line = open(dot).read().strip()
+            except OSError:
+                return ''
+            if not line.startswith('gitdir:'):
+                return ''
+            gd = norm(os.path.join(f, line[7:].strip()))
+            try:
+                gd = norm(os.path.join(gd, open(os.path.join(gd, 'commondir')).read().strip()))
+            except OSError:
+                pass
+            return gd
+        up = os.path.dirname(f)
+        if up == f:
+            return ''
+        f = up
+    return ''
+
+
+REPO_GIT = []
+
+
+def this_repository(place, gated):
+    """Whether git run in place works on this repository: this checkout, one of its worktrees, or (in a call that
+    touches this checkout) a folder the guard cannot place."""
+    if place == UNREAD:
+        return gated
+    if in_repo(place, ''):
+        return True
+    if not REPO_GIT:
+        REPO_GIT.append(git_dir_of(ROOT))
+    return bool(REPO_GIT[0]) and git_dir_of(place) == REPO_GIT[0]
 
 
 def git_call(words):
@@ -547,20 +640,564 @@ def in_live_layout(word, places):
     return False
 
 
+# Deletes outside the scratch folders ask, in every session.  Scratch is anything under the temp folder, Claude's
+# scratchpads and worktrees with it, spelled from the environment.
+
+def env_dir(name):
+    v = os.environ.get(name) or ''
+    return v if re.match(r'^([A-Za-z]:[\\/]|/[a-zA-Z]/)', v) else ''
+
+
+TEMP_DIR = env_dir('TEMP') or env_dir('TMP') or (os.path.join(env_dir('LOCALAPPDATA'), 'Temp')
+                                                 if env_dir('LOCALAPPDATA') else '')
+SCRATCH = sorted(set(norm(d) for d in (env_dir('TEMP'), env_dir('TMP'), os.path.join(env_dir('LOCALAPPDATA'), 'Temp')
+                                        if env_dir('LOCALAPPDATA') else '') if d))
+HOME_DIR = env_dir('HOME') or env_dir('USERPROFILE') or os.path.expanduser('~')
+KNOWN = dict((k.lower(), env_dir(k)) for k in ('TEMP', 'TMP', 'LOCALAPPDATA', 'USERPROFILE') if env_dir(k))
+KNOWN['home'] = HOME_DIR
+# A stand-in for a folder made by mktemp, New-TemporaryFile or GetTempPath, which land in the temp folder
+MADE_IN_TEMP = os.path.join(TEMP_DIR, 'tmp.made') if TEMP_DIR else None
+VAR = re.compile(r'\$\{(\w+)(:?[-=?+])?([^}]*)\}|\$env:(\w+)|\$(\w+)|%(\w+)%', re.I)
+
+
+def expand(word, names):
+    """word with ~, $NAME, ${NAME}, ${NAME:-default} (and :=, :?), $env:NAME and %NAME% put in, from the names this
+    call assigned and the environment's temp and home folders; None when some part of it cannot be read."""
+    if word == '~' or word[:2] in ('~/', '~\\'):
+        word = '$HOME' + word[1:]
+    missing = []
+
+    def put(m):
+        key = next(g for g in (m.group(1), m.group(4), m.group(5), m.group(6)) if g).lower()
+        known = key in names or key in KNOWN
+        v = names[key] if key in names else KNOWN.get(key)
+        op, rest = m.group(2) or '', m.group(3) or ''
+        if m.group(1) and (op.endswith('+') or (rest and not op)):
+            v = None  # ${S:+x} and ${S/a/b} are not read
+        elif op[-1:] in ('-', '=') and not known:
+            v = os.environ.get(key.upper()) or os.environ.get(key) or expand(rest, names)
+        if v is None:
+            missing.append(key)
+        return v or ''
+    out = VAR.sub(put, word)
+    return None if missing or re.search(r'[$%`~]', VAR.sub('', word)) else out
+
+
+def full_path(w, place, dialect):
+    """An expanded path as an absolute one, from place when it is relative; None when place cannot be read."""
+    if dialect == 'bash' and re.match(r'^/tmp([/\\]|$)', w) and TEMP_DIR:
+        w = TEMP_DIR + w[4:]  # Git Bash mounts /tmp on the temp folder
+    if re.match(r'^[A-Za-z]{2,}:', w) or w[:2] in ('\\\\', '//'):
+        return w  # a PowerShell drive such as HKCU:, or a share: never scratch
+    if not (w[:1] in '/\\' or re.match(r'^[A-Za-z]:', w)):
+        if place == UNREAD:
+            return None
+        w = os.path.join(place, w)
+    w = w.replace('\\', '/')
+    m = re.match(r'^/([a-zA-Z])(?:/(.*))?$', w)
+    return os.path.abspath(m.group(1) + ':/' + (m.group(2) or '') if m else w)
+
+
+WORKTREES = os.sep + os.path.join('.claude', 'worktrees')
+
+
+def in_scratch(path, root_too):
+    """Under the temp folder or in a repository's .claude/worktrees, where the Agent tool's isolated worktrees are
+    (or either folder itself, with root_too)."""
+    c = os.path.normcase(path)
+    return any((root_too and c == r) or c.startswith(r.rstrip(os.sep) + os.sep) for r in SCRATCH) or \
+        (root_too and c.endswith(WORKTREES)) or (WORKTREES + os.sep) in c
+
+
+def outside(word, place, names, dialect, root_too):
+    """Why deleting word from place may reach outside the scratch folders; None when it stays inside.  A pattern is
+    judged by its literal leading folder, and root_too lets that folder (or a find's) be a scratch folder itself."""
+    w = expand(word, names)
+    if w is None:
+        return word + ', a path the guard cannot read,', False
+    parts = re.split(r'[/\\]', w)
+    at = next((k for k, s in enumerate(parts) if re.search(r'[*?\[{]' if dialect == 'bash' else r'[*?\[]', s)), None)
+    if at is not None:
+        if '..' in parts[at + 1:]:
+            return word + ', a pattern that climbs out with "..",', False
+        w = '/'.join(parts[:at]) or ('/' if w[:1] in '/\\' else '.')
+        w, root_too = w + '/' if w.endswith(':') else w, True
+    p = full_path(w, place, dialect)
+    if p is None:
+        return word + ' in a folder the guard cannot place,', False
+    return None if in_scratch(p, root_too) else (word + ' (' + p + ')', True)
+
+
+CDS = {'cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location'}
+BASH_DELETES = {'rm', 'rmdir', 'unlink', 'shred'}
+PS_DELETES = {'remove-item', 'ri', 'rm', 'del', 'erase', 'rd', 'rmdir', 'clear-content', 'clc'}
+CMD_DELETES = {'del', 'erase', 'rd', 'rmdir'}
+LISTERS = {'get-childitem', 'gci', 'ls', 'dir', 'get-item', 'gi'}
+PS_VALUES = ('filter', 'include', 'exclude', 'credential', 'stream', 'erroraction', 'warningaction',
+             'informationaction', 'errorvariable', 'warningvariable', 'informationvariable', 'outvariable', 'outbuffer',
+             'pipelinevariable', 'progressaction', 'depth', 'attributes')
+PS_SHORT = {'ea', 'wa', 'infa', 'ev', 'wv', 'iv', 'ov', 'ob', 'pv'}
+
+
+def ps_paths(args):
+    """The paths a PowerShell cmdlet's words name: its positionals and its -Path and -LiteralPath values."""
+    out, i = [], 0
+    while i < len(args):
+        a = args[i]
+        if a.startswith('-') and len(a) > 1:
+            key, colon, val = a[1:].partition(':')
+            key = key.lower()
+            is_path = key in ('lp', 'pspath') or (len(key) > 1 and 'literalpath'.startswith(key)) or \
+                'path'.startswith(key)
+            if not colon and (is_path or key in PS_SHORT or (len(key) > 1 and any(v.startswith(key)
+                                                                                  for v in PS_VALUES))):
+                val = args[i + 1] if i + 1 < len(args) else ''
+                i += 1
+            if is_path and val:
+                out.append(val)
+        else:
+            out.append(a)
+        i += 1
+    return [p for w in out for p in w.split(',') if p]
+
+
+def deleted(name, args, dialect, prev, via_xargs):
+    """[(path word, root_too)] that this simple command deletes; None when it deletes nothing; 'input' when it deletes
+    paths it reads from its input."""
+    if dialect == 'bash' and name in BASH_DELETES:
+        _, pos = options(args, 'ns' if name == 'shred' else '', long_takes=('iterations', 'size', 'random-source'))
+        return [(p, False) for p in pos] or ('input' if via_xargs else None)
+    if dialect == 'bash' and name == 'find':
+        acts = '-delete' in args or any(a in ('-exec', '-execdir', '-ok', '-okdir') and k + 1 < len(args) and
+                                        base(args[k + 1]) in BASH_DELETES for k, a in enumerate(args))
+        if not acts:
+            return None
+        starts = []
+        for a in args:
+            if a.startswith('-') or a in ('(', ')', '!'):
+                break
+            starts.append(a)
+        return [(p, True) for p in starts or ['.']]
+    if dialect == 'ps' and name in PS_DELETES:
+        paths = ps_paths(args)
+        if paths:
+            return [(p, False) for p in paths]
+        # Get-ChildItem x | Remove-Item deletes what the listing names
+        if prev and prev[0] in LISTERS:
+            return [(p, True) for p in ps_paths(prev[1]) or ['.']]
+        return 'input'
+    if dialect == 'cmd' and name in CMD_DELETES:
+        return [(a, False) for a in args if not re.match(r'^/[A-Za-z?](:\S*)?$', a)] or None
+    return None
+
+
+def assigned(words, ci, dialect, after):
+    """{name: value} this simple command assigns, values expanded later; after is the next simple command, which an
+    unquoted S=$(mktemp) splits off."""
+    out = {}
+    if dialect == 'ps':
+        m = re.match(r'^\$(?:env:)?(\w+)(=(.*))?$', words[0], re.I) if words else None
+        if m and (m.group(2) is not None or words[1:2] == ['=']):
+            v = m.group(3) if m.group(2) is not None and len(words) == 1 else \
+                words[2] if m.group(2) is None and len(words) == 3 else None
+            rest = words[2:] if m.group(2) is None else []
+            if len(rest) > 2 and all(w == '+' for w in rest[1::2]):
+                v = ''.join(rest[0::2])  # $env:TEMP + "\x"
+            elif len(rest) > 1 and rest[0].lower() == 'join-path':
+                parts = [w for w in rest[1:] if not w.startswith('-')]
+                v = '\\'.join(parts) if len(parts) == 2 else None
+            if v is not None and re.match(r'^(New-TemporaryFile|\[(System\.)?IO\.Path\]::GetTemp\w*)$', v, re.I):
+                v = MADE_IN_TEMP
+            elif v is not None and not re.search(r'[/\\:$%~.]', v):
+                v = None  # a command's output, not a path
+            out[m.group(1).lower()] = v
+        return out
+    # S=x cmd sets S for cmd alone, so only a command of assignments, or export and the like, sets names
+    pairs = list(words[:ci]) if ci >= len(words) else []
+    if ci < len(words) and base(words[ci]) in ('export', 'declare', 'local', 'readonly', 'typeset'):
+        pairs += words[ci + 1:]
+    for w in pairs:
+        m = re.match(r'^([A-Za-z_]\w*)=(.*)$', w, re.S)
+        if not m:
+            continue
+        v = m.group(2)
+        made = re.match(r'^\$\(\s*mktemp\b([^)]*)\)$', v)
+        margs = made.group(1).split() if made else after[1:] if v == '$' and after and base(after[0]) == 'mktemp' \
+            else None
+        if margs is not None:
+            v = made_by_mktemp(margs)
+        out[m.group(1).lower()] = v
+    return out
+
+
+def made_by_mktemp(args):
+    """Where mktemp with these arguments makes its file or folder, as a path to expand: in its -p or --tmpdir folder,
+    at a template that names a folder, or in the temp folder."""
+    folder, template, i = None, None, 0
+    while i < len(args):
+        a = args[i]
+        if a in ('-p', '--tmpdir'):
+            folder, i = (args[i + 1] if i + 1 < len(args) else None), i + 1
+        elif a.startswith('--tmpdir='):
+            folder = a.split('=', 1)[1]
+        elif a.startswith('-p') and len(a) > 2:
+            folder = a[2:]
+        elif not a.startswith('-'):
+            template = a
+        i += 1
+    if template and re.search(r'[/\\]', template):
+        return os.path.join(folder, template) if folder else template
+    return os.path.join(folder, 'tmp.made') if folder else MADE_IN_TEMP
+
+
+def place(word, folder, names, dialect):
+    """The folder a cd, -C or --chdir to word reaches from folder; UNREAD when the guard cannot read it."""
+    x = expand(word, names)
+    return (full_path(x, folder, dialect) if x is not None else None) or UNREAD
+
+
+def cd_target(name, args, dialect):
+    """(word, or None) a cd-like command moves to: None for a bare cd to home, '-' for cd -, '' for no move."""
+    rest = [a for a in args if not a.startswith('-')]
+    # cmd's `cd /d <folder>`: a lone /x with a folder after it is a switch; alone, /c is the drive
+    if len(rest) > 1 and re.match(r'^/[A-Za-z]$', rest[0]):
+        rest = rest[1:]
+    return rest[0] if rest else '-' if '-' in args else None if name == 'cd' and dialect == 'bash' else ''
+
+
+def is_local(path):
+    """Whether path is on a local drive, so the guard may look at it: never a share (\\\\server or //server) or a
+    mapped network drive, whose stat can wait on the network."""
+    p = path.replace('\\', '/')
+    if p.startswith('//'):
+        return False
+    m = re.match(r'^([A-Za-z]):', p) or re.match(r'^/([A-Za-z])(/|$)', p)
+    if not m:
+        return not re.match(r'^[A-Za-z]{2,}:', p)
+    drive = m.group(1).upper()
+    if drive not in DRIVES:
+        try:
+            import ctypes
+            DRIVES[drive] = ctypes.windll.kernel32.GetDriveTypeW(drive + ':\\') not in (4, 5)  # remote, CD
+        except Exception:
+            DRIVES[drive] = True
+    return DRIVES[drive]
+
+
+DRIVES = {}
+
+
+def sure_folder(p):
+    """Whether a cd to p succeeds: a local folder that exists now."""
+    return p != UNREAD and is_local(p) and os.path.isdir(p)
+
+
+PIPE = re.compile(r'(?<!\|)\|(?!\|)')
+OPENERS = {'if', 'while', 'until', 'for', 'case', 'select'}
+CLOSERS = {'fi', 'done', 'esac'}
+
+
+def follow(segs, cwd):
+    """The call as the asks read it: (why its first delete that may reach outside the scratch folders asks, or None;
+    for each simple command, (the folders it may run in, the names assigned before it)).
+
+    A cd to a local folder that exists succeeds, so everything after it at its level (pipes, loops and if bodies
+    included) runs there, whatever the separator; one inside a subshell lasts to its end.  A cd that may not run (after
+    ||, in an if or loop body, after a command that may fail and &&, or in a pipeline stage or in the background) only
+    adds its folder.  A cd to a folder that does not exist or cannot be read adds it too, and places only what is
+    joined to it by && (and, after `cd X || exit`, the rest of its level)."""
+    level = {'places': [cwd], 'chain': None, 'fine': True, 'pushed': []}
+    outer, names, prev, xargs_open, why, loops = [], {}, None, False, None, {}
+    out, last_cd, block, braces = [], None, 0, 0
+    # Whether each simple command is in an and-or list that a lone & sends to the background, where a cd stays
+    background = [False] * len(segs)
+    for k in range(len(segs) - 1, -1, -1):
+        after = segs[k + 1][3] if k + 1 < len(segs) else ''
+        background[k] = after.strip(' \n') == '&' or bool(
+            k + 1 < len(segs) and background[k + 1] and ('&&' in after or '||' in after or PIPE.search(after)))
+    for k, (words, _, dialect, sep) in enumerate(segs):
+        after = segs[k + 1][3] if k + 1 < len(segs) else ''
+        for _ in range(sep.count(')')):
+            if outer:
+                level = outer.pop()
+        if dialect == 'ps':
+            braces = max(0, braces + sep.count('{') - sep.count('}'))
+        kind = 'or' if '||' in sep else 'pipe' if PIPE.search(sep) else 'and' if '&&' in sep else 'list'
+        ci = command_at(words)
+        name = base(words[ci]) if ci < len(words) else ''
+        if kind == 'or' and last_cd is not None and name in ('exit', 'return') and not background[k]:
+            level['places'], level['chain'] = last_cd, None  # cd X || exit: the rest of this level runs in X
+        elif kind == 'list':
+            level['chain'], level['fine'] = None, True
+        elif kind == 'or':
+            level['chain'], level['fine'] = None, False
+        last_cd = None
+        for _ in range(sep.count('(')):
+            outer.append(level)
+            level = {'places': list(level['chain'] if level['chain'] is not None else level['places']),
+                     'chain': None, 'fine': True, 'pushed': []}
+        lead = [w.lower() for w in words[:ci + 1]]
+        if dialect == 'bash':
+            block = max(0, block + sum(w in OPENERS for w in lead) - (words[0] in CLOSERS if words else 0))
+        # for d in a b; do ...: d is each of the listed words in turn (and PowerShell's foreach ($d in ...))
+        if dialect == 'bash' and words[ci:ci + 1] == ['for'] and words[ci + 2:ci + 3] == ['in'] and \
+                re.match(r'^[A-Za-z_]\w*$', words[ci + 1]):
+            loops[words[ci + 1].lower()] = words[ci + 3:]
+            names.pop(words[ci + 1].lower(), None)
+        elif dialect == 'ps' and len(words) > 2 and words[1].lower() == 'in' and re.match(r'^\$\w+$', words[0]) \
+                and k > 0 and segs[k - 1][0][-1:] and segs[k - 1][0][-1].lower() == 'foreach':
+            items = words[3:] if base(words[2]) in LISTERS else None
+            loops[words[0][1:].lower()] = [os.path.join(p, '*') for p in ps_paths(items) or ['.']] \
+                if items is not None else ps_paths(words[2:]) if not re.match(r'^[\w-]+$', words[2]) else []
+            names.pop(words[0][1:].lower(), None)
+            out.append(([UNREAD], dict(names)))
+            continue
+        sets = assigned(words, ci, dialect, segs[k + 1][0] if k + 1 < len(segs) else None)
+        for n, v in sets.items():
+            names[n] = expand(v, names) if v is not None else None
+        here = list(level['chain'] if level['chain'] is not None else level['places'])
+        # xargs -I {} rm {}: the braces end the xargs words, so the rm after them reads its input too
+        via_xargs, xargs_open = xargs_open or any(base(w) == 'xargs' for w in words[:ci]), \
+            ci >= len(words) and any(base(w) == 'xargs' for w in words)
+        if ci >= len(words) or (dialect == 'ps' and sets) or name in ('export', 'set', 'true', ':'):
+            out.append((here, dict(names)))  # an assignment or the like succeeds: the && chain stays fine
+            continue
+        args = words[ci + 1:]
+        if name in CDS or name in ('popd', 'pop-location'):
+            out.append((here, dict(names)))
+            if name in ('popd', 'pop-location'):
+                back = level['pushed'].pop() if level['pushed'] else None
+                if back and (kind == 'list' or (kind == 'and' and level['fine'])):
+                    level['places'], level['chain'] = back, None
+                else:
+                    level['places'] += [m for m in back or [] if m not in level['places']]
+                    level['chain'], level['fine'] = None, False
+                continue
+            to = cd_target(name, args, dialect)
+            if to == '':
+                continue
+            new = [UNREAD] if to == '-' else [HOME_DIR] if to is None else [place(to, p, names, dialect) for p in here]
+            new = [m for n, m in enumerate(new) if m not in new[:n]]
+            maybe = (block if dialect == 'bash' else braces) > 0 or kind in ('or', 'pipe') or \
+                (kind == 'and' and not level['fine']) or PIPE.search(after) or background[k]
+            if not maybe and all(sure_folder(m) for m in new):
+                if name in ('pushd', 'push-location'):
+                    level['pushed'].append(level['places'])
+                level['places'], level['chain'] = new, None
+                last_cd = new
+            else:
+                level['places'] += [m for m in new if m not in level['places']]
+                if len(level['places']) > MAX_PLACES:
+                    level['places'] = [p for p in level['places'][:MAX_PLACES] if p != UNREAD] + [UNREAD]
+                if kind != 'pipe' and not PIPE.search(after):
+                    # cd A || cd S: either may have run, so the cd after || starts no chain
+                    level['chain'] = None if kind == 'or' else new
+                level['fine'], last_cd = False, level['chain']
+            continue
+        level['fine'] = False
+        # env -C and git -C move the one command they run
+        for j, w in enumerate(words[:ci]):
+            if w in ('-C', '--chdir') and j > 0 and j + 1 < ci:
+                here = [place(words[j + 1], p, names, dialect) for p in here]
+            elif w.startswith('--chdir='):
+                here = [place(w.split('=', 1)[1], p, names, dialect) for p in here]
+        out.append((here, dict(names)))
+        if why:
+            continue
+        what, verb = deleted(name, args, dialect, prev, via_xargs), 'deletes '
+        g = git_call(words)
+        if g and g[1] in ('worktree', 'clean'):
+            for j, o in enumerate(g[0]):
+                if o == '-C' and j + 1 < len(g[0]):
+                    here = [place(g[0][j + 1], p, names, dialect) for p in here]
+            if g[1] == 'worktree' and g[2][:1] == ['remove']:
+                _, pos = options(g[2][1:])
+                what, verb = [(p, False) for p in pos[:1]] or None, 'removes the worktree '
+            elif g[1] == 'clean':
+                f, pos = options(g[2], 'e', long_takes=('exclude',))
+                if f & {'-f', '--force'}:
+                    what, verb = [(p, True) for p in pos or ['.']], 'deletes the untracked files in '
+        prev = (name, args)
+        if what == 'input':
+            why = 'this deletes paths it reads from its input, which may be outside the scratch folders (under ' + \
+                TEMP_DIR + '); a delete there waits for Adam\'s go.'
+        for word, root_too in (what if isinstance(what, list) else []):
+            if why or (dialect == 'ps' and re.match(r'^(env|variable|function|alias):', word, re.I)):
+                continue  # a session's variable or function, not a file
+            for p, value in [(p, v) for p in here for v in each_value(word, loops, names)]:
+                bad = outside(word, p, value, dialect, root_too)
+                if bad:
+                    why = 'this ' + verb + bad[0] + (', which is outside' if bad[1] else ' so it may be outside') + \
+                        ' the scratch folders (under ' + TEMP_DIR + '); a delete there waits for Adam\'s go.'
+                    break
+    return why, out
+
+
+def each_value(word, loops, names):
+    """The names to judge word with: one set for each value a for loop's variable in word takes (none listed or
+    one this call reassigned is left unread)."""
+    sets = [names]
+    for var, values in loops.items():
+        if var not in names and re.search(r'\$\{?' + var + r'\b', word, re.I):
+            sets = [dict(s, **{var: expand(v, s) if '$' in v or '~' in v else v}) for s in sets for v in values] or \
+                [dict(s, **{var: None}) for s in sets]
+            if len(sets) > 4 * MAX_PLACES:
+                return [dict(names, **{var: None})]  # too many to follow: unread, so it asks
+    return sets
+
+
+def git_places_loose(words, glob_opts, seen, dialect):
+    """The folders a git command may work in, as the asks place it (seen: follow()'s entry for it), with -C
+    and --git-dir or --work-tree read as git reads them."""
+    here, names = seen
+    for k, o in enumerate(glob_opts):
+        if o == '-C' and k + 1 < len(glob_opts):
+            here = [place(glob_opts[k + 1], p, names, dialect) for p in here]
+    named = [o.split('=', 1)[1] for o in glob_opts if o.startswith(('--git-dir=', '--work-tree='))]
+    named += [glob_opts[k + 1] for k, o in enumerate(glob_opts) if o in ('--git-dir', '--work-tree')
+              and k + 1 < len(glob_opts)]
+    named += [w.split('=', 1)[1] for w in words[:command_at(words)] if re.match(r'^GIT_(DIR|WORK_TREE)=', w)]
+    return here + [place(n, p, names, dialect) for n in named for p in seen[0]]
+
+
+def asks_here(folder):
+    """Whether a repository ask about uncommitted edits applies in folder: this checkout, but not an isolated agent's
+    worktree inside it (.claude/worktrees), and a folder the guard cannot place."""
+    if folder == UNREAD:
+        return True
+    return in_repo(folder, '') and not rel(folder, '').lower().startswith('.claude/worktrees')
+
+
+LIVE_STATE = re.compile(r'(^|[/\\])(LocDB\.data|UIState\.data|autonomy\.json)$', re.I)
+
+
+def live_state(word, seen, dialect):
+    """Whether word may be this checkout's own LocDB.data, UIState.data or autonomy.json, from where the delete check
+    places the command (seen); a worktree's copy is not.  Without seen, any path ending in one of those names."""
+    if not LIVE_STATE.search(word):
+        return False
+    x = expand(word, seen[1]) if seen else None
+    if x is None:
+        return True
+    for p in seen[0]:
+        full = full_path(x, p, dialect)
+        if full is None or os.path.normcase(os.path.dirname(full)) == ROOT:
+            return True
+    return False
+
+
+def head_of(folder):
+    """(the worktree's own git folder, the branch its HEAD is on, '' when detached), read from its .git files; None
+    when folder is in no repository (or on a share or network drive, which the guard never looks at)."""
+    if not is_local(folder):
+        return None
+    f = norm(folder)
+    for _ in range(64):
+        dot = os.path.join(f, '.git')
+        gd = None
+        if os.path.isdir(dot):
+            gd = dot
+        elif os.path.isfile(dot):
+            try:
+                line = open(dot).read().strip()
+            except OSError:
+                return None
+            gd = os.path.join(f, line[7:].strip()) if line.startswith('gitdir:') else None
+            if not gd:
+                return None
+        if gd:
+            try:
+                head = open(os.path.join(gd, 'HEAD')).read().strip()
+            except OSError:
+                head = ''
+            return norm(gd), head[16:] if head.startswith('ref: refs/heads/') else ''
+        up = os.path.dirname(f)
+        if up == f:
+            return None
+        f = up
+    return None
+
+
+# The git commands whose folder matters to master: they may move it by name, by switching to it, or on it
+MASTER_SUBS = {'push', 'branch', 'update-ref', 'checkout', 'switch', 'fetch', 'rebase', 'worktree', 'merge',
+               'cherry-pick', 'commit', 'reset', 'pull', 'revert', 'am'}
+ON_BRANCH = {'merge', 'rebase', 'cherry-pick', 'commit', 'reset', 'pull', 'revert', 'am', 'push'}
+
+
+def switched_to(sub, args):
+    """The branch a checkout or switch puts HEAD on ('' when detached), or None when it is no branch switch."""
+    if sub == 'checkout' and '--' not in args:
+        f, pos = options(args, '', long_takes=('orphan', 'conflict', 'pathspec-from-file'))
+        made = [args[k + 1] for k, a in enumerate(args[:-1]) if re.match(r'^-[A-Za-z]*[bB]$', a) or a == '--orphan']
+        if made:
+            return made[0]
+        if '--detach' in f or len(pos) > 1:
+            return '' if '--detach' in f else None
+        return pos[0] if pos else None
+    if sub == 'switch':
+        f, pos = options(args, '', long_takes=('conflict',))
+        made = [args[k + 1] for k, a in enumerate(args[:-1]) if re.match(r'^-[A-Za-z]*[cC]$', a) or
+                a in ('--create', '--force-create', '--orphan')]
+        return made[0] if made else '' if f & {'-d', '--detach'} else pos[0] if pos else None
+    return None
+
+
+def moves_current(sub, args, folders):
+    """Whether this git command, run on a branch, moves that branch."""
+    if sub in ('merge', 'rebase', 'cherry-pick', 'revert', 'am'):
+        return not set(args) & {'--abort', '--quit', '--skip', '--show-current-patch'}
+    if sub == 'push':
+        f, pos = options(args, 'o', long_takes=('repo', 'push-option', 'receive-pack', 'exec'))
+        if f & {'--tags', '--delete', '-d'}:
+            return False
+        # No refspec pushes the current branch (push.default simple), and so does HEAD
+        return len(pos) < 2 or any(r.lstrip('+') in ('HEAD', '@') for r in pos[1:])
+    if sub == 'reset':
+        before = args[:args.index('--')] if '--' in args else args
+        _, pos = options(before)
+        # A commit moves the branch; a path only resets the index
+        return any(not any(os.path.exists(os.path.join(norm(p), r)) for p in folders if p != UNREAD) for r in pos)
+    return True
+
+
+def judge_master(sub, args, folders, mine, on_master):
+    """Ask before a git command that moves master: a push to it from any repository (folders: where the command may
+    run), or in this repository (mine) a command that moves it by name (moves_master) or runs on it, because the
+    worktree's HEAD is there or this call switched it there (on_master keeps those; the last switch wins)."""
+    if sub == 'push' or mine:
+        why = moves_master(sub, args)
+        if why:
+            answer('ask', why)
+    look = folders if sub in ('push', 'checkout', 'switch') else mine
+    heads = [(p, head_of(p)) for p in look if p != UNREAD] + ([(UNREAD, head_of(ROOT))] if UNREAD in mine else [])
+    keys = [h[0] if h else p for p, h in heads]
+    branch = switched_to(sub, args)
+    if branch is not None:
+        on_master.update((key, branch == 'master') for key in keys)
+    elif sub in ON_BRANCH and any(on_master[key] if key in on_master else bool(h and h[1] == 'master')
+                                  for (p, h), key in zip(heads, keys)) and moves_current(sub, args, look):
+        answer('ask', 'this ' + sub + ' runs on master; changes to master wait for Adam\'s go.')
+
+
 def judge_shell(cmd, cwd, ps):
-    segs = segments(cmd, ps)
+    segs3 = segments(cmd, 'ps' if ps else 'bash')
+    segs = [(w, t) for w, t, _, _ in segs3]
     for name, words in acting(segs):
         text = ' '.join(words)
         if (re.search(r'(?<![\w-])(powershell|pwsh)(\.exe)?(?![\w-])', text, re.I) and
                 re.search(r'(?<![\w-])-(ep|ex\w*)[\s:]+bypass\b', text, re.I)) or \
                 re.search(r'\bset-executionpolicy\b.*\bbypass\b', text, re.I):
             answer('deny', '-ExecutionPolicy Bypass is never used; run the script another way.')
-    if not (in_repo(cwd, '') or NAME.lower() in cmd.lower()):
-        return
+    try:
+        removal, soft = follow(segs3, cwd)
+    except Exception:
+        removal, soft = None, None
+    gated = in_repo(cwd, '') or NAME.lower() in cmd.lower()
     # A cd earlier in the call adds a folder the rest may run in, and never takes one away: a cd can fail, a subshell
-    # ends, and the shell is then still where it was.  Only git -C, which git itself obeys, moves a git command.
-    places = [cwd]
-    for words, targets in segs:
+    # ends, and the shell is then still where it was.  Only git -C, which git itself obeys, moves a git command.  That
+    # strict placement is the denies'; the asks use follow()'s, which knows a cd to a folder that exists succeeds.
+    places, on_master = [cwd], {}
+    for k, (words, targets) in enumerate(segs):
         moved = moves_to(words, places)
         if moved:
             places += [m for m in moved if m not in places]
@@ -569,30 +1206,37 @@ def judge_shell(cmd, cwd, ps):
             continue
         g = git_call(words)
         if g:
-            inside = [p for p in git_places(words, g[0], places) if inside_checkout(p)]
+            at = git_places(words, g[0], places)
+            loose = git_places_loose(words, g[0], soft[k], segs3[k][2]) if soft else at
+            if g[1] in MASTER_SUBS:
+                judge_master(g[1], g[2], loose, [p for p in loose if this_repository(p, gated)], on_master)
+            inside = [p for p in at if inside_checkout(p)] if gated else []
             if inside:
                 ci = command_at(words)
                 via_xargs = any(base(w) == 'xargs' for w in words[:ci])
                 judge_git(g[0], g[1], g[2] + (['--'] if via_xargs and g[1] in ('checkout', 'restore') else []),
-                          ' '.join(words), inside)
+                          ' '.join(words), inside, [p for p in loose if asks_here(p)])
         # Run from inside the layout folder, a write of a relative path is a write into it
-        in_layout = any(p != UNREAD and in_live_layout(p, [ROOT]) for p in places)
-        if writes(words, targets, lambda w: in_live_layout(w, places)
-                  or (in_layout and absolute(w, ROOT) != w)):
+        in_layout = gated and any(p != UNREAD and in_live_layout(p, [ROOT]) for p in places)
+        if gated and writes(words, targets, lambda w: in_live_layout(w, places)
+                            or (in_layout and absolute(w, ROOT) != w)):
             answer('deny', 'the live layout is never written or reverted by a session; its changes are committed.')
-    # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that is
-    # itself the command being run is not a name to kill by.
-    named = killed = False
-    for name, words in acting(segs):
-        named = named or any(JAVA.search(w) for w in words[1:])
-        killed = killed or KILL.search(' '.join(words)) is not None or \
-            (name == 'wmic' and re.search(r'\b(delete|terminate)\b', ' '.join(words), re.I) is not None)
-    if named and killed:
-        answer('deny', 'never kill or wait on java by name: Adam\'s TrainControl may be one of them.  Use the run\'s '
-                       'reaper.')
-    live = re.compile(r'(^|[/\\])(LocDB\.data|UIState\.data|autonomy\.json)$', re.I)
-    if any(writes(words, targets, live.search) for words, targets in segs):
-        answer('ask', 'this may write or remove Adam\'s live LocDB.data, UIState.data or autonomy.json.')
+    if gated:
+        # Across pipes: Get-Process java | Stop-Process names java in one command and kills in the next.  A java that
+        # is itself the command being run is not a name to kill by.
+        named = killed = False
+        for name, words in acting(segs):
+            named = named or any(JAVA.search(w) for w in words[1:])
+            killed = killed or KILL.search(' '.join(words)) is not None or \
+                (name == 'wmic' and re.search(r'\b(delete|terminate)\b', ' '.join(words), re.I) is not None)
+        if named and killed:
+            answer('deny', 'never kill or wait on java by name: Adam\'s TrainControl may be one of them.  Use the '
+                           'run\'s reaper.')
+        if any(writes(words, targets, lambda w: live_state(w, soft[k] if soft else None, segs3[k][2]))
+               for k, (words, targets) in enumerate(segs)):
+            answer('ask', 'this may write or remove Adam\'s live LocDB.data, UIState.data or autonomy.json.')
+    if removal:
+        answer('ask', removal)
 
 
 def main():
@@ -607,7 +1251,7 @@ def main():
         judge_write(tool, ti, cwd)
     elif tool in ('Bash', 'PowerShell'):
         judge_shell(ti.get('command') or '', cwd, tool == 'PowerShell')
-    asked()
+    finish()
 
 
 if __name__ == '__main__':

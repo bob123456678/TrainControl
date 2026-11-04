@@ -6,13 +6,10 @@ import org.traincontrol.gui.widgets.StationCaption;
 import support.SourceOf;
 
 /**
- * FR-035, and the arrow that moves to the other side of the label.
- *
- * Adam: "If going south or west, move the arrow to the other side of the label." That rule is pure (a string and a
- * glyph), so it is driven directly.  And: "In the autonomy editor ONLY, make it possible to move around station labels
- * (only) by clicking and dragging them. Do not make tiles or anything else movable." A drag cannot be performed
- * without a window, a railway and a mouse, so what is checked is the part that can be wrong unnoticed: WHAT the
- * gesture is attached to, and whether the mark drawn during the drag asks the same question the drop will.
+ * FR-035, and the arrow that moves to the other side of the label.  The arrow rule is pure (a string and a glyph), so
+ * it is driven directly.  A drag cannot be performed without a window, a railway and a mouse, so what is checked is
+ * the part that can be wrong unnoticed: WHAT the gesture is attached to, and whether the mark drawn during the drag
+ * asks the same question the drop will.
  *
  * @author Adam
  */
@@ -113,10 +110,9 @@ public class testStationLabelDrag
     }
 
     /**
-     * What the drag mark says and what the drop does are one question.
-     *
-     * The mark asks `canDropCaption`, and `canDropCaption` and `moveCaption` both ask `refuseCaptionDrop`.  A highlight
-     * with a rule of its own would offer a square the drop then refused (OB-057, OB-090).
+     * What the drag mark says and what the drop does are one question (OB-057, OB-090): the mark asks `canDropCaption`,
+     * and `canDropCaption` and `moveCaption` both ask `refuseCaptionDrop`; a highlight with a rule of its own would
+     * offer a square the drop then refused.
      *
      * MUTATION: having the mark answer `over != null` fails the first assertion; giving moveCaption
      * its own copy of the checks fails the count.

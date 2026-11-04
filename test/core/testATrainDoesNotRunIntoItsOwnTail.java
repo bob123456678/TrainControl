@@ -22,12 +22,8 @@ import org.traincontrol.util.I18n;
 /**
  * A train is not sent round a loop into its own tail (OB-294).
  *
- * Adam: *"make sure the model factors in whether the train will clear the area before it crosses over"* and
- * *"the check should pass if the train would be gone (i.e. if that one was only length 4, for example)."*
- *
- * His railway's case: a train that came down RampDown and west along row 11 stands at BottomSecondary with its tail
- * back along that row, and every way to LowerFront comes back east along the same row.  A train never blocks itself
- * (behaviour/tail.md 5c): pulling forward off its tail is how it leaves a berth; coming back to it round a loop is not.
+ * A train never blocks itself (behaviour/tail.md 5c): pulling forward off its tail is how it leaves a berth; coming
+ * back to it round a loop is not.
  *
  * The frozen railway, because the loop is his and no hand-drawn fixture has one; LowerFront's size is raised for the
  * test so the station's own limit does not refuse a long train.
@@ -380,15 +376,9 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
     /**
      * A loop answered 0 all the way round is judged, and a train lying on it is not let round into its own body
-     * (OB-300).  Every other length rule reads track answered 0 on purpose as measured track of no length
-     * (behaviour/length.md 5b) and errs towards refusing; this one judged a return only where the route had run some
-     * length.  A way round is judged once it is measured: a length on it, or every place on it answered.  A loop nobody
-     * measured is not judged (*"only apply if lengths are specified"*), nor is one answered everywhere but one square,
-     * which `Edge.isMeasured` would not count either.
-     *
-     * Built by hand with the Points' and edges' own constructors (a new `Layout` would retire the loaded railway) and
-     * the rule asked directly: a train of 3 lying on A's square, where the loop begins and ends, out by B and C and
-     * back onto it, every place 0.  It meets its own body after 0 units, so it is refused at any length.
+     * (OB-300).  A loop nobody measured is not judged (Adam: "only apply if lengths are specified").  Built by hand
+     * with the Points' and edges' own constructors (a new `Layout` would retire the loaded railway) and the rule asked
+     * directly.
      *
      * MUTATION: judge a return only where the route has run some length again (drop the answered half of the test), and
      * this fails; count a way round as answered where any place on it is, not every place, and the control with one
@@ -619,9 +609,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
     }
 
     /**
-     * Return Home plans no route the railway would refuse for the train's own tail.  The planner re-implements the
-     * runtime's rules rather than asking `isPathClear` (live sensors), so it must gain every rule the runtime gains
-     * (OB-073).  Asked of its route search directly.
+     * Return Home plans no route the railway would refuse for the train's own tail: the planner re-implements the
+     * runtime's rules rather than asking `isPathClear`, so it must gain every rule the runtime gains (OB-073).
      *
      * MUTATION: leave the own-tail question out of the planner's search, and this fails.
      */
@@ -681,8 +670,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
     }
 
     /**
-     * Return Home judges a train it has already moved by the road it moved it along, not by the railway's record: the
-     * plan's second move starts where its first left it, and BottomSecondary is empty on the railway (OB-073).
+     * Return Home judges a train it has already moved by the road it moved it along, not by the railway's record
+     * (OB-073).
      *
      * MUTATION: judge the moved train by the railway's record of its square, and this fails.
      */

@@ -134,12 +134,8 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A deliberate 0 is kept, survives a save and a load, and reads as no length (OB-274).
-     *
-     * A length of 0 set deliberately means the same to the model as a square nobody measured, but lets everything get
-     * assigned without a skip.  So `getTileLength` answers 0 for both and only `isTileLengthAnswered` tells them apart,
-     * including after a restart (or the walk would offer the square again).  Writing 0 through `setTileLength` still
-     * clears a square, answer included.
+     * A deliberate 0 is kept, survives a save and a load, and reads as no length (OB-274): `getTileLength` answers 0
+     * for both, and only `isTileLengthAnswered` tells them apart.
      */
     @Test
     public void testADeliberateZeroIsKeptAndReadsAsNoLength() throws IOException
@@ -660,9 +656,7 @@ public class testAutonomyDiagramStore
 
     /**
      * A page RENUMBERED, whose page did not load, is still reported as not loaded.  The guard on the fix above: the id
-     * is believed only where `resolvePage` believes it.  Here id 2 belonged to "Yard" and now belongs to "Main Line",
-     * while "Yard" is still in the index under another id and did not load; asked by id alone, the save would lose a
-     * page of settings (MT-135).
+     * is believed only where `resolvePage` believes it (MT-135).
      *
      * MUTATION: ask `pageIdToName.get(written.getKey())` in `pagesNotLoaded` instead of
      * `resolvePage(written.getKey())`, and this fails.
@@ -893,10 +887,8 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * Switching a paired link off switches its partner off too (OB-041).  A pair of links is one doorway with an end in
-     * two places, and autonomy walks through it in both directions: a doorway closed at one end and open at the other
-     * is a route that exists one way and not the other, which nothing on the diagram says.  The same reasoning as
-     * OB-031, where pairing two links switches both ends ON.
+     * Switching a paired link off switches its partner off too (OB-041): a doorway closed at one end and open at the
+     * other is a route that exists one way and not the other.  The same reasoning as OB-031.
      */
     @Test
     public void testSwitchingAPairedLinkOffSwitchesItsPartnerOff() throws IOException
@@ -1256,11 +1248,8 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * One square holds one caption, and one station may be captioned in several places.
-     *
-     * The store holds a station's captions in as many places as it is told, so a setup edited by hand or written by an
-     * older version can carry several.  The editor never makes them (the session sweeps, OB-256); the setup check
-     * reports a station whose name is drawn twice on one page as an ERROR (OB-341).
+     * One square holds one caption, and one station may be captioned in several places.  The editor never makes
+     * several (OB-256); the setup check reports a station whose name is drawn twice on one page as an ERROR (OB-341).
      */
     @Test
     public void testASquareHoldsOneCaptionAndAStationMayHaveSeveral()
@@ -2249,11 +2238,8 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A rename reaches a setup that nothing has open.
-     *
-     * OB-062: a locomotive rename has to reach the database, the setup in memory and the setup on disk, even with no
-     * session built.  Nothing repairs locomotive names at load, so the old name would survive in the placement, the
-     * home and the exclusions, and parseAuto invalidates the whole layout over a locomotive it cannot resolve.
+     * A rename reaches a setup that nothing has open (OB-062): a locomotive rename has to reach the database, the setup
+     * in memory and the setup on disk, even with no session built.
      */
     @Test
     public void testARenameReachesASetupNothingHasOpen() throws IOException
@@ -2617,13 +2603,8 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A locomotive rename reaches the captured timetable, and survives a save and a load.
-     *
-     * OB-069: the repair's own note enumerates three holders of a locomotive's name (the placement, the home and the
-     * exclusion list), all inside "points".  The captured timetable is a fourth: it rides in "globals".
-     *
-     * Left behind, the loader discards the ENTIRE timetable over a locomotive that no longer exists, and the next
-     * capture writes the emptiness back permanently.
+     * A locomotive rename reaches the captured timetable, and survives a save and a load (OB-069): it rides in
+     * "globals", not in "points".
      */
     @Test
     public void testARenameReachesTheCapturedTimetable() throws IOException
@@ -2710,12 +2691,8 @@ public class testAutonomyDiagramStore
     }
 
     /**
-     * A page whose NAME contains a colon keeps its own setup.
-     *
-     * OB-071: a key is "page:x,y", and `parseTileKey`'s own comment calls "Yard: Upper" an ordinary page name, which is
-     * why it, `isOnPage` and `rekeyOne` all split on the LAST colon.  `toStored` and `fromStored` must too, or every
-     * square on "Yard: Upper" is stored under the id of "Yard", and renaming "Yard" loses the entire setup of "Yard:
-     * Upper".
+     * A page whose NAME contains a colon keeps its own setup (OB-071): `toStored` and `fromStored` split a key on the
+     * LAST colon, as `parseTileKey`, `isOnPage` and `rekeyOne` do.
      */
     @Test
     public void testAPageNameContainingAColonKeepsItsOwnSetup() throws IOException

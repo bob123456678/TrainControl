@@ -50,10 +50,9 @@ import support.Components;
 
 /**
  * Help > Download Update > Download & Update, from a jar it can replace: each way it stops short of the exit says why
- * and leaves the jar as it was (FR-125; Adam: "after downloading the new jar, it should take a backup, then start the
- * update script and close TrainControl.").  A test runs from a folder of classes, where Download & Update is not
- * offered, so each claim points `SelfUpdate.runningJarForTests` at a throwaway jar of its own (Adam: "OK on download
- * update test hooks") and answers the real dialogs through `support.Answering`.
+ * and leaves the jar as it was (FR-125).  A test runs from a folder of classes, where Download & Update is not offered,
+ * so each claim points `SelfUpdate.runningJarForTests` at a throwaway jar of its own and answers the real dialogs
+ * through `support.Answering`.
  *
  * Nothing is fetched from the internet and nothing real is replaced: the update check is off, the new version comes
  * from a server on this computer under a version no release will have, and the backup goes into the run's own data

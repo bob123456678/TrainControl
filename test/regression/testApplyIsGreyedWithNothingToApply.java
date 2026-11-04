@@ -13,13 +13,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 
 /**
- * Customize Function Icons grays Apply while there is nothing to apply, and only then (FR-098).
- *
- * Adam, on MT-466: *"there is no cancel button if you go to manage locomotive -> customize function icons,
- * only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure
- * apply is greyed out if there is nothing to apply."*  Nothing to apply is the function on show exactly as the
- * locomotive holds it: its icon, its trigger, and its custom picture.  Both directions are claimed - graying Apply while
- * there IS something to apply would lose the change when the window is closed.
+ * Customize Function Icons grays Apply while there is nothing to apply, and only then (FR-098, MT-466): nothing to
+ * apply is the function on show exactly as the locomotive holds it (icon, trigger and custom picture).  Both directions
+ * are claimed - graying Apply while there IS something to apply would lose the change when the window is closed.
  *
  * MUTATION: leave Apply enabled whatever is shown, or gray it whatever is shown, and this fails.
  *

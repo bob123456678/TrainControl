@@ -26,15 +26,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * The farthest sensor a standing train's tail has crossed can be given in the autonomy editor, from the right-click
- * menu or by clicking the sensor on the diagram: "pick from a list and select the farthest sensor the tail of the
- * train recently crossed".
- *
- * Fixture: the frozen `live-snapshot` with every square measured at one unit, so every road back is measured and a
- * long train's tail reaches past junctions, and one standing train made long enough that the question is put.  Each
- * claim puts the setup back as it found it (OB-111).
- *
- * Asked through the real doors: the menu is the one `AutonomyEditorPanel.buildFacingMenu` serves both surfaces, its
- * items are clicked, and the diagram click is `tileClicked`.
+ * menu or by clicking the sensor on the diagram.  Each claim puts the setup back as it found it (OB-111).  Asked
+ * through the real doors: the menu `AutonomyEditorPanel.buildFacingMenu` serves both surfaces, and the diagram click
+ * is `tileClicked`.
  *
  * @author Adam
  */

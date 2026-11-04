@@ -55,9 +55,8 @@ import org.testng.annotations.Test;
  * Both implementations run against the SAME Layout instance, so the graphs cannot differ, and bfs does
  * not mutate the layout, so the order they run in does not matter.
  *
- * **Equivalence now holds on graphs with no terminus.**  Since OB-229 the current bfs does not extend a
- * route through a terminus that is not its end, which the legacy one did.  None of the graphs here marks one, so
- * every comparison below still compares like with like; `core.testARouteIsFoundPastATerminus` holds the difference.
+ * **Equivalence holds on graphs with no terminus** (OB-229); none of the graphs here marks one.
+ * `core.testARouteIsFoundPastATerminus` holds the difference.
  */
 public class testLayoutBfsEquivalence
 {

@@ -20,11 +20,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
 
 /**
- * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened.
- *
- * Adam: *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*  The
- * link sat on the Load Autonomy Configuration tab, which goes (OB-254); the guide it opened,
- * `TrainControlUI.README_URL`, is about the autonomy the menu drives.
+ * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (OB-254).
  *
  * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard gray it with
  * the rest, and the second does.

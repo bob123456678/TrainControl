@@ -9,15 +9,9 @@ import org.testng.annotations.Test;
 import org.traincontrol.marklin.file.CS2File;
 
 /**
- * A CS3 that answers "Not Found" in the BODY is recognized as not having it.
- *
- * `isNotFoundError` has two branches and the suite only exercised one (OB-089): the mock Central Station returns real
- * HTTP 404s, which land in the `FileNotFoundException` catch.  The untested branch is the one that matters on real
- * hardware: a CS3 running firmware before 2.6.0 answers an unknown endpoint with **HTTP 200 and a JSON object**
- * `{"error": "Not Found"}` rather than a 404, which is why the method reads the body at all.
- *
- * No model, no layout, no network: `fetchURL` reads any URL the JVM understands, including `file:`, which the
- * application relies on when a local layout override is set, so the responses are written to disk and pointed at.
+ * A CS3 that answers "Not Found" in the BODY is recognized as not having it (OB-089): firmware before 2.6.0 answers an
+ * unknown endpoint with HTTP 200 and a JSON object, not a 404.  No model, no layout, no network: the responses are
+ * written to disk and read through `fetchURL` as `file:` URLs.
  */
 public class testCS3NotFoundDetection
 {

@@ -26,14 +26,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
- * The route list turns a mark beside every route that is running (FR-137).  The mark is the one Start and Return Home
- * turn (FR-077, OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for a route whoever
- * started it and off when the route really ends.
- *
- * It is seen as the renderer paints a cell to a picture, the strip left of the play button searched for the mark's
- * gray; the route is a real one, run by `MarklinRoute.execRoute` with a delay between its commands.  The list's other
- * doors and the route editor's own are driven as the operator drives them (FR-136): Change Route ID, Delete Route,
- * Enable and Disable Auto Execution, and the editor's Save and Cancel; each claim names the line it rests on.
+ * The route list turns a mark beside every route that is running (FR-137): the mark is the one Start and Return Home
+ * turn (OB-309), drawn by the list's renderer from `Route.isExecuting()`, so it is on for a route whoever started it
+ * and off when the route really ends.  The route is a real one, run by `MarklinRoute.execRoute` with a delay between
+ * its commands; the list's other doors and the route editor's own are driven as the operator drives them (FR-136), and
+ * each claim names the line it rests on.
  *
  * MUTATION: take the `routeStarted` notice out of `MarklinRoute.execRoute`, or the paint out of the renderer, and the
  * claims fail.
@@ -283,9 +280,8 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * With the power off the route list's button is a wrench in the play button's place, and with it on, the green
-     * triangle (FR-164).  Read as the renderer paints the cell, the glyph's box searched for the triangle's green and
-     * the wrench's gray; the power is turned off and on by the station's
-     * report, as a Central Station's GO and STOP arrive.
+     * triangle (FR-164).  Read as the renderer paints the cell; the power is turned off and on by the station's report,
+     * as a Central Station's GO and STOP arrive.
      *
      * MUTATION: in `CustomTableRenderer.paintComponent`, change `if (routeListEditsRoutes())` to `if (false)`, and the
      * wrench is never painted.
@@ -421,8 +417,7 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * The right-click menu's Execute Route still runs the route with the power off (FR-164).  Adam: "right clicking to
-     * execute when the power is off should still be allowed."
+     * The right-click menu's Execute Route still runs the route with the power off (FR-164).
      *
      * MUTATION: in `RightClickRouteMenu`, give the Execute Route item `setEnabled(ui.getModel().getPowerState())`, and
      * this fails.
@@ -478,8 +473,7 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * The menu opens with a grayed, bold line naming the route and its id, a divider, and then Execute Route, plain
-     * (FR-164).  Adam: "make sure that grey right click menu route name heading becomes bold and has a divider right
-     * below it."
+     * (FR-164).
      *
      * MUTATION: in `RightClickRouteMenu`, delete the header's `setFont(...)` line, and this fails.
      */
@@ -1631,7 +1625,7 @@ public class testTheRouteListShowsWhatRuns
 
     /**
      * A right-click as Windows sends it, the popup trigger on the release and then a click, opens the route's menu and
-     * leaves it open, with the power on and off (MT-876: "the right click menu is gone in both power on and off mode").
+     * leaves it open, with the power on and off (MT-876).
      *
      * MUTATION: drop `this.RouteList.addMouseListener(new RightClickRouteMenu(this))` from `TrainControlUI`, and no
      * menu opens.

@@ -640,8 +640,7 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * Nothing outlines the grid's padding (MT-228; Adam: "a phantom row gets permanently highlighted in blue.").  The
-     * grid is one row taller and one column wider than the diagram, blank labels hold it together (OB-055), and
+     * Nothing outlines the grid's padding (MT-228; Adam: "a phantom row gets permanently highlighted in blue."):
      * clearBordersFromChildren leaves spacers alone, so a landing outline painted there never came off.  Both doors are
      * tested: the landing set through a drag, the picked set through a box released on the padding.
      *

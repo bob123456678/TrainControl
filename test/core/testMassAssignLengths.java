@@ -24,15 +24,9 @@ import support.SourceOf;
 
 /**
  * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
- * shared out.  Every leg on the pages autonomy uses is cut into PIECES at its switches, because the FR-087 allowance
- * (`Layout.measuredRouteIn`) adds whole legs back until a reversal.  Adam chose **"Every leg, cut at switches"** and
- * **"One length for all switches"**:
- *
- *  - each square belongs to exactly one piece - a sensor square that ends several legs is in the first of them;
- *  - a switch square is in no piece, so its share of a piece's length never sits on a square the room rule does not
- *    count.  Switches are asked for together, one turnout length per page;
- *  - a piece needs a length only while its TOTAL is 0: *"It is only indeterminate if the entire logical segment has
- *    length 0."*  A square inside a measured piece may hold 0; the store keeps 0 and "not given" as the same thing.
+ * shared out.  Every leg on the pages autonomy uses is cut into PIECES at its switches (FR-087), each square in exactly
+ * one piece, and a piece needs a length only while its TOTAL is 0: *"It is only indeterminate if the entire logical
+ * segment has length 0."*
  *
  * @author Adam
  */
@@ -406,7 +400,7 @@ public class testMassAssignLengths
         assertFalse(marked(panel, key(5, 1)), "the rest of a piece that now has a length is still amber");
     }
 
-    /** A square whose only mark is "needs a length" still paints (OB-007). */
+    /** A square whose only mark is "needs a length" still paints (FR-005). */
     @Test
     public void testASquareMarkedOnlyAsUnmeasuredIsNotBlank()
     {
