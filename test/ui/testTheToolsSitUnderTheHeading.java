@@ -279,65 +279,6 @@ public class testTheToolsSitUnderTheHeading
     }
 
     /**
-     * The Visible Elements checkboxes of the autonomy editor (Grid, Addresses, Track Lengths, Unmeasured Track, Show
-     * Trains, Text Labels) are all the same distance apart (Adam: *make sure that in the autonomy editor, all the
-     * checkboxes are separated by the same gap size.*).  Measured from each box's bounds in the window, top to bottom.
-     *
-     * MUTATION: take the strut out from between Track Lengths and Unmeasured Track in `setAutonomyMode`, and this
-     * fails.
-     */
-    @Test
-    public void testTheVisibleElementsCheckboxesAreEquallySpaced() throws Exception
-    {
-        editor = shown(session);
-
-        final LayoutEditor on = editor;
-
-        final java.util.List<String> names = new java.util.ArrayList<>();
-        final java.util.List<Integer> gaps = new java.util.ArrayList<>();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            AutonomyEditorPanel panel = on.getAutonomyPanel();
-
-            javax.swing.JCheckBox[] boxes =
-            {
-                field(on, LayoutEditor.class, "showGridCheckbox"), field(on, LayoutEditor.class, "showAddressCheckbox"),
-                panel.getShowLengths(), panel.getShowUnmeasured(), panel.getShowTrains(), panel.getShowTextLabels()
-            };
-
-            int previousBottom = 0;
-
-            for (int i = 0; i < boxes.length; i++)
-            {
-                assertTrue(boxes[i].isShowing(), "precondition: '" + boxes[i].getText() + "' is not on the screen");
-
-                int top = SwingUtilities.convertPoint(boxes[i].getParent(), boxes[i].getLocation(), on.getContentPane()).y;
-
-                if (i > 0)
-                {
-                    names.add(boxes[i - 1].getText() + " to " + boxes[i].getText());
-                    gaps.add(top - previousBottom);
-                }
-
-                previousBottom = top + boxes[i].getHeight();
-            }
-        });
-
-        System.out.println("Gaps between the Visible Elements checkboxes (px): " + names + " " + gaps);
-
-        for (int i = 1; i < gaps.size(); i++)
-        {
-            assertTrue(gaps.get(i).equals(gaps.get(0)), "the autonomy editor's checkboxes are not evenly spaced: " + names
-                + " are " + gaps + " px apart");
-        }
-
-        close(editor);
-
-        editor = null;
-    }
-
-    /**
      * Switching from the track diagram to Autonomy Setup with its Text Labels off never shows the page's own text, not
      * even for the moment between the arrival's first drawing and the panel's settings, and neither does opening the
      * editor in Autonomy Setup: the probe looks between every event.  Captions are set to Hide for the claim, so any

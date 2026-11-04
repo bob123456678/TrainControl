@@ -121,7 +121,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     /**
      * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312): the form
      * leaves 4 pixels between its own checkboxes, so the columns built beside it must not leave the heading's gap
-     * between them.  Track Lengths and Show Unmeasured stay together with no gap, as one subject.
+     * between them (Adam: "make sure that in the autonomy editor, all the checkboxes are separated by the same gap
+     * size").
      *
      * MUTATION: leave a heading's gap between two of the checkboxes, and this fails.
      */
@@ -1214,10 +1215,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         }
     }
 
-    /**
-     * The gaps between one checkbox and the next under Visible Elements, top to bottom, in one editor: "A - B: n".  Not
-     * the pair Track Lengths and Show Unmeasured, which are one subject.
-     */
+    /** The gaps between one checkbox and the next under Visible Elements, top to bottom, in one editor: "A - B: n". */
     private static java.util.List<String> checkboxGaps(final boolean autonomy) throws Exception
     {
         final LayoutEditor built = builtEditor(autonomy, 30);
@@ -1242,8 +1240,6 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                     boxes.sort((a, b) -> Integer.compare(SwingUtilities.convertPoint(a.getParent(), a.getLocation(), pane).y,
                         SwingUtilities.convertPoint(b.getParent(), b.getLocation(), pane).y));
 
-                    javax.swing.JCheckBox unmeasured = autonomy ? built.getAutonomyPanel().getShowUnmeasured() : null;
-
                     for (int i = 1; i < boxes.size(); i++)
                     {
                         javax.swing.JCheckBox above = boxes.get(i - 1);
@@ -1254,8 +1250,6 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
                         // The column ends where the next control is far below it
                         if (gap > 30) break;
-
-                        if (below == unmeasured) continue;
 
                         out.add(above.getText() + " - " + below.getText() + ": " + gap);
                     }
