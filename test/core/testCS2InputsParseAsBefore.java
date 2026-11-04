@@ -25,8 +25,10 @@ import org.traincontrol.marklin.file.CS2File;
  * uncoupler that read as MM2, and only there (support.SavedProtocol).
  *
  * One change is on purpose and listed line by line in `test/baseline/cs2_parse_golden_changes.tsv`: the accessory
- * file's `.stellung` 0 now reads as turned, as the station's state and CAN do, so each accessory's printed position is
- * the other one.  Nothing reads that position yet.
+ * file's `.stellung` 0 reads as turned, as the station's state and CAN do, so an article with a written `.stellung`
+ * prints the other position; one without it prints as before.  Nothing reads that position yet.
+ *
+ * Only `test/` is read: the release tree has no `docs/`.
  *
  * MUTATION: write `.prot=MM2` on every tile (drop the accessory test from LayoutDiagramComponent's `else if`), and the
  * golden differs at the first track tile; or on none (drop the `else if`), and at the first MM2 switch.
@@ -44,9 +46,7 @@ public class testCS2InputsParseAsBefore
     {
         "test/layout", "test/layout_subpage", "test/test_layout", "test/test_layout_snapshot", "test/operator_layout",
         "test/baseline/layout", "test/layouts/curve-into-platform", "test/layouts/live-snapshot", "test/layouts/one-page",
-        "test/layouts/single-switch", "test/layouts/unfolded-route-tiles", "test/cs3_v261",
-        "docs/manual-tests/files/MT-244-layout-without-autonomy-setup/layout",
-        "docs/manual-tests/files/MT-380-one-page-layout/layout"
+        "test/layouts/single-switch", "test/layouts/unfolded-route-tiles", "test/cs3_v261"
     };
 
     private static final String[] MAGS =

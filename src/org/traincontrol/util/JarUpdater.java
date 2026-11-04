@@ -31,7 +31,8 @@ import java.util.List;
  * `LOCK_TIMEOUT_MS` it changes nothing and starts nothing, since a second copy is the last thing wanted.
  *
  * **"Started" means the new version said so** (`STARTED_ENVIRONMENT`, `SelfUpdate.reportStarted`): a version that fails
- * before its window is put back whatever its exit code.  **A failure puts the old jar back and starts it**, leaving
+ * before its window is put back whatever its exit code.  An environment variable rather than a -D option, because Java
+ * options are carried into every later restart.  **A failure puts the old jar back and starts it**, leaving
  * `ROLLBACK_NOTE_NAME` beside the jar.  Every step is logged to `update.log`.
  *
  * **Self-contained on purpose**: it uses nothing of TrainControl's, so nothing the application loads at start-up can
