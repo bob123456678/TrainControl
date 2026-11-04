@@ -498,8 +498,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      * smallest size (OB-399; Adam: "ensure the autonomy editor window has a min height to prevent the cancel button from
      * being hidden").  The smallest size is the column's own height, so it fits the screen rather than being cut to it.
      *
-     * MUTATION: put the 630-pixel floor back for the autonomy editor in `LayoutEditor.sizeForDiagram`, or the 640 and
-     * 240 pixels in `AutonomyEditorPanel.setColumnWidth`, and this fails.
+     * MUTATION: give `AutonomyEditorPanel` its 640-pixel preferred and 240-pixel minimum height again, and this fails.
      */
     @Test
     public void testCancelStaysInsideTheWindowOnA768PixelScreen() throws Exception
