@@ -3612,8 +3612,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
                 this.setMinimumSize(new Dimension(Math.max(getMinimumSize().width, 550 + sideways),
-                    isAutonomyMode() ? Math.min(heightForTheColumn(), usableScreen().height)
-                        : Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
+                    Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
             }
 
             saveWindowBounds();
