@@ -3541,8 +3541,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         java.awt.Rectangle usable = usableScreen();
 
-        if (!isAutonomyMode() || getHeight() <= usable.height
-            || (getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0) return;
+        if (!isAutonomyMode() || getHeight() <= usable.height || isMaximized()) return;
 
         setSize(getWidth(), usable.height);
 

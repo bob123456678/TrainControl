@@ -598,7 +598,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     {
         final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
 
-        java.awt.Rectangle opened = openedFromMemory(new java.awt.Rectangle(0, 0, 1300, 1100), 0, oneScreen(workArea));
+        java.awt.Rectangle opened = openedFromMemory(new java.awt.Rectangle(0, 0, 1300, 1100), 0, oneScreen(workArea), false);
 
         assertTrue(opened.height <= workArea.height, "a window remembered 1100 pixels tall opened "
             + opened.height + " pixels tall on a work area " + workArea.height + " tall (OB-399)");
@@ -624,14 +624,14 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         screens.put(shortDefault, taskbar);
         screens.put(new java.awt.Rectangle(0, 0, 1920, 1248), taskbar);
 
-        java.awt.Rectangle opened = openedFromMemory(remembered, 0, screens);
+        java.awt.Rectangle opened = openedFromMemory(remembered, 0, screens, false);
 
         if (opened.height != 1000) wrong.append("on a taller second screen: ").append(opened).append("; ");
 
         screens.remove(new java.awt.Rectangle(0, 0, 1920, 1248));
         screens.put(new java.awt.Rectangle(0, 100, 1920, 768), taskbar);
 
-        opened = openedFromMemory(remembered, 0, screens);
+        opened = openedFromMemory(remembered, 0, screens, false);
 
         if (opened.height != 720 || opened.y != 100) wrong.append("on a shorter second screen at y=100: ").append(opened)
             .append("; ");
@@ -639,7 +639,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
         screens.remove(new java.awt.Rectangle(0, 100, 1920, 768));
         screens.put(new java.awt.Rectangle(3000, 0, 1920, 1248), taskbar);
 
-        opened = openedFromMemory(remembered, 0, screens);
+        opened = openedFromMemory(remembered, 0, screens, false);
 
         if (opened.height != 720 || opened.y != 0) wrong.append("on no screen, so the default: ").append(opened);
 
@@ -648,11 +648,29 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
+     * A window remembered maximized keeps its remembered size under the maximize, as a maximized one does: brought back
+     * to normal, it has that size, not the work area's height (OB-399).
+     *
+     * MUTATION: ask only `getExtendedState()` for the maximize in `LayoutEditor.keepTheAutonomyEditorOnTheScreen`, and
+     * this fails.
+     */
+    @Test
+    public void testARememberedMaximizedWindowKeepsItsSizeUnderneath() throws Exception
+    {
+        java.awt.Rectangle restored = openedFromMemory(new java.awt.Rectangle(0, 0, 1300, 900),
+            java.awt.Frame.MAXIMIZED_BOTH, oneScreen(new java.awt.Rectangle(0, 0, 1366, 720)), true);
+
+        assertEquals(restored.height, 900, "a window remembered maximized over a size 900 pixels tall, on a work area"
+            + " 720 tall, came back to " + restored);
+    }
+
+    /**
      * The bounds of an autonomy editor opened where it is remembered at these bounds and state, on these screens (null
-     * for the machine's).  The window's remembered entry is written, then removed.
+     * for the machine's), and, with `unmaximized`, then brought back to normal.  The window's remembered entry is
+     * written, then removed.
      */
     private static java.awt.Rectangle openedFromMemory(final java.awt.Rectangle remembered, final int state,
-        final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens) throws Exception
+        final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens, final boolean unmaximized) throws Exception
     {
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
         final String entry = OnAScreen.class.getSimpleName() + "_editor_";
@@ -676,6 +694,16 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             settle(editor);
 
             final OnAScreen shown = editor;
+
+            if (unmaximized)
+            {
+                assertTrue((shown.getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0, "precondition: the window"
+                    + " remembered maximized opened " + shown.getBounds() + ", not maximized");
+
+                SwingUtilities.invokeAndWait(() -> shown.setExtendedState(java.awt.Frame.NORMAL));
+
+                settle(editor);
+            }
 
             SwingUtilities.invokeAndWait(() -> opened[0] = shown.getBounds());
         }

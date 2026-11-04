@@ -277,6 +277,12 @@ public class PositionAwareJFrame extends JFrame
         return screens;
     }
 
+    /** Whether the window is maximized, or remembered so and maximized once shown (OB-328). */
+    protected boolean isMaximized()
+    {
+        return maximisedOnceShown >= 0 || (getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0;
+    }
+
     /**
      * Checks if the loadWindowBounds method has previously been called
      * @return 
