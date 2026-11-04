@@ -14,10 +14,16 @@ MSYS = '/' + R[0].lower() + R[2:]
 misses = 0
 
 
-def guard(tool, ti, cwd=R):
+def answer(tool, ti, cwd=R):
     out = subprocess.run([sys.executable, GUARD], input=json.dumps({'tool_name': tool, 'cwd': cwd, 'tool_input': ti}),
                          capture_output=True, text=True).stdout.strip()
-    return json.loads(out)['hookSpecificOutput']['permissionDecision'] if out else 'pass'
+    return json.loads(out) if out else {}
+
+
+def guard(tool, ti, cwd=R):
+    """deny, ask, note (no decision, a message for Adam and Claude) or pass."""
+    out = answer(tool, ti, cwd)
+    return (out.get('hookSpecificOutput') or {}).get('permissionDecision') or ('note' if out else 'pass')
 
 
 def check(name, got, want):
@@ -239,17 +245,131 @@ check('--work-tree <repo> elsewhere', sh('git --work-tree=' + MSYS + ' reset --h
 for cmd in ['git checkout src', 'git checkout HEAD src test', 'git diff --name-only | xargs git checkout']:
     check(cmd, sh(cmd), 'ask')
 
+# Deletes outside the scratch folders ask, in any session; inside them, and writes that are not deletes, pass.
+# OUT is outside both the scratch folders and this checkout; SCR is a folder in scratch.
+TEMP = (os.environ.get('TEMP') or os.environ.get('TMP')).replace('\\', '/')
+TMSYS = '/' + TEMP[0].lower() + TEMP[2:]
+TWIN = TEMP.replace('/', '\\')
+OUT, SCR = 'C:/elsewhere', TEMP + '/tc-guard-test'
+for cmd in ['rm -rf C:/elsewhere/build', 'rm -rf build', 'rm -f /c/Users/x/a.txt', 'rmdir /c/x/y', 'unlink C:/x/a',
+            'shred -u -n 3 C:/x/a', "find C:/x -name '*.class' -delete", 'find /c/x -type f -exec rm -f {} \\;',
+            'rm -rf $TEMP/../x', 'rm -rf ~/x', 'rm -rf $HOME/x', 'rm -rf "$FOO/x"', 'rm -rf $(cat list)',
+            'S=/c/x; rm -rf "$S/y"', 'S="$FOO" && rm -rf "$S"', 'ls | xargs rm -f', 'ls | xargs -I {} rm -rf {}',
+            'rm -rf C:/Users/x/*', 'rm -rf /tmp/*/../../x', 'rm -rf $TEMP', 'rm -rf "' + TEMP + '"',
+            'bash -c "rm -rf /c/x"', 'git worktree remove C:/elsewhere/wt', 'git worktree remove --force ../wt',
+            'git -C C:/x worktree remove wt', 'cd ~ && rm -rf x', 'env -C /c/x rm -rf y',
+            'cmd //c "rd /s /q C:\\x"', 'rm -rf /usr/bin']:
+    check(cmd, sh(cmd, cwd=OUT), 'ask')
+for cmd in ['cd /c/x; rm -rf y', 'cd /tmp/x && cd ..\\..\\.. && rm -rf y', 'cd; rm -rf x', 'cd $FOO && rm -rf y',
+            'rm -rf ../../x']:
+    check(cmd + ', from scratch', sh(cmd, cwd=SCR), 'ask')
+check('cd into scratch, rm, from outside', sh('cd /tmp/x && rm -rf build', cwd=OUT), 'ask')
+for cmd in ['Remove-Item -Recurse -Force C:\\x\\y', 'ri C:\\x', 'del C:\\x\\a.txt', 'erase C:\\x\\a.txt', 'rd C:\\x',
+            'rmdir C:\\x', 'rm -r -fo C:\\x', 'Clear-Content C:\\x\\log.txt', "Remove-Item -LiteralPath 'C:\\x' -Recurse",
+            'Remove-Item -Path:C:\\x', 'Remove-Item $env:USERPROFILE\\x', "$S = 'C:\\x'; Remove-Item -Recurse $S",
+            '$S = Get-Location; Remove-Item $S', 'Get-ChildItem C:\\x -Recurse | Remove-Item',
+            'Get-Content list.txt | Remove-Item', 'Remove-Item a.txt -ErrorAction SilentlyContinue',
+            'Remove-Item HKCU:\\Software\\x', 'Remove-Item "$env:TEMP\\a",C:\\x', 'cmd /c del /f /q C:\\x\\a.txt',
+            'cmd /c "rd /s /q %USERPROFILE%\\x"', 'powershell -Command "Remove-Item C:\\x"']:
+    check('PowerShell: ' + cmd, ps(cmd, cwd=OUT), 'ask')
+for cmd in ['rm -rf /tmp/x', 'rm -rf ' + TEMP + '/x', "rm -rf '" + TWIN.upper() + "\\x'", 'rm -rf ' + TMSYS.lower() + '/x',
+            'rm -rf $TEMP/x', 'rm -rf "$TMP/x"', 'rm -rf ${TEMP}/x', 'rm -rf ~/AppData/Local/Temp/x',
+            'rm -rf $HOME/AppData/Local/Temp/x', 'S=/tmp/run1; rm -rf "$S"', 'S="$TEMP/run" && rm -rf "$S/out"',
+            'export S=/tmp/a; rm -rf $S', 'T=$(mktemp -d); rm -rf "$T"', 'T="$(mktemp)" && rm -f "$T"',
+            'rm -rf /tmp/foo*', 'rm -rf "$TEMP"/*', 'rm -rf /tmp/x{1,2}', "find /tmp/x -name '*.class' -delete",
+            "find C:/x -name '*.class'", 'find C:/x -exec grep -l y {} +', 'echo x > C:/elsewhere/a.txt',
+            'mv C:/x/a C:/x/b', 'cp a C:/x/b', 'git rm src/a.txt', 'git rm -r --cached x', 'grep -rn "rm -rf" C:/x',
+            'echo rm -rf C:/x', 'git commit -m "rm -rf C:/x and Remove-Item C:/y"', 'git worktree list',
+            'git worktree add C:/x/wt', 'git worktree remove ' + TEMP + '/tc-x', 'git worktree remove --force /tmp/tc-x',
+            'rm -rf /tmp/x 2>/dev/null', 'bash -c "rm -rf /tmp/x"', 'cmd //c "rd /s /q %TEMP%\\x"',
+            'rm']:
+    check(cmd, sh(cmd, cwd=OUT), 'pass')
+for cmd in ['rm -rf build', 'find . -type f -delete', 'cd /tmp && rm -rf x', 'rm -rf ./out/*',
+            'cd /tmp/x && rm -rf ../y']:
+    check(cmd + ', from scratch', sh(cmd, cwd=SCR), 'pass')
+for cmd in ['Remove-Item -Recurse -Force $env:TEMP\\x', 'Remove-Item "$env:TMP\\x"', 'ri ' + TWIN + '\\x',
+            '$S = "$env:TEMP\\run"; Remove-Item -Recurse $S', "$S='" + TWIN + "\\run'; Remove-Item $S",
+            '$t = New-TemporaryFile; Remove-Item $t.FullName', 'Remove-Item Env:FOO', 'Remove-Item Variable:x',
+            'Get-ChildItem $env:TEMP\\x | Remove-Item', 'Remove-Item -Path $env:TEMP\\a,$env:TEMP\\b',
+            'Clear-Content $env:TEMP\\log.txt', 'cmd /c "del /q ' + TWIN + '\\x\\*"', 'Set-Content C:\\x\\a.txt y',
+            'Move-Item C:\\x\\a C:\\x\\b', 'Copy-Item a C:\\x\\b', 'Get-ChildItem C:\\x -Recurse',
+            'Select-String -Path C:\\x\\a -Pattern "Remove-Item"']:
+    check('PowerShell: ' + cmd, ps(cmd, cwd=OUT), 'pass')
+check('PowerShell: Remove-Item a.txt -ErrorAction ..., from scratch',
+      ps('Remove-Item a.txt -ErrorAction SilentlyContinue', cwd=SCR), 'pass')
+check('PowerShell: Get-ChildItem | Remove-Item, from scratch', ps('Get-ChildItem *.log | Remove-Item', cwd=SCR), 'pass')
+# The existing denies still win, and a live-state write keeps its own message
+check('a heredoc naming rm -rf', sh("cat <<'EOF'\nrm -rf C:/x\nEOF", cwd=OUT), 'pass')
+check('rm outside, then git clean -fd', sh('rm -rf C:/x && git clean -fd'), 'deny')
+check('rm outside, then pkill java', sh('rm -rf C:/x; pkill java'), 'deny')
+check('rm -rf the live layout', sh('rm -rf ' + R + '/cs2_sample_layout'), 'deny')
+why = (answer('Bash', {'command': 'rm -rf C:/x'}, OUT).get('hookSpecificOutput') or {}).get('permissionDecisionReason')
+check('the message names the path', 'yes' if 'C:\\x' in (why or '') and 'outside the scratch folders' in why else why,
+      'yes')
+why = (answer('Bash', {'command': 'rm ' + R + '/LocDB.data'}).get('hookSpecificOutput') or {}).get(
+    'permissionDecisionReason')
+check('rm LocDB.data asks about the live state', 'yes' if 'LocDB' in (why or '') else why, 'yes')
+
+# Moving master in this repository asks, by any spelling the guard reads
+for cmd in ['git branch -f master release', 'git branch --force master release', 'git branch -D master',
+            'git branch -d master', 'git branch -M master', 'git branch -m master old-master',
+            'git branch -M release master', 'git branch -C release master', 'git branch -fq master release',
+            'git update-ref refs/heads/master HEAD', 'git update-ref -d refs/heads/master',
+            'git update-ref -m "x" refs/heads/master abc', '"git" branch -f master release',
+            '/mingw64/bin/git branch -f master release', 'git checkout -B master release',
+            'git switch -C master release', 'git fetch . release:master', 'git fetch origin +master:master',
+            'bash -c "git branch -f master release"']:
+    check(cmd, sh(cmd), 'ask')
+check('git -C <repo> branch -f master, from elsewhere', sh('git -C ' + MSYS + ' branch -f master release', cwd=OUT),
+      'ask')
+check('PowerShell: git branch -f master', ps('git branch -f master release'), 'ask')
+for cmd in ['git branch -f dev master', 'git branch release master', 'git branch --list master', 'git branch -d old',
+            'git branch -c master copy', 'git update-ref refs/heads/dev HEAD',
+            'git update-ref refs/heads/master-backup HEAD', 'git log master', 'git checkout -b master-fix',
+            'git fetch origin master', 'git branch -m old new', 'git switch -c fix master', 'git checkout master',
+            'git commit -m "git branch -f master release"', 'git branch -f fix --contains master']:
+    check(cmd, sh(cmd), 'pass')
+check('git branch -f master in another repository', sh('git branch -f master release', cwd=OUT), 'pass')
+# A worktree of this repository is this repository; a repository of its own is not
+fake = tempfile.mkdtemp()
+try:
+    common = subprocess.run(['git', '-C', ROOT, 'rev-parse', '--git-common-dir'], capture_output=True,
+                            text=True).stdout.strip()
+    common = os.path.abspath(os.path.join(ROOT, common))
+    os.makedirs(os.path.join(fake, 'gd'))
+    os.makedirs(os.path.join(fake, 'wt', 'src'))
+    os.makedirs(os.path.join(fake, 'other', '.git'))
+    open(os.path.join(fake, 'gd', 'commondir'), 'w').write(common + '\n')
+    open(os.path.join(fake, 'wt', '.git'), 'w').write('gitdir: ' + os.path.join(fake, 'gd') + '\n')
+    wt = os.path.join(fake, 'wt', 'src').replace('\\', '/')
+    check('a worktree: git branch -f master', sh('git branch -f master release', cwd=wt), 'ask')
+    check('a worktree: git push origin master', sh('git push origin master', cwd=wt), 'ask')
+    check('a worktree: git branch -f dev', sh('git branch -f dev release', cwd=wt), 'pass')
+    check('another repository: git branch -f master', sh('git branch -f master release',
+                                                         cwd=os.path.join(fake, 'other').replace('\\', '/')), 'pass')
+    check('another repository: git push origin master', sh('git push origin master',
+                                                           cwd=os.path.join(fake, 'other').replace('\\', '/')), 'pass')
+finally:
+    shutil.rmtree(fake, ignore_errors=True)
+
 out = subprocess.run([sys.executable, GUARD], input='not json', capture_output=True, text=True)
 check('garbage on stdin', 'pass' if not out.stdout.strip() and out.returncode == 0 else 'error', 'pass')
 
 marker = os.path.join(os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp', 'traincontrol-battery.lock.battery')
 if not os.path.exists(marker):
-    open(marker, 'w').write('%d\n' % os.getpid())
-    check('Edit a .java while a battery runs', edit(R + '/src/a/B.java', 'b'), 'ask')
-    check('Edit a .md while a battery runs', edit(R + '/docs/x.md', 'b'), 'pass')
-    open(marker, 'w').write('999999\n')
-    check('Edit a .java, stale battery marker', edit(R + '/src/a/B.java', 'b'), 'pass')
-    os.remove(marker)
+    try:
+        open(marker, 'w').write('%d\n' % os.getpid())
+        # The edit goes ahead: Adam sees the systemMessage, Claude the same text as additionalContext
+        check('Edit a .java while a battery runs', edit(R + '/src/a/B.java', 'b'), 'note')
+        out = answer('Edit', {'file_path': R + '/src/a/B.java', 'old_string': 'a', 'new_string': 'b'})
+        told = out.get('systemMessage') or ''
+        check('battery note: both told, same text', 'yes' if 'battery is running' in told and
+              out['hookSpecificOutput'].get('additionalContext') == told else 'no', 'yes')
+        check('Edit a .md while a battery runs', edit(R + '/docs/x.md', 'b'), 'pass')
+        open(marker, 'w').write('999999\n')
+        check('Edit a .java, stale battery marker', edit(R + '/src/a/B.java', 'b'), 'pass')
+    finally:
+        os.remove(marker)
 else:
     print('skip the battery cases: a battery marker is already there (%s)' % marker)
 
