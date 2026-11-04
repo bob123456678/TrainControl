@@ -155,9 +155,10 @@ def drop_heredocs(cmd):
 
 
 def lex(cmd, ps):
-    """The simple commands in cmd as (words, output redirection targets): split at unquoted ; & | ( ) newlines,
-    backticks in bash, and { } at a word's edge.  ps: PowerShell quoting, where the backtick escapes."""
-    segs, words, targets = [], [], []
+    """The simple commands in cmd as (words, output redirection targets, chained): split at unquoted ; & | ( )
+    newlines, backticks in bash, and { } at a word's edge; chained when only && separates one from the one before.
+    ps: PowerShell quoting, where the backtick escapes."""
+    segs, words, targets, between = [], [], [], []
     cur, has, redirect = [], False, None
     esc = '`' if ps else '\\'
     i, n = 0, len(cmd)
@@ -173,11 +174,13 @@ def lex(cmd, ps):
             redirect = None
         cur, has = [], False
 
-    def cut():
+    def cut(sep=''):
         nonlocal words, targets, redirect
         flush()
         if words or targets:
-            segs.append((words, targets))
+            segs.append((words, targets, bool(segs) and re.match(r'^&&\n*$', ''.join(between)) is not None))
+            between[:] = []
+        between.append(sep)
         words, targets, redirect = [], [], None
 
     while i < n:
@@ -220,14 +223,14 @@ def lex(cmd, ps):
                 i += 1
             continue
         elif c in ';|\n()' or (c == '`' and not ps) or (c in '{}' and not has):
-            cut()
+            cut(c)
         elif c == '&':
             if cmd[i + 1:i + 2] == '>':
                 flush()
                 i += 3 if cmd[i + 2:i + 3] == '>' else 2
                 redirect = 'out'
                 continue
-            cut()
+            cut(c)
         elif c == '>':
             if has and re.match(r'^[0-9*]$', ''.join(cur)):
                 cur, has = [], False
@@ -287,10 +290,11 @@ def command_at(words):
 
 
 def segments(cmd, dialect, depth=0):
-    """Every simple command in cmd as (words, redirection targets, dialect), with the script given to bash -c, sh -c,
-    cmd /c, powershell -Command, eval or Invoke-Expression added as commands of its own.  dialect: bash, ps or cmd."""
-    segs = [(w, t, dialect) for w, t in lex(drop_heredocs(cmd), dialect != 'bash')]
-    for words, _, _ in list(segs):
+    """Every simple command in cmd as (words, redirection targets, dialect, chained by && to the one before), with the
+    script given to bash -c, sh -c, cmd /c, powershell -Command, eval or Invoke-Expression added as commands of its
+    own.  dialect: bash, ps or cmd."""
+    segs = [(w, t, dialect, chained) for w, t, chained in lex(drop_heredocs(cmd), dialect != 'bash')]
+    for words, _, _, _ in list(segs):
         ci = command_at(words)
         if depth > 3 or ci >= len(words):
             continue
@@ -802,9 +806,11 @@ def assigned(words, ci, dialect, after):
 
 def judge_deletes(segs, cwd):
     """Why the first delete in this call that may reach outside the scratch folders asks; None when there is none.
-    A relative path is judged from every folder the call may run in, as the guard's cd tracking follows them."""
-    places, names, prev, xargs_open = [cwd], {}, None, False
-    for k, (words, _, dialect) in enumerate(segs):
+    A relative path is judged from every folder the call may run in, as the guard's cd tracking follows them; but a
+    delete joined by && alone to the cds before it runs only where they took it, so only there."""
+    places, names, prev, xargs_open, chain = [cwd], {}, None, False, None
+    for k, (words, _, dialect, chained) in enumerate(segs):
+        chain = chain if chained else None
         ci = command_at(words)
         sets = assigned(words, ci, dialect, segs[k + 1][0] if k + 1 < len(segs) else None)
         for n, v in sets.items():
@@ -823,14 +829,19 @@ def judge_deletes(segs, cwd):
             rest = [a for a in args if not a.startswith('-')]
             if len(rest) > 1 and re.match(r'^/[A-Za-z]$', rest[0]):
                 rest = rest[1:]
-            new = [where(rest[0], p) for p in places] if rest else [UNREAD] if '-' in args else \
-                [HOME_DIR] if name == 'cd' and dialect == 'bash' else []
+            def reach(froms):
+                return [where(rest[0], p) for p in froms] if rest else [UNREAD] if '-' in args else \
+                    [HOME_DIR] if name == 'cd' and dialect == 'bash' else []
+            new = reach(places)
+            chain = (reach(chain) if chain is not None else new) or chain
             places += [m for m in new if m not in places]
             if len(places) > MAX_PLACES:
                 places = [p for p in places[:MAX_PLACES] if p != UNREAD] + [UNREAD]
             continue
+        if name in ('popd', 'pop-location'):
+            chain = None
         # env -C and git -C move the one command they run
-        here = list(places)
+        here = list(chain if chain is not None else places)
         for j, w in enumerate(words[:ci]):
             if w in ('-C', '--chdir') and j > 0 and j + 1 < ci:
                 here = [where(words[j + 1], p) for p in here]
@@ -861,7 +872,7 @@ def judge_deletes(segs, cwd):
 
 def judge_shell(cmd, cwd, ps):
     segs3 = segments(cmd, 'ps' if ps else 'bash')
-    segs = [(w, t) for w, t, _ in segs3]
+    segs = [(w, t) for w, t, _, _ in segs3]
     for name, words in acting(segs):
         text = ' '.join(words)
         if (re.search(r'(?<![\w-])(powershell|pwsh)(\.exe)?(?![\w-])', text, re.I) and

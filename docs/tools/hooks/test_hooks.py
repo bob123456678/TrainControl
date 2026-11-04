@@ -263,7 +263,22 @@ for cmd in ['rm -rf C:/elsewhere/build', 'rm -rf build', 'rm -f /c/Users/x/a.txt
 for cmd in ['cd /c/x; rm -rf y', 'cd /tmp/x && cd ..\\..\\.. && rm -rf y', 'cd; rm -rf x', 'cd $FOO && rm -rf y',
             'rm -rf ../../x']:
     check(cmd + ', from scratch', sh(cmd, cwd=SCR), 'ask')
-check('cd into scratch, rm, from outside', sh('cd /tmp/x && rm -rf build', cwd=OUT), 'ask')
+# A delete joined by && alone to the cds before it runs only where they took it; any other boundary, every folder
+for cmd in ['cd /tmp/x && rm -rf build', 'cd ' + TEMP + '/a && cd b && rm -rf x', 'cd /tmp/a && cd ../b && rm -rf x',
+            'cd "$TEMP/run" && make && rm -rf out', 'cd /tmp/x &&\nrm -rf y', 'S=/tmp/q && cd "$S" && rm -rf y',
+            'bash -c "cd /tmp/x && rm -rf y"', 'cmd //c "cd /d ' + TWIN + '\\x && rd /s /q y"',
+            'cd C:/elsewhere && cd /tmp/x && rm -rf y']:
+    check('&& chain: ' + cmd, sh(cmd, cwd=OUT), 'pass')
+for cmd in ['cd /tmp/x; rm -rf build', 'cd C:/x && rm y', '(cd /tmp/x) && rm y', 'cd /tmp && cd .. && rm -rf x',
+            'cd $UNKNOWN && rm y', 'cd /tmp/x || rm -rf y', 'cd /tmp/x & rm -rf y', 'cd /tmp/x && ls | xargs rm',
+            'cd /tmp/x && rm -rf y; rm -rf z', 'cd /tmp/x\nrm -rf y', 'cd /tmp/x && { rm -rf y; }',
+            'cd /tmp/x && popd && rm -rf y', 'cd $UNKNOWN && cd sub && rm y', 'cd /tmp/x && rm -rf ../../y',
+            'cd C:/x && rm -rf /tmp/ok && rm -rf y']:
+    check('&& chain: ' + cmd, sh(cmd, cwd=OUT), 'ask')
+check('&& chain: Set-Location; if ($?) is not read', ps('Set-Location $env:TEMP\\x; if ($?) { Remove-Item y }',
+                                                        cwd=OUT), 'ask')
+# The repository rules keep "a cd only adds folders"
+check('&& chain: cd elsewhere && git reset --hard', sh('cd /tmp/clone && git reset --hard'), 'deny')
 for cmd in ['Remove-Item -Recurse -Force C:\\x\\y', 'ri C:\\x', 'del C:\\x\\a.txt', 'erase C:\\x\\a.txt', 'rd C:\\x',
             'rmdir C:\\x', 'rm -r -fo C:\\x', 'Clear-Content C:\\x\\log.txt', "Remove-Item -LiteralPath 'C:\\x' -Recurse",
             'Remove-Item -Path:C:\\x', 'Remove-Item $env:USERPROFILE\\x', "$S = 'C:\\x'; Remove-Item -Recurse $S",
