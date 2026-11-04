@@ -408,7 +408,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.8 [beta]
+* v3.0.8 [11/04/2026]
     - New Features
         - Central Station
             - When you sync with a CS3, TrainControl now takes the position of each switch and signal with two positions from the Central Station, so one thrown while TrainControl was closed shows correctly.
