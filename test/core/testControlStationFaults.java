@@ -191,6 +191,43 @@ public class testControlStationFaults
     }
 
     /**
+     * A database file with a corrupt header is closed once `restoreState` gives up on it, so the recovery can replace
+     * it: on Windows `Util.writeAtomically` cannot move a file over one somebody has open.
+     *
+     * MUTATION: fold `restoreState`'s two streams into one resource (`new CustomObjectInputStream(new
+     * BufferedInputStream(new FileInputStream(dataFile)))`), and this fails.
+     */
+    @Test
+    public void testACorruptDatabaseIsLeftClosedForItsReplacement() throws Exception
+    {
+        java.io.File corrupt = java.io.File.createTempFile("tc-corrupt", ".data");
+        java.io.File missing = java.io.File.createTempFile("tc-absent", ".data");
+
+        assertTrue(missing.delete(), "the reset below needs a file that is not there");
+
+        try
+        {
+            java.nio.file.Files.write(corrupt.toPath(), "this is not an object stream".getBytes("UTF-8"));
+
+            model.restoreState(corrupt.getAbsolutePath());
+
+            assertTrue(model.isDatabaseLoadFailed(), "precondition: the corrupt file read as a good database");
+
+            org.traincontrol.util.Util.writeAtomically(corrupt, out -> out.write("recovered".getBytes("UTF-8")));
+
+            assertEquals(new String(java.nio.file.Files.readAllBytes(corrupt.toPath()), "UTF-8"), "recovered",
+                "the corrupt database was not replaced");
+        }
+        finally
+        {
+            corrupt.delete();
+
+            // The mark is state on the model every test here shares
+            model.restoreState(missing.getAbsolutePath());
+        }
+    }
+
+    /**
      * A database file that reads, and holds something other than a locomotive list, is unreadable too.
      *
      * `restoreState` logged success for any deserialized object, leaving the exit-save guard clear, so the save wrote
