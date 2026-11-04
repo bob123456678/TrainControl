@@ -607,7 +607,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     /**
      * A remembered window is measured against the screen it opens on, the one its bounds overlap most, with that
      * screen's taskbar, and the default screen when it overlaps none: on a taller second screen it keeps its height,
-     * on a shorter one it is brought down and into it (OB-399).  The default screen here is a short one at the left.
+     * on a shorter one it is brought down and into it (OB-399).
      *
      * MUTATION: measure the screen the window was built on (`getGraphicsConfiguration()`) in
      * `PositionAwareJFrame.usableScreen`, and this fails.
@@ -615,36 +615,38 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     @Test
     public void testARememberedWindowIsMeasuredOnItsOwnScreen() throws Exception
     {
-        final java.awt.Insets taskbar = new java.awt.Insets(0, 0, 48, 0);
-        final java.awt.Rectangle remembered = new java.awt.Rectangle(100, 0, 900, 1000);
-        final java.awt.Rectangle shortDefault = new java.awt.Rectangle(-1366, 0, 1366, 768);
         final StringBuilder wrong = new StringBuilder();
 
-        java.util.Map<java.awt.Rectangle, java.awt.Insets> screens = new java.util.LinkedHashMap<>();
-        screens.put(shortDefault, taskbar);
-        screens.put(new java.awt.Rectangle(0, 0, 1920, 1248), taskbar);
-
-        java.awt.Rectangle opened = openedFromMemory(remembered, 0, screens, false);
+        java.awt.Rectangle opened = openedBeside(new java.awt.Rectangle(0, 0, 1920, 1248));
 
         if (opened.height != 1000) wrong.append("on a taller second screen: ").append(opened).append("; ");
 
-        screens.remove(new java.awt.Rectangle(0, 0, 1920, 1248));
-        screens.put(new java.awt.Rectangle(0, 100, 1920, 768), taskbar);
-
-        opened = openedFromMemory(remembered, 0, screens, false);
+        opened = openedBeside(new java.awt.Rectangle(0, 100, 1920, 768));
 
         if (opened.height != 720 || opened.y != 100) wrong.append("on a shorter second screen at y=100: ").append(opened)
             .append("; ");
 
-        screens.remove(new java.awt.Rectangle(0, 100, 1920, 768));
-        screens.put(new java.awt.Rectangle(3000, 0, 1920, 1248), taskbar);
-
-        opened = openedFromMemory(remembered, 0, screens, false);
+        opened = openedBeside(new java.awt.Rectangle(3000, 0, 1920, 1248));
 
         if (opened.height != 720 || opened.y != 0) wrong.append("on no screen, so the default: ").append(opened);
 
-        assertEquals(wrong.toString(), "", "a window remembered at " + remembered + ", opened where its work area is not"
-            + " the one it was measured against");
+        assertEquals(wrong.toString(), "", "a window remembered at (100, 0), 900 by 1000, opened where its work area is"
+            + " not the one it was measured against");
+    }
+
+    /**
+     * Where an autonomy editor remembered at (100, 0), 900 by 1000, opens with this second screen and a default screen
+     * 768 tall at its left, both under a 48-pixel taskbar.
+     */
+    private static java.awt.Rectangle openedBeside(java.awt.Rectangle second) throws Exception
+    {
+        java.awt.Insets taskbar = new java.awt.Insets(0, 0, 48, 0);
+        java.util.Map<java.awt.Rectangle, java.awt.Insets> screens = new java.util.LinkedHashMap<>();
+
+        screens.put(new java.awt.Rectangle(-1366, 0, 1366, 768), taskbar);
+        screens.put(second, taskbar);
+
+        return openedFromMemory(new java.awt.Rectangle(100, 0, 900, 1000), 0, screens, false);
     }
 
     /**
