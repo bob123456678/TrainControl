@@ -225,26 +225,56 @@ public class PositionAwareJFrame extends JFrame
     }
 
     /**
-     * The area a window can actually occupy on the screen it is on - the screen minus its taskbar.
+     * The area a window can actually occupy on the screen it is on - the screen minus its taskbar.  The screen is the
+     * one its bounds overlap most, or the default screen for none: before it is shown, Java 8's graphics configuration
+     * is still the screen it was built on, wherever its remembered bounds put it.
      *
      * @return the usable bounds
      */
     protected Rectangle usableScreen()
     {
-        Rectangle bounds = getGraphicsConfiguration() != null
-            ? getGraphicsConfiguration().getBounds()
-            : GraphicsEnvironment.getLocalGraphicsEnvironment()
-                .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+        Rectangle bounds = null;
+        java.awt.Insets insets = null;
+        long most = 0;
 
-        java.awt.Insets insets = getGraphicsConfiguration() != null
-            ? java.awt.Toolkit.getDefaultToolkit().getScreenInsets(getGraphicsConfiguration())
-            : new java.awt.Insets(0, 0, 0, 0);
+        for (java.util.Map.Entry<Rectangle, java.awt.Insets> screen : screens().entrySet())
+        {
+            Rectangle common = screen.getKey().intersection(getBounds());
+            long overlap = common.isEmpty() ? 0 : (long) common.width * common.height;
+
+            if (bounds == null || overlap > most)
+            {
+                bounds = screen.getKey();
+                insets = screen.getValue();
+                most = overlap;
+            }
+        }
 
         return new Rectangle(
             bounds.x + insets.left,
             bounds.y + insets.top,
             bounds.width - insets.left - insets.right,
             bounds.height - insets.top - insets.bottom);
+    }
+
+    /** Each screen's bounds and taskbar insets, the default screen first. */
+    protected java.util.Map<Rectangle, java.awt.Insets> screens()
+    {
+        GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        java.util.Map<Rectangle, java.awt.Insets> screens = new java.util.LinkedHashMap<>();
+        java.util.List<GraphicsDevice> devices = new java.util.ArrayList<>();
+
+        devices.add(env.getDefaultScreenDevice());
+        devices.addAll(java.util.Arrays.asList(env.getScreenDevices()));
+
+        for (GraphicsDevice device : devices)
+        {
+            java.awt.GraphicsConfiguration gc = device.getDefaultConfiguration();
+
+            screens.putIfAbsent(gc.getBounds(), java.awt.Toolkit.getDefaultToolkit().getScreenInsets(gc));
+        }
+
+        return screens;
     }
 
     /**

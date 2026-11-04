@@ -506,7 +506,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     {
         final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
 
-        final OnAScreen editor = autonomyEditorOn(workArea);
+        final OnAScreen editor = autonomyEditorOn(oneScreen(workArea));
 
         try
         {
@@ -597,28 +597,87 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     public void testARememberedSizeTallerThanTheScreenIsBroughtDown() throws Exception
     {
         final java.awt.Rectangle workArea = new java.awt.Rectangle(0, 0, 1366, 720);
+
+        java.awt.Rectangle opened = openedFromMemory(new java.awt.Rectangle(0, 0, 1300, 1100), 0, oneScreen(workArea));
+
+        assertTrue(opened.height <= workArea.height, "a window remembered 1100 pixels tall opened "
+            + opened.height + " pixels tall on a work area " + workArea.height + " tall (OB-399)");
+    }
+
+    /**
+     * A remembered window is measured against the screen it opens on, the one its bounds overlap most, with that
+     * screen's taskbar, and the default screen when it overlaps none: on a taller second screen it keeps its height,
+     * on a shorter one it is brought down and into it (OB-399).  The default screen here is a short one at the left.
+     *
+     * MUTATION: measure the screen the window was built on (`getGraphicsConfiguration()`) in
+     * `PositionAwareJFrame.usableScreen`, and this fails.
+     */
+    @Test
+    public void testARememberedWindowIsMeasuredOnItsOwnScreen() throws Exception
+    {
+        final java.awt.Insets taskbar = new java.awt.Insets(0, 0, 48, 0);
+        final java.awt.Rectangle remembered = new java.awt.Rectangle(100, 0, 900, 1000);
+        final java.awt.Rectangle shortDefault = new java.awt.Rectangle(-1366, 0, 1366, 768);
+        final StringBuilder wrong = new StringBuilder();
+
+        java.util.Map<java.awt.Rectangle, java.awt.Insets> screens = new java.util.LinkedHashMap<>();
+        screens.put(shortDefault, taskbar);
+        screens.put(new java.awt.Rectangle(0, 0, 1920, 1248), taskbar);
+
+        java.awt.Rectangle opened = openedFromMemory(remembered, 0, screens);
+
+        if (opened.height != 1000) wrong.append("on a taller second screen: ").append(opened).append("; ");
+
+        screens.remove(new java.awt.Rectangle(0, 0, 1920, 1248));
+        screens.put(new java.awt.Rectangle(0, 100, 1920, 768), taskbar);
+
+        opened = openedFromMemory(remembered, 0, screens);
+
+        if (opened.height != 720 || opened.y != 100) wrong.append("on a shorter second screen at y=100: ").append(opened)
+            .append("; ");
+
+        screens.remove(new java.awt.Rectangle(0, 100, 1920, 768));
+        screens.put(new java.awt.Rectangle(3000, 0, 1920, 1248), taskbar);
+
+        opened = openedFromMemory(remembered, 0, screens);
+
+        if (opened.height != 720 || opened.y != 0) wrong.append("on no screen, so the default: ").append(opened);
+
+        assertEquals(wrong.toString(), "", "a window remembered at " + remembered + ", opened where its work area is not"
+            + " the one it was measured against");
+    }
+
+    /**
+     * The bounds of an autonomy editor opened where it is remembered at these bounds and state, on these screens (null
+     * for the machine's).  The window's remembered entry is written, then removed.
+     */
+    private static java.awt.Rectangle openedFromMemory(final java.awt.Rectangle remembered, final int state,
+        final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens) throws Exception
+    {
         final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
         final String entry = OnAScreen.class.getSimpleName() + "_editor_";
         final String rememberKey = org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION;
         final String rememberWas = prefs.get(rememberKey, null);
+        final java.awt.Rectangle[] opened = new java.awt.Rectangle[1];
 
         OnAScreen editor = null;
 
         try
         {
-            prefs.putInt(entry + "x", 0);
-            prefs.putInt(entry + "y", 0);
-            prefs.putInt(entry + "width", 1300);
-            prefs.putInt(entry + "height", 1100);
-            prefs.putInt(entry + "state", 0);
+            prefs.putInt(entry + "x", remembered.x);
+            prefs.putInt(entry + "y", remembered.y);
+            prefs.putInt(entry + "width", remembered.width);
+            prefs.putInt(entry + "height", remembered.height);
+            prefs.putInt(entry + "state", state);
             prefs.putBoolean(rememberKey, true);
 
-            editor = autonomyEditorOn(workArea);
+            editor = autonomyEditorOn(screens);
 
             settle(editor);
 
-            assertTrue(editor.getHeight() <= workArea.height, "a window remembered 1100 pixels tall opened "
-                + editor.getHeight() + " pixels tall on a work area " + workArea.height + " tall (OB-399)");
+            final OnAScreen shown = editor;
+
+            SwingUtilities.invokeAndWait(() -> opened[0] = shown.getBounds());
         }
         finally
         {
@@ -631,35 +690,44 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             if (rememberWas == null) prefs.remove(rememberKey);
             else prefs.put(rememberKey, rememberWas);
         }
+
+        return opened[0];
     }
 
-    /** An editor whose screen has a work area of its own, to stand for a smaller screen than the machine's. */
+    /** An editor on screens of the test's own, the default first, to stand for screens the machine does not have. */
     public static class OnAScreen extends LayoutEditor
     {
-        private final java.awt.Rectangle workArea;
+        private final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens;
 
-        OnAScreen(LayoutDiagram page, TrainControlUI ui, java.awt.Rectangle workArea)
+        OnAScreen(LayoutDiagram page, TrainControlUI ui, java.util.Map<java.awt.Rectangle, java.awt.Insets> screens)
         {
             super(page, 30, ui, 0);
 
-            this.workArea = workArea;
+            this.screens = screens;
         }
 
         @Override
-        protected java.awt.Rectangle usableScreen()
+        protected java.util.Map<java.awt.Rectangle, java.awt.Insets> screens()
         {
-            return workArea == null ? super.usableScreen() : workArea;
+            return screens == null ? super.screens() : screens;
         }
     }
 
-    /** An autonomy editor on a screen with the work area given (null for the machine's own), opened. */
-    private static OnAScreen autonomyEditorOn(final java.awt.Rectangle workArea) throws Exception
+    /** One screen with this work area and no taskbar. */
+    private static java.util.Map<java.awt.Rectangle, java.awt.Insets> oneScreen(java.awt.Rectangle workArea)
+    {
+        return java.util.Collections.singletonMap(workArea, new java.awt.Insets(0, 0, 0, 0));
+    }
+
+    /** An autonomy editor on the screens given (null for the machine's own), opened. */
+    private static OnAScreen autonomyEditorOn(final java.util.Map<java.awt.Rectangle, java.awt.Insets> screens)
+        throws Exception
     {
         final OnAScreen[] built = new OnAScreen[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            built[0] = new OnAScreen(page, ui, workArea);
+            built[0] = new OnAScreen(page, ui, screens);
             built[0].render();
             built[0].setAutonomyMode(session);
         });
