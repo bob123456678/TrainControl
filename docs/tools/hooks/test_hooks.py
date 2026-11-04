@@ -3,7 +3,7 @@
 # Feeds claude_guard.py the calls it must refuse, ask about and let through, and checks each answer; then runs
 # precommit.py against a throwaway repository for each thing it must refuse.  Prints one line per case and exits 1 on
 # any miss.  Touches nothing in this repository.
-import json, os, shutil, subprocess, sys, tempfile, time
+import glob, json, os, shutil, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
@@ -110,20 +110,20 @@ check('branch switch after a layout log', sh('git log -- cs2_sample_layout && gi
 check('git add the live layout', sh('git add cs2_sample_layout/gleisbild.cs2 src/a/B.java'), 'pass')
 
 # Shell writes into the live layout, and reads of it
-for cmd in ['cp /tmp/x.cs2 cs2_sample_layout/gleisbild.cs2', 'echo x > cs2_sample_layout/gleisbild.cs2',
+for cmd in ['cp /tmp/tcg-x.cs2 cs2_sample_layout/gleisbild.cs2', 'echo x > cs2_sample_layout/gleisbild.cs2',
             'git show HEAD:cs2_sample_layout/a.cs2 > cs2_sample_layout/a.cs2', 'cat a >> "cs2_sample_layout/b c.cs2"',
             'mv cs2_sample_layout/a.cs2 /tmp/', 'sed -i s/a/b/ cs2_sample_layout/a.cs2', 'cat a | tee cs2_sample_layout/a',
             'cp -t cs2_sample_layout a.cs2', 'rm -rf cs2_sample_layout/fahrstrassen']:
     check(cmd, sh(cmd), 'deny')
-for cmd in ['Copy-Item C:/tmp/a.cs2 -Destination cs2_sample_layout/a.cs2', 'Set-Content cs2_sample_layout/a.cs2 x',
+for cmd in ['Copy-Item C:/tmp/tcg-a.cs2 -Destination cs2_sample_layout/a.cs2', 'Set-Content cs2_sample_layout/a.cs2 x',
             'Get-Content a | Out-File -FilePath cs2_sample_layout/a.cs2', 'Move-Item cs2_sample_layout/a.cs2 C:/tmp']:
     check(cmd, ps(cmd), 'deny')
 for cmd in ['cat cs2_sample_layout/gleisbild.cs2', 'grep -rn x cs2_sample_layout', 'git diff -- cs2_sample_layout',
-            'git log --oneline -3 -- cs2_sample_layout', 'git show HEAD:cs2_sample_layout/a.cs2 > /tmp/a.cs2',
-            'cp -r cs2_sample_layout /tmp/backup', 'sed -n 1,5p cs2_sample_layout/a.cs2',
+            'git log --oneline -3 -- cs2_sample_layout', 'git show HEAD:cs2_sample_layout/a.cs2 > /tmp/tcg-a.cs2',
+            'cp -r cs2_sample_layout /tmp/tcg-backup', 'sed -n 1,5p cs2_sample_layout/a.cs2',
             'git diff cs2_sample_layout 2>/dev/null | head']:
     check(cmd, sh(cmd), 'pass')
-check('Copy-Item out of the layout', ps('Copy-Item cs2_sample_layout/a.cs2 -Destination C:/tmp/a.cs2'), 'pass')
+check('Copy-Item out of the layout', ps('Copy-Item cs2_sample_layout/a.cs2 -Destination C:/tmp/tcg-a.cs2'), 'pass')
 
 # Killing java by any common spelling; reading the process list passes
 for cmd in ['Get-Process java | Stop-Process', 'Get-Process -Name javaw | Stop-Process -Force', 'gps java | kill',
@@ -191,11 +191,11 @@ check('timeout git reset --hard', sh('timeout 60 git reset --hard'), 'deny')
 check('git checkout <branch>', sh('git checkout dev'), 'pass')
 
 # A cd only adds folders a command may run in: it can fail, a subshell ends.  git -C is where git really runs.
-for cmd in ['git -C /tmp/clone reset --hard', 'cp x.cs2 /tmp/cs2_sample_layout_backup/x.cs2',
-            'echo x > /tmp/cs2_sample_layout/a.cs2', 'git checkout dev']:
+for cmd in ['git -C /tmp/tcg-clone reset --hard', 'cp x.cs2 /tmp/tcg-cs2_sample_layout_backup/x.cs2',
+            'echo x > /tmp/tcg-cs2_sample_layout/a.cs2', 'git checkout dev']:
     check(cmd, sh(cmd), 'pass')
-for cmd in ['cd /tmp/clone && git reset --hard', 'cd /tmp/clone; git clean -fd', '(cd /tmp/x && make); git reset --hard',
-            'pushd /tmp/x; popd; git reset --hard', 'cd -; git reset --hard', 'cd; git stash',
+for cmd in ['cd /tmp/tcg-clone && git reset --hard', 'cd /tmp/tcg-clone; git clean -fd', '(cd /tmp/tcg-x && make); git reset --hard',
+            'pushd /tmp/tcg-x; popd; git reset --hard', 'cd -; git reset --hard', 'cd; git stash',
             'echo x > $PWD/cs2_sample_layout/a.cs2',
             'cp x.cs2 ~/TrainControl/cs2_sample_layout/a.cs2']:
     check(cmd, sh(cmd), 'deny')
@@ -225,7 +225,7 @@ check('cd $X; git checkout <path>', sh('cd "$SCRATCH" && git checkout Readme.md'
 
 # Inside the layout folder, by name or through a variable, a write or revert is denied
 for cmd in ['cd cs2_sample_layout && rm -f *.cs2', 'cd cs2_sample_layout && sed -i s/a/b/ gleisbild.cs2',
-            'cd cs2_sample_layout && cp /tmp/x.cs2 .', 'cd "$PWD/cs2_sample_layout" && git checkout gleisbild.cs2']:
+            'cd cs2_sample_layout && cp /tmp/tcg-x.cs2 .', 'cd "$PWD/cs2_sample_layout" && git checkout gleisbild.cs2']:
     check(cmd, sh(cmd), 'deny')
 check('cd cs2_sample_layout; read it', sh('cd cs2_sample_layout && ls && cat gleisbild.cs2'), 'pass')
 
@@ -251,6 +251,9 @@ TEMP = (os.environ.get('TEMP') or os.environ.get('TMP')).replace('\\', '/')
 TMSYS = '/' + TEMP[0].lower() + TEMP[2:]
 TWIN = TEMP.replace('/', '\\')
 OUT, SCR = 'C:/elsewhere', TEMP + '/tc-guard-test'
+# The /tmp/tcg-* folders and NONE stand for folders that are not there, so a cd to them may fail
+NONE = TEMP + '/tcg-none'
+assert not glob.glob(TEMP + '/tcg-*') and not os.path.exists(OUT), 'a fixture folder exists: ' + TEMP + '/tcg-*'
 for cmd in ['rm -rf C:/elsewhere/build', 'rm -rf build', 'rm -f /c/Users/x/a.txt', 'rmdir /c/x/y', 'unlink C:/x/a',
             'shred -u -n 3 C:/x/a', "find C:/x -name '*.class' -delete", 'find /c/x -type f -exec rm -f {} \\;',
             'rm -rf $TEMP/../x', 'rm -rf ~/x', 'rm -rf $HOME/x', 'rm -rf "$FOO/x"', 'rm -rf $(cat list)',
@@ -260,25 +263,25 @@ for cmd in ['rm -rf C:/elsewhere/build', 'rm -rf build', 'rm -f /c/Users/x/a.txt
             'git -C C:/x worktree remove wt', 'cd ~ && rm -rf x', 'env -C /c/x rm -rf y',
             'cmd //c "rd /s /q C:\\x"', 'rm -rf /usr/bin']:
     check(cmd, sh(cmd, cwd=OUT), 'ask')
-for cmd in ['cd /c/x; rm -rf y', 'cd /tmp/x && cd ..\\..\\.. && rm -rf y', 'cd; rm -rf x', 'cd $FOO && rm -rf y',
+for cmd in ['cd /c/x; rm -rf y', 'cd /tmp/tcg-x && cd ..\\..\\.. && rm -rf y', 'cd; rm -rf x', 'cd $FOO && rm -rf y',
             'rm -rf ../../x']:
     check(cmd + ', from scratch', sh(cmd, cwd=SCR), 'ask')
 # A delete joined by && alone to the cds before it runs only where they took it; any other boundary, every folder
-for cmd in ['cd /tmp/x && rm -rf build', 'cd ' + TEMP + '/a && cd b && rm -rf x', 'cd /tmp/a && cd ../b && rm -rf x',
-            'cd "$TEMP/run" && make && rm -rf out', 'cd /tmp/x &&\nrm -rf y', 'S=/tmp/q && cd "$S" && rm -rf y',
-            'bash -c "cd /tmp/x && rm -rf y"', 'cmd //c "cd /d ' + TWIN + '\\x && rd /s /q y"',
-            'cd C:/elsewhere && cd /tmp/x && rm -rf y']:
+for cmd in ['cd /tmp/tcg-x && rm -rf build', 'cd ' + TEMP + '/a && cd b && rm -rf x', 'cd /tmp/tcg-a && cd ../b && rm -rf x',
+            'cd "$TEMP/run" && make && rm -rf out', 'cd /tmp/tcg-x &&\nrm -rf y', 'S=/tmp/tcg-q && cd "$S" && rm -rf y',
+            'bash -c "cd /tmp/tcg-x && rm -rf y"', 'cmd //c "cd /d ' + TWIN + '\\x && rd /s /q y"',
+            'cd C:/elsewhere && cd /tmp/tcg-x && rm -rf y']:
     check('&& chain: ' + cmd, sh(cmd, cwd=OUT), 'pass')
-for cmd in ['cd /tmp/x; rm -rf build', 'cd C:/x && rm y', '(cd /tmp/x) && rm y', 'cd /tmp && cd .. && rm -rf x',
-            'cd $UNKNOWN && rm y', 'cd /tmp/x || rm -rf y', 'cd /tmp/x & rm -rf y', 'cd /tmp/x && ls | xargs rm',
-            'cd /tmp/x && rm -rf y; rm -rf z', 'cd /tmp/x\nrm -rf y', 'cd /tmp/x && { rm -rf y; }',
-            'cd /tmp/x && popd && rm -rf y', 'cd $UNKNOWN && cd sub && rm y', 'cd /tmp/x && rm -rf ../../y',
-            'cd C:/x && rm -rf /tmp/ok && rm -rf y']:
+for cmd in ['cd /tmp/tcg-x; rm -rf build', 'cd C:/x && rm y', '(cd /tmp/tcg-x) && rm y', 'cd /tmp && cd .. && rm -rf x',
+            'cd $UNKNOWN && rm y', 'cd /tmp/tcg-x || rm -rf y', 'cd /tmp/tcg-x & rm -rf y', 'cd /tmp/tcg-x && ls | xargs rm',
+            'cd /tmp/tcg-x && rm -rf y; rm -rf z', 'cd /tmp/tcg-x\nrm -rf y', 'cd /tmp/tcg-x; { rm -rf y; }',
+            'cd /tmp/tcg-x && popd && rm -rf y', 'cd $UNKNOWN && cd sub && rm y', 'cd /tmp/tcg-x && rm -rf ../../y',
+            'cd C:/x && rm -rf /tmp/tcg-ok && rm -rf y']:
     check('&& chain: ' + cmd, sh(cmd, cwd=OUT), 'ask')
-check('&& chain: Set-Location; if ($?) is not read', ps('Set-Location $env:TEMP\\x; if ($?) { Remove-Item y }',
+check('&& chain: Set-Location; if ($?) is not read', ps('Set-Location $env:TEMP\\tcg-none; if ($?) { Remove-Item y }',
                                                         cwd=OUT), 'ask')
 # The repository rules keep "a cd only adds folders"
-check('&& chain: cd elsewhere && git reset --hard', sh('cd /tmp/clone && git reset --hard'), 'deny')
+check('&& chain: cd elsewhere && git reset --hard', sh('cd /tmp/tcg-clone && git reset --hard'), 'deny')
 for cmd in ['Remove-Item -Recurse -Force C:\\x\\y', 'ri C:\\x', 'del C:\\x\\a.txt', 'erase C:\\x\\a.txt', 'rd C:\\x',
             'rmdir C:\\x', 'rm -r -fo C:\\x', 'Clear-Content C:\\x\\log.txt', "Remove-Item -LiteralPath 'C:\\x' -Recurse",
             'Remove-Item -Path:C:\\x', 'Remove-Item $env:USERPROFILE\\x', "$S = 'C:\\x'; Remove-Item -Recurse $S",
@@ -287,20 +290,20 @@ for cmd in ['Remove-Item -Recurse -Force C:\\x\\y', 'ri C:\\x', 'del C:\\x\\a.tx
             'Remove-Item HKCU:\\Software\\x', 'Remove-Item "$env:TEMP\\a",C:\\x', 'cmd /c del /f /q C:\\x\\a.txt',
             'cmd /c "rd /s /q %USERPROFILE%\\x"', 'powershell -Command "Remove-Item C:\\x"']:
     check('PowerShell: ' + cmd, ps(cmd, cwd=OUT), 'ask')
-for cmd in ['rm -rf /tmp/x', 'rm -rf ' + TEMP + '/x', "rm -rf '" + TWIN.upper() + "\\x'", 'rm -rf ' + TMSYS.lower() + '/x',
+for cmd in ['rm -rf /tmp/tcg-x', 'rm -rf ' + TEMP + '/x', "rm -rf '" + TWIN.upper() + "\\x'", 'rm -rf ' + TMSYS.lower() + '/x',
             'rm -rf $TEMP/x', 'rm -rf "$TMP/x"', 'rm -rf ${TEMP}/x', 'rm -rf ~/AppData/Local/Temp/x',
-            'rm -rf $HOME/AppData/Local/Temp/x', 'S=/tmp/run1; rm -rf "$S"', 'S="$TEMP/run" && rm -rf "$S/out"',
-            'export S=/tmp/a; rm -rf $S', 'T=$(mktemp -d); rm -rf "$T"', 'T="$(mktemp)" && rm -f "$T"',
-            'rm -rf /tmp/foo*', 'rm -rf "$TEMP"/*', 'rm -rf /tmp/x{1,2}', "find /tmp/x -name '*.class' -delete",
+            'rm -rf $HOME/AppData/Local/Temp/x', 'S=/tmp/tcg-run1; rm -rf "$S"', 'S="$TEMP/run" && rm -rf "$S/out"',
+            'export S=/tmp/tcg-a; rm -rf $S', 'T=$(mktemp -d); rm -rf "$T"', 'T="$(mktemp)" && rm -f "$T"',
+            'rm -rf /tmp/tcg-foo*', 'rm -rf "$TEMP"/*', 'rm -rf /tmp/tcg-x{1,2}', "find /tmp/tcg-x -name '*.class' -delete",
             "find C:/x -name '*.class'", 'find C:/x -exec grep -l y {} +', 'echo x > C:/elsewhere/a.txt',
             'mv C:/x/a C:/x/b', 'cp a C:/x/b', 'git rm src/a.txt', 'git rm -r --cached x', 'grep -rn "rm -rf" C:/x',
             'echo rm -rf C:/x', 'git commit -m "rm -rf C:/x and Remove-Item C:/y"', 'git worktree list',
-            'git worktree add C:/x/wt', 'git worktree remove ' + TEMP + '/tc-x', 'git worktree remove --force /tmp/tc-x',
-            'rm -rf /tmp/x 2>/dev/null', 'bash -c "rm -rf /tmp/x"', 'cmd //c "rd /s /q %TEMP%\\x"',
+            'git worktree add C:/x/wt', 'git worktree remove ' + TEMP + '/tc-x', 'git worktree remove --force /tmp/tcg-tc-x',
+            'rm -rf /tmp/tcg-x 2>/dev/null', 'bash -c "rm -rf /tmp/tcg-x"', 'cmd //c "rd /s /q %TEMP%\\x"',
             'rm']:
     check(cmd, sh(cmd, cwd=OUT), 'pass')
 for cmd in ['rm -rf build', 'find . -type f -delete', 'cd /tmp && rm -rf x', 'rm -rf ./out/*',
-            'cd /tmp/x && rm -rf ../y']:
+            'cd /tmp/tcg-x && rm -rf ../y']:
     check(cmd + ', from scratch', sh(cmd, cwd=SCR), 'pass')
 for cmd in ['Remove-Item -Recurse -Force $env:TEMP\\x', 'Remove-Item "$env:TMP\\x"', 'ri ' + TWIN + '\\x',
             '$S = "$env:TEMP\\run"; Remove-Item -Recurse $S', "$S='" + TWIN + "\\run'; Remove-Item $S",
@@ -362,8 +365,11 @@ try:
     check('a worktree: git branch -f dev', sh('git branch -f dev release', cwd=wt), 'pass')
     check('another repository: git branch -f master', sh('git branch -f master release',
                                                          cwd=os.path.join(fake, 'other').replace('\\', '/')), 'pass')
+    # A push to master asks from any repository, as the settings' ask rules do
     check('another repository: git push origin master', sh('git push origin master',
-                                                           cwd=os.path.join(fake, 'other').replace('\\', '/')), 'pass')
+                                                           cwd=os.path.join(fake, 'other').replace('\\', '/')), 'ask')
+    check('another repository: git push origin dev', sh('git push origin dev',
+                                                        cwd=os.path.join(fake, 'other').replace('\\', '/')), 'pass')
 finally:
     shutil.rmtree(fake, ignore_errors=True)
 
@@ -372,10 +378,10 @@ for cmd in ['for d in build dist; do rm -rf "$d"; done', 'if [ -d C:/x ]; then r
             'if true; then rm -rf C:/x; else echo no; fi', 'if [ -e X ]; then echo; else rm -rf C:/x; fi',
             'while read f; do rm -f "$f"; done < list.txt', 'until true; do rm -rf C:/x; done',
             'if false; then :; elif true; then rm -rf C:/x; fi', 'ls *.log | while read f; do rm "$f"; done',
-            'for d in /tmp/a C:/x; do rm -rf "$d"; done', 'for d in $(ls); do rm -rf "$d"; done']:
+            'for d in /tmp/tcg-a C:/x; do rm -rf "$d"; done', 'for d in $(ls); do rm -rf "$d"; done']:
     check('keywords: ' + cmd, sh(cmd, cwd=OUT), 'ask')
-for cmd in ['for d in /tmp/a /tmp/b; do rm -rf "$d"; done', 'for d in "$TEMP"/x*; do rm -rf "$d"; done',
-            'if [ -d /tmp/x ]; then rm -rf /tmp/x; fi', 'for f in *.log; do echo "$f"; done',
+for cmd in ['for d in /tmp/tcg-a /tmp/tcg-b; do rm -rf "$d"; done', 'for d in "$TEMP"/x*; do rm -rf "$d"; done',
+            'if [ -d /tmp/tcg-x ]; then rm -rf /tmp/tcg-x; fi', 'for f in *.log; do echo "$f"; done',
             'if true; then echo rm -rf C:/x; fi', 'if true; then mv C:/x/a C:/x/b; fi']:
     check('keywords: ' + cmd, sh(cmd, cwd=OUT), 'pass')
 for cmd in ['if true; then git reset --hard; fi', 'if true; then git stash; fi', 'while true; do git stash; done',
@@ -391,46 +397,47 @@ for cmd in ['git clean -fdx', 'git clean -f', 'git clean --force -d', 'git -C C:
             'git clean -fd ../other']:
     check('clean: ' + cmd, sh(cmd, cwd=OUT), 'ask')
 check('clean: git clean -f ../../.. from scratch', sh('git clean -f ../../..', cwd=SCR), 'ask')
-for cmd in ['git clean -n', 'git clean -nd', 'cd /tmp/x && git clean -fdx', 'git -C /tmp/x clean -fd',
+for cmd in ['git clean -n', 'git clean -nd', 'cd /tmp/tcg-x && git clean -fdx', 'git -C /tmp/tcg-x clean -fd',
             'git -C "$TEMP/x" clean -fdx']:
     check('clean: ' + cmd, sh(cmd, cwd=OUT), 'pass')
 check('clean: git clean -fdx in scratch', sh('git clean -fdx', cwd=SCR), 'pass')
 check('clean: git clean -fd in this checkout', sh('git clean -fd'), 'deny')
 
 # cd X || exit and cd X || return place what follows at that level in X; ${VAR:-default}, ${VAR:?}, mktemp -p
-for cmd in ['cd /tmp/wt || exit 1; rm -rf build', 'cd /tmp/wt || exit; rm -rf build', 'cd /tmp/wt || return; rm -rf b',
-            'cd /tmp/wt || exit 1\nrm -rf build', 'cd /tmp/wt || exit 1; make; rm -rf build',
-            'cd /tmp/wt || exit 1; cd sub && rm -rf x', 'S=/tmp/s; rm -rf "${S:?}/x"', 'rm -rf "${TMPDIR:-/tmp}/x"',
+for cmd in ['cd /tmp/tcg-wt || exit 1; rm -rf build', 'cd /tmp/tcg-wt || exit; rm -rf build', 'cd /tmp/tcg-wt || return; rm -rf b',
+            'cd /tmp/tcg-wt || exit 1\nrm -rf build', 'cd /tmp/tcg-wt || exit 1; make; rm -rf build',
+            'cd /tmp/tcg-wt || exit 1; cd sub && rm -rf x', 'S=/tmp/tcg-s; rm -rf "${S:?}/x"', 'rm -rf "${TMPDIR:-/tmp}/x"',
             'rm -rf "${NOPE:=$TEMP}/x"', 'rm -rf "${TEMP:-C:/x}/y"', 'T=$(mktemp -d -p "$TEMP"); rm -rf "$T"',
             'T="$(mktemp -d -p "$TEMP")" && rm -rf "$T"', 'T=$(mktemp -d --tmpdir=/tmp); rm -rf "$T"',
-            'T=$(mktemp /tmp/fooXXXX); rm -f "$T"', 'T=$(mktemp -p /tmp/x); rm -f "$T"']:
+            'T=$(mktemp /tmp/tcg-fooXXXX); rm -f "$T"', 'T=$(mktemp -p /tmp/tcg-x); rm -f "$T"']:
     check('C1: ' + cmd, sh(cmd, cwd=OUT), 'pass')
-for cmd in ['cd /tmp/wt || echo no; rm -rf build', 'cd C:/x || exit 1; rm -rf y', '(cd /tmp/wt || exit 1); rm -rf b',
-            'cd /tmp/wt || exit 1; cd C:/x; rm -rf y', 'cd $NOPE || exit 1; rm -rf y', 'cd /tmp/wt | exit; rm -rf b',
-            'rm -rf "${NOPE:?}/x"', 'rm -rf "${NOPE:-C:/x}/y"', 'S=/tmp/s; rm -rf "${S:+C:/x}"',
-            'S=/tmp/s; rm -rf "${S/tmp/c}"', 'T=$(mktemp -d -p C:/x); rm -rf "$T"', 'T=$(mktemp C:/x/fooXXXX); rm "$T"',
+for cmd in ['cd /tmp/tcg-wt || echo no; rm -rf build', 'cd C:/x || exit 1; rm -rf y', '(cd /tmp/tcg-wt || exit 1); rm -rf b',
+            'cd /tmp/tcg-wt || exit 1; cd C:/x; rm -rf y', 'cd $NOPE || exit 1; rm -rf y', 'cd /tmp/tcg-wt | exit; rm -rf b',
+            'rm -rf "${NOPE:?}/x"', 'rm -rf "${NOPE:-C:/x}/y"', 'S=/tmp/tcg-s; rm -rf "${S:+C:/x}"',
+            'S=/tmp/tcg-s; rm -rf "${S/tmp/tcg-c}"', 'T=$(mktemp -d -p C:/x); rm -rf "$T"', 'T=$(mktemp C:/x/fooXXXX); rm "$T"',
             'T=$(mktemp -d -p "$NOPE"); rm -rf "$T"']:
     check('C1: ' + cmd, sh(cmd, cwd=OUT), 'ask')
 
 # A repository's .claude/worktrees, where the Agent tool's isolated worktrees are, is scratch
 AGENT = 'C:/elsewhere/.claude/worktrees/agent-x'
 for cmd, cwd in [('rm -rf build', AGENT), ('git worktree remove --force .claude/worktrees/agent-a0', OUT),
-                 ('rm -rf C:/elsewhere/.claude/worktrees', OUT), ('git clean -fdx', AGENT),
+                 ('rm -rf C:/elsewhere/.claude/worktrees/*', OUT), ('git clean -fdx', AGENT),
                  ('rm -rf ' + R + '/.claude/worktrees/agent-y/build', OUT)]:
     check('C2: ' + cmd + ' in ' + cwd[-24:], sh(cmd, cwd=cwd), 'pass')
 for cmd in ['rm -rf C:/elsewhere/.claude', 'rm -rf C:/elsewhere/.claude/worktrees-old/x',
+            'rm -rf C:/elsewhere/.claude/worktrees', 'rm -rf C:/elsewhere/.claude/worktrees/',
             'rm -rf C:/elsewhere/.claude/worktrees/../x', 'rm -rf C:/elsewhere/claude/worktrees/x']:
     check('C2: ' + cmd, sh(cmd, cwd=OUT), 'ask')
 
 # cd A || cd S && rm is not placed in S; S=x cmd sets S for cmd alone
-many = 'cd /tmp/wt || exit 1; ' + '; '.join(['cd a%d' % k for k in range(60)]) + '; rm -rf C:/x'
+many = 'cd /tmp/tcg-wt || exit 1; ' + '; '.join(['cd a%d' % k for k in range(60)]) + '; rm -rf C:/x'
 started = time.time()
 got = sh(many, cwd=OUT)
 check('C1: sixty cds after cd || exit, judged in time', got if time.time() - started < 5 else 'slow', 'ask')
-check('C5: cd C:/x || cd /tmp/s && rm',sh('cd C:/x || cd /tmp/s && rm -rf y', cwd=OUT), 'ask')
-check('C5: cd /tmp/a || cd /tmp/s && rm, from scratch', sh('cd /tmp/a || cd /tmp/s && rm -rf y', cwd=SCR), 'pass')
-check('C5: S=x true; rm "$S"', sh('S=/tmp/x true; rm -rf "$S/y"', cwd=OUT), 'ask')
-check('C5: S=x; true; rm "$S"', sh('S=/tmp/x; true; rm -rf "$S/y"', cwd=OUT), 'pass')
+check('C5: cd C:/x || cd /tmp/tcg-s && rm',sh('cd C:/x || cd /tmp/tcg-s && rm -rf y', cwd=OUT), 'ask')
+check('C5: cd /tmp/tcg-a || cd /tmp/tcg-s && rm, from scratch', sh('cd /tmp/tcg-a || cd /tmp/tcg-s && rm -rf y', cwd=SCR), 'pass')
+check('C5: S=x true; rm "$S"', sh('S=/tmp/tcg-x true; rm -rf "$S/y"', cwd=OUT), 'ask')
+check('C5: S=x; true; rm "$S"', sh('S=/tmp/tcg-x; true; rm -rf "$S/y"', cwd=OUT), 'pass')
 
 # Master moved in one call: switched to and then changed, or changed in a worktree that is on master
 for cmd in ['git checkout master && git merge --ff-only release',
@@ -439,8 +446,8 @@ for cmd in ['git checkout master && git merge --ff-only release',
             'git checkout master; git merge --ff-only release; git checkout dev', 'git checkout master && git commit -m x',
             'git switch master && git reset HEAD~1', 'git checkout master && git cherry-pick abc',
             'git checkout master && git pull', 'git checkout -q master && git revert abc', 'git rebase dev master',
-            'git rebase --onto dev x master', 'git worktree add -B master /tmp/m release',
-            'git worktree add -b master /tmp/m', 'git switch master\ngit merge release']:
+            'git rebase --onto dev x master', 'git worktree add -B master /tmp/tcg-m release',
+            'git worktree add -b master /tmp/tcg-m', 'git switch master\ngit merge release']:
     check('B2: ' + cmd, sh(cmd), 'ask')
 check('B2: PowerShell checkout master; merge',
       ps('git checkout master; git merge --ff-only release; git push; git checkout dev'), 'ask')
@@ -448,7 +455,7 @@ for cmd in ['git checkout master', 'git push origin dev', 'git merge dev', 'git 
             'git checkout -b fix master && git commit -m x', 'git switch -c fix master && git merge dev',
             'git switch --detach master && git commit -m x', 'git checkout --detach master && git merge x',
             'git checkout master && git log -3', 'git checkout master && git diff dev', 'git rebase master',
-            'git worktree add -b fix /tmp/m master', 'git worktree add --detach /tmp/m master',
+            'git worktree add -b fix /tmp/tcg-m master', 'git worktree add --detach /tmp/tcg-m master',
             'git checkout master && git merge --abort']:
     check('B2: ' + cmd, sh(cmd), 'pass')
 fake = tempfile.mkdtemp()
@@ -487,16 +494,101 @@ try:
                 'git -C .claude/worktrees/agent-x restore src/a.java']:
         check('7 silent: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'pass')
     check('7 silent: git restore in a scratch cwd', sh('git restore src/a.java', cwd=wt), 'pass')
-    for cmd in ['cd ' + wt + '; git checkout -- src/a.java', 'cd ' + wt + '\ngit restore src/a.java',
-                'git restore src/a.java', 'cd $NOPE && git restore x', 'cd ' + wt + '; cp test/LocDB.data LocDB.data',
-                'cp test/LocDB.data LocDB.data', 'cd ' + wt + ' || cd src && git checkout org']:
-        check('7 asks: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'ask')
-    check('7 asks: PowerShell Set-Location; git restore', ps('Set-Location ' + wt + '; git restore src/a.java'), 'ask')
+    # A folder that is not there: the cd may fail, so ; and newlines bring this checkout back
+    for cmd in ['cd ' + NONE + '; git checkout -- src/a.java', 'cd ' + NONE + '\ngit restore src/a.java',
+                'git restore src/a.java', 'cd $NOPE && git restore x', 'cd ' + NONE + '; cp test/LocDB.data LocDB.data',
+                'cp test/LocDB.data LocDB.data', 'cd ' + NONE + ' || cd src && git checkout org']:
+        check('7 asks: ' + cmd.replace(NONE, '<none>'), sh(cmd), 'ask')
+    check('7 asks: PowerShell Set-Location <none>; git restore', ps('Set-Location ' + NONE + '; git restore src/a.java'),
+          'ask')
     for cmd in ['cd ' + wt + ' && git reset --hard', 'cd ' + wt + ' && git stash', 'cd ' + wt + ' && git checkout .',
                 'cd ' + wt + ' && echo x > ' + R + '/cs2_sample_layout/a.cs2']:
         check('7 denies stay: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'deny')
+
+    # A cd to a folder that exists succeeds: what follows at its level runs there, whatever the separator, pipes,
+    # loops, if and brace bodies included.  One that may not run (after ||, in a body, after a test and &&, in a pipe
+    # stage, in the background, in a subshell that has ended) only adds its folder.
+    for cmd in ['cd ' + wt + ' && sh x 2>&1 | grep Total && git checkout -- src',
+                'cd ' + wt + ' && export TC_SCRATCH=' + wt + '-s && sh x | tail -3 && git checkout -- src/a.java',
+                'cd ' + wt + ' && git diff --stat | cat && git checkout -- src', 'cd ' + wt + ' && sh x | tail -3 && rm -rf b',
+                'cd ' + wt + ' && ls | head && rm -rf build', 'cd ' + wt + ' && cp a x | cat && cp test/LocDB.data LocDB.data',
+                'cd ' + wt + ' || exit 1; sh x | tail -3; git checkout -- src',
+                'cd ' + wt + ' && for f in src/a.java src/b.java; do git checkout -- "$f"; done',
+                'cd ' + wt + ' && if git diff --quiet; then echo clean; else git checkout -- src; fi',
+                'cd ' + wt + ' && { sh x; git checkout -- src; }', 'cd ' + wt + '; sh x | grep y; git checkout -- src',
+                'cd ' + wt + " && python - <<'EOF'\nprint(1)\nEOF\nexport X=1; git checkout -- src; git status | cat",
+                'cd ' + wt + ' && sh x || true; git checkout -- src', 'set -e; cd ' + wt + '; rm -rf build',
+                'cd ' + wt + '\nrm -rf build', 'pushd ' + wt + ' && git checkout -- src; popd',
+                'cd ' + wt + ' && cd src && git checkout -- a.java', 'cd ' + wt + '; cd src; rm -rf build',
+                '(cd ' + wt + ' && git checkout -- src)', 'cd ' + wt + '; (git checkout -- src)',
+                'cd ' + wt + ' || exit 1; [ -d src ] && cd src && rm -rf out']:
+        check('placed: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'pass')
+    for cmd in ['Set-Location ' + wt + '; git restore src/a.java', 'Set-Location ' + wt + '; Remove-Item -Recurse build',
+                'Push-Location ' + wt + '; git checkout -- src; Pop-Location', 'cd ' + wt + '; git diff | Out-Host; rm b']:
+        check('placed: PowerShell ' + cmd.replace(wt, '<wt>'), ps(cmd), 'pass')
+    for cmd in ['cd ' + wt + ' | cat && git checkout -- src', 'cd ' + wt + ' && x | cd ' + R + ' && git checkout -- src',
+                '(cd ' + wt + '); git checkout -- src', '(cd ' + wt + ' && make); git checkout -- src',
+                'true || cd ' + wt + '; git checkout -- src', 'test -d ' + wt + ' && cd ' + wt + '; git checkout -- src',
+                'if true; then cd ' + wt + '; fi; git checkout -- src', 'for d in a; do cd ' + wt + '; done; git restore x',
+                'cd ' + wt + ' & git checkout -- src', 'cd ' + wt + ' && cd - && git checkout -- src',
+                'pushd ' + wt + ' && popd && git restore src/a.java', 'cd ' + wt + '; cd ' + R + '; git checkout -- src',
+                'cd ' + wt + ' || exit 1; [ -d C:/x ] && cd C:/x; rm -rf out', 'make && cd ' + wt + '; git checkout -- src',
+                'cd C:/elsewhere/proj || exit 1; [ -d ' + wt + ' ] && cd ' + wt + '; rm -rf out',
+                'cd ' + wt + ' || exit 1 & git restore src/a.java', 'cd ' + NONE + ' || exit 1 & git restore x',
+                'cd ' + wt + ' && make & git checkout -- src']:
+        check('not placed: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'ask')
+    check('not placed: PowerShell if { Set-Location }', ps('if ($x) { Set-Location ' + wt + ' }; git restore src/a.java'),
+          'ask')
+
+    # The last checkout wins; a push to master asks from any repository, by its HEAD or by the refspec
+    for cmd, cwd in [('git checkout master && git checkout dev && git merge x', R),
+                     ('git checkout master; git log; git checkout dev; git merge x', R),
+                     ('git checkout dev && git merge x', on), ('git checkout -b fix && git commit -m x', on),
+                     ('git switch --detach && git commit -m x', on)]:
+        check('last switch: ' + cmd + ' in ' + ('<m>' if cwd == on else 'repo'), sh(cmd, cwd=cwd), 'pass')
+    check('last switch: dev then master, merge', sh('git checkout dev && git checkout master && git merge x'), 'ask')
+    clone = os.path.join(fake, 'clone')
+    os.makedirs(os.path.join(clone, '.git'))
+    open(os.path.join(clone, '.git', 'HEAD'), 'w').write('ref: refs/heads/master\n')
+    clone = clone.replace('\\', '/')
+    for cmd in ['cd ' + clone + ' && git push origin master', 'cd ' + clone + ' && git push',
+                'git -C ' + clone + ' push origin', 'cd ' + clone + ' && git push origin release:master',
+                'cd ' + clone + ' && git push origin @']:
+        check('clone: ' + cmd.replace(clone, '<clone>'), sh(cmd, cwd=OUT), 'ask')
+    for cmd in ['cd ' + clone + ' && git push origin dev', 'cd ' + clone + ' && git checkout dev && git push',
+                'cd ' + clone + ' && git merge x && git commit -m y']:
+        check('clone: ' + cmd.replace(clone, '<clone>'), sh(cmd, cwd=OUT), 'pass')
 finally:
     shutil.rmtree(fake, ignore_errors=True)
+
+# Loops nested or opened in a body, PowerShell foreach, and PowerShell string sums and Join-Path are read
+TW = TEMP.replace('/', '\\')
+for cmd in ['S=' + TEMP + '/a; for w in a b; do for f in x y; do rm -rf $S/$w/$f; done; done',
+            'S=' + TEMP + '/a; if [ -d $S/x ]; then for f in $S/x/*.log; do rm "$f"; done; fi']:
+    check('loops: ' + cmd, sh(cmd, cwd=OUT), 'pass')
+check('loops: nested, one value outside', sh('for w in /tmp/a C:/x; do for f in y; do rm -rf $w/$f; done; done',
+                                             cwd=OUT), 'ask')
+for cmd in ['foreach ($f in Get-ChildItem ' + TW + '\\x) { Remove-Item $f.FullName }',
+            "foreach ($d in '" + TW + "\\a','" + TW + "\\b') { Remove-Item -Recurse $d }",
+            '$S = $env:TEMP + "\\x"; Remove-Item $S -Recurse', '$d = Join-Path $env:TEMP "x"; Remove-Item $d']:
+    check('PowerShell loops and sums: ' + cmd, ps(cmd, cwd=OUT), 'pass')
+for cmd in ['foreach ($f in Get-ChildItem C:\\x) { Remove-Item $f.FullName }', 'foreach ($d in $list) { Remove-Item $d }',
+            'foreach ($f in Get-Content l.txt) { Remove-Item $f }', '$S = $env:USERPROFILE + "\\x"; Remove-Item $S',
+            '$d = Join-Path C:\\ "x"; Remove-Item $d']:
+    check('PowerShell loops and sums: ' + cmd, ps(cmd, cwd=OUT), 'ask')
+
+# ${V:-default} reads V from the environment when it is set there
+check('default: ${PROGRAMDATA:-/tmp}', sh('rm -rf "${PROGRAMDATA:-/tmp}/x"', cwd=OUT),
+      'ask' if os.environ.get('PROGRAMDATA') else 'pass')
+check('default: an unset name', sh('rm -rf "${TCG_UNSET_NAME:-/tmp}/x"', cwd=OUT), 'pass')
+
+# A share is never looked at, and is never scratch: these answer at once
+for cmd, tool in [('git -C //tcg-nohost/share commit -m x; rm -rf C:/x', 'Bash'), ('cd //tcg-nohost/s && rm -rf x', 'Bash'),
+                  ('git -C //tcg-nohost/share push; git -C //tcg-nohost2/s merge x; rm -rf C:/x', 'Bash'),
+                  ('Set-Location \\\\tcg-nohost\\share; Remove-Item x', 'PowerShell')]:
+    started = time.time()
+    got = guard(tool, {'command': cmd}, OUT)
+    check('share: ' + cmd, got if time.time() - started < 1 else 'slow', 'ask')
 
 out = subprocess.run([sys.executable, GUARD], input='not json', capture_output=True, text=True)
 check('garbage on stdin', 'pass' if not out.stdout.strip() and out.returncode == 0 else 'error', 'pass')
