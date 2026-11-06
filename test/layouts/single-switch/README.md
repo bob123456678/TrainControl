@@ -69,3 +69,4 @@ It also produces something else the suite has never had by hand: **a split squar
 - `ui.testTheAutoTabSaysWhyATrainWaits`
 - `ui.testTheAutonomyEditorsBulkDoors`
 - `ui.testTheKeyboardAsksDuringAnAutonomyRun`
+- `ui.testATimetableEntryKeepsItsSquaresThroughRenames`

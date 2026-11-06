@@ -135,6 +135,9 @@ public class AutonomySession
     /** The carry and the railway's squares as the edit began, for a Cancel; taken at the first move only. */
     private Remembered asTheEditBegan;
 
+    /** Whether a square moved since then, so the carry's memory no longer names the squares of the setup as it began. */
+    private boolean squareMovedInTheEdit;
+
     private Remembered remembered()
     {
         Map<org.traincontrol.automation.Point, String> railway = new java.util.IdentityHashMap<>();
@@ -828,23 +831,15 @@ public class AutonomySession
 
                 List<NamedLeg> legs = legsOf(configuration);
 
-                if (name.equals(active) ? carry(legs, tiles, bases, naming.edgesByName().keySet())
-                    : rename(legs, tiles, bases))
+                if (name.equals(active) ? carry(legs, tiles, bases, naming.edgesByName().keySet(), squareOfNameSeen,
+                    baseOfNameSeen) : rename(legs, tiles, bases, squareOfNameSeen, baseOfNameSeen))
                 {
                     dirty = true;
                 }
 
                 // And the timetable legs the edit's folds took from the railway (OB-343), carried every build so they
                 // name the latest Points when Cancel writes them back
-                org.json.JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(name);
-
-                if (taken != null && taken.has("timetable"))
-                {
-                    List<NamedLeg> takenLegs = legsOf(new org.json.JSONObject().put("globals", taken));
-
-                    if (name.equals(active)) carry(takenLegs, tiles, bases, naming.edgesByName().keySet());
-                    else rename(takenLegs, tiles, bases);
-                }
+                carryTheLegsTaken(name, naming, squareOfNameSeen, baseOfNameSeen);
             }
         }
         finally
@@ -861,6 +856,26 @@ public class AutonomySession
             nameOfSquareNow = bases;
             facingOfNameNow = facings;
             turningNow = naming.turningNames();
+        }
+    }
+
+    /** The timetable legs the edit's folds took for one configuration, carried to this build's names, as read by `seen`. */
+    private void carryTheLegsTaken(String configuration, AutonomyBuilder naming, Map<String, TileKey> seen,
+        Map<String, String> basesSeen)
+    {
+        org.json.JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(configuration);
+
+        if (taken == null || !taken.has("timetable")) return;
+
+        List<NamedLeg> legs = legsOf(new org.json.JSONObject().put("globals", taken));
+
+        if (configuration.equals(store.getActiveConfiguration()))
+        {
+            carry(legs, naming.tilesByName(), naming.uniqueNames(), naming.edgesByName().keySet(), seen, basesSeen);
+        }
+        else
+        {
+            rename(legs, naming.tilesByName(), naming.uniqueNames(), seen, basesSeen);
         }
     }
 
@@ -975,7 +990,8 @@ public class AutonomySession
      * Carries another configuration's names across a renamed square, in place, keeping the heading.  A name no build
      * gave is remembered by the square whose name it begins with, for a later rename.  Returns whether any changed.
      */
-    private boolean rename(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases)
+    private boolean rename(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases,
+        Map<String, TileKey> seen, Map<String, String> basesSeen)
     {
         boolean changed = false;
 
@@ -985,8 +1001,8 @@ public class AutonomySession
             {
                 String name = leg.get(end);
 
-                TileKey square = squareOfNameSeen.get(name);
-                String base = baseOfNameSeen.get(name);
+                TileKey square = seen.get(name);
+                String base = basesSeen.get(name);
 
                 // Still built on the square it named, or on one no build of this session placed
                 if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
@@ -997,8 +1013,8 @@ public class AutonomySession
 
                     if (called != null)
                     {
-                        squareOfNameSeen.put(name, called.getKey());
-                        baseOfNameSeen.put(name, called.getValue());
+                        seen.put(name, called.getKey());
+                        basesSeen.put(name, called.getValue());
                     }
 
                     continue;
@@ -1019,7 +1035,7 @@ public class AutonomySession
 
     /** Carries the in-use configuration's names to this build's names, in place; returns whether any changed. */
     private boolean carry(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases,
-        java.util.Set<String> edges)
+        java.util.Set<String> edges, Map<String, TileKey> seen, Map<String, String> basesSeen)
     {
         // Every name this build lacks, or gives another square, traced to its square
         Map<String, TileKey> stale = new LinkedHashMap<>();
@@ -1031,8 +1047,8 @@ public class AutonomySession
             {
                 if (stale.containsKey(name)) continue;
 
-                TileKey square = squareOfNameSeen.get(name);
-                String base = baseOfNameSeen.get(name);
+                TileKey square = seen.get(name);
+                String base = basesSeen.get(name);
 
                 // Still built on the square it named, by the previous build's memory (written after this carry)
                 if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
@@ -1998,6 +2014,8 @@ public class AutonomySession
 
         asTheEditBegan = remembered();
 
+        squareMovedInTheEdit = false;
+
         // And what the railway changes alone from here, which Cancel keeps (OB-343)
         takenFromTheRailway = new LinkedHashMap<>();
 
@@ -2165,6 +2183,13 @@ public class AutonomySession
         // What the railway changed alone during the edit stays changed (OB-343)
         putBackWhatTheRailwayChangedAlone();
 
+        // Its legs name the last build's squares, so they are read by the memory as the edit left it, not as it began
+        // (OB-345).  Not after a move: that memory's squares are not the restored setup's.
+        boolean legsBySquare = asTheEditBegan != null && !squareMovedInTheEdit && aTimetableWasTaken();
+
+        Map<String, TileKey> squaresLeft = legsBySquare ? new java.util.HashMap<>(squareOfNameSeen) : null;
+        Map<String, String> basesLeft = legsBySquare ? new java.util.HashMap<>(baseOfNameSeen) : null;
+
         // And the carry's memory and the railway's squares as before the first move.  But the names the edit's LAST
         // build gave are kept until the session ends (`keptSquares`, OB-343): the railway's timetable names them, and
         // forgetting them would make the next load drop those legs.
@@ -2196,9 +2221,54 @@ public class AutonomySession
 
         asTheEditBegan = null;
 
-        rebuild();
+        squareMovedInTheEdit = false;
+
+        if (legsBySquare)
+        {
+            rebuildAndCarryTheLegsTaken(squaresLeft, basesLeft);
+        }
+        else
+        {
+            rebuild();
+        }
 
         return saveQuietly();
+    }
+
+    /** Whether a fold of this edit took a timetable from the railway. */
+    private boolean aTimetableWasTaken()
+    {
+        if (takenFromTheRailway == null) return false;
+
+        for (org.json.JSONObject taken : takenFromTheRailway.values())
+        {
+            if (taken.has("timetable")) return true;
+        }
+
+        return false;
+    }
+
+    /** The rebuild of a Cancel, with the legs taken kept from its carry, then carried by the memory given and put back. */
+    private void rebuildAndCarryTheLegsTaken(Map<String, TileKey> seen, Map<String, String> basesSeen)
+    {
+        java.util.Map<String, org.json.JSONObject> taken = takenFromTheRailway;
+
+        takenFromTheRailway = null;
+
+        try
+        {
+            rebuild();
+        }
+        finally
+        {
+            takenFromTheRailway = taken;
+        }
+
+        AutonomyBuilder naming = builder(null);
+
+        for (String configuration : taken.keySet()) carryTheLegsTaken(configuration, naming, seen, basesSeen);
+
+        putBackWhatTheRailwayChangedAlone();
     }
 
     /** Everything the setup holds about one page, for the diagram editor's undo (restorePage). */
@@ -2294,6 +2364,8 @@ public class AutonomySession
         if (moved)
         {
             if (asTheEditBegan == null) asTheEditBegan = remembered();
+
+            squareMovedInTheEdit = true;
 
             moveTheRailwaysSquares(square -> moves.get(square) != null ? moves.get(square) : square);
 
@@ -4459,7 +4531,9 @@ public class AutonomySession
 
         if (configuration == null) return;
 
-        org.json.JSONObject now = globalsOf(new org.json.JSONObject(layoutJson));
+        org.json.JSONObject root = new org.json.JSONObject(layoutJson);
+
+        org.json.JSONObject now = globalsOf(root);
 
         org.json.JSONObject globals = configuration.optJSONObject("globals");
 
@@ -4484,9 +4558,11 @@ public class AutonomySession
             }
             else
             {
-                globals.put(key, now.get(key));
+                Object taken = "timetable".equals(key) ? inTheNamesNow(now.get(key), root) : now.get(key);
 
-                takenFromTheRailway(configurationName, key, now.get(key));
+                globals.put(key, taken);
+
+                takenFromTheRailway(configurationName, key, taken);
             }
 
             if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
@@ -4515,6 +4591,48 @@ public class AutonomySession
         }
 
         dirty = true;
+    }
+
+    /**
+     * The railway's timetable, as a copy, with each name the carry's memory would read as another square than the
+     * railway's own Point stands on written in the latest build's name (OB-345).  Every other name is the carry's.
+     */
+    private Object inTheNamesNow(Object timetable, org.json.JSONObject railway)
+    {
+        Object table = copyOfSetting(timetable);
+
+        org.json.JSONArray built = railway.optJSONArray("points");
+
+        Map<String, org.json.JSONObject> points = new java.util.HashMap<>();
+
+        for (int i = 0; built != null && i < built.length(); i++)
+        {
+            org.json.JSONObject point = built.optJSONObject(i);
+
+            if (point != null) points.put(point.optString("name"), point);
+        }
+
+        org.json.JSONObject globals = new org.json.JSONObject().put("timetable", table);
+
+        for (NamedLeg leg : legsOf(new org.json.JSONObject().put("globals", globals)))
+        {
+            for (int end = 0; end < 2; end++)
+            {
+                String name = leg.get(end);
+                org.json.JSONObject point = points.get(name);
+                String square = point == null ? null : point.optString("square", null);
+                TileKey at = square == null ? null : AutonomyCompanionStore.parseTileKey(square);
+                TileKey read = squareOfNameSeen.get(name);
+
+                if (at == null || read == null || read.equals(at)) continue;
+
+                String now = pointNamedNow(name, square, point.optString(AutonomyBuilder.COPY_FACING, null));
+
+                if (now != null) leg.set(end, now);
+            }
+        }
+
+        return table;
     }
 
     /**
