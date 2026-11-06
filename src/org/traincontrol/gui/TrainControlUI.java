@@ -355,6 +355,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
 
+    javax.swing.JMenuItem importLocsFromCSVMenuItem;
+
     javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
 
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
@@ -721,6 +723,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         installCurrentKeyRow();
 
         installShowPageNumbersMenuItem();
+
+        installImportLocsFromCSVMenuItem();
 
         installReturnHomeMenu();
 
@@ -4794,6 +4798,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.currentKeyRow = new CurrentKeyRow();
 
         this.CurrentKeyLabel.add(this.currentKeyRow, java.awt.BorderLayout.CENTER);
+    }
+
+    /** "Import from CSV..." beside Export to CSV (FR-049), built here because the menu belongs to the generated block. */
+    private void installImportLocsFromCSVMenuItem()
+    {
+        this.importLocsFromCSVMenuItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.importFromCSV"));
+
+        this.importLocsFromCSVMenuItem.addActionListener(event -> LocomotiveCsvDoor.open(this, this));
+
+        this.locomotiveMenu.insert(this.importLocsFromCSVMenuItem,
+            this.locomotiveMenu.getPopupMenu().getComponentIndex(this.exportLocsToCSVMenuItem) + 1);
     }
 
     /**

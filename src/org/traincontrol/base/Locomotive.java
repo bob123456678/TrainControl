@@ -1449,8 +1449,34 @@ public abstract class Locomotive
     }
     
     /**
+     * The one day a runtime that came from a file is filed under (FR-049): a file holds a total, not days, and this
+     * date is before TrainControl existed, so no chart range reaches it and no day of real running is invented.
+     */
+    public static final String IMPORTED_RUNTIME_DAY = "2000-01-01";
+
+    /**
+     * Raises the total runtime to at least `wantedMs`, filing only the difference under `IMPORTED_RUNTIME_DAY`; the
+     * recorded days are never touched.  Takes the lock runtime tracking takes.
+     * @param wantedMs
+     * @return the milliseconds added (0 when the total is already that large)
+     */
+    public long raiseTotalRuntimeTo(long wantedMs)
+    {
+        synchronized (speedMonitor)
+        {
+            long add = wantedMs - this.getTotalRuntime();
+
+            if (add <= 0) return 0;
+
+            this.historicalOperatingTime.merge(IMPORTED_RUNTIME_DAY, add, Long::sum);
+
+            return add;
+        }
+    }
+
+    /**
      * On how many different days was the locomotive run
-     * @return 
+     * @return
      */
     public int getNumDaysRun()
     {
