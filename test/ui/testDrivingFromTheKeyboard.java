@@ -199,7 +199,7 @@ public class testDrivingFromTheKeyboard
     /**
      * Control with the arrows forces a direction; a plain arrow turns the train whichever way it faces.
      *
-     * MUTATION: `forwardLoc()` in the Control+LEFT arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `forwardLoc()` in the "turn left" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testTheArrowKeysTurnTheTrain() throws Exception
@@ -270,7 +270,7 @@ public class testDrivingFromTheKeyboard
      * Every kind of function shortcut reaches its own function: the back quote for f0, F1-F24, Alt plus a digit for
      * f0-f9, Control plus a digit for f10-f19, Control and Alt plus a digit for f20-f29, and the number pad.
      *
-     * MUTATION: `switchF(12)` in the Control+1 arm of `LocControlPanelKeyPressed`, and this fails at Control+1.
+     * MUTATION: `switchF(fn + 1)` in the function rows of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testEveryKindOfFunctionShortcutReachesItsFunction() throws Exception
@@ -327,7 +327,7 @@ public class testDrivingFromTheKeyboard
      * Each digit key sets the speed its button on screen sets, 1 stops the train, 0 is full speed, and the digits
      * between climb in order.
      *
-     * MUTATION: `SixButtonActionPerformed` in the VK_5 arm of `LocControlPanelKeyPressed`, and this fails at 5.
+     * MUTATION: swap Five and Six in `TrainControlUI.KeyShortcuts.SPEED_BUTTONS`, and this fails at 5.
      */
     @Test
     public void testTheDigitKeysSetTheSpeedTheirButtonsSet() throws Exception
@@ -559,7 +559,7 @@ public class testDrivingFromTheKeyboard
     /**
      * Alt+G turns the power on and Escape turns it off.
      *
-     * MUTATION: `stop()` for `go()` in the Alt+G arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `stop()` for `go()` in the "power on" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testAltGAndEscapeSwitchThePower() throws Exception
@@ -765,7 +765,7 @@ public class testDrivingFromTheKeyboard
     /**
      * Backspace brings the next tab of the keyboard forward, and Alt+Backspace the one before.
      *
-     * MUTATION: `getSelectedIndex() + 2` in the BACK_SPACE arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `getSelectedIndex() + 2` in the "next keyboard tab" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testBackspaceCyclesTheKeyboardTabs() throws Exception

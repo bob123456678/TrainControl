@@ -13679,432 +13679,451 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // So `letTheWholeWindowDriveTrains` can tell a key it must still deliver from one already brought here.
         this.theKeyTheMapAlreadySaw = evt;
 
-        int keyCode = evt.getKeyCode();
-        boolean altPressed = (evt.getModifiers() & KeyEvent.ALT_MASK) != 0;
-        boolean controlPressed = (evt.getModifiers() & KeyEvent.CTRL_MASK) != 0 || (evt.getModifiers() & KeyEvent.CTRL_DOWN_MASK) != 0;
-
         // The diagram gets first refusal on cut, paste and delete, while the pointer is over one of its squares.
-        if (locomotiveGestureOnDiagram(keyCode, controlPressed)) return;
+        if (locomotiveGestureOnDiagram(evt.getKeyCode(), KeyShortcuts.controlPressed(evt.getModifiers()))) return;
 
-        if (altPressed && keyCode == KeyEvent.VK_G)
-        {
-            go();
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_P)
-        {
-            this.applyPreferredFunctions(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_V)
-        {
-            this.applyPreferredSpeed(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_O)
-        {
-            this.locFunctionsOff(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_S)
-        {
-            this.savePreferredFunctions(this.activeLoc);
-        }
-        else if (altPressed && keyCode == KeyEvent.VK_U)
-        {
-            this.savePreferredSpeed(this.activeLoc);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_A)
-        {
-            this.selectLocomotiveActivated(this.currentButton);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_F)
-        {
-            this.quickLocSearch();
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_C)
-        {
-            this.setCopyTarget(this.currentButton, false);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_D)
-        {
-            this.getLocAdder().setVisible(true);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_N)
-        {
-            this.changeLocNotes(this.getButtonLocomotive(this.currentButton));
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_L)
-        {
-            this.changeLinkedLocomotives((Locomotive) this.getButtonLocomotive(this.currentButton));
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_M)
-        {
-            this.toggleMenuBar.setSelected(!this.toggleMenuBar.isSelected());
-            toggleMenuBarActionPerformed(null);
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_DELETE)
-        {
-            if (this.getButtonLocomotive(this.currentButton) != null)
-            {
-                this.deleteLoc(this.getButtonLocomotive(this.currentButton).getName());
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_R)
-        {
-            this.changeLocAddress(this.getButtonLocomotive(this.currentButton));
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_V) // Paste
-        {
-            if (this.hasCopyTarget())
-            {
-                this.doPaste(this.currentButton, false, false);
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_S) // Swap
-        {
-            if (this.hasCopyTarget())
-            {
-                this.doPaste(this.currentButton, true, false);
-            }
-        }
-        else if (controlPressed && keyCode == KeyEvent.VK_X)
-        {
-            this.setCopyTarget(this.currentButton, true);
-        }
-        else if (!controlPressed && keyCode == KeyEvent.VK_DELETE)
-        {
-            // This is the same as clearing the button
-            this.setCopyTarget(this.currentButton, true);
-            this.setCopyTarget(this.currentButton, true);
-        }
-        // A bare letter, not a control chord (OB-197): without `!controlPressed`, Control plus any letter no arm above
-        // catches selected a locomotive button.  Alt is not filtered: the arms above take every Alt chord this window
-        // has.
-        else if (!controlPressed && this.buttonMapping.containsKey(keyCode))
-        {
-            this.displayCurrentButtonLoc(this.buttonMapping.get(evt.getKeyCode()));
-        }
-        else if (keyCode == KeyEvent.VK_UP)
-        {            
-            if (altPressed)
-            {
-                incrementLocSpeed(SPEED_STEP * 2);
-            }
-            else if (controlPressed)
-            {
-                incrementLocSpeed(1);
-            }
-            else
-            {
-                this.UpArrowLetterButtonPressed(null);
-            }
-        }
-        else if (keyCode == KeyEvent.VK_DOWN)
-        {            
-            if (altPressed)
-            {
-                decrementLocSpeed(SPEED_STEP * 2);
-            }
-            else if (controlPressed)
-            {
-                decrementLocSpeed(1);
-            }
-            else
-            {
-                this.DownArrowLetterButtonPressed(null);
-            }
-        }
-        else if (keyCode == KeyEvent.VK_RIGHT && !altPressed)
-        {
-            if (controlPressed)
-            {
-                this.forwardLoc();
-            }
-            else
-            {
-                this.RightArrowLetterButtonPressed(null);
-            }
-        }
-        else if (keyCode == KeyEvent.VK_LEFT && !altPressed)
-        {
-            if (controlPressed)
-            {
-                this.backwardLoc();
-            }
-            else
-            {
-               this.LeftArrowLetterButtonPressed(null); 
-            }
-        }
-        else if (keyCode == KeyEvent.VK_SPACE)
-        {
-            this.SpacebarButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_0 && !altPressed && !controlPressed)
-        {
-            this.ZeroButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_1 && !altPressed && !controlPressed)
-        {
-            this.OneButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_2 && !altPressed && !controlPressed)
-        {
-            this.TwoButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_3 && !altPressed && !controlPressed)
-        {
-            this.ThreeButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_4 && !altPressed && !controlPressed)
-        {
-            this.FourButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_5 && !altPressed && !controlPressed)
-        {
-            this.FiveButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_6 && !altPressed && !controlPressed)
-        {
-            this.SixButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_7 && !altPressed && !controlPressed)
-        {
-            this.SevenButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_8 && !altPressed && !controlPressed)
-        {
-            this.EightButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_9 && !altPressed && !controlPressed)
-        {
-            this.NineButtonActionPerformed(null);
-        }
-        else if (keyCode == KeyEvent.VK_MINUS || keyCode == KeyEvent.VK_UNDERSCORE || keyCode == KeyEvent.VK_QUOTE || keyCode == KeyEvent.VK_OPEN_BRACKET)
-        {
-            if (this.KeyboardTab.getSelectedIndex() == 1)
-            {
-                int currentIndex = this.LayoutList.getSelectedIndex();
-                
-                if (currentIndex > 0)
-                {
-                     this.LayoutList.setSelectedIndex(currentIndex - 1);
-                     //this.repaintLayout();
-                }
-            }
-            else
-            {
-                if (controlPressed)
-                {
-                    this.switchKeyboard(this.keyboardNumber - 4);
-                }
-                else
-                {
-                    this.PrevKeyboardActionPerformed(null);
-                }
-            }
-        }
-        else if (keyCode == KeyEvent.VK_EQUALS || keyCode == KeyEvent.VK_PLUS || keyCode == KeyEvent.VK_LEFT_PARENTHESIS || keyCode == KeyEvent.VK_CLOSE_BRACKET)
-        {
-            if (this.KeyboardTab.getSelectedIndex() == 1)
-            {
-                int currentIndex = this.LayoutList.getSelectedIndex();
-                
-                if (currentIndex < this.LayoutList.getItemCount() - 1)
-                {
-                     this.LayoutList.setSelectedIndex(currentIndex + 1);
-                }
-            }
-            else
-            {
-                if (controlPressed)
-                {
-                    this.switchKeyboard(this.keyboardNumber + 4);
-                }
-                else
-                {
-                    this.NextKeyboardActionPerformed(null);
-                }
-            } 
-        }
-        else if ((keyCode == KeyEvent.VK_COMMA && altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && altPressed))
-        {
-            this.switchLocMapping(1);    
-        }
-        else if ((keyCode == KeyEvent.VK_PERIOD && altPressed) || (keyCode == KeyEvent.VK_COLON && altPressed))
-        {
-            this.switchLocMapping(this.numLocMappings); 
-        }
-        else if ((keyCode == KeyEvent.VK_COMMA && !altPressed) || (keyCode == KeyEvent.VK_SEMICOLON && !altPressed) || (keyCode == KeyEvent.VK_LEFT && altPressed))
-        {
-            this.PrevLocMappingActionPerformed(null);   
-        }
-        else if ((keyCode == KeyEvent.VK_PERIOD && !altPressed) || (keyCode == KeyEvent.VK_COLON && !altPressed) || (keyCode == KeyEvent.VK_RIGHT && altPressed))
-        {
-            this.NextLocMappingActionPerformed(null);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD0 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_BACK_QUOTE || (keyCode == KeyEvent.VK_0 && altPressed && !controlPressed))
-        {
-            this.switchF(0);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD1 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F1 || (keyCode == KeyEvent.VK_1 && altPressed && !controlPressed))
-        {
-            this.switchF(1);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD2 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F2 || (keyCode == KeyEvent.VK_2 && altPressed && !controlPressed))
-        {
-            this.switchF(2);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD3 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F3 || (keyCode == KeyEvent.VK_3 && altPressed && !controlPressed))
-        {
-            this.switchF(3);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD4 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F4 || (keyCode == KeyEvent.VK_4 && altPressed && !controlPressed))
-        {
-            this.switchF(4);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD5 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F5 || (keyCode == KeyEvent.VK_5 && altPressed && !controlPressed))
-        {
-            this.switchF(5);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD6 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F6 || (keyCode == KeyEvent.VK_6 && altPressed && !controlPressed))
-        {
-            this.switchF(6);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD7 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F7 || (keyCode == KeyEvent.VK_7 && altPressed && !controlPressed))
-        {
-            this.switchF(7);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD8 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F8 || (keyCode == KeyEvent.VK_8 && altPressed && !controlPressed))
-        {
-            this.switchF(8);
-        }
-        else if ((keyCode == KeyEvent.VK_NUMPAD9 && !controlPressed && !altPressed) || keyCode == KeyEvent.VK_F9 || (keyCode == KeyEvent.VK_9 && altPressed && !controlPressed))
-        {
-            this.switchF(9);
-        }
-        else if (keyCode == KeyEvent.VK_F10 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && !altPressed && controlPressed))
-        {
-            this.switchF(10);
-        }
-        else if (keyCode == KeyEvent.VK_F11 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && !altPressed && controlPressed))
-        {
-            this.switchF(11);
-        }
-        else if (keyCode == KeyEvent.VK_F12 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && !altPressed && controlPressed))
-        {
-            this.switchF(12);
-        }
-        else if (keyCode == KeyEvent.VK_F13 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && !altPressed && controlPressed))
-        {
-            this.switchF(13);
-        }
-        else if (keyCode == KeyEvent.VK_F14 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && !altPressed && controlPressed))
-        {
-            this.switchF(14);
-        }
-        else if (keyCode == KeyEvent.VK_F15 || ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && !altPressed && controlPressed))
-        {
-            this.switchF(15);
-        }
-        else if (keyCode == KeyEvent.VK_F16 || ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && !altPressed && controlPressed))
-        {
-            this.switchF(16);
-        }
-        else if (keyCode == KeyEvent.VK_F17 || ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && !altPressed && controlPressed))
-        {
-            this.switchF(17);
-        }
-        else if (keyCode == KeyEvent.VK_F18 || ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && !altPressed && controlPressed))
-        {
-            this.switchF(18);
-        }
-        else if (keyCode == KeyEvent.VK_F19 || ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && !altPressed && controlPressed))
-        {
-            this.switchF(19);
-        }
-        else if (keyCode == KeyEvent.VK_F20 || ((keyCode == KeyEvent.VK_0 || keyCode == KeyEvent.VK_NUMPAD0) && altPressed && controlPressed))
-        {
-            this.switchF(20);
-        }
-        else if (keyCode == KeyEvent.VK_F21 || ((keyCode == KeyEvent.VK_1 || keyCode == KeyEvent.VK_NUMPAD1) && altPressed && controlPressed))
-        {
-            this.switchF(21);
-        }
-        else if (keyCode == KeyEvent.VK_F22 || ((keyCode == KeyEvent.VK_2 || keyCode == KeyEvent.VK_NUMPAD2) && altPressed && controlPressed))
-        {
-            this.switchF(22);
-        }
-        else if (keyCode == KeyEvent.VK_F23 || ((keyCode == KeyEvent.VK_3 || keyCode == KeyEvent.VK_NUMPAD3) && altPressed && controlPressed))
-        {
-            this.switchF(23);
-        }
-        else if (keyCode == KeyEvent.VK_F24 || ((keyCode == KeyEvent.VK_4 || keyCode == KeyEvent.VK_NUMPAD4) && altPressed && controlPressed))
-        {
-            this.switchF(24);
-        }
-        else if ((keyCode == KeyEvent.VK_5 || keyCode == KeyEvent.VK_NUMPAD5) && altPressed && controlPressed)
-        {
-            this.switchF(25);
-        }
-        else if ((keyCode == KeyEvent.VK_6 || keyCode == KeyEvent.VK_NUMPAD6) && altPressed && controlPressed)
-        {
-            this.switchF(26);
-        }
-        else if ((keyCode == KeyEvent.VK_7 || keyCode == KeyEvent.VK_NUMPAD7) && altPressed && controlPressed)
-        {
-            this.switchF(27);
-        }
-        else if ((keyCode == KeyEvent.VK_8 || keyCode == KeyEvent.VK_NUMPAD8) && altPressed && controlPressed)
-        {
-            this.switchF(28);
-        }
-        else if ((keyCode == KeyEvent.VK_9 || keyCode == KeyEvent.VK_NUMPAD9) && altPressed && controlPressed)
-        {
-            this.switchF(29);
-        }
-        else if (keyCode == KeyEvent.VK_ESCAPE)
-        {
-            stop();
-        }
-        else if (keyCode == KeyEvent.VK_SHIFT)
-        {
-            ShiftButtonActionPerformed(null);
-        }  
-        else if (keyCode == KeyEvent.VK_ENTER)
-        {
-            AltEmergencyStopActionPerformed(null);
-        }
-        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && !altPressed)
-        {
-            // Easy tab cycling
-            do
-            {
-                this.KeyboardTab.setSelectedIndex(
-                    (this.KeyboardTab.getSelectedIndex() + 1) 
-                        % this.KeyboardTab.getComponentCount()
-                );
-            }
-            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
-        } 
-        else if ((keyCode == KeyEvent.VK_CAPS_LOCK || keyCode == KeyEvent.VK_BACK_SPACE) && altPressed)
-        {
-            do
-            {
-                this.KeyboardTab.setSelectedIndex(
-                    Math.floorMod(this.KeyboardTab.getSelectedIndex() - 1, 
-                            this.KeyboardTab.getComponentCount()
-                    )
-                );
-            }
-            while (!this.KeyboardTab.isEnabledAt(this.KeyboardTab.getSelectedIndex()));
-        } 
-        else if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_LESS)
-        {
-            // Cycle function tabs
-            this.FunctionTabs.setSelectedIndex(
-                (this.FunctionTabs.getSelectedIndex() + 1) 
-                    % this.FunctionTabs.getComponentCount()
-            );
-        }
+        KeyShortcuts.Row row = KeyShortcuts.choose(evt.getKeyCode(), evt.getModifiers(), this.buttonMapping);
+
+        if (row != null) row.run(this, evt);
     }//GEN-LAST:event_LocControlPanelKeyPressed
+
+    /**
+     * Every keyboard shortcut of the main window, one row each: its name, its keys with what must be held, its action.
+     * The first row whose keys match takes the press, even when its action then does nothing, so the order is behavior
+     * where rows overlap.  Keys named here with `Held.ANY` fire whatever else is held; Shift is never asked.
+     *
+     * Nested because the actions call the window's private handlers, whose signatures belong to the GUI Builder.  Bare
+     * letters come from `buttonMapping`, which the keyboard layout swaps; the row itself does not depend on the layout.
+     */
+    public static final class KeyShortcuts
+    {
+        /** What a row's keys need held: true, false, or null for either. */
+        private enum Held
+        {
+            ANY(null, null), ALT(true, null), CONTROL(null, true), NOT_ALT(false, null), NOT_CONTROL(null, false),
+            NEITHER(false, false), ALT_ONLY(true, false), CONTROL_ONLY(false, true), BOTH(true, true);
+
+            private final Boolean alt;
+            private final Boolean control;
+
+            Held(Boolean alt, Boolean control)
+            {
+                this.alt = alt;
+                this.control = control;
+            }
+
+            boolean matches(boolean altPressed, boolean controlPressed)
+            {
+                return (alt == null || alt == altPressed) && (control == null || control == controlPressed);
+            }
+
+            Keys on(int... keyCodes)
+            {
+                return new Keys(this, keyCodes, null);
+            }
+        }
+
+        /** Key codes with what they need held, or else the keys of `or`. */
+        private static final class Keys
+        {
+            private final Held held;
+
+            /** Null for the letters of the keyboard layout: whatever `buttonMapping` holds. */
+            private final int[] keyCodes;
+
+            private final Keys orElse;
+
+            Keys(Held held, int[] keyCodes, Keys orElse)
+            {
+                this.held = held;
+                this.keyCodes = keyCodes;
+                this.orElse = orElse;
+            }
+
+            Keys or(Keys other)
+            {
+                return new Keys(held, keyCodes, orElse == null ? other : orElse.or(other));
+            }
+
+            boolean take(int keyCode, boolean altPressed, boolean controlPressed, Map<Integer, ?> buttonMapping)
+            {
+                return held.matches(altPressed, controlPressed) && names(keyCode, buttonMapping)
+                    || orElse != null && orElse.take(keyCode, altPressed, controlPressed, buttonMapping);
+            }
+
+            private boolean names(int keyCode, Map<Integer, ?> buttonMapping)
+            {
+                if (keyCodes == null) return buttonMapping.containsKey(keyCode);
+
+                for (int each : keyCodes)
+                {
+                    if (each == keyCode) return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public String toString()
+            {
+                StringBuilder out = new StringBuilder(held.toString());
+
+                if (keyCodes == null) out.append(" a letter of the keyboard layout");
+                else for (int each : keyCodes) out.append(' ').append(KeyEvent.getKeyText(each));
+
+                return orElse == null ? out.toString() : out + ", or " + orElse;
+            }
+        }
+
+        /** One press, as an action reads it. */
+        private static final class Press
+        {
+            private final TrainControlUI ui;
+            private final boolean altPressed;
+            private final boolean controlPressed;
+            private final KeyEvent evt;
+
+            Press(TrainControlUI ui, KeyEvent evt)
+            {
+                this.ui = ui;
+                this.altPressed = KeyShortcuts.altPressed(evt.getModifiers());
+                this.controlPressed = KeyShortcuts.controlPressed(evt.getModifiers());
+                this.evt = evt;
+            }
+        }
+
+        /** One shortcut. */
+        public static final class Row
+        {
+            private final String name;
+            private final Keys keys;
+            private final java.util.function.Consumer<Press> action;
+
+            private Row(String name, Keys keys, java.util.function.Consumer<Press> action)
+            {
+                this.name = name;
+                this.keys = keys;
+                this.action = action;
+            }
+
+            /** The name no other row has. */
+            public String name()
+            {
+                return name;
+            }
+
+            private void run(TrainControlUI ui, KeyEvent evt)
+            {
+                action.accept(new Press(ui, evt));
+            }
+
+            @Override
+            public String toString()
+            {
+                return name + ": " + keys;
+            }
+        }
+
+        private static final List<Row> ROWS = new ArrayList<>();
+
+        /** The keys of functions 0 to 24 with anything held: their digit keys need particular modifiers. */
+        private static final int[] FUNCTION_KEYS = {
+            KeyEvent.VK_BACK_QUOTE, KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4, KeyEvent.VK_F5,
+            KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10, KeyEvent.VK_F11,
+            KeyEvent.VK_F12, KeyEvent.VK_F13, KeyEvent.VK_F14, KeyEvent.VK_F15, KeyEvent.VK_F16, KeyEvent.VK_F17,
+            KeyEvent.VK_F18, KeyEvent.VK_F19, KeyEvent.VK_F20, KeyEvent.VK_F21, KeyEvent.VK_F22, KeyEvent.VK_F23,
+            KeyEvent.VK_F24};
+
+        /** The speed button of each digit key, by digit. */
+        private static final List<java.util.function.BiConsumer<TrainControlUI, ActionEvent>> SPEED_BUTTONS =
+            Arrays.asList(TrainControlUI::ZeroButtonActionPerformed, TrainControlUI::OneButtonActionPerformed,
+                TrainControlUI::TwoButtonActionPerformed, TrainControlUI::ThreeButtonActionPerformed,
+                TrainControlUI::FourButtonActionPerformed, TrainControlUI::FiveButtonActionPerformed,
+                TrainControlUI::SixButtonActionPerformed, TrainControlUI::SevenButtonActionPerformed,
+                TrainControlUI::EightButtonActionPerformed, TrainControlUI::NineButtonActionPerformed);
+
+        static
+        {
+            row("apply preferred functions", Held.ALT.on(KeyEvent.VK_P),
+                key -> key.ui.applyPreferredFunctions(key.ui.activeLoc));
+            row("apply preferred speed", Held.ALT.on(KeyEvent.VK_V),
+                key -> key.ui.applyPreferredSpeed(key.ui.activeLoc));
+            row("functions off", Held.ALT.on(KeyEvent.VK_O), key -> key.ui.locFunctionsOff(key.ui.activeLoc));
+            row("power on", Held.ALT.on(KeyEvent.VK_G), key -> key.ui.go());
+            row("save preferred functions", Held.ALT.on(KeyEvent.VK_S),
+                key -> key.ui.savePreferredFunctions(key.ui.activeLoc));
+            row("save preferred speed", Held.ALT.on(KeyEvent.VK_U), key -> key.ui.savePreferredSpeed(key.ui.activeLoc));
+            row("copy the button", Held.CONTROL.on(KeyEvent.VK_C),
+                key -> key.ui.setCopyTarget(key.ui.currentButton, false));
+            row("choose a locomotive", Held.CONTROL.on(KeyEvent.VK_A),
+                key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
+            row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
+            row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.getLocAdder().setVisible(true));
+            row("locomotive notes", Held.CONTROL.on(KeyEvent.VK_N),
+                key -> key.ui.changeLocNotes(key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("linked locomotives", Held.CONTROL.on(KeyEvent.VK_L),
+                key -> key.ui.changeLinkedLocomotives((Locomotive) key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("show or hide the menu bar", Held.CONTROL.on(KeyEvent.VK_M), key ->
+            {
+                key.ui.toggleMenuBar.setSelected(!key.ui.toggleMenuBar.isSelected());
+                key.ui.toggleMenuBarActionPerformed(null);
+            });
+            row("delete the locomotive", Held.CONTROL.on(KeyEvent.VK_DELETE), key ->
+            {
+                if (key.ui.getButtonLocomotive(key.ui.currentButton) != null)
+                {
+                    key.ui.deleteLoc(key.ui.getButtonLocomotive(key.ui.currentButton).getName());
+                }
+            });
+            row("change the address", Held.CONTROL.on(KeyEvent.VK_R),
+                key -> key.ui.changeLocAddress(key.ui.getButtonLocomotive(key.ui.currentButton)));
+            row("paste onto the button", Held.CONTROL.on(KeyEvent.VK_V), key ->
+            {
+                if (key.ui.hasCopyTarget())
+                {
+                    key.ui.doPaste(key.ui.currentButton, false, false);
+                }
+            });
+            row("swap with the button", Held.CONTROL.on(KeyEvent.VK_S), key ->
+            {
+                if (key.ui.hasCopyTarget())
+                {
+                    key.ui.doPaste(key.ui.currentButton, true, false);
+                }
+            });
+            row("cut the button", Held.CONTROL.on(KeyEvent.VK_X),
+                key -> key.ui.setCopyTarget(key.ui.currentButton, true));
+            row("clear the button", Held.NOT_CONTROL.on(KeyEvent.VK_DELETE), key ->
+            {
+                // This is the same as clearing the button
+                key.ui.setCopyTarget(key.ui.currentButton, true);
+                key.ui.setCopyTarget(key.ui.currentButton, true);
+            });
+            // A bare letter, not a control chord (OB-197): without `NOT_CONTROL`, Control plus any letter no row above
+            // catches selected a locomotive button.  Alt is not filtered: the rows above take every Alt chord this
+            // window has.
+            row("show a letter's button", new Keys(Held.NOT_CONTROL, null, null),
+                key -> key.ui.displayCurrentButtonLoc(key.ui.buttonMapping.get(key.evt.getKeyCode())));
+            row("turn right", Held.NOT_ALT.on(KeyEvent.VK_RIGHT), key ->
+            {
+                if (key.controlPressed)
+                {
+                    key.ui.forwardLoc();
+                }
+                else
+                {
+                    key.ui.RightArrowLetterButtonPressed(null);
+                }
+            });
+            row("turn left", Held.NOT_ALT.on(KeyEvent.VK_LEFT), key ->
+            {
+                if (key.controlPressed)
+                {
+                    key.ui.backwardLoc();
+                }
+                else
+                {
+                    key.ui.LeftArrowLetterButtonPressed(null);
+                }
+            });
+            row("speed up", Held.ANY.on(KeyEvent.VK_UP), key ->
+            {
+                if (key.altPressed)
+                {
+                    key.ui.incrementLocSpeed(SPEED_STEP * 2);
+                }
+                else if (key.controlPressed)
+                {
+                    key.ui.incrementLocSpeed(1);
+                }
+                else
+                {
+                    key.ui.UpArrowLetterButtonPressed(null);
+                }
+            });
+            row("speed down", Held.ANY.on(KeyEvent.VK_DOWN), key ->
+            {
+                if (key.altPressed)
+                {
+                    key.ui.decrementLocSpeed(SPEED_STEP * 2);
+                }
+                else if (key.controlPressed)
+                {
+                    key.ui.decrementLocSpeed(1);
+                }
+                else
+                {
+                    key.ui.DownArrowLetterButtonPressed(null);
+                }
+            });
+
+            for (int digit = 0; digit < SPEED_BUTTONS.size(); digit++)
+            {
+                final java.util.function.BiConsumer<TrainControlUI, ActionEvent> button = SPEED_BUTTONS.get(digit);
+
+                row("speed key " + digit, Held.NEITHER.on(KeyEvent.VK_0 + digit), key -> button.accept(key.ui, null));
+            }
+
+            row("stop the train", Held.ANY.on(KeyEvent.VK_SPACE), key -> key.ui.SpacebarButtonActionPerformed(null));
+            row("previous keyboard or layout page",
+                Held.ANY.on(KeyEvent.VK_MINUS, KeyEvent.VK_UNDERSCORE, KeyEvent.VK_QUOTE, KeyEvent.VK_OPEN_BRACKET),
+                key ->
+            {
+                if (key.ui.KeyboardTab.getSelectedIndex() == 1)
+                {
+                    int currentIndex = key.ui.LayoutList.getSelectedIndex();
+
+                    if (currentIndex > 0)
+                    {
+                        key.ui.LayoutList.setSelectedIndex(currentIndex - 1);
+                        //this.repaintLayout();
+                    }
+                }
+                else
+                {
+                    if (key.controlPressed)
+                    {
+                        key.ui.switchKeyboard(key.ui.keyboardNumber - 4);
+                    }
+                    else
+                    {
+                        key.ui.PrevKeyboardActionPerformed(null);
+                    }
+                }
+            });
+            row("next keyboard or layout page",
+                Held.ANY.on(KeyEvent.VK_EQUALS, KeyEvent.VK_PLUS, KeyEvent.VK_LEFT_PARENTHESIS,
+                    KeyEvent.VK_CLOSE_BRACKET),
+                key ->
+            {
+                if (key.ui.KeyboardTab.getSelectedIndex() == 1)
+                {
+                    int currentIndex = key.ui.LayoutList.getSelectedIndex();
+
+                    if (currentIndex < key.ui.LayoutList.getItemCount() - 1)
+                    {
+                        key.ui.LayoutList.setSelectedIndex(currentIndex + 1);
+                    }
+                }
+                else
+                {
+                    if (key.controlPressed)
+                    {
+                        key.ui.switchKeyboard(key.ui.keyboardNumber + 4);
+                    }
+                    else
+                    {
+                        key.ui.NextKeyboardActionPerformed(null);
+                    }
+                }
+            });
+            row("first locomotive page", Held.ALT.on(KeyEvent.VK_COMMA, KeyEvent.VK_SEMICOLON),
+                key -> key.ui.switchLocMapping(1));
+            row("last locomotive page", Held.ALT.on(KeyEvent.VK_PERIOD, KeyEvent.VK_COLON),
+                key -> key.ui.switchLocMapping(key.ui.numLocMappings));
+            row("previous locomotive page",
+                Held.NOT_ALT.on(KeyEvent.VK_COMMA, KeyEvent.VK_SEMICOLON).or(Held.ALT.on(KeyEvent.VK_LEFT)),
+                key -> key.ui.PrevLocMappingActionPerformed(null));
+            row("next locomotive page",
+                Held.NOT_ALT.on(KeyEvent.VK_PERIOD, KeyEvent.VK_COLON).or(Held.ALT.on(KeyEvent.VK_RIGHT)),
+                key -> key.ui.NextLocMappingActionPerformed(null));
+
+            for (int function = 0; function < 30; function++)
+            {
+                final int fn = function;
+
+                row("function " + fn, functionKeys(fn), key -> key.ui.switchF(fn));
+            }
+
+            row("power off", Held.ANY.on(KeyEvent.VK_ESCAPE), key -> key.ui.stop());
+            row("speed zero", Held.ANY.on(KeyEvent.VK_SHIFT), key -> key.ui.ShiftButtonActionPerformed(null));
+            row("stop every train", Held.ANY.on(KeyEvent.VK_ENTER),
+                key -> key.ui.AltEmergencyStopActionPerformed(null));
+            row("next keyboard tab", Held.NOT_ALT.on(KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_BACK_SPACE), key ->
+            {
+                // Easy tab cycling
+                do
+                {
+                    key.ui.KeyboardTab.setSelectedIndex(
+                        (key.ui.KeyboardTab.getSelectedIndex() + 1)
+                            % key.ui.KeyboardTab.getComponentCount()
+                    );
+                }
+                while (!key.ui.KeyboardTab.isEnabledAt(key.ui.KeyboardTab.getSelectedIndex()));
+            });
+            row("previous keyboard tab", Held.ALT.on(KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_BACK_SPACE), key ->
+            {
+                do
+                {
+                    key.ui.KeyboardTab.setSelectedIndex(
+                        Math.floorMod(key.ui.KeyboardTab.getSelectedIndex() - 1,
+                                key.ui.KeyboardTab.getComponentCount()
+                        )
+                    );
+                }
+                while (!key.ui.KeyboardTab.isEnabledAt(key.ui.KeyboardTab.getSelectedIndex()));
+            });
+            row("next function tab", Held.ANY.on(KeyEvent.VK_SLASH, KeyEvent.VK_LESS), key ->
+            {
+                // Cycle function tabs
+                key.ui.FunctionTabs.setSelectedIndex(
+                    (key.ui.FunctionTabs.getSelectedIndex() + 1)
+                        % key.ui.FunctionTabs.getComponentCount()
+                );
+            });
+        }
+
+        private KeyShortcuts()
+        {
+        }
+
+        private static void row(String name, Keys keys, java.util.function.Consumer<Press> action)
+        {
+            ROWS.add(new Row(name, keys, action));
+        }
+
+        /** Function 0-9 by Alt and a digit or a bare number-pad key, 10-19 by Control, 20-29 by Control and Alt. */
+        private static Keys functionKeys(int fn)
+        {
+            int digit = KeyEvent.VK_0 + fn % 10;
+            int numpad = KeyEvent.VK_NUMPAD0 + fn % 10;
+
+            if (fn < 10) return Held.NEITHER.on(numpad).or(Held.ANY.on(FUNCTION_KEYS[fn])).or(Held.ALT_ONLY.on(digit));
+
+            if (fn < 20) return Held.ANY.on(FUNCTION_KEYS[fn]).or(Held.CONTROL_ONLY.on(digit, numpad));
+
+            Keys both = Held.BOTH.on(digit, numpad);
+
+            return fn < FUNCTION_KEYS.length ? Held.ANY.on(FUNCTION_KEYS[fn]).or(both) : both;
+        }
+
+        /** Every shortcut, in the order they are asked. */
+        public static List<Row> rows()
+        {
+            return Collections.unmodifiableList(ROWS);
+        }
+
+        /** The shortcut this press belongs to, or null if none takes it. */
+        public static Row choose(int keyCode, int modifiers, Map<Integer, ?> buttonMapping)
+        {
+            for (Row row : ROWS)
+            {
+                if (row.keys.take(keyCode, altPressed(modifiers), controlPressed(modifiers), buttonMapping)) return row;
+            }
+
+            return null;
+        }
+
+        static boolean altPressed(int modifiers)
+        {
+            return (modifiers & KeyEvent.ALT_MASK) != 0;
+        }
+
+        static boolean controlPressed(int modifiers)
+        {
+            return (modifiers & KeyEvent.CTRL_MASK) != 0 || (modifiers & KeyEvent.CTRL_DOWN_MASK) != 0;
+        }
+    }
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed

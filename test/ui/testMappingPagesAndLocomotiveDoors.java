@@ -241,7 +241,7 @@ public class testMappingPagesAndLocomotiveDoors
     /**
      * Full stop and comma turn a page forward and back; with Alt, they go to the last page and the first.
      *
-     * MUTATION: `switchLocMapping(1)` in the Alt+PERIOD arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `switchLocMapping(1)` in the "last locomotive page" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testThePageKeysTurnThePage() throws Exception
