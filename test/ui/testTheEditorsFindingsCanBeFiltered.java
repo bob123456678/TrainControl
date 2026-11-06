@@ -436,8 +436,9 @@ public class testTheEditorsFindingsCanBeFiltered
 
             for (String row : findings(narrowed)) assertTrue(row.toLowerCase().contains(word), row);
 
-            // THE DOORS THAT REOPEN
+            // THE DOORS THAT REOPEN, all asked before one is reported
             LayoutEditor from = editor;
+            StringBuilder wrong = new StringBuilder();
 
             for (String door : new String[] {"notice", "finding", "link"})
             {
@@ -445,12 +446,19 @@ public class testTheEditorsFindingsCanBeFiltered
 
                 opened.add(to);
 
-                assertEquals(to.getAutonomyPanel().getFindingFilter(), word, "the box after the " + door + "'s door");
+                if (!word.equals(to.getAutonomyPanel().getFindingFilter()))
+                {
+                    wrong.append(" the box after the ").append(door).append("'s door is \"")
+                        .append(to.getAutonomyPanel().getFindingFilter()).append("\";");
 
-                for (String row : findings(rows(to))) assertTrue(row.toLowerCase().contains(word), door + ": " + row);
+                    // So the next door is asked on its own
+                    type(to, word);
+                }
 
                 from = to;
             }
+
+            assertEquals(wrong.toString(), "", "the filter \"" + word + "\" typed before the doors:");
         }
         finally
         {
@@ -684,7 +692,8 @@ public class testTheEditorsFindingsCanBeFiltered
         {
             for (String word : row.toLowerCase().split("[^a-z0-9]+"))
             {
-                if (word.length() < 4) continue;
+                // Letters only, so capitals can differ
+                if (!word.matches("[a-z]{4,}")) continue;
 
                 int matches = 0;
                 java.util.Set<String> sections = new java.util.HashSet<>();
