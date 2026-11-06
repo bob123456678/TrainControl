@@ -88,6 +88,50 @@ public final class Answering implements AutoCloseable
         return new Answer(null, 0, text);
     }
 
+    /** One question as it stood on screen, read before it was answered. */
+    public static final class Question
+    {
+        /** The window that owns the question's dialog, or null. */
+        public final Window owner;
+
+        /** Whether that owner was on screen when the question was. */
+        public final boolean ownerShowing;
+
+        /** Whether the dialog stood above other programs. */
+        public final boolean alwaysOnTop;
+
+        /** The dialog's title. */
+        public final String title;
+
+        /** What it says, as `asked` keeps it. */
+        public final String message;
+
+        /** Its `JOptionPane` message type. */
+        public final int type;
+
+        /** Its buttons' text, in order. */
+        public final List<String> buttons;
+
+        /** The text of the button it starts on, or null for a question whose buttons are the look-and-feel's. */
+        public final String startsOn;
+
+        private Question(JDialog dialog, JOptionPane pane, String message)
+        {
+            this.owner = dialog.getOwner();
+            this.ownerShowing = this.owner != null && this.owner.isShowing();
+            this.alwaysOnTop = dialog.isAlwaysOnTop();
+            this.title = dialog.getTitle();
+            this.message = message;
+            this.type = pane.getMessageType();
+            this.buttons = new ArrayList<>();
+
+            for (JButton button : buttonsOf(pane)) this.buttons.add(button.getText());
+
+            this.startsOn = pane.getInitialValue() == null ? null : String.valueOf(pane.getInitialValue());
+        }
+    }
+
+    private final List<Question> questions = Collections.synchronizedList(new ArrayList<>());
     private final List<String> asked = Collections.synchronizedList(new ArrayList<>());
     private final List<PopupShape> shapes = Collections.synchronizedList(new ArrayList<>());
     private final AtomicBoolean going = new AtomicBoolean(true);
@@ -124,6 +168,7 @@ public final class Answering implements AutoCloseable
                     {
                         String message = textOf(pane.getMessage());
 
+                        answering.questions.add(new Question((JDialog) window, pane, message));
                         answering.shapes.add(PopupShape.of(pane));
                         answering.asked.add(message);
 
@@ -171,6 +216,17 @@ public final class Answering implements AutoCloseable
         synchronized (asked)
         {
             return new ArrayList<>(asked);
+        }
+    }
+
+    /**
+     * @return each question as it stood on screen, in the order asked
+     */
+    public List<Question> questions()
+    {
+        synchronized (questions)
+        {
+            return new ArrayList<>(questions);
         }
     }
 

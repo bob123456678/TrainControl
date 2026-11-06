@@ -266,7 +266,8 @@ public final class ManualReversalPrompt
                 // showOptionDialog with the application's own words, NOT showConfirmDialog: a plain confirmation takes
                 // its buttons from the look-and-feel, which follows the SYSTEM language (`testMessageBundles` enforces
                 // this).  It returns an INDEX into the array, not YES_OPTION.
-                int chose = JOptionPane.showOptionDialog(parent,
+                int chose = JOptionPane.showOptionDialog(
+                    parent instanceof TrainControlUI ? ((TrainControlUI) parent).dialogParent() : parent,
                     I18n.f("autolayout.ui.confirmManualReversal", train.getName(), where.getName()),
                     I18n.t("autolayout.ui.confirmManualReversalTitle"),
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,

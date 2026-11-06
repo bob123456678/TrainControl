@@ -319,7 +319,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                             {
                                 javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
-                                    ui.editRoute(route.getName());
+                                    ui.pressFromWindow(edit, () -> ui.editRoute(route.getName()));
                                 });
                             }
                             catch (Exception e)

@@ -38,12 +38,15 @@ final class ReturnHomeController extends SettledQuestion
         // door that moves trains.
         if (this.ui.refusedToSendATrain(false)) return;
 
+        // The window that pressed it, for what the worker below has to say
+        final java.awt.Window asked = this.ui.dialogParent();
+
         final Layout layout = this.ui.getModel().getAutoLayout();
 
         if (this.ui.isAutonomyBusy())
         {
             // Routed through describeStagingOutcome like every other surface, so one state is described one way.
-            JOptionPane.showMessageDialog(this.ui,
+            JOptionPane.showMessageDialog(asked,
                 describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
@@ -111,7 +114,7 @@ final class ReturnHomeController extends SettledQuestion
                     final String message = describeStagingPlan(plan);
 
                     javax.swing.SwingUtilities.invokeLater(() ->
-                        JOptionPane.showMessageDialog(this.ui, message));
+                        JOptionPane.showMessageDialog(this.ui.stillShowing(asked), message));
 
                     return;
                 }
@@ -127,7 +130,7 @@ final class ReturnHomeController extends SettledQuestion
                 {
                     javax.swing.SwingUtilities.invokeAndWait(() ->
                     {
-                        editorCame[0] = this.ui.refusedForAnEditorOnItsWay();
+                        editorCame[0] = this.ui.refusedForAnEditorOnItsWay(asked);
 
                         if (!editorCame[0]) this.ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
                     });
@@ -174,7 +177,7 @@ final class ReturnHomeController extends SettledQuestion
                     // it is not reported.
                     if (!completed || (!everyoneHome && !this.ui.gracefulStopRequested))
                     {
-                        JOptionPane.showMessageDialog(this.ui,
+                        JOptionPane.showMessageDialog(this.ui.stillShowing(asked),
                             I18n.t("autolayout.ui.errorReturnToHomeStopped"));
                     }
                 });

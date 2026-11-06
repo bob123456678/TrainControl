@@ -183,3 +183,5 @@ not fix it. Name the square.
 - `ui.testTheAutoTabSaysWhyATrainWaits`
 - `ui.testTheAutonomyEditorsBulkDoors`
 - `ui.testTheEditorsFindingsCanBeFiltered`
+- `ui.testAPageWindowsMenuAsksOverIt`
+- `ui.testAPageWindowsSetupMenuAsksOverIt`

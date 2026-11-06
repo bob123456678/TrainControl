@@ -347,7 +347,7 @@ final class LayoutFileActions
                 // Asked before the new page is written (FR-018), as the delete path does: a Cancel at the index write
                 // would leave a page nothing references.
                 java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
-                    this.ui.getModel().getLayoutList(), null, null);
+                    this.ui.getModel().getLayoutList(), null, null, editor == null ? this.ui : editor);
 
                 if (keepAbsent == null) return;
 
@@ -488,7 +488,7 @@ final class LayoutFileActions
             this.ui.captureRunningLayout();
 
             java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
-                this.ui.getModel().getLayoutList(), null, null);
+                this.ui.getModel().getLayoutList(), null, null, from == null ? this.ui : from);
 
             if (keepAbsent == null) return false;
 
@@ -647,7 +647,7 @@ final class LayoutFileActions
             if (rename) renaming.put(currentLayout, newLayoutName);
 
             java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
-                this.ui.getModel().getLayoutList(), renaming, null);
+                this.ui.getModel().getLayoutList(), renaming, null, over);
 
             if (keepAbsent == null) return false;
 

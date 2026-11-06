@@ -648,6 +648,11 @@
         <test-one-class class="testPagesFollowTheFileOrder"/>
         <test-one-class class="testTheEditorPageStrip"/>
         <test-one-class class="testArrowsKeepTheirMeaningInAnyDisplayOrder"/>
+        <test-one-class class="testAPageWindowsSquaresAskOverIt"/>
+        <test-one-class class="testAPageWindowsMenuAsksOverIt"/>
+        <test-one-class class="testAPageWindowsSetupMenuAsksOverIt"/>
+        <test-one-class class="testTheLocomotiveDoorsAskOverTheirWindow"/>
+        <test-one-class class="testTheEditorsDoorsAskOverThem"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

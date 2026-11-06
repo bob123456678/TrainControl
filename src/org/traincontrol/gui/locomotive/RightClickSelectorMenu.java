@@ -75,6 +75,8 @@ public class RightClickSelectorMenu extends JPopupMenu
         addSeparator();
 
         add(LocomotiveMenuItems.deleteFromDatabase(ui, loc, e));
+
+        if (e != null) ui.itemsPressFromWindow(this, javax.swing.SwingUtilities.getWindowAncestor(e.getComponent()));
     }
 }
    
