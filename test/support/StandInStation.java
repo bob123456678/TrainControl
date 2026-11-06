@@ -17,7 +17,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 /**
  * A loopback HTTP server standing in for a Central Station's web server, counting the requests by path.  Each request
  * is answered with what the given function returns for its path and its count so far (1 for the first): null is a 404
- * with the CS3's own "Not Found" body, an empty array an empty 200.
+ * with the CS3's own "Not Found" body, an empty array an empty 200.  The requests are also kept in the order they
+ * came, query string and all (`log`).
  *
  * @author Adam
  */
@@ -31,6 +32,8 @@ public final class StandInStation implements AutoCloseable
 
     private final Map<String, AtomicInteger> requests = new ConcurrentHashMap<>();
 
+    private final java.util.List<String> log = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
     public StandInStation(BiFunction<String, Integer, byte[]> answer) throws IOException
     {
         this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -38,6 +41,8 @@ public final class StandInStation implements AutoCloseable
         this.server.createContext("/", exchange ->
         {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getRawQuery();
+            this.log.add(path + (query == null ? "" : "?" + query));
             byte[] body = answer.apply(path, requests.computeIfAbsent(path, k -> new AtomicInteger()).incrementAndGet());
             int status = body == null ? 404 : 200;
 
@@ -46,6 +51,9 @@ public final class StandInStation implements AutoCloseable
                 body = "{\"error\":\"Not Found\"}".getBytes(StandardCharsets.UTF_8);
             }
 
+            // A new connection for every request: the client library retries a request it thinks a kept-alive connection
+            // dropped, which would put a request in the log twice
+            exchange.getResponseHeaders().add("Connection", "close");
             exchange.sendResponseHeaders(status, body.length == 0 ? -1 : body.length);
 
             try (OutputStream out = exchange.getResponseBody())
@@ -76,9 +84,35 @@ public final class StandInStation implements AutoCloseable
         return new java.util.TreeMap<>(this.requests).toString();
     }
 
+    /** Every request since the last forget, in the order it came: the path, and the query string when it has one. */
+    public java.util.List<String> log()
+    {
+        synchronized (this.log)
+        {
+            return new java.util.ArrayList<>(this.log);
+        }
+    }
+
+    /** Forgets, runs the action, and lists what it returned and the requests it made, in order, one to a line. */
+    public String recorded(String title, java.util.concurrent.Callable<Object> action) throws Exception
+    {
+        forget();
+
+        Object result = action.call();
+        StringBuilder out = new StringBuilder("## " + title + " -> " + result + "\n");
+
+        for (String request : log())
+        {
+            out.append("  ").append(request).append("\n");
+        }
+
+        return out.toString();
+    }
+
     public void forget()
     {
         this.requests.clear();
+        this.log.clear();
     }
 
     /** Runs a sync of the model with this station, putting the station address back after. */
@@ -126,6 +160,48 @@ public final class StandInStation implements AutoCloseable
     public void close()
     {
         this.server.stop(0);
+    }
+
+    /**
+     * A CS3's answers from the repository's fixtures: "260" is firmware 2.6.1 (test/cs3_v261 and the 2.6 lists), "250"
+     * the older lists.  /app/api/info answers with `info`, or is not found when that is null.
+     */
+    public static BiFunction<String, Integer, byte[]> cs3(String firmware, String info)
+    {
+        boolean is260 = "260".equals(firmware);
+
+        return (path, n) ->
+        {
+            switch (path)
+            {
+                case "/config/geraet.vrs": return CS3_DEVICE;
+                case "/app/api/info": return info == null ? null : info.getBytes(StandardCharsets.UTF_8);
+                case "/app/api/locos": return is260 ? file("test/CS3_loks_v260.json") : null;
+                case "/app/api/loks": return is260 ? null : file("test/CS3_loks.json");
+                case "/app/api/mags": return file(is260 ? "test/cs3_v261/app/api/mags.json" : "test/CS3_mags.json");
+                case "/app/api/mags/state": return file("test/cs3_v261/app/api/mags/state.json");
+                case "/app/api/gbs": return file("test/cs3_v261/app/api/gbs.json");
+                case "/app/api/automatics": return withLocomotiveRoutes(is260);
+                default: return path.startsWith("/config/") ? file("test/cs3_v261" + path) : null;
+            }
+        };
+    }
+
+    /**
+     * The fixture's routes with two more, test/CS3_automatics_lok.json, that start locomotives (speed and direction items
+     * naming them): the fixtures hold no such route.  The list itself from 2.6, under "automatics" before.
+     */
+    private static byte[] withLocomotiveRoutes(boolean is260)
+    {
+        String text = new String(file(is260 ? "test/CS3_automatics_v260.json" : "test/CS3_automatics.json"), StandardCharsets.UTF_8);
+        org.json.JSONArray more = new org.json.JSONArray(new String(file("test/CS3_automatics_lok.json"), StandardCharsets.UTF_8));
+        Object parsed = new org.json.JSONTokener(text).nextValue();
+        org.json.JSONArray list = parsed instanceof org.json.JSONArray ? (org.json.JSONArray) parsed
+            : ((org.json.JSONObject) parsed).getJSONArray("automatics");
+
+        for (int i = 0; i < more.length(); i++) list.put(more.get(i));
+
+        return parsed.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     /** A file's bytes, or null when there is no such file. */

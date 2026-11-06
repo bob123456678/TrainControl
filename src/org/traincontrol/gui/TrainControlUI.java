@@ -14438,10 +14438,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else
                     {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            c,
-                            I18n.f("ui.infoSyncCompleteItemsAdded", r.toString())
-                        ));
+                        final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
+                            : "ui.infoSyncCompleteItemsAdded", r.toString());
+
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
                     }
                 }
             }).start();
@@ -20225,6 +20225,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return resync[0];
+    }
+
+    @Override
+    public void showSyncPartial()
+    {
+        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("ui.startupSyncPartial"),
+            I18n.t("ui.startupSyncPartialTitle"), JOptionPane.WARNING_MESSAGE));
     }
 
     @Override

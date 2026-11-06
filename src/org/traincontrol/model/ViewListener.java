@@ -102,6 +102,7 @@ public interface ViewListener
     public void log(Exception e);
     public void stopAllLocs();
     public int syncWithCS2();
+    public boolean wasLastSyncPartial();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
     public LayoutDiagram getLayout(String name);
