@@ -217,7 +217,7 @@ public final class MarklinLocomotiveCsv
         {
             Set<String> members = new HashSet<>(head.getLinkedLocomotiveNames().keySet());
 
-            members.addAll(head.getModelMultiUnitLocomotiveNames().keySet());
+            if (head.getModelMultiUnitLocomotiveNames() != null) members.addAll(head.getModelMultiUnitLocomotiveNames().keySet());
 
             if (members.isEmpty() || !(head == loc || members.contains(loc.getName()))) continue;
 
