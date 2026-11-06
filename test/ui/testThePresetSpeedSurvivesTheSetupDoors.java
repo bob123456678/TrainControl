@@ -5,6 +5,7 @@ import java.util.List;
 import javax.swing.JSpinner;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
@@ -242,6 +243,165 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         assertEquals(train.getPreferredSpeed(), 71, "the rebuild from the setup put the old setup's speed over the one saved in the window");
     }
 
+    private static final String COPY = "PS copy";
+
+    /** Everything the setup keeps on disk, by file. */
+    private static java.util.Map<String, String> setupFiles() throws Exception
+    {
+        java.util.Map<String, String> out = new java.util.TreeMap<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(
+            new java.io.File(fixture.sandbox.getFolder(), "config" + java.io.File.separator + "autonomy").toPath()))
+        {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) walk.filter(java.nio.file.Files::isRegularFile)::iterator)
+            {
+                out.put(file.toString(), new String(java.nio.file.Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8));
+            }
+        }
+
+        return out;
+    }
+
+    /** The square's record of the train, set to this, in every configuration there is. */
+    private static void storeEverywhere(TileKey square, org.json.JSONObject record) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> session.setPointProperty(square, "loc", record));
+    }
+
+    /**
+     * A second configuration that is a copy of the active one keeps the window's speed too: loaded without a fold, it
+     * does not bring the stale one back.
+     *
+     * MUTATION: walk only the active configuration in `AutonomySession.updateStoredSpeed`, and this fails.
+     */
+    @Test
+    public void testAnotherConfigurationDoesNotBringTheStaleSpeedBack() throws Exception
+    {
+        final String original = ui.getActiveDiagramConfiguration();
+        final TileKey square = squareNamed("BottomMainB");
+
+        storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN).put("speed", 20));
+
+        session.getStore().createConfiguration(COPY, original);
+
+        try
+        {
+            saveInTheWindow(66);
+
+            reloadWithoutFolding(COPY);
+
+            assertEquals(train.getPreferredSpeed(), 66, "the copy configuration put the stale speed over the one saved in the window");
+        }
+        finally
+        {
+            reloadWithoutFolding(original);
+
+            session.getStore().deleteConfiguration(COPY);
+        }
+    }
+
+    /**
+     * A train on an excluded page keeps the window's speed too: the page comes back and a load reads 66, not 20.
+     *
+     * MUTATION: skip the points of excluded pages in `AutonomySession.updateStoredSpeed`, and this fails.
+     */
+    @Test
+    public void testATrainOnAnExcludedPageDoesNotBringTheStaleSpeedBack() throws Exception
+    {
+        final String configuration = ui.getActiveDiagramConfiguration();
+        final TileKey square = squareNamed("BottomMainB");
+
+        storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN).put("speed", 20));
+
+        SwingUtilities.invokeAndWait(() -> session.setPageExcluded(square.getPage(), true));
+
+        try
+        {
+            saveInTheWindow(66);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> session.setPageExcluded(square.getPage(), false));
+        }
+
+        reloadWithoutFolding(configuration);
+
+        assertEquals(train.getPreferredSpeed(), 66, "the excluded page's stale speed came back");
+    }
+
+    /**
+     * A Save whose stored speed already equals the setup's does not rewrite the setup, and a setup that stores no
+     * speed is left byte for byte as it was, in every configuration.
+     *
+     * MUTATION: drop the equal-speed test in `AutonomySession.updateStoredSpeed`, and this fails.
+     */
+    @Test
+    public void testASetupIsNotRewrittenForNothing() throws Exception
+    {
+        final String original = ui.getActiveDiagramConfiguration();
+        final TileKey square = squareNamed("BottomMainB");
+
+        // Stores no speed: nothing to change, in either configuration
+        storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN));
+
+        session.getStore().createConfiguration(COPY, original);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    session.saveWithoutReconciling();
+                }
+                catch (java.io.IOException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            java.util.Map<String, String> before = setupFiles();
+
+            saveInTheWindow(66);
+
+            assertEquals(setupFiles(), before, "a setup that stores no speed was rewritten");
+
+            // Stores this speed already
+            storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN).put("speed", 40));
+
+            assertTrue(Components.onTheEventThread(() -> session.updateStoredSpeed(TRAIN, 41)), "a different speed was not stored");
+            assertFalse(Components.onTheEventThread(() -> session.updateStoredSpeed(TRAIN, 41)), "the same speed counted as a change");
+        }
+        finally
+        {
+            session.getStore().deleteConfiguration(COPY);
+        }
+    }
+
+    /**
+     * A saved 0 removes the stored speed and a load then gives the layout's default speed, which is what a train with no
+     * speed has always been given on a load.
+     *
+     * MUTATION: write the speed 0 into the stored record instead of removing it, and this fails.
+     */
+    @Test
+    public void testASavedZeroLoadsTheDefaultSpeed() throws Exception
+    {
+        final String configuration = ui.getActiveDiagramConfiguration();
+        final TileKey square = squareNamed("BottomMainB");
+
+        storeEverywhere(square, new org.json.JSONObject().put("name", TRAIN).put("speed", 20));
+
+        saveInTheWindow(0);
+
+        assertTrue(Components.onTheEventThread(() -> !((org.json.JSONObject) session.getPointProperty(square, "loc")).has("speed")),
+            "a saved 0 left a speed in the setup");
+
+        reloadWithoutFolding(configuration);
+
+        assertEquals(train.getPreferredSpeed(), model.getAutoLayout().getDefaultLocSpeed(), "a saved 0 did not load the default speed");
+    }
+
     private static void reloadWithoutFolding(String configuration) throws Exception
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
@@ -266,6 +426,9 @@ public class testThePresetSpeedSurvivesTheSetupDoors
 
     private static void saveInTheWindow(int speed) throws Exception
     {
+        // Something else to start from, so that the Save has a change to write
+        train.setPreferredSpeed(speed == 1 ? 2 : 1);
+
         assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the window did not open");
         assertNotNull(SettingsWindow.awaited());
 

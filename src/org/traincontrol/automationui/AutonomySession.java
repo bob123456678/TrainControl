@@ -7699,7 +7699,8 @@ public class AutonomySession
 
     /**
      * Puts a speed saved in the Locomotive Settings window over the stale copy an old-format setup keeps of a standing
-     * train, which a load would otherwise read back; a setup that stores no speed for the train is left alone.
+     * train, which a load would otherwise read back.  Every configuration is walked, excluded pages included; a setup
+     * that stores no speed for the train, or already stores this one, is left alone.
      *
      * @return true when a stored speed was changed
      */
@@ -7707,21 +7708,36 @@ public class AutonomySession
     {
         boolean changed = false;
 
-        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        for (String name : store.getConfigurationNames())
         {
-            Object stored = locomotive.equals(placed.getValue()) ? getPointProperty(placed.getKey(), "loc") : null;
+            org.json.JSONObject configuration = store.getConfiguration(name);
+            org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
 
-            if (!(stored instanceof org.json.JSONObject) || !((org.json.JSONObject) stored).has("speed")) continue;
+            if (points == null) continue;
 
-            org.json.JSONObject copy = new org.json.JSONObject(stored.toString());
+            for (String id : new ArrayList<>(points.keySet()))
+            {
+                org.json.JSONObject point = points.optJSONObject(id);
+                org.json.JSONObject stored = point == null ? null : point.optJSONObject("loc");
 
-            if (speed > 0) copy.put("speed", speed);
-            else copy.remove("speed");
+                if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has("speed")) continue;
 
-            setPointProperty(placed.getKey(), "loc", copy);
+                if (speed > 0)
+                {
+                    if (stored.optInt("speed", -1) == speed) continue;
 
-            changed = true;
+                    stored.put("speed", speed);
+                }
+                else
+                {
+                    stored.remove("speed");
+                }
+
+                changed = true;
+            }
         }
+
+        if (changed) dirty = true;
 
         return changed;
     }
