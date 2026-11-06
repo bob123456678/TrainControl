@@ -737,6 +737,9 @@ public class LayoutDiagramComponent
         }
         else if (this.isFeedback())
         {
+            // A square with no sensor bound has nothing to name (OB-401)
+            if (this.getFeedback() == null) return "";
+
             return I18n.f("layout.feedbackUid", this.getFeedback().getUID());
         }
         else if (this.isSignal())
