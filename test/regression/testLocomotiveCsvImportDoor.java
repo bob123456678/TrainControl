@@ -436,13 +436,29 @@ public class testLocomotiveCsvImportDoor
         });
     }
 
+    /** Puts a locomotive on the first free point of the layout; the point, to be emptied afterwards. */
+    private static org.traincontrol.automation.Point stand(MarklinControlStation model, Locomotive l)
+    {
+        for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+        {
+            if (point.getCurrentLocomotive() == null)
+            {
+                point.setLocomotive(l);
+
+                return point;
+            }
+        }
+
+        throw new AssertionError("precondition: no free point on this layout to stand a train on");
+    }
+
     /**
-     * The question lists the locomotives that change address or decoder, ten lines and then "and N more".
+     * The question lists every locomotive that changes address or decoder, in order, in the scrolling area.
      *
-     * MUTATION: list them all, or none, and this fails.
+     * MUTATION: list only the first ten, and this fails.
      */
     @Test
-    public void testTheQuestionListsTenChangesAndThenHowManyMore() throws Exception
+    public void testTheQuestionListsEveryChangeInOrder() throws Exception
     {
         inAWindow((ui, model) ->
         {
@@ -462,9 +478,9 @@ public class testLocomotiveCsvImportDoor
             {
                 Seen seen = press(ui, file, CANCEL, s -> s.question != null);
 
-                assertEquals(seen.questionDetails.size(), 11, "the list is not ten lines and a count: " + seen.questionDetails);
-                assertEquals(seen.questionDetails.get(10), I18n.f("loc.ui.importCsvMoreLine", 2));
+                assertEquals(seen.questionDetails.size(), 12, "the list is not every change: " + seen.questionDetails);
                 assertEquals(seen.questionDetails.get(0), I18n.f("loc.ui.importCsvChangeLine", "FR049 door chg 01", "MM2 1", "DCC 1001"));
+                assertEquals(seen.questionDetails.get(11), I18n.f("loc.ui.importCsvChangeLine", "FR049 door chg 12", "MM2 12", "DCC 1012"));
             }
             finally
             {
@@ -476,46 +492,126 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * An address change that would put a locomotive on the address of a train standing on the layout is left out and
-     * counted: the autonomy sweep would take the standing train off the layout.
+     * An address change that would put a locomotive on the address of a train standing on the layout is kept out, named
+     * in the question and in the message, and the standing train stays on the layout.
      *
      * MUTATION: let the file give a locomotive the address of a standing train, and this fails.
      */
     @Test
-    public void testAnAddressOfAStandingTrainIsNotTaken() throws Exception
+    public void testAStandingTrainsAddressIsKeptByName() throws Exception
     {
         inAWindow((ui, model) ->
         {
-            Locomotive standing = null;
-
-            for (org.traincontrol.automation.Point p : model.getAutoLayout().getPoints())
-            {
-                Locomotive l = p.getCurrentLocomotive();
-
-                if (standing == null && l != null && l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT && !l.hasLinkedLocomotives())
-                {
-                    standing = l;
-                }
-            }
-
-            assertNotNull(standing, "precondition: no train stands on this layout");
-
-            Locomotive other = model.newMM2Locomotive("FR049 door elsewhere", 77);
-            File file = write(HEADER + "FR049 door elsewhere,," + standing.getDecoderType().name() + "," + standing.getAddress()
-                + ",0,0:00:00,0,0,,\n");
+            Locomotive standing = model.newMM2Locomotive("FR049 door standing", 70);
+            Locomotive other = model.newMM2Locomotive("FR049 door elsewhere", 71);
+            org.traincontrol.automation.Point point = stand(model, standing);
+            File file = write(HEADER + "FR049 door elsewhere,,MM2,70,0,0:00:00,0,0,,\n");
 
             try
             {
                 Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
 
-                assertEquals(other.getAddress(), 77, "a locomotive was given the address of a standing train");
+                String line = I18n.f("loc.ui.importCsvKeptLine", "FR049 door elsewhere", I18n.t("loc.ui.importCsvKeptStanding"));
+
+                assertTrue(seen.questionDetails.contains(line), "the question does not name the locomotive that keeps its address: "
+                    + seen.questionDetails);
+                assertEquals(other.getAddress(), 71, "a locomotive was given the address of a standing train");
                 assertTrue(words(seen.said.get(0)).contains(words(I18n.f("loc.ui.infoImportCsvReaddressRefused", 1))), seen.said.get(0));
+                assertTrue(seen.saidShapes.get(0).details.contains(line), "the message does not name it: " + seen.saidShapes.get(0).details);
                 assertNotNull(model.getAutoLayout().getLocomotiveLocation(standing), "the standing train left the layout");
             }
             finally
             {
+                point.setLocomotive(null);
                 file.delete();
+                model.deleteLoc("FR049 door standing");
                 model.deleteLoc("FR049 door elsewhere");
+            }
+        });
+    }
+
+    /**
+     * The same for the address of a member of a standing consist: the sweep would take the head off the layout.
+     *
+     * MUTATION: look only at the standing train itself and not its members, and this fails.
+     */
+    @Test
+    public void testAMemberOfAStandingConsistsAddressIsKeptByName() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.marklin.MarklinLocomotive head = model.newMM2Locomotive("FR049 door head", 72);
+            Locomotive member = model.newMM2Locomotive("FR049 door member", 73);
+            Locomotive other = model.newMM2Locomotive("FR049 door other", 74);
+
+            java.util.Map<String, Double> link = new HashMap<>();
+
+            link.put(member.getName(), 1.0);
+            head.setLinkedLocomotives(link);
+
+            org.traincontrol.automation.Point point = stand(model, head);
+            File file = write(HEADER + "FR049 door other,,MM2,73,0,0:00:00,0,0,,\n");
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(other.getAddress(), 74, "a locomotive was given the address of a member of a standing consist");
+                assertTrue(seen.saidShapes.get(0).details.contains(I18n.f("loc.ui.importCsvKeptLine", "FR049 door other",
+                    I18n.t("loc.ui.importCsvKeptStanding"))), "the message does not name it: " + seen.saidShapes.get(0).details);
+                assertNotNull(model.getAutoLayout().getLocomotiveLocation(head), "the standing consist left the layout");
+            }
+            finally
+            {
+                point.setLocomotive(null);
+                file.delete();
+                model.deleteLoc("FR049 door head");
+                model.deleteLoc("FR049 door member");
+                model.deleteLoc("FR049 door other");
+            }
+        });
+    }
+
+    /**
+     * A clash that an earlier row clears is cleared in the plan too: a train with a speed that the file moves onto the
+     * address a standing train leaves is in the plan, and the moving check names it before anything is asked.
+     *
+     * MUTATION: judge every change against the addresses as they are now, and this fails.
+     */
+    @Test
+    public void testAClashFreedByAnEarlierRowStillMeetsTheMovingCheck() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            Locomotive standing = model.newMM2Locomotive("FR049 door leaves", 70);
+            Locomotive rolling = model.newMM2Locomotive("FR049 door arrives", 71);
+            org.traincontrol.automation.Point point = stand(model, standing);
+            File file = write(HEADER + "FR049 door leaves,,MM2,75,0,0:00:00,0,0,,\nFR049 door arrives,,MM2,70,0,0:00:00,0,0,,\n");
+
+            try
+            {
+                model.go();
+                model.waitForPowerState(true);
+                rolling.setSpeed(40);
+                rolling.waitForSpeedAtOrAbove(1);
+
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(seen.said, Collections.singletonList(I18n.f("loc.ui.errorImportCsvMoving", "FR049 door arrives")));
+                assertNull(seen.question, "the door asked, and would have re-addressed a moving train");
+                assertEquals(rolling.getAddress(), 71);
+                assertEquals(standing.getAddress(), 70);
+            }
+            finally
+            {
+                rolling.setSpeed(0);
+                rolling.waitForSpeedBelow(1);
+                model.stop();
+                model.waitForPowerState(false);
+                point.setLocomotive(null);
+                file.delete();
+                model.deleteLoc("FR049 door leaves");
+                model.deleteLoc("FR049 door arrives");
             }
         });
     }

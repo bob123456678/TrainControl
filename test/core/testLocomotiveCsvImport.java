@@ -127,9 +127,19 @@ public class testLocomotiveCsvImport
         return all;
     }
 
+    /** The locomotives the file would re-address that have a speed. */
+    private static List<String> moving(String text)
+    {
+        MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(text);
+
+        return csv.movingToReaddress(csv.plan(model), model);
+    }
+
     private static MarklinLocomotiveCsv.Result importText(String text)
     {
-        return MarklinLocomotiveCsv.read(text).apply(model);
+        MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(text);
+
+        return csv.apply(model, csv.plan(model));
     }
 
     /**
@@ -233,7 +243,7 @@ public class testLocomotiveCsvImport
 
         byte[] ansi = (OLD + name + ",,MM2,15,0,0:00:00,0,0,Rail,Note\n").getBytes(Charset.forName("windows-1252"));
 
-        MarklinLocomotiveCsv.Result result = MarklinLocomotiveCsv.read(MarklinLocomotiveCsv.decode(ansi)).apply(model);
+        MarklinLocomotiveCsv.Result result = importText(MarklinLocomotiveCsv.decode(ansi, Charset.forName("windows-1252")));
 
         assertEquals(result.merged, 1, "the file's Koef was not the locomotive that is here");
         assertEquals(result.added, 0, "the file added a locomotive for a name that is here");
@@ -244,6 +254,27 @@ public class testLocomotiveCsvImport
 
         assertEquals(MarklinLocomotiveCsv.read(MarklinLocomotiveCsv.decode(utf8)).getRows().get(0).name, name,
             "a UTF-8 file was not read as UTF-8");
+    }
+
+    /**
+     * A Polish file Excel saved in Windows-1250 matches the locomotive it names when the machine's own code page is read
+     * after UTF-8 fails: read as Windows-1252 the letters become others and a junk locomotive is added.
+     *
+     * MUTATION: read the fallback as Windows-1252 whatever it is given, and this fails.
+     */
+    @Test
+    public void testAFileSavedInThePolishCodePageMatchesTheLocomotive() throws Exception
+    {
+        String name = "FR049 Łódź";
+        make(name, decoderType.MM2, 28);
+        int before = model.getLocomotives().size();
+
+        byte[] ansi = (OLD + name + ",,MM2,28,0,0:00:00,0,0,Rail,Note\n").getBytes(Charset.forName("windows-1250"));
+
+        MarklinLocomotiveCsv.Result result = importText(MarklinLocomotiveCsv.decode(ansi, Charset.forName("windows-1250")));
+
+        assertEquals(result.merged, 1, "the Polish name was not the locomotive that is here");
+        assertEquals(model.getLocomotives().size(), before);
     }
 
     /**
@@ -382,24 +413,34 @@ public class testLocomotiveCsvImport
     }
 
     /**
-     * Minutes or seconds over 59, or an absurd number of hours, make a runtime unreadable: the row is skipped, because a
-     * total that is too big can never come down.
+     * Minutes or seconds over 59, or an absurd number of hours, make a runtime unreadable: only the runtime is left alone
+     * (a total that is too big can never come down), the rest of the row is used, and the row is counted.
      *
-     * MUTATION: stop checking minutes and seconds, or the hours, and this fails.
+     * MUTATION: skip the row for its runtime, or stop checking minutes, seconds or hours, and this fails.
      */
     @Test
-    public void testARuntimeThatCannotBeRightIsNotTaken()
+    public void testARuntimeThatCannotBeRightIsLeftAloneAndTheRowIsKept()
     {
         String name = "FR049 timed";
         MarklinLocomotive l = make(name, decoderType.MM2, 20);
 
-        for (String runtime : new String[] {"0:75:00", "1:00:61", "99999999:00:00"})
-        {
-            MarklinLocomotiveCsv.Result result = importText(HEADER + name + ",,MM2,20,0," + runtime + ",0,0,,,2024-06-06\n");
+        int bad = 0;
 
-            assertEquals(result.skipped.size(), 1, "a runtime of " + runtime + " was taken");
+        for (String runtime : new String[] {"0:75:00", "1:00:61", "99999999:00:00", "xx"})
+        {
+            MarklinLocomotiveCsv.Result result = importText(HEADER + name + ",,MM2,20,0," + runtime + ",0,0,Rail" + bad + ",,2024-06-06\n");
+
+            assertEquals(result.badRuntime, 1, "a runtime of " + runtime + " is not counted as unreadable");
+            assertTrue(result.skipped.isEmpty(), "a runtime of " + runtime + " skipped the row");
+            assertEquals(result.merged, 1);
             assertEquals(l.getTotalRuntime(), 0L, "a runtime of " + runtime + " was filed");
+
+            bad++;
         }
+
+        importText(HEADER + name + ",,DCC,21,0,0:75:00,0,0,,,2024-06-06\n");
+
+        assertEquals(l.getAddress(), 21, "the address of a row with a bad runtime was not taken");
     }
 
     /**
@@ -447,11 +488,13 @@ public class testLocomotiveCsvImport
     }
 
     /**
-     * A new Multi-Unit row, or a row for a locomotive linked into a multi-unit ("MU MFX"), is left out and counted apart
-     * with its reason: it would arrive as a plain locomotive with its links gone.  An existing name with such a row is
-     * merged and keeps its decoder.
+     * A new Multi-Unit row, or a row for a locomotive linked into a multi-unit ("MU MFX"), in any language the program
+     * speaks, is left out and counted apart with its reason: it would arrive as a plain locomotive with its links gone.  An
+     * existing name with such a row is merged, keeps its decoder, and is counted with them.  Other text ("Steam") is
+     * not a multi-unit, only unreadable.
      *
-     * MUTATION: read a linked row as a plain one, and this fails.
+     * MUTATION: read any text as a multi-unit, a linked row as a plain one, or an existing row's decoder as nothing worth
+     * counting, and this fails.
      */
     @Test
     public void testMultiUnitRowsAreLeftOutAndCounted()
@@ -459,16 +502,25 @@ public class testLocomotiveCsvImport
         String name = "FR049 head";
         MarklinLocomotive l = make(name, decoderType.MFX, 21);
 
+        String german = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages", java.util.Locale.GERMAN)
+            .getString("loc.multiUnit");
+
         MarklinLocomotiveCsv.Result result = importText(OLD
             + "FR049 mu one,,Multi-Unit,3,0,0:00:00,0,0,,\n"
             + "FR049 mu two,,MU MFX,22,0,0:00:00,0,0,,\n"
-            + name + ",,MU MFX,99,0,0:00:00,0,0,Rail,\n");
+            + name + ",,MU MFX,99,0,0:00:00,0,0,Rail,\n"
+            + "FR049 steam,,Steam,23,0,0:00:00,0,0,,\n"
+            + "FR049 mu three,," + german + ",24,0,0:00:00,0,0,,\n");
 
         assertNull(model.getLocByName("FR049 mu one"));
         assertNull(model.getLocByName("FR049 mu two"), "a linked row arrived as a plain locomotive");
-        assertEquals(result.leftOutMultiUnit, 2);
+        assertNull(model.getLocByName("FR049 mu three"), "a German multi-unit row arrived as a plain locomotive");
+        assertNull(model.getLocByName("FR049 steam"));
+        assertEquals(result.leftOutMultiUnit, 4, "the new multi-unit rows and the existing locomotive's are not counted together");
         assertEquals(result.skipped.get(2), Why.MULTI_UNIT);
         assertEquals(result.skipped.get(3), Why.MULTI_UNIT);
+        assertEquals(result.skipped.get(5), Why.UNREADABLE, "Steam was taken for a multi-unit");
+        assertEquals(result.skipped.get(6), Why.MULTI_UNIT);
         assertEquals(result.merged, 1);
         assertEquals(l.getAddress(), 21, "a linked row changed an existing locomotive's address");
         assertEquals(l.getStructuredNotes().getRailway(), "Rail");
@@ -591,19 +643,19 @@ public class testLocomotiveCsvImport
         try
         {
             assertTrue(model.getPowerState(), "precondition: the power is on");
-            assertTrue(csv.movingToReaddress(model).isEmpty(), "a standing train is named");
+            assertTrue(csv.movingToReaddress(csv.plan(model), model).isEmpty(), "a standing train is named");
 
             l.setSpeed(30);
             l.waitForSpeedAtOrAbove(1);
 
-            assertEquals(csv.movingToReaddress(model), Arrays.asList(name), "a moving train the file would re-address is not named");
-            assertTrue(MarklinLocomotiveCsv.read(OLD + name + ",,MM2,36,0,0:00:00,0,0,,\n").movingToReaddress(model).isEmpty(),
+            assertEquals(csv.movingToReaddress(csv.plan(model), model), Arrays.asList(name), "a moving train the file would re-address is not named");
+            assertTrue(moving(OLD + name + ",,MM2,36,0,0:00:00,0,0,,\n").isEmpty(),
                 "a moving train the file would not re-address is named");
 
             power.setBoolean(model, false);
 
             assertTrue(l.getSpeed() > 0, "precondition: the train still has its speed");
-            assertEquals(csv.movingToReaddress(model), Arrays.asList(name), "a train stopped by the power with a speed set is not named");
+            assertEquals(csv.movingToReaddress(csv.plan(model), model), Arrays.asList(name), "a train stopped by the power with a speed set is not named");
         }
         finally
         {
@@ -634,9 +686,53 @@ public class testLocomotiveCsvImport
 
         MarklinLocomotiveCsv.Result result = importText(OLD + member.getName() + ",,MM2,40,0,0:00:00,0,0,,\n");
 
-        assertEquals(result.readdressKept, 1, "the address change that breaks a consist is not counted");
+        assertEquals(result.kept.size(), 1, "the address change that breaks a consist is not counted");
+        assertEquals(result.kept.get(0).name, member.getName(), "the locomotive that keeps its address is not named");
+        assertEquals(result.kept.get(0).why, MarklinLocomotiveCsv.Keep.CONSIST);
         assertEquals(member.getAddress(), 41, "a member was given its head's address");
         assertTrue(head.getLinkedLocomotiveNames().containsKey(member.getName()), "the consist lost its member");
+    }
+
+    /**
+     * The addresses are decided once, each change judged against the addresses as the earlier ones leave them: when the
+     * file moves a member of a consist away first, a train with a speed that is moved onto the freed address is in the
+     * plan, and is named, not re-addressed unasked.
+     *
+     * MUTATION: judge every change against the addresses as they are now, and this fails.
+     */
+    @Test
+    public void testAClashFreedByAnEarlierRowStillMeetsTheMovingCheck() throws Exception
+    {
+        MarklinLocomotive head = make("FR049 plan head", decoderType.MM2, 60);
+        MarklinLocomotive first = make("FR049 plan first", decoderType.MM2, 61);
+        MarklinLocomotive second = make("FR049 plan second", decoderType.MM2, 62);
+
+        Map<String, Double> link = new HashMap<>();
+
+        link.put(first.getName(), 1.0);
+        link.put(second.getName(), 1.0);
+
+        assertEquals(head.setLinkedLocomotives(link), 2, "precondition: the consist was not made");
+
+        second.setSpeed(40);
+        second.waitForSpeedAtOrAbove(1);
+
+        try
+        {
+            MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD
+                + first.getName() + ",,MM2,63,0,0:00:00,0,0,,\n"
+                + second.getName() + ",,MM2,61,0,0:00:00,0,0,,\n");
+
+            MarklinLocomotiveCsv.Plan plan = csv.plan(model);
+
+            assertEquals(plan.moves.size(), 2, "the second change was judged against the addresses as they are now");
+            assertEquals(csv.movingToReaddress(plan, model), Arrays.asList(second.getName()), "the moving train in the plan is not named");
+        }
+        finally
+        {
+            second.setSpeed(0);
+            second.waitForSpeedBelow(1);
+        }
     }
 
     /**
@@ -654,7 +750,7 @@ public class testLocomotiveCsvImport
 
         boolean found = false;
 
-        for (MarklinLocomotiveCsv.Shared shared : csv.sharedAddresses(model))
+        for (MarklinLocomotiveCsv.Shared shared : csv.sharedAddresses(model, csv.plan(model)))
         {
             if (shared.names.contains("FR049 arrives on 50"))
             {
@@ -706,7 +802,7 @@ public class testLocomotiveCsvImport
 
         int locsBefore = model.getLocomotives().size();
 
-        MarklinLocomotiveCsv.Result result = csv0.apply(model);
+        MarklinLocomotiveCsv.Result result = csv0.apply(model, csv0.plan(model));
 
         assertEquals(new ArrayList<>(result.skipped.keySet()), expected, "the lines the result names are not the unusable ones");
         assertEquals(result.skipped.get(6), Why.ADDRESS);

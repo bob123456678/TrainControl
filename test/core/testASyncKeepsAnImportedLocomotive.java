@@ -61,8 +61,9 @@ public class testASyncKeepsAnImportedLocomotive
             TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
             model = support.TestStation.simulated();
 
-            MarklinLocomotiveCsv.read(HEADER + "FR049 same name,,MM2,9,0,5:00:00,0,0,,,2024-02-02\nFR049 only here,,MFX,300,0,2:00:00,0,0,,,2024-02-02\n")
-                .apply(model);
+            MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(HEADER + "FR049 same name,,MM2,9,0,5:00:00,0,0,,,2024-02-02\nFR049 only here,,MFX,300,0,2:00:00,0,0,,,2024-02-02\n");
+
+            csv.apply(model, csv.plan(model));
 
             station.forget();
             model.clearLayouts();

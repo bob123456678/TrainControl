@@ -19,9 +19,6 @@ import org.traincontrol.util.I18n;
  */
 final class LocomotiveCsvDoor
 {
-    /** The most lines a list in the question or the message shows before "and N more". */
-    private static final int MOST_LINES = 10;
-
     private LocomotiveCsvDoor()
     {
     }
@@ -70,37 +67,32 @@ final class LocomotiveCsvDoor
         // A route drives one of the locomotives to be merged: the same refusal the other edit doors give.
         if (RunGates.refuseWhileARouteDrivesAny(ui, ui, existing)) return;
 
-        // A train with a speed keeps its address: the file would send its commands to another decoder.
-        if (refuseWhileMoving(ui, csv, model)) return;
+        // The addresses are decided once, here; the question shows the plan and the import carries out exactly it.
+        MarklinLocomotiveCsv.Plan plan = csv.plan(model);
 
-        List<String> changing = csv.namesToReaddress(model);
-        List<MarklinLocomotiveCsv.Shared> shared = csv.sharedAddresses(model);
+        // A train with a speed keeps its address: the file would send its commands to another decoder.
+        if (refuseWhileMoving(ui, csv, plan, model)) return;
+
+        List<MarklinLocomotiveCsv.Move> changing = plan.moves;
+        List<MarklinLocomotiveCsv.Shared> shared = csv.sharedAddresses(model, plan);
         int sharing = 0;
 
         for (MarklinLocomotiveCsv.Shared group : shared) sharing += group.names.size();
 
         String question = I18n.f("loc.ui.confirmImportCsv", added, existing.size())
             + (changing.isEmpty() ? "" : "\n\n" + I18n.f("loc.ui.confirmImportCsvReaddress", changing.size()))
+            + (plan.kept.isEmpty() ? "" : "\n\n" + I18n.f("loc.ui.confirmImportCsvKept", plan.kept.size()))
             + (sharing == 0 ? "" : "\n\n" + I18n.f("loc.ui.confirmImportCsvShared", sharing))
             + (skipped > 0 ? "\n\n" + I18n.f("loc.ui.confirmImportCsvUnreadable", skipped) : "");
 
+        // Every line, in order: the area scrolls
         List<String> lines = new ArrayList<>();
 
-        for (int i = 0; i < changing.size() && i < MOST_LINES; i++)
-        {
-            String[] c = csv.change(model, changing.get(i));
+        for (MarklinLocomotiveCsv.Move move : changing) lines.add(I18n.f("loc.ui.importCsvChangeLine", move.name, move.from, move.to));
 
-            lines.add(I18n.f("loc.ui.importCsvChangeLine", c[0], c[1], c[2]));
-        }
+        for (MarklinLocomotiveCsv.Kept kept : plan.kept) lines.add(keptLine(kept));
 
-        if (changing.size() > MOST_LINES) lines.add(I18n.f("loc.ui.importCsvMoreLine", changing.size() - MOST_LINES));
-
-        for (int i = 0; i < shared.size() && i < MOST_LINES; i++)
-        {
-            lines.add(I18n.f("loc.ui.importCsvSharedLine", shared.get(i).address, String.join(", ", shared.get(i).names)));
-        }
-
-        if (shared.size() > MOST_LINES) lines.add(I18n.f("loc.ui.importCsvMoreLine", shared.size() - MOST_LINES));
+        for (MarklinLocomotiveCsv.Shared group : shared) lines.add(I18n.f("loc.ui.importCsvSharedLine", group.address, String.join(", ", group.names)));
 
         Object[] options = {I18n.t("loc.ui.importCsvButton"), I18n.t("ui.cancel")};
 
@@ -113,12 +105,12 @@ final class LocomotiveCsvDoor
 
         // The question was modal; a run or a route may have begun behind it.
         if (RunGates.refuseWhileAutonomyRunning(ui, source) || RunGates.refuseWhileARouteDrivesAny(ui, ui,
-            csv.existingNames(model)) || refuseWhileMoving(ui, csv, model))
+            csv.existingNames(model)) || refuseWhileMoving(ui, csv, plan, model))
         {
             return;
         }
 
-        MarklinLocomotiveCsv.Result result = csv.apply(model);
+        MarklinLocomotiveCsv.Result result = csv.apply(model, plan);
 
         TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, chosen.getParent());
 
@@ -134,7 +126,9 @@ final class LocomotiveCsvDoor
 
         if (!result.readdressed.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvReaddressed", result.readdressed.size());
 
-        if (result.readdressKept > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvReaddressRefused", result.readdressKept);
+        if (!result.kept.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvReaddressRefused", result.kept.size());
+
+        if (result.badRuntime > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvBadRuntime", result.badRuntime);
 
         if (result.addressInvalid > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvAddressInvalid", result.addressInvalid);
 
@@ -144,21 +138,27 @@ final class LocomotiveCsvDoor
 
         if (result.leftOutMultiUnit > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvLeftOutMultiUnit", result.leftOutMultiUnit);
 
-        if (result.skipped.isEmpty())
-        {
-            JOptionPane.showMessageDialog(ui, said);
-            return;
-        }
-
         List<String> lines = new ArrayList<>();
+
+        for (MarklinLocomotiveCsv.Kept kept : result.kept) lines.add(keptLine(kept));
 
         for (Map.Entry<Integer, MarklinLocomotiveCsv.Why> e : result.skipped.entrySet())
         {
             lines.add(I18n.f("loc.ui.importCsvSkippedLine", e.getKey()) + ": " + I18n.t(reason(e.getValue())));
         }
 
-        JOptionPane.showMessageDialog(ui, DetailsArea.message(said + "\n\n"
-            + I18n.f("loc.ui.infoImportCsvSkipped", result.skipped.size()), lines));
+        if (!result.skipped.isEmpty()) said += "\n\n" + I18n.f("loc.ui.infoImportCsvSkipped", result.skipped.size());
+
+        JOptionPane.showMessageDialog(ui, lines.isEmpty() ? said : DetailsArea.message(said, lines));
+    }
+
+    /** A locomotive that keeps its address, by name and why. */
+    private static String keptLine(MarklinLocomotiveCsv.Kept kept)
+    {
+        String why = kept.why == MarklinLocomotiveCsv.Keep.CONSIST ? "loc.ui.importCsvKeptConsist"
+            : kept.why == MarklinLocomotiveCsv.Keep.STANDING ? "loc.ui.importCsvKeptStanding" : "loc.ui.importCsvKeptMoving";
+
+        return I18n.f("loc.ui.importCsvKeptLine", kept.name, I18n.t(why));
     }
 
     private static String reason(MarklinLocomotiveCsv.Why why)
@@ -173,9 +173,10 @@ final class LocomotiveCsvDoor
     }
 
     /** Says which train with a speed the file would re-address; true when the import must not go on. */
-    private static boolean refuseWhileMoving(TrainControlUI ui, MarklinLocomotiveCsv csv, ViewListener model)
+    private static boolean refuseWhileMoving(TrainControlUI ui, MarklinLocomotiveCsv csv, MarklinLocomotiveCsv.Plan plan,
+        ViewListener model)
     {
-        List<String> moving = csv.movingToReaddress(model);
+        List<String> moving = csv.movingToReaddress(plan, model);
 
         if (moving.isEmpty()) return false;
 

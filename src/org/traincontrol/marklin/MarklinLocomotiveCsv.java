@@ -49,6 +49,33 @@ public final class MarklinLocomotiveCsv
     /** What a row does to a database. */
     public enum Fate { NEW, MERGE, SKIP }
 
+    /** Why a change of address is not made. */
+    public enum Keep { CONSIST, STANDING, MOVING }
+
+    /** One locomotive the import will give another address or decoder. */
+    public static final class Move
+    {
+        public String name;
+        public Row row;
+        /** Decoder and address before and after, as "MFX 5". */
+        public String from;
+        public String to;
+    }
+
+    /** One locomotive that keeps its address, and why. */
+    public static final class Kept
+    {
+        public String name;
+        public Keep why;
+    }
+
+    /** What the import will do to addresses, worked out once: the question shows it and `apply` carries it out. */
+    public static final class Plan
+    {
+        public final List<Move> moves = new ArrayList<>();
+        public final List<Kept> kept = new ArrayList<>();
+    }
+
     /** One readable row of the file, filled in by the reader. */
     public static final class Row
     {
@@ -67,6 +94,8 @@ public final class MarklinLocomotiveCsv
         /** The day the file's runtime was last added to (yyyy-MM-dd), when `day` is OK. */
         public String lastRun;
         public Day day;
+        /** The runtime cell could not be read; the row is used without it. */
+        public boolean runtimeBad;
     }
 
     /** Locomotives that would stand on one decoder address. */
@@ -87,8 +116,10 @@ public final class MarklinLocomotiveCsv
         public int badLastRun;
         /** Existing locomotives whose address or decoder the file changed. */
         public final List<String> readdressed = new ArrayList<>();
-        /** Address changes left out because they would break a multi-unit or clash with a train on the layout. */
-        public int readdressKept;
+        /** Rows whose running time could not be read, so it was left alone. */
+        public int badRuntime;
+        /** Locomotives that kept their address, and why. */
+        public final List<Kept> kept = new ArrayList<>();
         /** Existing locomotives that kept their address because the file's is not valid for its decoder. */
         public int addressInvalid;
         /** Multi-unit and linked rows left out. */
@@ -104,8 +135,16 @@ public final class MarklinLocomotiveCsv
     {
     }
 
-    /** The text of a file's bytes: UTF-8 when it is, else Windows-1252, which is what Excel saves without asking. */
+    /** The text of a file's bytes: UTF-8 when it is, else what Excel saved in on this machine. */
     public static String decode(byte[] bytes)
+    {
+        Charset machine = Charset.defaultCharset();
+
+        return decode(bytes, machine.newEncoder().maxBytesPerChar() == 1.0f ? machine : Charset.forName("windows-1252"));
+    }
+
+    /** The text of a file's bytes: UTF-8 when it is, else read in `fallback`. */
+    public static String decode(byte[] bytes, Charset fallback)
     {
         try
         {
@@ -114,7 +153,7 @@ public final class MarklinLocomotiveCsv
         }
         catch (CharacterCodingException notUtf8)
         {
-            return new String(bytes, Charset.forName("windows-1252"));
+            return new String(bytes, fallback);
         }
     }
 
@@ -206,18 +245,29 @@ public final class MarklinLocomotiveCsv
             && MarklinLocomotive.validateNewAddress(row.type, row.address);
     }
 
+    /** The names a head drives: its own links and the Central Station's, either of which may be absent. */
+    private static Set<String> membersOf(Locomotive head)
+    {
+        Set<String> members = new HashSet<>();
+
+        if (head.getLinkedLocomotiveNames() != null) members.addAll(head.getLinkedLocomotiveNames().keySet());
+
+        if (head.getModelMultiUnitLocomotiveNames() != null) members.addAll(head.getModelMultiUnitLocomotiveNames().keySet());
+
+        return members;
+    }
+
     /**
-     * Whether giving this locomotive the row's address would break a multi-unit it belongs to (a head and its members
-     * may not share an address) or take a train off the layout (the autonomy sweep removes a standing train with an
-     * equivalent address).
+     * Why the file may not give this locomotive the address `target` ("MFX 5"), judged against `where`, the addresses as
+     * they will stand after the changes planned before it: it would break a multi-unit it belongs to (a head and its
+     * members may not share an address), or it is the address of a train standing on the layout or of a member of a standing
+     * consist (the autonomy sweep takes a standing train off the layout for either).  Null when it may.
      */
-    private static boolean wouldBreakSomething(ViewListener model, Locomotive loc, Row row)
+    private static Keep keepReason(ViewListener model, Locomotive loc, String target, Map<String, String> where)
     {
         for (Locomotive head : model.getLocomotives())
         {
-            Set<String> members = new HashSet<>(head.getLinkedLocomotiveNames().keySet());
-
-            if (head.getModelMultiUnitLocomotiveNames() != null) members.addAll(head.getModelMultiUnitLocomotiveNames().keySet());
+            Set<String> members = membersOf(head);
 
             if (members.isEmpty() || !(head == loc || members.contains(loc.getName()))) continue;
 
@@ -225,87 +275,112 @@ public final class MarklinLocomotiveCsv
 
             for (String name : members)
             {
-                Locomotive other = model.getLocByName(name);
-
-                if (other != null && other != loc && other.getDecoderType() == row.type && other.getAddress() == row.address)
-                {
-                    return true;
-                }
+                if (!name.equals(loc.getName()) && target.equals(where.get(name))) return Keep.CONSIST;
             }
         }
 
         if (model.hasAutoLayout())
         {
-            for (Locomotive other : model.getLocomotives())
+            for (Locomotive standing : model.getLocomotives())
             {
-                if (other != loc && other.getDecoderType() == row.type && other.getAddress() == row.address
-                    && model.getAutoLayout().getLocomotiveLocation(other) != null)
+                if (standing == loc || model.getAutoLayout().getLocomotiveLocation(standing) == null) continue;
+
+                Set<String> train = membersOf(standing);
+
+                train.add(standing.getName());
+
+                for (String name : train)
                 {
-                    return true;
+                    if (!name.equals(loc.getName()) && target.equals(where.get(name))) return Keep.STANDING;
                 }
             }
-        }
-
-        return false;
-    }
-
-    /** The locomotives whose address or decoder the file will change, by name. */
-    public List<String> namesToReaddress(ViewListener model)
-    {
-        List<String> names = new ArrayList<>();
-
-        for (Row row : this.rows)
-        {
-            Locomotive loc = model.getLocByName(row.name);
-
-            if (loc != null && wouldReaddress(row, loc) && !wouldBreakSomething(model, loc, row)) names.add(row.name);
-        }
-
-        return names;
-    }
-
-    /** One line a locomotive's change shows as: name, then old and new decoder and address. */
-    public String[] change(ViewListener model, String name)
-    {
-        Locomotive loc = model.getLocByName(name);
-
-        for (Row row : this.rows)
-        {
-            if (row.name.equals(name)) return new String[] {name, loc.getDecoderType().name() + " " + loc.getAddress(),
-                row.type.name() + " " + row.address};
         }
 
         return null;
     }
 
-    /** Those among them that have a speed: the file must not re-address a train that is moving or only stopped by the power. */
-    public List<String> movingToReaddress(ViewListener model)
+    /** The decoder and address of a locomotive, as "MFX 5". */
+    private static String label(Locomotive.decoderType type, int address)
+    {
+        return type.name() + " " + address;
+    }
+
+    /**
+     * Works out, once and in file order, which locomotives change address or decoder and which keep theirs, each change
+     * judged against the addresses as the earlier ones leave them.  The question shows this plan and `apply` carries it out.
+     */
+    public Plan plan(ViewListener model)
+    {
+        Plan plan = new Plan();
+        Map<String, String> where = new HashMap<>();
+
+        for (Locomotive loc : model.getLocomotives()) where.put(loc.getName(), label(loc.getDecoderType(), loc.getAddress()));
+
+        for (Row row : this.rows)
+        {
+            Locomotive loc = model.getLocByName(row.name);
+
+            if (loc == null || !wouldReaddress(row, loc)) continue;
+
+            String target = label(row.type, row.address);
+            Keep why = keepReason(model, loc, target, where);
+
+            if (why != null)
+            {
+                Kept kept = new Kept();
+
+                kept.name = loc.getName();
+                kept.why = why;
+                plan.kept.add(kept);
+            }
+            else
+            {
+                Move move = new Move();
+
+                move.name = loc.getName();
+                move.row = row;
+                move.from = where.get(loc.getName());
+                move.to = target;
+                plan.moves.add(move);
+                where.put(loc.getName(), target);
+            }
+        }
+
+        return plan;
+    }
+
+    /** Those the plan re-addresses that have a speed: the file must not re-address a train that is moving or only stopped by the power. */
+    public List<String> movingToReaddress(Plan plan, ViewListener model)
     {
         List<String> moving = new ArrayList<>();
 
-        for (String name : namesToReaddress(model))
+        for (Move move : plan.moves)
         {
-            if (model.getLocByName(name).getSpeed() > 0) moving.add(name);
+            if (model.getLocByName(move.name).getSpeed() > 0) moving.add(move.name);
         }
 
         return moving;
     }
 
     /** The locomotives that would end up on a decoder address another one holds, because of this import. */
-    public List<Shared> sharedAddresses(ViewListener model)
+    public List<Shared> sharedAddresses(ViewListener model, Plan plan)
     {
         Map<String, String> where = new LinkedHashMap<>();
         Set<String> touched = new HashSet<>();
 
-        for (Locomotive loc : model.getLocomotives()) where.put(loc.getName(), loc.getDecoderType().name() + " " + loc.getAddress());
+        for (Locomotive loc : model.getLocomotives()) where.put(loc.getName(), label(loc.getDecoderType(), loc.getAddress()));
+
+        for (Move move : plan.moves)
+        {
+            where.put(move.name, move.to);
+            touched.add(move.name);
+        }
 
         for (Row row : this.rows)
         {
-            Locomotive loc = model.getLocByName(row.name);
-
-            if (loc == null ? fateOf(row, model) == Fate.NEW : wouldReaddress(row, loc) && !wouldBreakSomething(model, loc, row))
+            if (model.getLocByName(row.name) == null && fateOf(row, model) == Fate.NEW)
             {
-                where.put(row.name, row.type.name() + " " + row.address);
+                where.put(row.name, label(row.type, row.address));
                 touched.add(row.name);
             }
         }
@@ -339,16 +414,22 @@ public final class MarklinLocomotiveCsv
         return out;
     }
 
-    /** Adds and merges; the single place that changes the model. */
-    public Result apply(ViewListener model)
+    /** Adds and merges, and changes the addresses of the plan and no others; the single place that changes the model. */
+    public Result apply(ViewListener model, Plan plan)
     {
         Result result = new Result();
+        Map<String, Move> moves = new HashMap<>();
+
+        for (Move move : plan.moves) moves.put(move.name, move);
 
         result.skipped.putAll(this.unreadable);
+        result.kept.addAll(plan.kept);
 
         for (Row row : this.rows)
         {
             Fate fate = fateOf(row, model);
+
+            if (row.runtimeBad) result.badRuntime++;
 
             if (fate == Fate.SKIP)
             {
@@ -360,7 +441,7 @@ public final class MarklinLocomotiveCsv
             }
             else if (fate == Fate.MERGE)
             {
-                merge(model, model.getLocByName(row.name), row, result);
+                merge(model, model.getLocByName(row.name), row, moves.get(row.name), result);
                 result.merged++;
             }
             else
@@ -390,10 +471,10 @@ public final class MarklinLocomotiveCsv
 
     /**
      * The file's runtime counts only when its last run day is later than this locomotive's (or it has none); then the
-     * total becomes the larger of the two and the difference is filed on the file's day.  Address and decoder follow
-     * the file unless that breaks something.
+     * total becomes the larger of the two and the difference is filed on the file's day.  The address and decoder change
+     * only if the plan says so, and not if the train has begun to move since.
      */
-    private static void merge(ViewListener model, Locomotive loc, Row row, Result result)
+    private static void merge(ViewListener model, Locomotive loc, Row row, Move move, Result result)
     {
         fillEmpty(loc, row);
 
@@ -408,16 +489,25 @@ public final class MarklinLocomotiveCsv
             result.badLastRun++;
         }
 
-        if (row.kind == Kind.PLAIN && loc.getDecoderType() != Locomotive.decoderType.MULTI_UNIT
+        if (row.kind != Kind.PLAIN)
+        {
+            result.leftOutMultiUnit++;
+        }
+        else if (loc.getDecoderType() != Locomotive.decoderType.MULTI_UNIT
             && !MarklinLocomotive.validateNewAddress(row.type, row.address))
         {
             result.addressInvalid++;
         }
-        else if (wouldReaddress(row, loc))
+        else if (move != null)
         {
-            if (wouldBreakSomething(model, loc, row))
+            Kept late = new Kept();
+
+            late.name = loc.getName();
+            late.why = Keep.MOVING;
+
+            if (loc.getSpeed() > 0)
             {
-                result.readdressKept++;
+                result.kept.add(late);
                 return;
             }
 
@@ -428,7 +518,7 @@ public final class MarklinLocomotiveCsv
             }
             catch (Exception refused)
             {
-                result.readdressKept++;
+                result.kept.add(late);
             }
         }
     }
@@ -538,7 +628,7 @@ public final class MarklinLocomotiveCsv
         long runtime = runtimeMs(field(record, column, "totalruntime"));
 
         if (address < 0 || address > Integer.MAX_VALUE || speed < 0 || speed > 100 || start < 0 || start > Integer.MAX_VALUE
-            || end < 0 || end > Integer.MAX_VALUE || runtime < 0)
+            || end < 0 || end > Integer.MAX_VALUE)
         {
             return null;
         }
@@ -549,7 +639,8 @@ public final class MarklinLocomotiveCsv
         row.name = name;
         row.address = (int) address;
         row.preferredSpeed = (int) speed;
-        row.runtimeMs = runtime;
+        row.runtimeBad = runtime < 0;
+        row.runtimeMs = Math.max(runtime, 0);
         row.startYear = (int) start;
         row.endYear = (int) end;
         row.railway = field(record, column, "railwayname");
@@ -561,27 +652,48 @@ public final class MarklinLocomotiveCsv
         return row;
     }
 
-    /** What the decoder cell says: exactly MFX, DCC or MM2; those with more text are linked; other text is a multi-unit. */
+    /** The words a decoder cell may hold for a multi-unit in any language, and the patterns for a linked locomotive. */
+    private static final Set<String> MULTI_UNIT_LABELS = new HashSet<>();
+    private static final List<Pattern> LINKED_LABELS = new ArrayList<>();
+
+    static
+    {
+        MULTI_UNIT_LABELS.add("multi_unit");
+
+        for (String language : new String[] {"", "da", "de", "es", "fr", "it", "nl", "pl"})
+        {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
+                language.isEmpty() ? Locale.ROOT : new Locale(language));
+
+            MULTI_UNIT_LABELS.add(bundle.getString("loc.multiUnit").toLowerCase(Locale.ROOT));
+
+            LINKED_LABELS.add(Pattern.compile(Pattern.quote(bundle.getString("loc.multiUnitLinked")).replace("{0}",
+                "\\E(MFX|DCC|MM2)\\Q"), Pattern.CASE_INSENSITIVE));
+        }
+    }
+
+    /** What the decoder cell says: exactly MFX, DCC or MM2; a linked locomotive's label; a multi-unit's; else unknown. */
     private static void decoder(Row row, String text)
     {
         Matcher found = DECODER.matcher(text);
 
-        if (text.isEmpty())
-        {
-            row.kind = Kind.UNKNOWN;
-        }
-        else if (!found.find())
+        row.kind = Kind.UNKNOWN;
+
+        if (MULTI_UNIT_LABELS.contains(text.toLowerCase(Locale.ROOT)))
         {
             row.kind = Kind.MULTI;
+            return;
         }
-        else if (found.group(1).length() == text.length())
+
+        for (Pattern linked : LINKED_LABELS)
+        {
+            if (linked.matcher(text).matches()) row.kind = Kind.LINKED;
+        }
+
+        if (row.kind == Kind.UNKNOWN && found.matches())
         {
             row.kind = Kind.PLAIN;
             row.type = Locomotive.decoderType.valueOf(found.group(1).toUpperCase(Locale.ROOT));
-        }
-        else
-        {
-            row.kind = Kind.LINKED;
         }
     }
 
