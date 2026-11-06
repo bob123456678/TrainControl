@@ -29,6 +29,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         AutonomyEditorPanel.wrapTheTooltips(this);
 
+        ui.itemsPressFromWindow(this, javax.swing.SwingUtilities.getWindowAncestor(invoker));
+
         super.show(invoker, x, y);
     }
 
@@ -315,7 +317,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(ui, e.getMessage());
+                        JOptionPane.showMessageDialog(ui.dialogParent(), e.getMessage());
                     }
                 });
 
@@ -508,7 +510,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                 ui.getModel() == null ? null : ui.getModel().getAutoLayout());
 
                             int dialogResult = JOptionPane.showOptionDialog(
-                                ui,
+                                ui.dialogParent(),
                                 // The form with the arrival side under it (`asDialogContent`).
                                 edit.asDialogContent(),
                                 I18n.f("autolayout.ui.dialogEditOrAssignLocomotive",
@@ -576,7 +578,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(ui, e.getMessage());
+                        JOptionPane.showMessageDialog(ui.dialogParent(), e.getMessage());
                     }
                 });    
 
@@ -818,7 +820,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // a dismissal can leave the railway as it was.  The unbarred sides here and in the `wouldAsk` below must be
             // the same list (OB-204).
             tail = org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(running, landing,
-                facing == null ? null : facing.name(), mayTurnHere(), ui,
+                facing == null ? null : facing.name(), mayTurnHere(), ui.dialogParent(),
                 session == null ? null : session.unbarredArrivalSides(station));
 
             // A dismissal, and not the other two nulls: `forPlacement` also answers null when the square offers nothing
@@ -881,7 +883,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         // WHAT THE SAVE BEFORE THE TAIL QUESTION RECONCILED (OB-305), shown once here: the save below then finds
         // nothing more (MT-380).
-        AutonomyReport.show(ui, savedEarly[0]);
+        AutonomyReport.show(ui.dialogParent(), savedEarly[0]);
 
         // Not a setup the window has let go in the wait; the placement above is written either way (OB-373).
         if (session != null && setupStands)
@@ -889,7 +891,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             try
             {
                 // The reconciliation the save returns is shown, not dropped: it reports what the save had to let go.
-                AutonomyReport.show(ui, session.save());
+                AutonomyReport.show(ui.dialogParent(), session.save());
             }
             catch (java.io.IOException e)
             {
@@ -968,7 +970,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // save a removed train is back at the next launch.
             try
             {
-                AutonomyReport.show(ui, session.save());
+                AutonomyReport.show(ui.dialogParent(), session.save());
             }
             catch (java.io.IOException e)
             {

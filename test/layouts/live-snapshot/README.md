@@ -182,3 +182,5 @@ not fix it. Name the square.
 - `ui.testTheToolsSitUnderTheHeading`
 - `ui.testTheAutoTabSaysWhyATrainWaits`
 - `ui.testTheAutonomyEditorsBulkDoors`
+- `ui.testAPageWindowsMenuAsksOverIt`
+- `ui.testAPageWindowsSetupMenuAsksOverIt`

@@ -58,10 +58,12 @@ final class LocomotiveActions
      */
     void quickLocSearch()
     {
+        final java.awt.Window asked = this.ui.dialogParent();
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             String input = JOptionPane.showInputDialog(
-                this.ui,
+                this.ui.stillShowing(asked),
                 I18n.t("loc.ui.promptEnterLocomotiveNameToJumpTo")
             );
 
@@ -74,7 +76,7 @@ final class LocomotiveActions
 
     void changeLocAddress(Locomotive l, MouseEvent evt)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
+        Component source = evt != null ? (Component) evt.getSource() : this.ui.dialogParent();
 
         // The window, read now: the database's refresh below takes the tile out of it, and an error after that was
         // owned by Swing's hidden frame.
@@ -442,7 +444,7 @@ final class LocomotiveActions
     */
     void changeLocNotes(Locomotive l, MouseEvent evt)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
+        Component source = evt != null ? (Component) evt.getSource() : this.ui.dialogParent();
 
         if (l != null)
         {
@@ -576,7 +578,7 @@ final class LocomotiveActions
 
     void deleteLoc(String value, MouseEvent evt)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
+        Component source = evt != null ? (Component) evt.getSource() : this.ui.dialogParent();
         
         if (this.ui.getModel().isAutonomyRunning())
         {

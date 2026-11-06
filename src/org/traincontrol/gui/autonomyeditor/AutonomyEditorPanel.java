@@ -2351,7 +2351,10 @@ public class AutonomyEditorPanel extends JPanel
 
         if (window != null) return window;
 
-        // A menu-only panel is in no window, and a dialog parented on it can land hidden behind the main window.
+        // A menu-only panel is in no window, and a dialog parented on it can land hidden behind the main window.  The
+        // main window knows whose door is being pressed (OB-324).
+        if (dialogOwner instanceof TrainControlUI) return ((TrainControlUI) dialogOwner).dialogParent();
+
         return dialogOwner == null ? this : dialogOwner;
     }
 

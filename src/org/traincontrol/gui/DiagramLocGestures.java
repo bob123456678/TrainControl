@@ -133,7 +133,7 @@ final class DiagramLocGestures
 
             if (onto == null || !onto.getStore().isStation(aimed))
             {
-                JOptionPane.showMessageDialog(ui, I18n.t("autolayout.ui.errorTrainOnlyAtStation"));
+                JOptionPane.showMessageDialog(ui.dialogParent(), I18n.t("autolayout.ui.errorTrainOnlyAtStation"));
 
                 return true;
             }
@@ -179,7 +179,7 @@ final class DiagramLocGestures
                 ui.facingAtTheLanding == null ? null : ui.facingAtTheLanding.name(),
             // The build's sides, which the model reads too (OB-182): the geometric answer names where the neighboring
             // POINT lies, and a reduced run turns corners.  `Layout.entrySideOf` is what both writes and the walk read.
-                mayTurnHere(aimed), ui,
+                mayTurnHere(aimed), ui.dialogParent(),
                 ui.getAutonomySession() == null ? null : ui.getAutonomySession().unbarredArrivalSides(aimed));
 
             if (ui.tailAtTheLanding == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(
@@ -203,7 +203,8 @@ final class DiagramLocGestures
                 {
                     // Named as the square: a copy's name states a heading, which is what this asks.
                     ui.facingChosenAtTheLanding = org.traincontrol.gui.autonomy.FacingPrompt.forPlacement(
-                        canHold, ui.facingAtTheLanding, ui.getAutonomySession().baseNameOf(point.getName()), ui);
+                        canHold, ui.facingAtTheLanding, ui.getAutonomySession().baseNameOf(point.getName()),
+                        ui.dialogParent());
 
                     if (ui.facingChosenAtTheLanding == null) return true;
                 }
