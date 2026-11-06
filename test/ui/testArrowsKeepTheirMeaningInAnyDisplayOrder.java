@@ -177,12 +177,12 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         }
     }
 
-    /** Opens a page popup as the Pop Up menu does (on the page list's place, whatever the page) and waits for it. */
+    /** Opens a popup on this page, saving its place in the shown list as the window does for the page it shows. */
     private LayoutPopupUI showPopup(final String page) throws Exception
     {
         final LayoutPopupUI popup = Components.onTheEventThread(() ->
         {
-            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui, combo2().getSelectedIndex());
+            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui, model.getLayoutList().indexOf(page));
 
             made.render();
 
@@ -197,18 +197,6 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         Components.settle();
 
         return popup;
-    }
-
-    private javax.swing.JComboBox<?> combo2()
-    {
-        try
-        {
-            return combo();
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException(e);
-        }
     }
 
     /**
