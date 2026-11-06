@@ -32,11 +32,15 @@ public class AccessoryKeyboard extends JPanel
     public static final int KEYS = COLUMNS * ROWS;
     public static final int PAGES = 16;
 
-    public static final Color RED = new Color(214, 40, 40);
-    public static final Color GREEN = new Color(40, 167, 69);
-    public static final Color INACTIVE = new Color(0xF0, 0xF0, 0xF0);
-    public static final Color RED_HINT = new Color(250, 214, 214);
-    public static final Color GREEN_HINT = new Color(210, 240, 218);
+    /** The color of a half: clear red or green when lit, very light gray when not, a pale hint of its own color when pointed at. */
+    public static Color lookOf(boolean red, boolean lit, boolean hinted)
+    {
+        if (lit) return red ? new Color(214, 40, 40) : new Color(40, 167, 69);
+
+        if (hinted) return red ? new Color(250, 214, 214) : new Color(210, 240, 218);
+
+        return new Color(0xF0, 0xF0, 0xF0);
+    }
 
     private static final Font NUMBER_FONT = new Font("Segoe UI", Font.BOLD, 12);
     private static final int KEY_HEIGHT = 44;
@@ -275,12 +279,7 @@ public class AccessoryKeyboard extends JPanel
         @Override
         protected void paintComponent(Graphics g)
         {
-            Color fill = this.lit ? (this.red ? RED : GREEN) : INACTIVE;
-
-            if (!this.lit && this.isEnabled() && this.getModel().isRollover())
-            {
-                fill = this.red ? RED_HINT : GREEN_HINT;
-            }
+            Color fill = lookOf(this.red, this.lit, this.isEnabled() && this.getModel().isRollover());
 
             g.setColor(fill);
             g.fillRect(0, 0, this.getWidth(), this.getHeight());

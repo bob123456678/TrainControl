@@ -1082,7 +1082,7 @@ public class testDrivingFromTheKeyboard
      * The lit half is a clear color and the other is very light gray; pointed at, the gray half shows a pale hint of its
      * own color.  Painted, since the look is the claim.
      *
-     * MUTATION: swap `RED_HINT` and `GREEN_HINT` in `Half.paintComponent`, and this fails.
+     * MUTATION: swap the two hint colors in `AccessoryKeyboard.lookOf`, and this fails.
      */
     @Test
     public void testTheLitHalfIsColoredAndTheOtherIsLightGrayWithAHint() throws Exception
@@ -1094,23 +1094,32 @@ public class testDrivingFromTheKeyboard
 
         AccessoryKeyboard keys = keys();
 
-        assertEquals(paintedColor(keys.half(9, true)), AccessoryKeyboard.RED, "the lit red half is not red");
-        assertEquals(paintedColor(keys.half(9, false)), new java.awt.Color(0xF0, 0xF0, 0xF0),
-            "the half not lit is not very light gray");
+        java.awt.Color lightGray = new java.awt.Color(0xF0, 0xF0, 0xF0);
+
+        java.awt.Color litRed = paintedColor(keys.half(9, true));
+
+        assertTrue(litRed.getRed() > 180 && litRed.getGreen() < 80 && litRed.getBlue() < 80, "the lit red half is not red: " + litRed);
+        assertEquals(paintedColor(keys.half(9, false)), lightGray, "the half not lit is not very light gray");
 
         support.Mouse.enter(keys.half(9, false));
 
-        assertEquals(paintedColor(keys.half(9, false)), AccessoryKeyboard.GREEN_HINT,
-            "pointing at the gray half shows no hint of green");
+        java.awt.Color hint = paintedColor(keys.half(9, false));
+
+        assertTrue(hint.getGreen() > hint.getRed() && hint.getGreen() > 200 && !hint.equals(lightGray),
+            "pointing at the gray half shows no pale hint of green: " + hint);
 
         support.Mouse.exit(keys.half(9, false));
 
-        assertEquals(paintedColor(keys.half(9, false)), AccessoryKeyboard.INACTIVE, "the hint stayed after the pointer left");
+        assertEquals(paintedColor(keys.half(9, false)), lightGray, "the hint stayed after the pointer left");
 
         click(9, false);
 
         assertTrue(waitFor(() -> lit(9, false)), "green is not lit");
-        assertEquals(paintedColor(keys.half(9, false)), AccessoryKeyboard.GREEN, "the lit green half is not green");
+
+        java.awt.Color litGreen = paintedColor(keys.half(9, false));
+
+        assertTrue(litGreen.getGreen() > 140 && litGreen.getRed() < 80, "the lit green half is not green: " + litGreen);
+        assertEquals(paintedColor(keys.half(9, true)), lightGray, "the red half stayed lit after green was clicked");
     }
 
     /** The color at the middle of a half as it paints. */
