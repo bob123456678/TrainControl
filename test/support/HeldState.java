@@ -45,7 +45,7 @@ public final class HeldState
             + " name=" + a.getName() + " " + a.getType() + " " + a.getDecoderType() + " switched=" + a.isSwitched()));
         out.append("-- pages ").append(model.getLayoutList()).append("\n");
 
-        for (String name : model.getLayoutList())
+        for (String name : model.getLayoutListByName())
         {
             LayoutDiagram d = model.getLayout(name);
             out.append("page ").append(name).append(" id=").append(d.getPageId()).append(" unreadable=")
