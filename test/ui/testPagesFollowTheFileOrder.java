@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.swing.AbstractButton;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
@@ -271,9 +272,12 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
     }
 
     /**
-     * Sort Pages by Name writes name order once, on a layout in file order, keeping every id and the setup as it was.
+     * Sort Pages by Name writes name order once, on a layout in file order, keeping every id and the setup as it was,
+     * and leaves the main window on the page it showed while the editor is on another.
      *
-     * MUTATION: `sortPagesByName` does nothing, and the index stays in file order.
+     * MUTATION: `sortPagesByName` does nothing, and the index stays in file order; the main window put back after the
+     * editor arrives (the posted `setSelectedItem` in `runPageEdit`) left out, and the main window follows the editor
+     * to 1 - Main.
      */
     @Test
     public void testSortPagesByNameWritesNameOrderOnce() throws Exception
@@ -285,6 +289,13 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
         byte[] setup = Files.readAllBytes(setupFile().toPath());
 
         edit("1 - Main");
+
+        final javax.swing.JComboBox<?> shown = Components.find(ui, javax.swing.JComboBox.class,
+            b -> b.getItemCount() == 5 && "3 - Top Parking".equals(String.valueOf(b.getItemAt(0))));
+
+        Components.select(shown, "5 - Test");
+
+        Components.settle();
 
         javax.swing.JMenu tools = Components.find(editorOn("1 - Main"), javax.swing.JMenu.class,
             m -> I18n.t("layout.ui.menuTools").equals(m.getText()));
@@ -305,6 +316,11 @@ public class testPagesFollowTheFileOrder extends support.PageWindowTest
         assertEquals(Files.readAllBytes(setupFile().toPath()), setup, "sorting rewrote the autonomy setup");
 
         assertEquals(model.getLayoutList(), BY_NAME, "the model is not in name order");
+
+        assertTrue(editorOn("1 - Main") != null, "the editor left its page");
+
+        assertFalse(Components.waitFor(() -> !"5 - Test".equals(String.valueOf(shown.getSelectedItem())), 1500),
+            "Sort Pages by Name moved the main window off 5 - Test to " + shown.getSelectedItem());
     }
 
     /**

@@ -461,7 +461,7 @@ final class LayoutFileActions
     {
         if (sorted(this.ui.getModel().getLayoutList()) == null) return;
 
-        // Each window stays on the page it shows
+        // The layout editor arrives on its own page, and the main window is put back on the page it showed
         reorder(LayoutFileActions::sorted, String.valueOf(this.ui.layoutList().getSelectedItem()), null, from);
     }
 
@@ -563,6 +563,12 @@ final class LayoutFileActions
 
                         this.ui.layoutList().setSelectedItem(show);
                         this.ui.repaintLayout();
+
+                        // The editor's arrival selects its page in the main window; this lands after it
+                        if (from != null)
+                        {
+                            javax.swing.SwingUtilities.invokeLater(() -> this.ui.layoutList().setSelectedItem(show));
+                        }
                     });
 
                     arriving = true;
