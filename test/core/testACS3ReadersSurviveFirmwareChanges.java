@@ -37,15 +37,15 @@ import support.StationRig;
  * default, and testAnEmptyDatabaseIsNotFilledWithGuesses finds every locomotive stored as MM2.
  * Skip the record-level answer ("boolean unnameable = false" in parseLocomotivesCS3), and
  * testOneLocomotiveWithoutAnInternalNameCostsOnlyWhatNamesIt finds the units that name it with fewer members; the same in
- * parseRoutesCS3, and it finds the route that names it rewritten without that locomotive.  Drop requireRouteKeys from
+ * parseRoutesCS3, and it finds the route that names it rewritten without that locomotive.  Drop requireKeysOfALargeRailway from
  * parseRoutesCS3(boolean), a `typ` read with optString, or the missing-`lok` check, and testARouteItemThatCannotBeReadKeepsTheHeldRoute
  * finds routes emptied or a train command dropped.  Unlock the routes whatever skipped (canTellDeleted), and
  * testARouteWithNoIdLeavesTheLocksAlone finds the deleted route unlocked.  Drop the partial flag that records set, and
- * the tests find the sync not saying part was unread.  Refuse every list that looks suspect, whatever is held
- * (MarklinControlStation.wouldChangeHeldRoute always true), and testASmallRailwayIsImportedAtFirstAndSecondSync finds the
- * small railways refused; never refuse (always false), and testARouteItemThatCannotBeReadKeepsTheHeldRoute finds the
- * routes rewritten.  Read a direction's `wert` as before (only the text "1" is backward, a missing one forward), and
- * testADirectionThatCannotBeReadKeepsTheHeldRoute finds the route rewritten.
+ * the tests find the sync not saying part was unread.  Make the refusal sizes (MANY_SWITCHES, MANY_SPEEDS, MANY_ROUTES in CS2File) 0, and
+ * testASmallRailwayIsImportedAtFirstAndSecondSync and testAnHonestEditOfASmallRailwayIsImportedAtEverySync find the
+ * small railways refused; make them huge, and testAWholeKeyRenameOnALargeRailwayIsRefusedAtFirstSync finds the routes
+ * imported on a guess.  Read the direction 1.5 as backward, or refuse a direction that is left out, and
+ * testADirectionThatCannotBeReadKeepsTheHeldRoute finds the route rewritten or skipped.
  *
  * @author Adam
  */
@@ -182,6 +182,12 @@ public class testACS3ReadersSurviveFirmwareChanges
 
         return (path, n) -> replaced.containsKey(path) ? replaced.get(path)
             : ACCESSORIES.equals(path) ? StandInStation.file(MAGS[0]) : base.apply(path, n);
+    }
+
+    /** The routes a 2.6.1 CS3 answers: the fixture's, and two that start locomotives. */
+    private static String routeAnswer()
+    {
+        return new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8);
     }
 
     private static StationRig rig(Map<String, byte[]> replaced) throws Exception
@@ -358,10 +364,10 @@ public class testACS3ReadersSurviveFirmwareChanges
     {
         onHeld((rig, replaced, held) ->
         {
-            String routes = new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8);
+            String routes = routeAnswer();
 
             // A key renamed, removed or retyped (not to another valid article number: that is another article)
-            for (String key : new String[] {"stellung", "magnetartikel", "typ", "lok", "wert", "items"})
+            for (String key : new String[] {"stellung", "magnetartikel", "typ", "lok", "items"})
             {
                 for (int mode = 0; mode < MODES; mode++)
                 {
@@ -401,7 +407,7 @@ public class testACS3ReadersSurviveFirmwareChanges
     {
         onHeld((rig, replaced, held) ->
         {
-            JSONArray routes = listOf(new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8));
+            JSONArray routes = listOf(routeAnswer());
             String gone = routes.getJSONObject(3).getString("name");
             routes.remove(3);
 
@@ -541,21 +547,109 @@ public class testACS3ReadersSurviveFirmwareChanges
         }
     }
 
-    /** A direction is 0 or 1, as a number or as text; one that is missing or unreadable keeps the held route. */
+    private static String railway(String loc, boolean position, boolean go)
+    {
+        return "[{\"id\":\"1\",\"name\":\"one\",\"items\":[{\"typ\":\"mag\",\"magnetartikel\":\"0\""
+            + (position ? ",\"stellung\":\"1\"" : "") + ",\"key\":\"000\"},{\"typ\":\"speed\",\"lok\":\"" + loc + "\""
+            + (go ? ",\"wert\":500" : "") + ",\"key\":\"001\"}]}]";
+    }
+
+    /** The commands of the one route a railway gives at its first sync. */
+    private static java.util.List<org.traincontrol.base.RouteCommand> commandsOf(String routes) throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+        replaced.put(ROUTES, routes.getBytes(StandardCharsets.UTF_8));
+
+        try (StationRig rig = rig(replaced))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            return new ArrayList<>(rig.model.getRoutes().get(0).getRoute());
+        }
+    }
+
+    /** A small railway's honest edits (every switch to its default, go to stop, the only route emptied) are imported at every sync. */
+    @Test
+    public void testAnHonestEditOfASmallRailwayIsImportedAtEverySync() throws Exception
+    {
+        String loc = "02#200314-1#20DDR";
+        String[] edits = {railway(loc, false, true), railway(loc, true, false), "[{\"id\":\"1\",\"name\":\"one\",\"items\":[]}]"};
+        java.util.List<org.traincontrol.base.RouteCommand> first = commandsOf(railway(loc, true, true));
+
+        for (int i = 0; i < edits.length; i++)
+        {
+            Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+            replaced.put(ROUTES, railway(loc, true, true).getBytes(StandardCharsets.UTF_8));
+            java.util.List<org.traincontrol.base.RouteCommand> expected = commandsOf(edits[i]);
+            assertNotEquals(expected, first, "edit " + i + " changes the route");
+
+            try (StationRig rig = rig(replaced))
+            {
+                assertTrue(rig.model.syncWithCS2() >= 0);
+                replaced.put(ROUTES, edits[i].getBytes(StandardCharsets.UTF_8));
+
+                for (int sync = 1; sync <= 3; sync++)
+                {
+                    rig.takeLog();
+                    assertTrue(rig.model.syncWithCS2() >= 0, "edit " + i + ", sync " + sync);
+                    assertFalse(rig.model.wasLastSyncPartial(), "edit " + i + " is read, sync " + sync);
+                    assertEquals(rig.model.getRoutes().get(0).getRoute(), expected, "edit " + i + " is imported, sync " + sync);
+                    assertTrue(rig.takeLog().stream().noneMatch(l -> l.matches("(?is).*(not updated|could not|skipping).*")),
+                        "and nothing is said of it");
+                }
+            }
+        }
+    }
+
+    /** A key gone from every item of a large railway is refused at the first sync, with nothing held, and imported when it is back. */
+    @Test
+    public void testAWholeKeyRenameOnALargeRailwayIsRefusedAtFirstSync() throws Exception
+    {
+        String routes = routeAnswer();
+        Object[][] renames = {{"stellung", 0}, {"stellung", 1}, {"magnetartikel", 0}, {"magnetartikel", 1}, {"items", 5}};
+
+        for (Object[] rename : renames)
+        {
+            Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+            replaced.put(ROUTES, bytes(mutated(routes, (String) rename[0], (Integer) rename[1])));
+
+            try (StationRig rig = rig(replaced))
+            {
+                String what = rename[0] + ", mode " + rename[1];
+                assertTrue(rig.model.syncWithCS2() >= 0, what);
+                assertTrue(rig.model.wasLastSyncPartial(), "says part was not read: " + what);
+                assertTrue(rig.model.getRoutes().isEmpty(), "no route imported on a guess: " + what);
+
+                replaced.clear();
+                assertTrue(rig.model.syncWithCS2() >= 0);
+                assertFalse(rig.model.wasLastSyncPartial(), "and the good answer is read: " + what);
+                assertTrue(rig.model.getRoutes().size() > 40, "its routes are imported: " + what);
+            }
+        }
+    }
+
+    /** A direction is 0 or 1, as a number or as text, and omitted for forward; any other value keeps the held route. */
     @Test
     public void testADirectionThatCannotBeReadKeepsTheHeldRoute() throws Exception
     {
         onHeld((rig, replaced, held) ->
         {
-            String routes = new String(StandInStation.cs3("260", INFO).apply(ROUTES, 1), StandardCharsets.UTF_8);
+            String routes = routeAnswer();
 
-            for (Object wert : new Object[] {null, "x", 2})
+            for (Object wert : new Object[] {"x", 2, 1.5})
             {
                 assertHeldUnchanged(rig, replaced, held, "direction " + wert, only(ROUTES, withDirection(routes, wert)));
             }
 
             // The number 1 means backward, as the text "1" does
             assertHeldUnchanged(rig, replaced, held, "direction 1", only(ROUTES, withDirection(routes, 1)), false);
+
+            // One that is left out is forward, as real firmware leaves a default out: the route is read, not skipped
+            assertTrue(held.contains("DIRECTION=DIR_BACKWARD") && !held.contains("DIRECTION=DIR_FORWARD"));
+            replaced.putAll(only(ROUTES, withDirection(routes, null)));
+            assertTrue(rig.model.syncWithCS2() >= 0);
+            replaced.clear();
+            assertFalse(rig.model.wasLastSyncPartial(), "a direction left out is read");
+            assertTrue(state(rig).contains("DIRECTION=DIR_FORWARD"), "as forward");
         });
     }
 

@@ -20,7 +20,8 @@ import support.StationRig;
  * against a stand-in CS3, and the questions the program asks are read as the user would see them.
  *
  * MUTATION: have TrainControlUI.doSync always pick "ui.infoSyncCompleteItemsAdded" for its text, and the sync with an
- * unreadable route list says "Sync complete. Items added: 0" and nothing more.
+ * unreadable route list says "Sync complete. Items added: 0" and nothing more; drop the `view.showSyncPartial()` call
+ * of MarklinControlStation.init, and the start-up says nothing.
  *
  * @author Adam
  */
@@ -75,6 +76,33 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
             finally
             {
                 SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /** The start-up's own sync, made by the application's init against a station whose routes cannot be read, raises the notice. */
+    @Test
+    public void testTheStartUpSaysSoToo() throws Exception
+    {
+        BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            try (StationRig rig = new StationRig(Files.createTempDirectory("tc-startup-says").toFile(),
+                (path, n) -> "/app/api/automatics".equals(path) ? "<html>not json</html>".getBytes(StandardCharsets.UTF_8)
+                    : base.apply(path, n), true, true))
+            {
+                TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+
+                try
+                {
+                    assertTrue(answering.awaitAsked(1, 60000), "start-up asked nothing");
+                    assertEquals(answering.asked().get(0), I18n.t("ui.startupSyncPartial"));
+                }
+                finally
+                {
+                    SwingUtilities.invokeAndWait(ui::dispose);
+                }
             }
         }
     }

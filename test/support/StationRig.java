@@ -47,6 +47,13 @@ public final class StationRig implements AutoCloseable
     /** The same, with the application's own window when `window` is true (it needs a display). */
     public StationRig(File root, BiFunction<String, Integer, byte[]> answer, boolean window) throws Exception
     {
+        this(root, answer, window, false);
+    }
+
+    /** The same; with `atStartUp` true the start-up's own sync goes to the stand-in too, as an application's does. */
+    public StationRig(File root, BiFunction<String, Integer, byte[]> answer, boolean window, boolean atStartUp)
+        throws Exception
+    {
         MarklinControlStation started = null;
         LayoutSandbox opened = null;
         StandInStation standIn = null;
@@ -57,6 +64,8 @@ public final class StationRig implements AutoCloseable
             System.setProperty(Util.DATA_DIR_PROPERTY, Files.createDirectories(new File(root, "data").toPath()).toString());
             opened = LayoutSandbox.open(new File(root, "none"));
             TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            if (atStartUp) TestStationAddress.set(standIn.address());
+
             started = window ? TestStation.simulatedWithWindow() : TestStation.simulated();
         }
         catch (Exception | Error e)

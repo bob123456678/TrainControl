@@ -1436,20 +1436,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /** What the last sync failed with, in words, or null when it did not fail. */
     private volatile String lastSyncError = null;
 
-    /** Whether a route the Central Station describes has other commands than the one held under its id. */
-    private boolean wouldChangeHeldRoute(List<MarklinRoute> described)
-    {
-        for (MarklinRoute r : described)
-        {
-            if (this.routeDB.hasId(r.getId()) && !r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /** What the last sync failed with (OB-338), or null when it did not fail. */
     public String getLastSyncError()
     {
@@ -1627,12 +1613,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 try
                 {
                     parsedRoutes = fileParser.parseRoutesCS3();
-
-                    // A list that looks as if a key had gone is refused only if a route held would lose or change commands
-                    if (fileParser.isRouteListSuspect() && this.wouldChangeHeldRoute(parsedRoutes))
-                    {
-                        throw new UnreadableAnswerException("a key every route item had has gone");
-                    }
                 }
                 catch (UnreadableAnswerException e)
                 {

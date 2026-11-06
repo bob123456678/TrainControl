@@ -729,7 +729,7 @@ public final class CS2File
 
             requireUsable(routes, mags, "mag", o -> o.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE, "accessories");
             requireUsable(routes, locs, "lok", o -> true, "locomotives");
-            this.suspectRouteList = looksSuspect(routes);
+            requireKeysOfALargeRailway(routes);
 
             return parseRoutesCS3(routes, mags, locs);
         }
@@ -775,21 +775,20 @@ public final class CS2File
         }
     }
 
-    // Whether the last route list read looks as if a key every item had has gone
-    private boolean suspectRouteList;
+    // Sizes from which a missing key is too much to be honest: a small railway may have no switch off its default
+    // position, no speed but 0, or only empty routes, and is read as it is
+    private static final int MANY_SWITCHES = 10;
+
+    private static final int MANY_SPEEDS = 10;
+
+    private static final int MANY_ROUTES = 5;
 
     /**
-     * Whether the last route list read looks as if a key had gone from its answer: it has items that need one of the keys
-     * that are legitimately absent from some items (a switch in its default position has no "stellung") and none
-     * carries it, or every route is empty.  A small railway looks the same, so this only says: the sync decides by
-     * whether a route it holds would change (FR-169).
+     * Keys that real firmware omits for their default ("stellung", "wert") are missing from some items, but not from all
+     * of a large railway: with many switch items none carrying "stellung" or "magnetartikel", many speed items none
+     * carrying "wert", or many routes all empty, the key has gone from the answer and the routes cannot be read (FR-169).
      */
-    public boolean isRouteListSuspect()
-    {
-        return this.suspectRouteList;
-    }
-
-    private static boolean looksSuspect(JSONArray routes)
+    private static void requireKeysOfALargeRailway(JSONArray routes) throws UnreadableAnswerException
     {
         int switches = 0, withPosition = 0, withArticle = 0, speeds = 0, withValue = 0, withItems = 0;
 
@@ -816,8 +815,12 @@ public final class CS2File
             }
         }
 
-        return routes.length() > 0 && withItems == 0
-            || switches > 0 && (withPosition == 0 || withArticle == 0) || speeds > 0 && withValue == 0;
+        if (routes.length() >= MANY_ROUTES && withItems == 0
+            || switches >= MANY_SWITCHES && (withPosition == 0 || withArticle == 0)
+            || speeds >= MANY_SPEEDS && withValue == 0)
+        {
+            throw new UnreadableAnswerException("a key every route item had has gone");
+        }
     }
 
     /**
@@ -1406,10 +1409,17 @@ public final class CS2File
 
                             if (locName != null)
                             {
-                                // wert is 1 for backward and 0 for forward, as a number or as text; an item without it, or with
-                                // another value, does not say which way, and its route is skipped
+                                // wert is 1 for backward and 0 for forward, as a number or as text, and omitted for forward
+                                // like the other defaults; any other value does not say which way, and its route is skipped
                                 Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
-                                int wert = item.getInt("wert");
+                                double wert = 0;
+
+                                if (item.has("wert"))
+                                {
+                                    Object given = item.get("wert");
+                                    wert = given instanceof Number ? ((Number) given).doubleValue()
+                                        : Double.parseDouble(String.valueOf(given).trim());
+                                }
 
                                 if (wert != 0 && wert != 1)
                                 {
