@@ -191,6 +191,11 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         after.remove("config/gleisbild.cs2");
         before.remove("config/gleisbild.cs2");
 
+        // Opening the editor leaves its undo copy of the setup; moving a page does not
+        after.remove("config/autonomy/setup-before-edit.json");
+
+        assertEquals(after.keySet(), before.keySet(), "moving a page added or removed a file");
+
         assertEquals(after, before, "moving a page changed a file other than the index");
 
         assertEquals(graphFingerprint(), graph, "moving a page changed the autonomy graph");
