@@ -37,6 +37,8 @@ public class testLocomotiveCsvImportDoor
 {
     private static final String HEADER = "Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes\n";
 
+    private static final String HEADER11 = "Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes,LastRun\n";
+
     private static final String IMPORT = I18n.t("loc.ui.importCsvButton");
     private static final String CANCEL = I18n.t("ui.cancel");
 
@@ -242,7 +244,8 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * The question counts the new, the existing and the unreadable; Cancel changes nothing.
+     * The question counts the new, the existing, those that change address or decoder, and the unreadable; Cancel changes
+     * nothing.
      *
      * MUTATION: apply the file before the answer, or count the wrong rows, and this fails.
      */
@@ -251,8 +254,11 @@ public class testLocomotiveCsvImportDoor
     {
         inAWindow((ui, model) ->
         {
-            String there = model.getLocList().get(0);
-            File file = write(HEADER + "FR049 door new,,MFX,88,0,0:00:00,0,0,,\n" + there + ",,MFX,88,0,0:00:00,0,0,,\n"
+            final String there = "FR049 door old";
+
+            model.newMM2Locomotive(there, 20);
+
+            File file = write(HEADER + "FR049 door new,,MFX,88,0,0:00:00,0,0,,\n" + there + ",,DCC,21,0,0:00:00,0,0,,\n"
                 + "FR049 door bad,,MFX,xx,0,0:00:00,0,0,,\n");
 
             try
@@ -263,7 +269,7 @@ public class testLocomotiveCsvImportDoor
 
                 assertNotNull(seen.question, "the door did not ask before changing anything");
                 assertEquals(words(seen.question), words(I18n.f("loc.ui.confirmImportCsv", 1, 1) + "\n\n"
-                    + I18n.f("loc.ui.confirmImportCsvUnreadable", 1)));
+                    + I18n.f("loc.ui.confirmImportCsvReaddress", 1) + "\n\n" + I18n.f("loc.ui.confirmImportCsvUnreadable", 1)));
                 assertEquals(everyLocomotive(model), before, "Cancel changed the database");
                 assertNull(model.getLocByName("FR049 door new"));
                 assertTrue(seen.said.isEmpty(), "Cancel went on to say something: " + seen.said);
@@ -271,29 +277,30 @@ public class testLocomotiveCsvImportDoor
             finally
             {
                 file.delete();
+                model.deleteLoc(there);
             }
         });
     }
 
     /**
-     * Import adds the new name with no key, merges the existing name without moving its address, and names the line of
-     * the row it could not read.
+     * Import adds the new name with no key, merges the existing name (its address and decoder follow the file, its runtime
+     * follows a later last run day), and names the line of the row it could not read.
      *
-     * MUTATION: map the new locomotive to a key, let the file move the address, or name the wrong line, and this fails.
+     * MUTATION: map the new locomotive to a key, leave the address alone, or name the wrong line, and this fails.
      */
     @Test
     public void testImportAddsMergesAndNamesTheSkippedLine() throws Exception
     {
         inAWindow((ui, model) ->
         {
-            Locomotive there = model.getLocByName(model.getLocList().get(0));
-            int address = there.getAddress();
-            long runtime = there.getTotalRuntime();
-            long fileRuntime = runtime + 7200000L;
-            File file = write(HEADER + "FR049 door new,Page 1 Key 1;Page 2 Key 2,DCC,88,30,2:00:00,0,0,,\n"
-                + org.traincontrol.util.Util.escapeCsv(there.getName()) + ",,MM2," + (address + 1) + ",0,"
-                + org.traincontrol.util.Conversion.convertSecondsToHMmSs(fileRuntime) + ",0,0,,\n"
-                + "FR049 door bad,,MFX,xx,0,0:00:00,0,0,,\n");
+            final String there = "FR049 door old";
+            Locomotive old = model.newMM2Locomotive(there, 20);
+
+            old.getHistoricalOperatingTime().put("2024-01-01", 3600000L);
+
+            File file = write(HEADER11 + "FR049 door new,Page 1 Key 1;Page 2 Key 2,DCC,88,30,2:00:00,0,0,,,2024-02-02\n"
+                + there + ",,DCC,21,0,3:00:00,0,0,,,2024-06-06\n"
+                + "FR049 door bad,,MFX,xx,0,0:00:00,0,0,,,\n");
 
             try
             {
@@ -304,6 +311,7 @@ public class testLocomotiveCsvImportDoor
                 String said = words(seen.said.get(0));
 
                 assertTrue(said.startsWith(words(I18n.f("loc.ui.infoImportCsvDone", 1, 1))), said);
+                assertTrue(said.contains(words(I18n.f("loc.ui.infoImportCsvReaddressed", 1))), said);
                 assertEquals(seen.saidShapes.get(0).details, Collections.singletonList(I18n.f("loc.ui.importCsvSkippedLine", 4)),
                     "the skipped row's line is not named");
 
@@ -315,8 +323,9 @@ public class testLocomotiveCsvImportDoor
                 assertTrue(ui.getAllLocButtonMappings(added).isEmpty(), "the new locomotive was put on a key: "
                     + ui.getAllLocButtonMappings(added));
 
-                assertEquals(there.getAddress(), address, "the file moved an existing locomotive's address");
-                assertEquals(there.getTotalRuntime(), fileRuntime / 1000 * 1000, "the existing locomotive did not take the file's larger runtime");
+                assertEquals(old.getAddress(), 21, "the file did not move an existing locomotive's address");
+                assertEquals(old.getDecoderType(), Locomotive.decoderType.DCC);
+                assertEquals(old.getTotalRuntime(), 10800000L, "the existing locomotive did not take the file's larger runtime");
                 assertNull(model.getLocByName("FR049 door bad"));
 
                 model.deleteLoc("FR049 door new");
@@ -324,6 +333,48 @@ public class testLocomotiveCsvImportDoor
             finally
             {
                 file.delete();
+                model.deleteLoc(there);
+            }
+        });
+    }
+
+    /**
+     * A train that is moving, with the power on, is not re-addressed: the door says so before it asks, and nothing changes.
+     *
+     * MUTATION: take the moving check out of the door, and this fails.
+     */
+    @Test
+    public void testAMovingTrainIsNotReaddressed() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String name = "FR049 door rolling";
+            Locomotive rolling = model.newMM2Locomotive(name, 30);
+
+            File file = write(HEADER + name + ",,DCC,31,0,0:00:00,0,0,,\n");
+
+            try
+            {
+                model.go();
+                model.waitForPowerState(true);
+                rolling.setSpeed(30);
+                rolling.waitForSpeedAtOrAbove(1);
+
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(seen.said, Collections.singletonList(I18n.f("loc.ui.errorImportCsvMoving", name)));
+                assertNull(seen.question, "the door asked about a train it must not re-address");
+                assertEquals(rolling.getAddress(), 30);
+                assertEquals(rolling.getDecoderType(), Locomotive.decoderType.MM2);
+            }
+            finally
+            {
+                rolling.setSpeed(0);
+                rolling.waitForSpeedBelow(1);
+                model.stop();
+                model.waitForPowerState(false);
+                file.delete();
+                model.deleteLoc(name);
             }
         });
     }

@@ -1449,18 +1449,29 @@ public abstract class Locomotive
     }
     
     /**
-     * The one day a runtime that came from a file is filed under (FR-049): a file holds a total, not days, and this
-     * date is before TrainControl existed, so no chart range reaches it and no day of real running is invented.
+     * The latest day on which the locomotive has a runtime record (yyyy-MM-dd), or null if it has none
+     * @return
      */
-    public static final String IMPORTED_RUNTIME_DAY = "2000-01-01";
+    public String getLastRunDay()
+    {
+        String last = null;
+
+        for (String day : this.historicalOperatingTime.keySet())
+        {
+            if (last == null || day.compareTo(last) > 0) last = day;
+        }
+
+        return last;
+    }
 
     /**
-     * Raises the total runtime to at least `wantedMs`, filing only the difference under `IMPORTED_RUNTIME_DAY`; the
-     * recorded days are never touched.  Takes the lock runtime tracking takes.
+     * Raises the total runtime to at least `wantedMs`, filing only the difference on `day` (FR-049); the other days are
+     * never touched.  Takes the lock runtime tracking takes.
      * @param wantedMs
+     * @param day yyyy-MM-dd
      * @return the milliseconds added (0 when the total is already that large)
      */
-    public long raiseTotalRuntimeTo(long wantedMs)
+    public long raiseTotalRuntimeTo(long wantedMs, String day)
     {
         synchronized (speedMonitor)
         {
@@ -1468,7 +1479,7 @@ public abstract class Locomotive
 
             if (add <= 0) return 0;
 
-            this.historicalOperatingTime.merge(IMPORTED_RUNTIME_DAY, add, Long::sum);
+            this.historicalOperatingTime.merge(day, add, Long::sum);
 
             return add;
         }
@@ -1476,11 +1487,11 @@ public abstract class Locomotive
 
     /**
      * On how many different days was the locomotive run
-     * @return
+     * @return 
      */
     public int getNumDaysRun()
     {
-        return (int) this.historicalOperatingTime.keySet().stream().filter(d -> !IMPORTED_RUNTIME_DAY.equals(d)).count();
+        return this.historicalOperatingTime.keySet().size();
     }
     
     /**
@@ -1490,13 +1501,9 @@ public abstract class Locomotive
      */
     public String getOperatingDate(boolean mostRecent)
     {
-        List<String> sortedList = new ArrayList<>(this.historicalOperatingTime.keySet());
-
-        // The imported-runtime marker is not a day anything ran (FR-049)
-        sortedList.remove(IMPORTED_RUNTIME_DAY);
-
-        if (!sortedList.isEmpty())
+        if (!this.historicalOperatingTime.isEmpty())
         {
+            List<String> sortedList = new ArrayList<>(this.historicalOperatingTime.keySet());
             Collections.sort(sortedList);
 
             return sortedList.get(mostRecent ? sortedList.size() - 1 : 0);

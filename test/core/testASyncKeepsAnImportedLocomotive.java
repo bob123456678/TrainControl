@@ -25,7 +25,7 @@ import support.StandInStation;
  */
 public class testASyncKeepsAnImportedLocomotive
 {
-    private static final String HEADER = "Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes\n";
+    private static final String HEADER = "Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes,LastRun\n";
 
     @Test
     public void testASyncKeepsAnImportedLocomotiveAndItsRuntime() throws Exception
@@ -61,7 +61,7 @@ public class testASyncKeepsAnImportedLocomotive
             TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
             model = support.TestStation.simulated();
 
-            MarklinLocomotiveCsv.read(HEADER + "FR049 same name,,MM2,9,0,5:00:00,0,0,,\nFR049 only here,,MFX,300,0,2:00:00,0,0,,\n")
+            MarklinLocomotiveCsv.read(HEADER + "FR049 same name,,MM2,9,0,5:00:00,0,0,,,2024-02-02\nFR049 only here,,MFX,300,0,2:00:00,0,0,,,2024-02-02\n")
                 .apply(model);
 
             station.forget();

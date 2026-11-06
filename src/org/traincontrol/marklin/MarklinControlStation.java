@@ -4542,7 +4542,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         StringBuilder csvBuilder = new StringBuilder();
 
         // Header row
-        csvBuilder.append("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes\n");
+        csvBuilder.append("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,End Year,RailwayName,Notes,LastRun\n");
 
         for (Locomotive l : this.getLocomotives())
         {
@@ -4564,8 +4564,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             String railway = escapeCsv(l.getStructuredNotes().getRailway());
             String notes = escapeCsv(l.getStructuredNotes().getNotes());
 
-            csvBuilder.append(String.format("%s,%s,%s,%d,%d,%s,%d,%d,%s,%s\n",
-                name, mappingStr, decoder, address, prefSpeed, runtime, startYear, endYear, railway, notes));
+            // The day the import compares to decide whether the file's runtime is newer (FR-049); blank if never run
+            String lastRun = escapeCsv(l.getLastRunDay());
+
+            csvBuilder.append(String.format("%s,%s,%s,%d,%d,%s,%d,%d,%s,%s,%s\n",
+                name, mappingStr, decoder, address, prefSpeed, runtime, startYear, endYear, railway, notes, lastRun));
         }
 
         return csvBuilder.toString();
