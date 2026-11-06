@@ -102,6 +102,8 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         final javax.swing.JComboBox<?> shown = combo();
 
+        SwingUtilities.invokeAndWait(ui::showLayoutTab);
+
         int clicked = 0;
 
         for (final String page : model.getLayoutList())
@@ -131,9 +133,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
                 + ", not the page at that place in the name-sorted list, " + byName.get(number));
 
             // And in a page popup showing the same page
-            showPopup(page);
-
-            final LayoutPopupUI popup = popups().get(popups().size() - 1);
+            final LayoutPopupUI popup = showPopup(page);
 
             Mouse.click(arrowOn(popup, number));
 
@@ -176,22 +176,38 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         }
     }
 
-    /** Opens a page popup as the Pop Up menu does and waits for it. */
-    private void showPopup(String page) throws Exception
+    /** Opens a page popup as the Pop Up menu does (on the page list's place, whatever the page) and waits for it. */
+    private LayoutPopupUI showPopup(final String page) throws Exception
     {
-        int had = popups().size();
+        final LayoutPopupUI popup = Components.onTheEventThread(() ->
+        {
+            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui, combo2().getSelectedIndex());
 
-        java.lang.reflect.Method open = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("showLayoutPopup",
-            String.class, int.class);
+            made.render();
 
-        open.setAccessible(true);
+            // Kept by the window, as `showLayoutPopup` keeps it, so the window's refreshes reach it
+            popups().add(made);
 
-        open.invoke(ui, page, 30);
+            return made;
+        });
 
-        assertTrue(Components.waitFor(() -> popups().size() > had && popups().get(popups().size() - 1).isShowing(), 10000),
-            "the popup did not open");
+        assertTrue(Components.waitFor(popup::isShowing, 10000), "the popup did not open");
 
         Components.settle();
+
+        return popup;
+    }
+
+    private javax.swing.JComboBox<?> combo2()
+    {
+        try
+        {
+            return combo();
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -230,9 +246,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         assertNotNull(page, "precondition: every page is at the same place in both lists");
 
-        showPopup(page);
-
-        LayoutPopupUI popup = popups().get(popups().size() - 1);
+        LayoutPopupUI popup = showPopup(page);
 
         assertEquals(popupPage(popup), page);
 
@@ -364,7 +378,15 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
                 return out;
             });
 
-            assertEquals(listed, NOT_BY_NAME, I18n.t(submenu) + " does not list the pages in the order they are shown");
+            List<String> expected = new ArrayList<>(NOT_BY_NAME);
+
+            // Pages autonomy ignores are left out of the Edit submenu only
+            if (submenu.equals("autosetup.ui.menuEditAutonomy"))
+            {
+                expected.removeAll(ui.getAutonomySession().getStore().getExcludedPages());
+            }
+
+            assertEquals(listed, expected, I18n.t(submenu) + " does not list the pages in the order they are shown");
         }
 
         List<String> session = new ArrayList<>();
