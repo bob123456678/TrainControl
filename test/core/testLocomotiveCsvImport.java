@@ -42,16 +42,31 @@ public class testLocomotiveCsvImport
 
     private static final List<String> made = new ArrayList<>();
 
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = support.TestStation.simulated();
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStation.simulated();
+        }
+        catch (Exception e)
+        {
+            if (sandbox != null) sandbox.close();
+
+            throw e;
+        }
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass()
     {
         if (model != null) for (String name : made) model.deleteLoc(name);
+
+        if (sandbox != null) sandbox.close();
     }
 
     /** A locomotive as the file can say it. */

@@ -1,4 +1,4 @@
-package ui;
+package regression;
 
 import java.awt.Container;
 import java.io.File;
@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -158,41 +156,20 @@ public class testLocomotiveCsvImportDoor
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
+        support.SandboxedWindow sandboxed = new support.SandboxedWindow();
+
         try
         {
             sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            ui[0] = sandboxed.hold(openTheWindow());
+            TrainControlUI window = sandboxed.hold(testTheImportDoorReadsAnOldFile.openTheWindow());
 
-            claim.check(ui[0], (MarklinControlStation) ui[0].getModel());
+            claim.check(window, (MarklinControlStation) window.getModel());
         }
         finally
         {
             sandboxed.close();
         }
-    }
-
-    private static TrainControlUI openTheWindow() throws Exception
-    {
-        MarklinControlStation model = support.TestStation.simulatedInDebug();
-
-        final TrainControlUI[] made = new TrainControlUI[1];
-
-        SwingUtilities.invokeAndWait(() -> made[0] = new TrainControlUI());
-
-        made[0].setViewListener(model, new CountDownLatch(1));
-
-        final CountDownLatch settled = new CountDownLatch(1);
-
-        made[0].whenTilesSettled(() -> settled.countDown());
-
-        settled.await(30, TimeUnit.SECONDS);
-
-        for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
-
-        return made[0];
     }
 
     private static File write(String text) throws Exception

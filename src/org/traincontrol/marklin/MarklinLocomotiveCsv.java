@@ -25,38 +25,22 @@ public final class MarklinLocomotiveCsv
 {
     private static final Pattern DECODER = Pattern.compile("\\b(MFX|DCC|MM2)\\b", Pattern.CASE_INSENSITIVE);
 
-    /** One readable row of the file. */
+    /** One readable row of the file, filled in by the reader. */
     public static final class Row
     {
-        public final int line;
-        public final String name;
+        public int line;
+        public String name;
         /** Null when the decoder column names none of MFX, DCC or MM2 (a multi-unit cannot be built from a file). */
-        public final Locomotive.decoderType type;
-        public final int address;
-        public final int preferredSpeed;
-        public final long runtimeMs;
-        public final int startYear;
-        public final int endYear;
-        public final String railway;
-        public final String notes;
+        public Locomotive.decoderType type;
+        public int address;
+        public int preferredSpeed;
+        public long runtimeMs;
+        public int startYear;
+        public int endYear;
+        public String railway;
+        public String notes;
         /** The day the file's runtime was last added to (yyyy-MM-dd), or null when blank, missing or unreadable. */
-        public final String lastRun;
-
-        Row(int line, String name, Locomotive.decoderType type, int address, int preferredSpeed, long runtimeMs,
-            int startYear, int endYear, String railway, String notes, String lastRun)
-        {
-            this.lastRun = lastRun;
-            this.line = line;
-            this.name = name;
-            this.type = type;
-            this.address = address;
-            this.preferredSpeed = preferredSpeed;
-            this.runtimeMs = runtimeMs;
-            this.startYear = startYear;
-            this.endYear = endYear;
-            this.railway = railway;
-            this.notes = notes;
-        }
+        public String lastRun;
     }
 
     /** What a row does to a database. */
@@ -355,8 +339,21 @@ public final class MarklinLocomotiveCsv
         Locomotive.decoderType type = decoder.find()
             ? Locomotive.decoderType.valueOf(decoder.group(1).toUpperCase(Locale.ROOT)) : null;
 
-        return new Row(record.line, name, type, (int) address, (int) speed, runtime, (int) start, (int) end,
-            field(record, column, "railwayname"), field(record, column, "notes"), lastRun);
+        Row row = new Row();
+
+        row.line = record.line;
+        row.name = name;
+        row.type = type;
+        row.address = (int) address;
+        row.preferredSpeed = (int) speed;
+        row.runtimeMs = runtime;
+        row.startYear = (int) start;
+        row.endYear = (int) end;
+        row.railway = field(record, column, "railwayname");
+        row.notes = field(record, column, "notes");
+        row.lastRun = lastRun;
+
+        return row;
     }
 
     /** A day from 2018 to today as yyyy-MM-dd, or null for a blank, unreadable or impossible one (not an error). */
