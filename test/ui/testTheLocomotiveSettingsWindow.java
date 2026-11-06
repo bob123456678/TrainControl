@@ -692,6 +692,62 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * With the power off and a stored speed, a change of address or decoder is refused at Save, as the old door would
+     * refuse it, while a name saves; at speed zero the address saves.
+     *
+     * MUTATION: leave the stored-speed question out of `LocomotiveActions.writeNameAndAddress`, and this fails.
+     */
+    @Test
+    public void testAStoredSpeedRefusesTheAddressAndTheDecoderButNotTheName() throws Exception
+    {
+        String stop = I18n.f("loc.ui.stopToEdit", NAME);
+
+        loc.setSpeed(40);
+
+        open(0);
+
+        SettingsWindow.type("settings.address", "3411");
+
+        assertEquals(saveAndAnswer(), Arrays.asList(stop), "an address change was not refused under a stored speed");
+        assertEquals(loc.getAddress(), 3401);
+
+        SettingsWindow.type("settings.address", "3401");
+
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.DCC);
+
+            return null;
+        });
+
+        assertEquals(saveAndAnswer(), Arrays.asList(stop), "a decoder change was not refused under a stored speed");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.MFX);
+
+        Components.onTheEventThread(() ->
+        {
+            SettingsWindow.part("settings.decoder", JComboBox.class).setSelectedItem(Locomotive.decoderType.MFX);
+
+            return null;
+        });
+
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "a name change was refused under a stored speed");
+        assertNotNull(model.getLocByName("LS renamed"));
+
+        model.getLocByName("LS renamed").setSpeed(0);
+
+        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.awaited();
+        SettingsWindow.type("settings.address", "3411");
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> loc.getAddress() == 3411, WAIT), "an address change was refused at speed zero");
+    }
+
+    /**
      * The name and address write asks again whether autonomy runs, for the old dialogs that reach it without the
      * window's rule.
      *

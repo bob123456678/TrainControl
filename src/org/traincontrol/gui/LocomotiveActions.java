@@ -172,6 +172,13 @@ final class LocomotiveActions
 
                 if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                 {
+                    // A new address or decoder is not written under a train with a stored speed, power on or off
+                    if (LocomotiveSettings.hasSpeed(this.ui, l))
+                    {
+                        JOptionPane.showMessageDialog(source, I18n.f("loc.ui.stopToEdit", l.getName()));
+                        return false;
+                    }
+
                     this.ui.getModel().changeLocAddress(l.getName(), proposedAddress, newDecoderType);
                 }
             }

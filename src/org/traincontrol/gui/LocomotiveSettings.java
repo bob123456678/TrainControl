@@ -31,7 +31,16 @@ public final class LocomotiveSettings
      */
     public static boolean isMoving(TrainControlUI ui, Locomotive l)
     {
-        if (ui == null || l == null || ui.getModel() == null || !ui.powerIsOn()) return false;
+        return ui != null && ui.powerIsOn() && hasSpeed(ui, l);
+    }
+
+    /**
+     * Whether the locomotive, or a multi-unit it belongs to, has a speed above zero, with the power on or off: on Go the
+     * decoder at the old address would resume it.
+     */
+    public static boolean hasSpeed(TrainControlUI ui, Locomotive l)
+    {
+        if (ui == null || l == null || ui.getModel() == null) return false;
 
         if (l.getSpeed() > 0) return true;
 
