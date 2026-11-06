@@ -463,8 +463,7 @@ public class testTheEditorsFindingsCanBeFiltered
     /**
      * Closing the editor clears the filter: the next editor opens with an empty box.
      *
-     * MUTATION: in `EditorWindows.openCarryingTheClick`, leave `filterCarried` set after the opening; or store the
-     * text in a static; this fails.
+     * MUTATION: in `EditorWindows.openCarryingTheClick`, leave `filterCarried` set after the opening; this fails.
      */
     @Test
     public void testClosingTheEditorClearsTheFilter() throws Exception
@@ -482,9 +481,16 @@ public class testTheEditorsFindingsCanBeFiltered
 
             type(first, aWord(unfiltered, false));
 
-            close(first, true);
+            // Through a door, which hands the text on; the editor it opens is the one closed
+            LayoutEditor second = throughDoor(first, "notice", new TileKey(PAGE, 1, 1));
 
-            LayoutEditor next = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), first);
+            opened.add(second);
+
+            assertTrue(!box(second).getText().isEmpty(), "precondition: the door did not carry the text");
+
+            close(second, true);
+
+            LayoutEditor next = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), second);
 
             opened.add(next);
 
