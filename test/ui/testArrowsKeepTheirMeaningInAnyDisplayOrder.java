@@ -346,6 +346,13 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         List<String> lines = new ArrayList<>();
 
+        // The pages the graph is built over, in its order: a link's number indexes them
+        List<String> built = new ArrayList<>();
+
+        for (org.traincontrol.base.LayoutDiagram each : session.getPages()) built.add(each.getName());
+
+        lines.add("pages " + built);
+
         for (Map.Entry<?, ?> link : ((Map<?, ?>) portals.get(session.getGraph())).entrySet())
         {
             lines.add("link " + link.getKey() + " > " + link.getValue());
