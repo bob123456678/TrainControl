@@ -14259,7 +14259,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Navigates to a specific layout page
-     * @param index the page's place in the name-sorted list, or -1 for a link that points at no page
+     * @param index the page's place in the page list, or -1 for a link that points at no page
      */
     public void goToLayoutPage(int index)
     {
@@ -17899,6 +17899,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void duplicatePageFromTheEditor(LayoutEditor editor)
     {
         pressFromTheEditor(editor, this::duplicateLayoutMenuItemActionPerformed);
+    }
+
+    /** Move Page Up (-1) or Down (1) from the layout editor, on the main window's selected page (FR-175). */
+    public void movePageFromTheEditor(LayoutEditor editor, int by)
+    {
+        this.layoutFileActions.movePage(by, editor);
+    }
+
+    /** Sort Pages by Name from the layout editor (FR-175). */
+    public void sortPagesFromTheEditor(LayoutEditor editor)
+    {
+        this.layoutFileActions.sortPagesByName(editor);
     }
 
     /** Combine Linked Pages from the layout editor, from the main window's selected page. */

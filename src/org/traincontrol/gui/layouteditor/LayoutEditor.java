@@ -44,6 +44,7 @@ import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
+import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.util.I18n;
 
 /**
@@ -4192,26 +4193,16 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /**
-     * Manage Pages: the main window's page actions, run by its own handlers on the page being edited (FR-109).  Built
-     * once; it stays across page and mode switches.
+     * Tools: the page actions that have no icon in the sidebar's strip, run by the main window's handlers on the page
+     * being edited (FR-109).  Built once; it stays across page and mode switches.
      */
     private void mountPageMenu()
     {
         if (getJMenuBar() != null) return;
 
-        javax.swing.JMenu menu = pageMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.modifyLayout"));
+        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("layout.ui.menuTools"));
 
-        menu.add(pageMenuItem("ui.main.toolbar.addBlackPage", () -> parent.addBlankPageFromTheEditor(this)));
-        menu.add(pageMenuItem("ui.main.toolbar.renameCurrentPage", () -> parent.renamePageFromTheEditor(this)));
-        menu.add(pageMenuItem("ui.main.toolbar.duplicateCurrentPage", () -> parent.duplicatePageFromTheEditor(this)));
-
-        // Changes nothing, so a run does not refuse it: not a `pageMenuItem`
-        javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
-
-        sort.setFocusable(false);
-        sort.addActionListener(e -> JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoSortPages")));
-
-        menu.add(sort);
+        menu.add(pageMenuItem("ui.main.toolbar.sortPages", () -> parent.sortPagesFromTheEditor(this)));
         menu.addSeparator();
 
         javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
@@ -4220,8 +4211,6 @@ public class LayoutEditor extends PositionAwareJFrame
         combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
 
         menu.add(combine);
-        menu.addSeparator();
-        menu.add(pageMenuItem("ui.main.toolbar.deleteCurrentPage", () -> parent.deletePageFromTheEditor(this)));
 
         javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
 
@@ -4234,72 +4223,118 @@ public class LayoutEditor extends PositionAwareJFrame
         setJMenuBar(bar);
     }
 
-    /** The Manage Pages menu, once mounted. */
-    private javax.swing.JMenu pageMenu;
-
-    /** Opens Manage Pages with its items showing, for the main window's Manage Pages... (FR-146). */
-    public void openPageMenu()
-    {
-        if (pageMenu != null && pageMenu.isShowing()) pageMenu.doClick(0);
-    }
-
     private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)
     {
         javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t(key));
 
         item.setFocusable(false);
 
-        item.addActionListener(e ->
-        {
-            if (switching || changingPage || parent == null || parent.getModel() == null) return;
-
-            // A run refuses before the name is asked for, in one dialog
-            if (parent.refuseWhileARunHoldsTheSetup(this)) return;
-
-            // The handlers act on the main window's page, which may be another
-            parent.selectLayoutPage(layout.getName());
-
-            action.run();
-        });
+        item.addActionListener(e -> runPageAction(action));
 
         return item;
     }
 
+    /** The check the Tools menu and the strip's icons share before a page action runs. */
+    private void runPageAction(Runnable action)
+    {
+        if (switching || changingPage || parent == null || parent.getModel() == null) return;
+
+        // A run refuses before the name is asked for, in one dialog
+        if (parent.refuseWhileARunHoldsTheSetup(this)) return;
+
+        // The handlers act on the main window's page, which may be another
+        parent.selectLayoutPage(layout.getName());
+
+        action.run();
+    }
+
     /**
-     * The strip down the side: which page, and which editor.  Hidden when it would offer one choice.
+     * The icons under the Page heading (FR-174): add, rename, duplicate, move up, move down, and delete apart at the
+     * end.  Flat, as the route editor's are.
+     */
+    private javax.swing.JComponent buildPageStrip(java.util.List<String> pages)
+    {
+        int at = pages.indexOf(layout.getName());
+
+        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+
+        javax.swing.JPanel strip = new javax.swing.JPanel();
+
+        strip.setLayout(new javax.swing.BoxLayout(strip, javax.swing.BoxLayout.X_AXIS));
+        strip.setOpaque(false);
+        strip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+
+        strip.add(pageIcon(RowIcons.plus(16), RowIcons.plus(16, gray), I18n.t("ui.main.toolbar.addBlackPage"), true,
+            () -> parent.addBlankPageFromTheEditor(this)));
+        strip.add(pageIcon(RowIcons.pencil(16), RowIcons.pencil(16, gray), I18n.t("ui.main.toolbar.renameCurrentPage"),
+            true, () -> parent.renamePageFromTheEditor(this)));
+        strip.add(pageIcon(RowIcons.copy(16), RowIcons.copy(16, gray), I18n.t("ui.main.toolbar.duplicateCurrentPage"),
+            true, () -> parent.duplicatePageFromTheEditor(this)));
+
+        boolean first = at <= 0;
+        boolean last = at < 0 || at >= pages.size() - 1;
+
+        strip.add(pageIcon(RowIcons.arrow(16, true), RowIcons.arrow(16, true, gray),
+            I18n.t(first ? "layout.ui.tooltipPageIsFirst" : "layout.ui.tooltipMovePageUp"), !first,
+            () -> parent.movePageFromTheEditor(this, -1)));
+        strip.add(pageIcon(RowIcons.arrow(16, false), RowIcons.arrow(16, false, gray),
+            I18n.t(last ? "layout.ui.tooltipPageIsLast" : "layout.ui.tooltipMovePageDown"), !last,
+            () -> parent.movePageFromTheEditor(this, 1)));
+
+        strip.add(javax.swing.Box.createHorizontalGlue());
+
+        // The handler refuses the last page on the same count
+        boolean onlyOne = pages.size() <= 1;
+
+        strip.add(pageIcon(RowIcons.trash(16), RowIcons.trash(16, gray),
+            I18n.t(onlyOne ? "layout.ui.errorCannotDeleteOnlyRemainingPage" : "ui.main.toolbar.deleteCurrentPage"),
+            !onlyOne, () -> parent.deletePageFromTheEditor(this)));
+
+        return strip;
+    }
+
+    /** One flat icon button of the strip: no border until pointed at, out of the tab order. */
+    private javax.swing.JButton pageIcon(javax.swing.Icon icon, javax.swing.Icon grayed, String tip, boolean enabled,
+        Runnable action)
+    {
+        javax.swing.JButton button = new javax.swing.JButton(icon);
+
+        button.setDisabledIcon(grayed);
+        button.putClientProperty("JButton.buttonType", "toolBarButton");
+        button.setFocusable(false);
+        button.setToolTipText(tip);
+        button.setEnabled(enabled);
+        button.addActionListener(e -> runPageAction(action));
+
+        return button;
+    }
+
+    /**
+     * The strip down the side: the page icons and list, and which editor.  The editor choice is left out when it would
+     * offer one choice.
      */
     private void mountSidebar()
     {
         java.util.List<String> pages = parent.getModel() == null
             ? new java.util.ArrayList<String>() : parent.getModel().getLayoutList();
 
-        boolean offersPages = pages.size() > 1;
-        boolean offersModes = parent.editableAutonomySession() != null || isAutonomyMode();
-
-        if (!offersPages && !offersModes)
-        {
-            // A page action can leave one page: the strip goes
-            sidebar = null;
-
-            if (getContentPane() != formPane) setContentPane(formPane);
-
-            return;
-        }
+        boolean offersModes = pages.size() > 1 || parent.editableAutonomySession() != null || isAutonomyMode();
 
         sidebar = new javax.swing.JPanel();
         sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
         // Less on the right (MT-097): a list has its own inset.
         sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 2));
 
-        if (offersPages)
-        {
-            sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
-            sidebar.add(scrollable(buildPageControl(pages)));
-            sidebar.add(javax.swing.Box.createVerticalStrut(12));
-        }
+        sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
+        sidebar.add(buildPageStrip(pages));
+        sidebar.add(scrollable(buildPageControl(pages)));
+        sidebar.add(javax.swing.Box.createVerticalStrut(12));
 
-        sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
-        sidebar.add(buildModeControl());
+        if (offersModes)
+        {
+            sidebar.add(heading(I18n.t("layout.ui.sidebarMode")));
+            sidebar.add(buildModeControl());
+        }
 
         pageSettings = new javax.swing.JPanel();
         pageSettings.setLayout(new javax.swing.BoxLayout(pageSettings, javax.swing.BoxLayout.Y_AXIS));

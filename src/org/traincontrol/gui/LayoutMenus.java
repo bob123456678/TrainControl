@@ -8,7 +8,6 @@ import java.util.Set;
 import javax.swing.JOptionPane;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
@@ -228,8 +227,8 @@ final class LayoutMenus
     }
 
     /**
-     * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward, with its Manage
-     * Pages menu open (FR-146).  It stands in for the Manage Pages menu, hidden on Adam's word.
+     * Layouts > Manage Pages...: opens the layout editor as Edit does, or brings the open one forward (FR-146); the
+     * page actions are the icons down its left side.  It stands in for the Manage Pages menu, hidden on Adam's word.
      */
     void mountManagePages()
     {
@@ -249,17 +248,10 @@ final class LayoutMenus
         ui.modifyLocalLayoutMenu().setVisible(false);
     }
 
-    /** Edit's way in, then the editor's page menu, posted twice to follow the editor's posted build and show. */
+    /** Edit's way in. */
     private void openManagePages()
     {
         ui.openLayoutEditor(null, null, null);
-
-        javax.swing.SwingUtilities.invokeLater(() -> javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            LayoutEditor shown = ui.anEditorWindow();
-
-            if (shown != null) shown.openPageMenu();
-        }));
     }
 
     /** Items are looked up, not counted, as everything above the headings moves. */

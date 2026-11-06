@@ -463,6 +463,59 @@ public final class RowIcons
         };
     }
 
+    /**
+     * A pencil, tip to the lower left, for the mark that renames.
+     *
+     * @param size how many pixels square
+     * @return the icon
+     */
+    public static Icon pencil(final int size)
+    {
+        return pencil(size, QUIET);
+    }
+
+    /**
+     * The same, in a color of the caller's choosing.
+     *
+     * @param size how many pixels square
+     * @param colour what it is drawn in
+     * @return the icon
+     */
+    public static Icon pencil(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                // Drawn upright on a 13-unit grid around the origin, tip down, then turned a half right angle: the
+                // body, the tip cut from it, and a gap where the eraser is set off.
+                java.awt.geom.Area shape = new java.awt.geom.Area(
+                    new java.awt.geom.RoundRectangle2D.Float(-2f, -6.5f, 4f, 10f, 1.6f, 1.6f));
+
+                java.awt.geom.Path2D.Float tip = new java.awt.geom.Path2D.Float();
+
+                tip.moveTo(-2f, 3f);
+                tip.lineTo(2f, 3f);
+                tip.lineTo(0f, 6.8f);
+                tip.closePath();
+
+                shape.add(new java.awt.geom.Area(tip));
+                shape.subtract(new java.awt.geom.Area(
+                    new java.awt.geom.Rectangle2D.Float(-2.2f, -4.6f, 4.4f, 0.9f)));
+
+                java.awt.geom.AffineTransform turn = new java.awt.geom.AffineTransform();
+
+                turn.translate(width / 2.0, height / 2.0);
+                turn.scale(width / 13.0, height / 13.0);
+                turn.rotate(Math.PI / 4);
+
+                g.setColor(colour);
+                g.fill(turn.createTransformedShape(shape));
+            }
+        };
+    }
+
     /** An icon that paints itself, antialiased, on a graphics it is handed. */
     private abstract static class Painted implements Icon
     {
