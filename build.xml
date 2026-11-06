@@ -654,6 +654,7 @@
         <test-one-class class="testTheLocomotiveDoorsAskOverTheirWindow"/>
         <test-one-class class="testTheEditorsDoorsAskOverThem"/>
         <test-one-class class="testFindAPoint"/>
+        <test-one-class class="testAStationClosedOnEverySideCannotBeSentTo"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
