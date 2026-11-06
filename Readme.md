@@ -408,6 +408,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.0
 * v3.0.8 [11/04/2026]
     - New Features
         - Central Station
