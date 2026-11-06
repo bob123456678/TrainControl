@@ -240,6 +240,11 @@ public final class CS2File
         return "http://" + this.IP + "/app/api/automatics";
     }
     
+    public String getCS3InfoUrl()
+    {
+        return "http://" + this.IP + "/app/api/info";
+    }
+
     public String getCS3MagDBUrl()
     {
         return "http://" + this.IP + "/app/api/mags";
@@ -595,9 +600,44 @@ public final class CS2File
         return out;
     }
 
+    /** Whether the CS3 runs firmware 2.6 or later, which serves its locomotives and routes differently. */
     public boolean isCS3Version260OrAbove() throws Exception
     {
-        return !isNotFoundError(getCS3LocDBUrl(260));
+        return cs3Firmware().atLeast(2, 6);
+    }
+
+    // The CS3's firmware, found once for this parser: a sync makes a new parser, and the actions after it reuse the
+    // answer (FR-170)
+    private volatile FirmwareVersion cs3Firmware;
+
+    /**
+     * The CS3's firmware, read from /app/api/info; if that cannot be read, 2.6.0 or 2.5.0 by whether the 2.6
+     * locomotive endpoint answers.
+     */
+    private FirmwareVersion cs3Firmware() throws Exception
+    {
+        FirmwareVersion found = this.cs3Firmware;
+
+        if (found == null)
+        {
+            try (BufferedReader in = fetchURL(getCS3InfoUrl()))
+            {
+                found = FirmwareVersion.parse(parseJSONObject(in).optString("softwareVersion", null));
+            }
+            catch (Exception unreadable)
+            {
+                found = null;
+            }
+
+            if (found == null)
+            {
+                found = new FirmwareVersion(2, isNotFoundError(getCS3LocDBUrl(260)) ? 5 : 6, 0);
+            }
+
+            this.cs3Firmware = found;
+        }
+
+        return found;
     }
 
     public List<MarklinRoute> parseRoutesCS3() throws Exception

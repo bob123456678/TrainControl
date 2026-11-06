@@ -159,6 +159,32 @@ public final class StandInStation implements AutoCloseable
         this.server.stop(0);
     }
 
+    /**
+     * A CS3's answers from the repository's fixtures: "260" is firmware 2.6.1 (test/cs3_v261 and the 2.6 lists), "250"
+     * the older lists.  /app/api/info answers with `info`, or is not found when that is null.
+     */
+    public static BiFunction<String, Integer, byte[]> cs3(String firmware, String info)
+    {
+        boolean is260 = "260".equals(firmware);
+
+        return (path, n) ->
+        {
+            switch (path)
+            {
+                case "/config/geraet.vrs": return CS3_DEVICE;
+                case "/app/api/info": return info == null ? null : info.getBytes(StandardCharsets.UTF_8);
+                case "/app/api/locos": return is260 ? file("test/CS3_loks_v260.json") : null;
+                case "/app/api/loks": return is260 ? null : file("test/CS3_loks.json");
+                case "/app/api/mags": return file(is260 ? "test/cs3_v261/app/api/mags.json" : "test/CS3_mags.json");
+                case "/app/api/mags/state": return file("test/cs3_v261/app/api/mags/state.json");
+                case "/app/api/gbs": return file("test/cs3_v261/app/api/gbs.json");
+                case "/app/api/automatics": return file(is260 ? "test/CS3_automatics_v260.json"
+                    : "test/CS3_automatics.json");
+                default: return path.startsWith("/config/") ? file("test/cs3_v261" + path) : null;
+            }
+        };
+    }
+
     /** A file's bytes, or null when there is no such file. */
     public static byte[] file(String path)
     {
