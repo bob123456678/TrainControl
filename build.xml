@@ -655,6 +655,7 @@
         <test-one-class class="testTheEditorsDoorsAskOverThem"/>
         <test-one-class class="testFindAPoint"/>
         <test-one-class class="testAStationClosedOnEverySideCannotBeSentTo"/>
+        <test-one-class class="testATimetableEntryKeepsItsSquaresThroughRenames"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
