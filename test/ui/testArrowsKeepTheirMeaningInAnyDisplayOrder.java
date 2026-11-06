@@ -167,8 +167,6 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         String graph = graphFingerprint();
 
-        Map<String, String> before = fingerprint();
-
         List<String> was = namesInTheIndex();
 
         SwingUtilities.invokeAndWait(() -> ui.openLayoutEditor("3 - Top Parking", false, null));
@@ -176,6 +174,9 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         assertTrue(Components.waitFor(() -> support.EditorsOpen.editorOn("3 - Top Parking") != null, 15000), "no editor");
 
         Components.settle();
+
+        // Taken with the editor open: opening it writes its own undo copy and may refresh the configuration
+        Map<String, String> before = fingerprint();
 
         Components.press(Components.all(support.EditorsOpen.editorOn("3 - Top Parking"), javax.swing.AbstractButton.class,
             b -> I18n.t("layout.ui.tooltipMovePageUp").equals(b.getToolTipText())).get(0));
@@ -191,12 +192,13 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         after.remove("config/gleisbild.cs2");
         before.remove("config/gleisbild.cs2");
 
-        // Opening the editor leaves its undo copy of the setup; moving a page does not
-        after.remove("config/autonomy/setup-before-edit.json");
-
         assertEquals(after.keySet(), before.keySet(), "moving a page added or removed a file");
 
-        assertEquals(after, before, "moving a page changed a file other than the index");
+        List<String> changed = new ArrayList<>();
+
+        for (String file : before.keySet()) if (!before.get(file).equals(after.get(file))) changed.add(file);
+
+        assertEquals(changed.toString(), "[]", "moving a page changed a file other than the index");
 
         assertEquals(graphFingerprint(), graph, "moving a page changed the autonomy graph");
     }
