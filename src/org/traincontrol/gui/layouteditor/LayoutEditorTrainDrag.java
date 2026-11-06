@@ -92,7 +92,7 @@ final class LayoutEditorTrainDrag
         editor.moveCaptionGhost(javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(),
             editor.getLayeredPane()));
 
-        LayoutLabel over = LayoutGrid.tileUnder(squares, e.getComponent(), e);
+        LayoutLabel over = LayoutGrid.squareUnder(squares, e.getComponent(), e);
 
         TileKey to = tileOf(over);
 
@@ -113,7 +113,7 @@ final class LayoutEditorTrainDrag
         boolean wasCarrying = carrying;
 
         LayoutLabel over = wasCarrying
-            ? LayoutGrid.tileUnder(editor.grid.getContainer(), e.getComponent(), e) : null;
+            ? LayoutGrid.squareUnder(editor.grid.getContainer(), e.getComponent(), e) : null;
 
         finish();
 

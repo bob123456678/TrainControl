@@ -27,69 +27,97 @@ import support.Mouse;
 
 /**
  * FR-160: a train drawn on a station in the autonomy editor can be dragged to another station.  It lands through the
- * door the editor's Add to Autonomy picker places through (`putLocomotiveOn`), so the setup it leaves is the picker's.
+ * door the editor's Add to Autonomy picker places through (`placeLocomotive`), so the setup it leaves is the picker's.
  * Every claim drives real mouse events at the editor's squares on the frozen railway and puts the setup back.
  *
  * @author Adam
  */
 public class testATrainDragsFromStationToStation
 {
-    private static support.LayoutSandbox sandbox;
-    private static MarklinControlStation model;
-    private static TrainControlUI ui;
-    private static AutonomySession session;
-    private static LayoutDiagram page;
-    private static LayoutEditor editor;
-
     private static final String PAGE = "1 - Main";
+
+    private static LayoutEditor editor;
+    private static LayoutDiagram page;
+    private static AutonomySession session;
+    private static TrainControlUI ui;
+    private static MarklinControlStation model;
+    private static support.LayoutSandbox sandbox;
 
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor needs a display");
-        }
+        needADisplay();
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        openTheRailway();
 
-        model = support.TestStation.simulatedInDebug();
+        attachTheWindow();
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
-
-        // The locomotive list arrives with the first tiles; a configuration loaded before it forgets its trains.
-        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
-
-        ui.whenTilesSettled(() -> settled.countDown());
-
-        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
-
-        settle();
+        waitForTheTiles();
 
         session = ui.getAutonomySession();
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration, so there is no editor to drag in");
-        }
+        assertNotNull(session.getStore().getActiveConfiguration(), "no autonomy configuration to drag in");
 
         page = model.getLayout(PAGE);
 
-        // A configuration loaded, as on Adam's railway: the trains are drawn from the running layout it builds.
+        loadTheConfiguration();
+
+        editor = openEditor();
+    }
+
+    private static void needADisplay()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
+    }
+
+    private static void openTheRailway() throws Exception
+    {
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            model = support.TestStation.simulatedInDebug();
+        }
+        catch (Exception | Error failed)
+        {
+            closeTheRailway();
+
+            throw failed;
+        }
+    }
+
+    private static void attachTheWindow() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
+
+        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+    }
+
+    /** The locomotive list arrives with the first tiles; a configuration loaded before it forgets its trains. */
+    private static void waitForTheTiles() throws Exception
+    {
+        final java.util.concurrent.CountDownLatch arrived = new java.util.concurrent.CountDownLatch(1);
+
+        ui.whenTilesSettled(arrived::countDown);
+
+        arrived.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+        settle();
+    }
+
+    /** Loaded as on Adam's railway: the trains are drawn from the running layout it builds. */
+    private static void loadTheConfiguration() throws Exception
+    {
+        final String active = session.getStore().getActiveConfiguration();
+
         if (ui.getActiveDiagramConfiguration() == null)
         {
-            final String active = session.getStore().getActiveConfiguration();
-
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
             settle();
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
-
-        editor = openEditor();
     }
 
     /**
@@ -98,26 +126,54 @@ public class testATrainDragsFromStationToStation
      */
     private static LayoutEditor openEditor() throws Exception
     {
-        final LayoutEditor[] built = new LayoutEditor[1];
+        final java.util.concurrent.atomic.AtomicReference<LayoutEditor> made = new java.util.concurrent.atomic.AtomicReference<>();
 
-        SwingUtilities.invokeAndWait(() ->
+        onTheEventThread(() -> made.set(shown(new LayoutEditor(page, 30, ui, 0))));
+
+        settle();
+
+        onTheEventThread(ui::rebuildRunningLayoutFromSetup);
+
+        settle();
+
+        return made.get();
+    }
+
+    private static LayoutEditor shown(LayoutEditor window)
+    {
+        window.render();
+        window.setAutonomyMode(session);
+        window.setVisible(true);
+
+        return window;
+    }
+
+    /** A step that may throw. */
+    private interface Step
+    {
+        void run() throws Exception;
+    }
+
+    private static void onTheEventThread(final Step step) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> attempt(step));
+    }
+
+    private static void later(final Step step)
+    {
+        SwingUtilities.invokeLater(() -> attempt(step));
+    }
+
+    private static void attempt(Step step)
+    {
+        try
         {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-
-            built[0].render();
-
-            built[0].setAutonomyMode(session);
-
-            built[0].setVisible(true);
-        });
-
-        settle();
-
-        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
-
-        settle();
-
-        return built[0];
+            step.run();
+        }
+        catch (Exception failed)
+        {
+            throw new RuntimeException(failed);
+        }
     }
 
     @AfterClass(alwaysRun = true)
@@ -125,26 +181,27 @@ public class testATrainDragsFromStationToStation
     {
         try
         {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
+            closeTheWindows();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            closeTheRailway();
         }
+    }
+
+    private static void closeTheWindows() throws Exception
+    {
+        for (final java.awt.Window open : new java.awt.Window[] {editor, ui})
+        {
+            if (open != null) SwingUtilities.invokeAndWait(open::dispose);
+        }
+    }
+
+    private static void closeTheRailway()
+    {
+        if (model != null) model.stop();
+
+        if (sandbox != null) sandbox.close();
     }
 
     /**
@@ -539,17 +596,7 @@ public class testATrainDragsFromStationToStation
 
             cancel.setAccessible(true);
 
-            SwingUtilities.invokeLater(() ->
-            {
-                try
-                {
-                    cancel.invoke(editor);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            later(() -> cancel.invoke(editor));
 
             for (int wait = 0; wait < 100 && editor.isDisplayable(); wait++)
             {
@@ -575,17 +622,7 @@ public class testATrainDragsFromStationToStation
 
             pick.setAccessible(true);
 
-            SwingUtilities.invokeLater(() ->
-            {
-                try
-                {
-                    pick.invoke(editor.getAutonomyPanel(), f.to);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            later(() -> pick.invoke(editor.getAutonomyPanel(), f.to));
 
             assertTrue(answering.awaitAsked(1, 20000), "the picker never asked which train to place");
         }
@@ -617,7 +654,7 @@ public class testATrainDragsFromStationToStation
             editor = openEditor();
         }
 
-        putTwoTrainsOnStations();
+        needTwoTrains();
 
         showTheTrains();
 
@@ -645,92 +682,17 @@ public class testATrainDragsFromStationToStation
         }
     }
 
-    /**
-     * The frozen railway has no train standing on this page, so two are put on stations through the editor's own
-     * placement door, once; the claims then drag them.
-     */
-    private static void putTwoTrainsOnStations() throws Exception
+    /** The frozen railway stands trains on this page once the locomotive list has arrived; two are needed. */
+    private static void needTwoTrains()
     {
-        final java.util.List<TileKey> stations = new java.util.ArrayList<>();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                LayoutGrid grid = gridOf();
-
-                for (TileKey tile : session.getReducer().getPoints().keySet())
-                {
-                    if (!PAGE.equals(tile.getPage()) || !session.getStore().isStation(tile)) continue;
-
-                    LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
-
-                    if (label != null && !label.isSpacer() && label.getParent() != null
-                        && session.getLocomotiveNameAt(tile) == null)
-                    {
-                        stations.add(tile);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        });
-
-        int onPage = 0;
+        int standing = 0;
 
         for (TileKey tile : session.getReducer().getPoints().keySet())
         {
-            if (PAGE.equals(tile.getPage()) && session.getLocomotiveNameAt(tile) != null) onPage++;
+            if (PAGE.equals(tile.getPage()) && session.getLocomotiveNameAt(tile) != null) standing++;
         }
 
-        if (onPage >= 2) return;
-
-        final Object panel = editor.getAutonomyPanel();
-
-        final java.lang.reflect.Method door = panel.getClass().getDeclaredMethod("putLocomotiveOn", TileKey.class,
-            String.class);
-
-        door.setAccessible(true);
-
-        // The simulated station reads its locomotive list a moment after the window attaches to it.
-        for (int wait = 0; wait < 150 && model.getLocList().isEmpty(); wait++) Thread.sleep(100);
-
-        final java.util.List<String> roster = model.getLocList();
-
-        java.util.List<String> free = new java.util.ArrayList<>(roster);
-
-        for (TileKey tile : session.getReducer().getPoints().keySet())
-        {
-            String standing = session.getLocomotiveNameAt(tile);
-
-            if (standing != null) free.remove(standing);
-        }
-
-        assertTrue(free.size() >= 2 - onPage && stations.size() >= 2,
-            "precondition: the railway lacks two free locomotives (" + free.size() + " of " + roster.size()
-            + ") or two empty stations (" + stations.size() + ") on " + PAGE);
-
-        for (int i = 0; onPage < 2; i++, onPage++)
-        {
-            final TileKey at = stations.get(i);
-            final String name = free.get(i);
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    door.invoke(panel, at, name);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
-
-            settle();
-        }
+        assertTrue(standing >= 2, "precondition: " + standing + " trains stand on " + PAGE + ", and two are needed");
     }
 
     /**
@@ -830,9 +792,9 @@ public class testATrainDragsFromStationToStation
             {
                 if (!PAGE.equals(tile.getPage())) continue;
 
-                LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
+                LayoutLabel label = drawnLabel(grid, tile);
 
-                if (label == null || label.isSpacer() || label.getParent() == null) continue;
+                if (label == null) continue;
 
                 String standing = session.getLocomotiveNameAt(tile);
 
@@ -849,9 +811,9 @@ public class testATrainDragsFromStationToStation
             {
                 if (!PAGE.equals(tile.getPage()) || tile.equals(f.from) || f.to != null) continue;
 
-                LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
+                LayoutLabel label = drawnLabel(grid, tile);
 
-                if (label == null || label.isSpacer() || label.getParent() == null) continue;
+                if (label == null) continue;
 
                 boolean holds = session.getLocomotiveNameAt(tile) != null;
 
@@ -889,6 +851,14 @@ public class testATrainDragsFromStationToStation
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /** The square's label if it is really on the page, else null. */
+    private static LayoutLabel drawnLabel(LayoutGrid grid, TileKey tile)
+    {
+        LayoutLabel label = grid.getValueAt(tile.getX(), tile.getY());
+
+        return label == null || label.isSpacer() || label.getParent() == null ? null : label;
     }
 
     private static LayoutGrid gridOf() throws Exception
@@ -1007,11 +977,9 @@ public class testATrainDragsFromStationToStation
     {
         Map<String, String> out = new java.util.TreeMap<>();
 
-        for (TileKey tile : session.getReducer().getPoints().keySet())
+        for (Map.Entry<TileKey, String> standing : session.placementsAutonomyWillWrite().entrySet())
         {
-            String name = session.getLocomotiveNameAt(tile);
-
-            if (name != null) out.put(tile.toString(), name);
+            out.put(standing.getKey().toString(), standing.getValue());
         }
 
         return out;

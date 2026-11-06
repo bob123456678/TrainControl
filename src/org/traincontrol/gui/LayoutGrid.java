@@ -300,7 +300,7 @@ public class LayoutGrid
      * The tile under the pointer, asked of the tiles rather than of Swing: captions are z-ordered in front of the
      * diagram, so `getDeepestComponentAt` would answer with another station's name.  Null when off the diagram.
      */
-    public static LayoutLabel tileUnder(Container container, java.awt.Component from, MouseEvent e)
+    private static LayoutLabel tileUnder(Container container, java.awt.Component from, MouseEvent e)
     {
         java.awt.Point at = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), container);
 
@@ -317,6 +317,15 @@ public class LayoutGrid
         }
 
         return null;
+    }
+
+    /**
+     * The square under a mouse event, for a train dragged over the diagram (FR-160): the caption drag's own question.
+     * @return the square, or null when off the diagram
+     */
+    public static LayoutLabel squareUnder(Container container, java.awt.Component from, MouseEvent e)
+    {
+        return tileUnder(container, from, e);
     }
 
     /** How far the mouse moves before a press on a caption counts as a drag rather than a click. */

@@ -3472,9 +3472,33 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Puts a locomotive on a square, chosen from the whole roster with those autonomy runs marked first; choosing one
-     * moves it (OB-009).
+     * moves it (OB-009).  A train dragged here (FR-160) is the choice already made.
      */
     void placeLocomotive(TileKey tile)
+    {
+        String name = trainBeingDropped != null ? trainBeingDropped : askWhichTrain(tile);
+
+        if (name == null) return;
+
+        // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
+        // otherwise be the previous occupant's.
+        org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
+
+        session.placeLocomotive(tile, name);
+
+        // Over the copies it could leave (OB-284), as a paste records it.
+        session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
+
+        // Named (MT-337): only the rebuild puts the train on the railway.
+        placementChanged(java.util.Collections.singletonList(name));
+    }
+
+    /** The train being dragged onto a square, for the length of `dropTrain`; null otherwise. */
+    private String trainBeingDropped;
+
+    /** The picker: which train goes on the square, or null when none was chosen. */
+    private String askWhichTrain(TileKey tile)
     {
         List<String> placed = placedLocomotives();
 
@@ -3497,40 +3521,14 @@ public class AutonomyEditorPanel extends JPanel
         {
             JOptionPane.showMessageDialog(owner(),
                 I18n.t("autosetup.ui.infoAllLocomotivesInAutonomy"));
-            return;
+            return null;
         }
 
         // FR-011: without "use current", as the driven train is rarely in this list.
         String chosen = pickLocomotive(owner(), I18n.t("autosetup.ui.menuAddToAutonomy"),
             I18n.t("autosetup.ui.promptAddToAutonomy"), names, names.get(0), null, null);
 
-        if (chosen == null) return;
-
-        String name = unmark(chosen, placed);
-
-        if (name == null) return;
-
-        putLocomotiveOn(tile, name);
-    }
-
-    /**
-     * The door every placement in this editor goes through: the picker above and a train dragged from station to
-     * station (FR-160).
-     */
-    private void putLocomotiveOn(TileKey tile, String name)
-    {
-        // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
-        // otherwise be the previous occupant's.
-        org.traincontrol.automationui.TilePorts.Side heading = session.facingOf(name);
-
-        session.placeLocomotive(tile, name);
-
-        // Over the copies it could leave (OB-284), as a paste records it.
-        session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
-
-        // Named (MT-337): only the rebuild puts the train on the railway.
-        placementChanged(java.util.Collections.singletonList(name));
+        return chosen == null ? null : unmark(chosen, placed);
     }
 
     /**
@@ -3560,8 +3558,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Moves the train standing on a square to another station by the placement door (FR-160); nothing happens, and
-     * nothing is said, where `canDropTrain` says no.
+     * Moves the train standing on a square to another station through `placeLocomotive`, the door the menu's Add to
+     * Autonomy uses (FR-160); nothing happens, and nothing is said, where `canDropTrain` says no.
      * @param from the square the train stands on
      * @param to the square it was let go on
      * @return whether it moved
@@ -3570,7 +3568,16 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (!canDropTrain(from, to)) return false;
 
-        putLocomotiveOn(to, locomotiveAt(from));
+        trainBeingDropped = locomotiveAt(from);
+
+        try
+        {
+            placeLocomotive(to);
+        }
+        finally
+        {
+            trainBeingDropped = null;
+        }
 
         return true;
     }
