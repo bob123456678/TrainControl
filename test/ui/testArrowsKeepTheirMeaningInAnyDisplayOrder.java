@@ -160,13 +160,20 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     }
 
     @SuppressWarnings("unchecked")
-    private List<LayoutPopupUI> popups() throws Exception
+    private List<LayoutPopupUI> popups()
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("popups");
+        try
+        {
+            java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField("popups");
 
-        field.setAccessible(true);
+            field.setAccessible(true);
 
-        return (List<LayoutPopupUI>) field.get(ui);
+            return (List<LayoutPopupUI>) field.get(ui);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** Opens a page popup as the Pop Up menu does and waits for it. */
