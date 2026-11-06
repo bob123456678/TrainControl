@@ -313,10 +313,14 @@ public class testLocomotiveCsvImport
 
         MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + name + ",,DCC,37,0,0:00:00,0,0,,\n");
 
+        assertTrue(csv.movingToReaddress(model).isEmpty(), "a standing train is named with the power off");
+
         try
         {
             model.go();
             model.waitForPowerState(true);
+
+            assertTrue(csv.movingToReaddress(model).isEmpty(), "a standing train is named with the power on");
 
             l.setSpeed(30);
             l.waitForSpeedAtOrAbove(1);
@@ -324,16 +328,24 @@ public class testLocomotiveCsvImport
             assertEquals(csv.movingToReaddress(model), Arrays.asList(name), "a moving train the file would re-address is not named");
             assertTrue(MarklinLocomotiveCsv.read(OLD + name + ",,MM2,36,0,0:00:00,0,0,,\n").movingToReaddress(model).isEmpty(),
                 "a moving train the file would not re-address is named");
+
+            model.stop();
+            model.waitForPowerState(false);
+
+            assertTrue(l.getSpeed() > 0, "precondition: the train keeps its speed when the power goes off");
+            assertTrue(csv.movingToReaddress(model).isEmpty(), "a train is named with the power off");
         }
         finally
         {
             l.setSpeed(0);
             l.waitForSpeedBelow(1);
-            model.stop();
-            model.waitForPowerState(false);
-        }
 
-        assertTrue(csv.movingToReaddress(model).isEmpty(), "a train is named with the power off");
+            if (model.getPowerState())
+            {
+                model.stop();
+                model.waitForPowerState(false);
+            }
+        }
     }
 
     /**
